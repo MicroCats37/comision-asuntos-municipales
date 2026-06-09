@@ -2,7 +2,7 @@ name: Deploy to Test
 
 on:
   push:
-    branches: [master]
+    branches: [alpha]
 
 jobs:
   deploy:
@@ -17,8 +17,17 @@ jobs:
           script_stop: true
           script: |
             powershell -Command "
-              Set-Location C:\Users\USER\Desktop\Aplicaciones\cam
-              git pull origin master
+              $repo = 'https://github.com/MicroCats37/comision-asuntos-municipales.git'
+              $path = 'C:\Users\USER\Desktop\Aplicaciones\cam'
+              if (Test-Path $path\.git) {
+                Set-Location $path
+                git checkout alpha
+                git pull origin alpha
+              } else {
+                Remove-Item $path -Recurse -Force -ErrorAction SilentlyContinue
+                git clone -b alpha $repo $path
+                Set-Location $path
+              }
               docker compose down
               docker compose up -d --build
             "
