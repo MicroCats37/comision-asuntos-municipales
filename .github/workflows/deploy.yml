@@ -1,0 +1,24 @@
+name: Deploy to Test
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            powershell -Command "
+              Set-Location C:\Users\USER\Desktop\Aplicaciones\cam
+              git pull origin master
+              docker compose down
+              docker compose up -d --build
+            "
