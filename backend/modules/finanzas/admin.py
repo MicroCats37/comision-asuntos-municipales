@@ -1,0 +1,1 @@
+"""Admin placeholder — register Django admin classes here when needed."""

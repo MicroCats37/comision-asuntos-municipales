@@ -1,0 +1,1 @@
+"""Domain repositories — persistence interface ports (placeholder)."""

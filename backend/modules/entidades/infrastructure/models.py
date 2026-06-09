@@ -1,0 +1,1 @@
+"""Infrastructure models — Django ORM models (placeholder)."""

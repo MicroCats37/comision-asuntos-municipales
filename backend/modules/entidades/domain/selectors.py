@@ -1,0 +1,1 @@
+"""Domain selectors — query interface ports (placeholder)."""

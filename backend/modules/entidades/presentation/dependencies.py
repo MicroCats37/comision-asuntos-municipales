@@ -1,0 +1,1 @@
+"""Presentation dependencies — dependency injection factories (placeholder)."""

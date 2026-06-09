@@ -1,0 +1,59 @@
+# Environment & secrets (but NOT .env - needed in container for django-environ)
+# .env is NOT ignored here because docker needs it at build/container time
+# It IS ignored in .gitignore so it won't be committed
+.env.*
+*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Database
+*.sqlite3
+db.sqlite3
+
+# Static & Media (se generan en build)
+staticfiles/
+media/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+
+# Documentation
+docs/
+contract/
+.agent/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker (keep these files for docker build)
+# docker-compose*.yml
+# Dockerfile*
+# .dockerignore
+
+# Project specific
+contenido-avanze/

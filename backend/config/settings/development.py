@@ -1,0 +1,43 @@
+"""
+Development settings.
+"""
+from datetime import timedelta
+from .base import *  # noqa
+
+DEBUG = True
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
+
+# ── Base de datos — SQLite para desarrollo ───────────────────
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+# ── CORS ─────────────────────────────────────────────────────
+# Allow all origins in development (override with CORS_ALLOWED_ORIGINS for specific domains)
+CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=True)
+if not CORS_ALLOW_ALL_ORIGINS:
+    CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+    ])
+CORS_ALLOW_CREDENTIALS = not CORS_ALLOW_ALL_ORIGINS  # Can't use credentials with wildcard origin
+
+# ── Debug Toolbar ────────────────────────────────────────────
+INSTALLED_APPS += ['debug_toolbar']
+MIDDLEWARE = ['debug_toolbar.middleware.DebugToolbarMiddleware'] + MIDDLEWARE
+INTERNAL_IPS = ['127.0.0.1']
+
+# ── Email ────────────────────────────────────────────────────
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# ── JWT — Tokens de larga duración para desarrollo fácil ─────
+NINJA_JWT = {
+    **NINJA_JWT,
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=90),
+}

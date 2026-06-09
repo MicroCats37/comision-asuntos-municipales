@@ -1,0 +1,1 @@
+"""Infrastructure repositories — concrete persistence implementations (placeholder)."""

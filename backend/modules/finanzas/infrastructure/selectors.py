@@ -1,0 +1,1 @@
+"""Infrastructure selectors — concrete query implementations (placeholder)."""

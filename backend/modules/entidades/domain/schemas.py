@@ -1,0 +1,1 @@
+"""Domain schemas — Pydantic input/output validation objects (placeholder)."""

@@ -1,0 +1,1 @@
+"""Views placeholder — define views here when needed."""
