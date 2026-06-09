@@ -8,10 +8,9 @@ jobs:
   deploy:
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
-        with:
-          clean: false
       - name: Deploy
         run: |
+          cd C:\Users\USER\Desktop\Aplicaciones\cam
+          git pull origin alpha
           docker compose down
           docker compose up -d --build
