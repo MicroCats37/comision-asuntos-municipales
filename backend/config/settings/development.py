@@ -6,15 +6,19 @@ from .base import *  # noqa
 
 DEBUG = True
 
+# development usa hosts locales; base define fallback ["*"]
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
-# ── Base de datos — SQLite para desarrollo ───────────────────
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# ── Base de datos — SQLite para desarrollo local ────────────
+# Para usar PostgreSQL en desarrollo, quitar USE_SQLITE o setearlo a false
+import os
+if os.environ.get("USE_SQLITE", "").lower() in ("1", "true", "yes"):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
 
 # ── CORS ─────────────────────────────────────────────────────
 # Allow all origins in development (override with CORS_ALLOWED_ORIGINS for specific domains)

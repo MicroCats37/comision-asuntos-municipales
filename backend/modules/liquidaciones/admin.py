@@ -14,10 +14,62 @@ class RevisionDelegadoInline(NestedTabularInline):
 
     model = RevisionDelegado
     fk_name = "revision"
-    fields = ["delegado"]
+    fields = [
+        "delegado",
+        "delegado_cip",
+        "delegado_especialidad",
+        "delegado_municipalidad",
+        "delegado_banco",
+        "delegado_distrito",
+        "delegado_status",
+    ]
+    readonly_fields = [
+        "delegado_cip",
+        "delegado_especialidad",
+        "delegado_municipalidad",
+        "delegado_banco",
+        "delegado_distrito",
+        "delegado_status",
+    ]
     extra = 1
     autocomplete_fields = ["delegado"]
     ordering = ["delegado__perfil_ingeniero__apellido_paterno"]
+
+    def delegado_cip(self, obj):
+        if obj and obj.pk and obj.delegado_id:
+            return obj.delegado.perfil_ingeniero.cip
+        return "-"
+    delegado_cip.short_description = "CIP"
+
+    def delegado_especialidad(self, obj):
+        if obj and obj.pk and obj.delegado_id:
+            return obj.delegado.especialidad
+        return "-"
+    delegado_especialidad.short_description = "Especialidad"
+
+    def delegado_municipalidad(self, obj):
+        if obj and obj.pk and obj.delegado_id:
+            return obj.delegado.municipalidad.nombre
+        return "-"
+    delegado_municipalidad.short_description = "Municipalidad"
+
+    def delegado_banco(self, obj):
+        if obj and obj.pk and obj.delegado_id:
+            return obj.delegado.banco.nombre
+        return "-"
+    delegado_banco.short_description = "Banco"
+
+    def delegado_distrito(self, obj):
+        if obj and obj.pk and obj.delegado_id:
+            return obj.delegado.distrito
+        return "-"
+    delegado_distrito.short_description = "Distrito"
+
+    def delegado_status(self, obj):
+        if obj and obj.pk and obj.delegado_id:
+            return obj.delegado.get_status_display()
+        return "-"
+    delegado_status.short_description = "Estado"
 
 
 class RevisionInline(NestedTabularInline):
@@ -225,27 +277,18 @@ class LiquidacionAdmin(NestedModelAdmin, SimpleHistoryAdmin):
             {
                 "fields": (
                     "proyectista",
+                    "proyectista_nombre_display",
                     "empresa",
+                    "empresa_razon_social_display",
+                    "empresa_ruc_display",
+                    "empresa_direccion_display",
                     "valor_obra",
                     "derecho_minimo",
                     "porcentaje",
                 ),
             },
         ),
-        # ── Sección 2: Detalle de Empresa y Proyectista ──
-        (
-            "Detalle de Empresa y Proyectista",
-            {
-                "fields": (
-                    "empresa_razon_social_display",
-                    "empresa_ruc_display",
-                    "empresa_direccion_display",
-                    "proyectista_nombre_display",
-                ),
-                "description": "Información de referencia de la empresa y el proyectista asociado.",
-            },
-        ),
-        # ── Sección 3: Parámetros de Cálculo (IGV / UIT) ──
+        # ── Sección 2: Parámetros de Cálculo (IGV / UIT) ──
         (
             "Parámetros de Cálculo",
             {

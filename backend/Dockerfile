@@ -11,7 +11,6 @@ RUN pip install --no-cache-dir uv && \
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV USE_SQLITE=False
 
 # Set work directory
 WORKDIR /app

@@ -12,8 +12,9 @@ cp .env.example .env
 
 2. Editar `.env` y configurar los valores apropiados:
    - `SECRET_KEY`: Generar una clave secreta segura para producción
-   - `POSTGRES_PASSWORD`: Contraseña segura para PostgreSQL
-   - `ALLOWED_HOSTS`: Agregar los dominios/hosts permitidos
+   - `DB_PASSWORD`: Contraseña segura para PostgreSQL
+   - `ALLOWED_HOSTS`: Agregar los dominios/hosts permitidos (o usar `*` para desarrollo)
+   - `DJANGO_SETTINGS_MODULE`: `config.settings.production` (default) o `config.settings.development`
 
 ## Quick Start
 
@@ -224,10 +225,11 @@ docker compose logs db
 3. Verificar variables de entorno en `.env`:
 
 ```bash
-POSTGRES_DB=cam_db
-POSTGRES_USER=cam_user
-POSTGRES_PASSWORD=your_password
+DB_NAME=cam_db
+DB_USER=cam_user
+DB_PASSWORD=your_password
 DB_HOST=db
+DB_PORT=5432
 ```
 
 4. Testear conexión desde el contenedor backend:
@@ -245,7 +247,7 @@ docker compose exec backend uv run python manage.py check
 ### Verificar configuración de Docker
 
 ```bash
-docker compose config
+docker compose --env-file .env.example config
 ```
 
 ### Resetear todo y empezar de nuevo
@@ -290,7 +292,7 @@ docker builder prune -f
 
 El archivo `.env` en la raíz del proyecto es usado por docker-compose.yml para configurar los servicios.
 
-Variables necesarias para Docker:
+### Variables necesarias para Docker
 
 ```bash
 # Django
@@ -298,24 +300,39 @@ SECRET_KEY=your-secret-key-here
 DEBUG=False
 ALLOWED_HOSTS=localhost,127.0.0.1
 
-# Database (PostgreSQL)
-USE_SQLITE=False
-POSTGRES_DB=cam_db
-POSTGRES_USER=cam_user
-POSTGRES_PASSWORD=changeme
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-
-# Alternative (django-environ compatible)
+# Database (PostgreSQL) — vars DB_* son las oficiales para Django
 DB_NAME=cam_db
 DB_USER=cam_user
 DB_PASSWORD=changeme
 DB_HOST=db
+# Puerto interno de PostgreSQL (siempre 5432 dentro del contenedor)
 DB_PORT=5432
 
-# Backend Port
-BACKEND_PORT=8000
+# Puertos externos (host) — mapeados en docker-compose.yml
+DB_EXTERNAL_PORT=7000
+BACKEND_PORT=7001
+
+# Django settings module
+DJANGO_SETTINGS_MODULE=config.settings.production
 
 # CORS
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+CORS_ALLOW_ALL_ORIGINS=True
+# CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 ```
+
+### Mapeo interno del contenedor PostgreSQL
+
+docker-compose.yml mapea automáticamente las vars `DB_*` a `POSTGRES_*` para el servicio db:
+
+| .env (DJango) | db container (PostgreSQL) |
+|---------------|---------------------------|
+| `DB_NAME`     | `POSTGRES_DB`             |
+| `DB_USER`     | `POSTGRES_USER`           |
+| `DB_PASSWORD` | `POSTGRES_PASSWORD`       |
+
+### Puerto externo vs interno
+
+| Servicio | Puerto interno | Puerto externo (default) |
+|----------|----------------|---------------------------|
+| db       | 5432           | 7000 (`DB_EXTERNAL_PORT`) |
+| backend  | 8000           | 7001 (`BACKEND_PORT`)     |

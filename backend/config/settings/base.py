@@ -12,12 +12,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # ── Environ ──────────────────────────────────────────────────
 env = environ.Env(DEBUG=(bool, False))
-# NOTE: read_env() removed — in Docker, env vars come via env_file/docker environment,
-# not from a file on disk. The .env file is not copied into the container.
+# Lee .env si existe (para desarrollo local). En Docker, las vars vienen via env_file.
+# read_env() no falla si el archivo no existe — es seguro llamarlo siempre.
+environ.Env.read_env(BASE_DIR / ".env", raise_error=False)
 
 # ── Seguridad ────────────────────────────────────────────────
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
+
+# ── Hosts permitidos ─────────────────────────────────────────
+# Fallback permisivo para desarrollo; production.py overridea si es necesario
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 
 # ── Apps ─────────────────────────────────────────────────────
 DJANGO_APPS = [
@@ -105,7 +110,7 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# ── Static & Media ───────────────────────────────────────────
+# ── Static& Media ───────────────────────────────────────────
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
@@ -150,15 +155,15 @@ if os.environ.get("USE_SQLITE", "").lower() in ("1", "true", "yes"):
         }
     }
 else:
-    # PostgreSQL fallback — production.py should override this, but we set a
-    # safety net here in case settings resolution fails.
+    # PostgreSQL — production.py debería overridear, pero dejamos helper limpio.
+    # Lee DB_* con defaults razonables. Puerto interno estándar: 5432.
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("DB_NAME", "cam_db"),
-            "USER": os.environ.get("DB_USER", "cam_user"),
-            "PASSWORD": os.environ.get("DB_PASSWORD", "changeme"),
-            "HOST": os.environ.get("DB_HOST", "localhost"),
-            "PORT": os.environ.get("DB_PORT", "5432"),
+            "NAME": env("DB_NAME", default="cam_db"),
+            "USER": env("DB_USER", default="cam_user"),
+            "PASSWORD": env("DB_PASSWORD", default="changeme"),
+            "HOST": env("DB_HOST", default="localhost"),
+            "PORT": env("DB_PORT", default="5432"),
         }
     }
