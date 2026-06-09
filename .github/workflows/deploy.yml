@@ -6,28 +6,12 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+      - uses: actions/checkout@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          script_stop: true
-          script: |
-            powershell -Command "
-              $repo = 'https://github.com/MicroCats37/comision-asuntos-municipales.git'
-              $path = 'C:\Users\USER\Desktop\Aplicaciones\cam'
-              if (Test-Path $path\.git) {
-                Set-Location $path
-                git checkout alpha
-                git pull origin alpha
-              } else {
-                Remove-Item $path -Recurse -Force -ErrorAction SilentlyContinue
-                git clone -b alpha $repo $path
-                Set-Location $path
-              }
-              docker compose down
-              docker compose up -d --build
-            "
+          clean: false
+      - name: Deploy
+        run: |
+          docker compose down
+          docker compose up -d --build
