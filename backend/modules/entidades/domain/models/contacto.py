@@ -57,6 +57,7 @@ class Contacto(BaseModel):
         null=True,
         verbose_name="Descripción",
         help_text="Descripción del contacto (ej. mesa de partes, pagos, área técnica).",
+        max_length=2000,
     )
     activo = models.BooleanField(
         default=True,

@@ -44,12 +44,13 @@ class Usuario(AbstractBaseUser, PermissionsMixin, DjangoAuthMixin, BaseModel):
     """
     nombres = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre")
     apellidos = models.CharField(max_length=255, blank=True, null=True, verbose_name="Apellido")
-    email = models.EmailField(max_length=255, blank=True, null=True, unique=True, verbose_name="Correo electrónico")
+    email = models.EmailField(max_length=255, unique=True, verbose_name="Correo electrónico")
     username = models.CharField(max_length=255, blank=True, null=True, unique=True, verbose_name="Nombre de usuario")  # Opcional — futuro login alternativo
     dni = models.CharField(
         max_length=8,
         unique=True,
         validators=[dni_validator],
+        blank=True, null=True,
         verbose_name="DNI",
         help_text="8 dígitos numéricos exactamente.",
     )
@@ -59,7 +60,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin, DjangoAuthMixin, BaseModel):
     # Inherit from DjangoAuthMixin: is_staff
     # Inherit from BaseModel: id (UUID), created_at, updated_at
 
-    USERNAME_FIELD = "dni"
+    USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     objects = UsuarioManager()

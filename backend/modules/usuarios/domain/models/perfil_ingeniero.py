@@ -36,14 +36,14 @@ class PerfilIngeniero(BaseModel):
     Perfil profesional del ingeniero.
     Un usuario tiene exactamente un PerfilIngeniero (OneToOne).
     """
-
+    """
     usuario = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="perfil_ingeniero",
         verbose_name="Usuario",
     )
-    
+    """
     nombres = models.CharField(
         max_length=200,
         verbose_name="Nombres",
@@ -72,6 +72,12 @@ class PerfilIngeniero(BaseModel):
         unique=True,
         verbose_name="CIP",
         help_text="Número de CIP del ingeniero.",
+    )
+    dni = models.CharField(
+        max_length=8,
+        unique=True,
+        verbose_name="DNI",
+        help_text="DNI del ingeniero (8 dígitos).",
     )
     correo_personal = models.EmailField(max_length=255, blank=True, null=True, verbose_name="Correo Personal")
     

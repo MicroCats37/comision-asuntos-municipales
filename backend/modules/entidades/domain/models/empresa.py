@@ -54,17 +54,7 @@ class Empresa(BaseModel):
         null=True,
         verbose_name="Distrito",
     )
-    telefono = models.CharField(
-        max_length=20,
-        blank=True,
-        null=True,
-        verbose_name="Teléfono",
-    )
-    email = models.EmailField(
-        blank=True,
-        null=True,
-        verbose_name="Correo electrónico",
-    )
+
     activo = models.BooleanField(
         default=True,
         verbose_name="¿Activo?",

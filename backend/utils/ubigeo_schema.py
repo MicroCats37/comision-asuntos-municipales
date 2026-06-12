@@ -156,3 +156,42 @@ def is_valid_district_choice(value: str) -> bool:
     """
     choices = get_district_choices()
     return value in {c[0] for c in choices}
+
+
+# ---------------------------------------------------------------------------
+# Provincia and Distrito simple-name choice helpers (for Municipalidad)
+# ---------------------------------------------------------------------------
+
+@lru_cache(maxsize=1)
+def get_provincia_choices() -> tuple[tuple[str, str], ...]:
+    """
+    Return all unique provincia names as (value, label) tuples.
+
+    Format: just the provincia name, e.g. ("LIMA", "LIMA")
+    """
+    seen: set[str] = set()
+    choices: list[tuple[str, str]] = []
+    for provs in UBIGEO.values():
+        for prov_name in sorted(provs.keys()):
+            if prov_name not in seen:
+                seen.add(prov_name)
+                choices.append((prov_name, prov_name))
+    return tuple(choices)
+
+
+@lru_cache(maxsize=1)
+def get_distrito_flat_choices() -> tuple[tuple[str, str], ...]:
+    """
+    Return all unique distrito names as (value, label) tuples (flat names only).
+
+    Format: just the distrito name, e.g. ("MIRAFLORES", "MIRAFLORES")
+    """
+    seen: set[str] = set()
+    choices: list[tuple[str, str]] = []
+    for provs in UBIGEO.values():
+        for dists in provs.values():
+            for dist_name in sorted(dists.keys()):
+                if dist_name not in seen:
+                    seen.add(dist_name)
+                    choices.append((dist_name, dist_name))
+    return tuple(choices)

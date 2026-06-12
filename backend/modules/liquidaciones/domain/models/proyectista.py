@@ -16,11 +16,15 @@ class Proyectista(BaseModel):
 
     history = HistoricalRecords()
 
-    nombre = models.CharField(
+    nombres = models.CharField(
         max_length=255,
         verbose_name="Nombre",
     )
-
+    apellidos = models.CharField(
+        max_length=255,
+        verbose_name="Apellidos",
+    )
+    
     class Meta:
         verbose_name = "Proyectista"
         verbose_name_plural = "Proyectistas"
