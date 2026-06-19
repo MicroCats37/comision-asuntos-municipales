@@ -36,6 +36,8 @@ export interface GenericModalProps {
   preventClose?: boolean;
   /** Async or sync interceptor before closing. Return false to cancel close. */
   onBeforeClose?: () => boolean | Promise<boolean>;
+  /** If true, hides the overlay backdrop (use when a child modal is open). */
+  hideOverlay?: boolean;
   children: ReactNode;
 }
 
@@ -54,6 +56,8 @@ export interface GenericModalContentProps {
   className?: string;
   /** Force show/hide the top-right X button. Defaults to !preventClose */
   showCloseButton?: boolean;
+  /** If true, hides the overlay backdrop (use when a child modal is open). */
+  hideOverlay?: boolean;
 }
 
 export interface GenericModalHeaderProps {

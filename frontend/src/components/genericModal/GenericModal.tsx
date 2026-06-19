@@ -66,6 +66,7 @@ const GenericModalRoot = ({
   ref,
   preventClose = false,
   onBeforeClose,
+  hideOverlay = false,
 }: GenericModalProps) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [hasHeader, setHasHeader] = useState(false);
@@ -142,12 +143,15 @@ const ModalContent = ({
   children,
   className,
   size = "md",
+  hideOverlay = false,
 }: GenericModalContentProps & { size?: GenericModalSize }) => {
   const { preventClose, hasHeader } = useGenericModal();
 
   return (
     <DialogPortal>
-      <DialogOverlay className="bg-black/50 backdrop-blur-sm" />
+      {!hideOverlay && (
+        <DialogOverlay className="bg-black/50 backdrop-blur-sm" />
+      )}
       <DialogContent
         className={cn(
           "grid grid-rows-[auto_1fr_auto] p-0 overflow-hidden",

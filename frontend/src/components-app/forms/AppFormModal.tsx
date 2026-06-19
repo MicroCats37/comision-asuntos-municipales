@@ -38,6 +38,8 @@ export interface AppFormModalProps<T extends FieldValues> {
   onSecondary?: () => void;
   preventClose?: boolean;
   size?: GenericModalSize;
+  /** If true, hides the overlay backdrop (use when a child modal is open). */
+  hideOverlay?: boolean;
 
   // GenericForm
   schema: ZodType<T>;
@@ -79,6 +81,7 @@ export function AppFormModal<T extends FieldValues>({
   onSecondary,
   preventClose = false,
   size,
+  hideOverlay = false,
   schema,
   initialData,
   fields,
@@ -116,7 +119,7 @@ export function AppFormModal<T extends FieldValues>({
       onOpenChange={handleClose}
       preventClose={preventClose || primaryLoading}
     >
-      <GenericModal.Content size={size}>
+      <GenericModal.Content size={size} hideOverlay={hideOverlay}>
         {/* ── Header ─────────────────────────────────────────────── */}
         <GenericModal.Header
           title=""
