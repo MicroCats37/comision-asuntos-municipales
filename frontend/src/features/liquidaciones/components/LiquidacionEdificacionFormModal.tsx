@@ -150,7 +150,6 @@ export function LiquidacionEdificacionFormModal({
         onSubmit={(data) => submitHandlerRef.current?.(data)}
         size="lg"
         preventClose={crearMutation.isPending}
-        hideOverlay={showProyectoModal || showProyectistaModal}
       >
         {({ methods, isSubmitting }) => {
           // Configure submit handler with access to methods.setError

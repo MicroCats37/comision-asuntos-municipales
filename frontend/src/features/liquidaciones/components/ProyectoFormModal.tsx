@@ -124,7 +124,6 @@ export function ProyectoFormModal({
         }}
         onSubmit={handleSubmit}
         size="lg"
-        hideOverlay={showInstitucionModal || showPersonaNaturalModal}
       >
         {({ methods, isSubmitting }) => {
           const {
