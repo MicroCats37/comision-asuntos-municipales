@@ -59,16 +59,31 @@ class LiquidacionEdificacionesPresenter:
             entidad=entidad,
         )
 
+        # Construir municipalidad anidada
+        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
+            LiquidacionOut,
+            MunicipalidadesSnapshotOut,
+            ProvinciaBasicSnapshotOut,
+            DistritoBasicSnapshotOut,
+        )
+        # Para la respuesta de crear_primera_revision, no tenemos toda la info de provincia/distrito
+        # ya que LiquidacionEdificacionesResult solo tiene municipalidad_id y municipalidad_nombre
+        municipalidad = MunicipalidadesSnapshotOut(
+            id=result.municipalidad_id,
+            nombre=result.municipalidad_nombre,
+            codigo=None,
+            provincia=None,
+            distrito=None,
+        )
+
         # Construir liquidacion (sin expediente)
-        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import LiquidacionOut
         liquidacion = LiquidacionOut(
             id=result.liquidacion_id,
             public_id=result.liquidacion_public_id,
             estado=result.estado,
             fecha_creacion=result.fecha_creacion,
             proyecto=proyecto,
-            municipalidad_id=result.municipalidad_id,
-            municipalidad_nombre=result.municipalidad_nombre,
+            municipalidad=municipalidad,
             observacion=result.observacion or '',
         )
 
@@ -106,11 +121,11 @@ class LiquidacionEdificacionesPresenter:
         edificaciones_revisiones = []
         for rev in result.edificaciones_revisiones:
             # rev puede ser un dict o un EdificacionRevisionData
+            # NOTE: numero_revision fue removido de cada revisión — solo existe en nivel edificaciones
             if isinstance(rev, EdificacionRevisionData):
                 edificaciones_revisiones.append(RevisionOut(
                     id=rev.id,
-                    numero_revision=rev.numero_revision,
-                    especialidad=rev.especialidad.nombre,
+                    especialidad=rev.especialidad.nombre if hasattr(rev.especialidad, 'nombre') else str(rev.especialidad),
                     tarifa=TarifaOut(
                         id=rev.tarifa.id,
                         derecho_minimo=float(rev.tarifa.derecho_minimo),
@@ -124,7 +139,6 @@ class LiquidacionEdificacionesPresenter:
                 # fallback para dict
                 edificaciones_revisiones.append(RevisionOut(
                     id=str(rev.get('id', '')),
-                    numero_revision=rev.get('numero_revision', 0),
                     especialidad=rev.get('especialidad', ''),
                     tarifa=TarifaOut(
                         id=str(rev.get('tarifa', {}).get('id', '')),
@@ -172,7 +186,7 @@ class LiquidacionEdificacionesPresenter:
         Returns:
             NuevaRevisionFormularioOut schema para respuesta HTTP
         """
-        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import RevisionVigenteOut
+        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import RevisionVigenteOut, ProyectistaOut
 
         revisiones_vigentes = []
         for rev in result.revisiones_vigentes:
@@ -190,6 +204,29 @@ class LiquidacionEdificacionesPresenter:
                     habilitada=rev.habilitada,
                 ))
 
+        # Proyectistas actuales (heredados de la liquidación previa)
+        proyectistas_actuales = []
+        for p in result.proyectistas_actuales:
+            if isinstance(p, dict):
+                proyectistas_actuales.append(ProyectistaOut(
+                    id=p.get('id'),
+                    cip=p.get('cip'),
+                    dni=p.get('dni'),
+                    cap=p.get('cap'),
+                    nombres=p.get('nombres'),
+                    apellidos=p.get('apellidos'),
+                ))
+            else:
+                # Es ProyectistaSnapshotData
+                proyectistas_actuales.append(ProyectistaOut(
+                    id=p.id,
+                    cip=p.cip,
+                    dni=p.dni,
+                    cap=p.cap,
+                    nombres=p.nombres,
+                    apellidos=p.apellidos,
+                ))
+
         return NuevaRevisionFormularioOut(
             liquidacion_previa_id=str(result.liquidacion_previa_id),
             numero_revision=result.numero_revision,
@@ -199,6 +236,7 @@ class LiquidacionEdificacionesPresenter:
             proyecto_nombre=result.proyecto_nombre,
             valor_proyecto=float(result.valor_proyecto),
             revisiones_vigentes=revisiones_vigentes,
+            proyectistas_actuales=proyectistas_actuales,
         )
 
     @staticmethod

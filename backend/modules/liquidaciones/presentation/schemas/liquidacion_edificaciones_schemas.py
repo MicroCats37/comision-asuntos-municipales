@@ -34,6 +34,10 @@ class NuevaRevisionLiquidacionIn(Schema):
     liquidacion_previa_id: uuid.UUID = Field(..., description="ID de la liquidación previa (UUID)")
     revisiones_ids: list[uuid.UUID] = Field(..., min_length=1, description="IDs de revisiones de edificación a asociar (UUID), no puede estar vacío")
     observacion: Optional[str] = Field(None, description="Observación opcional")
+    proyectistas_ids: list[uuid.UUID] = Field(
+        default=[],
+        description="IDs de proyectistas a asociar. Si se omite o está vacía, se heredan de la liquidación previa."
+    )
     # valor_proyecto: se obtiene de la liquidación previa
     # expediente: fue removido del dominio
 
@@ -55,7 +59,6 @@ class EspecialidadOut(Schema):
 class RevisionOut(Schema):
     """Revisión dentro de edificaciones."""
     id: uuid.UUID
-    numero_revision: int
     especialidad: str
     tarifa: TarifaOut
     monto_base: float
@@ -100,6 +103,28 @@ class ProyectoOut(Schema):
     # NOTE: proyectista ya no está en proyecto — ahora vive en LiquidacionEdificaciones.proyectistas
 
 
+class ProvinciaBasicSnapshotOut(Schema):
+    """Provincia básica para anidamiento."""
+    id: uuid.UUID
+    nombre: str
+
+
+class DistritoBasicSnapshotOut(Schema):
+    """Distrito básico para anidamiento."""
+    id: uuid.UUID
+    nombre: str
+    provincia: Optional[ProvinciaBasicSnapshotOut] = None
+
+
+class MunicipalidadesSnapshotOut(Schema):
+    """Municipalidad anidada."""
+    id: uuid.UUID
+    nombre: str
+    codigo: Optional[str] = None
+    provincia: Optional[ProvinciaBasicSnapshotOut] = None
+    distrito: Optional[DistritoBasicSnapshotOut] = None
+
+
 class LiquidacionOut(Schema):
     """Liquidación en respuesta snapshot."""
     id: uuid.UUID
@@ -107,8 +132,7 @@ class LiquidacionOut(Schema):
     estado: str
     fecha_creacion: str
     proyecto: ProyectoOut
-    municipalidad_id: uuid.UUID
-    municipalidad_nombre: str
+    municipalidad: MunicipalidadesSnapshotOut
     # expediente fue removido del dominio
     observacion: Optional[str]
 
@@ -188,6 +212,10 @@ class NuevaRevisionFormularioOut(Schema):
     proyecto_nombre: str
     valor_proyecto: float
     revisiones_vigentes: list[RevisionVigenteOut]
+    proyectistas_actuales: list[ProyectistaOut] = Field(
+        default_factory=list,
+        description="Proyectistas heredados de la liquidación previa para prefijado en formulario"
+    )
 
 
 # ── Snapshot List Schemas (para endpoint GET /snapshots) ────────────────────────────────────
@@ -202,9 +230,11 @@ class TarifaSnapshotOut(Schema):
 
 
 class RevisionSnapshotOut(Schema):
-    """Revisión anidada en edificación snapshot."""
+    """Revisión anidada en edificación snapshot.
+    
+    NOTE: numero_revision fue removido de cada revisión — solo existe en nivel edificaciones.
+    """
     id: uuid.UUID
-    numero_revision: int
     especialidad: str
     tarifa: TarifaSnapshotOut
     monto_base: float
@@ -266,8 +296,7 @@ class LiquidacionSnapshotListItemOut(Schema):
     numero_liquidacion: str
     estado: str
     fecha_registro: str
-    municipalidad_id: Optional[uuid.UUID] = None
-    municipalidad_nombre: Optional[str] = None
+    municipalidad: MunicipalidadesSnapshotOut
     # expediente fue removido del dominio
     observacion: Optional[str]
     proyecto: ProyectoSnapshotOut

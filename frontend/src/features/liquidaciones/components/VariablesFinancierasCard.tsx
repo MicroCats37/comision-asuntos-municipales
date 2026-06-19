@@ -25,7 +25,7 @@ export function VariablesFinancierasCard({
         <div className="h-5 w-5 bg-primary/20 rounded" />
         <div className="space-y-2 flex-1">
           <div className="h-4 w-40 bg-primary/20 rounded" />
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+          <div className="space-y-1">
             <div className="h-3 w-12 bg-primary/20 rounded" />
             <div className="h-3 w-16 bg-primary/20 rounded" />
           </div>
@@ -60,7 +60,7 @@ export function VariablesFinancierasCard({
         <p className="font-semibold text-primary uppercase tracking-wide">
           Variables Financieras Vigentes
         </p>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-0.5">
+        <div className="space-y-0.5">
           <span className="flex items-center gap-1.5 text-foreground">
             <Percent className="h-3 w-3 text-primary/70" />
             IGV: <strong className="text-primary">{formatIgv(variables.igv_valor)}</strong>
@@ -69,7 +69,7 @@ export function VariablesFinancierasCard({
             <Banknote className="h-3 w-3 text-primary/70" />
             UIT: <strong className="text-primary">{formatUit(variables.uit_valor)}</strong>
           </span>
-          <span className="col-span-2 text-[10px] text-muted-foreground/70">
+          <span className="text-[10px] text-muted-foreground/70">
             Período: {variables.igv_periodo_inicio || "—"}
           </span>
         </div>

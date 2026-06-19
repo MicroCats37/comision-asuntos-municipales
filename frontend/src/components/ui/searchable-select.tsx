@@ -29,7 +29,7 @@ export interface SearchableSelectOption {
 interface SearchableSelectProps {
   /** Unique id for accessibility */
   id: string;
-  /** Label displayed above the trigger */
+  /** Label displayed above the trigger (or used for aria-label when showLabel is false) */
   label: string;
   /** Currently selected value */
   value: string | null;
@@ -49,6 +49,8 @@ interface SearchableSelectProps {
   error?: boolean;
   /** Error message to display below the trigger */
   errorMessage?: string;
+  /** Whether to render the visible Label. Defaults to true. Set false when used inside GenericInput wrapper. */
+  showLabel?: boolean;
 }
 
 export function SearchableSelect({
@@ -63,6 +65,7 @@ export function SearchableSelect({
   disabled = false,
   error = false,
   errorMessage,
+  showLabel = true,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -147,15 +150,17 @@ export function SearchableSelect({
 
   return (
     <div className={cn("space-y-1.5", className)}>
-      <Label
-        htmlFor={id}
-        className={cn(
-          "text-sm font-medium",
-          error ? "text-destructive" : "text-primary",
-        )}
-      >
-        {label}
-      </Label>
+      {showLabel && (
+        <Label
+          htmlFor={id}
+          className={cn(
+            "text-sm font-medium",
+            error ? "text-destructive" : "text-primary",
+          )}
+        >
+          {label}
+        </Label>
+      )}
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>

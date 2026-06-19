@@ -182,11 +182,13 @@ class LiquidacionEdificacionesController:
         - La liquidación previa debe existir y ser de edificaciones
         - El número de revisión no puede exceder 7
         - Las revisiones seleccionadas deben estar vigentes/habilitadas
+        - proyectistas_ids es opcional; si se omite o está vacío, se heredan de la liquidación previa
         """
         result = await self.orchestrator.crear_nueva_revision(
             liquidacion_previa_id=str(payload.liquidacion_previa_id),
             observacion=payload.observacion,
-            revisiones_ids=payload.revisiones_ids,
+            revisiones_ids=[str(rid) for rid in payload.revisiones_ids],
+            proyectistas_ids=[str(pid) for pid in payload.proyectistas_ids] if payload.proyectistas_ids else None,
         )
         return success_response(LiquidacionEdificacionesPresenter.present_snapshot(result))
 

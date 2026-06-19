@@ -35,3 +35,28 @@ export interface EntidadResult {
   activo: boolean;
   creado?: boolean; // Only present in upsert responses, not in buscar response
 }
+
+// ── SUNAT/RENIEC Lookup Response Types ─────────────────────────────────────────
+
+export interface InstitucionSunatResponse {
+  ruc: string;
+  razon_social: string;
+  nombre_comercial?: string;
+  estado: string;
+  tipo_contribuyente?: string;
+  direccion?: string;
+  departamento?: string;
+  provincia?: string;
+  distrito?: string;
+}
+
+export interface PersonaReniecResponse {
+  dni: string;
+  nombres: string;
+  apellidos: string;
+  nombre_completo: string;
+  genero?: string;
+  fecha_nacimiento?: string;
+  direccion?: string;
+  ubigeo?: string;
+}

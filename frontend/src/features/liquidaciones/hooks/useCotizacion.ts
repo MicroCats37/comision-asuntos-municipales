@@ -21,7 +21,7 @@ const BASE_URL = "/liquidaciones/edificaciones";
 export function useCotizacionPrimeraRevision() {
   const mutation = useApiCreate<
     z.infer<typeof cotizacionQuoteResponseSchema>,
-    { proyecto_public_id: string; valor_proyecto: number }
+    { liquidacion: { proyecto_public_id: string; valor_proyecto: number } }
   >({
     url: `${BASE_URL}/cotizar/primera-revision`,
     schema: cotizacionQuoteResponseSchema,
@@ -30,14 +30,16 @@ export function useCotizacionPrimeraRevision() {
     },
   });
 
-  // Wrapper que formatea el payload como { liquidacion: ... }
+  // Wrapper que formatea el payload como { liquidacion: ... } y extrae data.data
   const cotizacionMutation = {
     ...mutation,
     mutate: (payload: { proyecto_public_id: string; valor_proyecto: number }) => {
-      mutation.mutate({ liquidacion: payload } as any);
+      mutation.mutate({ liquidacion: payload });
     },
-    mutateAsync: async (payload: { proyecto_public_id: string; valor_proyecto: number }) => {
-      return mutation.mutateAsync({ liquidacion: payload } as any);
+    mutateAsync: async (payload: { proyecto_public_id: string; valor_proyecto: number }): Promise<CotizacionQuote> => {
+      const result = await mutation.mutateAsync({ liquidacion: payload });
+      // Extract inner data from {success, data: CotizacionQuote, error}
+      return result.data as CotizacionQuote;
     },
   };
 
@@ -49,8 +51,6 @@ export function useCotizacionPrimeraRevision() {
  * No guarda en BD, solo calcula los totales.
  */
 export function useCotizacionNuevaRevision() {
-  const queryClient = useQueryClient();
-
   const mutation = useApiCreate<
     z.infer<typeof cotizacionQuoteResponseSchema>,
     { liquidacion_previa_id: string; revisiones_ids: string[] }
@@ -62,5 +62,15 @@ export function useCotizacionNuevaRevision() {
     },
   });
 
-  return mutation;
+  // Wrapper que extrae data.data del resultado
+  const cotizacionMutation = {
+    ...mutation,
+    mutateAsync: async (payload: { liquidacion_previa_id: string; revisiones_ids: string[] }): Promise<CotizacionQuote> => {
+      const result = await mutation.mutateAsync(payload);
+      // Extract inner data from {success, data: CotizacionQuote, error}
+      return result.data as CotizacionQuote;
+    },
+  };
+
+  return cotizacionMutation;
 }

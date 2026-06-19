@@ -332,7 +332,10 @@ class LiquidacionesEdificacionesService:
         qs = LiquidacionGeneral.objects.filter(
             edificaciones__isnull=False
         ).select_related(
-            'proyecto__entidad'
+            'proyecto__entidad',
+            'proyecto__distrito__provincia',
+            'municipalidad__provincia',
+            'municipalidad__distrito__provincia',
         ).prefetch_related(
             'edificaciones__revisiones__tarifa',
             'edificaciones__revisiones__especialidad',
@@ -379,6 +382,21 @@ class LiquidacionesEdificacionesService:
                     'ruc': proyecto.entidad.numero_documento if hasattr(proyecto.entidad, 'numero_documento') else None,
                 }
 
+            # Build distrito nested object for proyecto
+            distrito_data = None
+            if proyecto.distrito:
+                provincia_prov = None
+                if proyecto.distrito.provincia:
+                    provincia_prov = {
+                        'id': str(proyecto.distrito.provincia.id),
+                        'nombre': proyecto.distrito.provincia.nombre,
+                    }
+                distrito_data = {
+                    'id': str(proyecto.distrito.id),
+                    'nombre': proyecto.distrito.nombre,
+                    'provincia': provincia_prov,
+                }
+
             # NOTE: proyectista ya no está en proyecto — ahora vive en LiquidacionEdificaciones.proyectistas
             proyecto_data = {
                 'id': str(proyecto.id),
@@ -387,6 +405,7 @@ class LiquidacionesEdificacionesService:
                 'direccion': proyecto.direccion,
                 'valor_proyecto': float(liq.valor_proyecto),
                 'entidad': entidad_data,
+                'distrito': distrito_data,
             }
 
             # Construir proyectistas desde edificacion
@@ -403,20 +422,21 @@ class LiquidacionesEdificacionesService:
                     })
 
             # Construir edificaciones con revisiones
+            # NOTE: numero_revision fue removido de cada revisión — solo existe en nivel edificaciones
             revisiones_data = []
             if snapshot and snapshot.data:
                 edificaciones_snapshot = snapshot.data.get('edificaciones', {})
                 numero_revision = edificaciones_snapshot.get('numero_revision', numero_revision)
                 revisions_snapshot = edificaciones_snapshot.get('revisiones', [])
                 if revisions_snapshot:
-                    # Usar datos del snapshot
+                    # Usar datos del snapshot (sin numero_revision por item)
                     revisiones_data = [{
                         'id': str(rev.get('id', '')),
-                        'numero_revision': rev.get('numero_revision', 0),
                         'especialidad': rev.get('especialidad', ''),
                         'tarifa': rev.get('tarifa', {}),
                         'monto_base': float(rev.get('monto_base', 0)),
                         'cobra': rev.get('cobra', True),
+                        'derecho': float(rev.get('derecho', 0)),
                     } for rev in revisions_snapshot]
                 # Tomar proyectistas del snapshot si existen
                 if 'proyectistas' in edificaciones_snapshot:
@@ -426,7 +446,6 @@ class LiquidacionesEdificacionesService:
                 for rev in edificacion.revisiones.all():
                     revisiones_data.append({
                         'id': str(rev.id),
-                        'numero_revision': rev.numero_revision if hasattr(rev, 'numero_revision') else 0,
                         'especialidad': rev.especialidad.nombre if rev.especialidad else '',
                         'tarifa': {
                             'id': str(rev.tarifa.id),
@@ -436,6 +455,7 @@ class LiquidacionesEdificacionesService:
                         },
                         'monto_base': float(getattr(rev, 'monto_base', 0)),
                         'cobra': getattr(rev, 'cobra', True),
+                        'derecho': float(getattr(rev, 'derecho', 0)),
                     })
 
             # Construir totales desde snapshot JSON
@@ -475,20 +495,61 @@ class LiquidacionesEdificacionesService:
                 'revisiones': revisiones_data,
             }
 
-            # Extraer public_id y municipalidad de liquidacion
+            # Extraer public_id y municipalidad de liquidacion (nuevo formato anidado)
             liquidacion_public_id = ""
-            municipalidad_id = None
-            municipalidad_nombre = ""
+            municipalidad_data = {
+                'id': None,
+                'nombre': '',
+                'codigo': None,
+                'provincia': None,
+                'distrito': None,
+            }
             if snapshot and snapshot.data:
                 liquidacion_snapshot = snapshot.data.get('liquidacion', {})
                 liquidacion_public_id = liquidacion_snapshot.get('public_id', '')
-                municipalidad_id = liquidacion_snapshot.get('municipalidad_id')
-                municipalidad_nombre = liquidacion_snapshot.get('municipalidad_nombre', '')
+                # Nuevo formato: municipalidad como objeto anidado
+                muni_snapshot = liquidacion_snapshot.get('municipalidad', {})
+                if muni_snapshot:
+                    municipalidad_data = muni_snapshot
+                # Backwards compat: si viene el formato viejo flat, convertir
+                elif liquidacion_snapshot.get('municipalidad_id'):
+                    municipalidad_data = {
+                        'id': liquidacion_snapshot.get('municipalidad_id'),
+                        'nombre': liquidacion_snapshot.get('municipalidad_nombre', ''),
+                        'codigo': None,
+                        'provincia': None,
+                        'distrito': None,
+                    }
             if not liquidacion_public_id:
                 liquidacion_public_id = liq.public_id or ''
-            if not municipalidad_id and liq.municipalidad:
-                municipalidad_id = str(liq.municipalidad.id)
-                municipalidad_nombre = liq.municipalidad.nombre
+            # Si no tenemos municipalidad del snapshot, construir desde ORM
+            if not municipalidad_data.get('id') and liq.municipalidad:
+                provincia_muni = None
+                distrito_muni = None
+                if liq.municipalidad.provincia:
+                    provincia_muni = {
+                        'id': str(liq.municipalidad.provincia.id),
+                        'nombre': liq.municipalidad.provincia.nombre,
+                    }
+                if liq.municipalidad.distrito:
+                    provincia_del_distrito = None
+                    if liq.municipalidad.distrito.provincia:
+                        provincia_del_distrito = {
+                            'id': str(liq.municipalidad.distrito.provincia.id),
+                            'nombre': liq.municipalidad.distrito.provincia.nombre,
+                        }
+                    distrito_muni = {
+                        'id': str(liq.municipalidad.distrito.id),
+                        'nombre': liq.municipalidad.distrito.nombre,
+                        'provincia': provincia_del_distrito,
+                    }
+                municipalidad_data = {
+                    'id': str(liq.municipalidad.id),
+                    'nombre': liq.municipalidad.nombre,
+                    'codigo': liq.municipalidad.codigo,
+                    'provincia': provincia_muni,
+                    'distrito': distrito_muni,
+                }
 
             items.append({
                 'liquidacion_id': str(liq.id),
@@ -496,8 +557,7 @@ class LiquidacionesEdificacionesService:
                 'numero_liquidacion': f"LIQ-EDIF-{numero_revision}",
                 'estado': liq.estado,
                 'fecha_registro': liq.fecha_registro.isoformat() if liq.fecha_registro else '',
-                'municipalidad_id': municipalidad_id,
-                'municipalidad_nombre': municipalidad_nombre,
+                'municipalidad': municipalidad_data,
                 'observacion': liq.observacion,
                 'proyecto': proyecto_data,
                 'edificaciones': edificaciones_data,

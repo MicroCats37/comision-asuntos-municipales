@@ -5,20 +5,23 @@ import {
   Building2,
   MapPin,
   User,
-  Award,
-  CreditCard,
   Calendar,
   Banknote,
-  Percent,
   Hash,
   AlertCircle,
   ChevronRight,
+  HardHat,
+  Scale,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LiquidacionSnapshotListItem } from "../types/liquidacion-edificaciones";
+import { Button } from "@/components/ui/button";
 
 interface LiquidacionSnapshotCardProps {
   item: LiquidacionSnapshotListItem;
+  /** Callback when user clicks "Nueva revisión" — passes full snapshot item */
+  onNuevaRevision?: (item: LiquidacionSnapshotListItem) => void;
 }
 
 /** Format currency: 1234.56 -> "S/ 1,234.56" */
@@ -29,11 +32,15 @@ const formatCurrency = (value: number): string => {
   })}`;
 };
 
-/** Format date: ISO string -> "dd/MM/yyyy" */
+/** Format date: ISO string -> "dd MMM yyyy" */
 const formatDate = (isoString: string): string => {
   if (!isoString) return "—";
   try {
-    return new Date(isoString).toLocaleDateString("es-PE");
+    return new Date(isoString).toLocaleDateString("es-PE", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   } catch {
     return "—";
   }
@@ -48,7 +55,36 @@ const formatEnumLabel = (value: string | null | undefined): string => {
     .join(" ");
 };
 
-/** Estado badge usando solo variables de tema */
+/** Full enum labels for better UX */
+const getTipoTramiteLabel = (value: string | null | undefined): string => {
+  switch (value) {
+    case "OBRA_NUEVA":
+      return "Obra Nueva";
+    case "DEMOLICION":
+      return "Demolición";
+    case "AMPLIACION":
+      return "Ampliación";
+    case "REMODELACION":
+      return "Remodelación";
+    case "MODIFICACION_LICENCIA":
+      return "Modificación de Licencia";
+    default:
+      return formatEnumLabel(value);
+  }
+};
+
+const getTramiteAccionLabel = (value: string | null | undefined): string => {
+  switch (value) {
+    case "PRIMERA_REVISION":
+      return "1ra. Revisión";
+    case "REVISION":
+      return "Revisión";
+    default:
+      return formatEnumLabel(value);
+  }
+};
+
+/** Estado badge using theme variables */
 const getEstadoBadgeClass = (estado: string): string => {
   switch (estado) {
     case "PAGADO":
@@ -62,328 +98,415 @@ const getEstadoBadgeClass = (estado: string): string => {
   }
 };
 
-/** Compact stat chip */
-function StatChip({
+/** Section card with icon header and visible border */
+function SectionCard({
   icon,
-  label,
-  value,
-  highlight = false,
+  title,
+  children,
+  className,
+  headerClassName,
 }: {
   icon: React.ReactNode;
-  label: string;
-  value: string;
-  highlight?: boolean;
+  title: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  headerClassName?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-2 px-3 py-2 rounded-lg",
-        highlight
-          ? "bg-primary/5 border border-primary/10"
-          : "bg-muted/50 border border-border/50"
-      )}
-    >
-      <span className="text-muted-foreground">{icon}</span>
-      <div className="flex flex-col">
-        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-          {label}
-        </span>
-        <span
-          className={cn(
-            "text-sm font-bold",
-            highlight ? "text-primary" : "text-foreground"
-          )}
-        >
-          {value}
-        </span>
+    <div className={cn("rounded-xl border bg-card shadow-sm overflow-hidden", className)}>
+      <div className={cn("flex items-center gap-2 px-4 py-2.5 border-b bg-muted/30", headerClassName)}>
+        <span className="text-muted-foreground/70">{icon}</span>
+        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+          {title}
+        </h4>
       </div>
+      <div className="p-4">{children}</div>
     </div>
   );
 }
 
-export function LiquidacionSnapshotCard({ item }: LiquidacionSnapshotCardProps) {
+/** Label + value row */
+function LabelValue({
+  label,
+  value,
+  className,
+  valueClassName,
+}: {
+  label: string;
+  value: React.ReactNode;
+  className?: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className={cn("flex flex-col", className)}>
+      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+        {label}
+      </span>
+      <span className={cn("text-sm font-medium text-foreground", valueClassName)}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+export function LiquidacionSnapshotCard({ item, onNuevaRevision }: LiquidacionSnapshotCardProps) {
   const {
+    liquidacion_id,
     numero_liquidacion,
     public_id,
     estado,
     fecha_registro,
-    municipalidad_nombre,
+    municipalidad,
     observacion,
     proyecto,
     edificaciones,
     totales,
   } = item;
 
+  // Build location string for proyecto
+  const proyectoLocation = [
+    proyecto.distrito?.nombre,
+    proyecto.distrito?.provincia?.nombre,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  // Build location string for municipalidad
+  const municipalidadLocation = [
+    municipalidad.distrito?.nombre,
+    municipalidad.provincia?.nombre,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const hasMultipleProyectistas = edificaciones.proyectistas.length > 1;
+
   return (
     <div className="group bg-card rounded-2xl border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden">
-      {/* ─── TOP SECTION: Identity & Status ─── */}
-      <div className="px-6 py-5 border-b border-border/60 bg-gradient-to-r from-muted/30 to-transparent">
-        <div className="flex items-start justify-between gap-4">
+      {/* ════════════════════════════════════════════════════════════════════
+          HEADER: Identity & Status + Total
+      ════════════════════════════════════════════════════════════════════ */}
+      <div className="px-5 py-4 bg-gradient-to-r from-muted/40 via-muted/20 to-transparent border-b border-border/60">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
           {/* Left: Icon + IDs */}
-          <div className="flex items-start gap-4 min-w-0 flex-1">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 group-hover:bg-primary/15 transition-colors">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 group-hover:bg-primary/15 transition-colors">
               <FileText className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h3 className="text-lg font-bold text-foreground tracking-tight">
+              {/* Primary: Liquidación ID + Status */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-black text-foreground tracking-tight">
                   {public_id || numero_liquidacion}
                 </h3>
                 <span
                   className={cn(
-                    "shrink-0 inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider",
+                    "shrink-0 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
                     getEstadoBadgeClass(estado)
                   )}
                 >
                   {estado}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground mt-1 truncate font-medium">
-                {proyecto.nombre}
-              </p>
-              {public_id && numero_liquidacion && public_id !== numero_liquidacion && (
-                <p className="text-xs text-muted-foreground mt-0.5 font-mono">
-                  {numero_liquidacion}
-                </p>
-              )}
-            </div>
-          </div>
 
-          {/* Right: Date */}
-          <div className="hidden sm:flex items-center gap-2 text-muted-foreground shrink-0">
-            <Calendar className="h-4 w-4" />
-            <span className="text-xs font-medium">{formatDate(fecha_registro)}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── MIDDLE SECTION: Key Info Grid ─── */}
-      <div className="px-6 py-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Proyectistas */}
-          {edificaciones.proyectistas && edificaciones.proyectistas.length > 0 && (
-            <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/50">
-                <User className="h-4 w-4 text-secondary-foreground" />
+              {/* Secondary: Internal ID + Project name */}
+              <div className="flex items-center gap-3 mt-1 flex-wrap">
+                {public_id && numero_liquidacion && public_id !== numero_liquidacion && (
+                  <span className="text-xs text-muted-foreground font-mono">
+                    N° {numero_liquidacion}
+                  </span>
+                )}
+                <span className="text-xs text-muted-foreground/60 hidden sm:inline">•</span>
+                <span className="text-xs text-muted-foreground truncate max-w-[280px]">
+                  {proyecto.nombre}
+                </span>
               </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Proyectista{edificaciones.proyectistas.length > 1 ? "s" : ""}
-                </p>
-                {edificaciones.proyectistas.map((proj, idx) => (
-                  <p key={proj.id} className="text-sm font-semibold text-foreground truncate">
-                    {proj.nombres} {proj.apellidos}
-                    {proj.cip && <span className="text-xs text-muted-foreground"> (CIP: {proj.cip})</span>}
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* Entidad */}
-          {proyecto.entidad && (
-            <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/50">
-                <CreditCard className="h-4 w-4 text-secondary-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Entidad
-                </p>
-                <p className="text-sm font-semibold text-foreground truncate">
-                  {proyecto.entidad.nombre}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {proyecto.entidad.tipo}: {proyecto.entidad.ruc}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Dirección */}
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/50">
-              <MapPin className="h-4 w-4 text-secondary-foreground" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Dirección
-              </p>
-              <p className="text-sm font-medium text-foreground truncate">
-                {proyecto.direccion || "—"}
-              </p>
-            </div>
-          </div>
-
-          {/* Revisión */}
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/50">
-              <Hash className="h-4 w-4 text-secondary-foreground" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Revisión
-              </p>
-              <p className="text-sm font-semibold text-foreground">
-                {edificaciones.numero_revision}
-              </p>
-            </div>
-          </div>
-
-          {/* Municipalidad */}
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/50">
-              <Building2 className="h-4 w-4 text-secondary-foreground" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Municipalidad
-              </p>
-              <p className="text-sm font-semibold text-foreground truncate">
-                {municipalidad_nombre || "—"}
-              </p>
-            </div>
-          </div>
-
-          {/* Trámite */}
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/50">
-              <FileText className="h-4 w-4 text-secondary-foreground" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Trámite
-              </p>
-              <p className="text-sm font-semibold text-foreground truncate">
-                {formatEnumLabel(edificaciones.tipo_tramite)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {formatEnumLabel(edificaciones.tramite_accion)}
-              </p>
-            </div>
-          </div>
-
-          {/* Especialidades count */}
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/50">
-              <Building2 className="h-4 w-4 text-secondary-foreground" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Especialidades
-              </p>
-              <p className="text-sm font-semibold text-foreground">
-                {edificaciones.revisiones.length}{" "}
-                {edificaciones.revisiones.length === 1 ? "especialidad" : "especialidades"}
-              </p>
-            </div>
-          </div>
-
-          {/* Mobile date */}
-          <div className="flex items-start gap-3 sm:hidden">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/50">
-              <Calendar className="h-4 w-4 text-secondary-foreground" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Fecha
-              </p>
-              <p className="text-sm font-semibold text-foreground">
-                {formatDate(fecha_registro)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* ─── EDIFICACIONES / ESPECIALIDADES ─── */}
-        {edificaciones.revisiones.length > 0 && (
-          <div className="mt-5 pt-5 border-t border-border/50">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-              Especialidades ({edificaciones.revisiones.length})
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {edificaciones.revisiones.map((edif) => (
-                <div
-                  key={edif.id}
-                  className="group/chip inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-secondary/40 border border-border/60 hover:bg-secondary/70 hover:border-primary/20 transition-all"
-                >
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover/chip:bg-primary/15 transition-colors">
-                    <Building2 className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-foreground leading-tight">
-                      {edif.especialidad}
-                    </span>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-muted-foreground">
-                        Tarifa: {Number(edif.tarifa.porcentaje_minimo_uit).toFixed(4)} UIT
-                      </span>
-                      {edif.tarifa.derecho_maximo && (
-                        <span className="text-[10px] text-muted-foreground">
-                          (max {formatCurrency(Number(edif.tarifa.derecho_maximo))})
-                        </span>
-                      )}
-                      <span className="text-[10px] font-bold text-primary">
-                        {formatCurrency(edif.monto_base)}
-                      </span>
-                    </div>
-                  </div>
-                  {edif.cobra ? (
-                    <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-emerald-500" title="Cobra" />
-                  ) : (
-                    <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-muted-foreground/30" title="No cobra" />
-                  )}
+              {/* Tertiary: Date + ID + Trámite badges */}
+              <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground/70">
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>{formatDate(fecha_registro)}</span>
                 </div>
-              ))}
+                <span className="hidden sm:inline text-muted-foreground/30">|</span>
+                <span className="font-mono hidden md:inline">ID: {liquidacion_id}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/60 border border-border/80 text-xs font-semibold text-secondary-foreground">
+                    <Scale className="h-3 w-3" />
+                    {getTipoTramiteLabel(edificaciones.tipo_tramite)}
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/60 border border-border/80 text-xs font-semibold text-secondary-foreground">
+                    {getTramiteAccionLabel(edificaciones.tramite_accion)}
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/8 border border-primary/15 text-xs font-bold text-primary">
+                    Rev. N° {edificaciones.numero_revision}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-        )}
 
-        {edificaciones.revisiones.length === 0 && (
-          <div className="mt-5 pt-5 border-t border-border/50">
-            <div className="flex items-center gap-2 text-muted-foreground/60">
-              <Building2 className="h-4 w-4" />
-              <span className="text-xs font-medium">Sin especialidades registradas</span>
-            </div>
-          </div>
-        )}
-
-        {/* ─── FINANCIAL SUMMARY ─── */}
-        <div className="mt-5 pt-5 border-t border-border/50">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatChip
-                icon={<Banknote className="h-3.5 w-3.5" />}
-                label="Subtotal"
-                value={formatCurrency(totales.subtotal)}
-              />
-              <StatChip
-                icon={<Percent className="h-3.5 w-3.5" />}
-                label="IGV"
-                value={formatCurrency(totales.igv)}
-              />
-            </div>
-            <div className="flex items-center gap-3 bg-primary/5 border border-primary/10 rounded-xl px-5 py-3">
+          {/* Right: Total prominently displayed + Nueva Revision button */}
+          <div className="flex flex-col gap-2 lg:items-end">
+            <div className="bg-primary/5 border border-primary/10 rounded-xl px-4 py-2.5 flex items-center gap-3">
               <div className="text-right">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
                   Total a Pagar
                 </p>
                 <p className="text-xl font-black text-primary tracking-tight">
                   {formatCurrency(totales.total_a_pagar)}
                 </p>
               </div>
-              <ChevronRight className="h-5 w-5 text-primary/40" />
+              <ChevronRight className="h-4 w-4 text-primary/40" />
             </div>
+            {onNuevaRevision && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onNuevaRevision(item)}
+                className="h-8 rounded-lg gap-1.5 text-xs font-semibold border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 w-full lg:w-auto"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Nueva revisión
+              </Button>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* ─── OBSERVACIÓN ─── */}
+      {/* ════════════════════════════════════════════════════════════════════
+          BODY: Sectioned Card Layout
+      ════════════════════════════════════════════════════════════════════ */}
+      <div className="p-5 space-y-4">
+        {/* ─── Three-column grid: Proyecto + Municipalidad + Edificación ─── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Proyecto Card */}
+          <SectionCard
+            icon={<Hash className="h-3.5 w-3.5" />}
+            title="Proyecto"
+            className="border-border/60"
+          >
+            <div className="space-y-2.5">
+              <LabelValue
+                label="Código"
+                value={
+                  <span className="font-mono text-primary font-semibold">
+                    {proyecto.public_id}
+                  </span>
+                }
+              />
+              <LabelValue label="Nombre" value={proyecto.nombre} />
+              {proyecto.entidad && (
+                <>
+                  <LabelValue label="Entidad" value={proyecto.entidad.nombre} />
+                  <LabelValue
+                    label="RUC"
+                    value={`${proyecto.entidad.tipo} ${proyecto.entidad.ruc}`}
+                  />
+                </>
+              )}
+              {proyecto.direccion && (
+                <div className="flex items-start gap-1.5 mt-1 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">
+                    {proyecto.direccion}
+                    {proyectoLocation && ` · ${proyectoLocation}`}
+                  </span>
+                </div>
+              )}
+            </div>
+          </SectionCard>
+
+          {/* Municipalidad Card */}
+          <SectionCard
+            icon={<Building2 className="h-3.5 w-3.5" />}
+            title="Municipalidad"
+            className="border-border/60"
+          >
+            <div className="space-y-2.5">
+              <LabelValue label="Nombre" value={municipalidad?.nombre || "—"} />
+              {municipalidad?.codigo && (
+                <LabelValue label="Código" value={municipalidad.codigo} />
+              )}
+              {municipalidadLocation && (
+                <div className="flex items-start gap-1.5 mt-1 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3 shrink-0 mt-0.5" />
+                  <span>{municipalidadLocation}</span>
+                </div>
+              )}
+            </div>
+          </SectionCard>
+
+          {/* Edificación Card */}
+          <SectionCard
+            icon={<FileText className="h-3.5 w-3.5" />}
+            title="Edificación"
+            className="border-border/60"
+          >
+            <div className="space-y-2.5">
+              <LabelValue
+                label="Código"
+                value={
+                  <span className="font-mono text-primary font-semibold">
+                    {edificaciones.public_id}
+                  </span>
+                }
+              />
+              <LabelValue
+                label="Valor del Proyecto"
+                value={formatCurrency(proyecto.valor_proyecto)}
+              />
+            </div>
+          </SectionCard>
+        </div>
+
+        {/* ─── Two-column grid: Proyectistas + Especialidades ─── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Proyectistas Card */}
+          <SectionCard
+            icon={<User className="h-3.5 w-3.5" />}
+            title={hasMultipleProyectistas ? "Proyectistas" : "Proyectista"}
+            className="border-border/60"
+          >
+            {edificaciones.proyectistas && edificaciones.proyectistas.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {edificaciones.proyectistas.map((proj) => (
+                  <div
+                    key={proj.id}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60 hover:bg-secondary/60 hover:border-primary/20 transition-all"
+                  >
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                      <HardHat className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-foreground">
+                        {proj.nombres} {proj.apellidos}
+                      </span>
+                      {proj.cip && (
+                        <span className="text-[10px] text-muted-foreground">
+                          CIP: {proj.cip}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground/60 italic">Sin proyectistas registrados</p>
+            )}
+          </SectionCard>
+
+          {/* Especialidades Card */}
+          <SectionCard
+            icon={<Building2 className="h-3.5 w-3.5" />}
+            title={
+              <span className="flex items-center gap-1.5">
+                Especialidades
+                <span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-[9px] font-bold text-muted-foreground">
+                  {edificaciones.revisiones.length}
+                </span>
+              </span>
+            }
+            className="border-border/60"
+          >
+            {edificaciones.revisiones.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {edificaciones.revisiones.map((edif) => (
+                  <div
+                    key={edif.id}
+                    className="group/chip inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60 hover:bg-secondary/60 hover:border-primary/20 transition-all"
+                  >
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover/chip:bg-primary/15 transition-colors">
+                      <Building2 className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-bold text-foreground leading-tight truncate max-w-[120px]">
+                        {edif.especialidad}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {Number(edif.tarifa.porcentaje_minimo_uit).toFixed(4)} UIT
+                      </span>
+                    </div>
+                    <div className="ml-1 flex flex-col items-end gap-0.5">
+                      <span className="text-xs font-black text-primary">
+                        {formatCurrency(edif.monto_base)}
+                      </span>
+                      {edif.cobra ? (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-600">
+                          <span className="inline-flex h-1 w-1 rounded-full bg-emerald-500" />
+                          Cobra
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-muted-foreground/50">
+                          <span className="inline-flex h-1 w-1 rounded-full bg-muted-foreground/30" />
+                          No cobra
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground/60 italic">Sin especialidades registradas</p>
+            )}
+          </SectionCard>
+        </div>
+
+        {/* ─── Totales Card (full width) ─── */}
+        <SectionCard
+          icon={<Banknote className="h-3.5 w-3.5" />}
+          title="Totales"
+          className="border-border/60"
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">
+                Subtotal
+              </span>
+              <span className="text-sm font-bold text-foreground">
+                {formatCurrency(totales.subtotal)}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">
+                IGV
+              </span>
+              <span className="text-sm font-bold text-foreground">
+                {formatCurrency(totales.igv)}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">
+                Total
+              </span>
+              <span className="text-sm font-bold text-foreground">
+                {formatCurrency(totales.total)}
+              </span>
+            </div>
+            <div className="flex flex-col bg-primary/5 border border-primary/10 rounded-lg px-3 py-2 -my-0.5">
+              <span className="text-[9px] font-bold text-primary uppercase tracking-wider mb-0.5">
+                Total a Pagar
+              </span>
+              <span className="text-base font-black text-primary">
+                {formatCurrency(totales.total_a_pagar)}
+              </span>
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* ─── Observación (if present) ─── */}
         {observacion && (
-          <div className="mt-4 flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/15">
             <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-            <span className="text-xs text-amber-700 font-medium leading-relaxed">
-              {observacion}
-            </span>
+            <div>
+              <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">
+                Observación
+              </span>
+              <p className="text-sm text-amber-700/90 font-medium leading-relaxed mt-0.5">
+                {observacion}
+              </p>
+            </div>
           </div>
         )}
       </div>

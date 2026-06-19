@@ -64,9 +64,10 @@ class TestPrimeraRevisionEndpoint:
         # Verificar public_id en liquidacion
         assert "public_id" in snapshot["liquidacion"]
         assert snapshot["liquidacion"]["public_id"].startswith("LIQ-")
-        # Verificar municipalidad en respuesta
-        assert "municipalidad_id" in snapshot["liquidacion"]
-        assert snapshot["liquidacion"]["municipalidad_id"] == str(self.municipalidad.id)
+        # Verificar municipalidad en respuesta (nuevo formato anidado)
+        assert "municipalidad" in snapshot["liquidacion"]
+        assert snapshot["liquidacion"]["municipalidad"]["id"] == str(self.municipalidad.id)
+        assert snapshot["liquidacion"]["municipalidad"]["nombre"] == self.municipalidad.nombre
         # Sin revisiones, totales deben ser 0
         assert snapshot["totales"]["subtotal"] == 0
         # expediente fue removido del dominio
@@ -646,6 +647,8 @@ class TestNuevaRevisionEndpoint:
             nombre="Municipalidad de Prueba 6",
             distrito=self.distrito,
         )
+        self.proyectista1 = ProyectistaFactory(nombres="Juan", apellidos="Pérez")
+        self.proyectista2 = ProyectistaFactory(nombres="María", apellidos="García")
 
         client = Client()
         response = client.post(
@@ -657,6 +660,7 @@ class TestNuevaRevisionEndpoint:
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
                     "revisiones_ids": [],
+                    "proyectistas_ids": [str(self.proyectista1.id)],
                 }
             },
             content_type="application/json",
@@ -731,6 +735,226 @@ class TestNuevaRevisionEndpoint:
         )
         # Should return 400/404/etc but NOT 200
         assert response.status_code != 200, response.json()
+
+    def test_nueva_revision_con_proyectistas_ids_usa_esos_proyectistas(self, client: Client):
+        """
+        POST /nueva-revision with non-empty proyectistas_ids debe usar
+        exactamente esos proyectistas (no heredar de la previa).
+        """
+        # Get a valid revision to use
+        revision_response = client.get(
+            "/api/liquidaciones/edificaciones/nueva-revision/formulario",
+            query_params={"liquidacion_previa_id": self.liquidacion_previa_id},
+        )
+        assert revision_response.status_code == 200, f"Setup failed: {revision_response.json()}"
+        revisiones_vigentes = revision_response.json()["data"]["revisiones_vigentes"]
+
+        if len(revisiones_vigentes) == 0:
+            pytest.skip("No revisiones vigentes available to test with")
+
+        first_revision_id = revisiones_vigentes[0]["id"]
+
+        # Create nueva revision with proyectista2 (different from previa's proyectista1)
+        response = client.post(
+            "/api/liquidaciones/edificaciones/nueva-revision",
+            data={
+                "liquidacion_previa_id": self.liquidacion_previa_id,
+                "revisiones_ids": [first_revision_id],
+                "observacion": "Test con proyectistas específicos",
+                "proyectistas_ids": [str(self.proyectista2.id)],
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        snapshot = data["data"]
+
+        # Verify that the new revision has only proyectista2 (not inherited)
+        proyectistas_ids_response = {p["id"] for p in snapshot["edificaciones"]["proyectistas"]}
+        assert str(self.proyectista2.id) in proyectistas_ids_response
+        assert str(self.proyectista1.id) not in proyectistas_ids_response
+
+    def test_nueva_revision_sin_proyectistas_ids_hereda_de_previa(self, client: Client):
+        """
+        POST /nueva-revision without proyectistas_ids (or empty) debe heredar
+        los proyectistas de la liquidación previa.
+        """
+        # Get a valid revision to use
+        revision_response = client.get(
+            "/api/liquidaciones/edificaciones/nueva-revision/formulario",
+            query_params={"liquidacion_previa_id": self.liquidacion_previa_id},
+        )
+        assert revision_response.status_code == 200, f"Setup failed: {revision_response.json()}"
+        revisiones_vigentes = revision_response.json()["data"]["revisiones_vigentes"]
+
+        if len(revisiones_vigentes) == 0:
+            pytest.skip("No revisiones vigentes available to test with")
+
+        first_revision_id = revisiones_vigentes[0]["id"]
+
+        # Create nueva revision WITHOUT proyectistas_ids (should inherit)
+        response = client.post(
+            "/api/liquidaciones/edificaciones/nueva-revision",
+            data={
+                "liquidacion_previa_id": self.liquidacion_previa_id,
+                "revisiones_ids": [first_revision_id],
+                "observacion": "Test heredando proyectistas",
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        snapshot = data["data"]
+
+        # Verify that the new revision inherited proyectista1 from previa
+        proyectistas_ids_response = {p["id"] for p in snapshot["edificaciones"]["proyectistas"]}
+        assert str(self.proyectista1.id) in proyectistas_ids_response
+
+    def test_nueva_revision_proyectistas_ids_vacio_hereda_de_previa(self, client: Client):
+        """
+        POST /nueva-revision with empty proyectistas_ids debe heredar
+        los proyectistas de la liquidación previa.
+        """
+        # Get a valid revision to use
+        revision_response = client.get(
+            "/api/liquidaciones/edificaciones/nueva-revision/formulario",
+            query_params={"liquidacion_previa_id": self.liquidacion_previa_id},
+        )
+        assert revision_response.status_code == 200, f"Setup failed: {revision_response.json()}"
+        revisiones_vigentes = revision_response.json()["data"]["revisiones_vigentes"]
+
+        if len(revisiones_vigentes) == 0:
+            pytest.skip("No revisiones vigentes available to test with")
+
+        first_revision_id = revisiones_vigentes[0]["id"]
+
+        # Create nueva revision with empty proyectistas_ids (should inherit)
+        response = client.post(
+            "/api/liquidaciones/edificaciones/nueva-revision",
+            data={
+                "liquidacion_previa_id": self.liquidacion_previa_id,
+                "revisiones_ids": [first_revision_id],
+                "observacion": "Test con proyectistas_ids vacío",
+                "proyectistas_ids": [],  # Empty — should inherit
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        snapshot = data["data"]
+
+        # Verify that the new revision inherited proyectista1 from previa
+        proyectistas_ids_response = {p["id"] for p in snapshot["edificaciones"]["proyectistas"]}
+        assert str(self.proyectista1.id) in proyectistas_ids_response
+
+
+@pytest.mark.django_db
+class TestNuevaRevisionFormularioEndpoint:
+    """Test GET /api/liquidaciones/edificaciones/nueva-revision/formulario returns proyectistas_actuales."""
+
+    def setup_method(self):
+        """Create a liquidacion with proyectistas to use as previous."""
+        self.igv = IGVFactory()
+        self.uit = UITFactory()
+        self.proyecto = ProyectoFactory()
+        # Create a municipalidad for testing
+        from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
+        from modules.entidades.models import Municipalidad
+        self.distrito = UbigeoDistritoFactory()
+        self.municipalidad = Municipalidad.objects.create(
+            codigo="MUN-FORM",
+            nombre="Municipalidad para Formulario",
+            distrito=self.distrito,
+        )
+        self.proyectista1 = ProyectistaFactory(nombres="Juan", apellidos="Pérez")
+        self.proyectista2 = ProyectistaFactory(nombres="María", apellidos="García")
+
+        client = Client()
+        response = client.post(
+            "/api/liquidaciones/edificaciones/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "tipo_tramite": "OBRA_NUEVA",
+                    "valor_proyecto": 10000.0,
+                    "revisiones_ids": [],
+                    "proyectistas_ids": [str(self.proyectista1.id), str(self.proyectista2.id)],
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200, f"Setup failed: {response.json()}"
+        self.liquidacion_previa_id = response.json()["data"]["liquidacion"]["id"]
+
+    def test_formulario_retorna_proyectistas_actuales(self, client: Client):
+        """
+        GET /nueva-revision/formulario debe retornar proyectistas_actuales
+        (los heredados de la liquidación previa) para prefijado en formulario.
+        """
+        response = client.get(
+            "/api/liquidaciones/edificaciones/nueva-revision/formulario",
+            query_params={"liquidacion_previa_id": self.liquidacion_previa_id},
+        )
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        assert "data" in data
+
+        # Verify proyectistas_actuales is present and contains the proyectistas from previa
+        assert "proyectistas_actuales" in data["data"]
+        proyectistas_actuales = data["data"]["proyectistas_actuales"]
+        assert len(proyectistas_actuales) == 2
+
+        proyectista_ids = {p["id"] for p in proyectistas_actuales}
+        assert str(self.proyectista1.id) in proyectista_ids
+        assert str(self.proyectista2.id) in proyectista_ids
+
+    def test_formulario_retorna_proyectistas_actuales_vacios_si_previa_sin_proyectistas(self, client: Client):
+        """
+        GET /nueva-revision/formulario debe retornar proyectistas_actuales vacío
+        si la liquidación previa no tenía proyectistas.
+        """
+        # Create a liquidacion WITHOUT proyectistas
+        igv = IGVFactory()
+        uit = UITFactory()
+        proyecto = ProyectoFactory()
+        from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
+        from modules.entidades.models import Municipalidad
+        distrito = UbigeoDistritoFactory()
+        municipalidad = Municipalidad.objects.create(
+            codigo="MUN-FORM-EMPTY",
+            nombre="Municipalidad sin Proyectistas",
+            distrito=distrito,
+        )
+
+        client = Client()
+        response = client.post(
+            "/api/liquidaciones/edificaciones/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": proyecto.public_id,
+                    "municipalidad_id": str(municipalidad.id),
+                    "tipo_tramite": "OBRA_NUEVA",
+                    "valor_proyecto": 10000.0,
+                    "revisiones_ids": [],
+                    "proyectistas_ids": [],  # No proyectistas
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200, f"Setup failed: {response.json()}"
+        liquidacion_previa_id = response.json()["data"]["liquidacion"]["id"]
+
+        # Get formulario
+        form_response = client.get(
+            "/api/liquidaciones/edificaciones/nueva-revision/formulario",
+            query_params={"liquidacion_previa_id": liquidacion_previa_id},
+        )
+        assert form_response.status_code == 200, form_response.json()
+
+        # Verify proyectistas_actuales is empty
+        proyectistas_actuales = form_response.json()["data"]["proyectistas_actuales"]
+        assert proyectistas_actuales == []
 
 
 @pytest.mark.django_db

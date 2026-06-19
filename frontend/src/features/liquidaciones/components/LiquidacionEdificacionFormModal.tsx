@@ -1,17 +1,23 @@
 "use client";
 
-import { FileText, Banknote, MessageSquare, User, Plus, X, Building2, Calculator } from "lucide-react";
-import { useCallback, useState, useRef, useEffect } from "react";
-import type { z } from "zod";
+import { FileText, Banknote, MessageSquare, User, X, Building2, Calculator, Search, CheckCircle2, Loader2, MapPin } from "lucide-react";
+import { useCallback, useState, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { SearchableSelect } from "@/components/ui/searchable-select";
+import { Label } from "@/components/ui/label";
 import { GenericInput } from "@/components/genericForm/GenericInput";
-import { AppFormModal } from "@/components-app/forms/AppFormModal";
+import { GenericModal } from "@/components/genericModal/GenericModal";
+import { GenericForm } from "@/components/genericForm/GenericForm";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useCrearPrimeraRevision } from "../hooks/useCrearLiquidacion";
 import { useCotizacionPrimeraRevision } from "../hooks/useCotizacion";
+import { useProyectoCrear } from "../hooks/useProyecto";
 import { useRevisionesVigentes } from "../hooks/useRevisionesVigentes";
 import { useVariablesFinancieras } from "../hooks/useVariablesFinancieras";
 import { useMunicipalidades } from "../hooks/useMunicipalidades";
+import { useDistritos } from "@/features/entidades/hooks/useDistritos";
 import { liquidacionEdificacionFormSchema } from "../schemas/liquidacion-edificaciones-form.schema";
 import type {
   LiquidacionEdificacionFormModalProps,
@@ -20,12 +26,16 @@ import type {
 } from "../types/liquidacion-edificaciones-form.types";
 import type { ProyectistaResult } from "../types/proyectista";
 import type { CotizacionQuote } from "../types/liquidacion-edificaciones";
-import { ProyectoFormModal } from "./ProyectoFormModal";
+import type { EntidadResult } from "@/features/entidades/types/entidad";
 import { ProyectistaFormModal } from "./ProyectistaFormModal";
-import { ProyectoSelectorSection } from "./ProyectoSelectorSection";
 import { RevisionesVigentesTable } from "./RevisionesVigentesTable";
-import { VariablesFinancierasCard } from "./VariablesFinancierasCard";
 import { CotizacionSection } from "./CotizacionSection";
+import { ProyectistasSection } from "./ProyectistasSection";
+import { useProyectoBuscar } from "../hooks/useProyecto";
+import { normalizeProyectoResponse } from "../services/proyecto.service";
+import { InstitucionFormModal } from "@/features/entidades/components/InstitucionFormModal";
+import { PersonaNaturalFormModal } from "@/features/entidades/components/PersonaNaturalFormModal";
+import { notify } from "@/errors";
 
 const formSchema = liquidacionEdificacionFormSchema;
 
@@ -70,9 +80,13 @@ export function LiquidacionEdificacionFormModal({
   onOpenChange,
   onSuccess,
 }: LiquidacionEdificacionFormModalProps) {
-  // Child modal state
-  const [showProyectoModal, setShowProyectoModal] = useState(false);
+  // Child modal state (only for proyectista now)
   const [showProyectistaModal, setShowProyectistaModal] = useState(false);
+
+  // Entidad state for inline proyecto form
+  const [entidad, setEntidad] = useState<EntidadResult | undefined>();
+  const [showInstitucionModal, setShowInstitucionModal] = useState(false);
+  const [showPersonaNaturalModal, setShowPersonaNaturalModal] = useState(false);
 
   // Selected proyecto (local state for display, synced to form)
   const [selectedProyecto, setSelectedProyecto] = useState<
@@ -84,10 +98,15 @@ export function LiquidacionEdificacionFormModal({
     ProyectistaResult[]
   >([]);
 
-  // Ref to store submit handler configured with methods from render prop
-  const submitHandlerRef = useRef<{
-    (data: FormData): Promise<void>;
-  } | null>(null);
+  // Locked revision IDs (mandatory/habilitadas) — cannot be toggled
+  const [lockedRevisionIds, setLockedRevisionIds] = useState<string[]>([]);
+
+  // Project search state for selector tab
+  const [publicIdSearch, setPublicIdSearch] = useState("");
+  const buscarMutation = useProyectoBuscar();
+
+  // Active tab for proyecto section
+  const [activeProyectoTab, setActiveProyectoTab] = useState<"gestionar" | "proyecto-seleccionado">("gestionar");
 
   // Data hooks
   const { data: variablesFinancieras, isLoading: isLoadingVariables } =
@@ -96,20 +115,44 @@ export function LiquidacionEdificacionFormModal({
     useRevisionesVigentes();
   const { data: municipalidades, isLoading: isLoadingMunicipalidades } =
     useMunicipalidades();
+  const { data: distritosData, isLoading: isLoadingDistritos } = useDistritos();
   const crearMutation = useCrearPrimeraRevision();
+  const proyectoCrearMutation = useProyectoCrear();
+
+  // Distrito options for proyecto form
+  const distritoOptions = distritosData
+    ? distritosData.map((d) => ({
+        label: `${d.nombre} (${d.provincia.departamento.nombre} - ${d.provincia.nombre})`,
+        value: d.id,
+      }))
+    : [];
 
   // Cotización state (clear when form fields change)
   const [cotizacionQuote, setCotizacionQuote] = useState<CotizacionQuote | null>(null);
 
-  // Sync proyecto_public_id when selectedProyecto changes
-  const handleProyectoSaved = useCallback((proyecto: ProyectoResumen) => {
-    setSelectedProyecto(proyecto);
-    setShowProyectoModal(false);
+  // ── Pre-select all habilitadas revisiones when data first loads ─────────────
+  // Uses a ref so this only fires once (first load), not on subsequent refetches.
+  const hasInitializedRevisiones = useRef(false);
+  useEffect(() => {
+    if (!isLoadingRevisiones && revisionesVigentes && !hasInitializedRevisiones.current) {
+      hasInitializedRevisiones.current = true;
+      const habilesIds = revisionesVigentes
+        .filter((rev) => rev.habilitada)
+        .map((rev) => rev.id);
+      liqSetValue("revisiones_ids", habilesIds, { shouldValidate: false, shouldDirty: true });
+      setLockedRevisionIds(habilesIds); // Lock the default mandatory revisions
+    }
+  }, [isLoadingRevisiones, revisionesVigentes]);
+
+  // Handle entidad saved from child modal
+  const handleEntidadSaved = useCallback((newEntidad: EntidadResult) => {
+    setEntidad(newEntidad);
+    setShowInstitucionModal(false);
+    setShowPersonaNaturalModal(false);
   }, []);
 
   // Handle proyectista saved (created or selected)
   const handleProyectistaSaved = useCallback((proyectista: ProyectistaResult) => {
-    // Add to selected if not already selected
     setSelectedProyectistas((prev) => {
       if (prev.some((p) => p.id === proyectista.id)) {
         return prev;
@@ -124,137 +167,574 @@ export function LiquidacionEdificacionFormModal({
     setSelectedProyectistas((prev) => prev.filter((p) => p.id !== proyectistaId));
   }, []);
 
+  // Handle search existing project
+  const handleSearch = async () => {
+    if (!publicIdSearch.trim()) return;
+
+    try {
+      const result = await buscarMutation.mutateAsync(publicIdSearch);
+      const proyectoData = normalizeProyectoResponse(result);
+      if (proyectoData?.public_id) {
+        const proyecto: ProyectoResumen = {
+          id: proyectoData.id,
+          public_id: proyectoData.public_id,
+          denominacion: proyectoData.denominacion,
+          direccion: proyectoData.direccion || "",
+          distrito: proyectoData.distrito || undefined,
+          entidad: proyectoData.entidad || undefined,
+        };
+        handleProyectoSaved(proyecto);
+        setPublicIdSearch("");
+      } else {
+        alert("No se encontró un proyecto con ese ID");
+      }
+    } catch {
+      alert("Error al buscar el proyecto");
+    }
+  };
+
+  // ----------------------------------------------------------------
+  // PROYECTO FORM — separate GenericForm, sibling to liquidacion form.
+  // Runs its own react-hook-form context, submits independently.
+  // On success: calls handleProyectoSaved which updates selectedProyecto
+  // and switches to the "proyecto-seleccionado" tab.
+  // ----------------------------------------------------------------
+  const proyectoSchema = z.object({
+    denominacion: z.string().min(1, "La denominación es requerida"),
+    direccion: z.string().optional(),
+    distrito_id: z.string().optional(),
+  });
+
+  const handleProyectoSubmit = async (data: z.infer<typeof proyectoSchema>) => {
+    const result = await proyectoCrearMutation.mutateAsync({
+      denominacion: data.denominacion,
+      direccion: data.direccion || undefined,
+      distrito_id: data.distrito_id,
+      entidad_id: entidad?.id,
+    });
+
+    // Defensively extract proyecto — handles both wrapped {success,data} and direct
+    const proyectoData = normalizeProyectoResponse(result);
+    if (proyectoData?.public_id) {
+      const proyecto: ProyectoResumen = {
+        id: proyectoData.id,
+        public_id: proyectoData.public_id,
+        denominacion: proyectoData.denominacion,
+        direccion: proyectoData.direccion || "",
+        distrito: proyectoData.distrito || undefined,
+        entidad: proyectoData.entidad || undefined,
+      };
+      handleProyectoSaved(proyecto);
+      notify.success("Proyecto creado correctamente");
+    }
+  };
+
+  // ----------------------------------------------------------------
+  // LIQUIDACION FORM — uses GenericModal.Footer submit button
+  // via form="liquidacion-form".  selectedProyecto is accessed
+  // directly (not via hidden field) since the liquidacion submit
+  // handler has closure access to the outer component state.
+  // ----------------------------------------------------------------
+  const handleLiquidacionSubmit = async (data: FormData) => {
+    if (!selectedProyecto) {
+      // Validation: proyecto must be selected — show alert (toast would need context)
+      alert("Debe seleccionar un proyecto antes de crear la liquidación");
+      return;
+    }
+
+    const submitData: LiquidacionEdificacionSubmitData = {
+      proyecto_public_id: selectedProyecto.public_id,
+      municipalidad_id: data.municipalidad_id,
+      tipo_tramite: data.tipo_tramite,
+      valor_proyecto: data.valor_proyecto,
+      observacion: data.observacion || undefined,
+      revisiones_ids: data.revisiones_ids || [],
+      proyectistas_ids: selectedProyectistas.map((p) => p.id),
+    };
+
+    await crearMutation.mutateAsync(submitData as import("../types/liquidacion-edificaciones").PrimeraRevisionFormData);
+    notify.success("Liquidación creada correctamente");
+    onSuccess?.();
+    setSelectedProyecto(undefined);
+    setSelectedProyectistas([]);
+    setCotizacionQuote(null);
+    // Reset form's proyecto_public_id so validation doesn't fail on next open
+    liqSetValue("proyecto_public_id", "", { shouldValidate: false, shouldDirty: false });
+  };
+
+  const handleClose = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      onOpenChange(false);
+    }
+  };
+
+  // Liquidacion form — useForm instance at component top level so watch/control are available
+  // NOTE: formMethods is passed to GenericForm below to ensure the SAME form instance
+  // is used. This is critical for setValue (from handleProyectoSaved) to properly
+  // update the field that GenericForm's validation checks.
+  const liqFormMethods = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      municipalidad_id: "",
+      tipo_tramite: "OBRA_NUEVA",
+      valor_proyecto: 0,
+      observacion: "",
+      revisiones_ids: [],
+      proyectistas_ids: [],
+      proyecto_public_id: "",
+    },
+  });
+  const {
+    control: liqControl,
+    formState: { errors: liqErrors },
+    watch: liqWatch,
+    setValue: liqSetValue,
+  } = liqFormMethods;
+
+  // ── Handle proyecto created inline or selected from search ──────────────────
+  // NOTE: Must be defined after useForm so it has access to liqSetValue.
+  // This callback syncs the selected proyecto to react-hook-form's
+  // proyecto_public_id field so validation passes and watchedValues effect
+  // (cotizacion clearing) triggers correctly.
+  // Guard: only sync if public_id is non-empty to avoid clearing the field.
+  // IMPORTANT: liqSetValue comes from liqFormMethods which is passed to GenericForm
+  // as formMethods, so this setValue call updates the SAME form instance that
+  // GenericForm uses for validation. This was the root cause of the bug.
+  const handleProyectoSaved = useCallback((proyecto: ProyectoResumen) => {
+    if (!proyecto?.public_id) {
+      console.error("[LiquidacionEdificacionFormModal] handleProyectoSaved called without public_id", proyecto);
+      return;
+    }
+    setSelectedProyecto(proyecto);
+    setActiveProyectoTab("proyecto-seleccionado");
+    // Sync to form state so validation passes and cotizacion clears
+    // liqSetValue updates the same form instance that GenericForm validates against
+    liqSetValue("proyecto_public_id", proyecto.public_id, { shouldValidate: true, shouldDirty: true });
+  }, [liqSetValue]);
+
+  const selectedRevisionIds =
+    (liqWatch("revisiones_ids") as string[]) || [];
+
+  const handleRevisionToggle = (revisionId: string) => {
+    const current = selectedRevisionIds;
+    const updated = current.includes(revisionId)
+      ? current.filter((id) => id !== revisionId)
+      : [...current, revisionId];
+    liqSetValue("revisiones_ids", updated, { shouldValidate: true });
+  };
+
+  // Cotizacion hook inside render prop (needs access to watch)
+  const cotizacionMutation = useCotizacionPrimeraRevision();
+
+  // Clear cotizacion when relevant form fields change
+  const watchedValues = liqWatch([
+    "proyecto_public_id",
+    "valor_proyecto",
+    "revisiones_ids",
+  ]);
+  const watchedValuesRef = useRef(watchedValues);
+  useEffect(() => {
+    const prev = watchedValuesRef.current;
+    const changed = prev.some((val, i) => val !== watchedValues[i]);
+    if (changed && cotizacionQuote !== null) {
+      setCotizacionQuote(null);
+    }
+    watchedValuesRef.current = watchedValues;
+  }, [watchedValues, cotizacionQuote]);
+
+  // Clear cotizacion when selectedProyecto changes (fallback effect).
+  // This handles edge cases where setValue might not trigger watch properly,
+  // and ensures cotizacion is cleared when project is changed/removed.
+  useEffect(() => {
+    if (cotizacionQuote !== null) {
+      setCotizacionQuote(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProyecto?.id]);
+
+  const handleCotizar = useCallback(async () => {
+    const proyectoPublicId = selectedProyecto?.public_id;
+    const valorProyecto = liqWatch("valor_proyecto");
+
+    if (!proyectoPublicId || !valorProyecto || valorProyecto <= 0) {
+      return;
+    }
+
+    try {
+      const result = await cotizacionMutation.mutateAsync({
+        proyecto_public_id: proyectoPublicId,
+        valor_proyecto: valorProyecto,
+      });
+      // Service now returns CotizacionQuote directly (unwrapped from {success, data, error})
+      setCotizacionQuote(result);
+    } catch {
+      // Error is handled by the mutation
+    }
+  }, [cotizacionMutation, selectedProyecto]);
+
+  const hasProject = !!selectedProyecto;
+  const valorProyecto = liqWatch("valor_proyecto");
+  const hasValidValorProyecto = !!valorProyecto && valorProyecto > 0;
+
   return (
     <>
-      <AppFormModal<FormData>
-        open={open}
-        onOpenChange={onOpenChange}
-        title="Nueva Liquidación"
-        description="Registra una nueva liquidación de edificación"
-        eyebrow="Edificaciones"
-        icon={<FileText className="h-5 w-5 text-primary" />}
-        primaryLabel="Crear Liquidación"
-        primaryLoadingLabel="Creando..."
-        primaryLoading={crearMutation.isPending}
-        onPrimary={() => {}}
-        schema={formSchema}
-        initialData={{
-          municipalidad_id: "",
-          tipo_tramite: "OBRA_NUEVA",
-          valor_proyecto: 0,
-          observacion: "",
-          revisiones_ids: [],
-          proyectistas_ids: [],
-          proyecto_public_id: "",
-        }}
-        onSubmit={(data) => submitHandlerRef.current?.(data)}
-        size="lg"
-        preventClose={crearMutation.isPending}
-      >
-        {({ methods, isSubmitting }) => {
-          // Configure submit handler with access to methods.setError
-          submitHandlerRef.current = async (data: FormData) => {
-            if (!selectedProyecto) {
-              methods.setError("proyecto_public_id", {
-                type: "manual",
-                message: "Debe seleccionar un proyecto",
-              });
-              return;
-            }
+    <GenericModal
+      open={open}
+      onOpenChange={handleClose}
+      preventClose={crearMutation.isPending}
+    >
+      <GenericModal.Content size="lg">
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <GenericModal.Header
+          title=""
+          className="bg-primary/[0.03] border-b border-border px-6 py-5 sm:px-8"
+        >
+          <div className="flex items-center gap-3 w-full">
+            <div className="p-2 sm:p-2.5 bg-primary/10 rounded-xl sm:rounded-2xl border border-primary/20 shadow-sm shrink-0">
+              <FileText className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+              <span className="hidden sm:block text-[10px] font-bold uppercase tracking-widest text-primary leading-none">
+                Edificaciones
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground leading-tight">
+                Nueva Liquidación
+              </h2>
+              <p className="hidden sm:block max-w-prose text-pretty line-clamp-3 text-sm text-muted-foreground leading-relaxed">
+                Registra una nueva liquidación de edificación
+              </p>
+            </div>
+            <div className="w-9 sm:w-11 shrink-0" aria-hidden="true" />
+          </div>
+        </GenericModal.Header>
 
-            const submitData: LiquidacionEdificacionSubmitData = {
-              proyecto_public_id: data.proyecto_public_id,
-              municipalidad_id: data.municipalidad_id,
-              tipo_tramite: data.tipo_tramite,
-              valor_proyecto: data.valor_proyecto,
-              observacion: data.observacion || undefined,
-              revisiones_ids: data.revisiones_ids || [],
-              proyectistas_ids: selectedProyectistas.map((p) => p.id),
-            };
+        {/* ── Body — two sibling GenericForms, no DOM nesting ─────── */}
+        <GenericModal.Body>
+          <div className="h-full flex flex-col min-h-0">
 
-            await crearMutation.mutateAsync(submitData);
-            onSuccess?.();
-            // Reset local state
-            setSelectedProyecto(undefined);
-            setSelectedProyectistas([]);
-          };
+            {/* Grid layout: responsive 2-column grid with explicit area placement
+                Mobile order (single column, DOM order):
+                  1. Proyecto
+                  2. Datos de Liquidación
+                  3. Revisiones / Especialidades
+                  4. Proyectistas
+                  5. Cotización
+                Desktop layout (2 columns with grid-template-areas):
+                  "proyecto datos"
+                  "revisiones proyectistas"
+                  "cotizacion cotizacion"
+            */}
+            <style>{`
+              @media (min-width: 768px) {
+                .liquidacion-grid {
+                  grid-template-areas:
+                    "proyecto datos"
+                    "revisiones proyectistas"
+                    "cotizacion cotizacion";
+                  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                }
+              }
+              @media (max-width: 767px) {
+                .liquidacion-grid {
+                  grid-template-areas:
+                    "proyecto"
+                    "datos"
+                    "revisiones"
+                    "proyectistas"
+                    "cotizacion";
+                  grid-template-columns: 1fr;
+                }
+              }
+            `}</style>
 
-          const {
-            register,
-            control,
-            formState: { errors },
-            watch,
-            setValue,
-          } = methods;
+            <div className="liquidacion-grid grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0">
 
-          const selectedRevisionIds =
-            (watch("revisiones_ids") as string[]) || [];
-          const selectedMunicipalidadId = watch("municipalidad_id");
+              {/* ── PROYECTO SECTION (Tabbed) ────────────────────────
+                  Uses its own GenericForm — NOT nested inside liquidacion form.
+                  formId="proyecto-form" so its submit button targets the right form.
+              */}
+              <div
+                className="rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-auto min-h-0"
+                style={{ gridArea: 'proyecto' }}
+              >
+                <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
+                  <Building2 className="h-4 w-4" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wide">
+                    Proyecto
+                  </h3>
+                </div>
 
-          // Sync proyecto_public_id when selectedProyecto changes
-          if (
-            selectedProyecto &&
-            watch("proyecto_public_id") !== selectedProyecto.public_id
-          ) {
-            setValue("proyecto_public_id", selectedProyecto.public_id, {
-              shouldValidate: true,
-            });
-          }
+                <Tabs
+                  value={activeProyectoTab}
+                  onValueChange={(v) => setActiveProyectoTab(v as "gestionar" | "proyecto-seleccionado")}
+                  orientation="horizontal"
+                >
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="gestionar">Gestionar Proyecto</TabsTrigger>
+                    <TabsTrigger value="proyecto-seleccionado">Proyecto Seleccionado</TabsTrigger>
+                  </TabsList>
 
-          const handleRevisionToggle = (revisionId: string) => {
-            const current = selectedRevisionIds;
-            const updated = current.includes(revisionId)
-              ? current.filter((id) => id !== revisionId)
-              : [...current, revisionId];
-            setValue("revisiones_ids", updated, { shouldValidate: true });
-          };
+                  {/* Tab 1: Gestionar Proyecto */}
+                  <TabsContent value="gestionar" className="space-y-4">
+                    {/* Search existing project */}
+                    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+                      <p className="text-sm font-semibold text-foreground">
+                        Buscar Proyecto Existente
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Ej: PROY-2026-00001"
+                          className="flex h-11 flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={publicIdSearch}
+                          onChange={(e) => setPublicIdSearch(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleSearch();
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="default"
+                          className="h-11 rounded-xl gap-2"
+                          onClick={handleSearch}
+                          disabled={buscarMutation.isPending}
+                        >
+                          <Search className="h-4 w-4" />
+                          Buscar
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Ingresa el ID público del proyecto existente
+                      </p>
+                    </div>
 
-          // Cotizacion hook inside render prop (needs access to watch)
-          const cotizacionMutation = useCotizacionPrimeraRevision();
+                    {/* Create new project — GenericForm for Proyecto */}
+                    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+                      <p className="text-sm font-semibold text-foreground">
+                        Crear Nuevo Proyecto
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Completa el formulario para crear un nuevo proyecto.
+                      </p>
 
-          // Clear cotizacion when relevant form fields change
-          const watchedValues = watch([
-            "proyecto_public_id",
-            "valor_proyecto",
-            "revisiones_ids",
-          ]);
-          useEffect(() => {
-            // Clear quote if any watched field changes (form was modified after quote)
-            if (cotizacionQuote !== null) {
-              setCotizacionQuote(null);
-            }
-          }, [watchedValues, cotizacionQuote]);
+                      {/* ─── GenericForm for proyecto — NO nesting, sibling form ─── */}
+                      <GenericForm
+                        formId="proyecto-form"
+                        schema={proyectoSchema}
+                        initialData={{
+                          denominacion: "",
+                          direccion: "",
+                          distrito_id: undefined,
+                        }}
+                        onSubmit={handleProyectoSubmit}
+                        skipFooter
+                        formClassName="space-y-3"
+                      >
+                        {({ methods: proyectoMethods, isSubmitting: proyectoSubmitting }) => {
+                          const {
+                            register: reg,
+                            control: projControl,
+                            formState: { errors: projErrors },
+                          } = proyectoMethods;
 
-          // Handle cotizar button click
-          const handleCotizar = useCallback(async () => {
-            const proyectoPublicId = watch("proyecto_public_id");
-            const valorProyecto = watch("valor_proyecto");
+                          return (
+                            <div className="space-y-3">
+                              <GenericInput
+                                field={{
+                                  name: "denominacion",
+                                  label: "Denominación",
+                                  type: "text",
+                                  required: true,
+                                  placeholder: "Nombre del proyecto",
+                                  icon: Building2,
+                                  labelClassName: "text-primary font-semibold",
+                                }}
+                                register={reg as any}
+                                control={projControl as any}
+                                errors={projErrors}
+                              />
+                              <GenericInput
+                                field={{
+                                  name: "direccion",
+                                  label: "Dirección",
+                                  type: "text",
+                                  placeholder: "Dirección del proyecto",
+                                  icon: MapPin,
+                                  labelClassName: "text-primary font-semibold",
+                                }}
+                                register={reg as any}
+                                control={projControl as any}
+                                errors={projErrors}
+                              />
+                              <GenericInput
+                                field={{
+                                  name: "distrito_id",
+                                  label: "Distrito",
+                                  type: "searchable-select",
+                                  placeholder: "Buscar distrito...",
+                                  options: distritoOptions,
+                                  isLoading: isLoadingDistritos,
+                                  icon: MapPin,
+                                  labelClassName: "text-primary font-semibold",
+                                }}
+                                register={reg as any}
+                                control={projControl as any}
+                                errors={projErrors}
+                              />
 
-            if (!proyectoPublicId || !valorProyecto || valorProyecto <= 0) {
-              return;
-            }
+                              {/* Entidad */}
+                              <div className="space-y-2">
+                                <span className="text-sm font-medium">Entidad</span>
+                                {entidad ? (
+                                  <div className="space-y-2">
+                                    <div className="p-3 rounded-lg border border-border bg-muted/30">
+                                      <p className="font-medium">{entidad.nombre_completo}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {entidad.tipo_documento}: {entidad.numero_documento}
+                                      </p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowInstitucionModal(true)}
+                                        className="h-8 rounded-lg gap-1.5"
+                                      >
+                                        Cambiar Institución
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowPersonaNaturalModal(true)}
+                                        className="h-8 rounded-lg gap-1.5"
+                                      >
+                                        Cambiar Persona
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-3">
+                                    <p className="text-sm text-muted-foreground italic">
+                                      No hay entidad seleccionada
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="default"
+                                        size="sm"
+                                        onClick={() => setShowInstitucionModal(true)}
+                                        className="h-8 rounded-lg gap-1.5"
+                                      >
+                                        <Building2 className="h-3.5 w-3.5" />
+                                        Crear Institución
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="default"
+                                        size="sm"
+                                        onClick={() => setShowPersonaNaturalModal(true)}
+                                        className="h-8 rounded-lg gap-1.5"
+                                      >
+                                        <User className="h-3.5 w-3.5" />
+                                        Crear Persona Natural
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
 
-            try {
-              const result = await cotizacionMutation.mutateAsync({
-                proyecto_public_id: proyectoPublicId,
-                valor_proyecto: valorProyecto,
-              });
-              setCotizacionQuote(result.data);
-            } catch {
-              // Error is handled by the mutation
-            }
-          }, [cotizacionMutation, watch]);
+                              {/* Submit button for proyecto form — inside the form body */}
+                              <div className="flex justify-end">
+                                <Button
+                                  type="submit"
+                                  form="proyecto-form"
+                                  variant="default"
+                                  size="sm"
+                                  disabled={proyectoSubmitting || proyectoCrearMutation.isPending}
+                                  className="rounded-lg gap-1.5"
+                                >
+                                  {proyectoSubmitting || proyectoCrearMutation.isPending
+                                    ? "Guardando..."
+                                    : "Guardar Proyecto"}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        }}
+                      </GenericForm>
+                    </div>
+                  </TabsContent>
 
-          return (
-            <div className="space-y-6">
-              {/* Variables Financieras Info Banner */}
-              <VariablesFinancierasCard
-                variables={variablesFinancieras}
-                isLoading={isLoadingVariables}
-              />
+                  {/* Tab 2: Proyecto Seleccionado */}
+                  <TabsContent value="proyecto-seleccionado" className="space-y-4 h-full">
+                    {selectedProyecto ? (
+                      <div className="p-4 rounded-xl border border-border bg-card">
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-semibold text-foreground">
+                                {selectedProyecto.denominacion}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {selectedProyecto.public_id}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedProyecto.direccion || "Sin dirección"}
+                            {selectedProyecto.distrito && ` - ${selectedProyecto.distrito}`}
+                          </p>
+                          {selectedProyecto.entidad && (
+                            <div className="flex items-center gap-2 mt-2 text-sm">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <span>{selectedProyecto.entidad.nombre}</span>
+                              {selectedProyecto.entidad.tipo && (
+                                <span className="text-xs text-muted-foreground">
+                                  ({selectedProyecto.entidad.tipo})
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center p-8 rounded-xl border border-dashed border-border">
+                        <div className="text-center">
+                          <Building2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            No hay proyecto seleccionado
+                          </p>
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            onClick={() => setActiveProyectoTab("gestionar")}
+                            className="mt-1"
+                          >
+                            Seleccionar o crear proyecto
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </div>
 
-              {/* Sección: Datos de Liquidación */}
-              <div className="rounded-xl border border-primary/20 bg-card p-4 space-y-4">
+              {/* ── LIQUIDACION FORM ────────────────────────────────
+                  formId="liquidacion-form" so GenericModal.Footer button
+                  with form="liquidacion-form" triggers this form's submit.
+                  Uses skipFooter — footer submit button is in GenericModal.Footer.
+              */}
+              <div
+                className="rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-auto min-h-0"
+                style={{ gridArea: 'datos' }}
+              >
                 <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
                   <Banknote className="h-4 w-4" />
                   <h3 className="text-sm font-semibold uppercase tracking-wide">
@@ -262,151 +742,132 @@ export function LiquidacionEdificacionFormModal({
                   </h3>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <SearchableSelect
-                    id="municipalidad_id"
-                    label="Municipalidad"
-                    value={selectedMunicipalidadId || null}
-                    onValueChange={(value) =>
-                      setValue("municipalidad_id", value ?? "", {
-                        shouldValidate: true,
-                      })
-                    }
-                    options={(municipalidades || []).map((municipalidad) => ({
-                      value: municipalidad.id,
-                      label: formatMunicipalidadLabel(municipalidad),
-                    }))}
-                    placeholder={
-                      isLoadingMunicipalidades
-                        ? "Cargando municipalidades..."
-                        : "Seleccione municipalidad"
-                    }
-                    icon={Building2}
-                    disabled={isLoadingMunicipalidades}
-                    error={!!errors.municipalidad_id}
-                    errorMessage={errors.municipalidad_id?.message as string | undefined}
-                  />
-
-                  <GenericInput
-                    field={{
-                      name: "tipo_tramite",
-                      label: "Tipo de Trámite",
-                      type: "select",
-                      required: true,
-                      placeholder: "Seleccione tipo de trámite",
-                      icon: FileText,
-                      options: [...TIPO_TRAMITE_OPTIONS],
-                    }}
-                    register={register as any}
-                    control={control as any}
-                    errors={errors}
-                  />
-                </div>
-
-                <GenericInput
-                  field={{
-                    name: "valor_proyecto",
-                    label: "Valor del Proyecto (S/)",
-                    type: "number",
-                    required: true,
-                    placeholder: "Ej: 500000",
-                    icon: Banknote,
+                <GenericForm
+                  formId="liquidacion-form"
+                  schema={formSchema}
+                  formMethods={liqFormMethods}
+                  initialData={{
+                    municipalidad_id: "",
+                    tipo_tramite: "OBRA_NUEVA",
+                    valor_proyecto: 0,
+                    observacion: "",
+                    revisiones_ids: [],
+                    proyectistas_ids: [],
+                    proyecto_public_id: "",
                   }}
-                  register={register as any}
-                  control={control as any}
-                  errors={errors}
-                />
-
-                <GenericInput
-                  field={{
-                    name: "observacion",
-                    label: "Observación",
-                    type: "textarea",
-                    placeholder: "Observaciones adicionales...",
-                    icon: MessageSquare,
-                  }}
-                  register={register as any}
-                  control={control as any}
-                  errors={errors}
-                />
-              </div>
-
-              {/* Hidden field for proyecto_public_id validation */}
-              <input type="hidden" {...register("proyecto_public_id")} />
-              {errors.proyecto_public_id && (
-                <p className="text-sm text-destructive">
-                  {errors.proyecto_public_id.message as string}
-                </p>
-              )}
-
-              {/* Sección: Proyecto */}
-              <ProyectoSelectorSection
-                proyecto={selectedProyecto}
-                onOpenProyectoModal={() => setShowProyectoModal(true)}
-              />
-
-              {/* Sección: Proyectistas */}
-              <div className="rounded-xl border border-primary/20 bg-card p-4 space-y-4">
-                <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
-                  <User className="h-4 w-4" />
-                  <h3 className="text-sm font-semibold uppercase tracking-wide">
-                    Proyectistas
-                  </h3>
-                </div>
-
-                {/* Selected proyectistas */}
-                {selectedProyectistas.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {selectedProyectistas.map((proyectista) => (
-                      <div
-                        key={proyectista.id}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border"
-                      >
-                        <span className="text-sm font-medium">
-                          {proyectista.nombres} {proyectista.apellidos}
-                        </span>
-                        {proyectista.cip && (
-                          <span className="text-xs text-muted-foreground">
-                            CIP: {proyectista.cip}
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveProyectista(proyectista.id)}
-                          className="ml-1 hover:bg-destructive/10 rounded p-0.5"
-                        >
-                          <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {selectedProyectistas.length === 0 && (
-                  <p className="text-sm text-muted-foreground italic">
-                    No hay proyectistas seleccionados
-                  </p>
-                )}
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowProyectistaModal(true)}
-                  className="gap-2 h-9 rounded-lg"
+                  onSubmit={handleLiquidacionSubmit}
+                  skipFooter
+                  formClassName="space-y-4"
                 >
-                  <Plus className="h-4 w-4" />
-                  Agregar Proyectista
-                </Button>
+                  {({ methods: liqMethods }) => {
+                    const {
+                      register: liqReg,
+                      control: liqControl,
+                      formState: { errors: liqErrors },
+                    } = liqMethods;
+
+                    return (
+                      <>
+                        {/* Hidden field for proyecto_public_id — synced from selectedProyecto */}
+                        <input
+                          type="hidden"
+                          {...liqReg("proyecto_public_id")}
+                          value={selectedProyecto?.public_id ?? ""}
+                        />
+                        {liqErrors.proyecto_public_id && (
+                          <p className="text-sm text-destructive px-1">
+                            {liqErrors.proyecto_public_id.message as string}
+                          </p>
+                        )}
+
+                        {/* Row: Municipalidad + Tipo de Trámite + Valor del Proyecto */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <GenericInput
+                            field={{
+                              name: "municipalidad_id",
+                              label: "Municipalidad",
+                              type: "searchable-select",
+                              required: true,
+                              placeholder: isLoadingMunicipalidades
+                                ? "Cargando municipalidades..."
+                                : "Seleccione municipalidad",
+                              options: (municipalidades || []).map((municipalidad) => ({
+                                label: formatMunicipalidadLabel(municipalidad),
+                                value: municipalidad.id,
+                              })),
+                              icon: Building2,
+                              isLoading: isLoadingMunicipalidades,
+                              labelClassName: "text-primary font-semibold",
+                            }}
+                            register={liqReg as any}
+                            control={liqControl as any}
+                            errors={liqErrors}
+                          />
+
+                          <GenericInput
+                            field={{
+                              name: "tipo_tramite",
+                              label: "Tipo de Trámite",
+                              type: "select",
+                              required: true,
+                              placeholder: "Seleccione tipo de trámite",
+                              icon: FileText,
+                              labelClassName: "text-primary font-semibold",
+                              options: [...TIPO_TRAMITE_OPTIONS],
+                            }}
+                            register={liqReg as any}
+                            control={liqControl as any}
+                            errors={liqErrors}
+                          />
+
+                          <GenericInput
+                            field={{
+                              name: "valor_proyecto",
+                              label: "Valor del Proyecto (S/)",
+                              type: "number",
+                              required: true,
+                              placeholder: "Ej: 500000",
+                              icon: Banknote,
+                              labelClassName: "text-primary font-semibold",
+                            }}
+                            register={liqReg as any}
+                            control={liqControl as any}
+                            errors={liqErrors}
+                          />
+                        </div>
+
+                        <GenericInput
+                          field={{
+                            name: "observacion",
+                            label: "Observación",
+                            type: "textarea",
+                            placeholder: "Observaciones adicionales...",
+                            icon: MessageSquare,
+                            labelClassName: "text-primary font-semibold",
+                          }}
+                          register={liqReg as any}
+                          control={liqControl as any}
+                          errors={liqErrors}
+                        />
+                      </>
+                    );
+                  }}
+                </GenericForm>
               </div>
 
-              {/* Sección: Revisiones/Especialidades */}
-              <div className="rounded-xl border border-primary/20 bg-card p-4 space-y-4">
+              {/* ── Revisiones/Especialidades ─────────────────────────── */}
+              <div
+                className="rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-auto min-h-0"
+                style={{ gridArea: 'revisiones' }}
+              >
                 <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
                   <FileText className="h-4 w-4" />
                   <h3 className="text-sm font-semibold uppercase tracking-wide">
                     Revisiones / Especialidades
                   </h3>
+                  <span className="ml-auto text-[10px] font-medium opacity-75">
+                    (obligatorias)
+                  </span>
                 </div>
 
                 <RevisionesVigentesTable
@@ -414,34 +875,96 @@ export function LiquidacionEdificacionFormModal({
                   selectedIds={selectedRevisionIds}
                   onToggleRevision={handleRevisionToggle}
                   isLoading={isLoadingRevisiones}
+                  lockedIds={lockedRevisionIds}
                 />
               </div>
 
-              {/* Sección: Cotizar / Resumen de Cálculo */}
-              <CotizacionSection
-                quote={cotizacionQuote}
-                isLoading={cotizacionMutation.isPending}
-                onCotizar={handleCotizar}
-                hasErrors={Object.keys(errors).length > 0}
-              />
+              {/* ── Proyectistas ──────────────────────────────────────── */}
+              <div
+                className="rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-auto min-h-0"
+                style={{ gridArea: 'proyectistas' }}
+              >
+                <ProyectistasSection
+                  selectedProyectistas={selectedProyectistas}
+                  onAddProyectista={() => setShowProyectistaModal(true)}
+                  onRemoveProyectista={handleRemoveProyectista}
+                />
+              </div>
+
+              {/* ── Cotizar / Resumen de Cálculo ────────────────────────── */}
+              <div
+                className="overflow-auto min-h-0"
+                style={{ gridArea: 'cotizacion' }}
+              >
+                <CotizacionSection
+                  quote={cotizacionQuote}
+                  isLoading={cotizacionMutation.isPending}
+                  onCotizar={handleCotizar}
+                  hasErrors={Object.keys(liqErrors).length > 0}
+                  hasProject={hasProject}
+                  hasValidValorProyecto={hasValidValorProyecto}
+                  variablesFinancieras={variablesFinancieras}
+                  isLoadingVariables={isLoadingVariables}
+                />
+              </div>
             </div>
-          );
-        }}
-      </AppFormModal>
+          </div>
+        </GenericModal.Body>
 
-      {/* Child Modal: Proyecto */}
-      <ProyectoFormModal
-        open={showProyectoModal}
-        onOpenChange={setShowProyectoModal}
-        onSaved={handleProyectoSaved}
-      />
+        {/* ── Footer — single submit button targeting liquidacion form ─── */}
+        <GenericModal.Footer className="px-6 py-4 sm:px-8 bg-muted/30 border-t border-border">
+          <div className="flex flex-row sm:justify-end items-center gap-2 sm:gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={crearMutation.isPending}
+              className="flex-1 h-10 sm:h-11 rounded-xl font-semibold border border-border/60 hover:border-border hover:bg-background transition-all duration-200 sm:max-w-[120px] text-muted-foreground hover:text-foreground"
+              aria-label="Cancelar"
+            >
+              <X className="h-4 w-4 sm:hidden" />
+              <span className="hidden sm:inline">Cancelar</span>
+            </Button>
+            <Button
+              type="submit"
+              form="liquidacion-form"
+              onClick={() => {}}
+              disabled={crearMutation.isPending}
+              className="flex-1 h-10 sm:h-12 rounded-xl sm:rounded-2xl font-bold shadow-lg shadow-primary/25 gap-2 sm:max-w-[160px] text-base transition-all duration-200 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 disabled:hover:translate-y-0 disabled:hover:shadow-lg"
+              aria-label="Crear Liquidación"
+            >
+              {crearMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {!crearMutation.isPending && <CheckCircle2 className="h-4 w-4 sm:hidden" />}
+              <span className="hidden sm:inline">
+                {crearMutation.isPending ? "Creando..." : "Crear Liquidación"}
+              </span>
+            </Button>
+          </div>
+        </GenericModal.Footer>
 
-      {/* Child Modal: Proyectista */}
-      <ProyectistaFormModal
-        open={showProyectistaModal}
-        onOpenChange={setShowProyectistaModal}
-        onSaved={handleProyectistaSaved}
-      />
+        <GenericModal.CloseX />
+      </GenericModal.Content>
+    </GenericModal>
+
+    {/* Child Modals for Entidad */}
+    <InstitucionFormModal
+      open={showInstitucionModal}
+      onOpenChange={setShowInstitucionModal}
+      onSaved={handleEntidadSaved}
+    />
+
+    <PersonaNaturalFormModal
+      open={showPersonaNaturalModal}
+      onOpenChange={setShowPersonaNaturalModal}
+      onSaved={handleEntidadSaved}
+    />
+
+    {/* Child Modal: Proyectista */}
+    <ProyectistaFormModal
+      open={showProyectistaModal}
+      onOpenChange={setShowProyectistaModal}
+      onSaved={handleProyectistaSaved}
+    />
     </>
   );
 }

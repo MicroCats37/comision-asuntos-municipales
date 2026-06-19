@@ -106,3 +106,8 @@ class MunicipalidadesResponseOut(Schema):
     codigo: Optional[str] = None
     provincia: Optional[ProvinciaBasicOut] = None
     distrito: Optional[DistritoBasicOut] = None
+
+
+# ── Consulta Externa Schemas ──────────────────────────────────────────────────
+
+from .consulta_schemas import InstitucionSunatOut, PersonaReniecOut

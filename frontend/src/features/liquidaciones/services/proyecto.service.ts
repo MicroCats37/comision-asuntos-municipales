@@ -17,7 +17,7 @@ export const entidadSimpleSchema = z.object({
 export type EntidadSimple = z.infer<typeof entidadSimpleSchema>;
 
 /** Data payload schema */
-const proyectoPayloadSchema = z.object({
+export const proyectoPayloadSchema = z.object({
   id: z.string(),
   public_id: z.string(),
   denominacion: z.string(),
@@ -31,6 +31,35 @@ const proyectoPayloadSchema = z.object({
 export const proyectoResponseSchema = apiResponseSchema(proyectoPayloadSchema);
 
 export type ProyectoResponse = z.infer<typeof proyectoResponseSchema>;
+
+/**
+ * Normalizes a raw API response to extract the proyecto object.
+ * Handles both:
+ *   - Wrapped:  { success, data: {...proyecto}, error }
+ *   - Direct:    {...proyecto} (no envelope)
+ *
+ * Returns null if no valid proyecto can be extracted.
+ */
+export function normalizeProyectoResponse(
+  raw: unknown,
+): z.infer<typeof proyectoPayloadSchema> | null {
+  if (!raw || typeof raw !== "object") return null;
+
+  // Case 1: Full envelope { success, data: {...}, error? }
+  if ("success" in (raw as Record<string, unknown>) && "data" in (raw as Record<string, unknown>)) {
+    const envelope = raw as { success: boolean; data: unknown; error?: unknown };
+    if (envelope.success && envelope.data && typeof envelope.data === "object") {
+      const result = proyectoPayloadSchema.safeParse(envelope.data);
+      if (result.success) return result.data;
+    }
+  }
+
+  // Case 2: Direct project object (no envelope)
+  const direct = proyectoPayloadSchema.safeParse(raw);
+  if (direct.success) return direct.data;
+
+  return null;
+}
 
 const proyectoInputSchema = z.object({
   denominacion: z.string().min(1),

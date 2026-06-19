@@ -67,12 +67,14 @@ class LiquidacionesEdificacionesOrchestrator:
         liquidacion_previa_id: str,
         observacion: str | None,
         revisiones_ids: list[str],
+        proyectistas_ids: list[str] | None = None,
     ) -> LiquidacionEdificacionesResult:
         """Crear nueva revisión — delega a flujo."""
         return await self.flujo._proceso_nueva_revision(
             liquidacion_previa_id=liquidacion_previa_id,
             observacion=observacion,
             revisiones_ids=revisiones_ids,
+            proyectistas_ids=proyectistas_ids,
         )
 
     async def obtener_liquidacion(

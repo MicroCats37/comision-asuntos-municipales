@@ -62,6 +62,8 @@ export interface RevisionesVigentesTableProps {
   selectedIds: string[];
   onToggleRevision: (id: string) => void;
   isLoading?: boolean;
+  /** IDs of revisions that are locked/mandatory (cannot be toggled) */
+  lockedIds?: string[];
 }
 
 export interface ProyectoSelectorSectionProps {

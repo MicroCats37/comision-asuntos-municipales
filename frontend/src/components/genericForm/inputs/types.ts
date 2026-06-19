@@ -29,6 +29,7 @@ export interface FieldConfig {
   // Visuales
   icon?: LucideIcon;
   className?: string; // Clases del input interno
+  labelClassName?: string; // Clases solo para el Label
   containerClassName?: string; // Clases del grid container (ej: col-span-6)
   helperText?: string; // Texto de ayuda debajo del input
 

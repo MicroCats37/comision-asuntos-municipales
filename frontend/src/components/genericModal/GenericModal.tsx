@@ -147,7 +147,9 @@ const ModalContent = ({
 
   return (
     <DialogPortal>
-      <DialogOverlay className="bg-black/50 backdrop-blur-sm" />
+      <DialogOverlay
+  className="bg-black/50 backdrop-brightness-50"
+/>
       <DialogContent
         className={cn(
           "grid grid-rows-[auto_1fr_auto] p-0 overflow-hidden",

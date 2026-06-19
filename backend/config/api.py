@@ -14,6 +14,7 @@ from modules.liquidaciones.presentation.controllers.liquidacion_edificaciones_co
 from modules.liquidaciones.presentation.controllers.proyectista_controller import ProyectistaController
 from modules.liquidaciones.presentation.controllers.proyecto_controller import ProyectoController
 from modules.entidades.presentation.controllers.entidad_controller import EntidadesController
+from modules.entidades.presentation.controllers.consulta_controller import ConsultaController
 
 import os
 
@@ -77,6 +78,7 @@ api.register_controllers(ProyectoController)
 
 # ── Entidades Controllers ─
 api.register_controllers(EntidadesController)
+api.register_controllers(ConsultaController)
 
 # ── Exception handlers globales ────────────────────────────────
 register_exception_handlers(api)

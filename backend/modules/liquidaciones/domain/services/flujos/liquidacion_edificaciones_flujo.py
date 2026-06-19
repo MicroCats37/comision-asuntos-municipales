@@ -43,6 +43,9 @@ from ...schemas import (
     CotizacionRevisionData,
     CotizacionTotalesData,
     CotizacionMetadataData,
+    ProvinciaBasicSnapshotData,
+    DistritoBasicSnapshotData,
+    MunicipalidadesSnapshotData,
 )
 from ...exceptions import (
     ProyectoNotFoundError,
@@ -284,6 +287,7 @@ class LiquidacionesEdificacionesFlujo:
         liquidacion_previa_id: str,
         observacion: Optional[str],
         revisiones_ids: list[int],
+        proyectistas_ids: Optional[list[str]] = None,
     ) -> LiquidacionEdificacionesResult:
         """
         Proceso para crear nueva revisión (2da, 3ra, etc.) de edificaciones.
@@ -294,11 +298,14 @@ class LiquidacionesEdificacionesFlujo:
         4. Validar <= 7 y que no exista ya esa revisión
         5. Determinar si cobra según número de revisión
         6. Validar revisiones seleccionadas existen y habilitadas
-        7. Crear LiquidacionGeneral y LiquidacionEdificaciones (hereda proyectistas de previa)
-        8. Si no cobra: cálculos en 0 pero conservar estructura
-        9. Si cobra: calcular con porcentajes
-        10. Guardar snapshot
-        11. Retornar resultado
+        7. Determinar proyectistas_ids:
+           - Si se proporcionó y no está vacío, usar esos
+           - Si se omitió o está vacío, heredar de la liquidación previa
+        8. Crear LiquidacionGeneral y LiquidacionEdificaciones
+        9. Si no cobra: cálculos en 0 pero conservar estructura
+        10. Si cobra: calcular con porcentajes
+        11. Guardar snapshot
+        12. Retornar resultado
         """
         # 1. Buscar liquidación previa
         previa = await sync_to_async(self.core._obtener_liquidacion_por_id)(liquidacion_previa_id)
@@ -351,15 +358,22 @@ class LiquidacionesEdificacionesFlujo:
         # Obtener valor_proyecto de la liquidación previa
         valor_proyecto = previa.valor_proyecto
 
-        # Obtener ids de proyectistas de la liquidación previa (se heredan)
-        proyectistas_ids_previa = list(liq_edif_previa.proyectistas.values_list('id', flat=True))
+        # 7. Determinar proyectistas_ids:
+        # - Si se proporcionó y no está vacío, usar esos
+        # - Si se omitió o está vacío, heredar de la liquidación previa
+        if proyectistas_ids and len(proyectistas_ids) > 0:
+            # Usar los proporcionados
+            final_proyectistas_ids = [str(pid) for pid in proyectistas_ids]
+        else:
+            # Heredar de la liquidación previa
+            final_proyectistas_ids = list(liq_edif_previa.proyectistas.values_list('id', flat=True))
 
         # Ejecutar bloque transactional en thread async
         def _run_nueva_revision():
             from django.db import transaction
 
             with transaction.atomic():
-                # 7. Crear LiquidacionGeneral (hereda municipalidad y valor_proyecto de previa)
+                # 8. Crear LiquidacionGeneral (hereda municipalidad y valor_proyecto de previa)
                 liquidacion = self.core._crear_liquidacion_general(
                     proyecto=previa.proyecto,
                     municipalidad=previa.municipalidad,
@@ -376,14 +390,14 @@ class LiquidacionesEdificacionesFlujo:
                     numero_revision=nuevo_numero,
                     tipo_tramite=liq_edif_previa.tipo_tramite,  # Heredado de la liquidación previa
                     tramite_accion=TramiteAccion.REVISION,
-                    proyectistas_ids=proyectistas_ids_previa,
+                    proyectistas_ids=final_proyectistas_ids,
                 )
 
                 # Asociar revisiones (siempre se conservan)
                 if revisiones_ids:
                     self.core._asociar_revisiones(liq_edif, revisiones_ids)
 
-                # 8-9. Calcular usando helper compartido
+                # 9-10. Calcular usando helper compartido
                 revision_results, subtotal, igv_monto, total_liquidacion = self._calcular_revisiones(
                     valor_proyecto=valor_proyecto,
                     revisiones_data=revisiones_data,
@@ -392,7 +406,7 @@ class LiquidacionesEdificacionesFlujo:
                     numero_revision=nuevo_numero,
                 )
 
-                # 10. Guardar snapshot
+                # 11. Guardar snapshot
                 snapshot_data = self._build_snapshot_data(
                     liquidacion, previa.proyecto, revision_results,
                     subtotal, igv_monto, total_liquidacion, total_liquidacion,
@@ -404,7 +418,7 @@ class LiquidacionesEdificacionesFlujo:
 
         liquidacion, liq_edif, revision_results, subtotal, igv_monto, total_liquidacion = await sync_to_async(_run_nueva_revision, thread_sensitive=True)()
 
-        # 11. Retornar (wrap DB access in sync_to_async)
+        # 12. Retornar (wrap DB access in sync_to_async)
         return await sync_to_async(self._build_result, thread_sensitive=True)(
             liquidacion, previa.proyecto, revision_results,
             subtotal, igv_monto, total_liquidacion, total_liquidacion,
@@ -423,7 +437,8 @@ class LiquidacionesEdificacionesFlujo:
         3. Calcular siguiente número de revisión (desde LiquidacionEdificaciones)
         4. Determinar si cobrará
         5. Obtener revisiones vigentes disponibles
-        6. Retornar datos del formulario
+        6. Obtener proyectistas actuales (heredados de la liquidación previa)
+        7. Retornar datos del formulario
         """
         # 1. Buscar liquidación previa
         previa = await sync_to_async(self.core._obtener_liquidacion_por_id)(liquidacion_previa_id)
@@ -454,6 +469,22 @@ class LiquidacionesEdificacionesFlujo:
         # 5. Obtener revisiones vigentes
         revisiones_vigentes = await sync_to_async(self.core._obtener_revisiones_vigentes_result)()
 
+        # 6. Obtener proyectistas actuales (heredados de la liquidación previa)
+        def _get_proyectistas():
+            return list(liq_edif_previa.proyectistas.all())
+        proyectistas_previa = await sync_to_async(_get_proyectistas)()
+        proyectistas_actuales = [
+            ProyectistaSnapshotData(
+                id=str(p.id),
+                cip=p.cip,
+                dni=p.dni,
+                cap=p.cap,
+                nombres=p.nombres,
+                apellidos=p.apellidos,
+            )
+            for p in proyectistas_previa
+        ]
+
         return NuevaRevisionFormularioResult(
             liquidacion_previa_id=str(liquidacion_previa_id),
             numero_revision=siguiente_numero,
@@ -463,6 +494,7 @@ class LiquidacionesEdificacionesFlujo:
             proyecto_nombre=previa.proyecto.denominacion,
             valor_proyecto=previa.valor_proyecto,
             revisiones_vigentes=revisiones_vigentes,
+            proyectistas_actuales=proyectistas_actuales,
         )
 
     async def _proceso_obtener_liquidacion(
@@ -512,6 +544,21 @@ class LiquidacionesEdificacionesFlujo:
                 ruc=proyecto.entidad.numero_documento,
             )
 
+        # Build distrito nested object for proyecto
+        distrito_data = None
+        if proyecto.distrito:
+            provincia_prov = None
+            if proyecto.distrito.provincia:
+                provincia_prov = ProvinciaBasicSnapshotData(
+                    id=str(proyecto.distrito.provincia.id),
+                    nombre=proyecto.distrito.provincia.nombre,
+                )
+            distrito_data = DistritoBasicSnapshotData(
+                id=str(proyecto.distrito.id),
+                nombre=proyecto.distrito.nombre,
+                provincia=provincia_prov,
+            )
+
         # NOTE: proyectista ya no está en proyecto — ahora vive en LiquidacionEdificaciones.proyectistas
         proyecto_data = ProyectoSnapshotData(
             id=str(proyecto.id),
@@ -520,6 +567,36 @@ class LiquidacionesEdificacionesFlujo:
             direccion=proyecto.direccion or '',
             valor_proyecto=float(liquidacion.valor_proyecto),
             entidad=entidad_data,
+            distrito=distrito_data,
+        )
+
+        # Build municipalidad nested object
+        provincia_muni = None
+        distrito_muni = None
+        if liquidacion.municipalidad:
+            if liquidacion.municipalidad.provincia:
+                provincia_muni = ProvinciaBasicSnapshotData(
+                    id=str(liquidacion.municipalidad.provincia.id),
+                    nombre=liquidacion.municipalidad.provincia.nombre,
+                )
+            if liquidacion.municipalidad.distrito:
+                provincia_del_distrito = None
+                if liquidacion.municipalidad.distrito.provincia:
+                    provincia_del_distrito = ProvinciaBasicSnapshotData(
+                        id=str(liquidacion.municipalidad.distrito.provincia.id),
+                        nombre=liquidacion.municipalidad.distrito.provincia.nombre,
+                    )
+                distrito_muni = DistritoBasicSnapshotData(
+                    id=str(liquidacion.municipalidad.distrito.id),
+                    nombre=liquidacion.municipalidad.distrito.nombre,
+                    provincia=provincia_del_distrito,
+                )
+        municipalidad_data = MunicipalidadesSnapshotData(
+            id=str(liquidacion.municipalidad.id) if liquidacion.municipalidad else uuid.UUID(int=0),
+            nombre=liquidacion.municipalidad.nombre if liquidacion.municipalidad else '',
+            codigo=liquidacion.municipalidad.codigo if liquidacion.municipalidad else None,
+            provincia=provincia_muni,
+            distrito=distrito_muni,
         )
 
         liquidacion_data = LiquidacionSnapshotData(
@@ -529,18 +606,17 @@ class LiquidacionesEdificacionesFlujo:
             estado=liquidacion.estado,
             fecha_creacion=liquidacion.created_at.isoformat() if liquidacion.created_at else '',
             proyecto=proyecto_data,
-            municipalidad_id=str(liquidacion.municipalidad.id) if liquidacion.municipalidad else None,
-            municipalidad_nombre=liquidacion.municipalidad.nombre if liquidacion.municipalidad else None,
+            municipalidad=municipalidad_data,
             # expediente fue removido del modelo
             observacion=liquidacion.observacion or '',
         )
 
         # Build revisiones from typed RevisionCalculoData
+        # NOTE: numero_revision fue removido de cada revisión — solo existe en edificaciones
         revisiones_data = []
         for rev in revision_results:
             revisiones_data.append(RevisionSnapshotData(
                 id=str(rev.id),
-                numero_revision=rev.numero_revision,
                 especialidad=rev.especialidad,
                 tarifa=TarifaSnapshotData(
                     id=str(rev.tarifa.id),
@@ -617,7 +693,6 @@ class LiquidacionesEdificacionesFlujo:
         for rev in revision_results:
             edificaciones_revisiones.append(EdificacionRevisionData(
                 id=str(rev.id),
-                numero_revision=rev.numero_revision,
                 especialidad=EspecialidadData(
                     id=str(rev.tarifa.id),  # La especialidad está embebida vía tarifa
                     nombre=rev.especialidad,
@@ -682,6 +757,36 @@ class LiquidacionesEdificacionesFlujo:
         proyecto = liquidacion.proyecto
         liq_edif = liquidacion.edificaciones if hasattr(liquidacion, 'edificaciones') else None
         numero_revision = liq_edif.numero_revision if liq_edif else 0
+
+        # Build municipalidad nested object
+        provincia_muni = None
+        distrito_muni = None
+        if liquidacion.municipalidad:
+            if liquidacion.municipalidad.provincia:
+                provincia_muni = ProvinciaBasicSnapshotData(
+                    id=str(liquidacion.municipalidad.provincia.id),
+                    nombre=liquidacion.municipalidad.provincia.nombre,
+                )
+            if liquidacion.municipalidad.distrito:
+                provincia_del_distrito = None
+                if liquidacion.municipalidad.distrito.provincia:
+                    provincia_del_distrito = ProvinciaBasicSnapshotData(
+                        id=str(liquidacion.municipalidad.distrito.provincia.id),
+                        nombre=liquidacion.municipalidad.distrito.provincia.nombre,
+                    )
+                distrito_muni = DistritoBasicSnapshotData(
+                    id=str(liquidacion.municipalidad.distrito.id),
+                    nombre=liquidacion.municipalidad.distrito.nombre,
+                    provincia=provincia_del_distrito,
+                )
+        municipalidad_data = MunicipalidadesSnapshotData(
+            id=str(liquidacion.municipalidad.id) if liquidacion.municipalidad else uuid.UUID(int=0),
+            nombre=liquidacion.municipalidad.nombre if liquidacion.municipalidad else '',
+            codigo=liquidacion.municipalidad.codigo if liquidacion.municipalidad else None,
+            provincia=provincia_muni,
+            distrito=distrito_muni,
+        )
+
         return LiquidacionSnapshotFallbackResult(
             liquidacion=LiquidacionFallbackData(
                 id=str(liquidacion.id),
@@ -696,8 +801,7 @@ class LiquidacionesEdificacionesFlujo:
                     direccion=proyecto.direccion or '',
                     valor_proyecto=float(liquidacion.valor_proyecto),
                 ),
-                municipalidad_id=str(liquidacion.municipalidad.id) if liquidacion.municipalidad else None,
-                municipalidad_nombre=liquidacion.municipalidad.nombre if liquidacion.municipalidad else None,
+                municipalidad=municipalidad_data,
                 # expediente fue removido
                 observacion=liquidacion.observacion or '',
             ),

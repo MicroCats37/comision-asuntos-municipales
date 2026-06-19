@@ -87,11 +87,12 @@ export interface SnapshotTarifa {
 
 export interface SnapshotRevision {
   id: string;
-  numero_revision: number;
+  // numero_revision fue removido de cada revisión — solo existe en nivel edificaciones
   especialidad: string;
   tarifa: SnapshotTarifa;
   monto_base: number;
   cobra: boolean;
+  // NOTE: derecho not present in backend RevisionOut for crearNuevaRevision
 }
 
 export interface SnapshotTotales {
@@ -102,18 +103,40 @@ export interface SnapshotTotales {
   total_a_pagar: number;
 }
 
+export interface SnapshotProvincia {
+  id: string;
+  nombre: string;
+}
+
+export interface SnapshotDistrito {
+  id: string;
+  nombre: string;
+  provincia: SnapshotProvincia | null;
+}
+
+export interface SnapshotMunicipalidad {
+  id: string;
+  nombre: string;
+  codigo: string | null;
+  // NOTE: backend presenter sets provincia=None and distrito=None explicitly
+  provincia: SnapshotProvincia | null;
+  distrito: SnapshotDistrito | null;
+}
+
 export interface SnapshotProyecto {
   id: string;
   public_id: string;
   nombre: string;
   direccion: string;
   valor_proyecto: number;
+  // NOTE: backend EntidadOut has all optional fields
   entidad: {
-    id: string;
-    tipo: string;
-    nombre: string;
-    ruc: string;
+    id: string | null;
+    tipo: string | null;
+    nombre: string | null;
+    ruc: string | null;
   } | null;
+  // NOTE: distrito not present in backend ProyectoOut for crearNuevaRevision
 }
 
 export interface SnapshotLiquidacion {
@@ -122,8 +145,7 @@ export interface SnapshotLiquidacion {
   estado: string;
   fecha_creacion: string;
   proyecto: SnapshotProyecto;
-  municipalidad_id: string;
-  municipalidad_nombre: string;
+  municipalidad: SnapshotMunicipalidad;
   observacion: string;
 }
 
@@ -155,7 +177,7 @@ export interface LiquidacionSnapshot {
   liquidacion: SnapshotLiquidacion;
   edificaciones: SnapshotEdificaciones;
   totales: SnapshotTotales;
-  _metadata?: LiquidacionSnapshotMetadata;
+  // NOTE: _metadata not present in backend LiquidacionSnapshotOut for crearNuevaRevision
 }
 
 // ── Estado Modal ──────────────────────────────────────────────────────────────
@@ -176,11 +198,12 @@ export interface SnapshotTarifaCard {
 
 export interface SnapshotRevisionCard {
   id: string;
-  numero_revision: number;
+  // numero_revision fue removido de cada revisión — solo existe en nivel edificaciones
   especialidad: string;
   tarifa: SnapshotTarifaCard;
   monto_base: number;
   cobra: boolean;
+  derecho?: number | null | undefined;
 }
 
 export interface SnapshotTotalesCard {
@@ -207,6 +230,25 @@ export interface SnapshotProyectistaCard {
   apellidos: string;
 }
 
+export interface SnapshotProvinciaCard {
+  id: string;
+  nombre: string;
+}
+
+export interface SnapshotDistritoCard {
+  id: string;
+  nombre: string;
+  provincia: SnapshotProvinciaCard | null;
+}
+
+export interface SnapshotMunicipalidadCard {
+  id: string;
+  nombre: string;
+  codigo: string | null;
+  provincia: SnapshotProvinciaCard | null;
+  distrito: SnapshotDistritoCard | null;
+}
+
 export interface SnapshotProyectoCard {
   id: string;
   public_id: string;
@@ -214,6 +256,7 @@ export interface SnapshotProyectoCard {
   direccion: string | null;
   valor_proyecto: number;
   entidad: SnapshotEntidadCard | null;
+  distrito?: SnapshotDistritoCard | null | undefined;
 }
 
 export interface SnapshotEdificacionesCard {
@@ -231,8 +274,7 @@ export interface LiquidacionSnapshotListItem {
   numero_liquidacion: string;
   estado: string;
   fecha_registro: string;
-  municipalidad_id: string | null;
-  municipalidad_nombre: string | null;
+  municipalidad: SnapshotMunicipalidadCard;
   observacion: string | null;
   proyecto: SnapshotProyectoCard;
   edificaciones: SnapshotEdificacionesCard;
@@ -283,4 +325,63 @@ export interface CotizacionQuote {
   revisiones: CotizacionRevision[];
   totales: CotizacionTotales;
   _metadata: CotizacionMetadata;
+}
+
+// ── Nueva Revisión ────────────────────────────────────────────────────────────
+
+/**
+ * Proyectista actual — returned in formulario GET for nueva revision.
+ * Reuses SnapshotProyectista shape.
+ */
+export interface ProyectistaActual {
+  id: string;
+  cip: string | null;
+  dni: string;
+  cap: string | null;
+  nombres: string;
+  apellidos: string;
+}
+
+/**
+ * Revision Vigente as returned in the formulario response (same shape as RevisionVigente).
+ * Used when revisiones_vigentes is embedded in NuevaRevisionFormularioResponse.
+ */
+export interface NuevaRevisionFormularioRevisionVigente {
+  id: string;
+  especialidad_id: string;
+  especialidad_nombre: string;
+  tarifa_id: string;
+  porcentaje_liquidacion: number;
+  derecho_minimo: number;
+  derecho_maximo: number | null;
+  porcentaje_minimo_uit: number;
+  habilitada: boolean;
+}
+
+/**
+ * Response payload from GET /liquidaciones/edificaciones/nueva-revision/formulario
+ * Returns inherited fields from prior liquidacion plus available proyectistas.
+ */
+export interface NuevaRevisionFormularioResponse {
+  liquidacion_previa_id: string;
+  numero_revision: number;
+  cobra: boolean;
+  proyecto_id: string;
+  proyecto_public_id: string;
+  proyecto_nombre: string;
+  valor_proyecto: number;
+  /** Revisiones vigentes available for this project — same shape as RevisionVigente[] */
+  revisiones_vigentes: NuevaRevisionFormularioRevisionVigente[];
+  proyectistas_actuales: ProyectistaActual[];
+}
+
+/**
+ * Form data for creating a nueva revision.
+ * Passed to POST /liquidaciones/edificaciones/nueva-revision
+ */
+export interface NuevaRevisionFormData {
+  liquidacion_previa_id: string;
+  revisiones_ids: string[];
+  proyectistas_ids: string[];
+  observacion?: string;
 }

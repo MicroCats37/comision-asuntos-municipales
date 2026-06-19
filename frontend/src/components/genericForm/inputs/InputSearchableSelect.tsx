@@ -87,6 +87,7 @@ export const InputSearchableSelect: React.FC<InputComponentProps> = ({
             error={!!error}
             errorMessage={error?.message}
             className={field.className}
+            showLabel={false}
           />
         );
       }}

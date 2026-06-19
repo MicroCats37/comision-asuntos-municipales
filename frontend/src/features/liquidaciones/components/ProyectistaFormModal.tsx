@@ -5,6 +5,7 @@ import { z } from "zod";
 import { GenericInput } from "@/components/genericForm/GenericInput";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { useProyectistaUpsert } from "../hooks/useProyectista";
+import { notify } from "@/errors";
 import type { ProyectistaFormModalProps } from "../types/liquidacion-edificaciones-form.types";
 import type { ProyectistaResult } from "../types/proyectista";
 
@@ -44,6 +45,7 @@ export function ProyectistaFormModal({
         cap: result.data.cap ?? undefined,
         creado: result.data.creado,
       };
+      notify.success("Proyectista guardado correctamente");
       onSaved(proyectistaResult);
     }
   };

@@ -1,11 +1,14 @@
 "use client";
 
-import { CreditCard, MapPin, User } from "lucide-react";
+import { CreditCard, MapPin, Search, User } from "lucide-react";
 import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import { GenericInput } from "@/components/genericForm/GenericInput";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { usePersonaNaturalUpsert } from "@/features/entidades/hooks/useEntidad";
 import { useDistritos } from "@/features/entidades/hooks/useDistritos";
+import { notify } from "@/errors";
+import { useReniecLookup } from "@/features/entidades/hooks/useConsultaExterna";
 import type { EntidadResult } from "@/features/entidades/types/entidad";
 import type { PersonaNaturalFormModalProps } from "@/features/liquidaciones/types/liquidacion-edificaciones-form.types";
 
@@ -27,6 +30,7 @@ export function PersonaNaturalFormModal({
   onSaved,
 }: PersonaNaturalFormModalProps) {
   const mutation = usePersonaNaturalUpsert();
+  const reniecLookup = useReniecLookup();
   const { data: distritosData, isLoading: isLoadingDistritos } = useDistritos();
 
   const distritoOptions = distritosData
@@ -35,6 +39,19 @@ export function PersonaNaturalFormModal({
         value: d.id,
       }))
     : [];
+
+  // Find matching distrito by ubigeo (from RENIEC response)
+  const findDistritoByUbigeo = (ubigeo: string | undefined): string | undefined => {
+    if (!ubigeo || !distritosData) return undefined;
+    // Ubigeo is typically 6 digits: 2 digits department + 2 digits province + 2 digits district
+    // We try to match the last 2 digits (district code)
+    if (ubigeo.length >= 6) {
+      // Try exact match first
+      const found = distritosData.find((d) => d.ubigeo === ubigeo || d.ubigeo?.endsWith(ubigeo));
+      return found?.id;
+    }
+    return undefined;
+  };
 
   const handleSubmit = async (data: FormData) => {
     const payload = {
@@ -62,6 +79,7 @@ export function PersonaNaturalFormModal({
         activo: result.data.activo,
         creado: result.data.creado,
       };
+      notify.success("Persona natural guardada correctamente");
       onSaved(entidadResult);
     }
   };
@@ -90,7 +108,33 @@ export function PersonaNaturalFormModal({
       size="md"
     >
       {({ methods }) => {
-        const { register, control, formState: { errors } } = methods;
+        const { register, control, setValue, watch, formState: { errors } } = methods;
+        const dniValue = watch("numero_documento") || "";
+
+        const handleReniecLookup = async () => {
+          if (dniValue.length !== 8) {
+            return;
+          }
+
+          try {
+            const result = await reniecLookup.mutateAsync(dniValue);
+            if (result) {
+              setValue("nombres", result.nombres, { shouldValidate: true });
+              setValue("apellidos", result.apellidos, { shouldValidate: true });
+              if (result.direccion) {
+                setValue("direccion", result.direccion, { shouldValidate: true });
+              }
+              // Try to match distrito by ubigeo
+              const distritoId = findDistritoByUbigeo(result.ubigeo);
+              if (distritoId) {
+                setValue("distrito_id", distritoId, { shouldValidate: true });
+              }
+            }
+          } catch {
+            // Error is handled by the hook
+          }
+        };
+
         return (
           <div className="space-y-4">
             <div className="rounded-xl border border-primary/20 bg-card p-4 space-y-4">
@@ -98,7 +142,26 @@ export function PersonaNaturalFormModal({
                 <CreditCard className="h-4 w-4" />
                 <h3 className="text-sm font-semibold uppercase tracking-wide">Identificación</h3>
               </div>
-              <GenericInput field={{ name: "numero_documento", label: "DNI", type: "text", required: true, placeholder: "8 dígitos", icon: CreditCard }} register={register as any} control={control as any} errors={errors} />
+              {/* DNI field with RENIEC lookup button */}
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <GenericInput field={{ name: "numero_documento", label: "DNI", type: "text", required: true, placeholder: "8 dígitos", icon: CreditCard }} register={register as any} control={control as any} errors={errors} />
+                </div>
+                <div className="flex flex-col justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 rounded-lg"
+                    onClick={handleReniecLookup}
+                    disabled={reniecLookup.isPending || dniValue.length !== 8}
+                    title="Buscar en RENIEC"
+                    aria-label="Buscar en RENIEC"
+                  >
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <GenericInput field={{ name: "nombres", label: "Nombres", type: "text", required: true, placeholder: "Nombres", icon: User }} register={register as any} control={control as any} errors={errors} />
                 <GenericInput field={{ name: "apellidos", label: "Apellidos", type: "text", required: true, placeholder: "Apellidos", icon: User }} register={register as any} control={control as any} errors={errors} />

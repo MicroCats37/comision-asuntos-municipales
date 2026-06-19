@@ -83,6 +83,7 @@ class NuevaRevisionFormularioResult(BaseModel):
     proyecto_nombre: str
     valor_proyecto: Decimal
     revisiones_vigentes: list[EdificacionRevisionData]
+    proyectistas_actuales: list = Field(default_factory=list)  # list of ProyectistaSnapshotData
 
 
 class LiquidacionEdificacionesListItem(BaseModel):
@@ -107,6 +108,28 @@ class LiquidacionEdificacionesPaginatedResult(BaseModel):
 # Snapshot schemas — typed DTOs para el payload JSON del LiquidacionSnapshot
 # =============================================================================
 
+class ProvinciaBasicSnapshotData(BaseModel):
+    """Provincia básica anidada dentro de DistritoSnapshotData y MunicipalidadesSnapshotData."""
+    id: uuid.UUID
+    nombre: str
+
+
+class DistritoBasicSnapshotData(BaseModel):
+    """Distrito básico anidado dentro de MunicipalidadesSnapshotData y ProyectoSnapshotData."""
+    id: uuid.UUID
+    nombre: str
+    provincia: Optional[ProvinciaBasicSnapshotData] = None
+
+
+class MunicipalidadesSnapshotData(BaseModel):
+    """Municipalidad anidada dentro de LiquidacionSnapshotData."""
+    id: uuid.UUID
+    nombre: str
+    codigo: Optional[str] = None
+    provincia: Optional[ProvinciaBasicSnapshotData] = None
+    distrito: Optional[DistritoBasicSnapshotData] = None
+
+
 class TarifaSnapshotData(BaseModel):
     """Tarifa embebida dentro de RevisionSnapshotData."""
     id: uuid.UUID
@@ -116,9 +139,12 @@ class TarifaSnapshotData(BaseModel):
 
 
 class RevisionSnapshotData(BaseModel):
-    """Una revisión individual dentro del snapshot de edificaciones."""
+    """Una revisión individual dentro del snapshot de edificaciones.
+    
+    NOTE: numero_revision fue removido de cada revisión — ya no se repite.
+    El número de revisión vive solo en el nivel edificaciones (edificaciones.numero_revision).
+    """
     id: uuid.UUID
-    numero_revision: int
     especialidad: str
     tarifa: TarifaSnapshotData
     monto_base: float
@@ -152,6 +178,7 @@ class ProyectoSnapshotData(BaseModel):
     direccion: str
     valor_proyecto: float
     entidad: Optional[EntidadSnapshotData]
+    distrito: Optional[DistritoBasicSnapshotData] = None
     # NOTE: proyectista ya no está en proyecto — ahora vive en LiquidacionEdificaciones.proyectistas
 
 
@@ -163,8 +190,7 @@ class LiquidacionSnapshotData(BaseModel):
     estado: str
     fecha_creacion: str
     proyecto: ProyectoSnapshotData
-    municipalidad_id: Optional[uuid.UUID] = None
-    municipalidad_nombre: Optional[str] = None
+    municipalidad: MunicipalidadesSnapshotData
     # expediente fue removido — ya no existe en el modelo
     observacion: str
 
@@ -270,8 +296,7 @@ class LiquidacionFallbackData(BaseModel):
     estado: str
     fecha_creacion: str
     proyecto: ProyectoFallbackData
-    municipalidad_id: Optional[uuid.UUID] = None
-    municipalidad_nombre: Optional[str] = None
+    municipalidad: MunicipalidadesSnapshotData
     # expediente fue removido
     observacion: str
 

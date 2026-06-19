@@ -9,6 +9,7 @@ import type {
   UseFormRegister,
 } from "react-hook-form";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { getInputComponent } from "./inputs";
 
 // =====================================================================
@@ -54,7 +55,7 @@ export const DefaultFieldWrapper: FC<FieldWrapperProps> = ({
   return (
     <div className={`space-y-2 ${field.containerClassName || "col-span-12"}`}>
       {!field.hidden && (
-        <Label htmlFor={labelId} className="text-sm font-medium">
+        <Label htmlFor={labelId} className={cn("text-sm font-medium", field.labelClassName)}>
           {field.label}
           {field.required && <span className="text-destructive ml-1">*</span>}
         </Label>
@@ -111,7 +112,8 @@ export interface FormField {
 
   // Visual Properties
   icon?: LucideIcon;
-  className?: string;
+  className?: string; // Input/control styling
+  labelClassName?: string; // Label-only styling
   containerClassName?: string;
   required?: boolean;
 }

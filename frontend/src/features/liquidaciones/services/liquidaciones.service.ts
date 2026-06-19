@@ -8,6 +8,8 @@ import type {
   VariablesFinancieras,
   LiquidacionSnapshot,
   CotizacionQuote,
+  NuevaRevisionFormularioResponse,
+  NuevaRevisionFormData,
 } from "../types/liquidacion-edificaciones";
 
 const BASE_URL = "/liquidaciones/edificaciones";
@@ -52,11 +54,14 @@ export const liquidacionesService = {
   async cotizarPrimeraRevision(payload: {
     proyecto_public_id: string;
     valor_proyecto: number;
-  }): Promise<{ data: CotizacionQuote }> {
+  }): Promise<CotizacionQuote> {
     const { data } = await api.post(`${BASE_URL}/cotizar/primera-revision`, {
       liquidacion: payload,
     });
-    return data as { data: CotizacionQuote };
+    // Return the inner data directly — useApiCreate with cotizacionQuoteResponseSchema
+    // already validates and returns the full {success, data, error} wrapper,
+    // so we extract data.data here.
+    return (data as { data: CotizacionQuote }).data;
   },
 
   /**
@@ -65,12 +70,37 @@ export const liquidacionesService = {
   async cotizarNuevaRevision(payload: {
     liquidacion_previa_id: string;
     revisiones_ids: string[];
-  }): Promise<{ data: CotizacionQuote }> {
+  }): Promise<CotizacionQuote> {
     const { data } = await api.post(`${BASE_URL}/cotizar/nueva-revision`, {
       liquidacion_previa_id: payload.liquidacion_previa_id,
       revisiones_ids: payload.revisiones_ids,
     });
-    return data as { data: CotizacionQuote };
+    // Return the inner data directly — useApiCreate with cotizacionQuoteResponseSchema
+    // already validates and returns the full {success, data, error} wrapper,
+    // so we extract data.data here.
+    return (data as { data: CotizacionQuote }).data;
+  },
+
+  /**
+   * Obtiene formulario para nueva revisión — retorna proyectistas_actuales.
+   */
+  async obtenerFormularioNuevaRevision(
+    liquidacionPreviaId: string,
+  ): Promise<NuevaRevisionFormularioResponse> {
+    const { data } = await api.get(`${BASE_URL}/nueva-revision/formulario`, {
+      params: { liquidacion_previa_id: liquidacionPreviaId },
+    });
+    return (data as { data: NuevaRevisionFormularioResponse }).data;
+  },
+
+  /**
+   * Crea nueva revisión de liquidación.
+   */
+  async crearNuevaRevision(
+    payload: NuevaRevisionFormData,
+  ): Promise<{ data: LiquidacionSnapshot }> {
+    const { data } = await api.post(`${BASE_URL}/nueva-revision`, payload);
+    return data as { data: LiquidacionSnapshot };
   },
 };
 

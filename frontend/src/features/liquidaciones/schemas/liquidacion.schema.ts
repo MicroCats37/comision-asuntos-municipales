@@ -73,15 +73,38 @@ const liquidacionSnapshotPayloadSchema = z.object({
       valor_proyecto: z.union([z.number(), z.string()]),
       entidad: z
         .object({
-          id: z.string(),
-          tipo: z.string(),
-          nombre: z.string(),
-          ruc: z.string(),
+          id: z.string().nullable(),
+          tipo: z.string().nullable(),
+          nombre: z.string().nullable(),
+          ruc: z.string().nullable(),
         })
         .nullable(),
-      }),
-    municipalidad_id: z.string(),
-    municipalidad_nombre: z.string(),
+      // NOTE: distrito not present in backend ProyectoOut for crearNuevaRevision
+    }),
+    municipalidad: z.object({
+      id: z.string(),
+      nombre: z.string(),
+      codigo: z.string().nullable(),
+      // NOTE: backend presenter sets provincia=None and distrito=None explicitly
+      provincia: z
+        .object({
+          id: z.string(),
+          nombre: z.string(),
+        })
+        .nullable(),
+      distrito: z
+        .object({
+          id: z.string(),
+          nombre: z.string(),
+          provincia: z
+            .object({
+              id: z.string(),
+              nombre: z.string(),
+            })
+            .nullable(),
+        })
+        .nullable(),
+    }),
     observacion: z.string(),
   }),
   edificaciones: z.object({
@@ -93,7 +116,7 @@ const liquidacionSnapshotPayloadSchema = z.object({
       z.object({
         id: z.string(),
         cip: z.string().nullable(),
-        dni: z.string(),
+dni: z.string().nullable(),
         cap: z.string().nullable(),
         nombres: z.string(),
         apellidos: z.string(),
@@ -102,7 +125,7 @@ const liquidacionSnapshotPayloadSchema = z.object({
     revisiones: z.array(
       z.object({
         id: z.string(),
-        numero_revision: z.number(),
+        // numero_revision fue removido de cada revisión — solo existe en nivel edificaciones
         especialidad: z.string(),
         tarifa: z.object({
           id: z.string(),
@@ -112,6 +135,7 @@ const liquidacionSnapshotPayloadSchema = z.object({
         }),
         monto_base: z.union([z.number(), z.string()]),
         cobra: z.boolean(),
+        // NOTE: derecho not present in backend RevisionOut for crearNuevaRevision
       }),
     ),
   }),
@@ -122,11 +146,7 @@ const liquidacionSnapshotPayloadSchema = z.object({
     liquidacion_total: z.union([z.number(), z.string()]),
     total_a_pagar: z.union([z.number(), z.string()]),
   }),
-  _metadata: z.object({
-    igv_valor: z.union([z.number(), z.string()]),
-    uit_valor: z.union([z.number(), z.string()]),
-    cobra: z.boolean(),
-  }).optional(),
+  // NOTE: _metadata not present in backend LiquidacionSnapshotOut for crearNuevaRevision
 });
 
 /** Wrapper schema for liquidacion snapshot response */
@@ -148,8 +168,29 @@ const liquidacionSnapshotListPayloadSchema = z.object({
       numero_liquidacion: z.string(),
       estado: z.string(),
       fecha_registro: z.string(),
-      municipalidad_id: z.string().nullable(),
-      municipalidad_nombre: z.string().nullable(),
+      municipalidad: z.object({
+        id: z.string(),
+        nombre: z.string(),
+        codigo: z.string().nullable(),
+        provincia: z
+          .object({
+            id: z.string(),
+            nombre: z.string(),
+          })
+          .nullable(),
+        distrito: z
+          .object({
+            id: z.string(),
+            nombre: z.string(),
+            provincia: z
+              .object({
+                id: z.string(),
+                nombre: z.string(),
+              })
+              .nullable(),
+          })
+          .nullable(),
+      }),
       observacion: z.string().nullable(),
       proyecto: z.object({
         id: z.string(),
@@ -165,6 +206,19 @@ const liquidacionSnapshotListPayloadSchema = z.object({
             ruc: z.string().nullable(),
           })
           .nullable(),
+        distrito: z
+          .object({
+            id: z.string(),
+            nombre: z.string(),
+            provincia: z
+              .object({
+                id: z.string(),
+                nombre: z.string(),
+              })
+              .nullable(),
+          })
+          .nullable()
+          .nullish(),
       }),
       edificaciones: z.object({
         public_id: z.string(),
@@ -184,7 +238,7 @@ const liquidacionSnapshotListPayloadSchema = z.object({
         revisiones: z.array(
           z.object({
             id: z.string(),
-            numero_revision: z.number(),
+            // numero_revision fue removido de cada revisión — solo existe en nivel edificaciones
             especialidad: z.string(),
             tarifa: z.object({
               id: z.string(),
@@ -194,6 +248,7 @@ const liquidacionSnapshotListPayloadSchema = z.object({
             }),
             monto_base: z.number(),
             cobra: z.boolean(),
+            derecho: z.number().nullish(),
           }),
         ),
       }),
@@ -270,3 +325,57 @@ export const cotizacionNuevaRevisionPayloadSchema = z.object({
 
 /** Wrapper schema for cotizar nueva revision request */
 export const cotizacionNuevaRevisionRequestSchema = cotizacionNuevaRevisionPayloadSchema;
+
+// ── Nueva Revisión Schemas ─────────────────────────────────────────────────────
+
+/** Schema for revision vigente item embedded in formulario response */
+const revisionVigenteFormularioSchema = z.object({
+  id: z.string(),
+  especialidad_id: z.string(),
+  especialidad_nombre: z.string(),
+  tarifa_id: z.string(),
+  porcentaje_liquidacion: z.number(),
+  derecho_minimo: z.number(),
+  derecho_maximo: z.number().nullable(),
+  porcentaje_minimo_uit: z.number(),
+  habilitada: z.boolean(),
+});
+
+/** Schema for proyectista actual item in formulario response */
+const proyectistaActualSchema = z.object({
+  id: z.string(),
+  cip: z.string().nullable(),
+  dni: z.string(),
+  cap: z.string().nullable(),
+  nombres: z.string(),
+  apellidos: z.string(),
+});
+
+/** Payload schema for GET /nueva-revision/formulario response */
+const nuevaRevisionFormularioPayloadSchema = z.object({
+  liquidacion_previa_id: z.string().uuid(),
+  numero_revision: z.number(),
+  cobra: z.boolean(),
+  proyecto_id: z.string().uuid(),
+  proyecto_public_id: z.string(),
+  proyecto_nombre: z.string(),
+  valor_proyecto: z.number(),
+  revisiones_vigentes: z.array(revisionVigenteFormularioSchema),
+  proyectistas_actuales: z.array(proyectistaActualSchema),
+});
+
+/** Wrapper schema for nueva revision formulario response */
+export const nuevaRevisionFormularioResponseSchema = apiResponseSchema(nuevaRevisionFormularioPayloadSchema);
+
+/** Schema for crear nueva revision request payload */
+export const crearNuevaRevisionPayloadSchema = z.object({
+  liquidacion_previa_id: z.string().uuid("Liquidación previa es requerida"),
+  revisiones_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una revisión"),
+  proyectistas_ids: z.array(z.string().uuid()).default([]),
+  observacion: z.string().optional(),
+});
+
+/** Wrapper schema for crear nueva revision request */
+export const crearNuevaRevisionRequestSchema = z.object({
+  liquidacion: crearNuevaRevisionPayloadSchema,
+});
