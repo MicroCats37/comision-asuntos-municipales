@@ -148,29 +148,29 @@ const ModalContent = ({
   return (
     <DialogPortal>
       <DialogOverlay className="bg-black/50 backdrop-blur-sm" />
-      {/* Flex wrapper replaces transform-based centering to avoid subpixel seam */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-        <DialogContent
-          className={cn(
-            "relative grid grid-rows-[auto_1fr_auto] overflow-hidden pointer-events-auto",
-            "border border-border shadow-xl gap-0 p-0",
-            "w-full max-w-[95vw] max-h-[90vh]",
-            className,
-          )}
-          showCloseButton={false}
-          onPointerDownOutside={(e) => {
-            if (preventClose) e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            if (preventClose) e.preventDefault();
-          }}
-        >
-          {!hasHeader && (
-            <DialogTitle className="sr-only">Modal Content</DialogTitle>
-          )}
-          {children}
-        </DialogContent>
-      </div>
+      <DialogContent
+        className={cn(
+          "grid grid-rows-[auto_1fr_auto] p-0 overflow-hidden",
+          "border border-border shadow-lg gap-0",
+          "left-4 right-4 top-4 bottom-4 translate-x-0 translate-y-0 w-auto max-w-none max-h-none",
+          "lg:left-1/2 lg:right-auto lg:top-1/2 lg:bottom-auto lg:-translate-x-1/2 lg:-translate-y-1/2",
+          "sm:left-1/8 sm:right-1/8 sm:top-1/2 sm:bottom-auto sm:translate-x-0 sm:-translate-y-1/2",
+          "sm:max-w-[95vw] sm:max-h-[90vh]",
+          className,
+        )}
+        showCloseButton={false}
+        onPointerDownOutside={(e) => {
+          if (preventClose) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (preventClose) e.preventDefault();
+        }}
+      >
+        {!hasHeader && (
+          <DialogTitle className="sr-only">Modal Content</DialogTitle>
+        )}
+        {children}
+      </DialogContent>
     </DialogPortal>
   );
 };
