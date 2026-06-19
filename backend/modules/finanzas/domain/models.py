@@ -1,1 +1,0 @@
-"""Domain entities — pure business objects (placeholder)."""

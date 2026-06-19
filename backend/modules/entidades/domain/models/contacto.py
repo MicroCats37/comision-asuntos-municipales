@@ -9,14 +9,17 @@ from core.models import BaseModel
 
 
 class Contacto(BaseModel):
+    
     history = HistoricalRecords()
+    
     """
     Entidad de contacto reutilizable.
     Puede asociarse a Empresa, Municipalidad, Banco u otras entidades mediante
-    tablas puente (EmpresaContacto, MunicipalidadContacto, BancoContacto).
+    tablas puente (ContactoEmpresa, ContactoMunicipalidad, ContactoBanco).
     No es un GenericForeignKey — cada relación tiene su propia tabla puente
     con FK explícitas para mantener integridad referencial real.
     """
+    
     nombres = models.CharField(
         max_length=255,
         blank=True,
@@ -52,16 +55,12 @@ class Contacto(BaseModel):
         null=True,
         verbose_name="Correo electrónico",
     )
-    descripcion = models.TextField(
+    
+    direccion = models.CharField(
+        max_length=512,
         blank=True,
         null=True,
-        verbose_name="Descripción",
-        help_text="Descripción del contacto (ej. mesa de partes, pagos, área técnica).",
-        max_length=2000,
-    )
-    activo = models.BooleanField(
-        default=True,
-        verbose_name="¿Activo?",
+        verbose_name="Dirección",
     )
 
     class Meta:

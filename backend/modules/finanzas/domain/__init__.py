@@ -1,1 +1,1 @@
-"""Domain layer — pure business logic (placeholder)."""
+"""Capa de dominio — lógica de negocio pura (pendiente)."""

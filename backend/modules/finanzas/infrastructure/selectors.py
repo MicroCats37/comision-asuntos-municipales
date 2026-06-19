@@ -1,1 +1,1 @@
-"""Infrastructure selectors — concrete query implementations (placeholder)."""
+"""Selectores de infraestructura — implementaciones concretas de consultas (pendiente)."""

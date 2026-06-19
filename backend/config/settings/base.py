@@ -105,8 +105,8 @@ STORAGES = {
     },
 }
 # ── Internacionalización ─────────────────────────────────────
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
+LANGUAGE_CODE = "es-pe"
+TIME_ZONE = "America/Lima"
 USE_I18N = True
 USE_TZ = True
 
@@ -129,6 +129,16 @@ NINJA_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
     # Login propio en /api/auth/login/ — no usamos el built-in de ninja-jwt
+}
+
+# ── Django Ninja Extra ───────────────────────────────────────
+NINJA_EXTRA = {
+    "INJECTOR_MODULES": [
+        "modules.usuarios.di.UsuariosModule",
+        "modules.finanzas.di.FinanzasModule",
+        "modules.liquidaciones.di.LiquidacionesModule",
+        "modules.entidades.di.EntidadesModule",
+    ]
 }
 
 # ── Django Q2 (Workers) ──────────────────────────────────────

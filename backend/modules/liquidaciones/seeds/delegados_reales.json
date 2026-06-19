@@ -1,0 +1,4463 @@
+{
+  "version": "1.0",
+  "periodo": "SEPTIEMBRE 2025 A AGOSTO 2026",
+  "fuente": "docs/desarrollo/",
+  "municipalidades": [
+    {
+      "nombre": "CERCADO DE LIMA",
+      "codigo": "MUN0001",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "CENTRO HISTORICO",
+      "codigo": "MUN0002",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "COMISION AD HOC",
+      "codigo": "MUN0003",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "ANCON",
+      "codigo": "MUN0004",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "ATE",
+      "codigo": "MUN0005",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "BARRANCO",
+      "codigo": "MUN0006",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "BREÑA",
+      "codigo": "MUN0007",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "CARABAYLLO",
+      "codigo": "MUN0008",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "COMAS",
+      "codigo": "MUN0009",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "CHACLACAYO",
+      "codigo": "MUN0010",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "CHORRILLOS",
+      "codigo": "MUN0011",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "EL AGUSTINO",
+      "codigo": "MUN0012",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "JESUS MARIA",
+      "codigo": "MUN0013",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "LA MOLINA",
+      "codigo": "MUN0014",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "LA VICTORIA",
+      "codigo": "MUN0015",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "LINCE",
+      "codigo": "MUN0016",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "LURIGANCHO - CHOSICA",
+      "codigo": "MUN0017",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SANTA MARIA DE HUACHIPA",
+      "codigo": "MUN0018",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "LURIN",
+      "codigo": "MUN0019",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "MAGDALENA DEL MAR",
+      "codigo": "MUN0020",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "MIRAFLORES",
+      "codigo": "MUN0021",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PACHACAMAC",
+      "codigo": "MUN0022",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PUCUSANA",
+      "codigo": "MUN0023",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PUEBLO LIBRE",
+      "codigo": "MUN0024",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PUENTE PIEDRA",
+      "codigo": "MUN0025",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PUNTA NEGRA",
+      "codigo": "MUN0026",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PUNTA HERMOSA",
+      "codigo": "MUN0027",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "RIMAC",
+      "codigo": "MUN0028",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN BARTOLO",
+      "codigo": "MUN0029",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN ISIDRO",
+      "codigo": "MUN0030",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "INDEPENDENCIA",
+      "codigo": "MUN0031",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN JUAN DE MIRAFLORES",
+      "codigo": "MUN0032",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN LUIS",
+      "codigo": "MUN0033",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN MARTIN DE PORRES",
+      "codigo": "MUN0034",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN MIGUEL",
+      "codigo": "MUN0035",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SANTIAGO DE SURCO",
+      "codigo": "MUN0036",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SURQUILLO",
+      "codigo": "MUN0037",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "VILLA MARIA DEL TRIUNFO",
+      "codigo": "MUN0038",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN JUAN DE LURIGANCHO",
+      "codigo": "MUN0039",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SANTA MARIA DEL MAR",
+      "codigo": "MUN0040",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SANTA ROSA",
+      "codigo": "MUN0041",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "LOS OLIVOS",
+      "codigo": "MUN0042",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "CIENEGUILLA",
+      "codigo": "MUN0043",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN BORJA",
+      "codigo": "MUN0044",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "VILLA EL SALVADOR",
+      "codigo": "MUN0045",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SANTA ANITA",
+      "codigo": "MUN0046",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PROVINCIAL DE CAÑETE",
+      "codigo": "MUN0047",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN ANTONIO DE CAÑETE",
+      "codigo": "MUN0048",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "ASIA",
+      "codigo": "MUN0049",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "CERRO AZUL",
+      "codigo": "MUN0050",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "LUNAHUANA",
+      "codigo": "MUN0051",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "MALA",
+      "codigo": "MUN0052",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "CHILCA",
+      "codigo": "MUN0053",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "IMPERIAL",
+      "codigo": "MUN0054",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "NUEVO IMPERIAL",
+      "codigo": "MUN0055",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN LUIS DE CAÑETE",
+      "codigo": "MUN0056",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "CALANGO",
+      "codigo": "MUN0057",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "COAYLLO",
+      "codigo": "MUN0058",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PACARAN",
+      "codigo": "MUN0059",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "QUILMANA",
+      "codigo": "MUN0060",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SANTA CRUZ DE FLORES",
+      "codigo": "MUN0061",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "ZUÑIGA",
+      "codigo": "MUN0062",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "HUARAL",
+      "codigo": "MUN0063",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "IHUARI",
+      "codigo": "MUN0064",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SUMBILCA",
+      "codigo": "MUN0065",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PACARAOS",
+      "codigo": "MUN0066",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "LAMPIAN",
+      "codigo": "MUN0067",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "ATAVILLOS ALTO",
+      "codigo": "MUN0068",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "ATAVILLOS BAJO",
+      "codigo": "MUN0069",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN MIGUEL DE ACOS",
+      "codigo": "MUN0070",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SANTA CRUZ DE ANDAMARCA",
+      "codigo": "MUN0071",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "AUCALLAMA",
+      "codigo": "MUN0072",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "27 DE NOVIEMBRE",
+      "codigo": "MUN0073",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "CHANCAY",
+      "codigo": "MUN0074",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "HUAURA",
+      "codigo": "MUN0075",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "CALETA DE CARQUIN",
+      "codigo": "MUN0076",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "HUACHO",
+      "codigo": "MUN0077",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAYAN",
+      "codigo": "MUN0078",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "VEGUETA",
+      "codigo": "MUN0079",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "AMBAR",
+      "codigo": "MUN0080",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "CHECRAS",
+      "codigo": "MUN0081",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "LEONCIO PRADO",
+      "codigo": "MUN0082",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SANTA LEONOR",
+      "codigo": "MUN0083",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PACCHO",
+      "codigo": "MUN0084",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "HUALMAY",
+      "codigo": "MUN0085",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "STA MARIA",
+      "codigo": "MUN0086",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "BARRANCA",
+      "codigo": "MUN0087",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SUPE",
+      "codigo": "MUN0088",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SUPE PUERTO",
+      "codigo": "MUN0089",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PARAMONGA",
+      "codigo": "MUN0090",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PATIVILCA",
+      "codigo": "MUN0091",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "HUAROCHIRI",
+      "codigo": "MUN0092",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN ANTONIO DE HUAROCHIRI",
+      "codigo": "MUN0093",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PROVINCIA CANTA",
+      "codigo": "MUN0094",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "ATE VITARTE",
+      "codigo": "MUN0095",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "LURIGANCHO-CHOSICA",
+      "codigo": "MUN0096",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PROVINCIAL DE HUAURA",
+      "codigo": "MUN0097",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SANTA MARIA",
+      "codigo": "MUN0098",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PROVINCIAL DE BARRANCA",
+      "codigo": "MUN0099",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "PROVINCIA DE HUAROCHIRI",
+      "codigo": "MUN0100",
+      "provincia": null,
+      "distrito": null
+    },
+    {
+      "nombre": "SAN AΝΤΟΝΙΟ DE CAÑETE",
+      "codigo": "MUN0101",
+      "provincia": null,
+      "distrito": null
+    }
+  ],
+  "delegados": [
+    {
+      "cip": "006502",
+      "nombre": "ALBINAGORTA",
+      "paterno": "JORGE",
+      "materno": "ALBERTO",
+      "nombre_completo": "ALBINAGORTA JARAMILLO JORGE ALBERTO",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "008311",
+      "nombre": "RAMOS",
+      "paterno": "JOSE",
+      "materno": "UBALDO",
+      "nombre_completo": "RAMOS SAAVEDRA JOSE UBALDO",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "053133",
+      "nombre": "HIDALGO",
+      "paterno": "GUSTAVO",
+      "materno": "ADOLFO",
+      "nombre_completo": "HIDALGO HUERTAS GUSTAVO ADOLFO",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "028365",
+      "nombre": "TAY",
+      "paterno": "TANG",
+      "materno": "JULIO",
+      "nombre_completo": "TAY WO CHONG TANG JULIO",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "077632",
+      "nombre": "LOPEZ",
+      "paterno": "JUAN",
+      "materno": "CARLOS",
+      "nombre_completo": "LOPEZ DIAZ JUAN CARLOS",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "141145",
+      "nombre": "DE",
+      "paterno": "CARMEN",
+      "materno": "JULIA",
+      "nombre_completo": "DE LA CRUZ ALIAGA CARMEN JULIA",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "nombre": "ESTEBAN",
+      "paterno": "YONEL",
+      "materno": "CLEVER",
+      "nombre_completo": "ESTEBAN PALOMINO YONEL CLEVER",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "042568",
+      "nombre": "SIERRA",
+      "paterno": "TIMOTEO",
+      "materno": "ALEJANDRO",
+      "nombre_completo": "SIERRA SERRANO TIMOTEO ALEJANDRO",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "102986",
+      "nombre": "VILLEGAS",
+      "paterno": "ALFREDO",
+      "materno": "MARIANO",
+      "nombre_completo": "VILLEGAS ORIHUELA ALFREDO MARIANO",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "nombre": "ALBUJAR",
+      "paterno": "SOCIMO",
+      "materno": "TOMAS",
+      "nombre_completo": "ALBUJAR ESCUDERO SOCIMO TOMAS",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "115447",
+      "nombre": "PADILLA",
+      "paterno": "ROMULO",
+      "materno": "ALBERTO",
+      "nombre_completo": "PADILLA MISAJEL ROMULO ALBERTO",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "100721",
+      "nombre": "PERCCA",
+      "paterno": "MANUEL",
+      "materno": "ANGEL",
+      "nombre_completo": "PERCCA ALAMO MANUEL ANGEL",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "183026",
+      "nombre": "MATOS",
+      "paterno": "RONEL",
+      "materno": "DAVID",
+      "nombre_completo": "MATOS HUAMAN RONEL DAVID",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "057822",
+      "nombre": "MENDOZA",
+      "paterno": "JOSE",
+      "materno": "RAFAEL",
+      "nombre_completo": "MENDOZA GUIDO JOSE RAFAEL",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "038284",
+      "nombre": "VIDAL",
+      "paterno": "ERNESTO",
+      "materno": "ABELARDO",
+      "nombre_completo": "VIDAL VALENZUELA ERNESTO ABELARDO",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "023593",
+      "nombre": "CORNEJO",
+      "paterno": "JORGE",
+      "materno": "FRANCISCO",
+      "nombre_completo": "CORNEJO ALVARADO JORGE FRANCISCO",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "nombre": "CASTILLO",
+      "paterno": "JORGE",
+      "materno": "LUIS",
+      "nombre_completo": "CASTILLO CHAVEZ JORGE LUIS",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "nombre": "LOPEZ",
+      "paterno": "GABRIEL",
+      "materno": "ROBERTO",
+      "nombre_completo": "LOPEZ REAL GABRIEL ROBERTO",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "nombre": "VARGAS",
+      "paterno": "DIEGO",
+      "materno": "ARTURO",
+      "nombre_completo": "VARGAS MENDIVIL DIEGO ARTURO",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "nombre": "LAZO",
+      "paterno": "JULIO",
+      "materno": "CESAR",
+      "nombre_completo": "LAZO MUÑOZ JULIO CESAR",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "nombre": "ACOSTA",
+      "paterno": "MIGUEL",
+      "materno": "ANGEL",
+      "nombre_completo": "ACOSTA QUINECHE MIGUEL ANGEL",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "nombre": "TARAZONA",
+      "paterno": "LUIS",
+      "materno": "ALBERTO",
+      "nombre_completo": "TARAZONA ESTRADA LUIS ALBERTO",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "nombre": "MEJIA",
+      "paterno": "JESSICA",
+      "materno": "LUCILA",
+      "nombre_completo": "MEJIA AZAÑERO JESSICA LUCILA",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "nombre": "LAZO",
+      "paterno": "LUIS",
+      "materno": "ENRIQUE",
+      "nombre_completo": "LAZO MAYORCA LUIS ENRIQUE",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "nombre": "RODRIGUEZ",
+      "paterno": "MARTHA",
+      "materno": "ELENA",
+      "nombre_completo": "RODRIGUEZ MONTANI MARTHA ELENA",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "nombre": "LAZO",
+      "paterno": "ELIZABETH",
+      "materno": "LUZMILA",
+      "nombre_completo": "LAZO MUÑOZ ELIZABETH LUZMILA",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "nombre": "BABILONIA",
+      "paterno": "AREVALO",
+      "materno": "OTTO",
+      "nombre_completo": "BABILONIA AREVALO OTTO",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "nombre": "DIAZ",
+      "paterno": "CARLOS",
+      "materno": "DAVID",
+      "nombre_completo": "DIAZ SILVA CARLOS DAVID",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "nombre": "ULLOA",
+      "paterno": "BEDER",
+      "materno": "FELIPE",
+      "nombre_completo": "ULLOA LLERENA BEDER FELIPE",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063112",
+      "nombre": "VALEGA",
+      "paterno": "RAUL",
+      "materno": "BENJAMIN",
+      "nombre_completo": "VALEGA ROSAS RAUL BENJAMIN",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "nombre": "LOVERA",
+      "paterno": "LUIS",
+      "materno": "GUILLERMO",
+      "nombre_completo": "LOVERA MARTINEZ LUIS GUILLERMO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "075157",
+      "nombre": "BAUTISTA",
+      "paterno": "RICARDO",
+      "materno": "AUGUSTO",
+      "nombre_completo": "BAUTISTA CEPEDA RICARDO AUGUSTO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "057599",
+      "nombre": "ARDILES",
+      "paterno": "JOSE",
+      "materno": "ANTONIO",
+      "nombre_completo": "ARDILES MARCOS IBAÑEZ JOSE ANTONIO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "090713",
+      "nombre": "RODAS",
+      "paterno": "DOMINGO",
+      "materno": "CHRISTIAN",
+      "nombre_completo": "RODAS CONDE DOMINGO CHRISTIAN",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "008833",
+      "nombre": "ESPINOZA",
+      "paterno": "ISIDRO",
+      "materno": "ROSENDO",
+      "nombre_completo": "ESPINOZA GARCIA ISIDRO ROSENDO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "nombre": "JIMENEZ",
+      "paterno": "GUSTAVO",
+      "materno": "GABRIEL",
+      "nombre_completo": "JIMENEZ PEÑA GUSTAVO GABRIEL",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "nombre": "ROMERO",
+      "paterno": "ANDRES",
+      "materno": "OSWALDO",
+      "nombre_completo": "ROMERO MEGO ANDRES OSWALDO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "061947",
+      "nombre": "ALCAYHUAMAN",
+      "paterno": "GUZMAN",
+      "materno": "GIOVANNA",
+      "nombre_completo": "ALCAYHUAMAN GUZMAN GIOVANNA",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "013213",
+      "nombre": "AQUINO",
+      "paterno": "MELENDEZ",
+      "materno": "ARTURO",
+      "nombre_completo": "AQUINO MELENDEZ ARTURO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "116177",
+      "nombre": "SAMANIEGO",
+      "paterno": "JOSE",
+      "materno": "LUIS",
+      "nombre_completo": "SAMANIEGO QUICHICA JOSE LUIS",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "100268",
+      "nombre": "DIAZ",
+      "paterno": "MACHUCA",
+      "materno": "EVER",
+      "nombre_completo": "DIAZ MACHUCA EVER",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "094591",
+      "nombre": "ALVARADO",
+      "paterno": "JOSE",
+      "materno": "RODRIGO",
+      "nombre_completo": "ALVARADO BARZOLA JOSE RODRIGO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "111717",
+      "nombre": "SILVA",
+      "paterno": "JULIO",
+      "materno": "LEONID",
+      "nombre_completo": "SILVA MATOS JULIO LEONID",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "083398",
+      "nombre": "ARANDA",
+      "paterno": "ANDRES",
+      "materno": "ULISES",
+      "nombre_completo": "ARANDA TOLEDO ANDRES ULISES",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "137201",
+      "nombre": "GRANADOS",
+      "paterno": "RODOLFO",
+      "materno": "VALENTINO",
+      "nombre_completo": "GRANADOS SAENZ RODOLFO VALENTINO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "008097",
+      "nombre": "ROMERO",
+      "paterno": "JORGE",
+      "materno": "ANDRES",
+      "nombre_completo": "ROMERO SOTELO JORGE ANDRES",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "nombre": "ROMERO",
+      "paterno": "JORGE",
+      "materno": "MARIANO",
+      "nombre_completo": "ROMERO MEGO JORGE MARIANO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "058975",
+      "nombre": "CARDENAS",
+      "paterno": "NESTOR",
+      "materno": "RAUL",
+      "nombre_completo": "CARDENAS SANCHEZ NESTOR RAUL",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "152605",
+      "nombre": "FALCONI",
+      "paterno": "CESAR",
+      "materno": "GONZALO",
+      "nombre_completo": "FALCONI LLANOS CESAR GONZALO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "079976",
+      "nombre": "TOLEDO",
+      "paterno": "RICARDO",
+      "materno": "ALEX",
+      "nombre_completo": "TOLEDO GONZALEZ RICARDO ALEX",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063108",
+      "nombre": "RISCO",
+      "paterno": "MARCO",
+      "materno": "AΝΤΟΝΙΟ",
+      "nombre_completo": "RISCO ZEVALLOS MARCO AΝΤΟΝΙΟ",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "014386",
+      "nombre": "CARDENAS",
+      "paterno": "MANUEL",
+      "materno": "EXALTACION",
+      "nombre_completo": "CARDENAS ASPAJO MANUEL EXALTACION",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "036992",
+      "nombre": "CORPUS",
+      "paterno": "RONALD",
+      "materno": "ERIK",
+      "nombre_completo": "CORPUS VERGARA RONALD ERIK",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072900",
+      "nombre": "CASTAÑEDA",
+      "paterno": "VIVIANA",
+      "materno": "PAOLA",
+      "nombre_completo": "CASTAÑEDA AMES VIVIANA PAOLA",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "085381",
+      "nombre": "NUÑEZ",
+      "paterno": "LUIS",
+      "materno": "MIGUEL",
+      "nombre_completo": "NUÑEZ SALCEDO LUIS MIGUEL",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016748",
+      "nombre": "PRADO",
+      "paterno": "LUIS",
+      "materno": "GUILLERMO",
+      "nombre_completo": "PRADO MEZA JESUS MANUEL LOVERA MARTINEZ LUIS GUILLERMO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063992",
+      "nombre": "MOREYRA",
+      "paterno": "VIZCARRA",
+      "materno": "YUBAL",
+      "nombre_completo": "MOREYRA VIZCARRA YUBAL",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "043995",
+      "nombre": "SANCHEZ",
+      "paterno": "SANTUR",
+      "materno": "LUIS",
+      "nombre_completo": "SANCHEZ SANTUR LUIS",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "064438",
+      "nombre": "URIBE",
+      "paterno": "CARLOS",
+      "materno": "IGNACIO",
+      "nombre_completo": "URIBE LAYSECA CARLOS IGNACIO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "012050",
+      "nombre": "ICAZA",
+      "paterno": "RICARDO",
+      "materno": "EMILIANO",
+      "nombre_completo": "ICAZA ANDRADE RICARDO EMILIANO",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    }
+  ],
+  "asignaciones": [
+    {
+      "cip": "006502",
+      "municipalidad_codigo": "MUN0001",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "008311",
+      "municipalidad_codigo": "MUN0001",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "008311",
+      "municipalidad_codigo": "MUN0002",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "053133",
+      "municipalidad_codigo": "MUN0002",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "053133",
+      "municipalidad_codigo": "MUN0003",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "028365",
+      "municipalidad_codigo": "MUN0003",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "008311",
+      "municipalidad_codigo": "MUN0004",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "077632",
+      "municipalidad_codigo": "MUN0004",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "141145",
+      "municipalidad_codigo": "MUN0005",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0005",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "042568",
+      "municipalidad_codigo": "MUN0006",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "102986",
+      "municipalidad_codigo": "MUN0006",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0007",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "141145",
+      "municipalidad_codigo": "MUN0007",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "028365",
+      "municipalidad_codigo": "MUN0008",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0008",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "028365",
+      "municipalidad_codigo": "MUN0009",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "077632",
+      "municipalidad_codigo": "MUN0009",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "028365",
+      "municipalidad_codigo": "MUN0010",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "042568",
+      "municipalidad_codigo": "MUN0010",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "077632",
+      "municipalidad_codigo": "MUN0011",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "115447",
+      "municipalidad_codigo": "MUN0011",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "141145",
+      "municipalidad_codigo": "MUN0012",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "100721",
+      "municipalidad_codigo": "MUN0012",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "102986",
+      "municipalidad_codigo": "MUN0013",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "008311",
+      "municipalidad_codigo": "MUN0013",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0014",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "100721",
+      "municipalidad_codigo": "MUN0014",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "057822",
+      "municipalidad_codigo": "MUN0015",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "038284",
+      "municipalidad_codigo": "MUN0015",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "102986",
+      "municipalidad_codigo": "MUN0016",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "077632",
+      "municipalidad_codigo": "MUN0016",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0017",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "042568",
+      "municipalidad_codigo": "MUN0017",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "141145",
+      "municipalidad_codigo": "MUN0018",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0018",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "141145",
+      "municipalidad_codigo": "MUN0019",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "028365",
+      "municipalidad_codigo": "MUN0019",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0020",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "102986",
+      "municipalidad_codigo": "MUN0020",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "115447",
+      "municipalidad_codigo": "MUN0021",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0021",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "053133",
+      "municipalidad_codigo": "MUN0022",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "141145",
+      "municipalidad_codigo": "MUN0022",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0023",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0023",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "057822",
+      "municipalidad_codigo": "MUN0024",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0024",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "077632",
+      "municipalidad_codigo": "MUN0025",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "042568",
+      "municipalidad_codigo": "MUN0025",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "100721",
+      "municipalidad_codigo": "MUN0026",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0026",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0027",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "141145",
+      "municipalidad_codigo": "MUN0027",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "042568",
+      "municipalidad_codigo": "MUN0028",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "028365",
+      "municipalidad_codigo": "MUN0028",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "008311",
+      "municipalidad_codigo": "MUN0029",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "100721",
+      "municipalidad_codigo": "MUN0029",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "038284",
+      "municipalidad_codigo": "MUN0030",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "100721",
+      "municipalidad_codigo": "MUN0030",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0031",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "008311",
+      "municipalidad_codigo": "MUN0031",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "115447",
+      "municipalidad_codigo": "MUN0032",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0032",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "115447",
+      "municipalidad_codigo": "MUN0033",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "102986",
+      "municipalidad_codigo": "MUN0033",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0034",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "008311",
+      "municipalidad_codigo": "MUN0034",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "100721",
+      "municipalidad_codigo": "MUN0035",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0036",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "100721",
+      "municipalidad_codigo": "MUN0036",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "053133",
+      "municipalidad_codigo": "MUN0037",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "006502",
+      "municipalidad_codigo": "MUN0037",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "042568",
+      "municipalidad_codigo": "MUN0038",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "077632",
+      "municipalidad_codigo": "MUN0038",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "077632",
+      "municipalidad_codigo": "MUN0039",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0039",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0040",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0040",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "042568",
+      "municipalidad_codigo": "MUN0041",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "053133",
+      "municipalidad_codigo": "MUN0041",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0042",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "028365",
+      "municipalidad_codigo": "MUN0042",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0043",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0043",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "053133",
+      "municipalidad_codigo": "MUN0044",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "057822",
+      "municipalidad_codigo": "MUN0044",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0045",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "042568",
+      "municipalidad_codigo": "MUN0045",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0046",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "141145",
+      "municipalidad_codigo": "MUN0046",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0047",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0048",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0049",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0050",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0051",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0052",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0053",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0054",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0055",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0056",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0057",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0058",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0059",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0060",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0061",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "074281",
+      "municipalidad_codigo": "MUN0062",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0047",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0048",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0049",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0050",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0051",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0052",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0053",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0054",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0055",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0056",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0057",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0058",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0059",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0060",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0061",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072389",
+      "municipalidad_codigo": "MUN0062",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0063",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0064",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0065",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0066",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0067",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0068",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0069",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0070",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0071",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0072",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0073",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0063",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0064",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0065",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0066",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0067",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0068",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0069",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0070",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0071",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0072",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0073",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0074",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "077632",
+      "municipalidad_codigo": "MUN0074",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0075",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0076",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0077",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0078",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0079",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0080",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0081",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0082",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0083",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0084",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0085",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "016932",
+      "municipalidad_codigo": "MUN0086",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0075",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0076",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0077",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0078",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0079",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0080",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0081",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0082",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0083",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0084",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0085",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "060441",
+      "municipalidad_codigo": "MUN0086",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0087",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0088",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0089",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0090",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0091",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0087",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0088",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0089",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0090",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0091",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0092",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "023593",
+      "municipalidad_codigo": "MUN0093",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "053133",
+      "municipalidad_codigo": "MUN0092",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "053133",
+      "municipalidad_codigo": "MUN0093",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "077632",
+      "municipalidad_codigo": "MUN0094",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "titular"
+    },
+    {
+      "cip": "053133",
+      "municipalidad_codigo": "MUN0094",
+      "especialidad": "Ingeniería Sanitaria",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0001",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0001",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0002",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0002",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0003",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0003",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0004",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0004",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0095",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0095",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0006",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0006",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0007",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0007",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0008",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0008",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0009",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0009",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0010",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0010",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0011",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0011",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0012",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0012",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0013",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0013",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0014",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0014",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0015",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0015",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0016",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0016",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0096",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0096",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0018",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0018",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0019",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0019",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0020",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0020",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0021",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0021",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0022",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0022",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0023",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0023",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0024",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0024",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0025",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0025",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0026",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0026",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0027",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0027",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0028",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0028",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0029",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0029",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0030",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0030",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0031",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0031",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0032",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0032",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0033",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0033",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0034",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0034",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0035",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0035",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0036",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0036",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0037",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0037",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0038",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0038",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0039",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0039",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0040",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0040",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0041",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0041",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0042",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0042",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0043",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0043",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0044",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0044",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0045",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0045",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0046",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0046",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0047",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0047",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0048",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0048",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0049",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0049",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0050",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0050",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0051",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0051",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0052",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0052",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0053",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0053",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0054",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0054",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0055",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0055",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0056",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0056",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0057",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0057",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0058",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0058",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0059",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0059",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0060",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0060",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0061",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0061",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0062",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0062",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0063",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0063",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0074",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0074",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0064",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0064",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0065",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0065",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0066",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0066",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0067",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0067",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0068",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0068",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0069",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0069",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0070",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0070",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0071",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0071",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0072",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0072",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0073",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0073",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0097",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0097",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0076",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0076",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0077",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0077",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0078",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0078",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0079",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0079",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0080",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0080",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0081",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0081",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0082",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0082",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0083",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0083",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0084",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0084",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0085",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0085",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0098",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0098",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0099",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0099",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0088",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0088",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0089",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0089",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0090",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0090",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0091",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0091",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0100",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0100",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0093",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0093",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0094",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0094",
+      "especialidad": "Habilitación Urbana",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063112",
+      "municipalidad_codigo": "MUN0001",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0001",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "075157",
+      "municipalidad_codigo": "MUN0002",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "057599",
+      "municipalidad_codigo": "MUN0002",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "090713",
+      "municipalidad_codigo": "MUN0003",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "008833",
+      "municipalidad_codigo": "MUN0003",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063112",
+      "municipalidad_codigo": "MUN0004",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0004",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0095",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "061947",
+      "municipalidad_codigo": "MUN0095",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "061947",
+      "municipalidad_codigo": "MUN0006",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "013213",
+      "municipalidad_codigo": "MUN0007",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0008",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "116177",
+      "municipalidad_codigo": "MUN0008",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "100268",
+      "municipalidad_codigo": "MUN0009",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "094591",
+      "municipalidad_codigo": "MUN0009",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "116177",
+      "municipalidad_codigo": "MUN0010",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063112",
+      "municipalidad_codigo": "MUN0010",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0011",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "111717",
+      "municipalidad_codigo": "MUN0011",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "008833",
+      "municipalidad_codigo": "MUN0012",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "013213",
+      "municipalidad_codigo": "MUN0012",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "083398",
+      "municipalidad_codigo": "MUN0013",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "137201",
+      "municipalidad_codigo": "MUN0013",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "008097",
+      "municipalidad_codigo": "MUN0014",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0014",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "058975",
+      "municipalidad_codigo": "MUN0015",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063112",
+      "municipalidad_codigo": "MUN0015",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0016",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "083398",
+      "municipalidad_codigo": "MUN0016",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "152605",
+      "municipalidad_codigo": "MUN0017",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063112",
+      "municipalidad_codigo": "MUN0017",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "079976",
+      "municipalidad_codigo": "MUN0018",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063108",
+      "municipalidad_codigo": "MUN0019",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "075157",
+      "municipalidad_codigo": "MUN0019",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "079976",
+      "municipalidad_codigo": "MUN0020",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "014386",
+      "municipalidad_codigo": "MUN0020",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063108",
+      "municipalidad_codigo": "MUN0021",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "036992",
+      "municipalidad_codigo": "MUN0021",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "111717",
+      "municipalidad_codigo": "MUN0022",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "100268",
+      "municipalidad_codigo": "MUN0022",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "057599",
+      "municipalidad_codigo": "MUN0023",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "061947",
+      "municipalidad_codigo": "MUN0023",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "057599",
+      "municipalidad_codigo": "MUN0024",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0025",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "061947",
+      "municipalidad_codigo": "MUN0026",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "072900",
+      "municipalidad_codigo": "MUN0026",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "083398",
+      "municipalidad_codigo": "MUN0027",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "085381",
+      "municipalidad_codigo": "MUN0027",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "085381",
+      "municipalidad_codigo": "MUN0028",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0028",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "058975",
+      "municipalidad_codigo": "MUN0029",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063108",
+      "municipalidad_codigo": "MUN0029",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "016748",
+      "municipalidad_codigo": "MUN0030",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "152605",
+      "municipalidad_codigo": "MUN0031",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0031",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063992",
+      "municipalidad_codigo": "MUN0032",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "043995",
+      "municipalidad_codigo": "MUN0032",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "072900",
+      "municipalidad_codigo": "MUN0033",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "008097",
+      "municipalidad_codigo": "MUN0033",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "043995",
+      "municipalidad_codigo": "MUN0034",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "079976",
+      "municipalidad_codigo": "MUN0034",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "014386",
+      "municipalidad_codigo": "MUN0035",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "079976",
+      "municipalidad_codigo": "MUN0035",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "036992",
+      "municipalidad_codigo": "MUN0036",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "090713",
+      "municipalidad_codigo": "MUN0036",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "116177",
+      "municipalidad_codigo": "MUN0037",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "058975",
+      "municipalidad_codigo": "MUN0037",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "137201",
+      "municipalidad_codigo": "MUN0038",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0038",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "058975",
+      "municipalidad_codigo": "MUN0039",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "075157",
+      "municipalidad_codigo": "MUN0040",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "090713",
+      "municipalidad_codigo": "MUN0040",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063112",
+      "municipalidad_codigo": "MUN0041",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "075157",
+      "municipalidad_codigo": "MUN0041",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0042",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "152605",
+      "municipalidad_codigo": "MUN0042",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "014386",
+      "municipalidad_codigo": "MUN0043",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "064438",
+      "municipalidad_codigo": "MUN0043",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0044",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063108",
+      "municipalidad_codigo": "MUN0044",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "064438",
+      "municipalidad_codigo": "MUN0045",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "152605",
+      "municipalidad_codigo": "MUN0045",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "094591",
+      "municipalidad_codigo": "MUN0046",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0046",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0047",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0101",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0049",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0050",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0051",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0052",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0053",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0054",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0055",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0056",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0057",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0058",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0059",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0060",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0061",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "073223",
+      "municipalidad_codigo": "MUN0062",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0047",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0101",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0049",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0050",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0051",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0052",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0053",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0054",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0055",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0056",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0057",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0058",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0059",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0060",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0061",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "167972",
+      "municipalidad_codigo": "MUN0062",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0063",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0064",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0065",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0066",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0067",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0068",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0069",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0070",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0071",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0072",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "031816",
+      "municipalidad_codigo": "MUN0073",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "012050",
+      "municipalidad_codigo": "MUN0063",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "012050",
+      "municipalidad_codigo": "MUN0064",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "012050",
+      "municipalidad_codigo": "MUN0065",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "012050",
+      "municipalidad_codigo": "MUN0066",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "012050",
+      "municipalidad_codigo": "MUN0067",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "012050",
+      "municipalidad_codigo": "MUN0068",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "012050",
+      "municipalidad_codigo": "MUN0069",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "012050",
+      "municipalidad_codigo": "MUN0070",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "012050",
+      "municipalidad_codigo": "MUN0071",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "012050",
+      "municipalidad_codigo": "MUN0072",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "012050",
+      "municipalidad_codigo": "MUN0073",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "012050",
+      "municipalidad_codigo": "MUN0074",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063992",
+      "municipalidad_codigo": "MUN0074",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0075",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0077",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0078",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0080",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0081",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0082",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0083",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0084",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0098",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0075",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0076",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0077",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0078",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0079",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0080",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0081",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0082",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0083",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0084",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0085",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0098",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0087",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0088",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0089",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0090",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "035106",
+      "municipalidad_codigo": "MUN0091",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0087",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0088",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0089",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0090",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0092",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0093",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0092",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0094",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "titular"
+    },
+    {
+      "cip": "116177",
+      "municipalidad_codigo": "MUN0094",
+      "especialidad": "Ingeniería Civil",
+      "tipo": "alterno"
+    }
+  ]
+}

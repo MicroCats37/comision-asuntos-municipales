@@ -1,1 +1,0 @@
-"""Presentation controllers — HTTP handlers (placeholder)."""

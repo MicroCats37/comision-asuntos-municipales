@@ -41,7 +41,7 @@ class Banco(BaseModel):
         return self.nombre
 
 
-class BancoContacto(BaseModel):
+class ContactoBanco(BaseModel):
     history = HistoricalRecords()
 
     """

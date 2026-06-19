@@ -1,5 +1,5 @@
 """
-Proyectista — Profesional que elabora los proyectos técnicos.
+Proyectista — Modelo de profesional responsable de proyectos técnicos.
 """
 
 from django.db import models
@@ -24,11 +24,34 @@ class Proyectista(BaseModel):
         max_length=255,
         verbose_name="Apellidos",
     )
-    
+    cip = models.CharField(
+        max_length=6,
+        blank=True,
+        null=True,
+        unique=True,
+        verbose_name="CIP",
+        help_text="Número de CIP (6 dígitos).",
+    )
+    dni = models.CharField(
+        max_length=8,
+        blank=True,
+        null=True,
+        unique=True,
+        verbose_name="DNI",
+        help_text="Número de DNI (8 dígitos).",
+    )
+    cap = models.CharField(
+        max_length=6,
+        blank=True,
+        null=True,
+        verbose_name="CAP",
+        help_text="Número de CAP (6 dígitos).",
+    )
+
     class Meta:
         verbose_name = "Proyectista"
         verbose_name_plural = "Proyectistas"
-        ordering = ["nombre"]
+        ordering= ["nombres"]
 
     def __str__(self):
-        return self.nombre
+        return f"{self.nombres} {self.apellidos}"

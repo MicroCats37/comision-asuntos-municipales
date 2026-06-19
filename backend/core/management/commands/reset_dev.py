@@ -4,11 +4,14 @@ Management command to clean __pycache__ directories and reset the development DB
 Usage:
     python manage.py reset_dev --settings=config.settings.development --yes
     python manage.py reset_dev --settings=config.settings.development --yes --with-admin
-    python manage.py reset_dev --settings=config.settings.development --yes --with-admin --with-mock
+    python manage.py reset_dev --settings=config.settings.development --yes --with-admin --with-real-seed
 
 Safety:
     Requires --yes flag to proceed. Without it, the command aborts.
     Only works with sqlite3 engine. Other backends are not modified.
+
+Data Options:
+    --with-real-seed  Load REAL canonical data after reset (ubigeo + delegados reales)
 """
 
 import os
@@ -17,7 +20,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core.management import call_command
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 
 # Directories to skip when searching for __pycache__
@@ -41,9 +44,9 @@ class Command(BaseCommand):
             help='Create admin superuser after reset (DNI: 00000000, password: admin)',
         )
         parser.add_argument(
-            '--with-mock',
+            '--with-real-seed',
             action='store_true',
-            help='Load mock data after reset (implies --with-admin)',
+            help='Load REAL canonical data after reset (ubigeo + delegados reales)',
         )
 
     def handle(self, *args, **options):
@@ -134,14 +137,15 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("  Migrations complete — DB is now empty with schema"))
 
         # ── 6. Optional: create admin ────────────────────────────────
-        if options.get('with_admin') or options.get('with_mock'):
+        if options.get('with_admin') or options.get('with_real_seed'):
             self.stdout.write("\n[+] Creating admin superuser...")
             call_command('create_admin', verbosity=1)
 
-        # ── 7. Optional: load mock data ─────────────────────────────
-        if options.get('with_mock'):
-            self.stdout.write("\n[+] Loading mock data...")
-            call_command('mock_data', '--skip-admin', verbosity=1)
+        # ── 7. Optional: load real seed data ─────────────────────────
+        if options.get('with_real_seed'):
+            self.stdout.write(self.style.SUCCESS("\n[+] Loading REAL seed data..."))
+            self.stdout.write(self.style.SUCCESS("  Using official canonical data"))
+            call_command('seed_real_all', verbosity=1)
 
         self.stdout.write(self.style.SUCCESS("\n" + "=" * 60))
         self.stdout.write(self.style.SUCCESS("reset_dev completed successfully!"))

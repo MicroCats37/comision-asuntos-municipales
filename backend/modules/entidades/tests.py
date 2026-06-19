@@ -1,1 +1,1 @@
-"""Tests placeholder — add tests here when needed."""
+"""Pruebas — agregar pruebas aquí cuando sea necesario."""

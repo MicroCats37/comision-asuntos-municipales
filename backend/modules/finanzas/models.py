@@ -1,1 +1,7 @@
-"""Models placeholder — define Django ORM models here when needed."""
+# -*- coding: utf-8 -*-
+from .domain.models import IGV, UIT
+
+__all__ = [
+    "IGV",
+    "UIT",
+]

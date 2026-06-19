@@ -1,1 +1,1 @@
-"""Infrastructure repositories — concrete persistence implementations (placeholder)."""
+"""Repositorios de infraestructura — implementaciones concretas de persistencia (pendiente)."""

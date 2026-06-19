@@ -1,1 +1,1 @@
-"""Infrastructure layer — framework adapters (placeholder)."""
+"""Capa de infraestructura — adaptadores de framework (pendiente)."""

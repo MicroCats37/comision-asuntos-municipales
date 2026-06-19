@@ -1,0 +1,245 @@
+"""
+LiquidacionEdificacionesPresenter — transforma resultados a esquemas HTTP.
+"""
+from typing import Union
+
+from modules.liquidaciones.domain.schemas import (
+    LiquidacionEdificacionesResult,
+    NuevaRevisionFormularioResult,
+    EdificacionRevisionData,
+    CotizacionQuoteData,
+)
+from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
+    LiquidacionSnapshotOut,
+    NuevaRevisionFormularioOut,
+    RevisionVigenteOut,
+    CotizacionQuoteOut,
+    CotizacionRevisionOut,
+    CotizacionTarifaOut,
+    CotizacionTotalesOut,
+    CotizacionMetadataOut,
+)
+
+
+class LiquidacionEdificacionesPresenter:
+    """
+    Transforma objetos de resultado del dominio a esquemas de respuesta HTTP.
+    """
+
+    @staticmethod
+    def present_snapshot(result: LiquidacionEdificacionesResult) -> LiquidacionSnapshotOut:
+        """
+        Transforma un LiquidacionEdificacionesResult a LiquidacionSnapshotOut.
+
+        Args:
+            result: LiquidacionEdificacionesResult del flujo
+
+        Returns:
+            LiquidacionSnapshotOut schema para respuesta HTTP
+        """
+        # Construir entidad si existe
+        entidad = None
+        if result.proyecto_entidad_id:
+            from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import EntidadOut
+            entidad = EntidadOut(
+                id=result.proyecto_entidad_id,
+                tipo=result.proyecto_entidad_tipo,
+                nombre=result.proyecto_entidad_nombre,
+                ruc=result.proyecto_entidad_ruc,
+            )
+
+        # Construir proyecto (sin proyectista — ahora vive en edificaciones)
+        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import ProyectoOut
+        proyecto = ProyectoOut(
+            id=result.proyecto_id,
+            public_id=result.proyecto_public_id,
+            nombre=result.proyecto_nombre,
+            direccion=result.proyecto_direccion,
+            valor_proyecto=float(result.valor_proyecto),
+            entidad=entidad,
+        )
+
+        # Construir liquidacion (sin expediente)
+        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import LiquidacionOut
+        liquidacion = LiquidacionOut(
+            id=result.liquidacion_id,
+            public_id=result.liquidacion_public_id,
+            estado=result.estado,
+            fecha_creacion=result.fecha_creacion,
+            proyecto=proyecto,
+            municipalidad_id=result.municipalidad_id,
+            municipalidad_nombre=result.municipalidad_nombre,
+            observacion=result.observacion or '',
+        )
+
+        # Construir proyectistas desde edificaciones_proyectistas (ahora en result, no en proyecto)
+        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import ProyectistaOut
+        edificaciones_proyectistas = []
+        for p in result.edificaciones_proyectistas:
+            if isinstance(p, dict):
+                edificaciones_proyectistas.append(ProyectistaOut(
+                    id=p.get('id'),
+                    cip=p.get('cip'),
+                    dni=p.get('dni'),
+                    cap=p.get('cap'),
+                    nombres=p.get('nombres'),
+                    apellidos=p.get('apellidos'),
+                ))
+            else:
+                # Es ProyectistaSnapshotData
+                edificaciones_proyectistas.append(ProyectistaOut(
+                    id=p.id,
+                    cip=p.cip,
+                    dni=p.dni,
+                    cap=p.cap,
+                    nombres=p.nombres,
+                    apellidos=p.apellidos,
+                ))
+
+        # Construir revisiones de edificaciones
+        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
+            EdificacionesOut,
+            RevisionOut,
+            TarifaOut,
+            EspecialidadOut,
+        )
+        edificaciones_revisiones = []
+        for rev in result.edificaciones_revisiones:
+            # rev puede ser un dict o un EdificacionRevisionData
+            if isinstance(rev, EdificacionRevisionData):
+                edificaciones_revisiones.append(RevisionOut(
+                    id=rev.id,
+                    numero_revision=rev.numero_revision,
+                    especialidad=rev.especialidad.nombre,
+                    tarifa=TarifaOut(
+                        id=rev.tarifa.id,
+                        derecho_minimo=float(rev.tarifa.derecho_minimo),
+                        derecho_maximo=float(rev.tarifa.derecho_maximo) if rev.tarifa.derecho_maximo else None,
+                        porcentaje_minimo_uit=float(rev.tarifa.porcentaje_minimo_uit),
+                    ),
+                    monto_base=float(rev.monto_base) if hasattr(rev, 'monto_base') else 0.0,
+                    cobra=rev.cobra if hasattr(rev, 'cobra') else False,
+                ))
+            else:
+                # fallback para dict
+                edificaciones_revisiones.append(RevisionOut(
+                    id=str(rev.get('id', '')),
+                    numero_revision=rev.get('numero_revision', 0),
+                    especialidad=rev.get('especialidad', ''),
+                    tarifa=TarifaOut(
+                        id=str(rev.get('tarifa', {}).get('id', '')),
+                        derecho_minimo=float(rev.get('tarifa', {}).get('derecho_minimo', 0)),
+                        derecho_maximo=float(rev.get('tarifa', {}).get('derecho_maximo', 0)) if rev.get('tarifa', {}).get('derecho_maximo') else None,
+                        porcentaje_minimo_uit=float(rev.get('tarifa', {}).get('porcentaje_minimo_uit', 0)),
+                    ),
+                    monto_base=float(rev.get('monto_base', 0)),
+                    cobra=rev.get('cobra', False),
+                ))
+
+        edificaciones = EdificacionesOut(
+            public_id=result.edificaciones_public_id,
+            numero_revision=result.numero_revision,
+            tipo_tramite=result.edificaciones_tipo_tramite,
+            tramite_accion=result.edificaciones_tramite_accion,
+            proyectistas=edificaciones_proyectistas,
+            revisiones=edificaciones_revisiones,
+        )
+
+        # Construir totales
+        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import TotalesOut
+        totales = TotalesOut(
+            subtotal=float(result.totales_subtotal),
+            igv=float(result.totales_igv),
+            total=float(result.totales_total_liquidacion),
+            liquidacion_total=float(result.totales_total_liquidacion),
+            total_a_pagar=float(result.totales_total_a_pagar),
+        )
+
+        return LiquidacionSnapshotOut(
+            liquidacion=liquidacion,
+            edificaciones=edificaciones,
+            totales=totales,
+        )
+
+    @staticmethod
+    def present_formulario(result: NuevaRevisionFormularioResult) -> NuevaRevisionFormularioOut:
+        """
+        Transforma resultado de formulario de nueva revisión.
+
+        Args:
+            result: NuevaRevisionFormularioResult
+
+        Returns:
+            NuevaRevisionFormularioOut schema para respuesta HTTP
+        """
+        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import RevisionVigenteOut
+
+        revisiones_vigentes = []
+        for rev in result.revisiones_vigentes:
+            if hasattr(rev, 'id'):
+                # Es RevisionVigenteResult
+                revisiones_vigentes.append(RevisionVigenteOut(
+                    id=str(rev.id),
+                    especialidad_id=str(rev.especialidad_id),
+                    especialidad_nombre=rev.especialidad_nombre,
+                    tarifa_id=str(rev.tarifa_id),
+                    porcentaje_liquidacion=float(rev.porcentaje_liquidacion),
+                    derecho_minimo=float(rev.derecho_minimo),
+                    derecho_maximo=float(rev.derecho_maximo) if rev.derecho_maximo else None,
+                    porcentaje_minimo_uit=float(rev.porcentaje_minimo_uit),
+                    habilitada=rev.habilitada,
+                ))
+
+        return NuevaRevisionFormularioOut(
+            liquidacion_previa_id=str(result.liquidacion_previa_id),
+            numero_revision=result.numero_revision,
+            cobra=result.cobra,
+            proyecto_id=str(result.proyecto_id),
+            proyecto_public_id=result.proyecto_public_id,
+            proyecto_nombre=result.proyecto_nombre,
+            valor_proyecto=float(result.valor_proyecto),
+            revisiones_vigentes=revisiones_vigentes,
+        )
+
+    @staticmethod
+    def present_cotizacion(result: CotizacionQuoteData) -> CotizacionQuoteOut:
+        """
+        Transforma un CotizacionQuoteData a CotizacionQuoteOut.
+
+        Args:
+            result: CotizacionQuoteData del flujo (cálculo sin persistencia)
+
+        Returns:
+            CotizacionQuoteOut schema para respuesta HTTP
+        """
+        cotizacion_revisiones = []
+        for rev in result.revisiones:
+            cotizacion_revisiones.append(CotizacionRevisionOut(
+                id=rev.id,
+                especialidad=rev.especialidad,
+                tarifa=CotizacionTarifaOut(
+                    id=rev.tarifa.id,
+                    derecho_minimo=float(rev.tarifa.derecho_minimo),
+                    derecho_maximo=float(rev.tarifa.derecho_maximo) if rev.tarifa.derecho_maximo else None,
+                    porcentaje_minimo_uit=float(rev.tarifa.porcentaje_minimo_uit),
+                ),
+                monto_base=float(rev.monto_base),
+                cobra=rev.cobra,
+            ))
+
+        return CotizacionQuoteOut(
+            numero_revision=result.numero_revision,
+            revisiones=cotizacion_revisiones,
+            totales=CotizacionTotalesOut(
+                subtotal=float(result.totales.subtotal),
+                igv=float(result.totales.igv),
+                total=float(result.totales.total),
+                liquidacion_total=float(result.totales.liquidacion_total),
+                total_a_pagar=float(result.totales.total_a_pagar),
+            ),
+            metadata=CotizacionMetadataOut(
+                igv_valor=float(result.metadata.igv_valor),
+                uit_valor=float(result.metadata.uit_valor),
+                cobra=result.metadata.cobra,
+            ),
+        )

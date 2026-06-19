@@ -1,0 +1,811 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-plus-jakarta-sans);
+  --font-heading: var(--font-plus-jakarta-sans);
+  --font-mono: var(--font-geist-mono);
+  --default-font-family: var(--font-sans);
+  --default-font-feature-settings: "rlig" 1, "calt" 1;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* === PALETA CIP — ROJO VINO, DORADO/MOSTAZA, BLANCO === */
+  /* Background — blanco puro */
+  --background: oklch(0.985 0 0);
+  /* Foreground — marrón oscuro para texto */
+  --foreground: oklch(0.28 0.03 45);
+
+  /* Card — blanco puro para contraste */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.28 0.03 45);
+
+  /* Popover */
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.28 0.03 45);
+
+  /* Primary — rojo vino CIP (color principal) */
+  --primary: oklch(0.42 0.16 22);
+  --primary-foreground: oklch(0.99 0 0);
+
+  /* Secondary — gris neutro suave (acento secundario) */
+  --secondary: oklch(0.93 0.01 45);
+  --secondary-foreground: oklch(0.28 0.03 45);
+
+  /* Muted — gris muy claro apagado */
+  --muted: oklch(0.95 0.005 45);
+  --muted-foreground: oklch(0.5 0.02 45);
+
+  /* Accent — dorado/mostaza CIP para highlights */
+  --accent: oklch(0.78 0.14 85);
+  --accent-foreground: oklch(0.28 0.03 45);
+
+  /* Destructive — rojo alertas */
+  --destructive: oklch(0.55 0.2 25);
+
+  /* Border — gris suave */
+  --border: oklch(0.9 0.01 45);
+  --input: oklch(0.9 0.01 45);
+  /* Ring — rojo vino primary para focus */
+  --ring: oklch(0.42 0.16 22);
+
+  /* Charts — paleta CIP */
+  --chart-1: oklch(0.42 0.16 22);
+  --chart-2: oklch(0.78 0.14 85);
+  --chart-3: oklch(0.55 0.12 40);
+  --chart-4: oklch(0.68 0.1 85);
+  --chart-5: oklch(0.6 0.08 25);
+
+  /* Radius base */
+  --radius: 0.625rem;
+
+  /* === LOGIN ANIMATED GRADIENT — Deep Wine to Rich Gold === */
+  --login-gradient-start: oklch(0.28 0.16 22);
+  --login-gradient-mid: oklch(0.38 0.18 28);
+  --login-gradient-end: oklch(0.52 0.16 42);
+  --login-gradient-accent: oklch(0.68 0.18 72);
+  --login-gradient-warm: oklch(0.75 0.15 80);
+
+  /* Sidebar — marrón oscuro para sidebar */
+  --sidebar: oklch(0.97 0.005 45);
+  --sidebar-foreground: oklch(0.28 0.03 45);
+  --sidebar-primary: oklch(0.42 0.16 22);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.93 0.01 45);
+  --sidebar-accent-foreground: oklch(0.28 0.03 45);
+  --sidebar-border: oklch(0.9 0.01 45);
+  --sidebar-ring: oklch(0.42 0.16 22);
+}
+
+.dark {
+  /* === DARK MODE CIP === */
+  --background: oklch(0.15 0.02 45);
+  --foreground: oklch(0.92 0.01 45);
+  --card: oklch(0.2 0.02 45);
+  --card-foreground: oklch(0.92 0.01 45);
+  --popover: oklch(0.2 0.02 45);
+  --popover-foreground: oklch(0.92 0.01 45);
+  --primary: oklch(0.55 0.16 22);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.35 0.06 45);
+  --secondary-foreground: oklch(0.92 0.01 45);
+  --muted: oklch(0.28 0.02 45);
+  --muted-foreground: oklch(0.65 0.02 45);
+  --accent: oklch(0.72 0.12 85);
+  --accent-foreground: oklch(0.15 0.02 45);
+  --destructive: oklch(0.55 0.2 25);
+  --border: oklch(0.3 0.02 45);
+  --input: oklch(0.3 0.02 45);
+  --ring: oklch(0.55 0.16 22);
+  --chart-1: oklch(0.55 0.16 22);
+  --chart-2: oklch(0.72 0.12 85);
+  --chart-3: oklch(0.5 0.1 45);
+  --chart-4: oklch(0.6 0.08 85);
+  --chart-5: oklch(0.55 0.12 25);
+  --sidebar: oklch(0.18 0.02 45);
+  --sidebar-foreground: oklch(0.92 0.01 45);
+  --sidebar-primary: oklch(0.55 0.16 22);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.35 0.06 45);
+  --sidebar-accent-foreground: oklch(0.15 0.02 45);
+  --sidebar-border: oklch(0.3 0.02 45);
+  --sidebar-ring: oklch(0.55 0.16 22);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+/* Selection styling */
+::selection {
+  background-color: oklch(0.42 0.16 22 / 0.2);
+  color: oklch(0.25 0.02 45);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: oklch(0.92 0.01 45);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.7 0.03 45);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.5 0.04 45);
+}
+
+/* Focus visible styles */
+:focus-visible {
+  outline: 2px solid oklch(0.42 0.16 22);
+  outline-offset: 2px;
+}
+
+/* Smooth transitions for interactive elements */
+a,
+button {
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+/* Utility classes preserved from current */
+@utility grid-auto-fill-sm {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+}
+
+@utility grid-auto-fill-md {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+}
+
+@utility flex-wrap-gap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+@utility page-section {
+  padding: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .page-section {
+    padding: 2rem;
+  }
+}
+
+/* Auth shell utility classes */
+@utility auth-surface {
+  @apply bg-background;
+}
+
+@utility auth-brand-dark {
+  @apply text-foreground;
+}
+
+@utility auth-brand-mid {
+  @apply text-muted-foreground;
+}
+
+@utility auth-brand-muted {
+  @apply text-muted-foreground/60;
+}
+
+@utility auth-border-subtle {
+  @apply border-border;
+}
+
+@utility btn-auth-primary {
+  @apply h-14 rounded-3xl bg-foreground hover:bg-black text-background font-bold text-sm uppercase tracking-widest shadow-xl shadow-foreground/10 active:scale-[0.98] transition-all disabled:opacity-70;
+}
+
+@utility login-brand-panel {
+  background-image:
+    radial-gradient(
+      circle at 20% 20%,
+      color-mix(in oklch, var(--accent) 16%, transparent)
+    ),
+    radial-gradient(
+      circle at 78% 12%,
+      color-mix(in oklch, var(--primary) 34%, transparent)
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--primary) 20%, black),
+      color-mix(in oklch, var(--primary) 28%, black) 48%,
+      color-mix(in oklch, var(--primary) 18%, black)
+    );
+}
+
+@utility login-form-panel {
+  background-image:
+    radial-gradient(
+      circle at 90% 8%,
+      color-mix(in oklch, var(--accent) 18%, transparent)
+    ),
+    radial-gradient(
+      circle at 8% 92%,
+      color-mix(in oklch, var(--primary) 10%, transparent)
+    ), var(--background);
+}
+
+@utility login-orb-primary {
+  background: oklch(0.88 0.15 100 / 0.16);
+}
+
+@utility login-orb-secondary {
+  background: oklch(0.55 0.12 25 / 0.24);
+}
+
+@utility login-icon-tile {
+  @apply flex items-center justify-center border border-primary-foreground/15 bg-primary-foreground/5 text-primary-foreground/80 shadow-2xl shadow-primary/20;
+}
+
+@utility login-accent-line {
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+
+/* === LOGIN ANIMATED BACKGROUND — Deep Wine with Pulsing Golden Orbs === */
+@keyframes login-orb-1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translate(12vw, -8vh) scale(1.2);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate(6vw, 4vh) scale(1.05);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translate(-4vw, -6vh) scale(1.15);
+    opacity: 0.5;
+  }
+}
+
+@keyframes login-orb-2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.25;
+  }
+  25% {
+    transform: translate(-10vw, 6vh) scale(0.9);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate(8vw, -10vh) scale(1.18);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translate(-2vw, 8vh) scale(1.1);
+    opacity: 0.35;
+  }
+}
+
+@utility login-animated-bg {
+  background: radial-gradient(
+    ellipse 90% 80% at 50% 40%,
+    var(--login-gradient-mid) 0%,
+    var(--login-gradient-start) 60%,
+    var(--login-gradient-start) 100%
+  );
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* Golden light orb 1 — top right area */
+.login-animated-bg::before {
+  content: "";
+  position: absolute;
+  top: -15%;
+  right: -10%;
+  width: 60vw;
+  height: 60vw;
+  max-width: 800px;
+  max-height: 800px;
+  background: radial-gradient(
+    circle at center,
+    var(--login-gradient-warm) 0%,
+    var(--login-gradient-accent) 25%,
+    transparent 70%
+  );
+  filter: blur(60px);
+  animation: login-orb-1 18s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Golden light orb 2 — bottom left area */
+.login-animated-bg::after {
+  content: "";
+  position: absolute;
+  bottom: -20%;
+  left: -15%;
+  width: 55vw;
+  height: 55vw;
+  max-width: 700px;
+  max-height: 700px;
+  background: radial-gradient(
+    circle at center,
+    var(--login-gradient-accent) 0%,
+    var(--login-gradient-end) 30%,
+    transparent 65%
+  );
+  filter: blur(80px);
+  animation: login-orb-2 22s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Reduced motion support for login background */
+@media (prefers-reduced-motion: reduce) {
+  .login-animated-bg,
+  .login-animated-bg::before,
+  .login-animated-bg::after {
+    animation: none;
+  }
+  .login-animated-bg::before,
+  .login-animated-bg::after {
+    opacity: 0.3;
+    transform: none;
+  }
+}
+
+@utility login-card-glow {
+  box-shadow:
+    0 28px 80px oklch(0.25 0.02 45 / 0.12),
+    inset 0 1px 0 oklch(1 0 0 / 0.72);
+}
+
+@keyframes cip-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--cip-rotate, 0deg));
+  }
+  50% {
+    transform: translate3d(0, -0.75rem, 0) rotate(var(--cip-rotate, 0deg));
+  }
+}
+
+@utility animate-cip-float {
+  animation: cip-float 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-cip-float {
+    animation: none;
+  }
+}
+
+/* === LOGIN UI — CAMPESTRE DEPTH & MOTION === */
+
+/* Brand panel gradient base */
+@utility login-brand-gradient {
+  background: linear-gradient(
+    135deg,
+    oklch(0.42 0.16 22) 0%,
+    oklch(0.38 0.14 22) 100%
+  );
+}
+
+/* Ambient glow tokens */
+@utility glow-brand-soft {
+  box-shadow: 0 0 80px oklch(0.42 0.16 22 / 0.15);
+}
+
+@utility glow-brand-accent {
+  box-shadow: 0 0 40px oklch(0.78 0.14 85 / 0.2);
+}
+
+/* Form card depth layers */
+@utility card-login {
+  background: oklch(1 0 0 / 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid oklch(0.88 0.02 45 / 0.6);
+  box-shadow:
+    0 4px 6px -1px oklch(0.25 0.02 45 / 0.05),
+    0 10px 20px -2px oklch(0.25 0.02 45 / 0.08);
+}
+
+/* Floating label / tab animations */
+@utility tab-pill-active {
+  @apply bg-background text-foreground shadow-md scale-[1.02];
+}
+
+@utility tab-pill-inactive {
+  @apply text-muted-foreground hover:text-foreground;
+}
+
+/* Brand decorative icons — muted opacity utility */
+@utility brand-icon-grid {
+  opacity: 0.08;
+}
+
+/* Accent line divider */
+@utility divider-campestre {
+  @apply h-px flex-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent;
+}
+
+/* Micro-interaction: button press */
+@utility btn-press-effect {
+  @apply active:scale-[0.98] transition-transform duration-150;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce {
+    animation: none;
+  }
+}
+
+/* === DASHBOARD SIDEBAR TOKENS === */
+
+/* Active nav indicator — left border accent */
+.sidebar-active-indicator {
+  @apply relative;
+}
+.sidebar-active-indicator::before {
+  content: "";
+  @apply absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full transition-all;
+}
+
+/* Dashboard surface — subtle card-like background */
+@utility dashboard-surface {
+  @apply bg-background rounded-xl border border-border shadow-sm;
+}
+
+/* CIP Brand Color Utilities — Wine Red (primary brand) */
+@utility text-brand-dark {
+  color: oklch(0.28 0.03 45);
+}
+@utility bg-brand-dark {
+  background-color: oklch(0.28 0.03 45);
+}
+@utility border-brand-dark {
+  border-color: oklch(0.28 0.03 45);
+}
+
+/* Dashboard top bar */
+@utility dashboard-topbar {
+  @apply flex h-16 items-center gap-3 border-b border-border bg-background px-4 lg:px-6;
+}
+
+/* === CAMPESTRE BACKGROUND ANIMATIONS === */
+
+/* Drifting clouds — move from left off-screen to right off-screen using translateX only */
+@keyframes cloud-drift-slow {
+  0% {
+    transform: translateX(-30vw);
+  }
+  100% {
+    transform: translateX(110vw);
+  }
+}
+
+@keyframes cloud-drift-medium {
+  0% {
+    transform: translateX(-35vw);
+  }
+  100% {
+    transform: translateX(110vw);
+  }
+}
+
+@keyframes cloud-drift-fast {
+  0% {
+    transform: translateX(-25vw);
+  }
+  100% {
+    transform: translateX(110vw);
+  }
+}
+
+@keyframes cloud-drift-slower {
+  0% {
+    transform: translateX(-40vw);
+  }
+  100% {
+    transform: translateX(110vw);
+  }
+}
+
+@utility animate-cloud-drift-slow {
+  animation: cloud-drift-slow 90s linear infinite;
+}
+
+@utility animate-cloud-drift-medium {
+  animation: cloud-drift-medium 70s linear infinite;
+}
+
+@utility animate-cloud-drift-fast {
+  animation: cloud-drift-fast 55s linear infinite;
+}
+
+@utility animate-cloud-drift-slower {
+  animation: cloud-drift-slower 120s linear infinite;
+}
+
+/* Sun ray pulse — soft glowing patches that breathe */
+@keyframes sun-ray-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.15);
+  }
+}
+
+@utility animate-sun-ray {
+  animation: sun-ray-pulse 8s ease-in-out infinite;
+}
+
+/* Floating leaf fall — gentle descent with rotation and lateral sway */
+@keyframes leaf-fall {
+  0% {
+    transform: translateY(-10vh) rotate(0deg) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.7;
+  }
+  90% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(110vh) rotate(720deg) translateX(40px);
+    opacity: 0;
+  }
+}
+
+@utility animate-leaf-fall {
+  animation: leaf-fall 16s linear infinite;
+}
+
+/* Twinkling fireflies — opacity pulse + subtle float + glow scale */
+@keyframes firefly-glow {
+  0%, 100% {
+    opacity: 0.2;
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(3px, -4px) scale(1.6);
+  }
+  50% {
+    opacity: 0.4;
+    transform: translate(-2px, 3px) scale(1.2);
+  }
+  75% {
+    opacity: 0.9;
+    transform: translate(2px, -2px) scale(1.4);
+  }
+}
+
+@utility animate-firefly-glow {
+  animation: firefly-glow 4s ease-in-out infinite;
+}
+
+/* Slower cloud drift for very far away background clouds */
+@keyframes cloud-drift-very-slow {
+  0% {
+    transform: translateX(-20vw);
+  }
+  100% {
+    transform: translateX(110vw);
+  }
+}
+
+@keyframes cloud-drift-ultra-slow {
+  0% {
+    transform: translateX(-25vw);
+  }
+  100% {
+    transform: translateX(110vw);
+  }
+}
+
+@utility animate-cloud-drift-very-slow {
+  animation: cloud-drift-very-slow 240s linear infinite;
+}
+
+@utility animate-cloud-drift-ultra-slow {
+  animation: cloud-drift-ultra-slow 300s linear infinite;
+}
+
+/* === CAMPESTRE FLOATING ELEMENTS — big, smooth, organic, alive === */
+
+/* Smooth float — grows BIG, drifts, rotates, fades smoothly */
+/* Works from ANY position on screen */
+@keyframes float {
+  0% {
+    transform: translate(0, 0) scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.5;
+  }
+  15% {
+    transform: translate(20px, -30px) scale(1.2) rotate(45deg);
+    opacity: 1;
+  }
+  35% {
+    transform: translate(-15px, -60px) scale(1.4) rotate(120deg);
+    opacity: 0.9;
+  }
+  55% {
+    transform: translate(25px, -100px) scale(1.3) rotate(200deg);
+    opacity: 0.7;
+  }
+  75% {
+    transform: translate(-10px, -140px) scale(1) rotate(280deg);
+    opacity: 0.4;
+  }
+  90% {
+    transform: translate(15px, -170px) scale(0.5) rotate(330deg);
+    opacity: 0.15;
+  }
+  100% {
+    transform: translate(0, -200px) scale(0) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Slow float — gentle, big, dreamy */
+@keyframes float-slow {
+  0% {
+    transform: translate(0, 0) scale(0.3) rotate(0deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.4;
+  }
+  20% {
+    transform: translate(30px, -40px) scale(1.1) rotate(25deg);
+    opacity: 0.8;
+  }
+  45% {
+    transform: translate(-20px, -90px) scale(1.2) rotate(80deg);
+    opacity: 0.7;
+  }
+  70% {
+    transform: translate(35px, -150px) scale(1.1) rotate(140deg);
+    opacity: 0.5;
+  }
+  85% {
+    transform: translate(-15px, -200px) scale(0.7) rotate(180deg);
+    opacity: 0.2;
+  }
+  100% {
+    transform: translate(0, -250px) scale(0.2) rotate(220deg);
+    opacity: 0;
+  }
+}
+
+/* Fast float — energetic, quick, big */
+@keyframes float-fast {
+  0% {
+    transform: translate(0, 0) scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  18% {
+    transform: translate(-25px, -35px) scale(1.3) rotate(90deg);
+    opacity: 0.9;
+  }
+  40% {
+    transform: translate(20px, -70px) scale(1.2) rotate(200deg);
+    opacity: 0.75;
+  }
+  65% {
+    transform: translate(-15px, -110px) scale(1) rotate(320deg);
+    opacity: 0.5;
+  }
+  85% {
+    transform: translate(10px, -150px) scale(0.6) rotate(420deg);
+    opacity: 0.2;
+  }
+  100% {
+    transform: translate(0, -180px) scale(0) rotate(480deg);
+    opacity: 0;
+  }
+}
+
+@utility animate-float {
+  animation: float 12s ease-in-out infinite;
+}
+
+@utility animate-float-slow {
+  animation: float-slow 22s ease-in-out infinite;
+}
+
+@utility animate-float-fast {
+  animation: float-fast 8s ease-in-out infinite;
+}
+
+/* Respect prefers-reduced-motion for background animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-cloud-drift-slow,
+  .animate-cloud-drift-medium,
+  .animate-cloud-drift-fast,
+  .animate-cloud-drift-slower,
+  .animate-cloud-drift-very-slow,
+  .animate-cloud-drift-ultra-slow,
+  .animate-sun-ray,
+  .animate-leaf-fall,
+  .animate-firefly-glow,
+  .animate-ambient-float,
+  .animate-ambient-float-slow,
+  .animate-ambient-float-fast,
+  .animate-ambient-glow-rise,
+  .animate-float,
+  .animate-float-slow,
+  .animate-float-fast {
+    animation: none;
+  }
+
+  .animate-firefly-glow {
+    opacity: 0.15;
+  }
+}

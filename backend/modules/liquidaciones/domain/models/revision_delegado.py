@@ -16,29 +16,30 @@ class RevisionDelegado(BaseModel):
 
     history = HistoricalRecords()
 
-    revision = models.ForeignKey(
-        "Revision",
+    liquidacion = models.ForeignKey(
+        "LiquidacionGeneral",
         on_delete=models.CASCADE,
-        related_name="revision_delegados",
+        related_name="liquidacion_delegados",
         verbose_name="Revisión",
     )
+    
     delegado = models.ForeignKey(
         "Delegado",
         on_delete=models.PROTECT,
-        related_name="revision_delegados",
+        related_name="liquidacion_delegados",
         verbose_name="Delegado",
     )
 
     class Meta:
         verbose_name = "Delegado de Revisión"
-        verbose_name_plural = "Delegados de Revisiones"
-        ordering = ["revision", "delegado"]
+        verbose_name_plural = "Delegados de liquidaciones"
+        ordering = ["liquidacion", "delegado"]
         constraints = [
             models.UniqueConstraint(
-                fields=["revision", "delegado"],
-                name="unique_revision_delegado",
+                fields=["liquidacion", "delegado"],
+                name="unique_liquidacion_delegado",
             ),
         ]
 
     def __str__(self):
-        return f"{self.delegado} @ Revisión {self.revision.numero}"
+        return f"{self.delegado} @ Revisión {self.liquidacion.numero_revision}"

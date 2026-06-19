@@ -6,10 +6,9 @@ from django.db import models
 from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
-from ..constants import DelegadoStatus
+from ..constants import DelegadoStatus, TipoDelegado
 from ..validators import validate_distrito
 from utils.ubigeo_schema import get_district_choices
-
 
 class Delegado(BaseModel):
     """
@@ -25,15 +24,16 @@ class Delegado(BaseModel):
         related_name="delegado_liquidacion",
         verbose_name="Perfil de Ingeniero",
     )
-    municipalidad = models.ForeignKey(
-        "entidades.Municipalidad",
-        on_delete=models.PROTECT,
-        related_name="delegados",
-        verbose_name="Municipalidad",
+    
+    tipo=models.CharField(
+        max_length=20,
+        choices=TipoDelegado.choices,
+        default=TipoDelegado.TITULAR,
+        verbose_name="Tipo de Delegado",
     )
     
     especialidad = models.ForeignKey(
-        "especialidades.Especialidad",
+        "Especialidad",
         on_delete=models.PROTECT,
         related_name="delegados",
         verbose_name="Especialidad",
@@ -41,6 +41,7 @@ class Delegado(BaseModel):
     
     banco = models.ForeignKey(
         "entidades.Banco",
+        null=True,
         on_delete=models.PROTECT,
         related_name="delegados",
         verbose_name="Banco",
@@ -61,7 +62,7 @@ class Delegado(BaseModel):
         return f"{self.perfil_ingeniero.nombre_completo} - {self.especialidad}"
     
 
-class DistritoDelegado(BaseModel):
+class MunicipalidadDelegado(BaseModel):
     """
     Modelo para asignar distritos específicos a un delegado.
     Un delegado puede tener múltiples distritos asignados.
@@ -75,22 +76,22 @@ class DistritoDelegado(BaseModel):
         related_name="distritos_asignados",
         verbose_name="Delegado",
     )
-    distrito = models.CharField(
-        max_length=100,
-        validators=[validate_distrito],
-        choices=get_district_choices(),
-        verbose_name="Distrito Asignado",
+    municipalidad = models.ForeignKey(
+        "entidades.Municipalidad",
+        on_delete=models.PROTECT,
+        related_name="delegados",
+        verbose_name="Municipalidad",
     )
     activo = models.BooleanField(default=True, verbose_name="Activo")
 
     class Meta:
-        verbose_name = "Distrito del Delegado"
-        verbose_name_plural = "Distritos de los Delegados"
-        unique_together = ("delegado", "distrito")
-        ordering = ["delegado__perfil_ingeniero__apellido_paterno", "delegado__perfil_ingeniero__apellido_materno", "distrito"]
+        verbose_name = "Municipalidad del Delegado"
+        verbose_name_plural = "Municipalidades de los Delegados"
+        unique_together = ("delegado", "municipalidad")
+        ordering = ["delegado__perfil_ingeniero__apellido_paterno", "delegado__perfil_ingeniero__apellido_materno", "municipalidad__nombre"]
 
     def __str__(self):
-        return f"{self.delegado.perfil_ingeniero.nombre_completo} - {self.distrito}"
+        return f"{self.delegado.perfil_ingeniero.nombre_completo} - {self.municipalidad.nombre}"
     
 
 class PeriodoDelegado(BaseModel):
@@ -107,14 +108,13 @@ class PeriodoDelegado(BaseModel):
         related_name="periodos_asignados",
         verbose_name="Delegado",
     )
-    inicio_periodo = models.DateField(verbose_name="Inicio del Periodo")
-    fin_periodo = models.DateField(verbose_name="Fin del Periodo")
+    periodo_inicio = models.DateField(verbose_name="Inicio del Periodo")
+    periodo_fin = models.DateField(verbose_name="Fin del Periodo")
 
     class Meta:
         verbose_name = "Periodo del Delegado"
         verbose_name_plural = "Periodos de los Delegados"
-        unique_together = ("delegado", "periodo")
-        ordering = ["delegado__perfil_ingeniero__apellido_paterno", "delegado__perfil_ingeniero__apellido_materno", "periodo"]
+        ordering = ["delegado__perfil_ingeniero__apellido_paterno", "periodo_inicio"]
 
     def __str__(self):
-        return f"{self.delegado.perfil_ingeniero.nombre_completo} - {self.periodo}"
+        return f"{self.delegado.perfil_ingeniero.nombre_completo} - {self.periodo_inicio} a {self.periodo_fin}"

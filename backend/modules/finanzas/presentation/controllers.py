@@ -1,1 +1,1 @@
-"""Presentation controllers — HTTP handlers (placeholder)."""
+"""Controladores de presentación — manejadores HTTP (pendiente)."""

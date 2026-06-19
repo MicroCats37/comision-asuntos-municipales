@@ -1,1 +1,1 @@
-"""Domain exceptions — business rule violations (placeholder)."""
+"""Excepciones de dominio — violaciones de reglas de negocio (pendiente)."""

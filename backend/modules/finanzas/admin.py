@@ -1,1 +1,1 @@
-"""Admin placeholder — register Django admin classes here when needed."""
+"""Admin — registrar clases Django admin aquí cuando sea necesario."""

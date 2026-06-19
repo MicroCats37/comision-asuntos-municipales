@@ -1,1 +1,1 @@
-"""Infrastructure services — external integrations (placeholder)."""
+"""Servicios de infraestructura — integraciones externas (pendiente)."""

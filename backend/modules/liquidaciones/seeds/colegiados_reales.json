@@ -1,0 +1,1207 @@
+{
+  "version": "1.0",
+  "source": "Endpoint CIP materializado desde load_delegados_reales",
+  "count": 60,
+  "colegiados": [
+    {
+      "cip": "006502",
+      "dni": "06650249",
+      "nombres": "JORGE ALBERTO",
+      "apellido_paterno": "ALBINAGORTA",
+      "apellido_materno": "JARAMILLO",
+      "fecha_nacimiento": "1944-07-24",
+      "genero": "M",
+      "correo_personal": "jajconstruccionesysalud@gmail.com",
+      "correo_institucional": "jalbinagorta@ciplima.org.pe",
+      "direccion": "EDIF.LAS BEGONIAS DPTO.504   RESD.SAN FELIPE",
+      "ubigeo": "150113",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "008097",
+      "dni": "08765875",
+      "nombres": "JORGE ANDRES",
+      "apellido_paterno": "ROMERO",
+      "apellido_materno": "SOTELO",
+      "fecha_nacimiento": "1944-11-10",
+      "genero": "M",
+      "correo_personal": "jars1011@hotmail.com",
+      "correo_institucional": "jorge.romeros@ciplima.org.pe",
+      "direccion": "AV.LA ENCALADA 1615-OF.406;MONTERR.SUR",
+      "ubigeo": "150140",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "008311",
+      "dni": "09136740",
+      "nombres": "JOSE UBALDO",
+      "apellido_paterno": "RAMOS",
+      "apellido_materno": "SAAVEDRA",
+      "fecha_nacimiento": "1942-11-27",
+      "genero": "M",
+      "correo_personal": "jubaldoramos@yahoo.es",
+      "correo_institucional": "jose.ramossa@ciplima.org.pe",
+      "direccion": "CALLE  5 MZ    E LOTE  11",
+      "ubigeo": "150140",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "008833",
+      "dni": "07577555",
+      "nombres": "ISIDRO ROSENDO",
+      "apellido_paterno": "ESPINOZA",
+      "apellido_materno": "GARCIA",
+      "fecha_nacimiento": "1947-01-02",
+      "genero": "M",
+      "correo_personal": "irgespinoza@yahoo.com",
+      "correo_institucional": null,
+      "direccion": "JR.PERCY GIBSON 243",
+      "ubigeo": "150116",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "012050",
+      "dni": "08809310",
+      "nombres": "RICARDO EMILIANO",
+      "apellido_paterno": "ICAZA",
+      "apellido_materno": "ANDRADE",
+      "fecha_nacimiento": "1947-11-02",
+      "genero": "M",
+      "correo_personal": "ricardo.icaza@gmail.com",
+      "correo_institucional": "ricardo.icazaa@ciplima.org.pe",
+      "direccion": "CAMINOS DEL INCA 1821-102",
+      "ubigeo": "150140",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "013213",
+      "dni": "07305928",
+      "nombres": "ARTURO",
+      "apellido_paterno": "AQUINO",
+      "apellido_materno": "MELENDEZ",
+      "fecha_nacimiento": "1947-08-25",
+      "genero": "M",
+      "correo_personal": "aaquinomel@yahoo.es",
+      "correo_institucional": null,
+      "direccion": "M.ARRISUENO 669;STA.CATALINA",
+      "ubigeo": "150115",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "014386",
+      "dni": "06141435",
+      "nombres": "MANUEL EXALTACION",
+      "apellido_paterno": "CARDENAS",
+      "apellido_materno": "ASPAJO",
+      "fecha_nacimiento": "1944-07-11",
+      "genero": "M",
+      "correo_personal": "ingmanuelcardenasaspajo@yahoo.com",
+      "correo_institucional": null,
+      "direccion": "PSJE. LOS PINOS 190 OF. 805",
+      "ubigeo": "150109",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "016748",
+      "dni": "08217547",
+      "nombres": "JESUS MANUEL",
+      "apellido_paterno": "PRADO",
+      "apellido_materno": "MEZA",
+      "fecha_nacimiento": "1951-06-16",
+      "genero": "M",
+      "correo_personal": "ing.mprado@gmail.com",
+      "correo_institucional": "jesus.pradom@ciplima.org.pe",
+      "direccion": "CALLE 27 NO. 157 URB. CORPAC",
+      "ubigeo": "150131",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "016932",
+      "dni": "06758997",
+      "nombres": "YONEL CLEVER",
+      "apellido_paterno": "ESTEBAN",
+      "apellido_materno": "PALOMINO",
+      "fecha_nacimiento": "1950-04-13",
+      "genero": "M",
+      "correo_personal": "yonelesteban@yahoo.com",
+      "correo_institucional": "yonel.estebanp@ciplima.org.pe",
+      "direccion": "MARCONA 140-A;TAMBO DE MONTERR.",
+      "ubigeo": "150140",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "018356",
+      "dni": "10213043",
+      "nombres": "LUIS ENRIQUE",
+      "apellido_paterno": "LAZO",
+      "apellido_materno": "MAYORCA",
+      "fecha_nacimiento": "1943-01-07",
+      "genero": "M",
+      "correo_personal": "afrikakorpus@gmail.com",
+      "correo_institucional": "luis.lazoma@ciplima.org.pe",
+      "direccion": "JAVIER HERAUD 285",
+      "ubigeo": "150106",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "022414",
+      "dni": "08194116",
+      "nombres": "MARTHA ELENA",
+      "apellido_paterno": "RODRIGUEZ",
+      "apellido_materno": "MONTANI",
+      "fecha_nacimiento": "1957-03-07",
+      "genero": "F",
+      "correo_personal": "mrodriguezm@ciplima.org.pe",
+      "correo_institucional": "mrodriguezm@ciplima.org.pe",
+      "direccion": "AV. VELASCO ASTETE 362",
+      "ubigeo": "150130",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "023593",
+      "dni": "07713294",
+      "nombres": "JORGE FRANCISCO",
+      "apellido_paterno": "CORNEJO",
+      "apellido_materno": "ALVARADO",
+      "fecha_nacimiento": "1942-11-01",
+      "genero": "M",
+      "correo_personal": "jfcornejoa@yahoo.com",
+      "correo_institucional": null,
+      "direccion": "JR. LIBERTAD  1127-1129",
+      "ubigeo": "150120",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "024657",
+      "dni": "06219711",
+      "nombres": "BEDER FELIPE",
+      "apellido_paterno": "ULLOA",
+      "apellido_materno": "LLERENA",
+      "fecha_nacimiento": "1950-06-08",
+      "genero": "M",
+      "correo_personal": "beder_ulloa@hotmail.com",
+      "correo_institucional": "beder.ulloal@ciplima.org.pe",
+      "direccion": "JR.LAS BELLOTITAS 1228;LAS VIOLETAS",
+      "ubigeo": "150132",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "028365",
+      "dni": "07189499",
+      "nombres": "JULIO",
+      "apellido_paterno": "TAY WO CHONG",
+      "apellido_materno": "TANG",
+      "fecha_nacimiento": "1949-06-08",
+      "genero": "M",
+      "correo_personal": "juliotaywo@yahoo.es",
+      "correo_institucional": "julio.taywochongt@ciplima.org.pe",
+      "direccion": "HUASCAR 1371 - 302",
+      "ubigeo": "150113",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "031816",
+      "dni": "25819697",
+      "nombres": "LUIS GUILLERMO",
+      "apellido_paterno": "LOVERA",
+      "apellido_materno": "MARTINEZ",
+      "fecha_nacimiento": "1962-05-19",
+      "genero": "M",
+      "correo_personal": "luisloveram@gmail.com",
+      "correo_institucional": "luis.loveram@ciplima.org.pe",
+      "direccion": "PSJE.E.SIMONETTI MZ.U, LT.7,SECT.II;A.M.D",
+      "ubigeo": "150114",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "035106",
+      "dni": "07547745",
+      "nombres": "GUSTAVO GABRIEL",
+      "apellido_paterno": "JIMENEZ",
+      "apellido_materno": "PEÑA",
+      "fecha_nacimiento": "1957-10-24",
+      "genero": "M",
+      "correo_personal": "gustavogabriel_jimenezpena@yahoo.es",
+      "correo_institucional": "gustavo.jimenezp@ciplima.org.pe",
+      "direccion": "AV.MONTE DE OLIVOS MZ.H4 LT.8;PROL.BENAVIDES",
+      "ubigeo": "150136",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "036992",
+      "dni": "08467415",
+      "nombres": "RONALD ERIK",
+      "apellido_paterno": "CORPUS",
+      "apellido_materno": "VERGARA",
+      "fecha_nacimiento": "1961-10-16",
+      "genero": "M",
+      "correo_personal": "ronaldcorpus@msn.com",
+      "correo_institucional": "ronald.corpusv@ciplima.org.pe",
+      "direccion": "AV. DE LOS PRECURSORES 280 DPTO. 402 - URB. LAS LE",
+      "ubigeo": "150131",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "038284",
+      "dni": "07639182",
+      "nombres": "ERNESTO ABELARDO",
+      "apellido_paterno": "VIDAL",
+      "apellido_materno": "VALENZUELA",
+      "fecha_nacimiento": "1960-07-13",
+      "genero": "M",
+      "correo_personal": "clbcvidal@gmail.com",
+      "correo_institucional": "ernesto.vidalv@ciplima.org.pe",
+      "direccion": "FCO.MASIAS 2529 DPTO.3A",
+      "ubigeo": "150116",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "042568",
+      "dni": "06223477",
+      "nombres": "TIMOTEO ALEJANDRO",
+      "apellido_paterno": "SIERRA",
+      "apellido_materno": "SERRANO",
+      "fecha_nacimiento": "1955-03-24",
+      "genero": "M",
+      "correo_personal": "alejantimo@gmail.com",
+      "correo_institucional": "timoteo.sierras@ciplima.org.pe",
+      "direccion": "CALLE ZARAGOZA MZ.R, LT.5;LA CAPILLA",
+      "ubigeo": "150114",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "043995",
+      "dni": "08351801",
+      "nombres": "LUIS",
+      "apellido_paterno": "SANCHEZ",
+      "apellido_materno": "SANTUR",
+      "fecha_nacimiento": "1956-09-11",
+      "genero": "M",
+      "correo_personal": "luisantur@yahoo.es",
+      "correo_institucional": null,
+      "direccion": "JR. IGNACIO SEMINARIO # 1098.",
+      "ubigeo": "150117",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "053133",
+      "dni": "07358522",
+      "nombres": "GUSTAVO ADOLFO",
+      "apellido_paterno": "HIDALGO",
+      "apellido_materno": "HUERTAS",
+      "fecha_nacimiento": "1966-10-03",
+      "genero": "M",
+      "correo_personal": "g17hidalgo@hotmail.com",
+      "correo_institucional": "ghidalgo@ciplima.org.pe",
+      "direccion": "LOS DIAMANTES 122-A BALCONCILLO",
+      "ubigeo": "150115",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "057599",
+      "dni": "07317946",
+      "nombres": "JOSE ANTONIO",
+      "apellido_paterno": "ARDILES",
+      "apellido_materno": "MARCOS-IBAÑEZ",
+      "fecha_nacimiento": "1961-05-13",
+      "genero": "M",
+      "correo_personal": "proyectos_ardiles@outlook.com",
+      "correo_institucional": "jose.ardilesm@ciplima.org.pe",
+      "direccion": "PROLO.LA MAR  338 DPTO.103",
+      "ubigeo": "150115",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "057822",
+      "dni": "08128468",
+      "nombres": "JOSE RAFAEL",
+      "apellido_paterno": "MENDOZA",
+      "apellido_materno": "GUIDO",
+      "fecha_nacimiento": "1968-10-07",
+      "genero": "M",
+      "correo_personal": "josermg1968@gmail.com",
+      "correo_institucional": "jose.mendozagu@ciplima.org.pe",
+      "direccion": "GRAL. VIDAL  610",
+      "ubigeo": "150140",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "058975",
+      "dni": "06680803",
+      "nombres": "NESTOR RAUL",
+      "apellido_paterno": "CARDENAS",
+      "apellido_materno": "SANCHEZ",
+      "fecha_nacimiento": "1962-05-07",
+      "genero": "M",
+      "correo_personal": "vkningenieros@gmail.com",
+      "correo_institucional": "nestor.cardenass@ciplima.org.pe",
+      "direccion": "JR.CARLOS ARRIETA #1484-206",
+      "ubigeo": "150187",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "059197",
+      "dni": "08113080",
+      "nombres": "OTTO",
+      "apellido_paterno": "BABILONIA",
+      "apellido_materno": "AREVALO",
+      "fecha_nacimiento": "1961-11-21",
+      "genero": "M",
+      "correo_personal": "otbabi@hotmail.com",
+      "correo_institucional": "otto.babiloniaa@ciplima.org.pe",
+      "direccion": "LOS CIBELES  110 INT.45",
+      "ubigeo": "150128",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "060441",
+      "dni": "08603433",
+      "nombres": "SOCIMO TOMAS",
+      "apellido_paterno": "ALBUJAR",
+      "apellido_materno": "ESCUDERO",
+      "fecha_nacimiento": "1965-03-07",
+      "genero": "M",
+      "correo_personal": "salbujar@hotmail.com",
+      "correo_institucional": "socimo.albujare@ciplima.org.pe",
+      "direccion": "MZ.K LOTE 10 URB. TAURIJA",
+      "ubigeo": "000000",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "061947",
+      "dni": "10611851",
+      "nombres": "GIOVANNA",
+      "apellido_paterno": "ALCAYHUAMAN",
+      "apellido_materno": "GUZMAN",
+      "fecha_nacimiento": "1977-11-20",
+      "genero": "F",
+      "correo_personal": "galcayhuaman@gmail.com",
+      "correo_institucional": "giovanna.alcayhuamang@ciplima.org.pe",
+      "direccion": "JR.CURAZAO 220.URB.STA.PATRICIA",
+      "ubigeo": "150114",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "062895",
+      "dni": "10213515",
+      "nombres": "ELIZABETH LUZMILA",
+      "apellido_paterno": "LAZO",
+      "apellido_materno": "MUÑOZ",
+      "fecha_nacimiento": "1974-08-16",
+      "genero": "F",
+      "correo_personal": "elizabeth_lazo@hotmail.com",
+      "correo_institucional": "elizabeth.lazom@ciplima.org.pe",
+      "direccion": "CALE JAVIER HERAUD  285 URB.LUCYANA",
+      "ubigeo": "150106",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "063108",
+      "dni": "09870342",
+      "nombres": "MARCO ANTONIO",
+      "apellido_paterno": "RISCO",
+      "apellido_materno": "ZEVALLOS",
+      "fecha_nacimiento": "1973-03-27",
+      "genero": "M",
+      "correo_personal": "marcoriscope@yahoo.es",
+      "correo_institucional": "marz@ciplima.org.pe",
+      "direccion": "CALLE DIEGO DE AGUERO #390;VALLE HERMOSO",
+      "ubigeo": "150130",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "063112",
+      "dni": "08226186",
+      "nombres": "RAUL BENJAMIN",
+      "apellido_paterno": "VALEGA",
+      "apellido_materno": "ROSAS",
+      "fecha_nacimiento": "1958-08-23",
+      "genero": "M",
+      "correo_personal": "raulvalega2@yahoo.com.ar",
+      "correo_institucional": "raul.valegar@ciplima.org.pe",
+      "direccion": "CALLE LA REPUBLICA  155",
+      "ubigeo": "150131",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "063986",
+      "dni": "00954864",
+      "nombres": "JESSICA LUCILA",
+      "apellido_paterno": "MEJIA",
+      "apellido_materno": "AZAÑERO",
+      "fecha_nacimiento": "1977-02-21",
+      "genero": "F",
+      "correo_personal": "jessicalmejia@yahoo.es",
+      "correo_institucional": "mejia.jl@ciplima.org.pe",
+      "direccion": "CALLE 34 MZ.T1 LT.11;URB.EL PINAR",
+      "ubigeo": "150116",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "063992",
+      "dni": "10135100",
+      "nombres": "YUBAL",
+      "apellido_paterno": "MOREYRA",
+      "apellido_materno": "VIZCARRA",
+      "fecha_nacimiento": "1970-11-18",
+      "genero": "M",
+      "correo_personal": "yubal.moreyra@gmail.com",
+      "correo_institucional": null,
+      "direccion": "JR. LOS JAZMINES 223",
+      "ubigeo": "150140",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "064438",
+      "dni": "09380375",
+      "nombres": "CARLOS IGNACIO",
+      "apellido_paterno": "URIBE",
+      "apellido_materno": "LAYSECA",
+      "fecha_nacimiento": "1968-12-13",
+      "genero": "M",
+      "correo_personal": "curibe_l@yahoo.es",
+      "correo_institucional": "carlos.uribel@ciplima.org.pe",
+      "direccion": "AV.DONA ROSA #160-02;URB.ROSALES",
+      "ubigeo": "150140",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "069692",
+      "dni": "06173534",
+      "nombres": "MIGUEL ANGEL",
+      "apellido_paterno": "ACOSTA",
+      "apellido_materno": "QUINECHE",
+      "fecha_nacimiento": "1959-09-17",
+      "genero": "M",
+      "correo_personal": "maaq_3@yahoo.es",
+      "correo_institucional": "miguel.acostaq@ciplima.org.pe",
+      "direccion": "JR MARGINAL DE LA SELVA 324-328 URB. IGUERETA",
+      "ubigeo": "150140",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "072389",
+      "dni": "07621158",
+      "nombres": "JORGE LUIS",
+      "apellido_paterno": "CASTILLO",
+      "apellido_materno": "CHAVEZ",
+      "fecha_nacimiento": "1970-07-11",
+      "genero": "M",
+      "correo_personal": "jlcastillo_eia@yahoo.es",
+      "correo_institucional": "jorge.castilloc@ciplima.org.pe",
+      "direccion": "AV. OLAYA 128",
+      "ubigeo": "150122",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "072900",
+      "dni": "09823966",
+      "nombres": "VIVIANA PAOLA",
+      "apellido_paterno": "CASTAÑEDA",
+      "apellido_materno": "AMES",
+      "fecha_nacimiento": "1972-12-22",
+      "genero": "F",
+      "correo_personal": "vp_castaneda@cip.org.pe",
+      "correo_institucional": "viviana.castanedaa@ciplima.org.pe",
+      "direccion": "JR. PALLARDELI 210",
+      "ubigeo": "150141",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "073223",
+      "dni": "09875031",
+      "nombres": "JORGE MARIANO",
+      "apellido_paterno": "ROMERO",
+      "apellido_materno": "MEGO",
+      "fecha_nacimiento": "1974-01-26",
+      "genero": "M",
+      "correo_personal": "jorgeromero@jrmingenieros.com",
+      "correo_institucional": "jorge.romerome@ciplima.org.pe",
+      "direccion": "AV. LA JOYA NR.381-383  URB HIGUERETA",
+      "ubigeo": "150130",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "074281",
+      "dni": "10689734",
+      "nombres": "GABRIEL ROBERTO",
+      "apellido_paterno": "LOPEZ",
+      "apellido_materno": "REAL",
+      "fecha_nacimiento": "1978-06-05",
+      "genero": "M",
+      "correo_personal": "glopezreal@gmail.com",
+      "correo_institucional": null,
+      "direccion": "JR. CARAZ 868 URB. MERCURIO",
+      "ubigeo": "150140",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "075157",
+      "dni": "05642803",
+      "nombres": "RICARDO AUGUSTO",
+      "apellido_paterno": "BAUTISTA",
+      "apellido_materno": "CEPEDA",
+      "fecha_nacimiento": "1978-05-01",
+      "genero": "M",
+      "correo_personal": "ricardo.bautista@veahome.com",
+      "correo_institucional": "ricardo.bautistac@ciplima.org.pe",
+      "direccion": "AV. CRISTOBAL DE P¿RALTA 1219  VALLE HERMOZO - MONTERRICO",
+      "ubigeo": "150140",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "077632",
+      "dni": "07417726",
+      "nombres": "JUAN CARLOS",
+      "apellido_paterno": "LOPEZ",
+      "apellido_materno": "DIAZ",
+      "fecha_nacimiento": "1964-06-22",
+      "genero": "M",
+      "correo_personal": "jclopezdiaz@hotmail.com",
+      "correo_institucional": "juan.lopezd@ciplima.org.pe",
+      "direccion": null,
+      "ubigeo": "150136",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "079976",
+      "dni": "08887515",
+      "nombres": "RICARDO ALEX",
+      "apellido_paterno": "TOLEDO",
+      "apellido_materno": "GONZALEZ",
+      "fecha_nacimiento": "1974-03-15",
+      "genero": "M",
+      "correo_personal": "rtoledo@edincosac.com",
+      "correo_institucional": "ricardo.toledog@ciplima.org.pe",
+      "direccion": "AV. GERARDO UNGER 247 110 INGENIERIA",
+      "ubigeo": "150136",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "082702",
+      "dni": "09661269",
+      "nombres": "CARLOS DAVID",
+      "apellido_paterno": "DIAZ",
+      "apellido_materno": "SILVA",
+      "fecha_nacimiento": "1971-11-04",
+      "genero": "M",
+      "correo_personal": "cardisi411@yahoo.es",
+      "correo_institucional": "carlos.diazs@ciplima.org.pe",
+      "direccion": "JR. PALLKA N?1115  URB. MANGOMARCA",
+      "ubigeo": "150132",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "083398",
+      "dni": "10341300",
+      "nombres": "ANDRES ULISES",
+      "apellido_paterno": "ARANDA",
+      "apellido_materno": "TOLEDO",
+      "fecha_nacimiento": "1967-10-14",
+      "genero": "M",
+      "correo_personal": "andres.arandat@ciplima.org.pe",
+      "correo_institucional": "andres.arandat@ciplima.org.pe",
+      "direccion": "AV. BOLIVAR 2150 EDIFICIO 19 DPTO 402   JARDINES DE LA CATOLICA",
+      "ubigeo": "150122",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "085381",
+      "dni": "40393389",
+      "nombres": "LUIS MIGUEL",
+      "apellido_paterno": "NUÑEZ",
+      "apellido_materno": "SALCEDO",
+      "fecha_nacimiento": "1979-10-21",
+      "genero": "M",
+      "correo_personal": "lmiguel96@yahoo.com",
+      "correo_institucional": "luis.nunezs@ciplima.org.pe",
+      "direccion": "CALLE LEONARDO DA VINCI NRO. 242  URB. LA CALERA D",
+      "ubigeo": "150141",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "090713",
+      "dni": "40064338",
+      "nombres": "DOMINGO CHRISTIAN",
+      "apellido_paterno": "RODAS",
+      "apellido_materno": "CONDE",
+      "fecha_nacimiento": "1978-11-08",
+      "genero": "M",
+      "correo_personal": "rodasing@yahoo.es",
+      "correo_institucional": null,
+      "direccion": "PROLOG. IQUITOS NRO. 2208",
+      "ubigeo": "150116",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "091616",
+      "dni": "40250756",
+      "nombres": "JULIO CESAR",
+      "apellido_paterno": "LAZO",
+      "apellido_materno": "MUÑOZ",
+      "fecha_nacimiento": "1978-09-11",
+      "genero": "M",
+      "correo_personal": "laztal.consultores2020@gmail.com",
+      "correo_institucional": "julio.lazom@ciplima.org.pe",
+      "direccion": "AV. LA PAZ 06 - CERCADO",
+      "ubigeo": "150110",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "094591",
+      "dni": "09950896",
+      "nombres": "JOSE RODRIGO",
+      "apellido_paterno": "ALVARADO",
+      "apellido_materno": "BARZOLA",
+      "fecha_nacimiento": "1975-08-13",
+      "genero": "M",
+      "correo_personal": "rodrigoabc@hotmail.com",
+      "correo_institucional": "jose.alvaradob@ciplima.org.pe",
+      "direccion": "JR. ZEPITA NRO. 538 DPTO. 403",
+      "ubigeo": "150101",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "100268",
+      "dni": "41086405",
+      "nombres": "EVER",
+      "apellido_paterno": "DIAZ",
+      "apellido_materno": "MACHUCA",
+      "fecha_nacimiento": "1981-02-25",
+      "genero": "M",
+      "correo_personal": "ediaz.ing@gmail.com",
+      "correo_institucional": "ever.diazm@ciplima.org.pe",
+      "direccion": null,
+      "ubigeo": "150121",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "100721",
+      "dni": "40049997",
+      "nombres": "MANUEL ANGEL",
+      "apellido_paterno": "PERCCA",
+      "apellido_materno": "ALAMO",
+      "fecha_nacimiento": "1978-09-07",
+      "genero": "M",
+      "correo_personal": "perccalamo@yahoo.es",
+      "correo_institucional": "manuel.perccaa@ciplima.org.pe           ",
+      "direccion": "SECTOR 2 GRUPO 14 MZ. G LOTE 22",
+      "ubigeo": "150142",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "102986",
+      "dni": "40958085",
+      "nombres": "ALFREDO MARIANO",
+      "apellido_paterno": "VILLEGAS",
+      "apellido_materno": "ORIHUELA",
+      "fecha_nacimiento": "1981-07-01",
+      "genero": "M",
+      "correo_personal": "avillegasorihuela@gmail.com",
+      "correo_institucional": "alfredo.villegaso@ciplima.org.pe",
+      "direccion": "CALLE LAS GOLONDRINAS 160 URB LOS NOGALES LOS OLIVOS",
+      "ubigeo": "150114",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "111717",
+      "dni": "40723021",
+      "nombres": "JULIO LEONID",
+      "apellido_paterno": "SILVA",
+      "apellido_materno": "MATOS",
+      "fecha_nacimiento": "1980-01-07",
+      "genero": "M",
+      "correo_personal": "silva.jl@pucp.edu.pe",
+      "correo_institucional": "julio.silvam@ciplima.org.pe",
+      "direccion": "JR. DELFIN PUCCIO ULLOA 195",
+      "ubigeo": "150108",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "115447",
+      "dni": "40406274",
+      "nombres": "ROMULO ALBERTO",
+      "apellido_paterno": "PADILLA",
+      "apellido_materno": "MISAJEL",
+      "fecha_nacimiento": "1979-11-10",
+      "genero": "M",
+      "correo_personal": "gerencia.rapm@gmail.com",
+      "correo_institucional": null,
+      "direccion": "PASAJE ISMAEL POZO 165-301",
+      "ubigeo": "150130",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "116177",
+      "dni": "40739128",
+      "nombres": "JOSE LUIS",
+      "apellido_paterno": "SAMANIEGO",
+      "apellido_materno": "QUICHICA",
+      "fecha_nacimiento": "1979-07-24",
+      "genero": "M",
+      "correo_personal": "jlssamaniego@gmail.com",
+      "correo_institucional": null,
+      "direccion": "MZA B LOTE 15 URB. COOPIP",
+      "ubigeo": "150106",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "118318",
+      "dni": "41134413",
+      "nombres": "LUIS ALBERTO",
+      "apellido_paterno": "TARAZONA",
+      "apellido_materno": "ESTRADA",
+      "fecha_nacimiento": "1981-10-27",
+      "genero": "M",
+      "correo_personal": "luistarazonaestrada@yahoo.com",
+      "correo_institucional": "luis.tarazonae@ciplima.org.pe",
+      "direccion": "CALLE JORGE LUIS BORGES MZ A LT 24 URB. STA. LEONOR II ETAPA",
+      "ubigeo": "150108",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "137201",
+      "dni": "45129534",
+      "nombres": "RODOLFO VALENTINO",
+      "apellido_paterno": "GRANADOS",
+      "apellido_materno": "SÁENZ",
+      "fecha_nacimiento": "1988-01-25",
+      "genero": "M",
+      "correo_personal": "rv.granados@gmail.com",
+      "correo_institucional": null,
+      "direccion": "P             ROLONG LOA FAISANES 266 DPTO. 303",
+      "ubigeo": "150113",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "141145",
+      "dni": "40674938",
+      "nombres": "CARMEN JULIA",
+      "apellido_paterno": "DE LA CRUZ",
+      "apellido_materno": "ALIAGA",
+      "fecha_nacimiento": "1980-05-07",
+      "genero": "F",
+      "correo_personal": "kdelacruza@gmail.com",
+      "correo_institucional": null,
+      "direccion": "CALLE LOS PETALOS 144 URB . LOS FICUS",
+      "ubigeo": "150137",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "152605",
+      "dni": "44325172",
+      "nombres": "CESAR GONZALO",
+      "apellido_paterno": "FALCONI",
+      "apellido_materno": "LLANOS",
+      "fecha_nacimiento": "1987-06-23",
+      "genero": "M",
+      "correo_personal": "cgfalconi@pucp.pe",
+      "correo_institucional": null,
+      "direccion": "AV. PARDO 901 DPTO. 702",
+      "ubigeo": "150113",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "163222",
+      "dni": "43175420",
+      "nombres": "DIEGO ARTURO",
+      "apellido_paterno": "VARGAS",
+      "apellido_materno": "MENDIVIL",
+      "fecha_nacimiento": "1985-08-28",
+      "genero": "M",
+      "correo_personal": "dvargas@cip.org.pe",
+      "correo_institucional": "diego.vargasm@ciplima.org.pe",
+      "direccion": "PARQUE SAN BERNARDO 105",
+      "ubigeo": "150140",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "167972",
+      "dni": "45012217",
+      "nombres": "ANDRES OSWALDO",
+      "apellido_paterno": "ROMERO",
+      "apellido_materno": "MEGO",
+      "fecha_nacimiento": "1988-04-26",
+      "genero": "M",
+      "correo_personal": "aromeroingcivil@gmail.com",
+      "correo_institucional": null,
+      "direccion": "JR ARACENA 381 HIGUERETA",
+      "ubigeo": "150140",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "ELECT",
+        "nombre": "INGENIERIA CIVIL",
+        "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+      }
+    },
+    {
+      "cip": "183026",
+      "dni": "43076636",
+      "nombres": "RONEL DAVID",
+      "apellido_paterno": "MATOS",
+      "apellido_materno": "HUAMAN",
+      "fecha_nacimiento": "1985-05-12",
+      "genero": "M",
+      "correo_personal": "rmatos.makoto@gmail.com",
+      "correo_institucional": "ronel.matosh@ciplima.org.pe",
+      "direccion": "NAZCA 367 A 903",
+      "ubigeo": "150113",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+        "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+      }
+    }
+  ]
+}

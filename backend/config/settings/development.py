@@ -7,7 +7,7 @@ from .base import *  # noqa
 DEBUG = True
 
 # development usa hosts locales; base define fallback ["*"]
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', 'testserver']
 
 # ── Base de datos — SQLite para desarrollo local ────────────
 # Para usar PostgreSQL en desarrollo, quitar USE_SQLITE o setearlo a false

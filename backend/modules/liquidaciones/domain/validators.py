@@ -1,4 +1,4 @@
-"""Validators for liquidaciones domain."""
+"""Validadores para el dominio de liquidaciones."""
 
 from django.core.exceptions import ValidationError
 
@@ -7,12 +7,12 @@ from utils.ubigeo_schema import is_valid_district_choice
 
 def validate_distrito(value: str) -> None:
     """
-    Validate that the given value is a valid district choice.
+    Valida que el valor proporcionado sea una elección de distrito válida.
 
-    The value must match the full hierarchical format:
-    "DEPARTAMENTO - PROVINCIA - DISTRITO" (e.g. "LIMA - LIMA - MIRAFLORES").
+    El valor debe coincidir con el formato jerárquico completo:
+    "DEPARTAMENTO - PROVINCIA - DISTRITO" (ej. "LIMA - LIMA - MIRAFLORES").
 
-    Raises ValidationError if invalid.
+    Lanza ValidationError si es inválido.
     """
     if not is_valid_district_choice(value):
         raise ValidationError(

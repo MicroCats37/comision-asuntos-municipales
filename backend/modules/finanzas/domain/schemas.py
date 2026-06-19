@@ -1,1 +1,1 @@
-"""Domain schemas — Pydantic input/output validation objects (placeholder)."""
+"""Esquemas de dominio — objetos de validación Pydantic de entrada/salida (pendiente)."""

@@ -28,7 +28,7 @@ class UsuarioManager(BaseUserManager):
         return self.create_user(dni, password, **extra_fields)
 
 
-# DNI validator: exactly 8 digits
+# Validador de DNI: exactamente 8 dígitos
 dni_validator = RegexValidator(
     regex=r"^\d{8}$",
     message="El DNI debe contener exactamente 8 dígitos numéricos.",
@@ -45,7 +45,13 @@ class Usuario(AbstractBaseUser, PermissionsMixin, DjangoAuthMixin, BaseModel):
     nombres = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre")
     apellidos = models.CharField(max_length=255, blank=True, null=True, verbose_name="Apellido")
     email = models.EmailField(max_length=255, unique=True, verbose_name="Correo electrónico")
-    username = models.CharField(max_length=255, blank=True, null=True, unique=True, verbose_name="Nombre de usuario")  # Opcional — futuro login alternativo
+    username = models.CharField(
+        max_length=8,
+        unique=True,
+        validators=[dni_validator],
+        verbose_name="Nombre de usuario",
+        help_text="DNI como identificador de login.",
+    )
     dni = models.CharField(
         max_length=8,
         unique=True,
@@ -55,12 +61,12 @@ class Usuario(AbstractBaseUser, PermissionsMixin, DjangoAuthMixin, BaseModel):
         help_text="8 dígitos numéricos exactamente.",
     )
 
-    # Inherit from AbstractBaseUser: password, last_login, is_active
-    # Inherit from PermissionsMixin: groups, user_permissions, is_superuser
-    # Inherit from DjangoAuthMixin: is_staff
-    # Inherit from BaseModel: id (UUID), created_at, updated_at
+    # Hereda de AbstractBaseUser: password, last_login, is_active
+    # Hereda de PermissionsMixin: groups, user_permissions, is_superuser
+    # Hereda de DjangoAuthMixin: is_staff
+    # Hereda de BaseModel: id (UUID), created_at, updated_at
 
-    USERNAME_FIELD = "email"
+    USERNAME_FIELD = "username"
     REQUIRED_FIELDS = []
 
     objects = UsuarioManager()

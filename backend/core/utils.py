@@ -4,6 +4,7 @@ import logging
 from typing import Any, Dict
 from ninja.errors import HttpError
 from django.core.files.uploadedfile import UploadedFile
+from django.utils import timezone
 
 # Configuración del logger para rastrear errores de hidratación
 logger = logging.getLogger(__name__)
@@ -108,3 +109,23 @@ def format_errors(exc_errors: list) -> Dict[str, str]:
         flattened[field_name] = msg
 
     return flattened
+
+
+def esta_vigente(periodo_inicio, periodo_fin, fecha=None):
+    """
+    Determina si un registro está vigente según su periodo de inicio y fin.
+
+    Args:
+        periodo_inicio: Fecha de inicio del periodo (DateField o None).
+        periodo_fin: Fecha de fin del periodo (DateField o None).
+        fecha: Fecha de evaluación (defaults to timezone.localdate()).
+
+    Returns:
+        True si el registro está vigente, False en caso contrario.
+    """
+    fecha = fecha or timezone.localdate()
+    if periodo_inicio and periodo_inicio > fecha:
+        return False
+    if periodo_fin and periodo_fin < fecha:
+        return False
+    return True

@@ -7,7 +7,10 @@ from django.db import models
 from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
-from utils.ubigeo_schema import get_provincia_choices, get_distrito_flat_choices
+from utils.ubigeo_schema import (
+    get_provincia_choices_callable,
+    get_distrito_flat_choices_callable,
+)
 
 
 class Municipalidad(BaseModel):
@@ -44,23 +47,25 @@ class Municipalidad(BaseModel):
         null=True,
         verbose_name="Observaciones",
     )
-    provincia = models.CharField(
-        max_length=250,
+    provincia = models.ForeignKey(
+        "UbigeoProvincia",
+        on_delete=models.SET_NULL,
+        related_name="municipalidades",
         blank=True,
-        null=True,
-        db_index=True,
-        choices=get_provincia_choices(),
+        null=True,        db_index=True,
+        choices=get_provincia_choices_callable,
         verbose_name="Provincia",
-        help_text="Nombre de la provincia. Solo si es municipalidad provincial.",
+        help_text="Provincia asociada a la municipalidad. Solo si es municipalidad provincial.",
     )
-    distrito = models.CharField(
-        max_length=250,
+    distrito = models.ForeignKey(
+        "UbigeoDistrito",
+        on_delete=models.SET_NULL,
+        related_name="municipalidades",
         blank=True,
-        null=True,
-        db_index=True,
-        choices=get_distrito_flat_choices(),
+            null=True,
+        db_index=True,        choices=get_distrito_flat_choices_callable,
         verbose_name="Distrito",
-        help_text="Nombre del distrito. Solo si es municipalidad distrital.",
+        help_text="Distrito asociado a la municipalidad. Solo si es municipalidad distrital.",  
     )
     activo = models.BooleanField(
         default=True,
@@ -96,8 +101,26 @@ class Municipalidad(BaseModel):
         return f"{self.nombre} ({tipo})" if tipo else self.nombre
 
 
+class MunicipalidadProvincialManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(
+            provincia__isnull=False,
+            distrito__isnull=True,
+        )
+
+
+class MunicipalidadDistritalManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(
+            distrito__isnull=False,
+            provincia__isnull=True,
+        )
+
+
 class MunicipalidadProvincial(Municipalidad):
     """Proxy model: solo municipalidades provinciales (provincia seteado, distrito null)."""
+
+    objects = MunicipalidadProvincialManager()
 
     class Meta:
         proxy = True
@@ -108,13 +131,15 @@ class MunicipalidadProvincial(Municipalidad):
 class MunicipalidadDistrital(Municipalidad):
     """Proxy model: solo municipalidades distritales (distrito seteado, provincia null)."""
 
+    objects = MunicipalidadDistritalManager()
+
     class Meta:
         proxy = True
         verbose_name = "Municipalidad Distrital"
         verbose_name_plural = "Municipalidades Distritales"
 
 
-class MunicipalidadContacto(BaseModel):
+class ContactoMunicipalidad(BaseModel):
     history = HistoricalRecords()
 
     """
@@ -172,16 +197,18 @@ class Alcalde(BaseModel):
     Alcalde de una municipalidad.
     Permite almacenar información histórica de alcaldes anteriores.
     """
-    nombre = models.CharField(
-        max_length=200,
-        verbose_name="Nombre del Alcalde",
-    )
     municipalidad = models.ForeignKey(
         Municipalidad,
         on_delete=models.CASCADE,
         related_name="alcaldes",
         verbose_name="Municipalidad",
     )
+    
+    nombre = models.CharField(
+        max_length=200,
+        verbose_name="Nombre del Alcalde",
+    )
+    
     periodo_inicio = models.DateField(
         blank=True,
         null=True,
@@ -208,16 +235,18 @@ class GerenteUrbano(BaseModel):
     Gerente Urbano de una municipalidad.
     Permite almacenar información histórica de gerentes urbanos anteriores.
     """
-    nombre = models.CharField(
-        max_length=200,
-        verbose_name="Nombre del Gerente Urbano",
-    )
     municipalidad = models.ForeignKey(
         Municipalidad,
         on_delete=models.CASCADE,
         related_name="gerentes_urbanos",
         verbose_name="Municipalidad",
     )
+    
+    nombre = models.CharField(
+        max_length=200,
+        verbose_name="Nombre del Gerente Urbano",
+    )
+    
     periodo_inicio = models.DateField(
         blank=True,
         null=True,

@@ -1,16 +1,45 @@
-"""Domain models — re-exported from domain/models/."""
+"""Modelos de dominio — re-exportados desde domain/models/."""
 
-from .empresa import Empresa, EmpresaContacto
-from .municipalidad import Municipalidad, MunicipalidadContacto
-from .banco import Banco, BancoContacto
+from .banco import Banco, ContactoBanco
 from .contacto import Contacto
+from .entidad import (
+    Entidad,
+    Institucion,
+    PersonaNatural,
+    ContactoEntidad,
+    TIPO_DOCUMENTO_CHOICES,
+    ruc_validator,
+    dni_validator,
+)
+from .municipalidad import (
+    Alcalde,
+    GerenteUrbano,
+    Municipalidad,
+    ContactoMunicipalidad,
+    MunicipalidadProvincial,
+    MunicipalidadDistrital,
+)
+from .ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
 
 __all__ = [
-    "Empresa",
-    "Municipalidad",
+    "Alcalde",
     "Banco",
+    "ContactoBanco",
     "Contacto",
-    "EmpresaContacto",
-    "MunicipalidadContacto",
-    "BancoContacto",
+    "Entidad",
+    "Institucion",
+    "PersonaNatural",
+    "ContactoEntidad",
+    "GerenteUrbano",
+    "Municipalidad",
+    "ContactoMunicipalidad",
+    "MunicipalidadProvincial",
+    "MunicipalidadDistrital",
+    "UbigeoDepartamento",
+    "UbigeoProvincia",
+    "UbigeoDistrito",
+    # Constants for reuse
+    "TIPO_DOCUMENTO_CHOICES",
+    "ruc_validator",
+    "dni_validator",
 ]

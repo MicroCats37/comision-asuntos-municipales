@@ -1,0 +1,215 @@
+"use client";
+
+import { CheckCircle2, Loader2, X } from "lucide-react";
+import type { ReactNode } from "react";
+import { useId } from "react";
+import type {
+  DefaultValues,
+  FieldValues,
+  UseFormReturn,
+} from "react-hook-form";
+import type { ZodType } from "zod";
+import type { GenericModalSize } from "@/components/genericModal/GenericModal";
+import { GenericModal } from "@/components/genericModal/GenericModal";
+import { GenericForm } from "@/components/genericForm/GenericForm";
+import type {
+  FieldWrapperProps,
+  FormField,
+  FormSection,
+  SectionWrapperProps,
+} from "@/components/genericForm/GenericInput";
+import { Button } from "@/components/ui/button";
+
+export interface AppFormModalProps<T extends FieldValues> {
+  // Shell
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: string;
+  eyebrow?: string;
+  icon?: ReactNode;
+  bodyClassName?: string;
+  primaryLabel: string;
+  primaryLoadingLabel?: string;
+  primaryLoading?: boolean;
+  primaryDisabled?: boolean;
+  onPrimary: () => void | Promise<void>;
+  secondaryLabel?: string;
+  onSecondary?: () => void;
+  preventClose?: boolean;
+  size?: GenericModalSize;
+
+  // GenericForm
+  schema: ZodType<T>;
+  initialData?: DefaultValues<T>;
+  fields?: FormField[];
+  formSections?: FormSection[];
+  customFields?: Record<string, (methods: UseFormReturn<T>) => ReactNode>;
+  onSubmit: (data: T) => unknown;
+  isLoading?: boolean;
+  isDisabled?: boolean;
+  showErrorsAsToasts?: boolean;
+  formClassName?: string;
+  onFieldChange?: (fieldName: string, value: unknown) => void;
+  formId?: string;
+
+  // Body content (renders inside GenericForm's children)
+  children: (props: {
+    methods: UseFormReturn<T>;
+    isSubmitting: boolean;
+    onSubmit: () => void;
+    submissionMessage: { type: "success" | "error"; message: string } | null;
+  }) => ReactNode;
+}
+
+export function AppFormModal<T extends FieldValues>({
+  open,
+  onOpenChange,
+  title,
+  description,
+  eyebrow,
+  icon,
+  bodyClassName,
+  primaryLabel,
+  primaryLoadingLabel,
+  primaryLoading = false,
+  primaryDisabled = false,
+  onPrimary,
+  secondaryLabel = "Cancelar",
+  onSecondary,
+  preventClose = false,
+  size,
+  schema,
+  initialData,
+  fields,
+  formSections,
+  customFields,
+  onSubmit,
+  isLoading = false,
+  isDisabled = false,
+  showErrorsAsToasts = false,
+  formClassName,
+  onFieldChange,
+  formId: externalFormId,
+  children,
+}: AppFormModalProps<T>) {
+  const generatedFormId = useId();
+  const formId = externalFormId ?? generatedFormId;
+
+  const handleClose = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      onOpenChange(false);
+    }
+  };
+
+  // Wrap onSubmit so the modal closes after a successful submit.
+  // If the parent's onSubmit throws, the modal stays open and the error
+  // is propagated to the caller for handling (toast, etc.).
+  const handleFormSubmit = async (data: T) => {
+    await onSubmit(data);
+    onOpenChange(false);
+  };
+
+  return (
+    <GenericModal
+      open={open}
+      onOpenChange={handleClose}
+      preventClose={preventClose || primaryLoading}
+    >
+      <GenericModal.Content size={size}>
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <GenericModal.Header
+          title=""
+          className="bg-primary/[0.03] border-b border-border px-6 py-5 sm:px-8"
+        >
+          {/* ── Icon + eyebrow + title + description row ─────────────── */}
+          <div className="flex items-center gap-3 w-full">
+            {/* Icon — small, inline, does not expand header */}
+            {icon && (
+              <div className="p-2 sm:p-2.5 bg-primary/10 rounded-xl sm:rounded-2xl border border-primary/20 shadow-sm shrink-0 transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]">
+                {icon}
+              </div>
+            )}
+            {/* Eyebrow + title + description */}
+            <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+              {/* Eyebrow — compact, hidden on mobile */}
+              {eyebrow && (
+                <span className="hidden sm:block text-[10px] font-bold uppercase tracking-widest text-primary leading-none">
+                  {eyebrow}
+                </span>
+              )}
+              {/* Title — large, bold, strong */}
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground leading-tight">
+                {title}
+              </h2>
+              {/* Description — hidden on mobile, constrained on desktop */}
+              {description && (
+                <p className="hidden sm:block max-w-prose text-pretty line-clamp-3 text-sm text-muted-foreground leading-relaxed">
+                  {description}
+                </p>
+              )}
+            </div>
+            {/* Spacer to mirror icon width */}
+            {icon && <div className="w-9 sm:w-11 shrink-0" aria-hidden="true" />}
+          </div>
+        </GenericModal.Header>
+
+        {/* ── Body ──────────────────────────────────────────────── */}
+        <GenericModal.Body className={bodyClassName}>
+          <GenericForm
+            formId={formId}
+            schema={schema}
+            initialData={initialData}
+            fields={fields}
+            formSections={formSections}
+            customFields={customFields}
+            onSubmit={handleFormSubmit as (data: T) => unknown}
+            isLoading={isLoading || primaryLoading}
+            isDisabled={isDisabled || primaryLoading}
+            showErrorsAsToasts={showErrorsAsToasts}
+            formClassName={formClassName}
+            onFieldChange={onFieldChange}
+            skipFooter
+          >
+            {children}
+          </GenericForm>
+        </GenericModal.Body>
+
+        {/* ── Footer ────────────────────────────────────────────── */}
+        <GenericModal.Footer className="px-6 py-4 sm:px-8 bg-muted/30 border-t border-border">
+          <div className="flex flex-row sm:justify-end items-center gap-2 sm:gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onSecondary ?? (() => onOpenChange(false))}
+              disabled={primaryLoading}
+              className="flex-1 h-10 sm:h-11 rounded-xl font-semibold border border-border/60 hover:border-border hover:bg-background transition-all duration-200 sm:max-w-[120px] text-muted-foreground hover:text-foreground"
+              aria-label={secondaryLabel}
+            >
+              <X className="h-4 w-4 sm:hidden" />
+              <span className="hidden sm:inline">{secondaryLabel}</span>
+            </Button>
+            <Button
+              type="submit"
+              form={formId}
+              onClick={onPrimary}
+              disabled={primaryLoading || primaryDisabled}
+              className="flex-1 h-10 sm:h-12 rounded-xl sm:rounded-2xl font-bold shadow-lg shadow-primary/25 gap-2 sm:max-w-[160px] text-base transition-all duration-200 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 disabled:hover:translate-y-0 disabled:hover:shadow-lg"
+              aria-label={primaryLabel}
+            >
+              {primaryLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {!primaryLoading && <CheckCircle2 className="h-4 w-4 sm:hidden" />}
+              <span className="hidden sm:inline">
+                {primaryLoading
+                  ? (primaryLoadingLabel ?? "Guardando...")
+                  : primaryLabel}
+              </span>
+            </Button>
+          </div>
+        </GenericModal.Footer>
+
+        <GenericModal.CloseX />
+      </GenericModal.Content>
+    </GenericModal>
+  );
+}

@@ -1,1 +1,1 @@
-"""Presentation routers — Ninja Router definitions (placeholder)."""
+"""Routers de presentación — definiciones de Ninja Router (pendiente)."""

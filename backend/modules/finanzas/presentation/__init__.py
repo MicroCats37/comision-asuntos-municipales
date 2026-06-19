@@ -1,1 +1,1 @@
-"""Presentation layer — HTTP adapters (placeholder)."""
+"""Capa de presentación — adaptadores HTTP (pendiente)."""

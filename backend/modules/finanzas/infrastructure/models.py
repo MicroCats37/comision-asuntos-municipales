@@ -1,1 +1,1 @@
-"""Infrastructure models — Django ORM models (placeholder)."""
+"""Modelos de infraestructura — modelos Django ORM (pendiente)."""

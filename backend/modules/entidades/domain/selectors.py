@@ -1,1 +1,1 @@
-"""Domain selectors — query interface ports (placeholder)."""
+"""Selectores de dominio — puertos de interfaz de consultas (pendiente)."""

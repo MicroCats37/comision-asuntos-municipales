@@ -1,1 +1,1 @@
-"""Domain repositories — persistence interface ports (placeholder)."""
+"""Repositorios de dominio — puertos de interfaz de persistencia (pendiente)."""

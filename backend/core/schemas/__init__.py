@@ -10,7 +10,7 @@ Usage:
 
 NOTE: Prefer ModelSchema over manual Schema when a Django model exists.
     from ninja_schema import ModelSchema
-    from modulos.identidad.models import User
+    from modules.identidad.models import User
 
     class UserOut(ModelSchema):
         class Meta:

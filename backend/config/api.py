@@ -8,11 +8,17 @@ from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.controller import NinjaJWTDefaultController
 
 from core.exceptions import register_exception_handlers
+from modules.usuarios.presentation.controllers.auth_controller import AuthLoginController
+from modules.finanzas.presentation.controllers.finanzas_controller import FinanzasController
+from modules.liquidaciones.presentation.controllers.liquidacion_edificaciones_controller import LiquidacionEdificacionesController
+from modules.liquidaciones.presentation.controllers.proyectista_controller import ProyectistaController
+from modules.liquidaciones.presentation.controllers.proyecto_controller import ProyectoController
+from modules.entidades.presentation.controllers.entidad_controller import EntidadesController
 
 import os
 
 api_version = "2.0.0"
-api_namespace = "api-v2"
+api_namespace = "api"
 
 if os.environ.get("PYTEST_CURRENT_TEST"):
     import sys
@@ -58,7 +64,21 @@ else:
 # ── Controllers JWT (token/pair, token/refresh, token/verify) ─
 api.register_controllers(NinjaJWTDefaultController)
 
-# ── Exception handlers globales ───────────────────────────────
+# ── Auth Controllers (modular login by username/dni/email) ─
+api.register_controllers(AuthLoginController)
+
+# ── Finanzas Controllers ─
+api.register_controllers(FinanzasController)
+
+# ── Liquidaciones Controllers ─
+api.register_controllers(LiquidacionEdificacionesController)
+api.register_controllers(ProyectistaController)
+api.register_controllers(ProyectoController)
+
+# ── Entidades Controllers ─
+api.register_controllers(EntidadesController)
+
+# ── Exception handlers globales ────────────────────────────────
 register_exception_handlers(api)
 
 # ── Routers por módulo (Legacy o Funcionales) ──────────────────

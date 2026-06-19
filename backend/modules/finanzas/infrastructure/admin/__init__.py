@@ -1,1 +1,1 @@
-"""Infrastructure admin — Django admin configuration (placeholder)."""
+"""Admin de infraestructura — configuración de Django admin (pendiente)."""

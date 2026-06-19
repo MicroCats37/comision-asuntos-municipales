@@ -1,1 +1,1 @@
-"""Views placeholder — define views here when needed."""
+"""Vistas — definir vistas aquí cuando sea necesario."""
