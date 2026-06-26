@@ -104,6 +104,14 @@ class LiquidacionGeneral(BaseModel):
         null=True,
         blank=True
     )
+
+    expediente = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name="Expediente",
+        help_text="Número de expediente associated with the liquidacion.",
+    )
     
     liquidaciones_previas = models.ManyToManyField(
         "self",

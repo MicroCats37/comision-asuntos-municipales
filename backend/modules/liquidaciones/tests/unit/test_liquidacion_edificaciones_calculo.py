@@ -124,7 +124,7 @@ class TestCalcularMontoBase:
     def test_monto_base_simple(self):
         """5% de 10000 = 500."""
         resultado = self.core.calcular_monto_base(
-            valor_proyecto=Decimal("10000.00"),
+            valor_base_calculo=Decimal("10000.00"),
             porcentaje_liquidacion=Decimal("0.05"),
         )
         assert resultado == Decimal("500.00")
@@ -132,7 +132,7 @@ class TestCalcularMontoBase:
     def test_monto_base_decimal(self):
         """5% de 12345.67 = 617.2835."""
         resultado = self.core.calcular_monto_base(
-            valor_proyecto=Decimal("12345.67"),
+            valor_base_calculo=Decimal("12345.67"),
             porcentaje_liquidacion=Decimal("0.05"),
         )
         assert resultado == Decimal("617.2835")
@@ -140,7 +140,7 @@ class TestCalcularMontoBase:
     def test_monto_base_cero(self):
         """0% de cualquier valor = 0."""
         resultado = self.core.calcular_monto_base(
-            valor_proyecto=Decimal("10000.00"),
+            valor_base_calculo=Decimal("10000.00"),
             porcentaje_liquidacion=Decimal("0.00"),
         )
         assert resultado == Decimal("0")

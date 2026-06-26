@@ -25,12 +25,14 @@ class TestPrimeraRevisionLiquidacionIn:
             "municipalidad_id": municipalidad_id,
             "tipo_tramite": "OBRA_NUEVA",
             "valor_proyecto": 10000.0,
+            "valor_base_calculo": 10000.0,
         }
         schema = PrimeraRevisionLiquidacionIn(**data)
         assert schema.proyecto_public_id == "PROY-2026-00001"
         assert schema.municipalidad_id == municipalidad_id
         assert schema.tipo_tramite == "OBRA_NUEVA"
         assert schema.valor_proyecto == 10000.0
+        assert schema.valor_base_calculo == 10000.0
         assert schema.revisiones_ids == []
 
     def test_valid_full_input(self):
@@ -44,6 +46,7 @@ class TestPrimeraRevisionLiquidacionIn:
             "municipalidad_id": municipalidad_id,
             "tipo_tramite": "AMPLIACION",
             "valor_proyecto": 50000.0,
+            "valor_base_calculo": 50000.0,
             "observacion": "Test observacion",
             "revisiones_ids": [rev1, rev2, rev3],
         }
@@ -60,6 +63,7 @@ class TestPrimeraRevisionLiquidacionIn:
             "municipalidad_id": municipalidad_id,
             "tipo_tramite": "OBRA_NUEVA",
             "valor_proyecto": 0.0,
+            "valor_base_calculo": 0.0,
         }
         with pytest.raises(ValidationError) as exc_info:
             PrimeraRevisionLiquidacionIn(**data)
@@ -74,6 +78,7 @@ class TestPrimeraRevisionLiquidacionIn:
             "municipalidad_id": municipalidad_id,
             "tipo_tramite": "OBRA_NUEVA",
             "valor_proyecto": -100.0,
+            "valor_base_calculo": -100.0,
         }
         with pytest.raises(ValidationError) as exc_info:
             PrimeraRevisionLiquidacionIn(**data)
@@ -87,6 +92,7 @@ class TestPrimeraRevisionLiquidacionIn:
             "municipalidad_id": municipalidad_id,
             "tipo_tramite": "OBRA_NUEVA",
             "valor_proyecto": 10000.0,
+            "valor_base_calculo": 10000.0,
         }
         schema = PrimeraRevisionLiquidacionIn(**data)
         assert schema.proyecto_public_id == ""
@@ -99,6 +105,7 @@ class TestPrimeraRevisionLiquidacionIn:
             "municipalidad_id": municipalidad_id,
             "tipo_tramite": "OBRA_NUEVA",
             "valor_proyecto": 10000.0,
+            "valor_base_calculo": 10000.0,
             "revisiones_ids": [],
         }
         schema = PrimeraRevisionLiquidacionIn(**data)
@@ -114,6 +121,7 @@ class TestPrimeraRevisionLiquidacionIn:
             "municipalidad_id": municipalidad_id,
             "tipo_tramite": "OBRA_NUEVA",
             "valor_proyecto": 10000.0,
+            "valor_base_calculo": 10000.0,
             "revisiones_ids": [rev1, rev1, rev2, rev2],
         }
         schema = PrimeraRevisionLiquidacionIn(**data)

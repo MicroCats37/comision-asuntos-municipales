@@ -51,7 +51,13 @@ class TipoTramiteEdificaciones(models.TextChoices):
     AMPLIACION = "AMPLIACION", "Ampliación"
     REMODELACION = "REMODELACION", "Remodelación"
     MODIFICACION_LICENCIA = "MODIFICACION_LICENCIA", "Modificación de Licencia"
+    REINTEGRO = "REINTEGRO", "Reintegro"
+    PROYECTO_CON_PLANTAS_TIPICAS = "PROYECTO_CON_PLANTAS_TIPICAS", "Proyecto con Plantas Típicas"
 
+
+# Constants for tramite types that use valor_base_calculo different from valor_proyecto
+PROYECTO_CON_PLANTAS_TIPICAS_TIPO = "PROYECTO_CON_PLANTAS_TIPICAS"
+    
 
 class TramiteAccion(models.TextChoices):
     """Acción de trámite asignada según el endpoint usado."""

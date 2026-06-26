@@ -78,7 +78,7 @@ class LiquidacionEdificacionesPresenter:
             distrito=None,
         )
 
-        # Construir liquidacion (sin expediente)
+        # Construir liquidacion (con expediente)
         liquidacion = LiquidacionOut(
             id=result.liquidacion_id,
             public_id=result.liquidacion_public_id,
@@ -86,6 +86,7 @@ class LiquidacionEdificacionesPresenter:
             fecha_creacion=result.fecha_creacion,
             proyecto=proyecto,
             municipalidad=municipalidad,
+            expediente=getattr(result, 'expediente', None),
             observacion=result.observacion or '',
         )
 
@@ -309,6 +310,7 @@ class LiquidacionEdificacionesPresenter:
             proyecto_public_id=result.proyecto_public_id,
             proyecto_nombre=result.proyecto_nombre,
             valor_proyecto=float(result.valor_proyecto),
+            valor_base_calculo=float(result.valor_base_calculo),
             revisiones_vigentes=revisiones_vigentes,
             proyectistas_actuales=proyectistas_actuales,
         )

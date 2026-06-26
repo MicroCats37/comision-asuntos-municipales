@@ -57,6 +57,7 @@ class LiquidacionEdificacionesResult(BaseModel):
     proyecto_entidad_ruc: Optional[str]
     municipalidad_id: uuid.UUID
     municipalidad_nombre: str
+    expediente: Optional[str] = None
     # proyectistas ahora van en edificaciones_proyectistas, no en proyecto
     edificaciones_proyectistas: list = Field(default_factory=list)  # list of ProyectistaSnapshotData
     edificaciones_delegados: list = Field(default_factory=list)  # list of DelegadoSnapshotData
@@ -83,6 +84,7 @@ class NuevaRevisionFormularioResult(BaseModel):
     proyecto_public_id: str
     proyecto_nombre: str
     valor_proyecto: Decimal
+    valor_base_calculo: Decimal
     revisiones_vigentes: list[EdificacionRevisionData]
     proyectistas_actuales: list = Field(default_factory=list)  # list of ProyectistaSnapshotData
 
@@ -209,7 +211,7 @@ class LiquidacionSnapshotData(BaseModel):
     fecha_creacion: str
     proyecto: ProyectoSnapshotData
     municipalidad: MunicipalidadesSnapshotData
-    # expediente fue removido — ya no existe en el modelo
+    expediente: Optional[str] = None
     observacion: str
 
 
@@ -227,6 +229,7 @@ class EdificacionesSnapshotData(BaseModel):
 class TotalesSnapshotData(BaseModel):
     """Sección 'totales' del snapshot completo."""
     subtotal: float
+    sub_total: Optional[float] = None
     igv: float
     total: float
     liquidacion_total: float
@@ -362,7 +365,7 @@ class LiquidacionFallbackData(BaseModel):
     fecha_creacion: str
     proyecto: ProyectoFallbackData
     municipalidad: MunicipalidadesSnapshotData
-    # expediente fue removido
+    expediente: Optional[str] = None
     observacion: str
 
 

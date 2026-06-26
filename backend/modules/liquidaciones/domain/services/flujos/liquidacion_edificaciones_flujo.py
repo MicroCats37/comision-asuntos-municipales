@@ -75,6 +75,8 @@ class LiquidacionesEdificacionesFlujo:
         municipalidad_id: str,
         tipo_tramite: str,
         valor_proyecto: Decimal,
+        expediente: Optional[str],
+        valor_base_calculo: Optional[Decimal],
         observacion: Optional[str],
         revisiones_ids: list[str],
         proyectistas_inline: Optional[list[ProyectistaInlineData]] = None,
@@ -152,6 +154,14 @@ class LiquidacionesEdificacionesFlujo:
         # Primera revisión siempre cobra
         cobra = True
 
+        # Validar valor_base_calculo según tipo_tramite
+        from ..validators import validate_valor_base_calculo
+        validate_valor_base_calculo(
+            valor_proyecto=valor_proyecto,
+            valor_base_calculo=valor_base_calculo if valor_base_calculo is not None else valor_proyecto,
+            tipo_tramite=tipo_tramite,
+        )
+
         # Ejecutar bloque transactional en thread async
         def _run_primera_revision():
             from django.db import transaction
@@ -162,6 +172,8 @@ class LiquidacionesEdificacionesFlujo:
                     proyecto=proyecto,
                     municipalidad=municipalidad,
                     valor_proyecto=valor_proyecto,
+                    expediente=expediente,
+                    valor_base_calculo=valor_base_calculo,
                     observacion=observacion,
                     liquidacion_previa=None,
                 )
@@ -197,8 +209,9 @@ class LiquidacionesEdificacionesFlujo:
                     self._crear_contactos_inline(liquidacion, contactos_inline)
 
                 # 8. Calcular por cada revisión usando helper compartido del core service
+                # Usar valor_base_calculo (ya validado que es igual a valor_proyecto para tipos normales)
                 revision_results, subtotal, igv_monto, total_liquidacion = self.core.calcular_revisiones(
-                    valor_proyecto=valor_proyecto,
+                    valor_base_calculo=valor_base_calculo if valor_base_calculo is not None else valor_proyecto,
                     revisiones_data=revisiones_data,
                     cobra=cobra,
                     igv_valor=variables.igv_valor,
@@ -318,8 +331,10 @@ class LiquidacionesEdificacionesFlujo:
         # Obtener IGV/UIT vigentes
         variables = await sync_to_async(self.core._obtener_variables_financieras_vigentes)()
 
-        # Obtener valor_proyecto de la liquidación previa
+        # Obtener valor_proyecto y valor_base_calculo de la liquidación previa
+        # valor_base_calculo se hereda de la liquidación previa para mantener consistencia
         valor_proyecto = previa.valor_proyecto
+        valor_base_calculo = previa.valor_base_calculo if previa.valor_base_calculo is not None else valor_proyecto
 
         # 7. Determinar proyectistas y delegados:
         # - Si se proporcionó proyectistas_inline (inline con CIP), validar CIPs primero
@@ -392,8 +407,9 @@ class LiquidacionesEdificacionesFlujo:
                     self._crear_contactos_inline(liquidacion, contactos_inline)
 
                 # 9-10. Calcular usando helper compartido del core service
+                # Usar valor_base_calculo heredado de la liquidación previa
                 revision_results, subtotal, igv_monto, total_liquidacion = self.core.calcular_revisiones(
-                    valor_proyecto=valor_proyecto,
+                    valor_base_calculo=valor_base_calculo,
                     revisiones_data=revisiones_data,
                     cobra=cobra,
                     igv_valor=variables.igv_valor,
@@ -494,6 +510,7 @@ class LiquidacionesEdificacionesFlujo:
             proyecto_public_id=previa.proyecto.public_id or "",
             proyecto_nombre=previa.proyecto.denominacion,
             valor_proyecto=previa.valor_proyecto,
+            valor_base_calculo=previa.valor_base_calculo if previa.valor_base_calculo is not None else previa.valor_proyecto,
             revisiones_vigentes=revisiones_vigentes,
             proyectistas_actuales=proyectistas_actuales,
         )
@@ -599,6 +616,7 @@ class LiquidacionesEdificacionesFlujo:
         self,
         proyecto_public_id: str,
         valor_proyecto: Decimal,
+        valor_base_calculo: Decimal,
     ) -> CotizacionQuoteData:
         """
         Cotiza primera revisión sin guardar en BD.
@@ -625,9 +643,10 @@ class LiquidacionesEdificacionesFlujo:
         revisiones_data = [self.core.to_revision_con_tarifa(rev) for rev in revisiones_data]
 
         # 4. Calcular — primera revisión siempre cobra
+        # Usar valor_base_calculo para el cálculo
         cobra = True
         revision_results, subtotal, igv_monto, total_liquidacion = self.core.calcular_revisiones(
-            valor_proyecto=valor_proyecto,
+            valor_base_calculo=valor_base_calculo,
             revisiones_data=revisiones_data,
             cobra=cobra,
             igv_valor=variables.igv_valor,
@@ -718,12 +737,13 @@ class LiquidacionesEdificacionesFlujo:
         # 7. Determinar si cobra según número de revisión
         cobra = nuevo_numero in REVISIONES_COBRAN
 
-        # 8. Obtener valor_proyecto de la liquidación previa
+        # 8. Obtener valor_proyecto y valor_base_calculo de la liquidación previa
         valor_proyecto = previa.valor_proyecto
+        valor_base_calculo = previa.valor_base_calculo if previa.valor_base_calculo is not None else valor_proyecto
 
-        # 9. Calcular
+        # 9. Calcular usando valor_base_calculo
         revision_results, subtotal, igv_monto, total_liquidacion = self.core.calcular_revisiones(
-            valor_proyecto=valor_proyecto,
+            valor_base_calculo=valor_base_calculo,
             revisiones_data=revisiones_data,
             cobra=cobra,
             igv_valor=variables.igv_valor,

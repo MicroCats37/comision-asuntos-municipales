@@ -189,9 +189,10 @@ class LiquidacionesEdificacionesService:
         proyecto: Proyecto,
         municipalidad: Municipalidad,
         valor_proyecto: Decimal,
+        expediente: Optional[str],
+        valor_base_calculo: Optional[Decimal],
         observacion: Optional[str],
         liquidacion_previa: Optional[LiquidacionGeneral] = None,
-        valor_base_calculo: Optional[Decimal] = None,
     ) -> LiquidacionGeneral:
         """Crea una LiquidacionGeneral con la cadena de liquidaciones previas."""
         from modules.finanzas.models import IGV, UIT
@@ -220,6 +221,7 @@ class LiquidacionesEdificacionesService:
             uit=uit,
             valor_proyecto=valor_proyecto,
             valor_base_calculo=valor_base_calculo,
+            expediente=expediente,
             observacion=observacion,
             public_id=public_id,
         )
@@ -467,24 +469,24 @@ class LiquidacionesEdificacionesService:
 
     def calcular_monto_base(
         self,
-        valor_proyecto: Decimal,
+        valor_base_calculo: Decimal,
         porcentaje_liquidacion: Decimal,
     ) -> Decimal:
         """
-        Calcula el monto base: valor_proyecto * porcentaje_liquidacion.
+        Calcula el monto base: valor_base_calculo * porcentaje_liquidacion.
 
         Args:
-            valor_proyecto: Valor total del proyecto
+            valor_base_calculo: Valor base de cálculo (puede ser valor_proyecto o un valor alternativo)
             porcentaje_liquidacion: Porcentaje de liquidación (ej: 0.05 para 5%)
 
         Returns:
             Decimal con el monto base calculado
         """
-        return Decimal(str(valor_proyecto)) * porcentaje_liquidacion
+        return Decimal(str(valor_base_calculo)) * porcentaje_liquidacion
 
     def calcular_revisiones(
         self,
-        valor_proyecto: Decimal,
+        valor_base_calculo: Decimal,
         revisiones_data: list,
         cobra: bool,
         igv_valor: Decimal,
@@ -494,7 +496,7 @@ class LiquidacionesEdificacionesService:
         Calcula el monto base, derecho y totales para una lista de revisiones.
 
         Args:
-            valor_proyecto: Valor del proyecto para el cálculo
+            valor_base_calculo: Valor base de cálculo para el cálculo (valor_proyecto o alternativo)
             revisiones_data: Lista de revisiones (con .tarifa y .porcentaje_liquidacion,
                              o RevisionConTarifaData para compatibilidad)
             cobra: Si True aplica derecho, si False todo es 0
@@ -519,7 +521,7 @@ class LiquidacionesEdificacionesService:
                 especialidad_nombre = rev_data.especialidad.nombre
 
             monto_base = self.calcular_monto_base(
-                valor_proyecto,
+                valor_base_calculo,
                 rev_data.porcentaje_liquidacion,
             )
 

@@ -64,7 +64,9 @@ export type TipoTramiteEdificaciones =
   | "DEMOLICION"
   | "AMPLIACION"
   | "REMODELACION"
-  | "MODIFICACION_LICENCIA";
+  | "MODIFICACION_LICENCIA"
+  | "REINTEGRO"
+  | "PROYECTO_CON_PLANTAS_TIPICAS";
 
 export type TramiteAccion = "PRIMERA_REVISION" | "REVISION";
 
@@ -384,6 +386,7 @@ export interface NuevaRevisionFormularioResponse {
   proyecto_public_id: string;
   proyecto_nombre: string;
   valor_proyecto: number;
+  valor_base_calculo: number;
   /** Revisiones vigentes available for this project — same shape as RevisionVigente[] */
   revisiones_vigentes: NuevaRevisionFormularioRevisionVigente[];
   proyectistas_actuales: ProyectistaActual[];

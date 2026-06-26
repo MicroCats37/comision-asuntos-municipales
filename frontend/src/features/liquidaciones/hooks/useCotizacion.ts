@@ -21,7 +21,7 @@ const BASE_URL = "/liquidaciones/edificaciones";
 export function useCotizacionPrimeraRevision() {
   const mutation = useApiCreate<
     z.infer<typeof cotizacionQuoteResponseSchema>,
-    { liquidacion: { proyecto_public_id: string; valor_proyecto: number } }
+    { liquidacion: { proyecto_public_id: string; valor_proyecto: number; valor_base_calculo: number } }
   >({
     url: `${BASE_URL}/cotizar/primera-revision`,
     schema: cotizacionQuoteResponseSchema,
@@ -33,10 +33,10 @@ export function useCotizacionPrimeraRevision() {
   // Wrapper que formatea el payload como { liquidacion: ... } y extrae data.data
   const cotizacionMutation = {
     ...mutation,
-    mutate: (payload: { proyecto_public_id: string; valor_proyecto: number }) => {
+    mutate: (payload: { proyecto_public_id: string; valor_proyecto: number; valor_base_calculo: number }) => {
       mutation.mutate({ liquidacion: payload });
     },
-    mutateAsync: async (payload: { proyecto_public_id: string; valor_proyecto: number }): Promise<CotizacionQuote> => {
+    mutateAsync: async (payload: { proyecto_public_id: string; valor_proyecto: number; valor_base_calculo: number }): Promise<CotizacionQuote> => {
       const result = await mutation.mutateAsync({ liquidacion: payload });
       // Extract inner data from {success, data: CotizacionQuote, error}
       return result.data as CotizacionQuote;

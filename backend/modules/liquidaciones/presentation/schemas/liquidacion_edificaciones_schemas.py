@@ -44,9 +44,10 @@ class PrimeraRevisionLiquidacionIn(Schema):
     """Payload para crear primera revisión / nueva liquidación."""
     proyecto_public_id: str = Field(..., description="ID público del proyecto (ej. PROY-2026-00001)")
     municipalidad_id: uuid.UUID = Field(..., description="ID de la municipalidad (UUID)")
-    tipo_tramite: str = Field(..., description="Tipo de trámite: OBRA_NUEVA, DEMOLICION, AMPLIACION, REMODELACION, MODIFICACION_LICENCIA")
+    tipo_tramite: str = Field(..., description="Tipo de trámite: OBRA_NUEVA, DEMOLICION, AMPLIACION, REMODELACION, MODIFICACION_LICENCIA, REINTEGRO, PROYECTO_CON_PLANTAS_TIPICAS")
     valor_proyecto: float = Field(..., gt=0, description="Valor del proyecto/obra")
-    # expediente fue removido del dominio
+    expediente: Optional[str] = Field(None, description="Número de expediente (opcional)")
+    valor_base_calculo: float = Field(..., gt=0, description="Valor base de cálculo. Para tipos normales debe ser igual a valor_proyecto. Para PROYECTO_CON_PLANTAS_TIPICAS puede ser diferente.")
     observacion: Optional[str] = Field(None, description="Observación opcional")
     revisiones_ids: list[str] = Field(default=[], description="IDs de revisiones de edificación a asociar (UUID)")
     # NUEVO: Proyectistas inline con validación CIP
@@ -218,7 +219,7 @@ class LiquidacionOut(Schema):
     fecha_creacion: str
     proyecto: ProyectoOut
     municipalidad: MunicipalidadesSnapshotOut
-    # expediente fue removido del dominio
+    expediente: Optional[str] = None
     observacion: Optional[str]
 
 
@@ -306,6 +307,7 @@ class NuevaRevisionFormularioOut(Schema):
     proyecto_public_id: str
     proyecto_nombre: str
     valor_proyecto: float
+    valor_base_calculo: float = Field(..., description="Valor base de cálculo heredado de la liquidación previa")
     revisiones_vigentes: list[RevisionVigenteOut]
     proyectistas_actuales: list[ProyectistaOut] = Field(
         default_factory=list,
@@ -385,6 +387,7 @@ class ProyectoSnapshotOut(Schema):
 class TotalesSnapshotOut(Schema):
     """Totales anidados en snapshot list."""
     subtotal: float
+    sub_total: Optional[float] = None
     igv: float
     total: float
     liquidacion_total: float
@@ -410,7 +413,7 @@ class LiquidacionSnapshotListItemOut(Schema):
     estado: str
     fecha_registro: str
     municipalidad: MunicipalidadesSnapshotOut
-    # expediente fue removido del dominio
+    expediente: Optional[str] = None
     observacion: Optional[str]
     proyecto: ProyectoSnapshotOut
     edificaciones: EdificacionesSnapshotListOut
@@ -424,6 +427,7 @@ class CotizacionPrimeraRevisionIn(Schema):
     """Payload para cotizar primera revisión (sin guardar en BD)."""
     proyecto_public_id: str = Field(..., description="ID público del proyecto (ej. PROY-2026-00001)")
     valor_proyecto: float = Field(..., gt=0, description="Valor del proyecto/obra")
+    valor_base_calculo: float = Field(..., gt=0, description="Valor base de cálculo. Para tipos normales debe ser igual a valor_proyecto. Para PROYECTO_CON_PLANTAS_TIPICAS puede ser diferente.")
     # No requiere municipalidad_id, tipo_tramite, ni revisiones_ids
     # municipalidad_id se infiere del proyecto
     # tipo_tramite se infiere del proyecto

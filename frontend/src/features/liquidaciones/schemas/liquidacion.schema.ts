@@ -10,6 +10,8 @@ export const tipoTramiteEdificacionesSchema = z.enum([
   "AMPLIACION",
   "REMODELACION",
   "MODIFICACION_LICENCIA",
+  "REINTEGRO",
+  "PROYECTO_CON_PLANTAS_TIPICAS",
 ]);
 
 export const tramiteAccionSchema = z.enum(["PRIMERA_REVISION", "REVISION"]);
@@ -310,6 +312,7 @@ export const cotizacionQuoteResponseSchema = apiResponseSchema(cotizacionQuotePa
 export const cotizacionPrimeraRevisionPayloadSchema = z.object({
   proyecto_public_id: z.string().min(1, "Proyecto es requerido"),
   valor_proyecto: z.number().positive("Valor debe ser positivo"),
+  valor_base_calculo: z.number().positive("Valor base de cálculo debe ser positivo"),
 });
 
 /** Wrapper schema for cotizar primera revision request */
@@ -362,6 +365,7 @@ const nuevaRevisionFormularioPayloadSchema = z.object({
   proyecto_public_id: z.string(),
   proyecto_nombre: z.string(),
   valor_proyecto: z.number(),
+  valor_base_calculo: z.number(),
   revisiones_vigentes: z.array(revisionVigenteFormularioSchema),
   proyectistas_actuales: z.array(proyectistaActualSchema),
 });

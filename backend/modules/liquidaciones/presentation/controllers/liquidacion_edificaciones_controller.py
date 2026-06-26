@@ -119,6 +119,8 @@ class LiquidacionEdificacionesController:
             municipalidad_id=str(liquidacion_data.municipalidad_id),
             tipo_tramite=liquidacion_data.tipo_tramite,
             valor_proyecto=liquidacion_data.valor_proyecto,
+            expediente=liquidacion_data.expediente,
+            valor_base_calculo=liquidacion_data.valor_base_calculo,
             observacion=liquidacion_data.observacion,
             revisiones_ids=liquidacion_data.revisiones_ids,
             proyectistas_inline=proyectistas_inline,
@@ -168,6 +170,7 @@ class LiquidacionEdificacionesController:
         Body:
         - proyecto_public_id: ID público del proyecto
         - valor_proyecto: Valor del proyecto
+        - valor_base_calculo: Valor base de cálculo para el cálculo
 
         Usa selección por defecto de revisiones vigentes.
         """
@@ -175,6 +178,7 @@ class LiquidacionEdificacionesController:
         result = await self.orchestrator.cotizar_primera_revision(
             proyecto_public_id=liquidacion_data.proyecto_public_id,
             valor_proyecto=liquidacion_data.valor_proyecto,
+            valor_base_calculo=liquidacion_data.valor_base_calculo,
         )
         return success_response(LiquidacionEdificacionesPresenter.present_cotizacion(result))
 

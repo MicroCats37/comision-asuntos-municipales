@@ -16,6 +16,19 @@ if TYPE_CHECKING:
     from modules.liquidaciones.models import LiquidacionGeneral, LiquidacionEdificaciones
 
 
+def generar_numero_liquidacion(numero_revision: int) -> str:
+    """
+    Genera el número de liquidación formateado desde el número de revisión.
+    
+    Args:
+        numero_revision: Número de revisión (1, 2, 3, ...)
+        
+    Returns:
+        String formateado como 'LIQ-EDIF-{numero_revision}'
+    """
+    return f"LIQ-EDIF-{numero_revision}"
+
+
 class LiquidacionEdificacionesResultBuilder:
     """
     Builder stateless para construir DTOs de resultado de liquidaciones.
@@ -184,11 +197,12 @@ class LiquidacionEdificacionesResultBuilder:
         liquidacion_data = LiquidacionSnapshotData(
             id=str(liquidacion.id),
             public_id=liquidacion.public_id or '',
-            numero_liquidacion=f"LIQ-EDIF-{liq_edif.numero_revision}",
+            numero_liquidacion=generar_numero_liquidacion(liq_edif.numero_revision),
             estado=liquidacion.estado,
             fecha_creacion=liquidacion.created_at.isoformat() if liquidacion.created_at else '',
             proyecto=proyecto_data,
             municipalidad=municipalidad_data,
+            expediente=liquidacion.expediente or None,
             observacion=liquidacion.observacion or '',
         )
 
@@ -262,6 +276,7 @@ class LiquidacionEdificacionesResultBuilder:
 
         totales_data = TotalesSnapshotData(
             subtotal=float(subtotal),
+            sub_total=float(subtotal),
             igv=float(igv_monto),
             total=float(total_liquidacion),
             liquidacion_total=float(total_liquidacion),
@@ -412,6 +427,7 @@ class LiquidacionEdificacionesResultBuilder:
             proyecto_entidad_ruc=proyecto.entidad.numero_documento if proyecto.entidad else None,
             municipalidad_id=str(liquidacion.municipalidad.id),
             municipalidad_nombre=liquidacion.municipalidad.nombre,
+            expediente=liquidacion.expediente or None,
             edificaciones_proyectistas=edificaciones_proyectistas,
             edificaciones_delegados=edificaciones_delegados_result,
             edificaciones_public_id=liq_edif.public_id or '',
@@ -487,7 +503,7 @@ class LiquidacionEdificacionesResultBuilder:
             liquidacion=LiquidacionFallbackData(
                 id=str(liquidacion.id),
                 public_id=liquidacion.public_id or '',
-                numero_liquidacion=f"LIQ-EDIF-{numero_revision}",
+                numero_liquidacion=generar_numero_liquidacion(numero_revision),
                 estado=liquidacion.estado,
                 fecha_creacion=liquidacion.created_at.isoformat() if liquidacion.created_at else '',
                 proyecto=ProyectoFallbackData(
@@ -498,6 +514,7 @@ class LiquidacionEdificacionesResultBuilder:
                     valor_proyecto=float(liquidacion.valor_proyecto),
                 ),
                 municipalidad=municipalidad_data,
+                expediente=liquidacion.expediente or None,
                 observacion=liquidacion.observacion or '',
             ),
             edificaciones=EdificacionesFallbackData(
@@ -591,12 +608,15 @@ class LiquidacionEdificacionesResultBuilder:
             proyectistas_orm_list
         )
 
-        # Determinar numero_revision desde edificacion o snapshot
+        # Determinar numero_revision y numero_liquidacion desde snapshot o fallback ORM
         numero_revision = edificacion_orm.numero_revision if edificacion_orm else 0
+        numero_liquidacion = None  # Se leerá del snapshot si está disponible
 
         # Construir revisions_data desde snapshot o fallback ORM
         revisiones_data = []
         if snapshot_orm and snapshot_orm.data:
+            liquidacion_snapshot = snapshot_orm.data.get('liquidacion', {})
+            numero_liquidacion = liquidacion_snapshot.get('numero_liquidacion')
             edificaciones_snapshot = snapshot_orm.data.get('edificaciones', {})
             numero_revision = edificaciones_snapshot.get('numero_revision', numero_revision)
             revisions_snapshot = edificaciones_snapshot.get('revisiones', [])
@@ -634,13 +654,18 @@ class LiquidacionEdificacionesResultBuilder:
         # Construir totales_data desde snapshot JSON
         totales_data = {
             'subtotal': 0.0,
+            'sub_total': 0.0,
             'igv': 0.0,
             'total': 0.0,
             'liquidacion_total': 0.0,
             'total_a_pagar': 0.0,
         }
         if snapshot_orm and snapshot_orm.data:
-            totales_data = snapshot_orm.data.get('totales', totales_data)
+            snapshot_totales = snapshot_orm.data.get('totales', totales_data)
+            # Ensure sub_total exists for backwards compat
+            if 'sub_total' not in snapshot_totales and 'subtotal' in snapshot_totales:
+                snapshot_totales['sub_total'] = snapshot_totales['subtotal']
+            totales_data = snapshot_totales
 
         # Extraer datos de edificacion desde snapshot o fallback
         edificacion_public_id = ""
@@ -722,13 +747,18 @@ class LiquidacionEdificacionesResultBuilder:
                 'distrito': distrito_muni,
             }
 
+        # Usar numero_liquidacion del snapshot si está disponible, si no calcular desde numero_revision
+        if numero_liquidacion is None:
+            numero_liquidacion = generar_numero_liquidacion(numero_revision)
+
         return {
             'liquidacion_id': str(liquidacion_orm.id),
             'public_id': liquidacion_public_id,
-            'numero_liquidacion': f"LIQ-EDIF-{numero_revision}",
+            'numero_liquidacion': numero_liquidacion,
             'estado': liquidacion_orm.estado,
             'fecha_registro': liquidacion_orm.fecha_registro.isoformat() if liquidacion_orm.fecha_registro else '',
             'municipalidad': municipalidad_data,
+            'expediente': liquidacion_orm.expediente if hasattr(liquidacion_orm, 'expediente') else None,
             'observacion': liquidacion_orm.observacion,
             'proyecto': proyecto_data,
             'edificaciones': edificaciones_data,

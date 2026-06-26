@@ -33,6 +33,8 @@ export interface LiquidacionEdificacionFormState {
   municipalidad_id: string;
   tipo_tramite: TipoTramiteEdificaciones | "";
   valor_proyecto: number;
+  expediente: string;
+  valor_base_calculo: number;
   observacion: string;
   revisiones_ids: string[];
   proyectistas: ProyectistaInline[];
@@ -48,6 +50,8 @@ export interface LiquidacionEdificacionSubmitData {
   municipalidad_id: string;
   tipo_tramite: TipoTramiteEdificaciones;
   valor_proyecto: number;
+  expediente?: string;
+  valor_base_calculo?: number;
   observacion?: string;
   revisiones_ids: string[];
   proyectistas: ProyectistaInline[];

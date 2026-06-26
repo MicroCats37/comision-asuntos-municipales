@@ -42,6 +42,8 @@ class LiquidacionesEdificacionesOrchestrator:
         municipalidad_id: str,
         tipo_tramite: str,
         valor_proyecto: float,
+        expediente: str | None,
+        valor_base_calculo: float | None,
         observacion: str | None,
         revisiones_ids: list[str],
         proyectistas_inline: list[ProyectistaInlineData] | None = None,
@@ -55,6 +57,8 @@ class LiquidacionesEdificacionesOrchestrator:
             municipalidad_id=municipalidad_id,
             tipo_tramite=tipo_tramite,
             valor_proyecto=valor_proyecto,
+            expediente=expediente,
+            valor_base_calculo=valor_base_calculo,
             observacion=observacion,
             revisiones_ids=revisiones_ids,
             proyectistas_inline=proyectistas_inline,
@@ -136,11 +140,13 @@ class LiquidacionesEdificacionesOrchestrator:
         self,
         proyecto_public_id: str,
         valor_proyecto: float,
+        valor_base_calculo: float,
     ) -> CotizacionQuoteData:
         """Cotizar primera revisión (sin guardar en BD) — delega a flujo."""
         return await self.flujo._proceso_cotizar_primera_revision(
             proyecto_public_id=proyecto_public_id,
             valor_proyecto=valor_proyecto,
+            valor_base_calculo=valor_base_calculo,
         )
 
     async def cotizar_nueva_revision(

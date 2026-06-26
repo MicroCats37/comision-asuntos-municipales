@@ -52,7 +52,12 @@ const TIPO_TRAMITE_OPTIONS = [
   { value: "AMPLIACION", label: "Ampliación" },
   { value: "REMODELACION", label: "Remodelación" },
   { value: "MODIFICACION_LICENCIA", label: "Modificación de licencia" },
+  { value: "REINTEGRO", label: "Reintegro" },
+  { value: "PROYECTO_CON_PLANTAS_TIPICAS", label: "Proyecto con plantas típicas" },
 ] as const;
+
+// Tipo trámite que permite valor_base_calculo diferente a valor_proyecto
+const PROYECTO_CON_PLANTAS_TIPICAS_TIPO = "PROYECTO_CON_PLANTAS_TIPICAS";
 
 function formatMunicipalidadLabel(municipalidad: {
   codigo?: string | null;
@@ -335,11 +340,21 @@ export function LiquidacionEdificacionFormModal({
     // Map contactos to backend payload, stripping localId (not a backend field)
     const contactosPayload = selectedContactos.map(({ localId: _localId, ...contacto }) => contacto);
 
+    // Determine valor_base_calculo:
+    // - For PROYECTO_CON_PLANTAS_TIPICAS: use the user-entered value (must be > 0)
+    // - For normal types: must be equal to valor_proyecto (backend validates this)
+    const isPlantasTipicas = data.tipo_tramite === PROYECTO_CON_PLANTAS_TIPICAS_TIPO;
+    const valorBaseCalculo = isPlantasTipicas
+      ? (data.valor_base_calculo && data.valor_base_calculo > 0 ? data.valor_base_calculo : data.valor_proyecto)
+      : data.valor_proyecto; // Normal types: valor_base_calculo equals valor_proyecto
+
     const submitData: LiquidacionEdificacionSubmitData = {
       proyecto_public_id: selectedProyecto.public_id,
       municipalidad_id: data.municipalidad_id,
       tipo_tramite: data.tipo_tramite,
       valor_proyecto: data.valor_proyecto,
+      expediente: data.expediente || undefined,
+      valor_base_calculo: valorBaseCalculo,
       observacion: data.observacion || undefined,
       revisiones_ids: data.revisiones_ids || [],
       proyectistas: proyectistasPayload,
@@ -376,6 +391,8 @@ export function LiquidacionEdificacionFormModal({
       municipalidad_id: "",
       tipo_tramite: "OBRA_NUEVA",
       valor_proyecto: 0,
+      expediente: "",
+      valor_base_calculo: 0,
       observacion: "",
       revisiones_ids: [],
       proyectistas: [],
@@ -395,6 +412,10 @@ export function LiquidacionEdificacionFormModal({
   const watchedMunicipalidadId = liqWatch("municipalidad_id");
   const selectedRevisionIds =
     (liqWatch("revisiones_ids") as string[]) || [];
+  
+  // Watch tipo_tramite for conditional valor_base_calculo display
+  const watchedTipoTramite = liqWatch("tipo_tramite");
+  const isPlantasTipicas = watchedTipoTramite === PROYECTO_CON_PLANTAS_TIPICAS_TIPO;
 
   // Use first selected revision for delegate filtering if exactly one is selected
   const singleRevisionId =
@@ -466,15 +487,21 @@ export function LiquidacionEdificacionFormModal({
   const handleCotizar = useCallback(async () => {
     const proyectoPublicId = selectedProyecto?.public_id;
     const valorProyecto = liqWatch("valor_proyecto");
+    const valorBaseCalculo = liqWatch("valor_base_calculo");
 
     if (!proyectoPublicId || !valorProyecto || valorProyecto <= 0) {
       return;
     }
 
+    // For cotizacion, use valor_base_calculo if provided (> 0), otherwise use valor_proyecto
+    // This matches the backend logic where valor_base_calculo defaults to valor_proyecto
+    const valorBase = (valorBaseCalculo && valorBaseCalculo > 0) ? valorBaseCalculo : valorProyecto;
+
     try {
       const result = await cotizacionMutation.mutateAsync({
         proyecto_public_id: proyectoPublicId,
         valor_proyecto: valorProyecto,
+        valor_base_calculo: valorBase,
       });
       // Service now returns CotizacionQuote directly (unwrapped from {success, data, error})
       setCotizacionQuote(result);
@@ -866,6 +893,8 @@ export function LiquidacionEdificacionFormModal({
                     municipalidad_id: "",
                     tipo_tramite: "OBRA_NUEVA",
                     valor_proyecto: 0,
+                    expediente: "",
+                    valor_base_calculo: 0,
                     observacion: "",
                     revisiones_ids: [],
                     proyectistas: [],
@@ -953,6 +982,41 @@ export function LiquidacionEdificacionFormModal({
                             errors={liqErrors}
                           />
                         </div>
+
+                          {/* Row: Expediente + Valor Base de Cálculo (solo para plantas típicas) */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <GenericInput
+                              field={{
+                                name: "expediente",
+                                label: "Expediente",
+                                type: "text",
+                                required: false,
+                                placeholder: "Número de expediente (opcional)",
+                                icon: FileText,
+                                labelClassName: "text-primary font-semibold",
+                              }}
+                              register={liqReg as any}
+                              control={liqControl as any}
+                              errors={liqErrors}
+                            />
+
+                            {isPlantasTipicas && (
+                              <GenericInput
+                                field={{
+                                  name: "valor_base_calculo",
+                                  label: "Valor Declarado (S/)",
+                                  type: "number",
+                                  required: true,
+                                  placeholder: "Valor base alternativo (requerido)",
+                                  icon: Calculator,
+                                  labelClassName: "text-primary font-semibold",
+                                }}
+                                register={liqReg as any}
+                                control={liqControl as any}
+                                errors={liqErrors}
+                              />
+                            )}
+                          </div>
 
                         <GenericInput
                           field={{
