@@ -16,7 +16,7 @@ import { RevisionesVigentesTable } from "./RevisionesVigentesTable";
 import { CotizacionSection } from "./CotizacionSection";
 import { ProyectistasSection } from "./ProyectistasSection";
 import { notify } from "@/errors";
-import type { ProyectistaResult } from "../types/proyectista";
+import type { ProyectistaResult, ProyectistaInline } from "../types/proyectista";
 import type { CotizacionQuote, LiquidacionSnapshotListItem } from "../types/liquidacion-edificaciones";
 import { z } from "zod";
 
@@ -98,12 +98,22 @@ export function NuevaRevisionFormModal({
   const cotizacionMutation = useCotizacionNuevaRevision();
 
   // Handle proyectista saved (created or selected)
-  const handleProyectistaSaved = useCallback((proyectista: ProyectistaResult) => {
+  const handleProyectistaSaved = useCallback((proyectista: ProyectistaInline) => {
     setSelectedProyectistas((prev) => {
-      if (prev.some((p) => p.id === proyectista.id)) {
+      if (prev.some((p) => p.cip === proyectista.cip)) {
         return prev;
       }
-      return [...prev, proyectista];
+      // Convert ProyectistaInline to ProyectistaResult for local state
+      const result: ProyectistaResult = {
+        id: proyectista.cip, // Use cip as id since it's the unique identifier
+        nombres: proyectista.nombres ?? "",
+        apellidos: proyectista.apellidos ?? "",
+        cip: proyectista.cip,
+        dni: "",
+        cap: proyectista.capitulo ?? undefined,
+        creado: false,
+      };
+      return [...prev, result];
     });
     setShowProyectistaModal(false);
   }, []);

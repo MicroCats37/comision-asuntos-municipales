@@ -59,6 +59,7 @@ class LiquidacionEdificacionesResult(BaseModel):
     municipalidad_nombre: str
     # proyectistas ahora van en edificaciones_proyectistas, no en proyecto
     edificaciones_proyectistas: list = Field(default_factory=list)  # list of ProyectistaSnapshotData
+    edificaciones_delegados: list = Field(default_factory=list)  # list of DelegadoSnapshotData
     edificaciones_public_id: str
     edificaciones_tipo_tramite: str
     edificaciones_tramite_accion: str
@@ -161,13 +162,30 @@ class EntidadSnapshotData(BaseModel):
 
 
 class ProyectistaSnapshotData(BaseModel):
-    """Proyectista anidado dentro de ProyectoSnapshotData."""
+    """Proyectista anidado dentro de EdificacionesSnapshotData.
+
+    NOTE: Actualizado para usar PerfilIngeniero referenciado.
+    """
     id: uuid.UUID
-    cip: Optional[str]
-    dni: Optional[str]
-    cap: Optional[str]
-    nombres: str
-    apellidos: str
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+
+
+class DelegadoSnapshotData(BaseModel):
+    """Delegado anidado dentro de EdificacionesSnapshotData."""
+    id: uuid.UUID
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    tipo: Optional[str] = None
 
 
 class ProyectoSnapshotData(BaseModel):
@@ -202,6 +220,7 @@ class EdificacionesSnapshotData(BaseModel):
     tipo_tramite: str
     tramite_accion: str
     proyectistas: list[ProyectistaSnapshotData] = Field(default_factory=list)
+    delegados: list[DelegadoSnapshotData] = Field(default_factory=list)
     revisiones: list[RevisionSnapshotData]
 
 
@@ -233,14 +252,60 @@ class LiquidacionSnapshotResult(BaseModel):
 
 
 # =============================================================================
+# Proyectista inline DTO — para flujo de crear/actualizar revisions con CIP
+# =============================================================================
+
+class ProyectistaInlineData(BaseModel):
+    """
+    DTO para proyectistas inline con validación CIP.
+
+    Se usa en _proceso_primera_revision y _proceso_nueva_revision para pasar
+    datos de proyectistas validados al flujo. Reemplaza el uso de list[dict].
+
+    Args:
+        cip: Número de CIP del ingeniero (6 dígitos, normalizado)
+        especialidad_id: ID de la especialidad (UUID)
+        descripcion: Descripción opcional del proyectista
+    """
+    cip: str
+    especialidad_id: uuid.UUID
+    descripcion: Optional[str] = None
+
+
+class ContactoInlineData(BaseModel):
+    """DTO para crear contactos inline asociados a una liquidacion."""
+
+    nombres: str
+    apellidos: str
+    dni: Optional[str] = None
+    cargo: Optional[str] = None
+    telefono: Optional[str] = None
+    celular: Optional[str] = None
+    email: Optional[str] = None
+    direccion: Optional[str] = None
+    principal: bool = False
+    descripcion: Optional[str] = None
+
+
+# =============================================================================
 # Revision vigentes DTO — para obtener_revisiones_vigentes
 # =============================================================================
 
-class RevisionVigenteResult(BaseModel):
-    """Resultado de una revisión vigente para formulario de revisión."""
+class EspecialidadBasicaResult(BaseModel):
+    """Datos básicos de una especialidad para resultados de revisiones vigentes."""
     id: uuid.UUID
-    especialidad_id: uuid.UUID
-    especialidad_nombre: str
+    nombre: str
+
+
+class RevisionVigenteResult(BaseModel):
+    """
+    Resultado de una revisión vigente para formulario de revisión.
+
+    NOTE: especialidades es M2M — una revisión puede cubrir múltiples especialidades.
+    Se devuelve la lista completa para que el frontend muestre todas.
+    """
+    id: uuid.UUID
+    especialidades: list[EspecialidadBasicaResult]
     tarifa_id: uuid.UUID
     porcentaje_liquidacion: Decimal
     derecho_minimo: Decimal
@@ -365,3 +430,39 @@ class CotizacionQuoteData(BaseModel):
     revisiones: list[CotizacionRevisionData]
     totales: CotizacionTotalesData
     metadata: CotizacionMetadataData  # Internal name (no underscore to avoid Pydantic private field)
+
+
+# =============================================================================
+# Revision con tarifa DTO — para transformar RevisionVigenteResult flat
+# a estructura anidada esperada por _calcular_revisiones
+# =============================================================================
+
+class RevisionConTarifaData(BaseModel):
+    """
+    Wrapper que transforma RevisionVigenteResult (flat) en estructura con
+    .tarifa y .especialidad anidados para reutilización en cálculo.
+
+    Reemplaza el helper _to_revision_calculo_data con fake inline class.
+    """
+    id: uuid.UUID
+    porcentaje_liquidacion: Decimal
+    tarifa: TarifaCalculoData
+    especialidad_nombre: str
+
+
+# =============================================================================
+# Delegados Vigentes DTO — para flujo deObtenerDelegadosVigentes
+# =============================================================================
+
+class DelegadoVigenteResult(BaseModel):
+    """Resultado de un delegado vigente para selection en formulario."""
+    id: uuid.UUID
+    nombre_completo: str
+    cip: str
+    especialidad: EspecialidadBasicaResult
+    tipo: str
+
+
+class DelegadosVigentesResult(BaseModel):
+    """Wrapper para lista de delegados vigentes."""
+    delegados: list[DelegadoVigenteResult]

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Banknote, MessageSquare, User, X, Building2, Calculator, Search, CheckCircle2, Loader2, MapPin } from "lucide-react";
+import { FileText, Banknote, MessageSquare, User, X, Building2, Calculator, Search, CheckCircle2, Loader2, MapPin, Phone } from "lucide-react";
 import { useCallback, useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,6 +17,7 @@ import { useProyectoCrear } from "../hooks/useProyecto";
 import { useRevisionesVigentes } from "../hooks/useRevisionesVigentes";
 import { useVariablesFinancieras } from "../hooks/useVariablesFinancieras";
 import { useMunicipalidades } from "../hooks/useMunicipalidades";
+import { useDelegadosVigentes } from "../hooks/useDelegadosVigentes";
 import { useDistritos } from "@/features/entidades/hooks/useDistritos";
 import { liquidacionEdificacionFormSchema } from "../schemas/liquidacion-edificaciones-form.schema";
 import type {
@@ -24,13 +25,17 @@ import type {
   LiquidacionEdificacionSubmitData,
   ProyectoResumen,
 } from "../types/liquidacion-edificaciones-form.types";
-import type { ProyectistaResult } from "../types/proyectista";
+import type { ProyectistaInline } from "../types/proyectista";
+import type { ContactoInline } from "../types/contacto";
 import type { CotizacionQuote } from "../types/liquidacion-edificaciones";
 import type { EntidadResult } from "@/features/entidades/types/entidad";
 import { ProyectistaFormModal } from "./ProyectistaFormModal";
+import { ContactosSection } from "./ContactosSection";
+import { ContactoFormModal } from "./ContactoFormModal";
 import { RevisionesVigentesTable } from "./RevisionesVigentesTable";
 import { CotizacionSection } from "./CotizacionSection";
 import { ProyectistasSection } from "./ProyectistasSection";
+import { DelegadosSection } from "./DelegadosSection";
 import { useProyectoBuscar } from "../hooks/useProyecto";
 import { normalizeProyectoResponse } from "../services/proyecto.service";
 import { InstitucionFormModal } from "@/features/entidades/components/InstitucionFormModal";
@@ -82,6 +87,9 @@ export function LiquidacionEdificacionFormModal({
 }: LiquidacionEdificacionFormModalProps) {
   // Child modal state (only for proyectista now)
   const [showProyectistaModal, setShowProyectistaModal] = useState(false);
+  const [showContactoModal, setShowContactoModal] = useState(false);
+  /** Index of contact being edited, or null if adding new */
+  const [editingContactoIndex, setEditingContactoIndex] = useState<number | null>(null);
 
   // Entidad state for inline proyecto form
   const [entidad, setEntidad] = useState<EntidadResult | undefined>();
@@ -95,8 +103,14 @@ export function LiquidacionEdificacionFormModal({
 
   // Selected proyectistas (local state for multi-select)
   const [selectedProyectistas, setSelectedProyectistas] = useState<
-    ProyectistaResult[]
+    ProyectistaInline[]
   >([]);
+
+  // Selected contactos (local state for multi-select)
+  const [selectedContactos, setSelectedContactos] = useState<ContactoInline[]>([]);
+
+  // Selected delegados (local state for multi-select)
+  const [selectedDelegados, setSelectedDelegados] = useState<string[]>([]);
 
   // Locked revision IDs (mandatory/habilitadas) — cannot be toggled
   const [lockedRevisionIds, setLockedRevisionIds] = useState<string[]>([]);
@@ -127,6 +141,29 @@ export function LiquidacionEdificacionFormModal({
       }))
     : [];
 
+  // Especialidad options for proyectista form (from revisiones vigentes)
+  // Now revisions have M2M especialidades - extract all unique specialties
+  const especialidadOptions = revisionesVigentes
+    ? [...new Map(
+        revisionesVigentes.flatMap((rev) =>
+          rev.especialidades.map((esp) => ({
+            label: esp.nombre,
+            value: esp.id,
+          }))
+        ).map((opt) => [opt.value, opt])
+      ).values()]
+    : [];
+
+  // Especialidad labels map for display in ProyectistasSection
+  const especialidadLabels: Record<string, string> = {};
+  if (revisionesVigentes) {
+    for (const rev of revisionesVigentes) {
+      for (const esp of rev.especialidades) {
+        especialidadLabels[esp.id] = esp.nombre;
+      }
+    }
+  }
+
   // Cotización state (clear when form fields change)
   const [cotizacionQuote, setCotizacionQuote] = useState<CotizacionQuote | null>(null);
 
@@ -152,9 +189,9 @@ export function LiquidacionEdificacionFormModal({
   }, []);
 
   // Handle proyectista saved (created or selected)
-  const handleProyectistaSaved = useCallback((proyectista: ProyectistaResult) => {
+  const handleProyectistaSaved = useCallback((proyectista: ProyectistaInline) => {
     setSelectedProyectistas((prev) => {
-      if (prev.some((p) => p.id === proyectista.id)) {
+      if (prev.some((p) => p.cip === proyectista.cip)) {
         return prev;
       }
       return [...prev, proyectista];
@@ -163,8 +200,54 @@ export function LiquidacionEdificacionFormModal({
   }, []);
 
   // Remove proyectista from selection
-  const handleRemoveProyectista = useCallback((proyectistaId: string) => {
-    setSelectedProyectistas((prev) => prev.filter((p) => p.id !== proyectistaId));
+  const handleRemoveProyectista = useCallback((cip: string) => {
+    setSelectedProyectistas((prev) => prev.filter((p) => p.cip !== cip));
+  }, []);
+
+  // Handle contacto saved (create or edit)
+  const handleContactoSaved = useCallback((contacto: ContactoInline) => {
+    setSelectedContactos((prev) => {
+      // If editing an existing contact, replace it; otherwise append
+      if (editingContactoIndex !== null) {
+        const updated = [...prev];
+        updated[editingContactoIndex] = contacto;
+        return updated;
+      }
+      // Generate localId for new contacts (not from backend)
+      const newContacto: ContactoInline = {
+        ...contacto,
+        localId: contacto.localId || `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      };
+      return [...prev, newContacto];
+    });
+    setShowContactoModal(false);
+    setEditingContactoIndex(null);
+  }, [editingContactoIndex]);
+
+  // Remove contacto from selection
+  const handleRemoveContacto = useCallback((index: number) => {
+    setSelectedContactos((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Edit contacto - open modal pre-filled
+  const handleEditContacto = useCallback((index: number) => {
+    setEditingContactoIndex(index);
+    setShowContactoModal(true);
+  }, []);
+
+  // Add contacto - open empty modal
+  const handleAddContacto = useCallback(() => {
+    setEditingContactoIndex(null);
+    setShowContactoModal(true);
+  }, []);
+
+  // Toggle delegado selection
+  const handleToggleDelegado = useCallback((delegadoId: string) => {
+    setSelectedDelegados((prev) =>
+      prev.includes(delegadoId)
+        ? prev.filter((id) => id !== delegadoId)
+        : [...prev, delegadoId]
+    );
   }, []);
 
   // Handle search existing project
@@ -242,6 +325,16 @@ export function LiquidacionEdificacionFormModal({
       return;
     }
 
+    // Map inline proyectistas to backend payload (only cip, especialidad_id, descripcion)
+    const proyectistasPayload = selectedProyectistas.map((p) => ({
+      cip: p.cip,
+      especialidad_id: p.especialidad_id,
+      descripcion: p.descripcion,
+    }));
+
+    // Map contactos to backend payload, stripping localId (not a backend field)
+    const contactosPayload = selectedContactos.map(({ localId: _localId, ...contacto }) => contacto);
+
     const submitData: LiquidacionEdificacionSubmitData = {
       proyecto_public_id: selectedProyecto.public_id,
       municipalidad_id: data.municipalidad_id,
@@ -249,7 +342,9 @@ export function LiquidacionEdificacionFormModal({
       valor_proyecto: data.valor_proyecto,
       observacion: data.observacion || undefined,
       revisiones_ids: data.revisiones_ids || [],
-      proyectistas_ids: selectedProyectistas.map((p) => p.id),
+      proyectistas: proyectistasPayload,
+      contactos: contactosPayload,
+      delegados_ids: selectedDelegados,
     };
 
     await crearMutation.mutateAsync(submitData as import("../types/liquidacion-edificaciones").PrimeraRevisionFormData);
@@ -257,6 +352,9 @@ export function LiquidacionEdificacionFormModal({
     onSuccess?.();
     setSelectedProyecto(undefined);
     setSelectedProyectistas([]);
+    setSelectedContactos([]);
+    setSelectedDelegados([]);
+    setEditingContactoIndex(null);
     setCotizacionQuote(null);
     // Reset form's proyecto_public_id so validation doesn't fail on next open
     liqSetValue("proyecto_public_id", "", { shouldValidate: false, shouldDirty: false });
@@ -280,7 +378,9 @@ export function LiquidacionEdificacionFormModal({
       valor_proyecto: 0,
       observacion: "",
       revisiones_ids: [],
-      proyectistas_ids: [],
+      proyectistas: [],
+      contactos: [],
+      delegados_ids: [],
       proyecto_public_id: "",
     },
   });
@@ -290,6 +390,20 @@ export function LiquidacionEdificacionFormModal({
     watch: liqWatch,
     setValue: liqSetValue,
   } = liqFormMethods;
+
+  // Watch municipalidad_id for fetching delegates (must be after liqWatch is defined)
+  const watchedMunicipalidadId = liqWatch("municipalidad_id");
+  const selectedRevisionIds =
+    (liqWatch("revisiones_ids") as string[]) || [];
+
+  // Use first selected revision for delegate filtering if exactly one is selected
+  const singleRevisionId =
+    selectedRevisionIds.length === 1 ? selectedRevisionIds[0] : null;
+
+  const { data: delegadosVigentes, isLoading: isLoadingDelegados } = useDelegadosVigentes(
+    watchedMunicipalidadId || null,
+    singleRevisionId
+  );
 
   // ── Handle proyecto created inline or selected from search ──────────────────
   // NOTE: Must be defined after useForm so it has access to liqSetValue.
@@ -311,9 +425,6 @@ export function LiquidacionEdificacionFormModal({
     // liqSetValue updates the same form instance that GenericForm validates against
     liqSetValue("proyecto_public_id", proyecto.public_id, { shouldValidate: true, shouldDirty: true });
   }, [liqSetValue]);
-
-  const selectedRevisionIds =
-    (liqWatch("revisiones_ids") as string[]) || [];
 
   const handleRevisionToggle = (revisionId: string) => {
     const current = selectedRevisionIds;
@@ -418,10 +529,12 @@ export function LiquidacionEdificacionFormModal({
                   2. Datos de Liquidación
                   3. Revisiones / Especialidades
                   4. Proyectistas
-                  5. Cotización
+                  5. Delegados (full width)
+                  6. Cotización
                 Desktop layout (2 columns with grid-template-areas):
                   "proyecto datos"
                   "revisiones proyectistas"
+                  "delegados delegados"
                   "cotizacion cotizacion"
             */}
             <style>{`
@@ -430,7 +543,8 @@ export function LiquidacionEdificacionFormModal({
                   grid-template-areas:
                     "proyecto datos"
                     "revisiones proyectistas"
-                    "cotizacion cotizacion";
+                    "contactos contactos"
+                    "delegados cotizacion";
                   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
                 }
               }
@@ -441,6 +555,8 @@ export function LiquidacionEdificacionFormModal({
                     "datos"
                     "revisiones"
                     "proyectistas"
+                    "contactos"
+                    "delegados"
                     "cotizacion";
                   grid-template-columns: 1fr;
                 }
@@ -752,7 +868,9 @@ export function LiquidacionEdificacionFormModal({
                     valor_proyecto: 0,
                     observacion: "",
                     revisiones_ids: [],
-                    proyectistas_ids: [],
+                    proyectistas: [],
+                    contactos: [],
+                    delegados_ids: [],
                     proyecto_public_id: "",
                   }}
                   onSubmit={handleLiquidacionSubmit}
@@ -888,6 +1006,34 @@ export function LiquidacionEdificacionFormModal({
                   selectedProyectistas={selectedProyectistas}
                   onAddProyectista={() => setShowProyectistaModal(true)}
                   onRemoveProyectista={handleRemoveProyectista}
+                  especialidadLabels={especialidadLabels}
+                />
+              </div>
+
+              {/* ── Contactos (full width) ───────────────────────────── */}
+              <div
+                className="rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-auto min-h-0"
+                style={{ gridArea: 'contactos' }}
+              >
+                <ContactosSection
+                  selectedContactos={selectedContactos}
+                  onAddContacto={handleAddContacto}
+                  onRemoveContacto={handleRemoveContacto}
+                  onEditContacto={handleEditContacto}
+                />
+              </div>
+
+              {/* ── Delegados (full width) ─────────────────────────────── */}
+              <div
+                className="rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-auto min-h-0"
+                style={{ gridArea: 'delegados' }}
+              >
+                <DelegadosSection
+                  delegados={delegadosVigentes || []}
+                  selectedIds={selectedDelegados}
+                  isLoading={isLoadingDelegados}
+                  hasMunicipalidad={!!watchedMunicipalidadId}
+                  onToggleDelegado={handleToggleDelegado}
                 />
               </div>
 
@@ -964,6 +1110,15 @@ export function LiquidacionEdificacionFormModal({
       open={showProyectistaModal}
       onOpenChange={setShowProyectistaModal}
       onSaved={handleProyectistaSaved}
+      especialidadOptions={especialidadOptions}
+    />
+
+    {/* Child Modal: Contacto */}
+    <ContactoFormModal
+      open={showContactoModal}
+      onOpenChange={setShowContactoModal}
+      onSaved={handleContactoSaved}
+      initialData={editingContactoIndex !== null ? selectedContactos[editingContactoIndex] : undefined}
     />
     </>
   );

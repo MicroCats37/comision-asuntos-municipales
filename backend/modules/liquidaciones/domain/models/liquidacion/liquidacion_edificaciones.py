@@ -11,6 +11,47 @@ from .liquidacion import LiquidacionGeneral
 from ...constants import TipoTramiteEdificaciones, TramiteAccion
 
 
+class EdificacionesEspecialidades(BaseModel):
+    """
+    Define el grupo de especialidades vigentes para Liquidaciones de Edificaciones
+    en un período determinado.
+
+    Este modelo representa qué especialidades son válidas para el cálculo de
+    liquidaciones de edificaciones en un momento dado. Se utiliza para validar
+    que las revisiones seleccionadas en una liquidación representen exactamente
+    el conjunto de especialidades vigentes.
+    """
+
+    history = HistoricalRecords()
+
+    especialidades = models.ManyToManyField(
+        "Especialidad",
+        related_name="edificaciones_especialidades_grupo",
+        verbose_name="Especialidades del Grupo",
+    )
+
+    periodo_inicio = models.DateField(
+        verbose_name="Periodo de Inicio",
+    )
+    periodo_fin = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Periodo de Fin",
+    )
+
+    class Meta:
+        verbose_name = "Grupo de Especialidades de Edificación"
+        verbose_name_plural = "Grupos de Especialidades de Edificación"
+        ordering = ["-periodo_inicio"]
+
+    def __str__(self):
+        fin_str = f" hasta {self.periodo_fin}" if self.periodo_fin else ""
+        return f"Especialidades Edificación desde {self.periodo_inicio}{fin_str}"
+
+    @property
+    def habilitada(self):
+        """Computado: determina si el grupo está vigente según el rango de fechas."""
+        return esta_vigente(self.periodo_inicio, self.periodo_fin)
 
 
 class EdificacionesTarifa(BaseModel):
@@ -62,9 +103,11 @@ class EdificacionesTarifa(BaseModel):
 
 class EdificacionesRevision(BaseModel):
     """
-    Revisión de tarifa de edificación por especialidad con vigencia propia.
-    Permite que cada tarifa de clasificación tenga variantes por especialidad
-    (arquitectura, estructuras, instalaciones sanitarias, etc.).
+    Revisión de tarifa de edificación con especialidades múltiples.
+
+    Una revisión puede cubrir una o más especialidades (M2M), por ejemplo:
+    arquitectura + estructuras + instalaciones sanitarias.
+    El cálculo genera UN cargo por revisión, no por especialidad.
     """
 
     tarifa = models.ForeignKey(
@@ -81,10 +124,10 @@ class EdificacionesRevision(BaseModel):
         help_text="Porcentaje aplicado para el cálculo del derecho.",
     )
 
-    especialidad = models.ForeignKey(
+    especialidades = models.ManyToManyField(
         "Especialidad",
-        on_delete=models.PROTECT,
-        verbose_name="Especialidad",
+        related_name="edificaciones_revisiones",
+        verbose_name="Especialidades",
     )
 
     periodo_inicio = models.DateField(
@@ -100,10 +143,10 @@ class EdificacionesRevision(BaseModel):
         verbose_name = "Revisión de Edificación"
         verbose_name_plural = "Revisiones de Edificaciones"
         db_table = "liquidaciones_edificacionesrevision"
-        unique_together = [["tarifa", "especialidad"]]
 
     def __str__(self):
-        return f"{self.especialidad.nombre} - {self.tarifa}"
+        nombres = ", ".join(e.nombre for e in self.especialidades.all())
+        return f"{nombres} - {self.tarifa}"
 
     @property
     def habilitada(self):
@@ -160,7 +203,7 @@ class LiquidacionEdificaciones(BaseModel):
         related_name="liquidaciones_edificaciones",
         verbose_name="Revisiones de Edificación",
     )
-    
+
     proyectistas = models.ManyToManyField(
         "Proyectista",
         related_name="liquidaciones_edificaciones",

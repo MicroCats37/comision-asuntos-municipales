@@ -44,12 +44,12 @@ class UsuarioAdmin(BaseUserAdmin, SimpleHistoryAdmin):
 class PerfilIngenieroAdmin(SimpleHistoryAdmin):
     """Admin para PerfilIngeniero."""
 
-    list_display = ["cip", "nombres", "apellido_paterno", "apellido_materno", "capitulo", "genero_display"]
+    list_display = ["cip", "nombres", "apellido_paterno", "apellido_materno", "capitulo", "genero_display", "habilitado_cip", "condicion_cip_display"]
     list_display_links = ["cip"]
-    list_filter = ["capitulo", "genero"]
+    list_filter = ["capitulo", "genero", "condicion_cip", "habilitado_cip"]
     search_fields = ["cip", "nombres", "apellido_paterno", "apellido_materno", "correo_personal", "correo_institucional"]
     ordering = ["apellido_paterno", "apellido_materno", "nombres"]
-    readonly_fields = ["created_at", "updated_at"]
+    readonly_fields = ["created_at", "updated_at", "fecha_validacion_cip", "ultimo_periodo_pagado_cip"]
     autocomplete_fields = ["capitulo"]
 
     fieldsets = (
@@ -57,6 +57,7 @@ class PerfilIngenieroAdmin(SimpleHistoryAdmin):
         ("Datos Personales", {"fields": ("nombres", "apellido_paterno", "apellido_materno", "fecha_nacimiento", "genero")}),
         ("Información de Contacto", {"fields": ("correo_personal", "correo_institucional", "direccion", "ubigeo")}),
         ("Información Profesional", {"fields": ("codigo_especialidad",)}),
+        ("Estado CIP", {"fields": ("habilitado_cip", "condicion_cip", "fecha_validacion_cip", "ultimo_periodo_pagado_cip")}),
         ("Auditoría", {"fields": ("created_at", "updated_at")}),
     )
 
@@ -64,6 +65,13 @@ class PerfilIngenieroAdmin(SimpleHistoryAdmin):
         return obj.genero or "—"
     genero_display.short_description = "Género"
     genero_display.allow_tags = True
+
+    def condicion_cip_display(self, obj):
+        if not obj.condicion_cip:
+            return "—"
+        return f"{obj.condicion_cip} ({'Habilitado' if obj.condicion_cip == '1' else 'No habilitado'})"
+    condicion_cip_display.short_description = "Condición CIP"
+    condicion_cip_display.allow_tags = True
 
 
 @admin.register(Capitulo)

@@ -6,7 +6,7 @@ from django.db import models
 from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
-from ..constants import DelegadoStatus, TipoDelegado
+from ..constants import DelegadoStatus, TipoDelegado, CategoriaDelegado
 from ..validators import validate_distrito
 from utils.ubigeo_schema import get_district_choices
 
@@ -23,13 +23,6 @@ class Delegado(BaseModel):
         on_delete=models.PROTECT,
         related_name="delegado_liquidacion",
         verbose_name="Perfil de Ingeniero",
-    )
-    
-    tipo=models.CharField(
-        max_length=20,
-        choices=TipoDelegado.choices,
-        default=TipoDelegado.TITULAR,
-        verbose_name="Tipo de Delegado",
     )
     
     especialidad = models.ForeignKey(
@@ -82,6 +75,19 @@ class MunicipalidadDelegado(BaseModel):
         related_name="delegados",
         verbose_name="Municipalidad",
     )
+    tipo=models.CharField(
+        max_length=20,
+        choices=TipoDelegado.choices,
+        default=TipoDelegado.TITULAR,
+        verbose_name="Tipo de Delegado",
+    )
+    categoria=models.CharField(
+        max_length=50,
+        choices=CategoriaDelegado.choices,
+        null=True,
+        blank=True,
+        verbose_name="Categoría del Delegado",
+    )
     activo = models.BooleanField(default=True, verbose_name="Activo")
 
     class Meta:
@@ -109,7 +115,7 @@ class PeriodoDelegado(BaseModel):
         verbose_name="Delegado",
     )
     periodo_inicio = models.DateField(verbose_name="Inicio del Periodo")
-    periodo_fin = models.DateField(verbose_name="Fin del Periodo")
+    periodo_fin = models.DateField(null=True, blank=True, verbose_name="Fin del Periodo")
 
     class Meta:
         verbose_name = "Periodo del Delegado"

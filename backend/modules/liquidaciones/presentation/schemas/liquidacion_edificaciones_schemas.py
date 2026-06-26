@@ -9,6 +9,37 @@ from typing import Optional, Any, Dict
 from pydantic import model_serializer, ConfigDict
 
 
+class ProyectistaInlineIn(Schema):
+    """
+    Proyectista inline para crear liquidación de edificaciones.
+
+    Reemplaza proyectistas_ids (lista de UUIDs) por una lista de objetos
+    con cip, especialidad_id y descripción opcional.
+
+    Validación:
+    - Para cada item se llama al servicio CIP externo
+    - Si cualquier CIP falla o no está habilitado (condicion != '1'), se rechaza TODA la operación
+    """
+    cip: str = Field(..., description="Número de CIP del ingeniero (6 dígitos)")
+    especialidad_id: uuid.UUID = Field(..., description="ID de la especialidad (UUID)")
+    descripcion: Optional[str] = Field(None, description="Descripción opcional del proyectista")
+
+
+class ContactoInlineIn(Schema):
+    """Contacto inline para crear y asociar a una liquidacion."""
+
+    nombres: str = Field(..., min_length=1, description="Nombres del contacto")
+    apellidos: str = Field(..., min_length=1, description="Apellidos del contacto")
+    dni: Optional[str] = Field(None, description="DNI del contacto")
+    cargo: Optional[str] = Field(None, description="Cargo del contacto")
+    telefono: Optional[str] = Field(None, description="Telefono del contacto")
+    celular: Optional[str] = Field(None, description="Celular del contacto")
+    email: Optional[str] = Field(None, description="Email del contacto")
+    direccion: Optional[str] = Field(None, description="Direccion del contacto")
+    principal: bool = Field(False, description="Marca este contacto como principal en la liquidacion")
+    descripcion: Optional[str] = Field(None, description="Notas de la relacion liquidacion-contacto")
+
+
 class PrimeraRevisionLiquidacionIn(Schema):
     """Payload para crear primera revisión / nueva liquidación."""
     proyecto_public_id: str = Field(..., description="ID público del proyecto (ej. PROY-2026-00001)")
@@ -18,9 +49,24 @@ class PrimeraRevisionLiquidacionIn(Schema):
     # expediente fue removido del dominio
     observacion: Optional[str] = Field(None, description="Observación opcional")
     revisiones_ids: list[str] = Field(default=[], description="IDs de revisiones de edificación a asociar (UUID)")
+    # NUEVO: Proyectistas inline con validación CIP
+    proyectistas: list[ProyectistaInlineIn] = Field(
+        default=[],
+        description="Lista de proyectistas inline con CIP. Si se provee, reemplaza completamente a proyectistas_ids."
+    )
+    # Para backwards compatibility暂时的 - mantener proyectistas_ids pero ya no se usa
     proyectistas_ids: list[uuid.UUID] = Field(
         default=[],
-        description="IDs de proyectistas a asociar a la liquidación de edificaciones (UUID)"
+        description="[DEPRECATED] Usar proyectistas (inline con CIP) en su lugar"
+    )
+    # NUEVO: Delegados IDs
+    delegados_ids: list[uuid.UUID] = Field(
+        default=[],
+        description="IDs de delegados a asociar a la liquidación de edificaciones (UUID)"
+    )
+    contactos: list[ContactoInlineIn] = Field(
+        default=[],
+        description="Contactos inline a crear y asociar a la liquidacion"
     )
 
 
@@ -32,11 +78,31 @@ class PrimeraRevisionLiquidacionWrapperIn(Schema):
 class NuevaRevisionLiquidacionIn(Schema):
     """Payload para crear nueva revisión."""
     liquidacion_previa_id: uuid.UUID = Field(..., description="ID de la liquidación previa (UUID)")
-    revisiones_ids: list[uuid.UUID] = Field(..., min_length=1, description="IDs de revisiones de edificación a asociar (UUID), no puede estar vacío")
+    revisiones_ids: list[uuid.UUID] = Field(
+        ...,
+        min_length=1,
+        max_length=1,
+        description="IDs de revisiones de edificación a asociar (UUID). Actualmente se requiere exactamente UNA revisión."
+    )
     observacion: Optional[str] = Field(None, description="Observación opcional")
+    # NUEVO: Proyectistas inline con validación CIP
+    proyectistas: list[ProyectistaInlineIn] = Field(
+        default=[],
+        description="Lista de proyectistas inline con CIP. Si se omite o está vacía, se heredan de la liquidación previa."
+    )
+    # Para backwards compatibility暂时的 - mantener proyectistas_ids pero ya no se usa
     proyectistas_ids: list[uuid.UUID] = Field(
         default=[],
-        description="IDs de proyectistas a asociar. Si se omite o está vacía, se heredan de la liquidación previa."
+        description="[DEPRECATED] Usar proyectistas (inline con CIP) en su lugar"
+    )
+    # NUEVO: Delegados IDs
+    delegados_ids: list[uuid.UUID] = Field(
+        default=[],
+        description="IDs de delegados a asociar. Si se omite o está vacía, se heredan de la liquidación previa."
+    )
+    contactos: list[ContactoInlineIn] = Field(
+        default=[],
+        description="Contactos inline a crear y asociar a la nueva liquidacion"
     )
     # valor_proyecto: se obtiene de la liquidación previa
     # expediente: fue removido del dominio
@@ -83,13 +149,32 @@ class EntidadOut(Schema):
 
 
 class ProyectistaOut(Schema):
-    """Proyectista anidado en edificaciones."""
+    """Proyectista anidado en edificaciones.
+
+    NOTE: Actualizado para usar PerfilIngeniero referenciado.
+    Los campos cip/dni/cap/nombres/apellidos fueron reemplazados por
+    perfil_ingeniero_* que se derivan del PerfilIngeniero FK.
+    """
     id: uuid.UUID
-    cip: Optional[str]
-    dni: Optional[str]
-    cap: Optional[str]
-    nombres: str
-    apellidos: str
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+
+
+class DelegadoOut(Schema):
+    """Delegado anidado en edificaciones."""
+    id: uuid.UUID
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    tipo: Optional[str] = None
 
 
 class ProyectoOut(Schema):
@@ -144,6 +229,7 @@ class EdificacionesOut(Schema):
     tipo_tramite: str
     tramite_accion: str
     proyectistas: list[ProyectistaOut] = Field(default_factory=list)
+    delegados: list[DelegadoOut] = Field(default_factory=list)
     revisiones: list[RevisionOut]
 
 
@@ -171,11 +257,20 @@ class VariablesFinancierasOut(Schema):
     uit_periodo_inicio: str = Field(..., description="Fecha inicio período UIT")
 
 
-class RevisionVigenteOut(Schema):
-    """Revisión vigente para formulario de primera/new revision."""
+class EspecialidadBasicaOut(Schema):
+    """Especialidad básica para revisión vigente."""
     id: uuid.UUID
-    especialidad_id: uuid.UUID
-    especialidad_nombre: str
+    nombre: str
+
+
+class RevisionVigenteOut(Schema):
+    """
+    Revisión vigente para formulario de primera/new revision.
+
+    NOTE: especialidades es M2M — una revisión puede cubrir múltiples especialidades.
+    """
+    id: uuid.UUID
+    especialidades: list[EspecialidadBasicaOut]
     tarifa_id: uuid.UUID
     porcentaje_liquidacion: float
     derecho_minimo: float
@@ -250,13 +345,30 @@ class EntidadSnapshotOut(Schema):
 
 
 class ProyectistaSnapshotOut(Schema):
-    """Proyectista anidado en edificaciones snapshot."""
+    """Proyectista anidado en edificaciones snapshot.
+
+    NOTE: Actualizado para usar PerfilIngeniero referenciado.
+    """
     id: uuid.UUID
-    cip: Optional[str]
-    dni: Optional[str]
-    cap: Optional[str]
-    nombres: str
-    apellidos: str
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+
+
+class DelegadoSnapshotOut(Schema):
+    """Delegado anidado en edificaciones snapshot."""
+    id: uuid.UUID
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    tipo: Optional[str] = None
 
 
 class ProyectoSnapshotOut(Schema):
@@ -286,6 +398,7 @@ class EdificacionesSnapshotListOut(Schema):
     tipo_tramite: str
     tramite_accion: str
     proyectistas: list[ProyectistaSnapshotOut] = Field(default_factory=list)
+    delegados: list[DelegadoSnapshotOut] = Field(default_factory=list)
     revisiones: list[RevisionSnapshotOut]
 
 
@@ -375,3 +488,40 @@ class CotizacionQuoteOut(Schema):
         data = handler(self)
         data['_metadata'] = data.pop('metadata')
         return data
+
+
+# ── Delegados Vigentes Schemas ─────────────────────────────────────────────────
+
+
+class EspecialidadBasicaDelegadoOut(Schema):
+    """Especialidad anidada en delegado vigente."""
+    id: uuid.UUID = Field(..., description="ID de la especialidad (UUID)")
+    nombre: str = Field(..., description="Nombre de la especialidad")
+
+
+class DelegadoVigenteOut(Schema):
+    """Delegado vigente para selección en formulario de liquidación."""
+    id: uuid.UUID = Field(..., description="ID del delegado (UUID)")
+    nombre_completo: str = Field(..., description="Nombre completo del ingeniero")
+    cip: str = Field(..., description="Número de CIP del ingeniero")
+    especialidad: EspecialidadBasicaDelegadoOut = Field(..., description="Especialidad del delegado")
+    tipo: str = Field(..., description="Tipo de delegado: titular o alterno")
+
+
+class DelegadosVigentesOut(Schema):
+    """Respuesta de delegados vigentes para una municipalidad."""
+    delegados: list[DelegadoVigenteOut] = Field(
+        default_factory=list,
+        description="Lista de delegados vigentes para la municipalidad seleccionada"
+    )
+
+
+# ── Especialidades Vigentes Schemas ──────────────────────────────────────────
+
+
+class EspecialidadesVigentesOut(Schema):
+    """Respuesta de especialidades vigentes para edificaciones."""
+    especialidades: list[EspecialidadBasicaOut] = Field(
+        default_factory=list,
+        description="Lista de especialidades vigentes del grupo de edificaciones"
+    )

@@ -12,6 +12,7 @@ from .liquidacion import (
 from .liquidacion_edificaciones import (
     TipoTramiteEdificaciones,
     TramiteAccion,
+    EdificacionesEspecialidades,
     EdificacionesTarifa,
     EdificacionesRevision,
     LiquidacionEdificaciones,
@@ -26,6 +27,7 @@ __all__ = [
     "LiquidacionSnapshot",
     "TipoTramiteEdificaciones",
     "TramiteAccion",
+    "EdificacionesEspecialidades",
     "EdificacionesTarifa",
     "EdificacionesRevision",
     "LiquidacionEdificaciones",

@@ -81,6 +81,24 @@ class LiquidacionGeneral(BaseModel):
         max_digits=12, decimal_places=2, verbose_name="Valor de Obra"
     )
     
+    valor_base_calculo = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Valor Base de Cálculo",
+        help_text="Valor base sobre el cual se calculan los derechos. Si está vacío, se usa valor_proyecto.",
+    )
+
+    sub_total = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Sub Total",
+        help_text="Subtotal calculado de la liquidación . Se llena después del cálculo.",
+    )
+
     observacion = models.CharField(
         max_length=2000,
         null=True,

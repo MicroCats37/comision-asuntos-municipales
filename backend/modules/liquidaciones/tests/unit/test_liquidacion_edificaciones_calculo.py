@@ -6,12 +6,14 @@ Tests:
 - Cálculo de derecho mínimo/máximo
 - Cálculo de monto base
 - Lógica de preparar_nueva_revision
+
+NOTE: Calculation methods (_calcular_derecho, _calcular_monto_base) were moved
+from Flujo to Core Service per Django architecture contract (P2, P6).
 """
 import pytest
 from decimal import Decimal
 
 from modules.liquidaciones.domain.services.flujos.liquidacion_edificaciones_flujo import (
-    LiquidacionesEdificacionesFlujo,
     REVISIONES_COBRAN,
     MAX_REVISIONES,
 )
@@ -62,14 +64,14 @@ class TestRevisionCobraRegla:
 
 
 class TestCalcularDerecho:
-    """Test _calcular_derecho with minimum and maximum — living in Flujo."""
+    """Test calcular_derecho with minimum and maximum — living in Core Service."""
 
     def setup_method(self):
-        self.flujo = LiquidacionesEdificacionesFlujo(core=LiquidacionesEdificacionesService())
+        self.core = LiquidacionesEdificacionesService()
 
     def test_derecho_sobre_minimo_retorna_minimo(self):
         """Si monto_base < derecho_minimo, debe retornar derecho_minimo."""
-        resultado = self.flujo._calcular_derecho(
+        resultado = self.core.calcular_derecho(
             monto_base=Decimal("100.00"),
             derecho_minimo=Decimal("500.00"),
             derecho_maximo=None,
@@ -78,7 +80,7 @@ class TestCalcularDerecho:
 
     def test_derecho_igual_minimo_retorna_minimo(self):
         """Si monto_base == derecho_minimo, debe retornarlo."""
-        resultado = self.flujo._calcular_derecho(
+        resultado = self.core.calcular_derecho(
             monto_base=Decimal("500.00"),
             derecho_minimo=Decimal("500.00"),
             derecho_maximo=None,
@@ -87,7 +89,7 @@ class TestCalcularDerecho:
 
     def test_derecho_entre_minimo_y_maximo_retorna_monto_base(self):
         """Si monto_base está entre mínimo y máximo, retorna monto_base."""
-        resultado = self.flujo._calcular_derecho(
+        resultado = self.core.calcular_derecho(
             monto_base=Decimal("1500.00"),
             derecho_minimo=Decimal("500.00"),
             derecho_maximo=Decimal("5000.00"),
@@ -96,7 +98,7 @@ class TestCalcularDerecho:
 
     def test_derecho_sobre_maximo_retorna_maximo(self):
         """Si monto_base > derecho_maximo, debe retornar derecho_maximo."""
-        resultado = self.flujo._calcular_derecho(
+        resultado = self.core.calcular_derecho(
             monto_base=Decimal("8000.00"),
             derecho_minimo=Decimal("500.00"),
             derecho_maximo=Decimal("5000.00"),
@@ -105,7 +107,7 @@ class TestCalcularDerecho:
 
     def test_derecho_sin_maximo_retorna_monto_base_cuando_es_mayor(self):
         """Si derecho_maximo=None, no hay techo."""
-        resultado = self.flujo._calcular_derecho(
+        resultado = self.core.calcular_derecho(
             monto_base=Decimal("10000.00"),
             derecho_minimo=Decimal("500.00"),
             derecho_maximo=None,
@@ -114,14 +116,14 @@ class TestCalcularDerecho:
 
 
 class TestCalcularMontoBase:
-    """Test _calcular_monto_base — living in Flujo."""
+    """Test calcular_monto_base — living in Core Service."""
 
     def setup_method(self):
-        self.flujo = LiquidacionesEdificacionesFlujo(core=LiquidacionesEdificacionesService())
+        self.core = LiquidacionesEdificacionesService()
 
     def test_monto_base_simple(self):
         """5% de 10000 = 500."""
-        resultado = self.flujo._calcular_monto_base(
+        resultado = self.core.calcular_monto_base(
             valor_proyecto=Decimal("10000.00"),
             porcentaje_liquidacion=Decimal("0.05"),
         )
@@ -129,7 +131,7 @@ class TestCalcularMontoBase:
 
     def test_monto_base_decimal(self):
         """5% de 12345.67 = 617.2835."""
-        resultado = self.flujo._calcular_monto_base(
+        resultado = self.core.calcular_monto_base(
             valor_proyecto=Decimal("12345.67"),
             porcentaje_liquidacion=Decimal("0.05"),
         )
@@ -137,7 +139,7 @@ class TestCalcularMontoBase:
 
     def test_monto_base_cero(self):
         """0% de cualquier valor = 0."""
-        resultado = self.flujo._calcular_monto_base(
+        resultado = self.core.calcular_monto_base(
             valor_proyecto=Decimal("10000.00"),
             porcentaje_liquidacion=Decimal("0.00"),
         )

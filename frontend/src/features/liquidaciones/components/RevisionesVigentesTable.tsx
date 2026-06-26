@@ -1,6 +1,7 @@
 "use client";
 
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   FileText,
   Percent,
@@ -129,9 +130,17 @@ export function RevisionesVigentesTable({
 
                 {/* Name and status */}
                 <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="font-semibold text-sm text-foreground truncate">
-                    {rev.especialidad_nombre}
-                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {rev.especialidades.length > 0 ? (
+                      rev.especialidades.map((e) => (
+                        <Badge key={e.id} variant="secondary" className="text-xs">
+                          {e.nombre}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Sin especialidades</span>
+                    )}
+                  </div>
                   {isLocked && !isDisabled ? (
                     <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 uppercase tracking-wide">
                       <Lock className="h-3 w-3" />
@@ -160,7 +169,13 @@ export function RevisionesVigentesTable({
                 onCheckedChange={() => !isLocked && !isDisabled && onToggleRevision(rev.id)}
                 disabled={isDisabled || isLocked}
                 className="shrink-0 mt-0.5"
-                aria-label={`Seleccionar ${rev.especialidad_nombre}`}
+                aria-label={
+                  rev.especialidades.length > 0
+                    ? rev.especialidades.length === 1
+                      ? `Seleccionar ${rev.especialidades[0].nombre}`
+                      : `Seleccionar ${rev.especialidades[0].nombre} y ${rev.especialidades.length - 1} más`
+                    : "Seleccionar"
+                }
               />
             </div>
 

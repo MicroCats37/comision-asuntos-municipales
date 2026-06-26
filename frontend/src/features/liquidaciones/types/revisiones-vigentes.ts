@@ -2,10 +2,14 @@
  * Tipos para Revisiones Vigentes — API contracts.
  */
 
+export interface EspecialidadBasica {
+  id: string;
+  nombre: string;
+}
+
 export interface RevisionVigente {
   id: string;
-  especialidad_id: string;
-  especialidad_nombre: string;
+  especialidades: EspecialidadBasica[];
   tarifa_id: string;
   porcentaje_liquidacion: number;
   derecho_minimo: number;

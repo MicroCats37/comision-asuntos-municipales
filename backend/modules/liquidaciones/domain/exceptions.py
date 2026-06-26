@@ -42,3 +42,18 @@ class PrimeraRevisionYaExisteError(ConflictError):
 class TipoLiquidacionInvalidoError(BusinessError):
     """Excepción cuando se intenta crear una revisión sobre una liquidación que no es de edificaciones."""
     pass
+
+
+class EspecialidadesGrupoNoEncontradoError(BusinessError):
+    """Excepción cuando no se encuentra un grupo de especialidades vigente para la fecha actual."""
+    pass
+
+
+class EspecialidadesSetInvalidoError(BusinessError):
+    """Excepción cuando el conjunto de especialidades de las revisiones seleccionadas no coincide exactamente con el grupo vigente."""
+    pass
+
+
+class RevisionesMultipleError(BusinessError):
+    """Excepción cuando se intenta crear una nueva revisión con más de una revisión (actualmente se permite exactamente una)."""
+    pass

@@ -23,7 +23,7 @@ def _promote_liquidacion_get_app_list(original_get_app_list):
             for model in app["models"]:
                 if model["object_name"] == "LiquidacionGeneral":
                     liquidacion_model = model
-                elif model["object_name"] == "RevisionDelegado":
+                elif model["object_name"] == "LiquidacionDelegado":
                     related_models.append(model)
             break
 
@@ -33,7 +33,7 @@ def _promote_liquidacion_get_app_list(original_get_app_list):
         liquidaciones_app["models"] = [
             model
             for model in liquidaciones_app["models"]
-            if model["object_name"] not in {"LiquidacionGeneral", "RevisionDelegado"}
+            if model["object_name"] not in {"LiquidacionGeneral", "LiquidacionDelegado"}
         ]
 
         if not liquidaciones_app["models"]:

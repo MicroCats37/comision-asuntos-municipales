@@ -1,5 +1,7 @@
 """
 ProyectistaFlujo — flujos async de negocio para proyectistas.
+
+NOTE: Flujo simplificado para usar identificación por (perfil_ingeniero, especialidad).
 """
 from asgiref.sync import sync_to_async
 from injector import inject
@@ -17,37 +19,31 @@ class ProyectistaFlujo:
     def __init__(self, core: ProyectistaService):
         self.core = core
 
-    async def _proceso_upsert(
+    async def proceso_upsert(
         self,
-        nombres: str,
-        apellidos: str,
-        cip: str | None,
-        dni: str | None,
-        cap: str | None,
+        perfil_ingeniero_id: str,
+        especialidad_id: str,
+        descripcion: str | None = None,
     ) -> tuple[ProyectistaResult, bool]:
         """
-        Proceso para crear o buscar un proyectista.
+        Proceso para crear o buscar un proyectista por (perfil_ingeniero, especialidad).
 
-        Busca por DNI si existe, si no encuentra busca por CIP.
-        Si no encuentra ninguno, crea uno nuevo.
+        Busca por perfil_ingeniero + especialidad.
+        Si no encuentra, crea uno nuevo.
 
         Returns:
             tuple: (ProyectistaResult, creado) donde creado=True si se creó, False si se encontró existente
         """
         data = ProyectistaCreateData(
-            nombres=nombres,
-            apellidos=apellidos,
-            cip=cip,
-            dni=dni,
-            cap=cap,
+            perfil_ingeniero_id=perfil_ingeniero_id,
+            especialidad_id=especialidad_id,
+            descripcion=descripcion,
         )
 
-        # Buscar si existe por DNI o CIP
-        existente = None
-        if dni:
-            existente = await sync_to_async(self.core._buscar_por_dni)(dni)
-        if not existente and cip:
-            existente = await sync_to_async(self.core._buscar_por_cip)(cip)
+        # Buscar si existe por perfil_ingeniero + especialidad
+        existente = await sync_to_async(self.core._buscar_por_perfil_y_especialidad)(
+            perfil_ingeniero_id, especialidad_id
+        )
 
         if existente:
             # Actualizar con datos nuevos

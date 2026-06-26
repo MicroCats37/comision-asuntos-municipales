@@ -12,46 +12,51 @@ class Proyectista(BaseModel):
     """
     Profesional responsable de elaborar los proyectos técnicos
     que se incluyen en las liquidaciones.
+
+    Un Proyectista está vinculado a un PerfilIngeniero (source of truth para
+    datos CIP/habilitación) y tiene una especialidad requerida para esta
+    liquidación específica.
+
+    NOTE: Los campos nombres/apellidos/cip/dni/cap fueron eliminados.
+    La identidad del proyectista se obtiene via PerfilIngeniero referenciado.
     """
 
     history = HistoricalRecords()
 
-    nombres = models.CharField(
-        max_length=255,
-        verbose_name="Nombre",
+    perfil_ingeniero = models.ForeignKey(
+        "usuarios.PerfilIngeniero",
+        on_delete=models.PROTECT,
+        related_name="proyectistas",
+        verbose_name="Perfil de Ingeniero",
+        help_text="Perfil que contiene los datos de identidad del ingeniero.",
     )
-    apellidos = models.CharField(
-        max_length=255,
-        verbose_name="Apellidos",
+
+    especialidad = models.ForeignKey(
+        "Especialidad",
+        on_delete=models.PROTECT,
+        verbose_name="Especialidad",
+        help_text="Especialidad de este proyectista para esta liquidación.",
     )
-    cip = models.CharField(
-        max_length=6,
+
+    descripcion = models.TextField(
         blank=True,
         null=True,
-        unique=True,
-        verbose_name="CIP",
-        help_text="Número de CIP (6 dígitos).",
-    )
-    dni = models.CharField(
-        max_length=8,
-        blank=True,
-        null=True,
-        unique=True,
-        verbose_name="DNI",
-        help_text="Número de DNI (8 dígitos).",
-    )
-    cap = models.CharField(
-        max_length=6,
-        blank=True,
-        null=True,
-        verbose_name="CAP",
-        help_text="Número de CAP (6 dígitos).",
+        verbose_name="Descripción",
+        help_text="Notas u observaciones sobre este proyectista.",
     )
 
     class Meta:
         verbose_name = "Proyectista"
         verbose_name_plural = "Proyectistas"
-        ordering= ["nombres"]
+        ordering = ["perfil_ingeniero__apellido_paterno", "perfil_ingeniero__apellido_materno", "perfil_ingeniero__nombres"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["perfil_ingeniero", "especialidad"],
+                name="unique_proyectista_perfil_especialidad",
+            ),
+        ]
 
     def __str__(self):
-        return f"{self.nombres} {self.apellidos}"
+        if self.perfil_ingeniero:
+            return f"{self.perfil_ingeniero.apellido_paterno} {self.perfil_ingeniero.apellido_materno}, {self.perfil_ingeniero.nombres}"
+        return f"Proyectista {self.id}"

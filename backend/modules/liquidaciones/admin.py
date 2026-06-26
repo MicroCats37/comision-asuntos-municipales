@@ -11,6 +11,7 @@ from .models import (
     ContactoProyecto,
     Delegado,
     Especialidad,
+    EdificacionesEspecialidades,
     LiquidacionGeneral,
     LiquidacionContacto,
     LiquidacionDocumentos,
@@ -22,17 +23,18 @@ from .models import (
     ProyectoEmpresarial,
     ProyectoPersonaNatural,
     Proyectista,
-    RevisionDelegado,
+    LiquidacionDelegado,
+    MunicipalidadDelegado,
 )
 from .domain.constants import EstadoLiquidacion, TipoTramiteEdificaciones, TramiteAccion
 
 from modules.finanzas.models import IGV, UIT
 
 
-class RevisionDelegadoInline(NestedTabularInline):
+class LiquidacionDelegadoInline(NestedTabularInline):
     """Inline para gestionar delegados asignados a una liquidación/revisión."""
 
-    model = RevisionDelegado
+    model = LiquidacionDelegado
     fk_name = "liquidacion"
     fields = [
         "delegado",
@@ -106,7 +108,7 @@ class RevisionInline(NestedTabularInline):
     readonly_fields = ["delegados_resumen", "created_at"]
     ordering = ["-created_at"]
     show_change_link = True
-    # inlines = [RevisionDelegadoInline]  # Deshabilitado hasta reimplementar con M2M
+    # inlines = [LiquidacionDelegadoInline]  # Deshabilitado hasta reimplementar con M2M
 
     def delegados_resumen(self, obj):
         if not obj:
@@ -131,8 +133,8 @@ class RevisionInline(NestedTabularInline):
 
 @admin.register(Delegado)
 class DelegadoAdmin(SimpleHistoryAdmin):
-    list_display = ["perfil_ingeniero", "tipo_display", "especialidad", "banco", "status"]
-    list_filter = ["tipo", "status", "especialidad", "banco"]
+    list_display = ["perfil_ingeniero", "especialidad", "banco", "status"]
+    list_filter = ["status", "especialidad", "banco"]
     search_fields = [
         "perfil_ingeniero__nombres",
         "perfil_ingeniero__apellido_paterno",
@@ -155,18 +157,88 @@ class DelegadoAdmin(SimpleHistoryAdmin):
             .select_related("perfil_ingeniero", "especialidad", "banco")
         )
 
-    def tipo_display(self, obj):
-        return obj.get_tipo_display()
 
-    tipo_display.short_description = "Tipo"
+@admin.register(MunicipalidadDelegado)
+class MunicipalidadDelegadoAdmin(SimpleHistoryAdmin):
+    list_display = [
+        "delegado",
+        "municipalidad",
+        "tipo",
+        "activo",
+        "delegado_cip",
+        "delegado_especialidad",
+    ]
+    list_filter = [
+        "activo",
+        "tipo",
+        "municipalidad",
+        "delegado__status",
+        "delegado__especialidad",
+    ]
+    search_fields = [
+        "delegado__perfil_ingeniero__nombres",
+        "delegado__perfil_ingeniero__apellido_paterno",
+        "delegado__perfil_ingeniero__apellido_materno",
+        "delegado__perfil_ingeniero__cip",
+        "municipalidad__nombre",
+        "municipalidad__codigo",
+    ]
+    readonly_fields = ["created_at", "updated_at"]
+    autocomplete_fields = ["delegado", "municipalidad"]
+    ordering = [
+        "delegado__perfil_ingeniero__apellido_paterno",
+        "delegado__perfil_ingeniero__apellido_materno",
+        "municipalidad__nombre",
+    ]
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .select_related(
+                "delegado__perfil_ingeniero",
+                "delegado__especialidad",
+                "municipalidad",
+            )
+        )
+
+    def delegado_cip(self, obj):
+        if obj and obj.pk and obj.delegado_id and obj.delegado.perfil_ingeniero_id:
+            return obj.delegado.perfil_ingeniero.cip
+        return "-"
+
+    delegado_cip.short_description = "CIP"
+    delegado_cip.boolean = False
+
+    def delegado_especialidad(self, obj):
+        if obj and obj.pk and obj.delegado_id:
+            return str(obj.delegado.especialidad)
+        return "-"
+
+    delegado_especialidad.short_description = "Especialidad"
+    delegado_especialidad.boolean = False
 
 
 @admin.register(Proyectista)
 class ProyectistaAdmin(SimpleHistoryAdmin):
-    list_display = ["nombres", "apellidos"]
-    search_fields = ["nombres", "apellidos"]
+    list_display = ["perfil_ingeniero", "especialidad", "descripcion"]
+    list_filter = ["especialidad"]
+    search_fields = [
+        "perfil_ingeniero__nombres",
+        "perfil_ingeniero__apellido_paterno",
+        "perfil_ingeniero__apellido_materno",
+        "perfil_ingeniero__cip",
+    ]
     readonly_fields = ["created_at", "updated_at"]
-    ordering = ["apellidos", "nombres"]
+    ordering = ["perfil_ingeniero__apellido_paterno", "perfil_ingeniero__apellido_materno", "perfil_ingeniero__nombres"]
+    autocomplete_fields = ["perfil_ingeniero", "especialidad"]
+
+    def perfil_ingeniero(self, obj):
+        if obj.perfil_ingeniero:
+            return f"{obj.perfil_ingeniero.apellido_paterno} {obj.perfil_ingeniero.apellido_materno}, {obj.perfil_ingeniero.nombres}"
+        return "-"
+
+    perfil_ingeniero.short_description = "Perfil Ingeniero"
 
 
 @admin.register(Proyecto)
@@ -254,7 +326,7 @@ class LiquidacionEdificacionesInline(NestedTabularInline):
 
     model = LiquidacionEdificaciones
     fk_name = "liquidacion"
-    fields = ["revisiones"]
+    fields = ["numero_revision", "tipo_tramite", "tramite_accion"]
     readonly_fields = ["created_at", "updated_at"]
     extra = 1
 
@@ -559,7 +631,7 @@ class LiquidacionGeneralAdmin(NestedModelAdmin, SimpleHistoryAdmin):
         "igv",
         "uit",
     ]
-    inlines = [RevisionDelegadoInline, LiquidacionEdificacionesInline]
+    inlines = [LiquidacionDelegadoInline, LiquidacionEdificacionesInline]
 
     def get_queryset(self, request):
         return (
@@ -798,8 +870,8 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
     Admin para LiquidacionEdificaciones — forma completa similar a LiquidacionGeneralAdmin.
 
     Limitaciones:
-    - RevisionDelegadoInline no puede inlar abuelos directamente bajo LiquidacionEdificaciones
-      porque RevisionDelegado FK apunta a LiquidacionGeneral (padre), no a LiquidacionEdificaciones.
+    - LiquidacionDelegadoInline no puede inlar abuelos directamente bajo LiquidacionEdificaciones
+      porque LiquidacionDelegado FK apunta a LiquidacionGeneral (padre), no a LiquidacionEdificaciones.
       Los delegados se gestionan desde LiquidacionGeneralAdmin padre.
     - EdificacionesClasificacionEspecialidadesInline tampoco funciona directamente porque
       su FK apunta a EdificacionesClasificacion, no a LiquidacionEdificaciones.
@@ -825,9 +897,10 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
         "calculo_total",
     ]
     autocomplete_fields = ["revisiones"]
+    filter_horizontal = ["proyectistas"]
     ordering = ["-created_at"]
     form = LiquidacionEdificacionesForm
-    # NOTA: No se pueden incluir inlines de RevisionDelegado porque su fk_name="liquidacion"
+    # NOTA: No se pueden incluir inlines de LiquidacionDelegado porque su fk_name="liquidacion"
     # apunta a LiquidacionGeneral, no a LiquidacionEdificaciones. Los delegados se gestionan
     # desde LiquidacionGeneralAdmin. Tampoco se pueden inlar EdificacionesClasificacionEspecialidades.
     inlines = []
@@ -842,7 +915,7 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
                 "liquidacion__igv",
                 "liquidacion__uit",
             )
-            .prefetch_related("revisiones", "revisiones__especialidad", "proyectistas")
+            .prefetch_related("revisiones", "revisiones__tarifa", "revisiones__especialidades", "proyectistas")
         )
 
     def get_changeform_initial_data(self, request):
@@ -1005,9 +1078,9 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
                     },
                 ),
                 (
-                    "Registro",
+                    "Delegados asignados",
                     {
-                        "fields": ("fecha_registro", "usuario_creador"),
+                        "fields": ("delegados_display", "delegados"),
                     },
                 ),
             ]
@@ -1053,13 +1126,13 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
                 (
                     "Delegados asignados",
                     {
-                        "fields": ("delegados_display",),
+                        "fields": ("delegados_display", "delegados"),
                     },
                 ),
                 (
                     "Datos de Edificación",
                     {
-                        "fields": ("revisiones",),
+                        "fields": ("revisiones", "proyectistas"),
                     },
                 ),
                 (
@@ -1072,10 +1145,17 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
             ]
 
 
-@admin.register(RevisionDelegado)
-class RevisionDelegadoAdmin(SimpleHistoryAdmin):
-    list_display = ["liquidacion", "numero_revision_display", "proyecto", "delegado", "created_at"]
-    list_filter = ["delegado__tipo", "delegado__especialidad"]
+@admin.register(LiquidacionDelegado)
+class LiquidacionDelegadoAdmin(SimpleHistoryAdmin):
+    list_display = [
+        "liquidacion",
+        "numero_revision_display",
+        "proyecto",
+        "delegado",
+        "dictamen_revision",
+        "created_at",
+    ]
+    list_filter = ["delegado__especialidad", "dictamen_revision"]
     search_fields = [
         "liquidacion__proyecto__denominacion",
         "delegado__perfil_ingeniero__nombres",
@@ -1130,6 +1210,32 @@ class UITAdmin(SimpleHistoryAdmin):
 # EdificacionesClasificacion model moved to domain — admin registration pending model availability.
 
 
+@admin.register(EdificacionesEspecialidades)
+class EdificacionesEspecialidadesAdmin(SimpleHistoryAdmin):
+    list_display = ["grupo_especialidades_display", "periodo_inicio", "periodo_fin", "habilitada_display"]
+    list_filter = ["periodo_inicio"]
+    search_fields = ["especialidades__nombre"]
+    readonly_fields = ["created_at", "updated_at", "habilitada_display"]
+    filter_horizontal = ["especialidades"]
+    ordering = ["-periodo_inicio"]
+
+    def grupo_especialidades_display(self, obj):
+        especialidades = list(obj.especialidades.all())
+        if not especialidades:
+            return "-"
+        nombres = [e.nombre for e in especialidades]
+        if len(nombres) > 4:
+            return ", ".join(nombres[:4]) + f" (+{len(nombres) - 4})"
+        return ", ".join(nombres)
+
+    grupo_especialidades_display.short_description = "Especialidades"
+
+    def habilitada_display(self, obj):
+        return obj.habilitada if obj.habilitada is not None else None
+
+    habilitada_display.short_description = "Habilitada"
+
+
 @admin.register(EdificacionesTarifa)
 class EdificacionesTarifaAdmin(SimpleHistoryAdmin):
     list_display = ["porcentaje_minimo_uit", "derecho_minimo", "derecho_maximo", "periodo_inicio", "periodo_fin"]
@@ -1141,12 +1247,21 @@ class EdificacionesTarifaAdmin(SimpleHistoryAdmin):
 
 @admin.register(EdificacionesRevision)
 class EdificacionesRevisionAdmin(SimpleHistoryAdmin):
-    list_display = ["tarifa", "especialidad", "porcentaje_liquidacion", "periodo_inicio", "periodo_fin", "habilitada"]
-    list_filter = ["especialidad"]
-    search_fields = ["especialidad__nombre"]
+    list_display = ["tarifa", "especialidades_list", "porcentaje_liquidacion", "periodo_inicio", "periodo_fin", "habilitada"]
+    list_filter = ["tarifa"]
+    search_fields = ["especialidades__nombre"]
     readonly_fields = ["created_at", "updated_at", "habilitada"]
-    autocomplete_fields = ["tarifa", "especialidad"]
+    filter_horizontal = ["especialidades"]
     ordering = ["-periodo_inicio"]
+
+    def especialidades_list(self, obj):
+        """Muestra lista de especialidades como texto separado por comas."""
+        especialidades = list(obj.especialidades.all())
+        if not especialidades:
+            return "-"
+        return ", ".join(e.nombre for e in especialidades)
+
+    especialidades_list.short_description = "Especialidades"
 
 
 # EdificacionesClasificacionEspecialidades model removed - specialties now stored

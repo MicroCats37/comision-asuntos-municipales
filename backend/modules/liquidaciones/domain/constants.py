@@ -18,6 +18,13 @@ class TipoDelegado(models.TextChoices):
     ALTERNO = "alterno", "Alterno"
 
 
+class CategoriaDelegado(models.TextChoices):
+    """Categoría del Delegado para filter en endpoint de liquidaciones."""
+
+    EDIFICACIONES = "Edificaciones", "Edificaciones"
+    HABILITACIONES_URBANAS = "Habilitaciones Urbanas", "Habilitaciones Urbanas"
+
+
 class EstadoLiquidacion(models.TextChoices):
     """Estado de LiquidacionGeneral."""
 
@@ -25,6 +32,15 @@ class EstadoLiquidacion(models.TextChoices):
     APROBADA = "APROBADA", "Aprobada"
     REINGRESADA = "REINGRESADA", "Reingresada"
     RECHAZADA = "RECHAZADA", "Rechazada"
+
+
+class DictamenRevision(models.TextChoices):
+    """Dictamen de revision asociado a un delegado de liquidacion."""
+
+    CONFORME = "CONFORME", "Conforme"
+    NO_CONFORME = "NO_CONFORME", "No conforme"
+    PENDIENTE = "PENDIENTE", "Pendiente"
+    AP_OB = "AP_OB", "AP.OB."
 
 
 class TipoTramiteEdificaciones(models.TextChoices):

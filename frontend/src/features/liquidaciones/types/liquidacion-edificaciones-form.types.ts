@@ -2,9 +2,10 @@
  * Tipos para el formulario de Liquidación Edificaciones.
  */
 import type { EntidadResult } from "@/features/entidades/types/entidad";
-import type { ProyectistaResult } from "./proyectista";
+import type { ProyectistaResult, ProyectistaInline } from "./proyectista";
 import type { RevisionVigente } from "./revisiones-vigentes";
 import type { TipoTramiteEdificaciones, VariablesFinancieras } from "./liquidacion-edificaciones";
+import type { ContactoInline } from "./contacto";
 
 // ── Entidad Simple (matches backend ProyectoSerializer response) ─────────────
 
@@ -34,7 +35,9 @@ export interface LiquidacionEdificacionFormState {
   valor_proyecto: number;
   observacion: string;
   revisiones_ids: string[];
-  proyectistas_ids: string[];
+  proyectistas: ProyectistaInline[];
+  contactos: ContactoInline[];
+  delegados_ids: string[];
   proyecto?: ProyectoResumen;
 }
 
@@ -47,7 +50,9 @@ export interface LiquidacionEdificacionSubmitData {
   valor_proyecto: number;
   observacion?: string;
   revisiones_ids: string[];
-  proyectistas_ids: string[];
+  proyectistas: ProyectistaInline[];
+  contactos: ContactoInline[];
+  delegados_ids: string[];
 }
 
 // ── Props Interfaces ────────────────────────────────────────────────────────
@@ -88,7 +93,9 @@ export interface ProyectoFormModalProps {
 export interface ProyectistaFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSaved: (proyectista: ProyectistaResult) => void;
+  onSaved: (proyectista: ProyectistaInline) => void;
+  /** Available especialidades from revisiones vigentes */
+  especialidadOptions?: Array<{ label: string; value: string }>;
 }
 
 export interface EntidadFormModalProps {
@@ -107,4 +114,12 @@ export interface PersonaNaturalFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: (entidad: EntidadResult) => void;
+}
+
+export interface ContactoFormModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSaved: (contacto: ContactoInline) => void;
+  /** Initial data to pre-fill the form (for edit mode) */
+  initialData?: ContactoInline;
 }

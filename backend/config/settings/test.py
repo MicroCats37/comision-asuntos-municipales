@@ -13,6 +13,10 @@ DATABASES = {
     }
 }
 
+# ── CIP Simulator ────────────────────────────────────────────
+# En tests usamos el simulador para no depender del API externo real
+CIP_USE_SIMULATOR = True
+
 # ── Notificaciones (Mock) ───────────────────────────────────
 NOTI_EMULATOR_ENABLED = True
 NOTI_URL = "http://mock-noti"

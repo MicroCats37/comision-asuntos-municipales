@@ -42,6 +42,24 @@ services:
     restart: unless-stopped
     entrypoint: ["/app/docker/entrypoint.sh"]
 
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: cam_frontend
+    env_file:
+      - frontend/.env.local
+    environment:
+      PORT: ${FRONTEND_PORT:-70020}
+      HOSTNAME: ${FRONTEND_HOSTNAME:-0.0.0.0}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:8000/api}
+    ports:
+      # Puerto externo (host): ${FRONTEND_PORT:-70020} → interno 70020
+      - "${FRONTEND_PORT:-70020}:${FRONTEND_PORT:-70020}"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   backend_static:

@@ -7,6 +7,9 @@ Nota: Los tests de cálculo de revisiones usan factories que pueden tener
 problemas de serialización de IDs en el test client. Los unit tests
 (100% passing) cubren la lógica de negocio. Estos tests de integración
 verifican el flujo completo a nivel HTTP.
+
+NOTE: Updated to use new Proyectista contract (perfil_ingeniero FK).
+EdificacionesEspecialidades must be created before primera-revision with revisions.
 """
 import pytest
 from django.test import Client
@@ -14,6 +17,7 @@ from django.test import Client
 from modules.liquidaciones.tests.factories.proyecto_factory import ProyectoFactory
 from modules.liquidaciones.tests.factories.finanzas_factory import IGVFactory, UITFactory
 from modules.liquidaciones.tests.factories.proyectista_factory import ProyectistaFactory
+from modules.liquidaciones.tests.factories.edificaciones_especialidades_factory import EdificacionesEspecialidadesFactory
 
 
 @pytest.mark.django_db
@@ -25,6 +29,8 @@ class TestPrimeraRevisionEndpoint:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
+        # Create EdificacionesEspecialidades vigente (empty set for sin_revisiones tests)
+        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -100,6 +106,8 @@ class TestObtenerLiquidacionEndpoint:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
+        # Create EdificacionesEspecialidades vigente
+        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -233,6 +241,8 @@ class TestPrimeraRevisionProyectistasM2M:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
+        # Create EdificacionesEspecialidades vigente
+        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -242,8 +252,8 @@ class TestPrimeraRevisionProyectistasM2M:
             nombre="Municipalidad de Prueba 2",
             distrito=self.distrito,
         )
-        self.proyectista1 = ProyectistaFactory(nombres="Juan", apellidos="Pérez")
-        self.proyectista2 = ProyectistaFactory(nombres="María", apellidos="García")
+        self.proyectista1 = ProyectistaFactory()
+        self.proyectista2 = ProyectistaFactory()
 
     def test_primera_revision_con_proyectistas_guarda_y_retorna_m2m(self, client: Client):
         """
@@ -366,6 +376,8 @@ class TestEdificacionesListEndpoint:
             nombre="Municipalidad de Prueba 3",
             distrito=self.distrito,
         )
+        # Create EdificacionesEspecialidades vigente for tests that create liquidaciones
+        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
 
     def test_get_list_empty_returns_success_with_items_array(self, client: Client):
         """
@@ -442,6 +454,8 @@ class TestPrimeraRevisionValidation:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
+        # Create EdificacionesEspecialidades vigente
+        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -559,6 +573,8 @@ class TestNuevaRevisionFormularioEndpoint:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
+        # Create EdificacionesEspecialidades vigente
+        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -638,6 +654,8 @@ class TestNuevaRevisionEndpoint:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
+        # Create EdificacionesEspecialidades vigente
+        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -647,8 +665,8 @@ class TestNuevaRevisionEndpoint:
             nombre="Municipalidad de Prueba 6",
             distrito=self.distrito,
         )
-        self.proyectista1 = ProyectistaFactory(nombres="Juan", apellidos="Pérez")
-        self.proyectista2 = ProyectistaFactory(nombres="María", apellidos="García")
+        self.proyectista1 = ProyectistaFactory()
+        self.proyectista2 = ProyectistaFactory()
 
         client = Client()
         response = client.post(
@@ -857,6 +875,8 @@ class TestNuevaRevisionFormularioEndpoint:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
+        # Create EdificacionesEspecialidades vigente
+        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -866,8 +886,8 @@ class TestNuevaRevisionFormularioEndpoint:
             nombre="Municipalidad para Formulario",
             distrito=self.distrito,
         )
-        self.proyectista1 = ProyectistaFactory(nombres="Juan", apellidos="Pérez")
-        self.proyectista2 = ProyectistaFactory(nombres="María", apellidos="García")
+        self.proyectista1 = ProyectistaFactory()
+        self.proyectista2 = ProyectistaFactory()
 
         client = Client()
         response = client.post(
@@ -975,8 +995,12 @@ class TestRevisionesVigentesSchema:
         # If there are revisions, verify schema keys
         for rev in revisiones:
             assert "id" in rev
-            assert "especialidad_id" in rev
-            assert "especialidad_nombre" in rev
+            assert "especialidades" in rev
+            assert isinstance(rev["especialidades"], list)
+            # Each especialidad should have id and nombre
+            for esp in rev["especialidades"]:
+                assert "id" in esp
+                assert "nombre" in esp
             assert "tarifa_id" in rev
             assert "porcentaje_liquidacion" in rev
             assert "derecho_minimo" in rev
@@ -1011,6 +1035,8 @@ class TestSnapshotsListEndpoint:
             nombre="Municipalidad de Prueba 7",
             distrito=self.distrito,
         )
+        # Create EdificacionesEspecialidades vigente for tests that create liquidaciones
+        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
 
     def test_snapshots_list_returns_success_with_pagination_shape(self, client: Client):
         """
@@ -1188,6 +1214,8 @@ class TestCotizarNuevaRevisionEndpoint:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
+        # Create EdificacionesEspecialidades vigente
+        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -1331,3 +1359,165 @@ class TestCotizarNuevaRevisionEndpoint:
             content_type="application/json",
         )
         assert response.status_code != 200, "Debe fallar con liquidacion_previa_id inexistente"
+
+
+@pytest.mark.django_db
+class TestDelegadosCategoriaValidation:
+    """
+    Test that delegados_ids validation requires categoria=Edificaciones for
+    liquidaciones de edificaciones.
+
+    Validates the fix: MunicipalidadDelegado must have categoria=Edificaciones
+    for Edificaciones liquidations, not just any active assignment.
+    """
+
+    def setup_method(self):
+        """Seed IGV, UIT, proyecto, municipalidad y delegado."""
+        from datetime import date
+        from modules.liquidaciones.tests.factories.delegado_factory import (
+            DelegadoFactory,
+            PeriodoDelegadoFactory,
+            MunicipalidadDelegadoFactory,
+        )
+        from modules.liquidaciones.domain.constants import CategoriaDelegado
+
+        self.igv = IGVFactory()
+        self.uit = UITFactory()
+        self.proyecto = ProyectoFactory()
+        # Create EdificacionesEspecialidades vigente
+        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
+        # Create a municipalidad for testing
+        from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
+        from modules.entidades.models import Municipalidad
+        self.distrito = UbigeoDistritoFactory()
+        self.municipalidad = Municipalidad.objects.create(
+            codigo="MUN-CAT-TEST",
+            nombre="Municipalidad de Prueba Categoria",
+            distrito=self.distrito,
+        )
+
+        today = date.today()
+
+        # Create a delegate with categoria=EDIFICACIONES (valid for Edificaciones liquidations)
+        self.delegado_edificaciones = DelegadoFactory(status='ACTIVO')
+        PeriodoDelegadoFactory(
+            delegado=self.delegado_edificaciones,
+            periodo_inicio=date(today.year - 1, 1, 1),
+            periodo_fin=None,  # Vigente
+        )
+        # Assignment with EDIFICACIONES categoria
+        self.mun_delegado_edificaciones = MunicipalidadDelegadoFactory(
+            delegado=self.delegado_edificaciones,
+            municipalidad=self.municipalidad,
+            activo=True,
+            categoria=CategoriaDelegado.EDIFICACIONES,
+        )
+
+        # Create a delegate with categoria=HABILITACIONES_URBANAS (NOT valid for Edificaciones)
+        self.delegado_habilitaciones = DelegadoFactory(status='ACTIVO')
+        PeriodoDelegadoFactory(
+            delegado=self.delegado_habilitaciones,
+            periodo_inicio=date(today.year - 1, 1, 1),
+            periodo_fin=None,  # Vigente
+        )
+        # Assignment with HABILITACIONES_URBANAS categoria
+        self.mun_delegado_habilitaciones = MunicipalidadDelegadoFactory(
+            delegado=self.delegado_habilitaciones,
+            municipalidad=self.municipalidad,
+            activo=True,
+            categoria=CategoriaDelegado.HABILITACIONES_URBANAS,
+        )
+
+    def test_delegado_con_categoria_edificaciones_pasa_validacion_en_primera_revision(self, client: Client):
+        """
+        POST /primera-revision con delegados_ids conteniendo un delegado con
+        categoria=Edificaciones debe retornar 200.
+        """
+        response = client.post(
+            "/api/liquidaciones/edificaciones/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "tipo_tramite": "OBRA_NUEVA",
+                    "valor_proyecto": 10000.0,
+                    "revisiones_ids": [],
+                    "delegados_ids": [str(self.delegado_edificaciones.id)],
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        assert "data" in data
+        snapshot = data["data"]
+        # Verify delegate appears in response
+        assert "delegados" in snapshot["edificaciones"]
+        delegados_ids_response = {d["id"] for d in snapshot["edificaciones"]["delegados"]}
+        assert str(self.delegado_edificaciones.id) in delegados_ids_response
+
+    def test_delegado_con_categoria_habilitaciones_urbanas_falla_validacion_en_primera_revision(self, client: Client):
+        """
+        POST /primera-revision con delegados_ids conteniendo un delegado con
+        categoria=Habilitaciones Urbanas (pero NO Edificaciones) debe retornar
+        error 400/422 indicando que el delegado no está asignado como Edificaciones.
+        """
+        response = client.post(
+            "/api/liquidaciones/edificaciones/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "tipo_tramite": "OBRA_NUEVA",
+                    "valor_proyecto": 10000.0,
+                    "revisiones_ids": [],
+                    "delegados_ids": [str(self.delegado_habilitaciones.id)],
+                }
+            },
+            content_type="application/json",
+        )
+        # Debe fallar con error de negocio (no 500)
+        assert response.status_code in (400, 422), f"Expected 400/422, got {response.status_code}: {response.json()}"
+        data = response.json()
+        # Verificar que el mensaje indica la categoría incorrecta
+        error_msg = str(data).lower()
+        assert "edificaciones" in error_msg or "municipalidad" in error_msg
+
+    def test_delegado_sin_asignacion_a_municipalidad_falla_validacion(self, client: Client):
+        """
+        POST /primera-revision con delegados_ids conteniendo un delegado que
+        NO tiene asignación a la municipalidad debe retornar error.
+        """
+        from modules.liquidaciones.tests.factories.delegado_factory import (
+            DelegadoFactory,
+            PeriodoDelegadoFactory,
+        )
+        from datetime import date
+        from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
+        from modules.entidades.models import Municipalidad
+
+        # Create delegate without municipalidad assignment
+        delegado_sin_asignacion = DelegadoFactory(status='ACTIVO')
+        today = date.today()
+        PeriodoDelegadoFactory(
+            delegado=delegado_sin_asignacion,
+            periodo_inicio=date(today.year - 1, 1, 1),
+            periodo_fin=None,
+        )
+
+        response = client.post(
+            "/api/liquidaciones/edificaciones/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "tipo_tramite": "OBRA_NUEVA",
+                    "valor_proyecto": 10000.0,
+                    "revisiones_ids": [],
+                    "delegados_ids": [str(delegado_sin_asignacion.id)],
+                }
+            },
+            content_type="application/json",
+        )
+        # Debe fallar con error de negocio
+        assert response.status_code in (400, 422), f"Expected 400/422, got {response.status_code}: {response.json()}"

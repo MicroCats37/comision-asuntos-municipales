@@ -1,6 +1,9 @@
 """
 ProyectistaOrchestrator — fachada asíncrona ligera para controladores de proyectistas.
+
+NOTE: Simplificado para usar identificación por (perfil_ingeniero, especialidad).
 """
+import uuid
 from injector import inject
 
 from ..flujos.proyectista_flujo import ProyectistaFlujo
@@ -17,23 +20,19 @@ class ProyectistaOrchestrator:
 
     async def upsert_proyectista(
         self,
-        nombres: str,
-        apellidos: str,
-        cip: str | None,
-        dni: str | None,
-        cap: str | None,
+        perfil_ingeniero_id: uuid.UUID,
+        especialidad_id: uuid.UUID,
+        descripcion: str | None = None,
     ) -> tuple[dict, bool]:
         """
-        Crea o busca un proyectista.
+        Crea o busca un proyectista por (perfil_ingeniero, especialidad).
 
         Returns:
             tuple: (dict con datos de proyectista, creado) donde creado=True si se creó, False si se encontró existente
         """
-        result, creado = await self.flujo._proceso_upsert(
-            nombres=nombres,
-            apellidos=apellidos,
-            cip=cip,
-            dni=dni,
-            cap=cap,
+        result, creado = await self.flujo.proceso_upsert(
+            perfil_ingeniero_id=str(perfil_ingeniero_id),
+            especialidad_id=str(especialidad_id),
+            descripcion=descripcion,
         )
         return result.model_dump(mode='json'), creado

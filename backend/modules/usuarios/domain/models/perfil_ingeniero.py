@@ -111,7 +111,37 @@ class PerfilIngeniero(BaseModel):
             related_name="ingenieros",
             verbose_name="Capítulo Profesional",
         )
-    
+
+    # ── CIP Habilitación Status (last-known external state) ─────────────────────
+    # Estos campos reflejan el estado más reciente obtenido del servicio CIP externo.
+    # NO son la fuente de verdad para validación operacional — siempre se valida
+    # en vivo durante la creación de liquidaciones.
+    habilitado_cip = models.BooleanField(
+        default=False,
+        verbose_name="Habilitado CIP",
+        help_text="Indica si el ingeniero está habilitado según CIP (último estado conocido).",
+    )
+    condicion_cip = models.CharField(
+        max_length=10,
+        blank=True,
+        null=True,
+        verbose_name="Condición CIP",
+        help_text="Condición del ingeniero según CIP (ej. '1' = habilitado).",
+    )
+    fecha_validacion_cip = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name="Fecha Validación CIP",
+        help_text="Fecha/hora de la última validación con el servicio CIP.",
+    )
+    ultimo_periodo_pagado_cip = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name="Último Período Pagado CIP",
+        help_text="Último período pagado según CIP.",
+    )
+
     @property
     def nombre_completo(self):
         return f"{self.nombres} {self.apellido_paterno} {self.apellido_materno}"

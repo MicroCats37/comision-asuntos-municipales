@@ -8,3 +8,6 @@ export { ProyectistaFormModal } from "./ProyectistaFormModal";
 export { LiquidacionSnapshotCard } from "./LiquidacionSnapshotCard";
 export { NuevaRevisionFormModal } from "./NuevaRevisionFormModal";
 export { ProyectistasSection } from "./ProyectistasSection";
+export { DelegadosSection } from "./DelegadosSection";
+export { ContactosSection } from "./ContactosSection";
+export { ContactoFormModal } from "./ContactoFormModal";

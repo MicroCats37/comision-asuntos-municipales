@@ -1,5 +1,7 @@
 """
 Factory for EdificacionesRevision model — used in tests.
+
+NOTE: Actualizada para usar ManyToManyField especialidades en lugar de FK.
 """
 from datetime import date
 from decimal import Decimal
@@ -18,6 +20,10 @@ class EdificacionesRevisionFactory(DjangoModelFactory):
 
     tarifa = factory.SubFactory(EdificacionesTarifaFactory)
     porcentaje_liquidacion = Decimal("5.00")
-    especialidad = factory.SubFactory(EspecialidadFactory)
     periodo_inicio = date(2020, 1, 1)
     periodo_fin = None  # vigente (habilitada)
+
+    @factory.lazy_attribute
+    def especialidades(self):
+        """Crea especialidades M2M después de la creación del objeto."""
+        return []  # Se asignan en el test o con .create() y luego establecer especialidades

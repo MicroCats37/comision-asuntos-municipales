@@ -2,6 +2,8 @@
 ProyectistaController — controladores HTTP ligeros para proyectistas.
 
 Solo delega a ProyectistaOrchestrator.
+
+NOTE: Simplificado para usar identificación por (perfil_ingeniero, especialidad).
 """
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
@@ -21,7 +23,7 @@ class ProyectistaController:
     Controlador para Proyectistas.
 
     Endpoints:
-    - POST /: Crear o buscar proyectista
+    - POST /: Crear o buscar proyectista por (perfil_ingeniero, especialidad)
     """
 
     @inject
@@ -31,17 +33,12 @@ class ProyectistaController:
     @route.post("/", response={200: ApiResponse[ProyectistaUpsertResponseOut]}, auth=None)
     async def upsert_proyectista(self, payload: ProyectistaIn):
         """
-        Crear o buscar un proyectista.
-
-        Busca por DNI si existe, si no encuentra busca por CIP.
-        Si no encuentra ninguno, crea uno nuevo.
+        Crear o buscar un proyectista por (perfil_ingeniero, especialidad).
         """
         result_dict, creado = await self.orchestrator.upsert_proyectista(
-            nombres=payload.nombres,
-            apellidos=payload.apellidos,
-            cip=payload.cip,
-            dni=payload.dni,
-            cap=payload.cap,
+            perfil_ingeniero_id=payload.perfil_ingeniero_id,
+            especialidad_id=payload.especialidad_id,
+            descripcion=payload.descripcion,
         )
 
         response_data = {

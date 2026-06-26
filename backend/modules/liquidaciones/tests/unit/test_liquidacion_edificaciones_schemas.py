@@ -127,29 +127,27 @@ class TestNuevaRevisionLiquidacionIn:
         """Input con solo campos requeridos debe ser válido."""
         liquidacion_id = uuid.uuid4()
         rev1 = uuid.uuid4()
-        rev2 = uuid.uuid4()
         data = {
             "liquidacion_previa_id": liquidacion_id,
-            "revisiones_ids": [rev1, rev2],
+            "revisiones_ids": [rev1],
         }
         schema = NuevaRevisionLiquidacionIn(**data)
         assert schema.liquidacion_previa_id == liquidacion_id
-        assert schema.revisiones_ids == [rev1, rev2]
+        assert schema.revisiones_ids == [rev1]
 
     def test_valid_full_input(self):
         """Input con todos los campos opcionales debe ser válido."""
         liquidacion_id = uuid.uuid4()
         rev4 = uuid.uuid4()
-        rev5 = uuid.uuid4()
         data = {
             "liquidacion_previa_id": liquidacion_id,
-            "revisiones_ids": [rev4, rev5],
+            "revisiones_ids": [rev4],
             "observacion": "Segunda revisión",
         }
         schema = NuevaRevisionLiquidacionIn(**data)
         assert schema.liquidacion_previa_id == liquidacion_id
         assert schema.observacion == "Segunda revisión"
-        assert schema.revisiones_ids == [rev4, rev5]
+        assert schema.revisiones_ids == [rev4]
 
     def test_liquidacion_previa_id_zero_invalid(self):
         """liquidacion_previa_id='0' no es un UUID válido y debe fallar."""

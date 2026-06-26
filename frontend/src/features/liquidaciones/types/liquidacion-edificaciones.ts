@@ -39,6 +39,15 @@ export interface VariablesFinancieras {
 
 // ── Formulario ────────────────────────────────────────────────────────────────
 
+/**
+ * Inline proyectista for liquidacion submit.
+ */
+export interface ProyectistaSubmit {
+  cip: string;
+  especialidad_id: string;
+  descripcion?: string;
+}
+
 export interface PrimeraRevisionFormData {
   proyecto_public_id: string;
   municipalidad_id: string;
@@ -46,7 +55,8 @@ export interface PrimeraRevisionFormData {
   valor_proyecto: number;
   observacion?: string;
   revisiones_ids: string[];
-  proyectistas_ids: string[];
+  proyectistas: ProyectistaSubmit[];
+  delegados_ids: string[];
 }
 
 export type TipoTramiteEdificaciones =
@@ -346,10 +356,14 @@ export interface ProyectistaActual {
  * Revision Vigente as returned in the formulario response (same shape as RevisionVigente).
  * Used when revisiones_vigentes is embedded in NuevaRevisionFormularioResponse.
  */
+export interface EspecialidadBasica {
+  id: string;
+  nombre: string;
+}
+
 export interface NuevaRevisionFormularioRevisionVigente {
   id: string;
-  especialidad_id: string;
-  especialidad_nombre: string;
+  especialidades: EspecialidadBasica[];
   tarifa_id: string;
   porcentaje_liquidacion: number;
   derecho_minimo: number;
@@ -384,4 +398,26 @@ export interface NuevaRevisionFormData {
   revisiones_ids: string[];
   proyectistas_ids: string[];
   observacion?: string;
+}
+
+// ── Delegados Vigentes ────────────────────────────────────────────────────────
+
+/**
+ * Especialidad anidada en delegado vigente.
+ */
+export interface EspecialidadBasicaDelegado {
+  id: string;
+  nombre: string;
+}
+
+/**
+ * Delegado vigente para selección en formulario.
+ * Retornado por GET /liquidaciones/edificaciones/delegados/vigentes
+ */
+export interface DelegadoVigente {
+  id: string;
+  nombre_completo: string;
+  cip: string;
+  especialidad: EspecialidadBasicaDelegado;
+  tipo: string;
 }

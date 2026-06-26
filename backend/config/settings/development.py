@@ -45,3 +45,7 @@ NINJA_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=90),
 }
+
+# ── CIP — Usar cliente real en desarrollo (no el simulador) ──
+# Tests siguen usando CIP_USE_SIMULATOR=True en test.py
+CIP_USE_SIMULATOR = False

@@ -146,12 +146,13 @@ class ContactoAdmin(SimpleHistoryAdmin):
     list_display = [
         "nombres",
         "apellidos",
+        "dni",
         "cargo",
         "telefono",
         "celular",
         "email",
     ]
-    search_fields = ["nombres", "apellidos", "cargo", "email"]
+    search_fields = ["nombres", "apellidos", "dni", "cargo", "email"]
     readonly_fields = ["created_at", "updated_at"]
     ordering = ["nombres", "apellidos"]
 

@@ -331,8 +331,10 @@ export const cotizacionNuevaRevisionRequestSchema = cotizacionNuevaRevisionPaylo
 /** Schema for revision vigente item embedded in formulario response */
 const revisionVigenteFormularioSchema = z.object({
   id: z.string(),
-  especialidad_id: z.string(),
-  especialidad_nombre: z.string(),
+  especialidades: z.array(z.object({
+    id: z.string(),
+    nombre: z.string(),
+  })),
   tarifa_id: z.string(),
   porcentaje_liquidacion: z.number(),
   derecho_minimo: z.number(),

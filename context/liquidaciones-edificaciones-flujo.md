@@ -17,23 +17,37 @@ Diseñar la lógica de negocio de Liquidaciones Edificaciones antes de implement
 | `LiquidacionGeneral` | Cabecera/base operacional de toda liquidación |
 | `LiquidacionEdificaciones` | Cabecera específica de edificaciones; se crea junto con `LiquidacionGeneral` desde endpoints específicos |
 | `EdificacionesRevision` | Revisión/tarifa por especialidad; tiene campo `habilitada` por periodo (usa helper core `esta_vigente`) |
+| `EdificacionesEspecialidades` | Define el grupo de especialidades vigentes para Liquidaciones de Edificaciones en un período determinado |
+| `Proyectista` | Vinculado a `PerfilIngeniero` (source of truth para CIP/habilitación); NO duplica campos CIP/DNI/CAP/Nombres/Apellidos |
 
 ### 2.2 Relaciones
 
 - `LiquidacionEdificaciones.revisiones` es **M2M** a `EdificacionesRevision`.
-- Las especialidades disponibles se obtienen de `EdificacionesRevision` vigente (no existe tabla `EspecialidadesHabilitadasEdificaciones`).
+- `EdificacionesRevision.especialidades` es **M2M** a `Especialidad` (no FK singular).
+- `EdificacionesEspecialidades.especialidades` es **M2M** a `Especialidad`.
+- `Proyectista` tiene FK a `PerfilIngeniero` y FK a `Especialidad` (NO campos duplicados de identidad).
 
 ### 2.3 Atributos por Modelo
 
 | Modelo | Atributos clave |
 |--------|----------------|
-| `EdificacionesRevision` (tarifa) | `derecho_minimo`, `derecho_maximo`, `porcentaje_minimo_uit` — pertenecen a la tarifa/revisión, NO a un bloque global |
-| `LiquidacionEdificaciones` | Referencia M2M a revisiones seleccionadas |
+| `EdificacionesRevision` (tarifa) | `derecho_minimo`, `derecho_maximo`, `porcentaje_minimo_uit` — pertenecen a la tarifa/revisión, NO a un bloque global. Tiene M2M a `especialidades`. |
+| `LiquidacionEdificaciones` | Referencia M2M a revisiones seleccionadas. `revisiones_ids` en API permite múltiples pero cálculo es 1 fila = 1 cargo. |
+| `EdificacionesEspecialidades` | `periodo_inicio`, `periodo_fin` (nullable), M2M a `especialidades`. `habilitada` es propiedad computada (no almacenada). |
+| `Proyectista` | FK `perfil_ingeniero`, FK `especialidad`, `descripcion` (opcional). Unique constraint en `(perfil_ingeniero, especialidad)`. |
 
 ### 2.4 Creación de Instancias
 
 - `LiquidacionEdificaciones` se crea **junto con** `LiquidacionGeneral` desde endpoints específicos.
 - **NO** por pasos separados manuales.
+
+### 2.5 Proyectista — Modelo Limpio
+
+`Proyectista` **NO almacena** campos duplicados de `PerfilIngeniero`:
+- ❌ NO `nombres`, `apellidos`, `cip`, `dni`, `cap`
+- ✅ SÍ `perfil_ingeniero = ForeignKey(PerfilIngeniero)` y `especialidad = ForeignKey(Especialidad)`
+- Unique constraint en `(perfil_ingeniero, especialidad)`
+- La identidad del ingeniero se obtiene via `PerfilIngeniero` referenciado
 
 ---
 
@@ -48,12 +62,19 @@ Diseñar la lógica de negocio de Liquidaciones Edificaciones antes de implement
 ### 3.2 Primera Revisión
 
 - Según `docs/tarifas.md`: **0.15% del valor de obra declarada**.
+- **Validación de conjunto exacto de especialidades**:
+  - Se busca `EdificacionesEspecialidades` vigente para la fecha actual.
+  - Si no existe, se lanza `EspecialidadesGrupoNoEncontradoError`.
+  - Las especialidades de las `EdificacionesRevision` seleccionadas deben coincidir **exactamente** con el conjunto del grupo vigente.
+  - Si no coincide, se lanza `EspecialidadesSetInvalidoError`.
 
 ### 3.3 Nueva Revisión
 
 - Se crea desde `liquidacion_previa_id`.
 - Se calcula `numero_revision = previa + 1`.
 - **Máximo 7 revisiones** (1 primera + 6 nuevas).
+- **Exactamente UNA revisión por nueva revisión** (validación en schema y flujo).
+  - Si se envían más de 1, se lanza `RevisionesMultipleError`.
 
 ### 3.4 Cobro por Número de Revisión
 
@@ -70,6 +91,17 @@ Diseñar la lógica de negocio de Liquidaciones Edificaciones antes de implement
 ### 3.5 Conservación de Revisiones
 
 - Aunque una revisión (2,4,6) **no cobre**, debe conservar las `revisiones` seleccionadas en el M2M.
+
+### 3.6 Cálculo: Una Revisión = Un Cargo
+
+- **Una fila de `EdificacionesRevision` = una línea de cargo/cálculo**.
+- NO se expande por cada especialidad de la revisión (aunque tenga M2M especialidades).
+- El subtotal es la suma de derechos de cada revisión.
+
+### 3.7 LiquidacionGeneral — Campos Operativos
+
+- `valor_base_calculo`: Se setea con `valor_proyecto` si no se proporciona explícitamente.
+- `sub_total`: Se llena después del cálculo de la liquidación.
 
 ---
 
@@ -96,18 +128,22 @@ Diseñar la lógica de negocio de Liquidaciones Edificaciones antes de implement
 
 ### 4.4 Proyectista
 
-- Identificado por: `cip`, `dni`, `cap` (**NO** `capitulo`).
-- `cip` y `dni` son únicos.
-- `cap` máximo **6 dígitos**.
+- Identificado por `(perfil_ingeniero_id, especialidad_id)`.
+- Upsert: busca por `(perfil_ingeniero, especialidad)`, si no existe crea.
+- **NO** requiere campos de identidad (CIP, DNI, etc.) — se obtienen de `PerfilIngeniero`.
 
 ### 4.5 Liquidaciones Edificaciones (NO CRUD genérico)
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
 | `POST` | `/liquidaciones/edificaciones/primera-revision` | Crear primera revisión |
-| `GET` | `/liquidaciones/edificaciones/nueva-revision` | Preparar formulario por liquidación previa |
+| `GET` | `/liquidaciones/edificaciones/nueva-revision/formulario` | Preparar formulario por liquidación previa |
 | `POST` | `/liquidaciones/edificaciones/nueva-revision` | Crear nueva revisión |
 | `GET` | `/liquidaciones/edificaciones/{id}` | Snapshot/detalle de liquidación |
+| `POST` | `/liquidaciones/edificaciones/cotizar/primera-revision` | Cotizar primera revisión (sin guardar) |
+| `POST` | `/liquidaciones/edificaciones/cotizar/nueva-revision` | Cotizar nueva revisión (sin guardar) |
+| `GET` | `/liquidaciones/edificaciones/revisiones-vigentes` | Lista de revisiones vigentes |
+| `GET` | `/liquidaciones/edificaciones/snapshots` | Lista paginada de snapshots |
 
 ---
 
@@ -128,6 +164,7 @@ Diseñar la lógica de negocio de Liquidaciones Edificaciones antes de implement
 │     │     ┌──────────────────────┐          │                  │
 │     │     │ MODAL PROYECTISTA    │          │                  │
 │     │     │ - Crear/Buscar       │          │                  │
+│     │     │ (por perfil+esp)     │          │                  │
 │     │     └──────────────────────┘          │                  │
 │     │  - [Botón] Buscar/Crear Entidad       │                  │
 │     │                                       │                  │
@@ -158,32 +195,32 @@ Diseñar la lógica de negocio de Liquidaciones Edificaciones antes de implement
 {
   "liquidacion": {
     "proyecto_public_id": "PROY-2026-00001",
+    "municipalidad_id": "uuid-de-municipalidad",
+    "tipo_tramite": "OBRA_NUEVA",
     "valor_proyecto": 500000.00,
-    "expediente": "EXP-2026-001",
-    "observacion": "Observación opcional"
+    "observacion": "Observación opcional",
+    "revisiones_ids": ["uuid-revision-1", "uuid-revision-2"],
+    "proyectistas_ids": ["uuid-proyectista-1"]
   }
 }
 ```
 
 > **Nota**: NO se envía `liquidacion_previa_id` en primera revisión.
+> Las revisiones seleccionadas deben representar exactamente el conjunto de especialidades del grupo vigente.
 
 ### 6.2 Nueva Revisión
 
 ```json
 {
-  "liquidacion": {
-    "liquidacion_previa_id": 123,
-    "valor_proyecto": 500000.00,
-    "expediente": "EXP-2026-002",
-    "observacion": "Observación opcional"
-  },
-  "edificaciones": {
-    "revisiones": [1, 2, 3]
-  }
+  "liquidacion_previa_id": "uuid-liquidacion-previa",
+  "revisiones_ids": ["uuid-una-sola-revision"],
+  "observacion": "Observación opcional",
+  "proyectistas_ids": []
 }
 ```
 
-> **Nota**: NO se envía IGV/UIT desde frontend.
+> **Nota**: `revisiones_ids` debe contener exactamente UNA revisión.
+> Si `proyectistas_ids` está vacío, se heredan de la liquidación previa.
 
 ---
 
@@ -194,61 +231,76 @@ Diseñar la lógica de negocio de Liquidaciones Edificaciones antes de implement
 ```json
 {
   "liquidacion": {
-    "id": 123,
-    "numero_liquidacion": "LIQ-EDIF-2026-00001",
+    "id": "uuid",
+    "public_id": "LIQ-2026-00001",
+    "numero_liquidacion": "LIQ-EDIF-1",
     "estado": "PENDIENTE",
     "fecha_creacion": "2026-01-15T10:30:00Z",
     "proyecto": {
-      "id": 456,
+      "id": "uuid",
       "public_id": "PROY-2026-00001",
       "nombre": "Edificio Residencial Los Andes",
       "direccion": "Av. Principal 123, Lima",
       "valor_proyecto": 500000.00,
       "entidad": {
-        "id": 789,
+        "id": "uuid",
         "tipo": "INSTITUCION",
         "nombre": "Constructora Los Andes S.A.C.",
         "ruc": "20456789012"
-      },
-      "proyectista": {
-        "id": 101,
-        "cip": "CIP-12345",
-        "dni": "12345678",
-        "cap": "123456",
-        "nombres": "Juan",
-        "apellidos": "Pérez García"
       }
     },
-    "expediente": "EXP-2026-001",
+    "municipalidad": {
+      "id": "uuid",
+      "nombre": "Municipalidad de Lima",
+      "codigo": "MUN-LIMA",
+      "provincia": { "id": "uuid", "nombre": "Lima" },
+      "distrito": { "id": "uuid", "nombre": "Lima" }
+    },
     "observacion": "Observación opcional"
   },
   "edificaciones": {
+    "public_id": "LIQ-EDIF-2026-00001",
+    "numero_revision": 1,
+    "tipo_tramite": "OBRA_NUEVA",
+    "tramite_accion": "PRIMERA_REVISION",
+    "proyectistas": [
+      {
+        "id": "uuid",
+        "perfil_ingeniero_id": "uuid",
+        "perfil_ingeniero_nombres": "Juan",
+        "perfil_ingeniero_apellidos": "Pérez García",
+        "perfil_ingeniero_cip": "CIP-12345",
+        "especialidad_id": "uuid",
+        "especialidad_nombre": "Arquitectura",
+        "descripcion": null
+      }
+    ],
     "revisiones": [
       {
-        "id": 1,
-        "numero_revision": 1,
-        "especialidad": "ARQUITECTURA",
+        "id": "uuid",
+        "especialidad": "Arquitectura",
         "tarifa": {
-          "id": 10,
-          "derecho_minimo": 100.00,
-          "derecho_maximo": 5000.00,
-          "porcentaje_minimo_uit": 0.15
+          "id": "uuid",
+          "derecho_minimo": "100.00",
+          "derecho_maximo": "5000.00",
+          "porcentaje_minimo_uit": "0.1500"
         },
         "monto_base": 750.00,
-        "cobra": true
+        "cobra": true,
+        "derecho": 750.00
       },
       {
-        "id": 2,
-        "numero_revision": 2,
-        "especialidad": "ESTRUCTURAS",
+        "id": "uuid",
+        "especialidad": "Estructuras",
         "tarifa": {
-          "id": 11,
-          "derecho_minimo": 150.00,
-          "derecho_maximo": 6000.00,
-          "porcentaje_minimo_uit": 0.15
+          "id": "uuid",
+          "derecho_minimo": "150.00",
+          "derecho_maximo": "6000.00",
+          "porcentaje_minimo_uit": "0.1500"
         },
         "monto_base": 0,
-        "cobra": false
+        "cobra": false,
+        "derecho": 0
       }
     ]
   },
@@ -265,45 +317,26 @@ Diseñar la lógica de negocio de Liquidaciones Edificaciones antes de implement
 ### 7.2 Notas Importantes
 
 - `liquidacion` contiene `proyecto` **dentro** (anidado).
-- `edificaciones` contiene `revisiones[]`.
+- `edificaciones` contiene `proyectistas` (vía M2M) y `revisiones[]`.
 - Cada revisión contiene su `tarifa` con `derecho_minimo`, `derecho_maximo`, `porcentaje_minimo_uit`.
 - `totales` contiene: subtotal, IGV, total, liquidación total, total a pagar.
-- Esta estructura se guarda en `LiquidacionSnapshot.data` **por ahora** porque campos finales pueden cambiar.
+- `proyectistas` ahora muestra datos del `PerfilIngeniero` referenciado, no campos duplicados.
+- **Una revisión = una línea de cargo** (no se expande por especialidad aunque tenga M2M especialidades).
 
 ---
 
-## 8. Preguntas Pendientes
+## 8. Errores de Validación
 
-| # | Pregunta | Estado |
-|---|----------|--------|
-| 1 | Nombre exacto de endpoints de nueva revisión | ⏳ Pendiente |
-| 2 | Definir shape final de snapshot con cliente | ⏳ Pendiente |
-| 3 | Confirmar valores enum exactos de clasificación | ⏳ Pendiente |
-| 4 | Definir formato/algoritmo de `public_id` de Proyecto | ⏳ Pendiente |
-
----
-
-## 9. Notas Importantes de Estilo
-
-### 9.1 Orden de Objetos
-
-Mantener objetos ordenados por pertenencia:
-
-| Parent | Child | Ejemplo |
-|--------|-------|---------|
-| `liquidacion` | `proyecto` | `liquidacion.proyecto` |
-| `proyecto` | `entidad`, `proyectista` | `proyecto.entidad`, `proyecto.proyectista` |
-| `tarifa` / `revision` | `derecho_minimo` | `revision.tarifa.derecho_minimo` |
-
-### 9.2 Datos
-
-- **NO mezclar datos globales inventados**.
-- Usar datos coherentes con el dominio.
-- Los ejemplos JSON son ilustrativos y bien ordenados.
+| Error | Excepción | Descripción |
+|-------|-----------|-------------|
+| Grupo de especialidades no vigente | `EspecialidadesGrupoNoEncontradoError` | No existe `EdificacionesEspecialidades` vigente para la fecha actual |
+| Conjunto de especialidades no coincide | `EspecialidadesSetInvalidoError` | Las especialidades de las revisiones seleccionadas no coinciden exactamente con el grupo vigente |
+| Múltiples revisiones en nueva revisión | `RevisionesMultipleError` | Se envió más de una revisión para nueva revisión (se requiere exactamente 1) |
+| Revisión no habilitada | `RevisionNoHabilitadaError` | Una de las revisiones seleccionadas no está vigente/habilitada |
 
 ---
 
-## 10. Referencias
+## 9. Referencias
 
 - Contrato de arquitectura: `contract/django-app-architecture-contract.md`
 - Tarifas: `docs/tarifas.md`
@@ -311,4 +344,5 @@ Mantener objetos ordenados por pertenencia:
 
 ---
 
-*Documento generado: 2026-06-16*
+*Documento generado: 2026-06-24*
+*Última actualización: Agregada documentación sobre modelo Proyectista limpio, validación de conjunto exacto de especialidades, y cálculo 1 revisión = 1 cargo.*

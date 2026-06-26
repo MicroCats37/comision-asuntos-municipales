@@ -15,6 +15,10 @@ from ...schemas import (
     RevisionVigenteResult,
     LiquidacionEdificacionesPaginatedResult,
     CotizacionQuoteData,
+    ProyectistaInlineData,
+    ContactoInlineData,
+    DelegadosVigentesResult,
+    EspecialidadBasicaResult,
 )
 
 
@@ -40,7 +44,10 @@ class LiquidacionesEdificacionesOrchestrator:
         valor_proyecto: float,
         observacion: str | None,
         revisiones_ids: list[str],
-        proyectistas_ids: list[str],
+        proyectistas_inline: list[ProyectistaInlineData] | None = None,
+        proyectistas_ids: list[str] | None = None,
+        delegados_ids: list[str] | None = None,
+        contactos_inline: list[ContactoInlineData] | None = None,
     ) -> LiquidacionEdificacionesResult:
         """Crear primera revisión — delega a flujo."""
         return await self.flujo._proceso_primera_revision(
@@ -50,7 +57,10 @@ class LiquidacionesEdificacionesOrchestrator:
             valor_proyecto=valor_proyecto,
             observacion=observacion,
             revisiones_ids=revisiones_ids,
+            proyectistas_inline=proyectistas_inline,
             proyectistas_ids=proyectistas_ids,
+            delegados_ids=delegados_ids,
+            contactos_inline=contactos_inline,
         )
 
     async def preparar_nueva_revision(
@@ -67,14 +77,20 @@ class LiquidacionesEdificacionesOrchestrator:
         liquidacion_previa_id: str,
         observacion: str | None,
         revisiones_ids: list[str],
+        proyectistas_inline: list[ProyectistaInlineData] | None = None,
         proyectistas_ids: list[str] | None = None,
+        delegados_ids: list[str] | None = None,
+        contactos_inline: list[ContactoInlineData] | None = None,
     ) -> LiquidacionEdificacionesResult:
         """Crear nueva revisión — delega a flujo."""
         return await self.flujo._proceso_nueva_revision(
             liquidacion_previa_id=liquidacion_previa_id,
             observacion=observacion,
             revisiones_ids=revisiones_ids,
+            proyectistas_inline=proyectistas_inline,
             proyectistas_ids=proyectistas_ids,
+            delegados_ids=delegados_ids,
+            contactos_inline=contactos_inline,
         )
 
     async def obtener_liquidacion(
@@ -137,3 +153,34 @@ class LiquidacionesEdificacionesOrchestrator:
             liquidacion_previa_id=liquidacion_previa_id,
             revisiones_ids=revisiones_ids,
         )
+
+    async def obtener_delegados_vigentes(
+        self,
+        municipalidad_id: str,
+        revision_id: str | None = None,
+        categoria: str | None = None,
+    ) -> DelegadosVigentesResult:
+        """
+        Obtiene delegados vigentes para una municipalidad.
+
+        Delegates to flujo._proceso_delegados_vigentes.
+        Retorna DelegadosVigentesResult con lista tipada de delegados.
+
+        Args:
+            municipalidad_id: UUID de la municipalidad
+            revision_id: UUID opcional de EdificacionesRevision para filtrar por especialidades
+            categoria: Categoría del delegado (Edificaciones o Habilitaciones Urbanas). Default: Edificaciones
+        """
+        return await self.flujo._proceso_delegados_vigentes(
+            municipalidad_id=municipalidad_id,
+            revision_id=revision_id,
+            categoria=categoria,
+        )
+
+    async def obtener_especialidades_vigentes(self) -> list[EspecialidadBasicaResult]:
+        """
+        Obtiene las especialidades vigentes del grupo EdificacionesEspecialidades.
+
+        Retorna lista tipada de EspecialidadBasicaResult.
+        """
+        return await self.flujo._proceso_especialidades_vigentes()

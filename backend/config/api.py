@@ -9,6 +9,7 @@ from ninja_jwt.controller import NinjaJWTDefaultController
 
 from core.exceptions import register_exception_handlers
 from modules.usuarios.presentation.controllers.auth_controller import AuthLoginController
+from modules.usuarios.presentation.controllers.ingeniero_habilitado_controller import IngenieroHabilitadoController
 from modules.finanzas.presentation.controllers.finanzas_controller import FinanzasController
 from modules.liquidaciones.presentation.controllers.liquidacion_edificaciones_controller import LiquidacionEdificacionesController
 from modules.liquidaciones.presentation.controllers.proyectista_controller import ProyectistaController
@@ -67,6 +68,9 @@ api.register_controllers(NinjaJWTDefaultController)
 
 # ── Auth Controllers (modular login by username/dni/email) ─
 api.register_controllers(AuthLoginController)
+
+# ── Ingeniero Habilitado Controllers ─
+api.register_controllers(IngenieroHabilitadoController)
 
 # ── Finanzas Controllers ─
 api.register_controllers(FinanzasController)

@@ -9,6 +9,7 @@ from .domain.models import (
     LiquidacionContacto,
     LiquidacionDocumentos,
     LiquidacionSnapshot,
+    EdificacionesEspecialidades,
     EdificacionesTarifa,
     EdificacionesRevision,
     LiquidacionEdificaciones,
@@ -18,7 +19,7 @@ from .domain.models import (
     ProyectoEmpresarial,
     ProyectoPersonaNatural,
     ContactoProyecto,
-    RevisionDelegado,
+    LiquidacionDelegado,
 )
 
 __all__ = [
@@ -30,14 +31,15 @@ __all__ = [
     "LiquidacionContacto",
     "LiquidacionDocumentos",
     "LiquidacionSnapshot",
-    "LiquidacionEdificaciones",
-    "LiquidacionEdificacionesProxy",
+    "EdificacionesEspecialidades",
     "EdificacionesTarifa",
     "EdificacionesRevision",
+    "LiquidacionEdificaciones",
+    "LiquidacionEdificacionesProxy",
     "Proyectista",
     "Proyecto",
     "ProyectoEmpresarial",
     "ProyectoPersonaNatural",
     "ContactoProyecto",
-    "RevisionDelegado",
+    "LiquidacionDelegado",
 ]

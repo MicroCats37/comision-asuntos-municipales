@@ -1,30 +1,38 @@
 """
-Management command to load real delegados data from seed JSON.
+Management command to load real delegados data from seed JSON or markdown.
 
 Usage:
     python manage.py load_delegados_reales --settings=config.settings.development
     python manage.py load_delegados_reales --dry-run --settings=config.settings.development
     python manage.py load_delegados_reales --skip-endpoint --settings=config.settings.development
+    python manage.py load_delegados_reales --source markdown --settings=config.settings.development
 
-Seed data sources:
+Seed data sources (JSON mode):
   - backend/modules/liquidaciones/seeds/delegados_reales.json   (municipalidades/delegados/asignaciones)
   - backend/modules/liquidaciones/seeds/colegiados_reales.json  (PerfilIngeniero/Capitulo materializado)
-Endpoint: http://172.16.93.83:9001/api/v1/colegiado/{cip}
+  - Endpoint: http://172.16.93.83:9001/api/v1/colegiado/{cip}
+
+Markdown mode:
+  - docs/desarrollo/delegados-electrica-mecanica.md - Contains DELEGADOS TITULARES Y ALTERNOS DE INGENIERÍA ELÉCTRICA Y MECÁNICA ELÉCTRICA
 """
 
 import json
 import logging
+import re
 from pathlib import Path
+from typing import List, Tuple, Optional
 
 import requests
+import markdown
 from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from django.core.management.base import BaseCommand, CommandError
 
 from modules.entidades.models import Banco
 from modules.entidades.domain.models.municipalidad import Municipalidad
-from modules.liquidaciones.domain.models.delegado import Delegado, TipoDelegado, MunicipalidadDelegado
+from modules.liquidaciones.domain.models.delegado import Delegado, TipoDelegado, CategoriaDelegado, MunicipalidadDelegado, PeriodoDelegado
 from modules.liquidaciones.domain.models.especialidades import Especialidad
 from modules.liquidaciones.domain.constants import DelegadoStatus
 from modules.usuarios.models import PerfilIngeniero
@@ -33,6 +41,10 @@ from modules.usuarios.domain.models.perfil_ingeniero import Capitulo
 
 logger = logging.getLogger(__name__)
 
+# Constants for markdown source
+MARKDOWN_SPECIALTY = "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+MARKDOWN_MUNICIPALIDAD_CODE_PREFIX = "ELE"
+
 
 class Command(BaseCommand):
     help = "Cargar datos reales de delegados desde JSON seed"
@@ -40,6 +52,13 @@ class Command(BaseCommand):
     COLEGIADO_ENDPOINT = "http://172.16.93.83:9001/api/v1/colegiado/{cip}"
 
     def add_arguments(self, parser):
+        parser.add_argument(
+            '--source',
+            type=str,
+            choices=['json', 'markdown'],
+            default='json',
+            help='Fuente de datos: json (default) o markdown',
+        )
         parser.add_argument(
             '--dry-run',
             action='store_true',
@@ -62,10 +81,17 @@ class Command(BaseCommand):
             default=None,
             help='Ruta al archivo JSON seed de colegiados (datos de PerfilIngeniero/Capitulo)',
         )
+        parser.add_argument(
+            '--markdown-path',
+            type=str,
+            default=None,
+            help='Ruta al archivo markdown con delegados de Ingeniería Eléctrica',
+        )
 
     def handle(self, *args, **options):
         self.dry_run = options['dry_run']
         self.skip_endpoint = options['skip_endpoint']
+        self.source = options['source']
         self.seed_path = (
             Path(options['seed_path'])
             if options['seed_path']
@@ -76,11 +102,59 @@ class Command(BaseCommand):
             if options['colegiados_seed_path']
             else Path(settings.BASE_DIR) / 'modules' / 'liquidaciones' / 'seeds' / 'colegiados_reales.json'
         )
+        self.markdown_path = (
+            Path(options['markdown_path'])
+            if options['markdown_path']
+            else Path(settings.BASE_DIR).parent / 'docs' / 'desarrollo' / 'delegados-electrica-mecanica.md'
+        )
 
         self._log(f"\n[load_delegados_reales] Starting...")
 
         if self.dry_run:
             self._log(self.style.WARNING("  DRY-RUN MODE - No database writes will occur"))
+
+        if self.source == 'markdown':
+            self._handle_markdown_source()
+        else:
+            self._handle_json_source()
+
+        self._log(self.style.SUCCESS(
+            f"\n[load_delegados_reales] Completed successfully"
+        ))
+
+    def _handle_markdown_source(self):
+        """Process delegates from markdown file."""
+        self._log(f"  Source: markdown")
+        self._log(f"  Markdown file: {self.markdown_path}")
+
+        if not self.markdown_path.exists():
+            raise CommandError(f"Markdown file not found: {self.markdown_path}")
+
+        # Ensure the specialty exists
+        self._ensure_markdown_especialidad()
+
+        # Parse markdown and get rows
+        rows = self._parse_markdown_table()
+        self._log(f"  Parsed {len(rows)} rows from markdown")
+
+        # Process each row
+        muni_count = 0
+        dele_count = 0
+        asign_count = 0
+
+        for row_num, row_data in enumerate(rows, start=1):
+            m_result = self._process_markdown_row(row_data)
+            muni_count += m_result['municipalidades']
+            dele_count += m_result['delegados']
+            asign_count += m_result['asignaciones']
+
+        self._log(self.style.SUCCESS(
+            f"\n  Completed: {muni_count} municipalidades, {dele_count} delegados, {asign_count} asignaciones processed"
+        ))
+
+    def _handle_json_source(self):
+        """Process delegates from JSON seed file (original behavior)."""
+        self._log(f"  Source: json")
 
         # Load colegiados seed into memory by CIP
         self.colegiados_seed_data = self._load_colegiados_seed()
@@ -151,10 +225,11 @@ class Command(BaseCommand):
 
     def _ensure_especialidades(self):
         """Asegurar que las especialidades requeridas existan en la base de datos."""
+        # Clean specialty names - no more " - Edificaciones" suffix
         required_specialties = [
-            'Ingeniería Sanitaria',
             'Ingeniería Civil',
-            'Habilitación Urbana',
+            'Ingeniería Sanitaria',
+            'Ingeniería Eléctrica y Mecánica Eléctrica',
         ]
 
         for spec_name in required_specialties:
@@ -281,22 +356,77 @@ class Command(BaseCommand):
                     perfil_ingeniero__cip=cip
                 )
                 municipalidad = Municipalidad.objects.get(codigo=muni_code)
+                tipo = asignacion.get('tipo', 'titular')
+                tipo_delegado = TipoDelegado.TITULAR if tipo == 'titular' else TipoDelegado.ALTERNO
+
+                # Extraer categoria de la especialidad: "Ingeniería Civil - Edificaciones" -> categoria="Edificaciones"
+                especialidad_raw = asignacion.get('especialidad', '')
+                categoria = self._extract_categoria_from_especialidad(especialidad_raw)
+                if categoria:
+                    categoria_delegado = categoria
+                else:
+                    categoria_delegado = None
+
                 _, created = MunicipalidadDelegado.objects.update_or_create(
                     delegado=delegado,
                     municipalidad=municipalidad,
-                    defaults={'activo': True},
+                    defaults={
+                        'activo': True,
+                        'tipo': tipo_delegado,
+                        'categoria': categoria_delegado,
+                    },
                 )
                 action = 'created' if created else 'updated'
                 self._log(
-                    f"    {action} asignación: {delegado.perfil_ingeniero.cip} @ {municipalidad.nombre}"
+                    f"    {action} asignación: {delegado.perfil_ingeniero.cip} @ {municipalidad.nombre} (categoria={categoria_delegado})"
                 )
                 count += 1
             except Delegado.DoesNotExist:
                 self._log(self.style.WARNING(f"    Delegado not found for CIP {cip}, skipping assignment"))
-            except Municipalidad.DoesNotExist:
-                self._log(self.style.WARNING(f"    Municipalidad not found for code {muni_code}, skipping assignment"))
+            except Exception as e:
+                self._log(self.style.WARNING(f"    Error assigning CIP {cip} to {muni_code}: {e}, skipping"))
 
         return count
+
+    def _extract_categoria_from_especialidad(self, especialidad_raw: str) -> str | None:
+        """Extrae la categoría de una especialidad cruda.
+
+        Ejemplos:
+            'Ingeniería Civil - Edificaciones' -> 'Edificaciones'
+            'Ingeniería Civil - Habilitaciones Urbanas' -> 'Habilitaciones Urbanas'
+            'Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones' -> 'Edificaciones'
+        """
+        if not especialidad_raw:
+            return None
+
+        # Split por " - " y tomar la última parte como categoria
+        parts = especialidad_raw.split(' - ')
+        if len(parts) >= 2:
+            categoria = parts[-1].strip()
+            # Validar que sea una categoria conocida
+            if categoria == CategoriaDelegado.EDIFICACIONES:
+                return CategoriaDelegado.EDIFICACIONES
+            elif categoria == CategoriaDelegado.HABILITACIONES_URBANAS:
+                return CategoriaDelegado.HABILITACIONES_URBANAS
+        return None
+
+    def _extract_clean_especialidad_nombre(self, especialidad_raw: str) -> str:
+        """Extrae el nombre limpio de la especialidad (sin el sufijo de categoria).
+
+        Ejemplos:
+            'Ingeniería Civil - Edificaciones' -> 'Ingeniería Civil'
+            'Ingeniería Civil - Habilitaciones Urbanas' -> 'Ingeniería Civil'
+            'Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones' -> 'Ingeniería Eléctrica y Mecánica Eléctrica'
+            'Ingeniería Civil' -> 'Ingeniería Civil' (sin cambios si no tiene sufijo)
+        """
+        if not especialidad_raw:
+            return 'Ingeniería Civil'  # Default
+
+        # Split por " - " y tomar la primera parte como nombre limpio
+        parts = especialidad_raw.split(' - ')
+        if len(parts) >= 1:
+            return parts[0].strip()
+        return especialidad_raw.strip()
 
     def _process_delegados(self, delegados):
         """Crear/actualizar delegados desde datos seed."""
@@ -312,7 +442,9 @@ class Command(BaseCommand):
                 continue
 
             nombre_completo = dele_data.get('nombre_completo', '')
-            especialidad_nombre = dele_data.get('especialidad', 'Ingeniería Civil')
+            # Extraer nombre limpio de la especialidad (sin " - Edificaciones" o " - Habilitaciones Urbanas")
+            especialidad_raw = dele_data.get('especialidad', 'Ingeniería Civil')
+            especialidad_nombre = self._extract_clean_especialidad_nombre(especialidad_raw)
             tipo = dele_data.get('tipo', 'titular')
 
             # Fetch from endpoint if not skipped
@@ -347,16 +479,15 @@ class Command(BaseCommand):
                     ))
                     continue
 
-            # Determine tipo
+            # NOTE: tipo is now set on MunicipalidadDelegado, not on Delegado itself
             tipo_delegado = TipoDelegado.TITULAR if tipo == 'titular' else TipoDelegado.ALTERNO
 
             if self.dry_run:
-                self._log(f"    [DRY-RUN] Would create/update delegado: {nombre_completo} (CIP={cip}, tipo={tipo})")
+                self._log(f"    [DRY-RUN] Would create/update delegado: {nombre_completo} (CIP={cip})")
             else:
                 delegado, created = Delegado.objects.update_or_create(
                     perfil_ingeniero=perfil,
                     defaults={
-                        'tipo': tipo_delegado,
                         'especialidad': especialidad,
                         'banco': None,  # Banco remains null
                         'status': DelegadoStatus.ACTIVO,
@@ -364,6 +495,13 @@ class Command(BaseCommand):
                 )
                 action = "created" if created else "updated"
                 self._log(f"    {action} delegado: {nombre_completo}")
+
+                if created:
+                    PeriodoDelegado.objects.get_or_create(
+                        delegado=delegado,
+                        periodo_inicio=timezone.now().date(),
+                        defaults={'periodo_fin': None},
+                    )
 
             count += 1
 
@@ -541,6 +679,12 @@ class Command(BaseCommand):
         nombre2 = (endpoint_data.get('nombre2') or '').strip()
         nombres = ' '.join(part for part in [nombre1, nombre2] if part).strip()
         capitulo = self._get_or_create_capitulo_from_endpoint(endpoint_data)
+
+        # Determinar habilitación CIP
+        condicion = endpoint_data.get('condicion', '')
+        habilitado_cip = condicion == '1'
+
+        from django.utils import timezone
         return {
             'dni': (endpoint_data.get('dni') or '').strip(),
             'nombres': nombres,
@@ -554,6 +698,11 @@ class Command(BaseCommand):
             'ubigeo': endpoint_data.get('distritoId') or None,
             'codigo_especialidad': endpoint_data.get('codEspecialidad') or None,
             'capitulo': capitulo,
+            # Campos de habilitación CIP
+            'habilitado_cip': habilitado_cip,
+            'condicion_cip': condicion,
+            'fecha_validacion_cip': timezone.now(),
+            'ultimo_periodo_pagado_cip': endpoint_data.get('ultimoPeriodoPagado') or None,
         }
 
     def _get_or_create_capitulo_from_endpoint(self, endpoint_data):
@@ -584,3 +733,484 @@ class Command(BaseCommand):
             },
         )
         return capitulo
+
+    # ── Markdown Source Methods ──────────────────────────────────────────────────
+
+    def _ensure_markdown_especialidad(self):
+        """Ensure the Electrical Engineering specialty exists."""
+        if self.dry_run:
+            self._log(f"    [DRY-RUN] Would create/find especialidad: {MARKDOWN_SPECIALTY}")
+            return
+
+        spec, created = Especialidad.objects.get_or_create(
+            nombre=MARKDOWN_SPECIALTY,
+            defaults={}
+        )
+        if created:
+            self._log(self.style.SUCCESS(f"    Created especialidad: {MARKDOWN_SPECIALTY}"))
+        else:
+            self._log(f"    Found existing especialidad: {MARKDOWN_SPECIALTY}")
+
+    def _parse_markdown_table(self) -> List[dict]:
+        """Parse the markdown file and extract table rows for Electrical Engineering delegates."""
+        content = self.markdown_path.read_text(encoding='utf-8')
+
+        # Convert markdown to HTML and parse
+        html = markdown.markdown(content, extensions=['tables'])
+
+        # Find the table containing "DELEGADOS TITULARES Y ALTERNOS DE INGENIERÍA ELÉCTRICA"
+        rows = []
+        in_target_table = False
+
+        # Split by table tags to find our table
+        table_pattern = re.compile(r'<table>(.*?)</table>', re.DOTALL | re.IGNORECASE)
+        for table_match in table_pattern.finditer(html):
+            table_html = table_match.group(0)
+            # Check if this is the target table by looking for the specialty header
+            if MARKDOWN_SPECIALTY.upper() in table_html.upper() or 'DELEGADOS TITULARES Y ALTERNOS' in table_html.upper():
+                in_target_table = True
+                rows = self._parse_html_table(table_html)
+                break
+
+        if not rows:
+            # Fallback: try to parse any table with CIP numbers
+            self._log(self.style.WARNING("  Could not find target table, attempting to parse first table with CIP data"))
+            for table_match in table_pattern.finditer(html):
+                potential_rows = self._parse_html_table(table_match.group(0))
+                if potential_rows and any('cip' in str(r).lower() for r in potential_rows):
+                    rows = potential_rows
+                    break
+
+        return rows
+
+    def _parse_html_table(self, table_html: str) -> List[dict]:
+        """Parse an HTML table into a list of row dictionaries."""
+        rows = []
+
+        # Parse header row
+        header_pattern = re.compile(r'<thead>(.*?)</thead>', re.DOTALL | re.IGNORECASE)
+        header_match = header_pattern.search(table_html)
+        if not header_match:
+            return rows
+
+        header_html = header_match.group(1)
+        headers = []
+        for th_match in re.finditer(r'<th[^>]*>(.*?)</th>', header_html, re.DOTALL | re.IGNORECASE):
+            header_text = re.sub(r'<[^>]+>', '', th_match.group(1)).strip()
+            headers.append(header_text.lower())
+
+        # Parse body rows
+        body_pattern = re.compile(r'<tbody>(.*?)</tbody>', re.DOTALL | re.IGNORECASE)
+        body_match = body_pattern.search(table_html)
+        if not body_match:
+            return rows
+
+        body_html = body_match.group(1)
+
+        for tr_match in re.finditer(r'<tr>(.*?)</tr>', body_html, re.DOTALL | re.IGNORECASE):
+            tr_html = tr_match.group(1)
+            cells = []
+            for td_match in re.finditer(r'<td[^>]*>(.*?)</td>', tr_html, re.DOTALL | re.IGNORECASE):
+                cell_html = td_match.group(1)
+                # Replace <br> with pipe for splitting multiple entries
+                cell_text = re.sub(r'<br\s*/?>.*?', ' | ', cell_html, flags=re.IGNORECASE)
+                cell_text = re.sub(r'<[^>]+>', '', cell_text).strip()
+                cells.append(cell_text)
+
+            if len(cells) >= len(headers):
+                row_dict = dict(zip(headers, cells))
+                rows.append(row_dict)
+
+        return rows
+
+    def _process_markdown_row(self, row_data: dict) -> dict:
+        """Process a single row from the markdown table.
+
+        Returns dict with counts of municipalidades, delegados, and asignaciones created.
+        """
+        result = {'municipalidades': 0, 'delegados': 0, 'asignaciones': 0}
+
+        # Extract row number (for logging)
+        row_num = row_data.get('n°', row_data.get('#', '?')).strip('*')
+
+        # Get municipalidad names - may be multiple separated by comma
+        muni_names_cell = row_data.get('municipalidades distritales y provinciales', '')
+        muni_names = self._split_municipalidad_names(muni_names_cell)
+
+        if not muni_names:
+            self._log(self.style.WARNING(f"  Row {row_num}: No municipalidades found, skipping"))
+            return result
+
+        # Get especialidad for this source (Ingeniería Eléctrica y Mecánica Eléctrica)
+        try:
+            especialidad = Especialidad.objects.get(nombre=MARKDOWN_SPECIALTY)
+        except Especialidad.DoesNotExist:
+            self._log(self.style.ERROR(f"  Especialidad {MARKDOWN_SPECIALTY} not found"))
+            return result
+
+        # Parse TITULAR delegate(s)
+        titular_cip = self._normalize_cip(row_data.get('n° cip titular', ''))
+        titular_name = row_data.get('delegado titular', '')
+
+        if titular_cip and titular_name:
+            # Split by ' | ' for multiple delegates in one cell
+            titular_entries = self._split_delegate_entries(titular_cip, titular_name)
+            for cip, name in titular_entries:
+                d_result = self._process_markdown_delegate(cip, name, TipoDelegado.TITULAR, especialidad)
+                result['delegados'] += d_result['delegados']
+
+                # Create assignments for each municipalidad
+                for muni_name in muni_names:
+                    a_result = self._create_markdown_assignment(
+                        muni_name, cip, TipoDelegado.TITULAR, especialidad
+                    )
+                    result['municipalidades'] += a_result['municipalidades']
+                    result['asignaciones'] += a_result['asignaciones']
+
+        # Parse ALTERNO delegate(s)
+        alterno_cip = self._normalize_cip(row_data.get('n° cip alterno', ''))
+        alterno_name = row_data.get('delegado alterno', '')
+
+        if alterno_cip and alterno_name:
+            # Split by ' | ' for multiple delegates in one cell
+            alterno_entries = self._split_delegate_entries(alterno_cip, alterno_name)
+            for cip, name in alterno_entries:
+                d_result = self._process_markdown_delegate(cip, name, TipoDelegado.ALTERNO, especialidad)
+                result['delegados'] += d_result['delegados']
+
+                # Create assignments for each municipalidad
+                for muni_name in muni_names:
+                    a_result = self._create_markdown_assignment(
+                        muni_name, cip, TipoDelegado.ALTERNO, especialidad
+                    )
+                    result['municipalidades'] += a_result['municipalidades']
+                    result['asignaciones'] += a_result['asignaciones']
+
+        return result
+
+    def _split_municipalidad_names(self, cell_text: str) -> List[str]:
+        """Split municipalidad cell text into individual names.
+
+        Handles grouped municipalidad rows (rows 44-50) where multiple
+        municipalities are listed in one cell separated by commas.
+        """
+        if not cell_text:
+            return []
+
+        # Split by comma and clean up
+        names = []
+        for name in cell_text.split(','):
+            name = name.strip()
+            # Skip empty entries and "PROVINCIAL DE..." prefixes for individual names
+            if name and name.upper() not in ('PROVINCIAL', 'PROVINCIA'):
+                names.append(name)
+
+        return names
+
+    def _split_delegate_entries(self, cip: str, name: str) -> List[Tuple[str, str]]:
+        """Split a cell with multiple delegates separated by ' | ' (from <br> conversion).
+
+        Returns list of (cip, name) tuples.
+        """
+        entries = []
+
+        # Split by ' | ' which comes from <br> replacement
+        cip_parts = [c.strip() for c in cip.split(' | ')]
+        name_parts = [n.strip() for n in name.split(' | ')]
+
+        # If we have multiple CIPs but maybe single name (rare case)
+        if len(cip_parts) > 1:
+            # Pair them up - zip will stop at the shorter list
+            for c, n in zip(cip_parts, name_parts):
+                if c:
+                    entries.append((c, n))
+        elif cip:
+            entries.append((cip, name))
+        elif name:
+            # No CIP but has name - this is an error case
+            self._log(self.style.WARNING(f"    No CIP found for delegate: {name}"))
+
+        return entries
+
+    def _process_markdown_delegate(self, cip: str, full_name: str, tipo: str, especialidad) -> dict:
+        """Create or find PerfilIngeniero and Delegado for a markdown source delegate.
+
+        Returns dict with counts.
+        """
+        result = {'delegados': 0}
+
+        if not cip or not full_name:
+            return result
+
+        # Normalize CIP
+        normalized_cip = self._normalize_cip(cip)
+        if not normalized_cip:
+            self._log(self.style.WARNING(f"    Invalid CIP: {cip} for {full_name}"))
+            return result
+
+        # Parse name: "APELLIDO_PATERNO APELLIDO_MATERNO NOMBRES"
+        name_parts = self._parse_delegate_name(full_name)
+
+        if self.dry_run:
+            self._log(f"    [DRY-RUN] Would create/find PerfilIngeniero CIP={normalized_cip}: {full_name}")
+            self._log(f"    [DRY-RUN] Would create/find Delegado: {full_name} (CIP={normalized_cip}, tipo={tipo})")
+            result['delegados'] = 1
+            return result
+
+        # Get or create PerfilIngeniero
+        perfil, perfil_created = self._get_or_create_perfil_markdown(
+            normalized_cip, name_parts
+        )
+
+        if not perfil:
+            self._log(self.style.ERROR(f"    Failed to get/create PerfilIngeniero for CIP {normalized_cip}"))
+            return result
+
+        # Get or create Delegado (tipo is now set on MunicipalidadaDelegado, not on Delegado)
+        try:
+            delegado, created = Delegado.objects.update_or_create(
+                perfil_ingeniero=perfil,
+                defaults={
+                    'especialidad': especialidad,
+                    'banco': None,
+                    'status': DelegadoStatus.ACTIVO,
+                }
+            )
+            if created:
+                result['delegados'] = 1
+                self._log(f"    Created delegado: {full_name} (CIP={normalized_cip})")
+                PeriodoDelegado.objects.get_or_create(
+                    delegado=delegado,
+                    periodo_inicio=timezone.now().date(),
+                    defaults={'periodo_fin': None},
+                )
+            # No update for tipo since it's no longer on Delegado
+        except Exception as e:
+            self._log(self.style.ERROR(f"    Error creating Delegado: {e}"))
+
+        return result
+
+    def _get_or_create_perfil_markdown(self, cip: str, name_parts: dict) -> Tuple[Optional[PerfilIngeniero], bool]:
+        """Get or create PerfilIngeniero from markdown data.
+
+        Returns (perfil, created) tuple.
+        """
+        try:
+            perfil = PerfilIngeniero.objects.get(cip=cip)
+            # Update name if different
+            updated = False
+            for field in ['nombres', 'apellido_paterno', 'apellido_materno']:
+                if name_parts.get(field) and getattr(perfil, field) != name_parts[field]:
+                    setattr(perfil, field, name_parts[field])
+                    updated = True
+            if updated:
+                try:
+                    perfil.save()
+                    self._log(f"    Updated PerfilIngeniero: {perfil.nombre_completo}")
+                except Exception as e:
+                    self._log(self.style.WARNING(f"    Error updating PerfilIngeniero: {e}"))
+            return perfil, False
+        except PerfilIngeniero.DoesNotExist:
+            pass
+
+        if self.dry_run:
+            return None, True
+
+        try:
+            perfil = PerfilIngeniero.objects.create(
+                cip=cip,
+                nombres=name_parts.get('nombres', ''),
+                apellido_paterno=name_parts.get('apellido_paterno', ''),
+                apellido_materno=name_parts.get('apellido_materno', ''),
+            )
+            self._log(f"    Created PerfilIngeniero: {perfil.nombre_completo} (CIP={cip})")
+            return perfil, True
+        except Exception as e:
+            self._log(self.style.ERROR(f"    Error creating PerfilIngeniero: {e}"))
+            return None, False
+
+    def _parse_delegate_name(self, full_name: str) -> dict:
+        """Parse delegate full name into components.
+
+        Format expected: "APELLIDO_PATERNO APELLIDO_MATERNO NOMBRES"
+        Handles Greek characters (ΜANSILLA, ΑΝΤΟΝΙΟ) by normalizing.
+
+        Returns dict with 'nombres', 'apellido_paterno', 'apellido_materno'.
+        """
+        # Normalize Greek and other unicode characters
+        name = self._normalize_unicode_name(full_name)
+
+        # Split by spaces
+        parts = name.split()
+
+        if len(parts) >= 3:
+            # First two parts are surnames, rest is nombres
+            apellido_paterno = parts[0]
+            apellido_materno = parts[1]
+            nombres = ' '.join(parts[2:])
+        elif len(parts) == 2:
+            # Could be "APELLIDO NOMBRES" where apellido is combined
+            apellido_paterno = parts[0]
+            apellido_materno = ''
+            nombres = parts[1]
+        elif len(parts) == 1:
+            apellido_paterno = parts[0]
+            apellido_materno = ''
+            nombres = ''
+        else:
+            apellido_paterno = ''
+            apellido_materno = ''
+            nombres = ''
+
+        return {
+            'nombres': nombres,
+            'apellido_paterno': apellido_paterno,
+            'apellido_materno': apellido_materno,
+        }
+
+    def _normalize_unicode_name(self, name: str) -> str:
+        """Normalize unicode characters in names (Greek letters, etc).
+
+        Handles cases like ΜANSILLA, ΑΝΤΟΝΙΟ by replacing Greek letters
+        with their Latin equivalents when possible.
+        """
+        # Greek to Latin mapping for common Greek letters found in names
+        greek_to_latin = {
+            'Α': 'A', 'Β': 'B', 'Γ': 'G', 'Δ': 'D', 'Ε': 'E', 'Ζ': 'Z', 'Η': 'H', 'Θ': 'TH',
+            'Ι': 'I', 'Κ': 'K', 'Λ': 'L', 'Μ': 'M', 'Ν': 'N', 'Ξ': 'X', 'Ο': 'O', 'Π': 'P',
+            'Ρ': 'R', 'Σ': 'S', 'Τ': 'T', 'Υ': 'Y', 'Φ': 'F', 'Χ': 'CH', 'Ψ': 'PS', 'Ω': 'O',
+            'α': 'a', 'β': 'b', 'γ': 'g', 'δ': 'd', 'ε': 'e', 'ζ': 'z', 'η': 'h', 'θ': 'th',
+            'ι': 'i', 'κ': 'k', 'λ': 'l', 'μ': 'm', 'ν': 'n', 'ξ': 'x', 'ο': 'o', 'π': 'p',
+            'ρ': 'r', 'σ': 's', 'τ': 't', 'υ': 'y', 'φ': 'f', 'χ': 'ch', 'ψ': 'ps', 'ω': 'o',
+        }
+
+        result = []
+        for char in name:
+            result.append(greek_to_latin.get(char, char))
+
+        return ''.join(result)
+
+    def _create_markdown_assignment(
+        self,
+        muni_nombre: str,
+        cip: str,
+        tipo: str,
+        especialidad
+    ) -> dict:
+        """Create or update municipalidad and its assignment to a delegado.
+
+        Returns dict with counts of municipalidades and asignaciones.
+        """
+        result = {'municipalidades': 0, 'asignaciones': 0}
+
+        if not muni_nombre or not cip:
+            return result
+
+        normalized_cip = self._normalize_cip(cip)
+        if not normalized_cip:
+            return result
+
+        if self.dry_run:
+            self._log(f"    [DRY-RUN] Would create/find municipalidad: {muni_nombre}")
+            self._log(f"    [DRY-RUN] Would assign delegado CIP={normalized_cip} to {muni_nombre} (tipo={tipo})")
+            result['municipalidades'] = 1
+            result['asignaciones'] = 1
+            return result
+
+        # Find or create municipalidad with ELE prefix
+        muni_code = self._generate_municipalidad_code(muni_nombre)
+
+        municipalidad, muni_created = self._get_or_create_municipalidad_markdown(
+            muni_nombre, muni_code
+        )
+
+        if not municipalidad:
+            return result
+
+        if muni_created:
+            result['municipalidades'] = 1
+
+        # Find the delegado by CIP
+        try:
+            delegado = Delegado.objects.select_related('perfil_ingeniero').get(
+                perfil_ingeniero__cip=normalized_cip
+            )
+        except Delegado.DoesNotExist:
+            self._log(self.style.WARNING(
+                f"    Delegado not found for CIP {normalized_cip} when creating assignment for {muni_nombre}"
+            ))
+            return result
+
+        # Create assignment (tipo now goes on MunicipalidadaDelegado, not Delegado)
+        # categoria is always Edificaciones for markdown source (Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones)
+        try:
+            _, asig_created = MunicipalidadDelegado.objects.update_or_create(
+                delegado=delegado,
+                municipalidad=municipalidad,
+                defaults={
+                    'activo': True,
+                    'tipo': tipo,
+                    'categoria': CategoriaDelegado.EDIFICACIONES,
+                },
+            )
+            result['asignaciones'] = 1
+            if asig_created:
+                self._log(f"    Created asignación: {delegado.perfil_ingeniero.cip} @ {municipalidad.nombre} ({tipo})")
+        except Exception as e:
+            self._log(self.style.WARNING(f"    Error creating asignación: {e}"))
+
+        return result
+
+    def _generate_municipalidad_code(self, nombre: str) -> str:
+        """Generate a unique municipalidad code with ELE prefix.
+
+        For markdown source, new municipalidades get 'ELE' prefix followed by
+        a hash of the name to ensure uniqueness.
+        """
+        # Create a simple hash from the name
+        name_hash = abs(hash(nombre.upper())) % 100000
+        return f"{MARKDOWN_MUNICIPALIDAD_CODE_PREFIX}{name_hash:05d}"
+
+    def _get_or_create_municipalidad_markdown(self, nombre: str, code: str) -> Tuple[Optional[Municipalidad], bool]:
+        """Get or create a municipalidad for markdown source.
+
+        First tries to find by exact name, then by code prefix.
+
+        Returns (municipalidad, created) tuple.
+        """
+        # First try to find by exact name
+        municipalidad = Municipalidad.objects.filter(nombre__iexact=nombre).first()
+        if municipalidad:
+            return municipalidad, False
+
+        # Try to find by code (in case it was created before)
+        if code:
+            municipalidad = Municipalidad.objects.filter(codigo=code).first()
+            if municipalidad:
+                # Update name if different
+                if municipalidad.nombre != nombre:
+                    municipalidad.nombre = nombre
+                    municipalidad.save(update_fields=['nombre'])
+                return municipalidad, False
+
+        # Create new
+        try:
+            # Find a unique code
+            base_code = code
+            counter = 1
+            while Municipalidad.objects.filter(codigo=code).exists():
+                code = f"{base_code[:3]}{counter:04d}"
+                counter += 1
+                if counter > 1000:
+                    break
+
+            municipalidad = Municipalidad.objects.create(
+                codigo=code,
+                nombre=nombre,
+                activo=True,
+            )
+            self._log(f"    Created municipalidad: {nombre} (code={code})")
+            return municipalidad, True
+        except Exception as e:
+            self._log(self.style.ERROR(f"    Error creating municipalidad {nombre}: {e}"))
+            return None, False

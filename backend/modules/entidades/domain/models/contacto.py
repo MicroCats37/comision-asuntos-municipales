@@ -32,6 +32,12 @@ class Contacto(BaseModel):
         null=True,
         verbose_name="Apellidos",
     )
+    dni = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name="DNI",
+    )
     cargo = models.CharField(
         max_length=150,
         blank=True,

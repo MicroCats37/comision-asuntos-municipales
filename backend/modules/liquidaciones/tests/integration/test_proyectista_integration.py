@@ -2,6 +2,9 @@
 Integration tests for Proyectistas endpoint.
 
 Tests the full stack: controller -> orchestrator -> flujo -> core -> DB.
+
+NOTE: Updated to use new Proyectista contract with PerfilIngeniero and Especialidad.
+Old fields (nombres, apellidos, cip, dni, cap) were replaced by perfil_ingeniero_id.
 """
 import pytest
 from django.test import Client
@@ -15,124 +18,104 @@ class TestCrearProyectistaEndpoint:
 
     def test_post_minimal_valid_returns_200(self, client: Client):
         """
-        POST / with only nombres+apellidos returns 200 and no validation error.
-        CIP/DNI are optional.
+        POST / with perfil_ingeniero_id + especialidad_id returns 200.
+        descripcion is optional.
         """
+        from modules.liquidaciones.tests.factories.especialidad_factory import EspecialidadFactory
+        from modules.usuarios.tests.factories.perfil_ingeniero_factory import PerfilIngenieroFactory
+
+        perfil = PerfilIngenieroFactory()
+        especialidad = EspecialidadFactory()
+
         response = client.post(
             "/api/proyectistas/",
             data={
-                "nombres": "Juan",
-                "apellidos": "Pérez",
+                "perfil_ingeniero_id": str(perfil.id),
+                "especialidad_id": str(especialidad.id),
             },
             content_type="application/json",
         )
         assert response.status_code == 200, response.json()
         data = response.json()
         assert "data" in data
-        assert data["data"]["nombres"] == "Juan"
-        assert data["data"]["apellidos"] == "Pérez"
+        assert data["data"]["perfil_ingeniero_id"] == str(perfil.id)
+        assert data["data"]["especialidad_id"] == str(especialidad.id)
         assert data["data"]["creado"] is True
-        # Optional fields should be None
-        assert data["data"]["cip"] is None
-        assert data["data"]["dni"] is None
-        assert data["data"]["cap"] is None
+        # Optional descripcion should be None
+        assert data["data"]["descripcion"] is None
+        # perfil_ingeniero data should be nested
+        assert data["data"]["perfil_ingeniero_nombres"] is not None
+        assert data["data"]["perfil_ingeniero_apellidos"] is not None
+        assert data["data"]["perfil_ingeniero_cip"] is not None
 
-    def test_post_with_cip_optional_returns_200(self, client: Client):
+    def test_post_with_descripcion_optional_returns_200(self, client: Client):
         """
-        POST / with CIP (optional field) returns 200.
+        POST / with descripcion (optional field) returns 200.
         """
+        from modules.liquidaciones.tests.factories.especialidad_factory import EspecialidadFactory
+        from modules.usuarios.tests.factories.perfil_ingeniero_factory import PerfilIngenieroFactory
+
+        perfil = PerfilIngenieroFactory()
+        especialidad = EspecialidadFactory()
+
         response = client.post(
             "/api/proyectistas/",
             data={
-                "nombres": "María",
-                "apellidos": "García",
-                "cip": "123456",
+                "perfil_ingeniero_id": str(perfil.id),
+                "especialidad_id": str(especialidad.id),
+                "descripcion": "Ingeniero especialista en estructuras",
             },
             content_type="application/json",
         )
         assert response.status_code == 200, response.json()
         data = response.json()
-        assert data["data"]["cip"] == "123456"
+        assert data["data"]["descripcion"] == "Ingeniero especialista en estructuras"
         assert data["data"]["creado"] is True
 
-    def test_post_with_dni_optional_returns_200(self, client: Client):
+    def test_post_missing_perfil_ingeniero_id_returns_422(self, client: Client):
         """
-        POST / with DNI (optional field) returns 200.
+        POST / without required perfil_ingeniero_id returns 422.
         """
+        from modules.liquidaciones.tests.factories.especialidad_factory import EspecialidadFactory
+        especialidad = EspecialidadFactory()
+
         response = client.post(
             "/api/proyectistas/",
             data={
-                "nombres": "Carlos",
-                "apellidos": "Rodríguez",
-                "dni": "12345678",
-            },
-            content_type="application/json",
-        )
-        assert response.status_code == 200, response.json()
-        data = response.json()
-        assert data["data"]["dni"] == "12345678"
-        assert data["data"]["creado"] is True
-
-    def test_post_with_cip_and_dni_optional_returns_200(self, client: Client):
-        """
-        POST / with both CIP and DNI (both optional) returns 200.
-        """
-        response = client.post(
-            "/api/proyectistas/",
-            data={
-                "nombres": "Ana",
-                "apellidos": "López",
-                "cip": "654321",
-                "dni": "87654321",
-                "cap": "111222",
-            },
-            content_type="application/json",
-        )
-        assert response.status_code == 200, response.json()
-        data = response.json()
-        assert data["data"]["cip"] == "654321"
-        assert data["data"]["dni"] == "87654321"
-        assert data["data"]["cap"] == "111222"
-        assert data["data"]["creado"] is True
-
-    def test_post_missing_nombres_returns_422(self, client: Client):
-        """
-        POST / without required nombres returns 422.
-        """
-        response = client.post(
-            "/api/proyectistas/",
-            data={
-                "apellidos": "Sin Nombre",
+                "especialidad_id": str(especialidad.id),
             },
             content_type="application/json",
         )
         assert response.status_code == 422, response.json()
 
-    def test_post_missing_apellidos_returns_422(self, client: Client):
+    def test_post_missing_especialidad_id_returns_422(self, client: Client):
         """
-        POST / without required apellidos returns 422.
+        POST / without required especialidad_id returns 422.
         """
+        from modules.usuarios.tests.factories.perfil_ingeniero_factory import PerfilIngenieroFactory
+        perfil = PerfilIngenieroFactory()
+
         response = client.post(
             "/api/proyectistas/",
             data={
-                "nombres": "Sin Apellido",
+                "perfil_ingeniero_id": str(perfil.id),
             },
             content_type="application/json",
         )
         assert response.status_code == 422, response.json()
 
-    def test_post_existing_by_dni_returns_200_with_creado_false(self, client: Client):
+    def test_post_existing_by_perfil_ingeniero_returns_200_with_creado_false(self, client: Client):
         """
-        POST / with DNI of existing proyectista returns 200 with creado=False.
+        POST / with same perfil_ingeniero+especialidad of existing proyectista
+        returns 200 with creado=False.
         """
-        existing = ProyectistaFactory(dni="11223344", nombres="Existente", apellidos="Proyectista")
+        existing = ProyectistaFactory()
 
         response = client.post(
             "/api/proyectistas/",
             data={
-                "nombres": "Otro Nombre",
-                "apellidos": "Otra Apellido",
-                "dni": "11223344",
+                "perfil_ingeniero_id": str(existing.perfil_ingeniero_id),
+                "especialidad_id": str(existing.especialidad_id),
             },
             content_type="application/json",
         )
@@ -140,17 +123,22 @@ class TestCrearProyectistaEndpoint:
         data = response.json()
         assert data["data"]["creado"] is False
         assert data["data"]["id"] == str(existing.id)
-        assert data["data"]["dni"] == "11223344"
 
     def test_post_response_includes_uuid_id(self, client: Client):
         """
         Response must include the created/found proyectista UUID id.
         """
+        from modules.liquidaciones.tests.factories.especialidad_factory import EspecialidadFactory
+        from modules.usuarios.tests.factories.perfil_ingeniero_factory import PerfilIngenieroFactory
+
+        perfil = PerfilIngenieroFactory()
+        especialidad = EspecialidadFactory()
+
         response = client.post(
             "/api/proyectistas/",
             data={
-                "nombres": "Test",
-                "apellidos": "UUID",
+                "perfil_ingeniero_id": str(perfil.id),
+                "especialidad_id": str(especialidad.id),
             },
             content_type="application/json",
         )

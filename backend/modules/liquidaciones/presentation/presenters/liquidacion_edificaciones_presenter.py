@@ -8,6 +8,7 @@ from modules.liquidaciones.domain.schemas import (
     NuevaRevisionFormularioResult,
     EdificacionRevisionData,
     CotizacionQuoteData,
+    DelegadosVigentesResult,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
     LiquidacionSnapshotOut,
@@ -18,6 +19,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schema
     CotizacionTarifaOut,
     CotizacionTotalesOut,
     CotizacionMetadataOut,
+    DelegadosVigentesOut,
 )
 
 
@@ -89,35 +91,79 @@ class LiquidacionEdificacionesPresenter:
 
         # Construir proyectistas desde edificaciones_proyectistas (ahora en result, no en proyecto)
         from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import ProyectistaOut
+        from modules.liquidaciones.domain.models import Proyectista
         edificaciones_proyectistas = []
         for p in result.edificaciones_proyectistas:
             if isinstance(p, dict):
+                # Dict desde snapshot - nuevo formato con perfil_ingeniero_*
                 edificaciones_proyectistas.append(ProyectistaOut(
                     id=p.get('id'),
-                    cip=p.get('cip'),
-                    dni=p.get('dni'),
-                    cap=p.get('cap'),
-                    nombres=p.get('nombres'),
-                    apellidos=p.get('apellidos'),
+                    perfil_ingeniero_id=p.get('perfil_ingeniero_id'),
+                    perfil_ingeniero_nombres=p.get('perfil_ingeniero_nombres'),
+                    perfil_ingeniero_apellidos=p.get('perfil_ingeniero_apellidos'),
+                    perfil_ingeniero_cip=p.get('perfil_ingeniero_cip'),
+                    especialidad_id=p.get('especialidad_id'),
+                    especialidad_nombre=p.get('especialidad_nombre'),
+                    descripcion=p.get('descripcion'),
                 ))
-            else:
-                # Es ProyectistaSnapshotData
+            elif isinstance(p, Proyectista):
+                # Proyectista model instance - acceder via perfil_ingeniero FK
+                perfil = p.perfil_ingeniero
                 edificaciones_proyectistas.append(ProyectistaOut(
                     id=p.id,
-                    cip=p.cip,
-                    dni=p.dni,
-                    cap=p.cap,
-                    nombres=p.nombres,
-                    apellidos=p.apellidos,
+                    perfil_ingeniero_id=str(p.perfil_ingeniero_id) if p.perfil_ingeniero_id else None,
+                    perfil_ingeniero_nombres=getattr(perfil, 'nombres', None) if perfil else None,
+                    perfil_ingeniero_apellidos=f"{getattr(perfil, 'apellido_paterno', '') if perfil else ''} {getattr(perfil, 'apellido_materno', '') if perfil else ''}".strip() or None,
+                    perfil_ingeniero_cip=getattr(perfil, 'cip', None) if perfil else None,
+                    especialidad_id=str(p.especialidad_id) if p.especialidad_id else None,
+                    especialidad_nombre=p.especialidad.nombre if p.especialidad else None,
+                    descripcion=p.descripcion,
+                ))
+            else:
+                # ProyectistaSnapshotData u otro schema object
+                edificaciones_proyectistas.append(ProyectistaOut(
+                    id=p.id,
+                    perfil_ingeniero_id=getattr(p, 'perfil_ingeniero_id', None),
+                    perfil_ingeniero_nombres=getattr(p, 'perfil_ingeniero_nombres', None),
+                    perfil_ingeniero_apellidos=getattr(p, 'perfil_ingeniero_apellidos', None),
+                    perfil_ingeniero_cip=getattr(p, 'perfil_ingeniero_cip', None),
+                    especialidad_id=getattr(p, 'especialidad_id', None),
+                    especialidad_nombre=getattr(p, 'especialidad_nombre', None),
+                    descripcion=getattr(p, 'descripcion', None),
                 ))
 
         # Construir revisiones de edificaciones
         from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
+            DelegadoOut,
             EdificacionesOut,
             RevisionOut,
             TarifaOut,
-            EspecialidadOut,
         )
+        edificaciones_delegados = []
+        for d in result.edificaciones_delegados:
+            if isinstance(d, dict):
+                edificaciones_delegados.append(DelegadoOut(
+                    id=d.get('id'),
+                    perfil_ingeniero_id=d.get('perfil_ingeniero_id'),
+                    perfil_ingeniero_nombres=d.get('perfil_ingeniero_nombres'),
+                    perfil_ingeniero_apellidos=d.get('perfil_ingeniero_apellidos'),
+                    perfil_ingeniero_cip=d.get('perfil_ingeniero_cip'),
+                    especialidad_id=d.get('especialidad_id'),
+                    especialidad_nombre=d.get('especialidad_nombre'),
+                    tipo=d.get('tipo'),
+                ))
+            else:
+                edificaciones_delegados.append(DelegadoOut(
+                    id=getattr(d, 'id', None),
+                    perfil_ingeniero_id=getattr(d, 'perfil_ingeniero_id', None),
+                    perfil_ingeniero_nombres=getattr(d, 'perfil_ingeniero_nombres', None),
+                    perfil_ingeniero_apellidos=getattr(d, 'perfil_ingeniero_apellidos', None),
+                    perfil_ingeniero_cip=getattr(d, 'perfil_ingeniero_cip', None),
+                    especialidad_id=getattr(d, 'especialidad_id', None),
+                    especialidad_nombre=getattr(d, 'especialidad_nombre', None),
+                    tipo=getattr(d, 'tipo', None),
+                ))
+
         edificaciones_revisiones = []
         for rev in result.edificaciones_revisiones:
             # rev puede ser un dict o un EdificacionRevisionData
@@ -156,6 +202,7 @@ class LiquidacionEdificacionesPresenter:
             tipo_tramite=result.edificaciones_tipo_tramite,
             tramite_accion=result.edificaciones_tramite_accion,
             proyectistas=edificaciones_proyectistas,
+            delegados=edificaciones_delegados,
             revisiones=edificaciones_revisiones,
         )
 
@@ -189,13 +236,21 @@ class LiquidacionEdificacionesPresenter:
         from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import RevisionVigenteOut, ProyectistaOut
 
         revisiones_vigentes = []
+        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import EspecialidadBasicaOut
         for rev in result.revisiones_vigentes:
             if hasattr(rev, 'id'):
                 # Es RevisionVigenteResult
+                # Construir lista de especialidades desde M2M
+                especialidades_list = [
+                    EspecialidadBasicaOut(
+                        id=str(esp.id),
+                        nombre=esp.nombre,
+                    )
+                    for esp in rev.especialidades
+                ]
                 revisiones_vigentes.append(RevisionVigenteOut(
                     id=str(rev.id),
-                    especialidad_id=str(rev.especialidad_id),
-                    especialidad_nombre=rev.especialidad_nombre,
+                    especialidades=especialidades_list,
                     tarifa_id=str(rev.tarifa_id),
                     porcentaje_liquidacion=float(rev.porcentaje_liquidacion),
                     derecho_minimo=float(rev.derecho_minimo),
@@ -205,26 +260,45 @@ class LiquidacionEdificacionesPresenter:
                 ))
 
         # Proyectistas actuales (heredados de la liquidación previa)
+        from modules.liquidaciones.domain.models import Proyectista
         proyectistas_actuales = []
         for p in result.proyectistas_actuales:
             if isinstance(p, dict):
+                # Dict - nuevo formato con perfil_ingeniero_*
                 proyectistas_actuales.append(ProyectistaOut(
                     id=p.get('id'),
-                    cip=p.get('cip'),
-                    dni=p.get('dni'),
-                    cap=p.get('cap'),
-                    nombres=p.get('nombres'),
-                    apellidos=p.get('apellidos'),
+                    perfil_ingeniero_id=p.get('perfil_ingeniero_id'),
+                    perfil_ingeniero_nombres=p.get('perfil_ingeniero_nombres'),
+                    perfil_ingeniero_apellidos=p.get('perfil_ingeniero_apellidos'),
+                    perfil_ingeniero_cip=p.get('perfil_ingeniero_cip'),
+                    especialidad_id=p.get('especialidad_id'),
+                    especialidad_nombre=p.get('especialidad_nombre'),
+                    descripcion=p.get('descripcion'),
                 ))
-            else:
-                # Es ProyectistaSnapshotData
+            elif isinstance(p, Proyectista):
+                # Proyectista model instance
+                perfil = p.perfil_ingeniero
                 proyectistas_actuales.append(ProyectistaOut(
                     id=p.id,
-                    cip=p.cip,
-                    dni=p.dni,
-                    cap=p.cap,
-                    nombres=p.nombres,
-                    apellidos=p.apellidos,
+                    perfil_ingeniero_id=str(p.perfil_ingeniero_id) if p.perfil_ingeniero_id else None,
+                    perfil_ingeniero_nombres=getattr(perfil, 'nombres', None) if perfil else None,
+                    perfil_ingeniero_apellidos=f"{getattr(perfil, 'apellido_paterno', '') if perfil else ''} {getattr(perfil, 'apellido_materno', '') if perfil else ''}".strip() or None,
+                    perfil_ingeniero_cip=getattr(perfil, 'cip', None) if perfil else None,
+                    especialidad_id=str(p.especialidad_id) if p.especialidad_id else None,
+                    especialidad_nombre=p.especialidad.nombre if p.especialidad else None,
+                    descripcion=p.descripcion,
+                ))
+            else:
+                # ProyectistaSnapshotData u otro
+                proyectistas_actuales.append(ProyectistaOut(
+                    id=getattr(p, 'id', None),
+                    perfil_ingeniero_id=getattr(p, 'perfil_ingeniero_id', None),
+                    perfil_ingeniero_nombres=getattr(p, 'perfil_ingeniero_nombres', None),
+                    perfil_ingeniero_apellidos=getattr(p, 'perfil_ingeniero_apellidos', None),
+                    perfil_ingeniero_cip=getattr(p, 'perfil_ingeniero_cip', None),
+                    especialidad_id=getattr(p, 'especialidad_id', None),
+                    especialidad_nombre=getattr(p, 'especialidad_nombre', None),
+                    descripcion=getattr(p, 'descripcion', None),
                 ))
 
         return NuevaRevisionFormularioOut(
@@ -281,3 +355,37 @@ class LiquidacionEdificacionesPresenter:
                 cobra=result.metadata.cobra,
             ),
         )
+
+    @staticmethod
+    def present_delegados_vigentes(result: DelegadosVigentesResult) -> DelegadosVigentesOut:
+        """
+        Transforma un DelegadosVigentesResult a DelegadosVigentesOut.
+
+        Args:
+            result: DelegadosVigentesResult del flujo
+
+        Returns:
+            DelegadosVigentesOut schema para respuesta HTTP
+        """
+        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
+            DelegadoVigenteOut,
+            EspecialidadBasicaDelegadoOut,
+        )
+
+        delegados_out = []
+        for dele in result.delegados:
+            especialidad_out = None
+            if dele.especialidad:
+                especialidad_out = EspecialidadBasicaDelegadoOut(
+                    id=dele.especialidad.id,
+                    nombre=dele.especialidad.nombre,
+                )
+            delegados_out.append(DelegadoVigenteOut(
+                id=dele.id,
+                nombre_completo=dele.nombre_completo,
+                cip=dele.cip,
+                especialidad=especialidad_out,
+                tipo=dele.tipo,
+            ))
+
+        return DelegadosVigentesOut(delegados=delegados_out)

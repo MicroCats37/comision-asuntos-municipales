@@ -9,6 +9,7 @@ from .liquidacion import (
     LiquidacionSnapshot,
 )
 from .liquidacion.liquidacion_edificaciones import (
+    EdificacionesEspecialidades,
     EdificacionesTarifa,
     EdificacionesRevision,
     LiquidacionEdificaciones,
@@ -21,7 +22,7 @@ from .proyecto import (
     ProyectoPersonaNatural,
     ContactoProyecto,
 )
-from .revision_delegado import RevisionDelegado
+from .liquidacion_delegado import LiquidacionDelegado
 
 __all__ = [
     "Delegado",
@@ -34,6 +35,7 @@ __all__ = [
     "LiquidacionSnapshot",
     "LiquidacionEdificaciones",
     "LiquidacionEdificacionesProxy",
+    "EdificacionesEspecialidades",
     "EdificacionesTarifa",
     "EdificacionesRevision",
     "Proyectista",
@@ -41,5 +43,5 @@ __all__ = [
     "ProyectoEmpresarial",
     "ProyectoPersonaNatural",
     "ContactoProyecto",
-    "RevisionDelegado",
+    "LiquidacionDelegado",
 ]

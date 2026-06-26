@@ -23,9 +23,12 @@ from ..schemas.liquidacion_edificaciones_schemas import (
     CotizacionPrimeraRevisionWrapperIn,
     CotizacionNuevaRevisionIn,
     CotizacionQuoteOut,
+    DelegadosVigentesOut,
+    EspecialidadesVigentesOut,
 )
 from ..presenters.liquidacion_edificaciones_presenter import LiquidacionEdificacionesPresenter
 from ...domain.services.orchestrators.liquidacion_edificaciones_orchestrator import LiquidacionesEdificacionesOrchestrator
+from ...domain.schemas import ContactoInlineData, ProyectistaInlineData
 
 
 @api_controller("/liquidaciones/edificaciones", tags=["Liquidaciones Edificaciones"], permissions=[AllowAny])
@@ -85,8 +88,32 @@ class LiquidacionEdificacionesController:
         - La municipalidad debe existir
         - No debe existir ya una primera revisión para ese proyecto
         - Las revisiones seleccionadas deben estar vigentes/habilitadas
+        - Los proyectistas inline (si se proveen) deben estar habilitados en CIP (condicion='1')
+        - Los delegados (si se proveen) deben estar activos y tener periodo vigente
         """
         liquidacion_data = payload.liquidacion
+
+        # Determinar si se usan proyectistas inline o IDs heredados
+        # Si se provee proyectistas (inline con CIP), usar esos; si no, usar proyectistas_ids
+        if liquidacion_data.proyectistas:
+            # Usar inline proyectistas con validación CIP
+            proyectistas_inline = [
+                ProyectistaInlineData(
+                    cip=p.cip,
+                    especialidad_id=p.especialidad_id,
+                    descripcion=p.descripcion,
+                )
+                for p in liquidacion_data.proyectistas
+            ]
+            proyectistas_ids = None  # No usar IDs cuando hay inline
+        elif liquidacion_data.proyectistas_ids:
+            # Backwards compatibility: usar IDs
+            proyectistas_inline = None
+            proyectistas_ids = [str(pid) for pid in liquidacion_data.proyectistas_ids]
+        else:
+            proyectistas_inline = None
+            proyectistas_ids = None
+
         result = await self.orchestrator.crear_primera_revision(
             proyecto_public_id=liquidacion_data.proyecto_public_id,
             municipalidad_id=str(liquidacion_data.municipalidad_id),
@@ -94,7 +121,24 @@ class LiquidacionEdificacionesController:
             valor_proyecto=liquidacion_data.valor_proyecto,
             observacion=liquidacion_data.observacion,
             revisiones_ids=liquidacion_data.revisiones_ids,
-            proyectistas_ids=[str(pid) for pid in liquidacion_data.proyectistas_ids],
+            proyectistas_inline=proyectistas_inline,
+            proyectistas_ids=proyectistas_ids,
+            delegados_ids=[str(did) for did in liquidacion_data.delegados_ids],
+            contactos_inline=[
+                ContactoInlineData(
+                    nombres=c.nombres,
+                    apellidos=c.apellidos,
+                    dni=c.dni,
+                    cargo=c.cargo,
+                    telefono=c.telefono,
+                    celular=c.celular,
+                    email=c.email,
+                    direccion=c.direccion,
+                    principal=c.principal,
+                    descripcion=c.descripcion,
+                )
+                for c in liquidacion_data.contactos
+            ],
         )
         return success_response(LiquidacionEdificacionesPresenter.present_snapshot(result))
 
@@ -182,13 +226,53 @@ class LiquidacionEdificacionesController:
         - La liquidación previa debe existir y ser de edificaciones
         - El número de revisión no puede exceder 7
         - Las revisiones seleccionadas deben estar vigentes/habilitadas
-        - proyectistas_ids es opcional; si se omite o está vacío, se heredan de la liquidación previa
+        - Proyectistas inline (si se proveen) deben estar habilitados en CIP
+        - Delegados (si se proveen) deben estar activos y tener periodo vigente
+        - Si se omite proyectistas o está vacío, se heredan de la liquidación previa
+        - Si se omite delegados o está vacío, se heredan de la liquidación previa
         """
+        # Determinar si se usan proyectistas inline o IDs heredados
+        if payload.proyectistas:
+            # Usar inline proyectistas con validación CIP
+            proyectistas_inline = [
+                ProyectistaInlineData(
+                    cip=p.cip,
+                    especialidad_id=p.especialidad_id,
+                    descripcion=p.descripcion,
+                )
+                for p in payload.proyectistas
+            ]
+            proyectistas_ids = None  # No usar IDs cuando hay inline
+        elif payload.proyectistas_ids:
+            # Backwards compatibility: usar IDs
+            proyectistas_inline = None
+            proyectistas_ids = [str(pid) for pid in payload.proyectistas_ids]
+        else:
+            proyectistas_inline = None
+            proyectistas_ids = None
+
         result = await self.orchestrator.crear_nueva_revision(
             liquidacion_previa_id=str(payload.liquidacion_previa_id),
             observacion=payload.observacion,
             revisiones_ids=[str(rid) for rid in payload.revisiones_ids],
-            proyectistas_ids=[str(pid) for pid in payload.proyectistas_ids] if payload.proyectistas_ids else None,
+            proyectistas_inline=proyectistas_inline,
+            proyectistas_ids=proyectistas_ids,
+            delegados_ids=[str(did) for did in payload.delegados_ids] if payload.delegados_ids else None,
+            contactos_inline=[
+                ContactoInlineData(
+                    nombres=c.nombres,
+                    apellidos=c.apellidos,
+                    dni=c.dni,
+                    cargo=c.cargo,
+                    telefono=c.telefono,
+                    celular=c.celular,
+                    email=c.email,
+                    direccion=c.direccion,
+                    principal=c.principal,
+                    descripcion=c.descripcion,
+                )
+                for c in payload.contactos
+            ],
         )
         return success_response(LiquidacionEdificacionesPresenter.present_snapshot(result))
 
@@ -202,6 +286,52 @@ class LiquidacionEdificacionesController:
         """
         result = await self.orchestrator.obtener_revisiones_vigentes()
         return success_response({'revisiones': result})
+
+    @route.get("/especialidades-vigentes", response={200: ApiResponse[EspecialidadesVigentesOut]}, auth=None)
+    async def obtener_especialidades_vigentes(self):
+        """
+        Obtiene las especialidades vigentes del grupo de EdificacionesEspecialidades.
+
+        Fuente: grupo EdificacionesEspecialidades cuyo periodo_inicio <= hoy
+        y (periodo_fin IS NULL OR periodo_fin >= hoy).
+
+        Retorna lista de especialidades con: id, nombre.
+        """
+        result = await self.orchestrator.obtener_especialidades_vigentes()
+        return success_response({'especialidades': result})
+
+    @route.get("/delegados/vigentes", response={200: ApiResponse[DelegadosVigentesOut]}, auth=None)
+    async def obtener_delegados_vigentes(
+        self,
+        municipalidad_id: str = Query(..., description="ID de la municipalidad (UUID)"),
+        revision_id: str = Query(..., description="ID de la revisión de edificación (UUID)"),
+        categoria: str = Query(None, description="Categoría del delegado: Edificaciones o Habilitaciones Urbanas"),
+    ):
+        """
+        Obtiene delegados vigentes para una municipalidad y revisión seleccionadas.
+
+        Un delegado está vigente si:
+        - Pertenece a la municipalidad (MunicipalidadesDelegado con activo=True)
+        - Tiene status='activo'
+        - Tiene un periodo vigente para la fecha actual
+        - Su especialidad está en el grupo EdificacionesEspecialidades vigente
+        - Su especialidad también está en las especialidades de la revisión seleccionada
+        - Si se provee categoria, filtra por esa categoría (por defecto Edificaciones para este endpoint)
+
+        Args:
+            municipalidad_id: UUID de la municipalidad
+            revision_id: UUID de la EdificacionesRevision para filtrar por especialidades
+            categoria: Categoría del delegado (Edificaciones o Habilitaciones Urbanas). Default: Edificaciones
+
+        Returns:
+            Lista de delegados con: id, nombre_completo, cip, especialidad: {id, nombre}, tipo.
+        """
+        result = await self.orchestrator.obtener_delegados_vigentes(
+            municipalidad_id=municipalidad_id,
+            revision_id=revision_id,
+            categoria=categoria,
+        )
+        return success_response(LiquidacionEdificacionesPresenter.present_delegados_vigentes(result))
 
     @route.get("/snapshots", response={200: ApiResponse[PaginatedData[LiquidacionSnapshotListItemOut]]}, auth=None)
     async def listar_snapshots(

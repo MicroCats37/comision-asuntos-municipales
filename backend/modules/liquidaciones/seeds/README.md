@@ -18,9 +18,10 @@ seeds/
 Contiene las municipalidades, delegados y asignaciones municipalidad-delegado.
 
 **Fuente de Datos:**
-- `docs/desarrollo/1.md` → Ingeniería Sanitaria
-- `docs/desarrollo/1 copy.md` → Habilitación Urbana
-- `docs/desarrollo/1 copy 2.md` → Ingeniería Civil
+- `docs/desarrollo/delegados-sanitaria.md` → Ingeniería Sanitaria
+- `docs/desarrollo/delegados-habilitacion-urbana.md` → Habilitación Urbana
+- `docs/desarrollo/delegados-civil.md` → Ingeniería Civil
+- `docs/desarrollo/delegados-electrica-mecanica.md` → Ingeniería Eléctrica y Mecánica Eléctrica
 
 **Formato:**
 ```json
@@ -141,7 +142,7 @@ El comando usa la siguiente prioridad para crear/actualizar `PerfilIngeniero`:
 ### Proceso de Carga
 
 1. **Carga Seeds** - Lee `delegados_reales.json` y `colegiados_reales.json`
-2. **Crea Especialidades** - Asegura que existan: Ingeniería Sanitaria, Ingeniería Civil, Habilitación Urbana
+2. **Crea Especialidades** - Asegura que existan: Ingeniería Sanitaria, Ingeniería Civil, Habilitación Urbana, Ingeniería Eléctrica y Mecánica Eléctrica
 3. **Crea Municipalidades** - Por cada municipalidad en el seed:
    - Usa código pre-generado desde el seed
    - Crea/actualiza con `update_or_create`

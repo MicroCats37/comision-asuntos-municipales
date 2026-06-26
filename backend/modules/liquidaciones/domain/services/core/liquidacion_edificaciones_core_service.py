@@ -1,6 +1,7 @@
 """
 Liquidaciones Edificaciones Service — operaciones sync.
 """
+from datetime import date
 from decimal import Decimal
 from typing import Optional
 from django.db.models import QuerySet
@@ -14,7 +15,8 @@ from ...models import (
     EdificacionesTarifa,
     Proyecto,
 )
-from ...schemas import VariablesFinancierasResult, EdificacionRevisionData, TarifaEdificacionData, EspecialidadData, LiquidacionEdificacionesPaginatedResult, LiquidacionEdificacionesListItem, LiquidacionSnapshotResult, RevisionVigenteResult
+from ...schemas import VariablesFinancierasResult, EdificacionRevisionData, TarifaEdificacionData, EspecialidadData, LiquidacionEdificacionesPaginatedResult, LiquidacionEdificacionesListItem, LiquidacionSnapshotResult, RevisionVigenteResult, RevisionConTarifaData, RevisionCalculoData, CotizacionRevisionData, TarifaCalculoData
+from modules.entidades.models import Municipalidad
 
 
 class LiquidacionesEdificacionesService:
@@ -66,7 +68,7 @@ class LiquidacionesEdificacionesService:
         """Obtiene todas las EdificacionesRevision vigentes (habilitadas) - QuerySet lazy."""
         return EdificacionesRevision.objects.filter(
             periodo_fin__isnull=True
-        ).select_related('tarifa', 'especialidad')
+        ).select_related('tarifa').prefetch_related('especialidades')
 
     def _obtener_revisiones_vigentes(self) -> list:
         """Materializa el QuerySet en contexto sync - obligatorio antes de sync_to_async."""
@@ -75,15 +77,30 @@ class LiquidacionesEdificacionesService:
         return list(qs)
 
     def _obtener_revisiones_vigentes_result(self) -> list[RevisionVigenteResult]:
-        """Obtiene todas las revisiones vigentes con sus tarifas y especialidades (devuelve result objects)."""
+        """
+        Obtiene todas las revisiones vigentes con sus tarifas y especialidades (devuelve result objects).
+
+        NOTE: Con M2M especialidades, una revisión puede tener múltiples especialidades.
+        Se devuelve la lista completa de especialidades para cada revisión.
+        El flujo completo de cálculo (que es 1 fila = 1 cargo) no necesita expand by specialty.
+        """
+        from modules.liquidaciones.domain.schemas import EspecialidadBasicaResult
         revisions_list = self._obtener_revisiones_vigencias_raw()
 
         result = []
         for rev in revisions_list:
+            # M2M: obtener todas las especialidades de la revisión
+            especialidades_orm = rev.especialidades.all()
+            especialidades = [
+                EspecialidadBasicaResult(
+                    id=esp.id,
+                    nombre=esp.nombre,
+                )
+                for esp in especialidades_orm
+            ]
             result.append(RevisionVigenteResult(
                 id=str(rev.id),
-                especialidad_id=str(rev.especialidad.id),
-                especialidad_nombre=rev.especialidad.nombre,
+                especialidades=especialidades,
                 tarifa_id=str(rev.tarifa.id),
                 porcentaje_liquidacion=rev.porcentaje_liquidacion,
                 derecho_minimo=rev.tarifa.derecho_minimo,
@@ -95,7 +112,7 @@ class LiquidacionesEdificacionesService:
 
     def _obtener_revisiones_por_ids_raw(self, ids: list[str]) -> QuerySet:
         """Obtiene revisiones por lista de IDs (QuerySet lazy)."""
-        return EdificacionesRevision.objects.filter(id__in=ids).select_related('tarifa', 'especialidad')
+        return EdificacionesRevision.objects.filter(id__in=ids).select_related('tarifa').prefetch_related('especialidades')
 
     def _obtener_revisiones_por_ids(self, ids: list[str]) -> list[EdificacionRevisionData]:
         """Obtiene revisiones por IDs (devuelve result objects)."""
@@ -103,11 +120,14 @@ class LiquidacionesEdificacionesService:
 
         result = []
         for rev in revisions_qs:
+            # M2M: obtener primera especialidad para compatibilidad
+            especialidades = list(rev.especialidades.all())
+            primera_esp = especialidades[0] if especialidades else None
             result.append(EdificacionRevisionData(
                 id=rev.id,
                 especialidad=EspecialidadData(
-                    id=rev.especialidad.id,
-                    nombre=rev.especialidad.nombre,
+                    id=str(primera_esp.id) if primera_esp else None,
+                    nombre=primera_esp.nombre if primera_esp else None,
                 ),
                 tarifa=TarifaEdificacionData(
                     id=rev.tarifa.id,
@@ -167,21 +187,39 @@ class LiquidacionesEdificacionesService:
     def _crear_liquidacion_general(
         self,
         proyecto: Proyecto,
-        municipalidad: 'entidades.Municipalidad',
-        igv: 'finanzas.IGV',
-        uit: 'finanzas.UIT',
+        municipalidad: Municipalidad,
         valor_proyecto: Decimal,
         observacion: Optional[str],
         liquidacion_previa: Optional[LiquidacionGeneral] = None,
+        valor_base_calculo: Optional[Decimal] = None,
     ) -> LiquidacionGeneral:
         """Crea una LiquidacionGeneral con la cadena de liquidaciones previas."""
+        from modules.finanzas.models import IGV, UIT
+
+        # Obtener IGV y UIT vigentes
+        igv = IGV.objects.vigente()
+        uit = UIT.objects.vigente()
+
+        if igv is None:
+            raise ValueError(
+                "No hay IGV vigente configurado. Ejecute: python manage.py seed_finanzas"
+            )
+        if uit is None:
+            raise ValueError(
+                "No hay UIT vigente configurada. Ejecute: python manage.py seed_finanzas"
+            )
+
         public_id = self._generar_public_id_liquidacion_general()
+        # valor_base_calculo: si no se proporciona, usar valor_proyecto
+        if valor_base_calculo is None:
+            valor_base_calculo = valor_proyecto
         liquidacion = LiquidacionGeneral.objects.create(
             proyecto=proyecto,
             municipalidad=municipalidad,
             igv=igv,
             uit=uit,
             valor_proyecto=valor_proyecto,
+            valor_base_calculo=valor_base_calculo,
             observacion=observacion,
             public_id=public_id,
         )
@@ -328,7 +366,14 @@ class LiquidacionesEdificacionesService:
         edificaciones/revisiones, totales, proyectistas) usando prefetch/select_related
         para evitar N+1.
         Retorna (lista_de_dicts_nested, total).
+
+        NOTE: La construcción de cada item de la lista está Delegada al
+        LiquidacionEdificacionesResultBuilder.build_snapshot_list_item()
+        para mantener el core service enfocado en query/paginación y
+        separar la responsabilidad de construcción de DTOs.
         """
+        from ..builders import LiquidacionEdificacionesResultBuilder
+
         qs = LiquidacionGeneral.objects.filter(
             edificaciones__isnull=False
         ).select_related(
@@ -338,8 +383,9 @@ class LiquidacionesEdificacionesService:
             'municipalidad__distrito__provincia',
         ).prefetch_related(
             'edificaciones__revisiones__tarifa',
-            'edificaciones__revisiones__especialidad',
-            'edificaciones__proyectistas',
+            'edificaciones__revisiones__especialidades',
+            'edificaciones__proyectistas__perfil_ingeniero',
+            'edificaciones__proyectistas__especialidad',
         ).order_by('-created_at')
         total = qs.count()
         offset = (page - 1) * page_size
@@ -361,207 +407,318 @@ class LiquidacionesEdificacionesService:
         edificaciones_qs = LiquidacionEdificaciones.objects.filter(
             liquidacion_id__in=liquidacion_ids
         ).prefetch_related(
-            'revisiones__tarifa', 'revisiones__especialidad', 'proyectistas'
+            'revisiones__tarifa', 'revisiones__especialidades',
+            'proyectistas__perfil_ingeniero', 'proyectistas__especialidad',
         )
         edificaciones_by_liquidacion = {ed.liquidacion_id: ed for ed in edificaciones_qs}
 
+        # Bulk fetch de proyectistas por edificacion para pasar al builder
+        # NOTE: Ya viene en el prefetch de edificaciones, pero extraemos la lista
+        # para pasarla directamente al builder que sabe cómo construir el DTO.
         items = []
         for liq in liquidaciones:
             snapshot = snapshots.get(liq.id)
             edificacion = edificaciones_by_liquidacion.get(liq.id)
-            numero_revision = edificacion.numero_revision if edificacion else 0
-
-            # Construir proyecto anidado
-            proyecto = liq.proyecto
-            entidad_data = None
-            if proyecto.entidad:
-                entidad_data = {
-                    'id': str(proyecto.entidad.id),
-                    'tipo': proyecto.entidad.tipo_documento,
-                    'nombre': proyecto.entidad.nombre_completo,
-                    'ruc': proyecto.entidad.numero_documento if hasattr(proyecto.entidad, 'numero_documento') else None,
-                }
-
-            # Build distrito nested object for proyecto
-            distrito_data = None
-            if proyecto.distrito:
-                provincia_prov = None
-                if proyecto.distrito.provincia:
-                    provincia_prov = {
-                        'id': str(proyecto.distrito.provincia.id),
-                        'nombre': proyecto.distrito.provincia.nombre,
-                    }
-                distrito_data = {
-                    'id': str(proyecto.distrito.id),
-                    'nombre': proyecto.distrito.nombre,
-                    'provincia': provincia_prov,
-                }
-
-            # NOTE: proyectista ya no está en proyecto — ahora vive en LiquidacionEdificaciones.proyectistas
-            proyecto_data = {
-                'id': str(proyecto.id),
-                'public_id': str(proyecto.public_id) if proyecto.public_id else '',
-                'nombre': proyecto.denominacion,
-                'direccion': proyecto.direccion,
-                'valor_proyecto': float(liq.valor_proyecto),
-                'entidad': entidad_data,
-                'distrito': distrito_data,
-            }
-
-            # Construir proyectistas desde edificacion
-            proyectistas_data = []
+            # Obtener proyectistas desde edificacion con relaciones preloadadas
+            proyectistas_list = []
             if edificacion:
-                for p in edificacion.proyectistas.all():
-                    proyectistas_data.append({
-                        'id': str(p.id),
-                        'cip': p.cip,
-                        'dni': p.dni,
-                        'cap': p.cap,
-                        'nombres': p.nombres,
-                        'apellidos': p.apellidos,
-                    })
-
-            # Construir edificaciones con revisiones
-            # NOTE: numero_revision fue removido de cada revisión — solo existe en nivel edificaciones
-            revisiones_data = []
-            if snapshot and snapshot.data:
-                edificaciones_snapshot = snapshot.data.get('edificaciones', {})
-                numero_revision = edificaciones_snapshot.get('numero_revision', numero_revision)
-                revisions_snapshot = edificaciones_snapshot.get('revisiones', [])
-                if revisions_snapshot:
-                    # Usar datos del snapshot (sin numero_revision por item)
-                    revisiones_data = [{
-                        'id': str(rev.get('id', '')),
-                        'especialidad': rev.get('especialidad', ''),
-                        'tarifa': rev.get('tarifa', {}),
-                        'monto_base': float(rev.get('monto_base', 0)),
-                        'cobra': rev.get('cobra', True),
-                        'derecho': float(rev.get('derecho', 0)),
-                    } for rev in revisions_snapshot]
-                # Tomar proyectistas del snapshot si existen
-                if 'proyectistas' in edificaciones_snapshot:
-                    proyectistas_data = edificaciones_snapshot.get('proyectistas', [])
-            elif edificacion:
-                # Fallback a ORM cuando no hay snapshot
-                for rev in edificacion.revisiones.all():
-                    revisiones_data.append({
-                        'id': str(rev.id),
-                        'especialidad': rev.especialidad.nombre if rev.especialidad else '',
-                        'tarifa': {
-                            'id': str(rev.tarifa.id),
-                            'derecho_minimo': float(rev.tarifa.derecho_minimo),
-                            'derecho_maximo': float(rev.tarifa.derecho_maximo) if rev.tarifa.derecho_maximo else None,
-                            'porcentaje_minimo_uit': float(rev.tarifa.porcentaje_minimo_uit),
-                        },
-                        'monto_base': float(getattr(rev, 'monto_base', 0)),
-                        'cobra': getattr(rev, 'cobra', True),
-                        'derecho': float(getattr(rev, 'derecho', 0)),
-                    })
-
-            # Construir totales desde snapshot JSON
-            totales_data = {
-                'subtotal': 0.0,
-                'igv': 0.0,
-                'total': 0.0,
-                'liquidacion_total': 0.0,
-                'total_a_pagar': 0.0,
-            }
-            if snapshot and snapshot.data:
-                totales_data = snapshot.data.get('totales', totales_data)
-
-            # Construir data de edificaciones (incluye numero_revision y proyectistas)
-            # Extraer public_id, tipo_tramite, tramite_accion de snapshot o fallback del ORM
-            edificacion_public_id = ""
-            edificacion_tipo_tramite = ""
-            edificacion_tramite_accion = ""
-            if snapshot and snapshot.data:
-                edificaciones_snapshot = snapshot.data.get('edificaciones', {})
-                edificacion_public_id = edificaciones_snapshot.get('public_id', '')
-                edificacion_tipo_tramite = edificaciones_snapshot.get('tipo_tramite', '')
-                edificacion_tramite_accion = edificaciones_snapshot.get('tramite_accion', '')
-            if not edificacion_public_id and edificacion:
-                edificacion_public_id = edificacion.public_id or ''
-            if not edificacion_tipo_tramite and edificacion:
-                edificacion_tipo_tramite = edificacion.tipo_tramite or ''
-            if not edificacion_tramite_accion and edificacion:
-                edificacion_tramite_accion = edificacion.tramite_accion or ''
-
-            edificaciones_data = {
-                'public_id': edificacion_public_id,
-                'numero_revision': numero_revision,
-                'tipo_tramite': edificacion_tipo_tramite,
-                'tramite_accion': edificacion_tramite_accion,
-                'proyectistas': proyectistas_data,
-                'revisiones': revisiones_data,
-            }
-
-            # Extraer public_id y municipalidad de liquidacion (nuevo formato anidado)
-            liquidacion_public_id = ""
-            municipalidad_data = {
-                'id': None,
-                'nombre': '',
-                'codigo': None,
-                'provincia': None,
-                'distrito': None,
-            }
-            if snapshot and snapshot.data:
-                liquidacion_snapshot = snapshot.data.get('liquidacion', {})
-                liquidacion_public_id = liquidacion_snapshot.get('public_id', '')
-                # Nuevo formato: municipalidad como objeto anidado
-                muni_snapshot = liquidacion_snapshot.get('municipalidad', {})
-                if muni_snapshot:
-                    municipalidad_data = muni_snapshot
-                # Backwards compat: si viene el formato viejo flat, convertir
-                elif liquidacion_snapshot.get('municipalidad_id'):
-                    municipalidad_data = {
-                        'id': liquidacion_snapshot.get('municipalidad_id'),
-                        'nombre': liquidacion_snapshot.get('municipalidad_nombre', ''),
-                        'codigo': None,
-                        'provincia': None,
-                        'distrito': None,
-                    }
-            if not liquidacion_public_id:
-                liquidacion_public_id = liq.public_id or ''
-            # Si no tenemos municipalidad del snapshot, construir desde ORM
-            if not municipalidad_data.get('id') and liq.municipalidad:
-                provincia_muni = None
-                distrito_muni = None
-                if liq.municipalidad.provincia:
-                    provincia_muni = {
-                        'id': str(liq.municipalidad.provincia.id),
-                        'nombre': liq.municipalidad.provincia.nombre,
-                    }
-                if liq.municipalidad.distrito:
-                    provincia_del_distrito = None
-                    if liq.municipalidad.distrito.provincia:
-                        provincia_del_distrito = {
-                            'id': str(liq.municipalidad.distrito.provincia.id),
-                            'nombre': liq.municipalidad.distrito.provincia.nombre,
-                        }
-                    distrito_muni = {
-                        'id': str(liq.municipalidad.distrito.id),
-                        'nombre': liq.municipalidad.distrito.nombre,
-                        'provincia': provincia_del_distrito,
-                    }
-                municipalidad_data = {
-                    'id': str(liq.municipalidad.id),
-                    'nombre': liq.municipalidad.nombre,
-                    'codigo': liq.municipalidad.codigo,
-                    'provincia': provincia_muni,
-                    'distrito': distrito_muni,
-                }
-
-            items.append({
-                'liquidacion_id': str(liq.id),
-                'public_id': liquidacion_public_id,
-                'numero_liquidacion': f"LIQ-EDIF-{numero_revision}",
-                'estado': liq.estado,
-                'fecha_registro': liq.fecha_registro.isoformat() if liq.fecha_registro else '',
-                'municipalidad': municipalidad_data,
-                'observacion': liq.observacion,
-                'proyecto': proyecto_data,
-                'edificaciones': edificaciones_data,
-                'totales': totales_data,
-            })
+                proyectistas_list = list(
+                    edificacion.proyectistas.select_related('perfil_ingeniero', 'especialidad').all()
+                )
+            # Delegar construcción del item al builder
+            item = LiquidacionEdificacionesResultBuilder.build_snapshot_list_item(
+                liquidacion_orm=liq,
+                edificacion_orm=edificacion,
+                snapshot_orm=snapshot,
+                proyectistas_orm_list=proyectistas_list,
+            )
+            items.append(item)
 
         return items, total
+
+    # =============================================================================
+    # Calculation helpers — sync operations for reusable domain calculations
+    # Moved from flujo per Django architecture contract (P2, P6)
+    # =============================================================================
+
+    def calcular_derecho(
+        self,
+        monto_base: Decimal,
+        derecho_minimo: Decimal,
+        derecho_maximo: Optional[Decimal],
+    ) -> Decimal:
+        """
+        Calcula el derecho aplicando mínimo y máximo.
+
+        Args:
+            monto_base: Monto base para el cálculo
+            derecho_minimo: Valor mínimo del derecho
+            derecho_maximo: Valor máximo del derecho (None = sin máximo)
+
+        Returns:
+            Decimal con el derecho calculado
+        """
+        derecho = monto_base
+        if derecho < derecho_minimo:
+            derecho = derecho_minimo
+        if derecho_maximo is not None and derecho > derecho_maximo:
+            derecho = derecho_maximo
+        return derecho
+
+    def calcular_monto_base(
+        self,
+        valor_proyecto: Decimal,
+        porcentaje_liquidacion: Decimal,
+    ) -> Decimal:
+        """
+        Calcula el monto base: valor_proyecto * porcentaje_liquidacion.
+
+        Args:
+            valor_proyecto: Valor total del proyecto
+            porcentaje_liquidacion: Porcentaje de liquidación (ej: 0.05 para 5%)
+
+        Returns:
+            Decimal con el monto base calculado
+        """
+        return Decimal(str(valor_proyecto)) * porcentaje_liquidacion
+
+    def calcular_revisiones(
+        self,
+        valor_proyecto: Decimal,
+        revisiones_data: list,
+        cobra: bool,
+        igv_valor: Decimal,
+        numero_revision: Optional[int] = None,
+    ) -> tuple[list, Decimal, Decimal, Decimal]:
+        """
+        Calcula el monto base, derecho y totales para una lista de revisiones.
+
+        Args:
+            valor_proyecto: Valor del proyecto para el cálculo
+            revisiones_data: Lista de revisiones (con .tarifa y .porcentaje_liquidacion,
+                             o RevisionConTarifaData para compatibilidad)
+            cobra: Si True aplica derecho, si False todo es 0
+            igv_valor: Valor del IGV (ej: Decimal('0.18'))
+            numero_revision: Si se proporciona, retorna RevisionCalculoData con este número;
+                            si no, retorna CotizacionRevisionData (sin numero_revision por item)
+
+        Returns:
+            Tuple of (revision_results, subtotal, igv_monto, total_liquidacion)
+        """
+        subtotal = Decimal('0')
+        revision_results = []
+
+        for rev_data in revisiones_data:
+            # Support both EdificacionRevisionData (with .especialidad.nombre)
+            # and RevisionConTarifaData (with .especialidad_nombre string)
+            if hasattr(rev_data, 'especialidad_nombre'):
+                # RevisionConTarifaData style
+                especialidad_nombre = rev_data.especialidad_nombre
+            else:
+                # EdificacionRevisionData style
+                especialidad_nombre = rev_data.especialidad.nombre
+
+            monto_base = self.calcular_monto_base(
+                valor_proyecto,
+                rev_data.porcentaje_liquidacion,
+            )
+
+            if cobra:
+                derecho = self.calcular_derecho(
+                    monto_base,
+                    rev_data.tarifa.derecho_minimo,
+                    rev_data.tarifa.derecho_maximo,
+                )
+            else:
+                derecho = Decimal('0')
+                monto_base = Decimal('0')
+
+            if numero_revision is not None:
+                # Create flow: RevisionCalculoData con numero_revision por item
+                revision_results.append(RevisionCalculoData(
+                    id=str(rev_data.id),
+                    numero_revision=numero_revision,
+                    especialidad=especialidad_nombre,
+                    tarifa=TarifaCalculoData(
+                        id=str(rev_data.tarifa.id),
+                        derecho_minimo=rev_data.tarifa.derecho_minimo,
+                        derecho_maximo=rev_data.tarifa.derecho_maximo,
+                        porcentaje_minimo_uit=rev_data.tarifa.porcentaje_minimo_uit,
+                    ),
+                    monto_base=monto_base,
+                    cobra=cobra,
+                    derecho=derecho,
+                ))
+            else:
+                # Cotizar flow: CotizacionRevisionData sin numero_revision por item
+                revision_results.append(CotizacionRevisionData(
+                    id=rev_data.id,
+                    especialidad=especialidad_nombre,
+                    tarifa=TarifaCalculoData(
+                        id=rev_data.tarifa.id,
+                        derecho_minimo=rev_data.tarifa.derecho_minimo,
+                        derecho_maximo=rev_data.tarifa.derecho_maximo,
+                        porcentaje_minimo_uit=rev_data.tarifa.porcentaje_minimo_uit,
+                    ),
+                    monto_base=monto_base,
+                    cobra=cobra,
+                    derecho=derecho,
+                ))
+            subtotal += derecho
+
+        # Calcular totales
+        igv_monto = subtotal * igv_valor
+        total_liquidacion = subtotal + igv_monto
+
+        return revision_results, subtotal, igv_monto, total_liquidacion
+
+    def to_revision_con_tarifa(self, rev: RevisionVigenteResult) -> RevisionConTarifaData:
+        """
+        Transforma RevisionVigenteResult (flat) en RevisionConTarifaData con
+        estructura anidada (.tarifa y .especialidad_nombre).
+
+        Reemplaza el helper _to_revision_calculo_data con fake inline class.
+
+        Args:
+            rev: RevisionVigenteResult con campos planos
+
+        Returns:
+            RevisionConTarifaData con estructura anidada
+        """
+        return RevisionConTarifaData(
+            id=rev.id,
+            porcentaje_liquidacion=rev.porcentaje_liquidacion,
+            tarifa=TarifaCalculoData(
+                id=rev.tarifa_id,
+                derecho_minimo=rev.derecho_minimo,
+                derecho_maximo=rev.derecho_maximo,
+                porcentaje_minimo_uit=rev.porcentaje_minimo_uit,
+            ),
+            especialidad_nombre=rev.especialidad_nombre,
+        )
+
+    def _obtener_delegados_vigentes(
+        self,
+        municipalidad_id: str,
+        fecha: date,
+        revision_id: str | None = None,
+        categoria: str | None = None,
+    ) -> list:
+        """
+        Obtiene delegados vigentes para una municipalidad y fecha.
+
+        Un delegado está vigente si:
+        1. Existe en MunicipalidadesDelegado con activo=True para la municipalidad
+        2. El Delegado tiene status='activo'
+        3. Existe PeriodoDelegado con periodo_inicio <= fecha <= periodo_fin
+        4. Si se provee revision_id, la especialidad del delegado debe:
+           a. Estar en el grupo EdificacionesEspecialidades vigente
+           b. Estar en las especialidades de la EdificacionesRevision seleccionada
+        5. Si se provee categoria, filtra por esa categoría en MunicipalidadesDelegado
+
+        Args:
+            municipalidad_id: UUID de la municipalidad
+            fecha: Fecha actual para validar periodo
+            revision_id: UUID opcional de EdificacionesRevision para filtrar por especialidades
+            categoria: Categoría del delegado (Edificaciones o Habilitaciones Urbanas)
+
+        Returns:
+            Lista de DelegadoVigenteResult con datos del delegado:
+            id, nombre_completo, cip, especialidad: {id, nombre}, tipo
+        """
+        from django.db.models import Q, OuterRef, Subquery
+        from ...models import Delegado, PeriodoDelegado, EdificacionesEspecialidades, EdificacionesRevision, MunicipalidadDelegado
+        from ...constants import DelegadoStatus
+        from ...schemas import DelegadoVigenteResult, EspecialidadBasicaResult
+
+        # Annotate tipo and categoria from the specific MunicipalidadDelegado for this municipalidad
+        # This replaces Delegado.tipo which was per-delegado; now tipo and categoria are per-assignment
+        tipo_subquery = MunicipalidadDelegado.objects.filter(
+            delegado=OuterRef('pk'),
+            municipalidad_id=municipalidad_id,
+        ).values_list('tipo', flat=True)[:1]
+
+        categoria_subquery = MunicipalidadDelegado.objects.filter(
+            delegado=OuterRef('pk'),
+            municipalidad_id=municipalidad_id,
+        ).values_list('categoria', flat=True)[:1]
+
+        # Query: Join MunicipalidadDelegado -> Delegado -> PeriodoDelegado
+        # Filtros:
+        # - municipalidad_id
+        # - ProvinciaDelegado.activo = True
+        # - Delegado.status = 'activo'
+        # - PeriodoDelegado.periodo_inicio <= fecha
+        # - PeriodoDelegado.periodo_fin >= fecha OR periodo_fin IS NULL (vigente/open-ended)
+        queryset = (
+            Delegado.objects
+            .select_related('perfil_ingeniero', 'especialidad')
+            .annotate(municipalidad_tipo=Subquery(tipo_subquery))
+            .filter(
+                Q(periodos_asignados__periodo_fin__gte=fecha) | Q(periodos_asignados__periodo_fin__isnull=True),
+                distritos_asignados__municipalidad_id=municipalidad_id,
+                distritos_asignados__activo=True,
+                status=DelegadoStatus.ACTIVO,
+                periodos_asignados__periodo_inicio__lte=fecha,
+            )
+            .distinct()
+        )
+
+        # Si se provee categoria, filtrar por esa categoria en MunicipalidadesDelegado
+        if categoria:
+            queryset = queryset.filter(distritos_asignados__categoria=categoria)
+
+        # Si se provee revision_id, aplicar filtro adicional por especialidades
+        if revision_id:
+            # Obtener grupo de especialidades vigente
+            grupo_vigente = EdificacionesEspecialidades.objects.filter(
+                periodo_inicio__lte=fecha,
+            ).filter(
+                Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha)
+            ).first()
+
+            if grupo_vigente:
+                # Especialidades del grupo vigente
+                especialidades_vigente_ids = set(
+                    grupo_vigente.especialidades.values_list('id', flat=True)
+                )
+
+                # Especialidades de la revision seleccionada
+                try:
+                    revision = EdificacionesRevision.objects.prefetch_related('especialidades').get(id=revision_id)
+                    revision_especialidades_ids = set(
+                        revision.especialidades.values_list('id', flat=True)
+                    )
+                except EdificacionesRevision.DoesNotExist:
+                    revision_especialidades_ids = set()
+
+                # Interseccion: vigentes que tambien estan en la revision
+                allowed_especialidades = especialidades_vigente_ids & revision_especialidades_ids
+
+                # Filtrar queryset por especialidades en la interseccion
+                if allowed_especialidades:
+                    queryset = queryset.filter(especialidad_id__in=allowed_especialidades)
+                else:
+                    # No hay interseccion - retornar lista vacia
+                    return []
+            else:
+                # No hay grupo vigente - retornar lista vacia
+                return []
+
+        items = []
+        for dele in queryset:
+            perfil = dele.perfil_ingeniero
+            especialidad_data = None
+            if dele.especialidad:
+                especialidad_data = EspecialidadBasicaResult(
+                    id=dele.especialidad.id,
+                    nombre=dele.especialidad.nombre,
+                )
+            items.append(DelegadoVigenteResult(
+                id=dele.id,
+                nombre_completo=perfil.nombre_completo if perfil else '',
+                cip=perfil.cip if perfil else '',
+                especialidad=especialidad_data,
+                tipo=dele.municipalidad_tipo,
+            ))
+        return items

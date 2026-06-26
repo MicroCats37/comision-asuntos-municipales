@@ -2,6 +2,9 @@
 Presentation schemas — Esquemas HTTP para Proyectistas.
 
 Usa Ninja Schema para request/response.
+
+NOTE: Los esquemas fueron simplificados para usar PerfilIngeniero referenciado
+en lugar de campos de identidad duplicados.
 """
 import uuid
 from ninja import Schema, Field
@@ -9,30 +12,32 @@ from typing import Optional
 
 
 class ProyectistaIn(Schema):
-    """Payload para crear/buscar proyectista."""
-    nombres: str = Field(..., min_length=1, max_length=255, description="Nombres")
-    apellidos: str = Field(..., min_length=1, max_length=255, description="Apellidos")
-    cip: Optional[str] = Field(None, max_length=6, description="CIP (6 dígitos)")
-    dni: Optional[str] = Field(None, max_length=8, description="DNI (8 dígitos)")
-    cap: Optional[str] = Field(None, max_length=6, description="CAP (6 dígitos)")
+    """Payload para crear/buscar proyectista por perfil y especialidad."""
+    perfil_ingeniero_id: uuid.UUID = Field(..., description="ID del PerfilIngeniero")
+    especialidad_id: uuid.UUID = Field(..., description="ID de la Especialidad")
+    descripcion: Optional[str] = Field(None, description="Descripción opcional")
 
 
 class ProyectistaOut(Schema):
     """Proyectista en respuesta."""
     id: uuid.UUID
-    nombres: str
-    apellidos: str
-    cip: Optional[str]
-    dni: Optional[str]
-    cap: Optional[str]
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    descripcion: Optional[str] = None
 
 
 class ProyectistaUpsertResponseOut(Schema):
     """Respuesta de crear/buscar proyectista."""
     id: uuid.UUID
-    nombres: str
-    apellidos: str
-    cip: Optional[str]
-    dni: Optional[str]
-    cap: Optional[str]
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    descripcion: Optional[str] = None
     creado: bool  # True si se creó, False si se encontró existente
