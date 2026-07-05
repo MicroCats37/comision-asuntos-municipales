@@ -3,57 +3,80 @@
  */
 import api from "@/lib/api";
 import type {
-  PaginatedLiquidaciones,
+  CotizacionQuote,
+  LiquidacionEdificacionOut,
+  LiquidacionGeneralListItem,
+  NuevaRevisionFormData,
+  NuevaRevisionFormularioResponse,
+  PaginatedLiquidacionesEdificaciones,
+  PaginatedLiquidacionesGenerales,
   PrimeraRevisionFormData,
   VariablesFinancieras,
-  LiquidacionSnapshot,
-  CotizacionQuote,
-  NuevaRevisionFormularioResponse,
-  NuevaRevisionFormData,
 } from "../types/liquidacion-edificaciones";
 
 const BASE_URL = "/liquidaciones/edificaciones";
+const GENERAL_BASE_URL = "/liquidaciones";
 
 export const liquidacionesService = {
   /**
-   * Lista liquidaciones con paginación.
+   * Lista liquidaciones de edificaciones con paginación.
+   * El endpoint GET /liquidaciones/edificaciones retorna LiquidacionEdificacionOut
+   * completo en cada item de la lista (backend Phase 4+).
    */
   async listarLiquidaciones(params: {
     page: number;
     page_size: number;
-  }): Promise<PaginatedLiquidaciones> {
+  }): Promise<PaginatedLiquidacionesEdificaciones> {
     const { data } = await api.get(BASE_URL, { params });
-    return data.data as PaginatedLiquidaciones;
+    return data.data as PaginatedLiquidacionesEdificaciones;
+  },
+
+  /**
+   * Lista liquidaciones GENERALES con paginación.
+   * Endpoint: GET /liquidaciones
+   * Retorna LiquidacionGeneralListItemOut (backend Phase 4+).
+   */
+  async listarLiquidacionesGenerales(params: {
+    page: number;
+    page_size: number;
+  }): Promise<PaginatedLiquidacionesGenerales> {
+    const { data } = await api.get(GENERAL_BASE_URL, { params });
+    return data.data as PaginatedLiquidacionesGenerales;
   },
 
   /**
    * Crea primera revisión de liquidación.
+   * Retorna LiquidacionEdificacionOut plano (backend Phase 4+).
    */
   async crearPrimeraRevision(
     payload: PrimeraRevisionFormData,
-  ): Promise<{ data: LiquidacionSnapshot }> {
+  ): Promise<LiquidacionEdificacionOut> {
     const { data } = await api.post(`${BASE_URL}/primera-revision`, {
       liquidacion: payload,
     });
-    return data as { data: LiquidacionSnapshot };
+    return (data as { data: LiquidacionEdificacionOut }).data;
   },
 
   /**
    * Obtiene detalle de una liquidación.
+   * Retorna LiquidacionEdificacionOut plano (backend Phase 4+).
    */
   async obtenerLiquidacion(
     liquidacionId: string,
-  ): Promise<{ data: LiquidacionSnapshot }> {
+  ): Promise<LiquidacionEdificacionOut> {
     const { data } = await api.get(`${BASE_URL}/${liquidacionId}`);
-    return data as { data: LiquidacionSnapshot };
+    return (data as { data: LiquidacionEdificacionOut }).data;
   },
 
   /**
    * Cotiza primera revisión sin guardar en BD.
+   * Ahora acepta tarifas_ids en lugar de proyecto_public_id para el cálculo.
    */
   async cotizarPrimeraRevision(payload: {
     proyecto_public_id: string;
     valor_proyecto: number;
+    valor_base_calculo: number;
+    tarifas_ids: string[];
   }): Promise<CotizacionQuote> {
     const { data } = await api.post(`${BASE_URL}/cotizar/primera-revision`, {
       liquidacion: payload,
@@ -95,12 +118,13 @@ export const liquidacionesService = {
 
   /**
    * Crea nueva revisión de liquidación.
+   * Retorna LiquidacionEdificacionOut plano (backend Phase 4+).
    */
   async crearNuevaRevision(
     payload: NuevaRevisionFormData,
-  ): Promise<{ data: LiquidacionSnapshot }> {
+  ): Promise<LiquidacionEdificacionOut> {
     const { data } = await api.post(`${BASE_URL}/nueva-revision`, payload);
-    return data as { data: LiquidacionSnapshot };
+    return (data as { data: LiquidacionEdificacionOut }).data;
   },
 };
 

@@ -2,8 +2,9 @@
  * Hook para validar CIP de ingeniero habilitado.
  * GET /ingenieros/habilitados/{cip}
  */
-import { useApiQuery } from "@/hooks";
+
 import { z } from "zod";
+import { useApiQuery } from "@/hooks";
 import { apiResponseSchema } from "@/types/api.types";
 import type { IngenieroHabilitado } from "../types/proyectista";
 

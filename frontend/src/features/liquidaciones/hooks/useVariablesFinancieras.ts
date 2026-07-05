@@ -2,8 +2,9 @@
  * Hook para obtener variables financieras vigentes (IGV/UIT).
  * Usa useApiQuery genérico del proyecto.
  */
-import { useApiQuery } from "@/hooks";
+
 import { z } from "zod";
+import { useApiQuery } from "@/hooks";
 import { apiResponseSchema } from "@/types/api.types";
 import type { VariablesFinancieras } from "../types/liquidacion-edificaciones";
 
@@ -16,7 +17,9 @@ const variablesFinancierasPayloadSchema = z.object({
 });
 
 /** Full envelope schema using shared helper */
-const finanzasVariablesResponseSchema = apiResponseSchema(variablesFinancierasPayloadSchema);
+const finanzasVariablesResponseSchema = apiResponseSchema(
+  variablesFinancierasPayloadSchema,
+);
 
 /** Fallback values when API fails or returns null data */
 const DEFAULT_VARIABLES: VariablesFinancieras = {

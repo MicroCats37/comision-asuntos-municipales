@@ -7,7 +7,6 @@ from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
 from ninja import Query
-from typing import Dict, Any
 
 from core.responses import ApiResponse, success_response
 from core.pagination import PaginatedData
@@ -15,11 +14,10 @@ from ..schemas.liquidacion_edificaciones_schemas import (
     PrimeraRevisionLiquidacionWrapperIn,
     PrimeraRevisionLiquidacionIn,
     NuevaRevisionLiquidacionIn,
-    LiquidacionSnapshotOut,
+    LiquidacionEdificacionOut,
     NuevaRevisionFormularioOut,
     RevisionesVigentesOut,
     LiquidacionEdificacionesListItemOut,
-    LiquidacionSnapshotListItemOut,
     CotizacionPrimeraRevisionWrapperIn,
     CotizacionNuevaRevisionIn,
     CotizacionQuoteOut,
@@ -29,6 +27,7 @@ from ..schemas.liquidacion_edificaciones_schemas import (
 from ..presenters.liquidacion_edificaciones_presenter import LiquidacionEdificacionesPresenter
 from ...domain.services.orchestrators.liquidacion_edificaciones_orchestrator import LiquidacionesEdificacionesOrchestrator
 from ...domain.schemas import ContactoInlineData, ProyectistaInlineData
+from ...domain.schemas_proyecto import ProyectoInlineData, EntidadInlineData
 
 
 @api_controller("/liquidaciones/edificaciones", tags=["Liquidaciones Edificaciones"], permissions=[AllowAny])
@@ -38,45 +37,59 @@ class LiquidacionEdificacionesController:
 
     Endpoints:
     - GET /: Listar liquidaciones con paginación
-    - POST /primera-revision: Crear primera revisión
+    - POST /nueva-liquidacion: Crear nueva liquidación (primera revisión)
+    - POST /primera-revision: Crear primera revisión (alias de /nueva-liquidacion)
+    - POST /cotizar/primera-revision: Cotizar primera revisión sin guardar
+    - POST /cotizar/nueva-revision: Cotizar nueva revisión sin guardar
     - GET /nueva-revision/formulario: Preparar formulario para nueva revisión
     - POST /nueva-revision: Crear nueva revisión
-    - GET /{liquidacion_id}: Obtener detalle/snapshot de liquidación
+    - GET /revisiones-vigentes: Obtener revisiones vigentes
+    - GET /especialidades-vigentes: Obtener especialidades vigentes
+    - GET /delegados/vigentes: Obtener delegados vigentes
     """
 
     @inject
     def __init__(self, orchestrator: LiquidacionesEdificacionesOrchestrator):
         self.orchestrator = orchestrator
 
-    @route.get("/", response={200: ApiResponse[PaginatedData[LiquidacionEdificacionesListItemOut]]}, auth=None)
+    @route.get("/", response={200: ApiResponse[PaginatedData[LiquidacionEdificacionOut]]}, auth=None)
     async def listar_liquidaciones(
         self,
         page: int = Query(1, ge=1, description="Número de página"),
         page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),
+        proyecto_public_id: str = Query(None, description="Filtrar por ID público del proyecto (ej. PROY-2026-00001)"),
     ):
         """
         Listar liquidaciones de edificaciones con paginación.
 
-        Retorna para cada item: id, numero_revision, estado,
-        valor_proyecto, proyecto_public_id, proyecto_denominacion,
-        fecha_registro, total.
+        Retorna una colección/página de LiquidacionEdificacionOut (estructura plana completa).
+
+        Soporta filtrado opcional por proyecto_public_id.
         """
         result = await self.orchestrator.listar_liquidaciones(
             page=page,
             page_size=page_size,
+            proyecto_public_id=proyecto_public_id,
         )
+
+        # Transformar cada LiquidacionEdificacionesListItem a LiquidacionEdificacionOut
+        # Para esto necesitamos obtener el detalle completo de cada liquidación
+        items_out = []
+        for item in result.items:
+            detalle = await self.orchestrator.obtener_liquidacion_por_id(str(item.id))
+            items_out.append(LiquidacionEdificacionesPresenter.present(detalle))
 
         total_pages = (result.total + page_size - 1) // page_size if result.total > 0 else 1
 
         return success_response(PaginatedData(
-            items=result.items,
+            items=items_out,
             total=result.total,
             page=page,
             page_size=page_size,
             total_pages=total_pages,
         ))
 
-    @route.post("/nueva-liquidacion", response={200: ApiResponse[LiquidacionSnapshotOut]}, auth=None)
+    @route.post("/nueva-liquidacion", response={200: ApiResponse[LiquidacionEdificacionOut]}, auth=None)
     async def crear_nueva_liquidacion(self, payload: PrimeraRevisionLiquidacionWrapperIn):
         """
         Crear nueva liquidación de edificaciones (primera revisión).
@@ -93,26 +106,19 @@ class LiquidacionEdificacionesController:
         """
         liquidacion_data = payload.liquidacion
 
-        # Determinar si se usan proyectistas inline o IDs heredados
-        # Si se provee proyectistas (inline con CIP), usar esos; si no, usar proyectistas_ids
-        if liquidacion_data.proyectistas:
-            # Usar inline proyectistas con validación CIP
-            proyectistas_inline = [
-                ProyectistaInlineData(
-                    cip=p.cip,
-                    especialidad_id=p.especialidad_id,
-                    descripcion=p.descripcion,
-                )
-                for p in liquidacion_data.proyectistas
-            ]
-            proyectistas_ids = None  # No usar IDs cuando hay inline
-        elif liquidacion_data.proyectistas_ids:
-            # Backwards compatibility: usar IDs
-            proyectistas_inline = None
-            proyectistas_ids = [str(pid) for pid in liquidacion_data.proyectistas_ids]
-        else:
-            proyectistas_inline = None
-            proyectistas_ids = None
+        # Parseo de proyectistas inline desde el payload
+        proyectistas_inline = [
+            ProyectistaInlineData(
+                cip=p.cip,
+                especialidad_id=p.especialidad_id,
+                descripcion=p.descripcion,
+            )
+            for p in liquidacion_data.proyectistas
+        ] if liquidacion_data.proyectistas else None
+
+        # Proyectistas IDs: convertir a strings si hay contenido, None si está vacío
+        # La selección de cuál usar se delega al orchestrator/flujo
+        proyectistas_ids = [str(pid) for pid in liquidacion_data.proyectistas_ids] if liquidacion_data.proyectistas_ids else None
 
         result = await self.orchestrator.crear_primera_revision(
             proyecto_public_id=liquidacion_data.proyecto_public_id,
@@ -125,7 +131,8 @@ class LiquidacionEdificacionesController:
             revisiones_ids=liquidacion_data.revisiones_ids,
             proyectistas_inline=proyectistas_inline,
             proyectistas_ids=proyectistas_ids,
-            delegados_ids=[str(did) for did in liquidacion_data.delegados_ids],
+            # NOTE: delegados_ids fue eliminado de PrimeraRevisionLiquidacionIn (Fase 4).
+            # Los delegados se manejarán en un endpoint POST posterior separate.
             contactos_inline=[
                 ContactoInlineData(
                     nombres=c.nombres,
@@ -141,10 +148,23 @@ class LiquidacionEdificacionesController:
                 )
                 for c in liquidacion_data.contactos
             ],
+            proyecto_inline=ProyectoInlineData(
+                denominacion=liquidacion_data.proyecto_inline.denominacion,
+                direccion=liquidacion_data.proyecto_inline.direccion,
+                distrito_id=liquidacion_data.proyecto_inline.distrito_id,
+                nombre_propietario=liquidacion_data.proyecto_inline.nombre_propietario,
+                entidad=EntidadInlineData(
+                    tipo_documento=liquidacion_data.proyecto_inline.entidad.tipo_documento,
+                    numero_documento=liquidacion_data.proyecto_inline.entidad.numero_documento,
+                    razon_social=liquidacion_data.proyecto_inline.entidad.razon_social,
+                ),
+            ) if liquidacion_data.proyecto_inline else None,
+            # Fase 3: tarifas_ids para selección explícita de tarifa en primera revisión
+            tarifas_ids=[str(tid) for tid in liquidacion_data.tarifas_ids] if liquidacion_data.tarifas_ids else None,
         )
-        return success_response(LiquidacionEdificacionesPresenter.present_snapshot(result))
+        return success_response(LiquidacionEdificacionesPresenter.present(result))
 
-    @route.post("/primera-revision", response={200: ApiResponse[LiquidacionSnapshotOut]}, auth=None)
+    @route.post("/primera-revision", response={200: ApiResponse[LiquidacionEdificacionOut]}, auth=None)
     async def crear_primera_revision(self, payload: PrimeraRevisionLiquidacionWrapperIn):
         """
         Crear primera revisión de liquidación de edificaciones (alias de /nueva-liquidacion).
@@ -168,17 +188,19 @@ class LiquidacionEdificacionesController:
         No crea ningún registro en la base de datos.
 
         Body:
-        - proyecto_public_id: ID público del proyecto
         - valor_proyecto: Valor del proyecto
         - valor_base_calculo: Valor base de cálculo para el cálculo
 
-        Usa selección por defecto de revisiones vigentes.
+        La cotización es específica para Edificación — usa TarifaLiquidacionBase
+        filtrada por tipo_liquidacion=EDIFICACION.
         """
         liquidacion_data = payload.liquidacion
         result = await self.orchestrator.cotizar_primera_revision(
-            proyecto_public_id=liquidacion_data.proyecto_public_id,
+            tipo_tramite=liquidacion_data.tipo_tramite,
             valor_proyecto=liquidacion_data.valor_proyecto,
             valor_base_calculo=liquidacion_data.valor_base_calculo,
+            # Fase 3: tarifas_ids para usar tarifa específica en cotización
+            tarifas_ids=[str(tid) for tid in liquidacion_data.tarifas_ids] if liquidacion_data.tarifas_ids else None,
         )
         return success_response(LiquidacionEdificacionesPresenter.present_cotizacion(result))
 
@@ -221,7 +243,7 @@ class LiquidacionEdificacionesController:
         )
         return success_response(LiquidacionEdificacionesPresenter.present_formulario(result))
 
-    @route.post("/nueva-revision", response={200: ApiResponse[LiquidacionSnapshotOut]}, auth=None)
+    @route.post("/nueva-revision", response={200: ApiResponse[LiquidacionEdificacionOut]}, auth=None)
     async def crear_nueva_revision(self, payload: NuevaRevisionLiquidacionIn):
         """
         Crear nueva revisión de liquidación de edificaciones.
@@ -235,25 +257,19 @@ class LiquidacionEdificacionesController:
         - Si se omite proyectistas o está vacío, se heredan de la liquidación previa
         - Si se omite delegados o está vacío, se heredan de la liquidación previa
         """
-        # Determinar si se usan proyectistas inline o IDs heredados
-        if payload.proyectistas:
-            # Usar inline proyectistas con validación CIP
-            proyectistas_inline = [
-                ProyectistaInlineData(
-                    cip=p.cip,
-                    especialidad_id=p.especialidad_id,
-                    descripcion=p.descripcion,
-                )
-                for p in payload.proyectistas
-            ]
-            proyectistas_ids = None  # No usar IDs cuando hay inline
-        elif payload.proyectistas_ids:
-            # Backwards compatibility: usar IDs
-            proyectistas_inline = None
-            proyectistas_ids = [str(pid) for pid in payload.proyectistas_ids]
-        else:
-            proyectistas_inline = None
-            proyectistas_ids = None
+        # Parseo de proyectistas inline desde el payload
+        # La selección de cuál usar (inline vs IDs) se delega al orchestrator/flujo
+        proyectistas_inline = [
+            ProyectistaInlineData(
+                cip=p.cip,
+                especialidad_id=p.especialidad_id,
+                descripcion=p.descripcion,
+            )
+            for p in payload.proyectistas
+        ] if payload.proyectistas else None
+
+        # Proyectistas IDs: convertir a strings si hay contenido, None si está vacío
+        proyectistas_ids = [str(pid) for pid in payload.proyectistas_ids] if payload.proyectistas_ids else None
 
         result = await self.orchestrator.crear_nueva_revision(
             liquidacion_previa_id=str(payload.liquidacion_previa_id),
@@ -277,27 +293,39 @@ class LiquidacionEdificacionesController:
                 )
                 for c in payload.contactos
             ],
+            # Fase 3 refactor: tarifas_ids para selección explícita en nueva revisión
+            tarifas_ids=[str(tid) for tid in payload.tarifas_ids] if payload.tarifas_ids else None,
         )
-        return success_response(LiquidacionEdificacionesPresenter.present_snapshot(result))
+        return success_response(LiquidacionEdificacionesPresenter.present(result))
 
     @route.get("/revisiones-vigentes", response={200: ApiResponse[RevisionesVigentesOut]}, auth=None)
-    async def obtener_revisiones_vigentes(self):
+    async def obtener_revisiones_vigentes(
+        self,
+        tipo_tramite: str = Query(None, description="Tipo de trámite de edificación (opcional)"),
+        tramite_accion: str = Query(None, description="Acción de trámite: PRIMERA_REVISION o REVISION (opcional)"),
+    ):
         """
         Obtiene todas las revisiones/especialidades vigentes para mostrar en formulario.
+
+        Si tipo_tramite y tramite_accion son provistos, filtra las tarifas vigentes
+        usando ReglaTarifaEdificacion para esa combinación.
 
         Retorna lista de revisiones con especialidad, tarifa (derecho_minimo,
         derecho_maximo, porcentaje_minimo_uit) y si está habilitada.
         """
-        result = await self.orchestrator.obtener_revisiones_vigentes()
+        result = await self.orchestrator.obtener_revisiones_vigentes(
+            tipo_tramite=tipo_tramite,
+            tramite_accion=tramite_accion,
+        )
         return success_response({'revisiones': result})
 
     @route.get("/especialidades-vigentes", response={200: ApiResponse[EspecialidadesVigentesOut]}, auth=None)
     async def obtener_especialidades_vigentes(self):
         """
-        Obtiene las especialidades vigentes del grupo de EdificacionesEspecialidades.
+        Obtiene las especialidades vigentes del grupo de EspecialidadesLiquidacion.
 
-        Fuente: grupo EdificacionesEspecialidades cuyo periodo_inicio <= hoy
-        y (periodo_fin IS NULL OR periodo_fin >= hoy).
+        Fuente: grupo EspecialidadesLiquidacion con tipo_liquidacion=EDIFICACION,
+        periodo_inicio <= hoy y (periodo_fin IS NULL OR periodo_fin >= hoy).
 
         Retorna lista de especialidades con: id, nombre.
         """
@@ -318,13 +346,13 @@ class LiquidacionEdificacionesController:
         - Pertenece a la municipalidad (MunicipalidadesDelegado con activo=True)
         - Tiene status='activo'
         - Tiene un periodo vigente para la fecha actual
-        - Su especialidad está en el grupo EdificacionesEspecialidades vigente
-        - Su especialidad también está en las especialidades de la revisión seleccionada
+        - Su especialidad está en el grupo EspecialidadesLiquidacion vigente
+        - Su especialidad también está en las especialidades de la TarifaLiquidacionBase seleccionada
         - Si se provee categoria, filtra por esa categoría (por defecto Edificaciones para este endpoint)
 
         Args:
             municipalidad_id: UUID de la municipalidad
-            revision_id: UUID de la EdificacionesRevision para filtrar por especialidades
+            revision_id: UUID opcional de TarifaLiquidacionBase para filtrar por especialidades
             categoria: Categoría del delegado (Edificaciones o Habilitaciones Urbanas). Default: Edificaciones
 
         Returns:
@@ -337,47 +365,17 @@ class LiquidacionEdificacionesController:
         )
         return success_response(LiquidacionEdificacionesPresenter.present_delegados_vigentes(result))
 
-    @route.get("/snapshots", response={200: ApiResponse[PaginatedData[LiquidacionSnapshotListItemOut]]}, auth=None)
-    async def listar_snapshots(
-        self,
-        page: int = Query(1, ge=1, description="Número de página"),
-        page_size: int = Query(10, ge=1, le=50, description="Elementos por página"),
-    ):
-        """
-        Listar snapshots completos de liquidaciones con paginación.
+    # ── Ruta con parámetro path al FINAL para evitar capturar rutas estáticas ──────
 
-        Retorna para cada item: liquidacion_id, numero_liquidacion, estado,
-        fecha_registro, observacion, proyecto (con entidad),
-        edificaciones (con revisiones, tarifas y proyectistas), totales.
-        """
-        items, total = await self.orchestrator.listar_snapshots(
-            page=page,
-            page_size=page_size,
-        )
-
-        total_pages = (total + page_size - 1) // page_size if total > 0 else 1
-
-        return success_response(PaginatedData(
-            items=items,
-            total=total,
-            page=page,
-            page_size=page_size,
-            total_pages=total_pages,
-        ))
-
-    @route.get("/{liquidacion_id}", response={200: ApiResponse[Dict[Any, Any]]}, auth=None)
-    async def obtener_liquidacion(
+    @route.get("/{liquidacion_id}", response={200: ApiResponse[LiquidacionEdificacionOut]}, auth=None)
+    async def obtener_detalle_liquidacion(
         self,
         liquidacion_id: str,
     ):
         """
-        Obtener detalle/snapshot de una liquidación de edificaciones.
+        Obtener detalle de una liquidación de edificación por ID.
 
-        Retorna el JSON completo almacenado en LiquidacionSnapshot.data,
-        sin proyección — incluye todos los campos guardados (liquidacion,
-        edificaciones, totales, _metadata y cualquier campo adicional).
+        Retorna un objeto plano LiquidacionEdificacionOut con todos los campos.
         """
-        result = await self.orchestrator.obtener_liquidacion(
-            liquidacion_id=liquidacion_id,
-        )
-        return success_response(result)
+        result = await self.orchestrator.obtener_liquidacion_por_id(liquidacion_id)
+        return success_response(LiquidacionEdificacionesPresenter.present(result))

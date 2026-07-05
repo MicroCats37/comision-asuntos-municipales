@@ -359,7 +359,9 @@ export function LiquidacionEdificacionFormModal({
       revisiones_ids: data.revisiones_ids || [],
       proyectistas: proyectistasPayload,
       contactos: contactosPayload,
-      delegados_ids: selectedDelegados,
+      // delegadas_ids fue eliminado del tipo LiquidacionEdificacionSubmitData
+      // TODO: Este formulario deprecated no soporta tarifas_ids - se mantiene por compatibilidad
+      tarifas_ids: [],
     };
 
     await crearMutation.mutateAsync(submitData as import("../types/liquidacion-edificaciones").PrimeraRevisionFormData);
@@ -499,9 +501,10 @@ export function LiquidacionEdificacionFormModal({
 
     try {
       const result = await cotizacionMutation.mutateAsync({
-        proyecto_public_id: proyectoPublicId,
+        tipo_tramite: undefined,
         valor_proyecto: valorProyecto,
         valor_base_calculo: valorBase,
+        tarifas_ids: [],
       });
       // Service now returns CotizacionQuote directly (unwrapped from {success, data, error})
       setCotizacionQuote(result);
@@ -511,8 +514,8 @@ export function LiquidacionEdificacionFormModal({
   }, [cotizacionMutation, selectedProyecto]);
 
   const hasProject = !!selectedProyecto;
-  const valorProyecto = liqWatch("valor_proyecto");
-  const hasValidValorProyecto = !!valorProyecto && valorProyecto > 0;
+  const valorBaseCalculo = liqWatch("valor_base_calculo");
+  const hasValidValorBase = !!valorBaseCalculo && Number(valorBaseCalculo) > 0;
 
   return (
     <>
@@ -1054,8 +1057,8 @@ export function LiquidacionEdificacionFormModal({
 
                 <RevisionesVigentesTable
                   revisiones={revisionesVigentes || []}
-                  selectedIds={selectedRevisionIds}
-                  onToggleRevision={handleRevisionToggle}
+                  selectedId={selectedRevisionIds[0] ?? null}
+                  onSelectRevision={(id) => handleRevisionToggle(id)}
                   isLoading={isLoadingRevisiones}
                   lockedIds={lockedRevisionIds}
                 />
@@ -1111,8 +1114,7 @@ export function LiquidacionEdificacionFormModal({
                   isLoading={cotizacionMutation.isPending}
                   onCotizar={handleCotizar}
                   hasErrors={Object.keys(liqErrors).length > 0}
-                  hasProject={hasProject}
-                  hasValidValorProyecto={hasValidValorProyecto}
+                  hasValidValorBase={hasValidValorBase}
                   variablesFinancieras={variablesFinancieras}
                   isLoadingVariables={isLoadingVariables}
                 />

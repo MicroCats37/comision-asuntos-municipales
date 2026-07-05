@@ -29,19 +29,13 @@ class EntidadAdmin(SimpleHistoryAdmin):
     list_display = [
         "numero_documento",
         "tipo_documento",
-        "nombre_display",
-        "distrito",
-        "activo",
+        "razon_social",
+        "direccion",
     ]
-    list_filter = ["tipo_documento", "activo", "distrito"]
-    search_fields = ["numero_documento", "razon_social", "nombres", "apellidos"]
+    list_filter = ["tipo_documento"]
+    search_fields = ["numero_documento", "razon_social"]
     readonly_fields = ["created_at", "updated_at"]
-    ordering = ["tipo_documento", "razon_social", "apellidos", "nombres"]
-
-    def nombre_display(self, obj):
-        return obj.nombre_completo or "-"
-
-    nombre_display.short_description = "Nombre / Razón Social"
+    ordering = ["tipo_documento", "razon_social"]
 
 
 @admin.register(Institucion)
@@ -51,10 +45,9 @@ class InstitucionAdmin(SimpleHistoryAdmin):
         "razon_social",
         "nombre_comercial",
         "tipo_contribuyente",
-        "distrito",
-        "activo",
+        "direccion",
     ]
-    list_filter = ["activo", "tipo_contribuyente", "distrito"]
+    list_filter = ["tipo_contribuyente"]
     search_fields = ["numero_documento", "razon_social", "nombre_comercial"]
     readonly_fields = ["created_at", "updated_at", "tipo_documento"]
     fields = [
@@ -64,8 +57,6 @@ class InstitucionAdmin(SimpleHistoryAdmin):
         "nombre_comercial",
         "tipo_contribuyente",
         "direccion",
-        "distrito",
-        "activo",
         "created_at",
         "updated_at",
     ]
@@ -78,22 +69,19 @@ class InstitucionAdmin(SimpleHistoryAdmin):
 
 @admin.register(PersonaNatural)
 class PersonaNaturalAdmin(SimpleHistoryAdmin):
-    list_display = ["numero_documento", "nombres", "apellidos", "distrito", "activo"]
-    list_filter = ["activo", "distrito"]
-    search_fields = ["numero_documento", "nombres", "apellidos"]
+    list_display = ["numero_documento", "razon_social", "direccion"]
+    list_filter = []
+    search_fields = ["numero_documento", "razon_social"]
     readonly_fields = ["created_at", "updated_at", "tipo_documento"]
     fields = [
         "tipo_documento",
         "numero_documento",
-        "nombres",
-        "apellidos",
+        "razon_social",
         "direccion",
-        "distrito",
-        "activo",
         "created_at",
         "updated_at",
     ]
-    ordering = ["apellidos", "nombres"]
+    ordering = ["razon_social"]
 
     def get_queryset(self, request):
         # Mostrar solo personas naturales (DNI) en este admin
@@ -163,8 +151,6 @@ class ContactoEntidadAdmin(SimpleHistoryAdmin):
     list_filter = ["principal", "activo"]
     search_fields = [
         "entidad__razon_social",
-        "entidad__nombres",
-        "entidad__apellidos",
         "entidad__numero_documento",
         "contacto__nombres",
         "contacto__apellidos",

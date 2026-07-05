@@ -6,14 +6,32 @@ from .liquidacion import (
     LiquidacionGeneral,
     LiquidacionContacto,
     LiquidacionDocumentos,
-    LiquidacionSnapshot,
+    LiquidacionProyectista,
+    TarifaPorcentajeObra,
+    TarifaLiquidacionBase,
+    LiquidacionPorcentajeObra,
+    EspecialidadesLiquidacion,
+    ReglaTarifaEdificacion,
 )
 from .liquidacion.liquidacion_edificaciones import (
-    EdificacionesEspecialidades,
-    EdificacionesTarifa,
-    EdificacionesRevision,
-    LiquidacionEdificaciones,
-    LiquidacionEdificacionesProxy,
+    # Modelo de detalle para edificaciones (singular)
+    LiquidacionEdificacion,
+    LiquidacionEdificacionProxy,
+)
+from .liquidacion.liquidacion_habilitacion_urbana import LiquidacionHabilitacionUrbana
+from .liquidacion.liquidacion_mecanica_suelos import LiquidacionMecanicaSuelos
+from .liquidacion.liquidacion_impacto_vial import LiquidacionImpactoVial
+from .liquidacion.liquidacion_taludes import LiquidacionTaludes
+from .liquidacion.liquidacion_inspeccion_obra import LiquidacionInspeccionObra
+from .liquidacion.calculos_nuevos import (
+    LiquidacionPorMetroCuadrado,
+    LiquidacionPorCategoriaVisitas,
+)
+from .liquidacion.tarifas_reglas import (
+    TarifaPorMetroCuadrado,
+    TarifaPorCategoriaVisitas,
+    ReglaTarifaLiquidacion,
+    ReglaTarifaInspeccionObra,
 )
 from .proyectista import Proyectista
 from .proyecto import (
@@ -32,12 +50,30 @@ __all__ = [
     "LiquidacionGeneral",
     "LiquidacionContacto",
     "LiquidacionDocumentos",
-    "LiquidacionSnapshot",
-    "LiquidacionEdificaciones",
-    "LiquidacionEdificacionesProxy",
-    "EdificacionesEspecialidades",
-    "EdificacionesTarifa",
-    "EdificacionesRevision",
+    # Modelo de detalle para edificaciones
+    "LiquidacionEdificacion",
+    "LiquidacionEdificacionProxy",
+    # Modelos de nuevos formularios
+    "LiquidacionHabilitacionUrbana",
+    "LiquidacionMecanicaSuelos",
+    "LiquidacionImpactoVial",
+    "LiquidacionTaludes",
+    "LiquidacionInspeccionObra",
+    # Modelos de cálculo nuevos
+    "LiquidacionPorMetroCuadrado",
+    "LiquidacionPorCategoriaVisitas",
+    # Modelos del refactor
+    "LiquidacionProyectista",
+    "TarifaPorcentajeObra",
+    "TarifaLiquidacionBase",
+    "LiquidacionPorcentajeObra",
+    "EspecialidadesLiquidacion",
+    "ReglaTarifaEdificacion",
+    # Tarifas y reglas nuevas
+    "TarifaPorMetroCuadrado",
+    "TarifaPorCategoriaVisitas",
+    "ReglaTarifaLiquidacion",
+    "ReglaTarifaInspeccionObra",
     "Proyectista",
     "Proyecto",
     "ProyectoEmpresarial",

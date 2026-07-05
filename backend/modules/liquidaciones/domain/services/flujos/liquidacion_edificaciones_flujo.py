@@ -42,15 +42,16 @@ from ...exceptions import (
     EspecialidadesSetInvalidoError,
     RevisionesMultipleError,
 )
-from modules.liquidaciones.models import LiquidacionEdificaciones
+from ...schemas_proyecto import ProyectoInlineData
+from modules.liquidaciones.models import LiquidacionEdificacion, LiquidacionPorcentajeObra, LiquidacionProyectista
 from modules.liquidaciones.domain.constants import TramiteAccion
 from modules.usuarios.infrastructure.services import ICipClient
 from modules.usuarios.domain.services.core.perfil_ingeniero_core_service import PerfilIngenieroCoreService
 
 
-# Revisiones que cobran: 1, 3, 5, 7
-REVISIONES_COBRAN = {1, 3, 5, 7}
-MAX_REVISIONES = 7
+# Revisiones que cobran: 1, 3, 5
+REVISIONES_COBRAN = {1, 3, 5}
+MAX_REVISIONES = 5
 
 
 class LiquidacionesEdificacionesFlujo:
@@ -71,7 +72,7 @@ class LiquidacionesEdificacionesFlujo:
 
     async def _proceso_primera_revision(
         self,
-        proyecto_public_id: str,
+        proyecto_public_id: str | None,
         municipalidad_id: str,
         tipo_tramite: str,
         valor_proyecto: Decimal,
@@ -81,13 +82,16 @@ class LiquidacionesEdificacionesFlujo:
         revisiones_ids: list[str],
         proyectistas_inline: Optional[list[ProyectistaInlineData]] = None,
         proyectistas_ids: Optional[list[str]] = None,
-        delegados_ids: Optional[list[str]] = None,
+        # NOTE: delegados_ids fue eliminado de _proceso_primera_revision (Fase 4).
+        # Los delegados se manejarán en un endpoint POST posterior separate.
         contactos_inline: Optional[list[ContactoInlineData]] = None,
+        proyecto_inline: Optional[ProyectoInlineData] = None,
+        tarifas_ids: Optional[list[str]] = None,
     ):
         """
         Proceso para crear primera revisión (nueva-liquidacion) de edificaciones.
 
-        1. Buscar proyecto por public_id
+        1. Obtener proyecto (inline o por public_id)
         2. Buscar municipalidad por ID
         3. Validar que no exista ya revisión 1 para ese proyecto
         4. Obtener IGV/UIT vigentes
@@ -97,22 +101,48 @@ class LiquidacionesEdificacionesFlujo:
            - Si cualquier CIP falla o no está habilitado, se rechaza toda la operación
         7. Validar delegados (si se proveen)
         8. Crear LiquidacionGeneral (con municipalidad y public_id)
-        9. Crear LiquidacionEdificaciones con proyectistas upsertados
+        9. Crear LiquidacionEdificacion con proyectistas upsertados
         10. Asociar revisiones y delegados
         11. Calcular por cada revisión
         12. Crear snapshot
         13. Retornar resultado
         """
-        # 1. Buscar proyecto
-        proyecto = await sync_to_async(self.core._obtener_proyecto_por_public_id)(proyecto_public_id)
-        if not proyecto:
-            raise ProyectoNotFoundError(f"Proyecto con public_id={proyecto_public_id}")
+        # 1. Obtener proyecto (inline o por public_id)
+        # XOR ya validado en orchestrator: exactamente uno de los dos está presente
+        if proyecto_inline:
+            # Crear proyecto inline dentro de la transacción
+            proyecto = await sync_to_async(self.core._crear_proyecto_inline)(proyecto_inline)
+        else:
+            # Buscar proyecto existente por public_id
+            proyecto = await sync_to_async(self.core._obtener_proyecto_por_public_id)(proyecto_public_id)
+            if not proyecto:
+                raise ProyectoNotFoundError(f"Proyecto con public_id={proyecto_public_id}")
 
         # 2. Buscar municipalidad
         municipalidad = await self._get_municipalidad_model(municipalidad_id)
         if not municipalidad:
             from ...exceptions import NotFoundError
             raise NotFoundError(f"Municipalidad con id={municipalidad_id}")
+
+        # ── Fase 3: Validar tarifas_ids (exactamente 1 elemento) ──────────────
+        if tarifas_ids is not None and len(tarifas_ids) != 1:
+            from ...exceptions import BusinessError
+            raise BusinessError(
+                f"tarifas_ids debe contener exactamente 1 elemento para primera revisión, "
+                f"pero se recibieron {len(tarifas_ids)} elementos."
+            )
+
+        # Validar que la tarifa exista, esté vigente, sea EDIFICACION, tenga detalle,
+        # tenga al menos una especialidad asociada, y tenga ReglaTarifaEdificacion
+        # para tipo_tramite y tramite_accion.
+        tarifas_validadas = []
+        if tarifas_ids is not None:
+            tarifas_validadas = await sync_to_async(self.core._validar_tarifa_por_tipo_tramite)(
+                tarifas_ids,
+                tipo_tramite=tipo_tramite,
+                tramite_accion=TramiteAccion.PRIMERA_REVISION,
+            )
+        # ── Fin Fase 3 ───────────────────────────────────────────────────────────
 
         # 3. Validar que no exista primera revisión
         if await sync_to_async(self.core._existe_primera_revision_proyecto)(proyecto.id):
@@ -125,37 +155,50 @@ class LiquidacionesEdificacionesFlujo:
 
         # 5. Validar revisiones seleccionadas están vigentes/habilitadas
         if revisiones_ids:
-            if not await sync_to_async(self.core._todas_revisiones_habilitadas)(revisiones_ids):
+            try:
+                habilitada = await sync_to_async(self.core._todas_revisiones_habilitadas)(revisiones_ids)
+            except ValueError as e:
+                from ...exceptions import RevisionIdsInvalidosError
+                raise RevisionIdsInvalidosError(str(e))
+            if not habilitada:
                 raise RevisionNoHabilitadaError(
                     "Una o más revisiones seleccionadas no están habilitadas/vigentes"
                 )
 
         # Obtener datos de revisiones
         if not revisiones_ids:
-            revisiones_data = await sync_to_async(self.core._obtener_revisiones_vigentes_result)()
-            # Transformar RevisionVigenteResult (flat) a estructura anidada con .tarifa y .especialidad
-            revisiones_data = [self.core.to_revision_con_tarifa(rev) for rev in revisiones_data]
+            if tarifas_ids is not None:
+                # Fase 3: usar la tarifa seleccionada específicamente (ya validada en paso anterior)
+                # _obtener_revisiones_por_ids retorna EdificacionRevisionData con especialidades y tarifa
+                revisiones_data = await sync_to_async(self.core._obtener_revisiones_por_ids)(tarifas_ids)
+            else:
+                # Auto-selección: todas las activas de EDIFICACION
+                revisiones_data = await sync_to_async(self.core._obtener_revisiones_vigentes_result)()
+                # Transformar RevisionVigenteResult (flat) a estructura anidada con .tarifa y .especialidad
+                revisiones_data = [self.core.to_revision_con_tarifa(rev) for rev in revisiones_data]
         else:
             revisiones_data = await sync_to_async(self.core._obtener_revisiones_por_ids)(revisiones_ids)
 
         # 5b. Validar exact-set de especialidades vigentes (primera revisión)
-        await self._validar_especialidades_exact_set(revisiones_data)
+        # NOTA: Cuando tarifas_ids es proporcionado explícitamente, se salta esta validación
+        # porque el usuario ya seleccionó una tarifa específica (no quiere auto-selección).
+        if tarifas_ids is None:
+            await self._validar_especialidades_exact_set(revisiones_data)
 
         # 6. Si hay proyectistas_inline (inline con CIP), validar TODOS los CIPs
         # ALL-OR-NOTHING: si cualquier CIP falla o no está habilitado, se rechaza toda la operación
         if proyectistas_inline:
             await self._validar_proyectistas_inline_cip(proyectistas_inline)
 
-        # 7. Validar delegados si se proveen
-        if delegados_ids:
-            await self._validar_delegados_ids(delegados_ids, municipalidad_id)
+        # NOTE: Validación y asociación de delegados fue eliminada de _proceso_primera_revision (Fase 4).
+        # Los delegados se manejarán en un endpoint POST posterior separate.
 
         # 5-8. Crear liquidación y calcular
         # Primera revisión siempre cobra
         cobra = True
 
         # Validar valor_base_calculo según tipo_tramite
-        from ..validators import validate_valor_base_calculo
+        from ...validators import validate_valor_base_calculo
         validate_valor_base_calculo(
             valor_proyecto=valor_proyecto,
             valor_base_calculo=valor_base_calculo if valor_base_calculo is not None else valor_proyecto,
@@ -165,17 +208,17 @@ class LiquidacionesEdificacionesFlujo:
         # Ejecutar bloque transactional en thread async
         def _run_primera_revision():
             from django.db import transaction
+            from modules.liquidaciones.models import TarifaPorcentajeObra, LiquidacionPorcentajeObra
 
             with transaction.atomic():
-                # Crear LiquidacionGeneral (sin numero_revision — va en LiquidacionEdificaciones)
+                # Crear LiquidacionGeneral con numero_revision=1 (fuente de verdad)
                 liquidacion = self.core._crear_liquidacion_general(
                     proyecto=proyecto,
                     municipalidad=municipalidad,
-                    valor_proyecto=valor_proyecto,
                     expediente=expediente,
-                    valor_base_calculo=valor_base_calculo,
                     observacion=observacion,
                     liquidacion_previa=None,
+                    numero_revision=1,
                 )
 
                 # 8. Crear/upsertear proyectistas desde inline data si existe
@@ -188,22 +231,17 @@ class LiquidacionesEdificacionesFlujo:
                 elif proyectistas_ids:
                     final_proyectistas_ids = proyectistas_ids
 
-                # Crear LiquidacionEdificaciones con numero_revision=1, tipo_tramite y tramite_accion=PRIMERA_REVISION
+                # Crear LiquidacionEdificacion (sin numero_revision — vive en LiquidacionGeneral)
+                # Nota: valor_proyecto y valor_base_calculo viven en LiquidacionPorcentajeObra, no aquí
                 liq_edif = self.core._crear_liquidacion_edificaciones(
                     liquidacion=liquidacion,
-                    numero_revision=1,
                     tipo_tramite=tipo_tramite,
                     tramite_accion=TramiteAccion.PRIMERA_REVISION,
                     proyectistas_ids=final_proyectistas_ids,
                 )
 
-                # Asociar revisiones
-                if revisiones_ids:
-                    self.core._asociar_revisiones(liq_edif, revisiones_ids)
-
-                # Asociar delegados si se proveen
-                if delegados_ids:
-                    self._asociar_delegados(liq_edif, delegados_ids)
+                # NOTE: Asociación de delegados fue eliminada de _proceso_primera_revision (Fase 4).
+                # Los delegados se manejarán en un endpoint POST posterior separate.
 
                 if contactos_inline:
                     self._crear_contactos_inline(liquidacion, contactos_inline)
@@ -218,23 +256,36 @@ class LiquidacionesEdificacionesFlujo:
                     numero_revision=1,  # Primera revisión siempre cobra
                 )
 
-                # 8b. Guardar sub_total y valor_base_calculo en LiquidacionGeneral
+                # 8b. Persistir LiquidacionPorcentajeObra por cada revisión calculada
+                # El cálculo se persistía solo en el snapshot — ahora también en la tabla
+                valor_base = valor_base_calculo if valor_base_calculo is not None else valor_proyecto
+                for rev in revision_results:
+                    # Obtener la tarifa porcentual (TarifaPorcentajeObra) desde el resultado del cálculo
+                    # rev.tarifa.id es el ID de TarifaPorcentajeObra
+                    try:
+                        tarifa_pct = TarifaPorcentajeObra.objects.get(id=rev.tarifa.id)
+                    except TarifaPorcentajeObra.DoesNotExist:
+                        # Si no se encuentra, saltar — la tarifa puede no existir en el nuevo diseño
+                        continue
+                    LiquidacionPorcentajeObra.objects.create(
+                        liquidacion_general=liquidacion,
+                        valor_proyecto=valor_proyecto,
+                        valor_base_calculo=valor_base,
+                        tarifa_aplicada=tarifa_pct,
+                    )
+
+                # 8c. Guardar sub_total en LiquidacionGeneral
                 liquidacion.sub_total = subtotal
                 liquidacion.save(update_fields=['sub_total'])
 
-                # 9. Crear snapshot — delega al builder (dentro del contexto sync)
-                snapshot_data = LiquidacionEdificacionesResultBuilder.build_snapshot_data(
-                    liquidacion, proyecto, revision_results,
-                    subtotal, igv_monto, total_liquidacion, total_liquidacion,
-                    variables, cobra, liq_edif,
-                )
-                self.core._crear_snapshot(liquidacion, snapshot_data)
-
-                # 10. Construir resultado — delega al builder (dentro del contexto sync)
+                # 9. Construir resultado — delega al builder (dentro del contexto sync)
                 # Pre-materializar proyectistas antes de retornar para evitar acceso ORM en contexto async
-                edificaciones_proyectistas = list(
-                    liq_edif.proyectistas.select_related('perfil_ingeniero', 'especialidad').all()
-                )
+                # Refactor: usar LiquidacionProyectista en lugar de M2M en LiquidacionEdificacion
+                edificaciones_proyectistas = [
+                    lp.proyectista for lp in LiquidacionProyectista.objects.filter(
+                        liquidacion_general=liq_edif.liquidacion
+                    ).select_related('proyectista__perfil_ingeniero', 'proyectista__especialidad')
+                ]
                 edificaciones_delegados = list(
                     liq_edif.liquidacion.liquidacion_delegados.select_related(
                         'delegado__perfil_ingeniero', 'delegado__especialidad'
@@ -258,28 +309,33 @@ class LiquidacionesEdificacionesFlujo:
         proyectistas_ids: Optional[list[str]] = None,
         delegados_ids: Optional[list[str]] = None,
         contactos_inline: Optional[list[ContactoInlineData]] = None,
+        tarifas_ids: Optional[list[str]] = None,
     ):
         """
-        Proceso para crear nueva revisión (2da, 3ra, etc.) de edificaciones.
+        Proceso para crear nueva revisión de edificaciones.
+
+        Secuencia de revisiones: 1 -> 3 -> 5 (solo números impares, paso +2).
+        No se pueden crear revisiones 2, 4, 6, 7.
 
         1. Buscar liquidación previa
         2. Validar que sea de edificaciones
-        3. Calcular nuevo numero_revision = previa.edificaciones.numero_revision + 1
-        4. Validar <= 7 y que no exista ya esa revisión
+        3. Calcular nuevo numero_revision = previa.numero_revision + 2 (paso +2)
+        4. Validar <= 5 y que no exista ya esa revisión
         5. Determinar si cobra según número de revisión
-        6. Validar revisiones seleccionadas existen y habilitadas
-        7. Si hay proyectistas_inline (inline con CIP):
+        6. Validar tarifas_ids (exactamente 1 elemento si se provee)
+        7. Validar revisiones seleccionadas existen y habilitadas
+        8. Si hay proyectistas_inline (inline con CIP):
            - Validar TODOS los CIPs via servicio externo (ALL-OR-NOTHING)
            - Si cualquier CIP falla o no está habilitado, se rechaza toda la operación
-        8. Determinar proyectistas:
+        9. Determinar proyectistas:
            - Si se proporcionó y no está vacío, usar esos (inline o IDs)
            - Si se omitió o está vacío, heredar de la liquidación previa
-        9. Validar delegados (si se proveen, o heredar si se omiten)
-        10. Crear LiquidacionGeneral y LiquidacionEdificaciones
-        11. Si no cobra: cálculos en 0 pero conservar estructura
-        12. Si cobra: calcular con porcentajes
-        13. Guardar snapshot
-        14. Retornar resultado
+        10. Validar delegados (si se proveen, o heredar si se omiten)
+        11. Crear LiquidacionGeneral y LiquidacionEdificaciones
+        12. Si no cobra: cálculos en 0 pero conservar estructura
+        13. Si cobra: calcular con porcentajes
+        14. Guardar snapshot
+        15. Retornar resultado
         """
         # 1. Buscar liquidación previa
         previa = await sync_to_async(self.core._obtener_liquidacion_por_id)(liquidacion_previa_id)
@@ -288,21 +344,23 @@ class LiquidacionesEdificacionesFlujo:
 
         # 2. Validar que sea de edificaciones
         def _get_liq_edif_previa():
-            return LiquidacionEdificaciones.objects.select_related('liquidacion').get(liquidacion=previa)
+            return LiquidacionEdificacion.objects.select_related('liquidacion').get(liquidacion=previa)
         try:
             liq_edif_previa = await sync_to_async(_get_liq_edif_previa)()
-        except LiquidacionEdificaciones.DoesNotExist:
+        except LiquidacionEdificacion.DoesNotExist:
             raise TipoLiquidacionInvalidoError(
                 "La liquidación previa no es de tipo edificaciones"
             )
 
-        # 3. Calcular nuevo número desde LiquidacionEdificaciones (no LiquidacionGeneral)
-        nuevo_numero = liq_edif_previa.numero_revision + 1
+        # 3. Calcular nuevo número desde LiquidacionGeneral (fuente de verdad)
+        # Secuencia: 1 -> 3 -> 5 (paso +2)
+        nuevo_numero = previa.numero_revision + 2
 
-        # 4. Validar <= 7 y no exista
+        # 4. Validar <= 5 y no exista
         if nuevo_numero > MAX_REVISIONES:
             raise MaximoRevisionAlcanzadoError(
-                f"No se puede crear más de {MAX_REVISIONES} revisiones"
+                f"No se puede crear más de {MAX_REVISIONES} revisiones. "
+                f"La revisión {nuevo_numero} excede el máximo permitido."
             )
         if await sync_to_async(self.core._existe_revision_numero_proyecto)(previa.proyecto_id, nuevo_numero):
             from ...exceptions import ConflictError
@@ -313,28 +371,65 @@ class LiquidacionesEdificacionesFlujo:
         # 5. Determinar si cobra
         cobra = nuevo_numero in REVISIONES_COBRAN
 
-        # 6. Validar revisiones seleccionadas - exactamente UNA para nueva revisión
+        # 6. Validar tarifas_ids (exactamente 1 elemento si se provee)
+        # Las tarifas se validan con tipo_tramite de la liquidación previa y TramiteAccion.REVISION
+        tipo_tramite_previo = liq_edif_previa.tipo_tramite
+        tarifas_validadas = []
+        if tarifas_ids is not None and len(tarifas_ids) != 1:
+            from ...exceptions import BusinessError
+            raise BusinessError(
+                f"tarifas_ids debe contener exactamente 1 elemento para nueva revisión, "
+                f"pero se recibieron {len(tarifas_ids)} elementos."
+            )
+        if tarifas_ids is not None:
+            tarifas_validadas = await sync_to_async(self.core._validar_tarifa_por_tipo_tramite)(
+                tarifas_ids,
+                tipo_tramite=tipo_tramite_previo,
+                tramite_accion=TramiteAccion.REVISION,
+            )
+
+        # 7. Validar revisiones seleccionadas - exactamente UNA para nueva revisión
         if revisiones_ids:
             if len(revisiones_ids) != 1:
                 from ...exceptions import RevisionesMultipleError
                 raise RevisionesMultipleError(
                     f"Se requiere exactamente UNA revisión para nueva revisión, pero se enviaron {len(revisiones_ids)}."
                 )
-            if not await sync_to_async(self.core._todas_revisiones_habilitadas)(revisiones_ids):
+            try:
+                habilitada = await sync_to_async(self.core._todas_revisiones_habilitadas)(revisiones_ids)
+            except ValueError as e:
+                from ...exceptions import RevisionIdsInvalidosError
+                raise RevisionIdsInvalidosError(str(e))
+            if not habilitada:
                 raise RevisionNoHabilitadaError(
                     "Una o más revisiones seleccionadas no están habilitadas/vigentes"
                 )
 
         # Obtener datos de revisiones
-        revisiones_data = await sync_to_async(self.core._obtener_revisiones_por_ids)(revisiones_ids) if revisiones_ids else []
+        if not revisiones_ids:
+            if tarifas_ids is not None:
+                # Usar la tarifa seleccionada específicamente
+                revisiones_data = await sync_to_async(self.core._obtener_revisiones_por_ids)(tarifas_ids)
+            else:
+                # Auto-selección: error si no se provee tarifas_ids
+                from ...exceptions import BusinessError
+                raise BusinessError(
+                    "tarifas_ids es requerido para nueva revisión. "
+                    "No se permite auto-selección de tarifas."
+                )
+        else:
+            revisiones_data = await sync_to_async(self.core._obtener_revisiones_por_ids)(revisiones_ids)
 
         # Obtener IGV/UIT vigentes
         variables = await sync_to_async(self.core._obtener_variables_financieras_vigentes)()
 
-        # Obtener valor_proyecto y valor_base_calculo de la liquidación previa
+        # Obtener valor_proyecto y valor_base_calculo de LiquidacionPorcentajeObra de la liquidación previa
         # valor_base_calculo se hereda de la liquidación previa para mantener consistencia
-        valor_proyecto = previa.valor_proyecto
-        valor_base_calculo = previa.valor_base_calculo if previa.valor_base_calculo is not None else valor_proyecto
+        lpo_previa = await sync_to_async(
+            lambda: liq_edif_previa.liquidacion.liquidacion_porcentaje_obra.first()
+        )()
+        valor_proyecto = lpo_previa.valor_proyecto if lpo_previa else Decimal('0')
+        valor_base_calculo = lpo_previa.valor_base_calculo if lpo_previa and lpo_previa.valor_base_calculo is not None else valor_proyecto
 
         # 7. Determinar proyectistas y delegados:
         # - Si se proporcionó proyectistas_inline (inline con CIP), validar CIPs primero
@@ -350,8 +445,12 @@ class LiquidacionesEdificacionesFlujo:
             final_proyectistas_ids = [str(pid) for pid in proyectistas_ids]
             final_delegados_ids = None  # Se manejarán dentro de la transacción
         else:
-            # Heredar de la liquidación previa
-            final_proyectistas_ids = list(liq_edif_previa.proyectistas.values_list('id', flat=True))
+            # Heredar de la liquidación previa (usando LiquidacionProyectista)
+            final_proyectistas_ids = await sync_to_async(lambda: list(
+                LiquidacionProyectista.objects.filter(
+                    liquidacion_general=liq_edif_previa.liquidacion
+                ).values_list('proyectista_id', flat=True)
+            ))()
             final_delegados_ids = None  # Se heredarán dentro de la transacción si no se especifican
 
         # 8. Validar/modificar delegados si se proveen
@@ -359,13 +458,15 @@ class LiquidacionesEdificacionesFlujo:
             await self._validar_delegados_ids(delegados_ids, str(previa.municipalidad_id))
         elif final_delegados_ids is None:
             # Heredar delegados de la liquidación previa si no se especificaron
-            final_delegados_ids = list(
+            final_delegados_ids = await sync_to_async(lambda: list(
                 liq_edif_previa.liquidacion.liquidacion_delegados.values_list('delegado_id', flat=True)
-            )
+            ))()
 
         # Ejecutar bloque transactional en thread async
         def _run_nueva_revision():
+            nonlocal final_proyectistas_ids
             from django.db import transaction
+            from modules.liquidaciones.models import TarifaPorcentajeObra, LiquidacionPorcentajeObra
 
             with transaction.atomic():
                 # 8. Crear/upsertear proyectistas desde inline data si existe
@@ -374,27 +475,24 @@ class LiquidacionesEdificacionesFlujo:
                         proyectistas_inline, str(previa.municipalidad_id)
                     )
 
-                # 9. Crear LiquidacionGeneral (hereda municipalidad y valor_proyecto de previa)
+                # 9. Crear LiquidacionGeneral con numero_revision (fuente de verdad)
                 liquidacion = self.core._crear_liquidacion_general(
                     proyecto=previa.proyecto,
                     municipalidad=previa.municipalidad,
-                    valor_proyecto=valor_proyecto,
+                    expediente=None,
                     observacion=observacion,
                     liquidacion_previa=previa,
+                    numero_revision=nuevo_numero,
                 )
 
-                # 10. Crear LiquidacionEdificaciones con numero_revision, tipo_tramite heredado y tramite_accion=REVISION
+                # 10. Crear LiquidacionEdificaciones (sin numero_revision — vive en LiquidacionGeneral)
+                # Nota: valor_proyecto y valor_base_calculo ya NO se pasan — viven en LiquidacionPorcentajeObra
                 liq_edif = self.core._crear_liquidacion_edificaciones(
                     liquidacion=liquidacion,
-                    numero_revision=nuevo_numero,
                     tipo_tramite=liq_edif_previa.tipo_tramite,  # Heredado de la liquidación previa
                     tramite_accion=TramiteAccion.REVISION,
                     proyectistas_ids=final_proyectistas_ids,
                 )
-
-                # Asociar revisiones (siempre se conservan)
-                if revisiones_ids:
-                    self.core._asociar_revisiones(liq_edif, revisiones_ids)
 
                 # Asociar delegados
                 if delegados_ids:
@@ -416,23 +514,35 @@ class LiquidacionesEdificacionesFlujo:
                     numero_revision=nuevo_numero,
                 )
 
-                # 10b. Guardar sub_total y valor_base_calculo en LiquidacionGeneral
+                # 10b. Persistir LiquidacionPorcentajeObra por cada revisión calculada
+                # El cálculo se persistía solo en el snapshot — ahora también en la tabla
+                for rev in revision_results:
+                    # Obtener la tarifa porcentual (TarifaPorcentajeObra) desde el resultado del cálculo
+                    # rev.tarifa.id es el ID de TarifaPorcentajeObra
+                    try:
+                        tarifa_pct = TarifaPorcentajeObra.objects.get(id=rev.tarifa.id)
+                    except TarifaPorcentajeObra.DoesNotExist:
+                        # Si no se encuentra, saltar — la tarifa puede no existir en el nuevo diseño
+                        continue
+                    LiquidacionPorcentajeObra.objects.create(
+                        liquidacion_general=liquidacion,
+                        valor_proyecto=valor_proyecto,
+                        valor_base_calculo=valor_base_calculo,
+                        tarifa_aplicada=tarifa_pct,
+                    )
+
+                # 10c. Guardar sub_total en LiquidacionGeneral
                 liquidacion.sub_total = subtotal
                 liquidacion.save(update_fields=['sub_total'])
 
-                # 11. Guardar snapshot — delega al builder (dentro del contexto sync)
-                snapshot_data = LiquidacionEdificacionesResultBuilder.build_snapshot_data(
-                    liquidacion, previa.proyecto, revision_results,
-                    subtotal, igv_monto, total_liquidacion, total_liquidacion,
-                    variables, cobra, liq_edif,
-                )
-                self.core._crear_snapshot(liquidacion, snapshot_data)
-
-                # 12. Construir resultado — delega al builder (dentro del contexto sync)
+                # 11. Construir resultado — delega al builder (dentro del contexto sync)
                 # Pre-materializar proyectistas antes de retornar para evitar acceso ORM en contexto async
-                edificaciones_proyectistas = list(
-                    liq_edif.proyectistas.select_related('perfil_ingeniero', 'especialidad').all()
-                )
+                # Refactor: usar LiquidacionProyectista en lugar de M2M en LiquidacionEdificacion
+                edificaciones_proyectistas = [
+                    lp.proyectista for lp in LiquidacionProyectista.objects.filter(
+                        liquidacion_general=liq_edif.liquidacion
+                    ).select_related('proyectista__perfil_ingeniero', 'proyectista__especialidad')
+                ]
                 edificaciones_delegados = list(
                     liq_edif.liquidacion.liquidacion_delegados.select_related(
                         'delegado__perfil_ingeniero', 'delegado__especialidad'
@@ -454,13 +564,17 @@ class LiquidacionesEdificacionesFlujo:
         """
         Prepara datos para formulario de nueva revisión.
 
+        Secuencia de revisiones: 1 -> 3 -> 5 (solo números impares, paso +2).
+        No se pueden crear revisiones 2, 4, 6, 7.
+
         1. Buscar liquidación previa
         2. Validar que sea de edificaciones
-        3. Calcular siguiente número de revisión (desde LiquidacionEdificaciones)
+        3. Calcular siguiente número de revisión (previa + 2)
         4. Determinar si cobrará
-        5. Obtener revisiones vigentes disponibles
+        5. Obtener tarifas disponibles filtradas por tipo_tramite + REVISION
         6. Obtener proyectistas actuales (heredados de la liquidación previa)
-        7. Retornar datos del formulario
+        7. Obtener contactos de la liquidación previa
+        8. Retornar datos del formulario
         """
         # 1. Buscar liquidación previa
         previa = await sync_to_async(self.core._obtener_liquidacion_por_id)(liquidacion_previa_id)
@@ -469,38 +583,63 @@ class LiquidacionesEdificacionesFlujo:
 
         # 2. Validar que sea de edificaciones
         def _get_liq_edif_previa():
-            return LiquidacionEdificaciones.objects.select_related('liquidacion').get(liquidacion=previa)
+            return LiquidacionEdificacion.objects.select_related('liquidacion').get(liquidacion=previa)
         try:
             liq_edif_previa = await sync_to_async(_get_liq_edif_previa)()
-        except LiquidacionEdificaciones.DoesNotExist:
+        except LiquidacionEdificacion.DoesNotExist:
             raise TipoLiquidacionInvalidoError(
                 "La liquidación previa no es de tipo edificaciones"
             )
 
-        # 3. Calcular siguiente número desde LiquidacionEdificaciones
-        siguiente_numero = liq_edif_previa.numero_revision + 1
+        # 3. Calcular siguiente número desde LiquidacionGeneral (fuente de verdad)
+        # Secuencia: 1 -> 3 -> 5 (paso +2)
+        siguiente_numero = previa.numero_revision + 2
 
         if siguiente_numero > MAX_REVISIONES:
             raise MaximoRevisionAlcanzadoError(
-                f"No se puede crear más de {MAX_REVISIONES} revisiones"
+                f"No se puede crear más de {MAX_REVISIONES} revisiones. "
+                f"La revisión {siguiente_numero} excede el máximo permitido."
             )
 
         # 4. Determinar si cobrará
         cobra = siguiente_numero in REVISIONES_COBRAN
 
-        # 5. Obtener revisiones vigentes
-        revisiones_vigentes = await sync_to_async(self.core._obtener_revisiones_vigentes_result)()
+        # 5. Obtener tarifas disponibles filtradas por tipo_tramite + REVISION
+        # El tipo_tramite viene de la liquidación previa
+        tipo_tramite_previo = liq_edif_previa.tipo_tramite
+        tarifas_disponibles = await sync_to_async(self.core._obtener_revisiones_vigentes_result)(
+            tipo_tramite=tipo_tramite_previo,
+            tramite_accion=TramiteAccion.REVISION,
+        )
 
         # 6. Obtener proyectistas actuales (heredados de la liquidación previa)
-        # Delegar construcción de ProyectistaSnapshotData al builder para
+        # Delegar construcción de ProyectistaEdificacionData al builder para
         # mantener el flujo enfocado en coordinación de pasos de negocio.
-        # El builder recibe instancias ORM y produce domain DTOs (ProyectistaSnapshotData).
+        # El builder recibe instancias ORM y produce domain DTOs (ProyectistaEdificacionData).
         def _get_proyectistas():
-            return list(liq_edif_previa.proyectistas.select_related('perfil_ingeniero', 'especialidad').all())
+            # Refactor: usar LiquidacionProyectista en lugar de M2M en LiquidacionEdificacion
+            return [lp.proyectista for lp in LiquidacionProyectista.objects.filter(
+                liquidacion_general=liq_edif_previa.liquidacion
+            ).select_related('proyectista__perfil_ingeniero', 'proyectista__especialidad')]
         proyectistas_previa = await sync_to_async(_get_proyectistas)()
-        proyectistas_actuales = LiquidacionEdificacionesResultBuilder.build_proyectistas_snapshot_data(
+        proyectistas_actuales = LiquidacionEdificacionesResultBuilder.build_proyectistas_data(
             proyectistas_previa
         )
+
+        # 7. Obtener contactos de la liquidación previa
+        def _get_contactos():
+            from modules.liquidaciones.models import LiquidacionContacto
+            return list(LiquidacionContacto.objects.filter(
+                liquidacion=liq_edif_previa.liquidacion
+            ).select_related('contacto').all())
+        contactos_previa = await sync_to_async(_get_contactos)()
+
+        # Obtener valor_proyecto y valor_base_calculo de LiquidacionPorcentajeObra de la liquidación previa
+        def _get_lpo_previa():
+            return liq_edif_previa.liquidacion.liquidacion_porcentaje_obra.first()
+        lpo_previa = await sync_to_async(_get_lpo_previa)()
+        vp = lpo_previa.valor_proyecto if lpo_previa else Decimal('0')
+        vbc = lpo_previa.valor_base_calculo if lpo_previa and lpo_previa.valor_base_calculo is not None else vp
 
         return NuevaRevisionFormularioResult(
             liquidacion_previa_id=str(liquidacion_previa_id),
@@ -509,36 +648,12 @@ class LiquidacionesEdificacionesFlujo:
             proyecto_id=str(previa.proyecto.id),
             proyecto_public_id=previa.proyecto.public_id or "",
             proyecto_nombre=previa.proyecto.denominacion,
-            valor_proyecto=previa.valor_proyecto,
-            valor_base_calculo=previa.valor_base_calculo if previa.valor_base_calculo is not None else previa.valor_proyecto,
-            revisiones_vigentes=revisiones_vigentes,
+            valor_proyecto=vp,
+            valor_base_calculo=vbc,
+            revisiones_vigentes=tarifas_disponibles,
             proyectistas_actuales=proyectistas_actuales,
+            tipo_tramite=tipo_tramite_previo,
         )
-
-    async def _proceso_obtener_liquidacion(
-        self,
-        liquidacion_id: str,
-    ) -> dict:
-        """
-        Obtiene el snapshot/detalle de una liquidación.
-        Retorna el dict raw de LiquidacionSnapshot.data para preservar
-        todos los campos sin proyección.
-        """
-        # Buscar snapshot
-        snapshot = await sync_to_async(self.core._obtener_snapshot_liquidacion)(liquidacion_id)
-        if not snapshot:
-            # Si no hay snapshot, buscar la liquidación y construir resultado
-            liquidacion = await sync_to_async(self.core._obtener_liquidacion_por_id)(liquidacion_id)
-            if not liquidacion:
-                raise LiquidacionNotFoundError(f"Liquidacion with id={liquidacion_id}")
-            # Retornar estructura básica sin snapshot como dict — delega al builder
-            return LiquidacionEdificacionesResultBuilder.build_result_from_liquidacion(
-                liquidacion
-            ).model_dump(mode="json")
-
-        # Retornar el dict raw directamente — sin validación Pydantic
-        # para preservar todos los campos almacenados (incluyendo _metadata y cualquier campo extra)
-        return snapshot.data
 
     async def _get_municipalidad_model(self, municipalidad_id: str):
         """Obtiene modelo Municipalidad por ID."""
@@ -550,23 +665,28 @@ class LiquidacionesEdificacionesFlujo:
         Valida que el conjunto de especialidades de las revisiones seleccionadas
         coincida exactamente con el conjunto de especialidades vigentes.
 
+        La validación hace la UNIÓN de todas las especialidades M2M de las revisiones
+        seleccionadas y la compara con el grupo vigente de EspecialidadesLiquidacion.
+
         Args:
-            revisiones_data: Lista de revisiones (con .especialidad y .tarifa)
+            revisiones_data: Lista de revisiones (con .especialidad y, opcionalmente, .especialidades)
 
         Raises:
             EspecialidadesGrupoNoEncontradoError: Si no hay grupo de especialidades vigente
             EspecialidadesSetInvalidoError: Si los conjuntos no coinciden exactamente
         """
         from datetime import date
-        from modules.liquidaciones.models import EdificacionesEspecialidades
+        from modules.liquidaciones.models import EspecialidadesLiquidacion
+        from ...constants import TipoLiquidacion
         from ...exceptions import EspecialidadesGrupoNoEncontradoError, EspecialidadesSetInvalidoError
 
         today = date.today()
 
-        # Buscar grupo de especialidades vigente para la fecha actual
+        # Buscar grupo de especialidades vigente para EDIFICACION usando EspecialidadesLiquidacion
         grupo_vigente = await sync_to_async(
-            EdificacionesEspecialidades.objects.filter(
-                periodo_inicio__lte=today
+            EspecialidadesLiquidacion.objects.filter(
+                tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+                periodo_inicio__lte=today,
             ).filter(
                 periodo_fin__isnull=True
             ).first
@@ -578,81 +698,141 @@ class LiquidacionesEdificacionesFlujo:
                 "Configure las especialidades de edificación antes de crear una liquidación."
             )
 
-        # Obtener conjunto de especialidades del grupo vigente
-        # NOTE: Must use sync_to_async for M2M access in async context
+        # Obtener conjunto de especialidades del grupo vigente con nombres para mensajes
         def _sync_get_especialidades_grupo():
-            return set(str(esp.id) for esp in grupo_vigente.especialidades.all())
+            return {(str(esp.id), esp.nombre) for esp in grupo_vigente.especialidades.all()}
 
-        especialidades_grupo = await sync_to_async(_sync_get_especialidades_grupo)()
+        grupo_con_nombres = await sync_to_async(_sync_get_especialidades_grupo)()
+        especialidades_grupo = {id_ for id_, _ in grupo_con_nombres}
+        grupo_nombres = {nombre for _, nombre in grupo_con_nombres}
 
-        # Extraer especialidades de las revisiones seleccionadas
+        # Extraer especialidades de las revisiones seleccionadas (UNIÓN de todas)
         # Cada revisión puede tener M2M especialidades
         def _sync_get_especialidades_revisiones():
-            result = set()
+            result = set()  # (id, nombre)
+            nombres_revisiones = set()
             for rev_data in revisiones_data:
-                # Si la revisión tiene método especialidades (objeto ORM) o es result object
-                if hasattr(rev_data, 'especialidades'):
-                    # Es un objeto EdificacionesRevision del ORM
+                # Caso 1: EdificacionRevisionData con campo `especialidades` (lista de EspecialidadData)
+                if hasattr(rev_data, 'especialidades') and rev_data.especialidades is not None:
+                    for esp in rev_data.especialidades:
+                        result.add((str(esp.id), esp.nombre))
+                        nombres_revisiones.add(esp.nombre)
+                # Caso 2: ORM object TarifaLiquidacionBase con M2M .especialidades.all()
+                elif hasattr(rev_data, 'especialidades') and callable(rev_data.especialidades.all):
                     for esp in rev_data.especialidades.all():
-                        result.add(str(esp.id))
-                elif hasattr(rev_data, 'especialidad'):
-                    # Es un result object con especialidad embebida
-                    if hasattr(rev_data.especialidad, 'id'):
-                        result.add(str(rev_data.especialidad.id))
-            return result
+                        result.add((str(esp.id), esp.nombre))
+                        nombres_revisiones.add(esp.nombre)
+                # Caso 3: result object sin `especialidades` — usar `especialidad` singular (retrocompatibilidad)
+                elif hasattr(rev_data, 'especialidad') and hasattr(rev_data.especialidad, 'id'):
+                    result.add((str(rev_data.especialidad.id), rev_data.especialidad.nombre))
+                    nombres_revisiones.add(rev_data.especialidad.nombre)
+            return result, nombres_revisiones
 
-        especialidades_revisiones = await sync_to_async(_sync_get_especialidades_revisiones)()
+        result_tuple = await sync_to_async(_sync_get_especialidades_revisiones)()
+        especialidades_revisiones, nombres_revisiones = result_tuple
+        especialidades_revisiones_ids = {id_ for id_, _ in especialidades_revisiones}
 
         # Validar conjunto exacto
-        if especialidades_grupo != especialidades_revisiones:
+        if especialidades_grupo != especialidades_revisiones_ids:
+            missing_ids = especialidades_grupo - especialidades_revisiones_ids
+            extra_ids = especialidades_revisiones_ids - especialidades_grupo
+
+            detail_parts = []
+            if missing_ids:
+                missing_nombres = [nombre for id_, nombre in grupo_con_nombres if id_ in missing_ids]
+                detail_parts.append(
+                    f"Faltan especialidades en selecciones: {missing_ids} ({missing_nombres})"
+                )
+            if extra_ids:
+                extra_nombres = [nombre for id_, nombre in especialidades_revisiones if id_ in extra_ids]
+                detail_parts.append(
+                    f"Especialidades extra/no vigentes en selecciones: {extra_ids} ({extra_nombres})"
+                )
+
             raise EspecialidadesSetInvalidoError(
-                f"El conjunto de especialidades de las revisiones seleccionadas ({len(especialidades_revisiones)}) "
-                f"no coincide exactamente con el grupo vigente ({len(especialidades_grupo)}). "
-                f"Grupal: {especialidades_grupo}, Revisones: {especialidades_revisiones}. "
-                "Las revisiones seleccionadas deben representar exactamente el mismo conjunto de especialidades."
+                f"El conjunto de especialidades de las revisiones seleccionadas "
+                f"no coincide exactamente con el grupo vigente.\n"
+                f"Grupo vigente ({len(especialidades_grupo)}): {sorted(grupo_nombres)}\n"
+                f"Selecciones ({len(especialidades_revisiones_ids)}): {sorted(nombres_revisiones)}\n"
+                + "\n".join(detail_parts) +
+                "\nLas revisiones seleccionadas deben cubrir TODAS las especialidades del grupo "
+                "y NINGUNA más. Si ve IDs que no reconoce, verifique que está enviando "
+                "IDs de TarifaLiquidacionBase, no IDs de Especialidad."
             )
 
     async def _proceso_cotizar_primera_revision(
         self,
-        proyecto_public_id: str,
+        tipo_tramite: str | None,
         valor_proyecto: Decimal,
-        valor_base_calculo: Decimal,
+        valor_base_calculo: Optional[Decimal],
+        tarifas_ids: Optional[list[str]] = None,
     ) -> CotizacionQuoteData:
         """
         Cotiza primera revisión sin guardar en BD.
 
-        1. Buscar proyecto por public_id
-        2. Obtener IGV/UIT vigentes
-        3. Obtener revisiones vigentes (default selection si no se envían)
-        4. Calcular con cobra=True (primera siempre cobra)
-        5. Retornar resultado de cotización
+        1. Obtener IGV/UIT vigentes
+        2. Fase 3: Si tarifas_ids tiene exactamente 1 elemento, usar esa tarifa específica.
+           Caso contrario, obtener revisiones vigentes filtradas por EDIFICACION (auto-selección).
+        3. Calcular con cobra=True (primera siempre cobra)
+        4. Retornar resultado de cotización
 
         No crea ningún registro en BD.
+        
+        Nota: La cotización es específica para Edificación — no depende de proyecto_public_id
+        ya que el cálculo solo usa valores y tarifas de Edificación (TarifaLiquidacionBase
+        filtrada por tipo_liquidacion=EDIFICACION).
+        
+        Args:
+            tipo_tramite: Tipo de trámite de edificación (requerido si tarifas_ids es proporcionado).
+            valor_proyecto: Valor del proyecto/obra.
+            valor_base_calculo: Valor base de cálculo.
+            tarifas_ids: Lista de IDs de tarifas a usar (exactamente 1 elemento para Fase 3).
         """
-        # 1. Buscar proyecto
-        proyecto = await sync_to_async(self.core._obtener_proyecto_por_public_id)(proyecto_public_id)
-        if not proyecto:
-            raise ProyectoNotFoundError(f"Proyecto con public_id={proyecto_public_id}")
-
-        # 2. Obtener IGV/UIT vigentes
+        # 1. Obtener IGV/UIT vigentes
         variables = await sync_to_async(self.core._obtener_variables_financieras_vigentes)()
 
-        # 3. Obtener revisiones vigentes (default selection — todas las vigentes)
-        revisiones_data = await sync_to_async(self.core._obtener_revisiones_vigentes_result)()
-        # Transformar RevisionVigenteResult (flat) a estructura anidada con .tarifa y .especialidad
-        revisiones_data = [self.core.to_revision_con_tarifa(rev) for rev in revisiones_data]
+        # 2. Fase 3: Obtener revisiones
+        if tarifas_ids is not None:
+            # Validar exactamente 1 elemento
+            if len(tarifas_ids) != 1:
+                from ...exceptions import BusinessError
+                raise BusinessError(
+                    f"tarifas_ids debe contener exactamente 1 elemento para cotización, "
+                    f"pero se recibieron {len(tarifas_ids)} elementos."
+                )
+            # Cuando se provee tarifas_ids, tipo_tramite es requerido para validar la ReglaTarifaEdificacion
+            if tipo_tramite is None:
+                from ...exceptions import BusinessError
+                raise BusinessError(
+                    "tipo_tramite es requerido cuando se provee tarifas_ids. "
+                    "Proporcione el tipo de trámite de edificación (OBRA_NUEVA, DEMOLICION, AMPLIACION, etc.)."
+                )
+            # Validar y usar la tarifa seleccionada específicamente (incluye verificar que tenga especialidades
+            # y que tenga ReglaTarifaEdificacion para tipo_tramite + PRIMERA_REVISION)
+            await sync_to_async(self.core._validar_tarifa_por_tipo_tramite)(
+                tarifas_ids,
+                tipo_tramite=tipo_tramite,
+                tramite_accion=TramiteAccion.PRIMERA_REVISION,
+            )
+            revisiones_data = await sync_to_async(self.core._obtener_revisiones_por_ids)(tarifas_ids)
+        else:
+            # Auto-selección: todas las activas de EDIFICACION
+            revisiones_data = await sync_to_async(self.core._obtener_revisiones_vigentes_result)()
+            # Transformar RevisionVigenteResult (flat) a estructura anidada con .tarifa y .especialidad
+            revisiones_data = [self.core.to_revision_con_tarifa(rev) for rev in revisiones_data]
 
-        # 4. Calcular — primera revisión siempre cobra
-        # Usar valor_base_calculo para el cálculo
+        # 3. Calcular — primera revisión siempre cobra
+        # Si valor_base_calculo es None, usar valor_proyecto
+        valor_base = valor_base_calculo if valor_base_calculo is not None else valor_proyecto
         cobra = True
         revision_results, subtotal, igv_monto, total_liquidacion = self.core.calcular_revisiones(
-            valor_base_calculo=valor_base_calculo,
+            valor_base_calculo=valor_base,
             revisiones_data=revisiones_data,
             cobra=cobra,
             igv_valor=variables.igv_valor,
         )
 
-        # 5. Retornar resultado de cotización
+        # 4. Retornar resultado de cotización
         return CotizacionQuoteData(
             numero_revision=1,
             revisiones=revision_results,
@@ -667,6 +847,7 @@ class LiquidacionesEdificacionesFlujo:
                 igv_valor=variables.igv_valor,
                 uit_valor=variables.uit_valor,
                 cobra=cobra,
+                valor_base_calculo=valor_base,
             ),
         )
 
@@ -697,16 +878,16 @@ class LiquidacionesEdificacionesFlujo:
 
         # 2. Validar que sea de edificaciones
         def _get_liq_edif_previa():
-            return LiquidacionEdificaciones.objects.select_related('liquidacion').get(liquidacion=previa)
+            return LiquidacionEdificacion.objects.select_related('liquidacion').get(liquidacion=previa)
         try:
             liq_edif_previa = await sync_to_async(_get_liq_edif_previa)()
-        except LiquidacionEdificaciones.DoesNotExist:
+        except LiquidacionEdificacion.DoesNotExist:
             raise TipoLiquidacionInvalidoError(
                 "La liquidación previa no es de tipo edificaciones"
             )
 
-        # 3. Calcular siguiente número
-        nuevo_numero = liq_edif_previa.numero_revision + 1
+        # 3. Calcular siguiente número desde LiquidacionGeneral (fuente de verdad)
+        nuevo_numero = previa.numero_revision + 1
 
         # 4. Validar <= 7
         if nuevo_numero > MAX_REVISIONES:
@@ -727,7 +908,12 @@ class LiquidacionesEdificacionesFlujo:
                 f"Se requiere exactamente UNA revisión para cotizar nueva revisión, pero se enviaron {len(revisiones_ids)}."
             )
 
-        if not await sync_to_async(self.core._todas_revisiones_habilitadas)(revisiones_ids):
+        try:
+            habilitada = await sync_to_async(self.core._todas_revisiones_habilitadas)(revisiones_ids)
+        except ValueError as e:
+            from ...exceptions import RevisionIdsInvalidosError
+            raise RevisionIdsInvalidosError(str(e))
+        if not habilitada:
             raise RevisionNoHabilitadaError(
                 "Una o más revisiones seleccionadas no están habilitadas/vigentes"
             )
@@ -737,9 +923,12 @@ class LiquidacionesEdificacionesFlujo:
         # 7. Determinar si cobra según número de revisión
         cobra = nuevo_numero in REVISIONES_COBRAN
 
-        # 8. Obtener valor_proyecto y valor_base_calculo de la liquidación previa
-        valor_proyecto = previa.valor_proyecto
-        valor_base_calculo = previa.valor_base_calculo if previa.valor_base_calculo is not None else valor_proyecto
+        # 8. Obtener valor_proyecto y valor_base_calculo de LiquidacionPorcentajeObra de la liquidación previa
+        def _get_lpo_previa():
+            return liq_edif_previa.liquidacion.liquidacion_porcentaje_obra.first()
+        lpo_previa = await sync_to_async(_get_lpo_previa)()
+        valor_proyecto = lpo_previa.valor_proyecto if lpo_previa else Decimal('0')
+        valor_base_calculo = lpo_previa.valor_base_calculo if lpo_previa and lpo_previa.valor_base_calculo is not None else valor_proyecto
 
         # 9. Calcular usando valor_base_calculo
         revision_results, subtotal, igv_monto, total_liquidacion = self.core.calcular_revisiones(
@@ -764,6 +953,7 @@ class LiquidacionesEdificacionesFlujo:
                 igv_valor=variables.igv_valor,
                 uit_valor=variables.uit_valor,
                 cobra=cobra,
+                valor_base_calculo=valor_base_calculo,
             ),
         )
 
@@ -773,21 +963,25 @@ class LiquidacionesEdificacionesFlujo:
         self,
         page: int,
         page_size: int,
+        proyecto_public_id: str | None = None,
     ) -> LiquidacionEdificacionesPaginatedResult:
         """Lista liquidaciones paginadas — delega a core via sync_to_async."""
-        return await sync_to_async(self.core._listar_liquidaciones_paginado_result)(page, page_size)
+        return await sync_to_async(self.core._listar_liquidaciones_paginado_result)(page, page_size, proyecto_public_id)
 
-    async def obtener_revisiones_vigentes(self) -> list[RevisionVigenteResult]:
-        """Obtiene todas las revisiones vigentes — delega a core via sync_to_async."""
-        return await sync_to_async(self.core._obtener_revisiones_vigentes_result)()
-
-    async def listar_snapshots_paginado(
+    async def obtener_revisiones_vigentes(
         self,
-        page: int,
-        page_size: int,
-    ) -> tuple[list[dict], int]:
-        """Lista snapshots completos con paginación — delega a core via sync_to_async."""
-        return await sync_to_async(self.core._listar_snapshots_paginado)(page, page_size)
+        tipo_tramite: str | None = None,
+        tramite_accion: str | None = None,
+    ) -> list[RevisionVigenteResult]:
+        """
+        Obtiene las revisiones vigentes — delega a core via sync_to_async.
+
+        Si tipo_tramite y tramite_accion son provistos, filtra usando ReglaTarifaEdificacion.
+        """
+        return await sync_to_async(self.core._obtener_revisiones_vigentes_result)(
+            tipo_tramite=tipo_tramite,
+            tramite_accion=tramite_accion,
+        )
 
     # =============================================================================
     # Helper methods para validación y upsert de inline proyectistas/delegados
@@ -985,7 +1179,7 @@ class LiquidacionesEdificacionesFlujo:
 
     def _asociar_delegados(
         self,
-        liq_edif: 'LiquidacionEdificaciones',
+        liq_edif: 'LiquidacionEdificacion',
         delegados_ids: list[str],
     ):
         """
@@ -994,7 +1188,7 @@ class LiquidacionesEdificacionesFlujo:
         Dentro de transaction.atomic (ya abierto por el llamador).
 
         Args:
-            liq_edif: Instancia de LiquidacionEdificaciones
+            liq_edif: Instancia de LiquidacionEdificacion
             delegados_ids: Lista de IDs de Delegado
         """
         from modules.liquidaciones.domain.models import Delegado, LiquidacionDelegado
@@ -1053,7 +1247,7 @@ class LiquidacionesEdificacionesFlujo:
 
         Args:
             municipalidad_id: UUID de la municipalidad
-            revision_id: UUID opcional de EdificacionesRevision para filtrar por especialidades
+            revision_id: UUID opcional de TarifaLiquidacionBase para filtrar por especialidades
             categoria: Categoría del delegado (Edificaciones o Habilitaciones Urbanas). Default: Edificaciones
 
         Returns:
@@ -1086,23 +1280,25 @@ class LiquidacionesEdificacionesFlujo:
 
     async def _proceso_especialidades_vigentes(self) -> list:
         """
-        Obtiene las especialidades vigentes del grupo EdificacionesEspecialidades.
+        Obtiene las especialidades vigentes del grupo EspecialidadesLiquidacion.
 
-        Fuente: grupo EdificacionesEspecialidades cuyo periodo_inicio <= hoy
-        y (periodo_fin IS NULL OR periodo_fin >= hoy).
+        Fuente: grupo EspecialidadesLiquidacion cuyo tipo_liquidacion=EDIFICACION,
+        periodo_inicio <= hoy y (periodo_fin IS NULL OR periodo_fin >= hoy).
 
         Returns:
             Lista de EspecialidadBasicaResult con id y nombre.
         """
         from datetime import date
         from django.db.models import Q
-        from ...models import EdificacionesEspecialidades
+        from ...models import EspecialidadesLiquidacion
+        from ...constants import TipoLiquidacion
         from ...schemas import EspecialidadBasicaResult
 
         today = date.today()
 
-        # Obtener grupo de especialidades vigente
-        grupo_vigente = EdificacionesEspecialidades.objects.filter(
+        # Obtener grupo de especialidades vigente para EDIFICACION usando EspecialidadesLiquidacion
+        grupo_vigente = EspecialidadesLiquidacion.objects.filter(
+            tipo_liquidacion=TipoLiquidacion.EDIFICACION,
             periodo_inicio__lte=today,
         ).filter(
             Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=today)
@@ -1116,3 +1312,87 @@ class LiquidacionesEdificacionesFlujo:
             EspecialidadBasicaResult(id=esp.id, nombre=esp.nombre)
             for esp in grupo_vigente.especialidades.all()
         ]
+
+    async def _proceso_obtener_liquidacion_edificacion_detalle(
+        self,
+        liquidacion_id: str,
+    ):
+        """
+        Obtiene una liquidación de edificación por ID para retornar en GET /{id}.
+
+        1. Obtener liquidación con todos los datos relacionados (core)
+        2. Reconstruir revision_results desde LiquidacionPorcentajeObra
+        3. Construir LiquidacionEdificacionesResult via builder
+        4. Retornar resultado plano para presenter
+        """
+        # Obtener datos crudos del core
+        data = await sync_to_async(self.core._obtener_liquidacion_edificacion_para_detalle)(liquidacion_id)
+        if not data:
+            from ...exceptions import LiquidacionNotFoundError
+            raise LiquidacionNotFoundError(f"Liquidacion with id={liquidacion_id}")
+
+        liquidacion = data['liquidacion']
+        proyecto = data['proyecto']
+        revision_raw = data['revision_results']
+        subtotal = data['subtotal']
+        igv_monto = data['igv_monto']
+        total_liquidacion = data['total_liquidacion']
+        total_a_pagar = data['total_a_pagar']
+        variables = data['variables']
+        cobra = data['cobra']
+        liq_edif = data['liq_edif']
+        edificaciones_proyectistas = data['edificaciones_proyectistas']
+        edificaciones_delegados = data['edificaciones_delegados']
+        contactos_orm = data['contactos_orm']
+        valor_proyecto = data['valor_proyecto']
+
+        # Reconstruir revision_results como objetos con la estructura que espera el builder
+        revision_results = []
+        from ...schemas import RevisionConTarifaData, TarifaCalculoData, EspecialidadBasicaResult
+
+        for rev in revision_raw:
+            # Construir especialidades como objetos con atributos
+            especialidades_objs = [
+                type('Esp', (), {'id': e['id'], 'nombre': e['nombre']})()
+                for e in rev.get('especialidades', [])
+            ]
+
+            # Construir tarifa como objeto con atributos
+            tarifa_data = rev.get('tarifa', {})
+            tarifa_obj = type('Tarifa', (), {
+                'id': tarifa_data.get('id', ''),
+                'derecho_minimo': Decimal(str(tarifa_data.get('derecho_minimo', 0))),
+                'derecho_maximo': Decimal(str(tarifa_data['derecho_maximo'])) if tarifa_data.get('derecho_maximo') else None,
+                'porcentaje_minimo_uit': Decimal(str(tarifa_data.get('porcentaje_minimo_uit', 0))),
+            })()
+
+            # Construir revision con atributos
+            revision_results.append(type('Revision', (), {
+                'id': rev.get('id', ''),
+                'numero_revision': rev.get('numero_revision', 1),
+                'tarifa': tarifa_obj,
+                'especialidades': especialidades_objs,
+                'especialidad_nombre': rev.get('especialidad_nombre', ''),
+                'monto_base': Decimal(str(rev.get('monto_base', 0))),
+                'cobra': rev.get('cobra', False),
+            })())
+
+        # Construir resultado usando el builder
+        from ..builders import LiquidacionEdificacionesResultBuilder
+        result = LiquidacionEdificacionesResultBuilder.build_result(
+            liquidacion=liquidacion,
+            proyecto=proyecto,
+            revision_results=revision_results,
+            subtotal=subtotal,
+            igv_monto=igv_monto,
+            total_liquidacion=total_liquidacion,
+            total_a_pagar=total_a_pagar,
+            variables=variables,
+            cobra=cobra,
+            liq_edif=liq_edif,
+            edificaciones_proyectistas=edificaciones_proyectistas,
+            edificaciones_delegados=edificaciones_delegados,
+            contactos_orm=contactos_orm,
+            valor_proyecto=valor_proyecto,
+        )
+        return result

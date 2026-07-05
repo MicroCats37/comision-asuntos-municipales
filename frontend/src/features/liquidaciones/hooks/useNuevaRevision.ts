@@ -2,16 +2,16 @@
  * Hooks para Nueva Revisión de Liquidación.
  */
 import { useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
+import type { z } from "zod";
 import { useApiCreate, useApiQuery } from "@/hooks";
 import {
+  liquidacionEdificacionOutResponseSchema,
   nuevaRevisionFormularioResponseSchema,
-  liquidacionSnapshotResponseSchema,
 } from "../schemas/liquidacion.schema";
 import type {
-  NuevaRevisionFormularioResponse,
+  LiquidacionEdificacionOut,
   NuevaRevisionFormData,
-  LiquidacionSnapshot,
+  NuevaRevisionFormularioResponse,
 } from "../types/liquidacion-edificaciones";
 
 const BASE_URL = "/liquidaciones/edificaciones";
@@ -31,7 +31,12 @@ export function useNuevaRevisionFormulario(
     z.infer<typeof nuevaRevisionFormularioResponseSchema>,
     NuevaRevisionFormularioResponse | null
   >({
-    queryKey: ["liquidaciones", "nueva-revision", "formulario", liquidacionPreviaId],
+    queryKey: [
+      "liquidaciones",
+      "nueva-revision",
+      "formulario",
+      liquidacionPreviaId,
+    ],
     url: `${BASE_URL}/nueva-revision/formulario`,
     params: { liquidacion_previa_id: liquidacionPreviaId ?? "" },
     schema: nuevaRevisionFormularioResponseSchema,
@@ -47,35 +52,41 @@ export function useNuevaRevisionFormulario(
 
 /**
  * Hook para crear nueva revisión de liquidación.
+ * Retorna LiquidacionEdificacionOut plano (backend Phase 4+).
  */
 export function useCrearNuevaRevision() {
   const queryClient = useQueryClient();
 
   const mutation = useApiCreate<
-    z.infer<typeof liquidacionSnapshotResponseSchema>,
+    z.infer<typeof liquidacionEdificacionOutResponseSchema>,
     NuevaRevisionFormData
   >({
     url: `${BASE_URL}/nueva-revision`,
-    schema: liquidacionSnapshotResponseSchema,
+    schema: liquidacionEdificacionOutResponseSchema,
     options: {
       onSuccess: () => {
-        // Invalidate snapshot list queries so cards refresh
-        queryClient.invalidateQueries({ queryKey: ["liquidaciones", "snapshots"] });
-        // Invalidate liquidaciones list query if still used
-        queryClient.invalidateQueries({ queryKey: ["liquidaciones", "list"] });
+        // Invalidate liquidaciones list queries so cards refresh
+        queryClient.invalidateQueries({
+          queryKey: ["liquidaciones", "edificaciones"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["liquidaciones", "no-edificacion"],
+        });
       },
     },
   });
 
-  // Wrapper that sends payload directly and extracts inner data
+  // Wrapper that sends payload directly and extracts flat LiquidacionEdificacionOut
   const crearMutation = {
     ...mutation,
     mutate: (payload: NuevaRevisionFormData) => {
       mutation.mutate(payload);
     },
-    mutateAsync: async (payload: NuevaRevisionFormData): Promise<LiquidacionSnapshot> => {
+    mutateAsync: async (
+      payload: NuevaRevisionFormData,
+    ): Promise<LiquidacionEdificacionOut> => {
       const result = await mutation.mutateAsync(payload);
-      return (result as { data: LiquidacionSnapshot }).data;
+      return (result as { data: LiquidacionEdificacionOut }).data;
     },
   };
 

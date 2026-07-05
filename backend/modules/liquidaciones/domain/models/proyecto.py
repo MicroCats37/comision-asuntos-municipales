@@ -18,6 +18,11 @@ class Proyecto(BaseModel):
     La entidad determina si es empresarial o persona natural:
     - entidad.tipo_documento='RUC' => ProyectoEmpresarial
     - entidad.tipo_documento='DNI' => ProyectoPersonaNatural
+
+    Los campos entidad_razon_social, entidad_tipo_documento, entidad_numero_documento
+    son copias denormalizadas de los campos correspondientes de Entidad.
+    Se populan al momento de crear el proyecto (normal o inline) para preservar
+    el histórico, ya que la entidad puede ser modificada posteriormente.
     """
 
     entidad = models.ForeignKey(
@@ -30,6 +35,29 @@ class Proyecto(BaseModel):
     )
     
     history = HistoricalRecords()
+
+    # Campos denormalizados de la entidad para preservar histórico
+    entidad_razon_social = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Razón Social / Nombre de Entidad (snapshot)",
+        help_text="Copia de entidad.razon_social al momento de crear el proyecto.",
+    )
+    entidad_tipo_documento = models.CharField(
+        max_length=3,
+        blank=True,
+        null=True,
+        verbose_name="Tipo de Documento de Entidad (snapshot)",
+        help_text="Copia de entidad.tipo_documento al momento de crear el proyecto.",
+    )
+    entidad_numero_documento = models.CharField(
+        max_length=11,
+        blank=True,
+        null=True,
+        verbose_name="Número de Documento de Entidad (snapshot)",
+        help_text="Copia de entidad.numero_documento al momento de crear el proyecto.",
+    )
 
     public_id = models.CharField(
         max_length=50,

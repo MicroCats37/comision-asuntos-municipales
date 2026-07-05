@@ -19,6 +19,7 @@ Markdown mode:
 import json
 import logging
 import re
+import unicodedata
 from pathlib import Path
 from typing import List, Tuple, Optional
 
@@ -40,6 +41,49 @@ from modules.usuarios.domain.models.perfil_ingeniero import Capitulo
 
 
 logger = logging.getLogger(__name__)
+
+
+def normalize_specialty_name(name: str) -> str:
+    """Remove accents/diacritics from a specialty name for canonical comparison.
+
+    Uses NFD decomposition to strip combining diacritical marks (accents)
+    so that 'Ingeniería Civil' and 'Ingenieria Civil' both normalize to
+    'Ingenieria Civil' for deduplication purposes.
+    """
+    if not name:
+        return name
+    normalized = unicodedata.normalize('NFD', name)
+    return ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+
+
+# Canonical specialty names (with proper accents) — these are the authoritative names.
+CANONICAL_SPECIALTY_NAMES = [
+    'Ingeniería Civil',
+    'Ingeniería Sanitaria',
+    'Ingeniería Eléctrica y Mecánica Eléctrica',
+]
+
+# Mapping from unaccented/normalized variants to canonical names.
+# Used to canonicalize seed data and avoid duplicates.
+SPECIALTY_NORMALIZATION_MAP = {
+    'ingenieria civil': 'Ingeniería Civil',
+    'ingenieria sanitaria': 'Ingeniería Sanitaria',
+    'ingenieria electrica y mecanica electrica': 'Ingeniería Eléctrica y Mecánica Eléctrica',
+}
+
+
+def get_canonical_specialty_name(raw_name: str) -> str:
+    """Return the canonical accented specialty name for a raw name from seed data.
+
+    Handles both accented and unaccented variants by normalizing and looking up
+    in the canonical map. If no mapping exists, returns the original name unchanged.
+    """
+    if not raw_name:
+        return raw_name
+    # Strip category suffix if present: "Ingeniería Civil - Edificaciones" -> "Ingeniería Civil"
+    base_name = raw_name.split(' - ')[0].strip()
+    normalized = normalize_specialty_name(base_name).lower()
+    return SPECIALTY_NORMALIZATION_MAP.get(normalized, base_name)
 
 # Constants for markdown source
 MARKDOWN_SPECIALTY = "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
@@ -224,15 +268,13 @@ class Command(BaseCommand):
             return {}
 
     def _ensure_especialidades(self):
-        """Asegurar que las especialidades requeridas existan en la base de datos."""
-        # Clean specialty names - no more " - Edificaciones" suffix
-        required_specialties = [
-            'Ingeniería Civil',
-            'Ingeniería Sanitaria',
-            'Ingeniería Eléctrica y Mecánica Eléctrica',
-        ]
+        """Asegurar que las especialidades requeridas existan en la base de datos.
 
-        for spec_name in required_specialties:
+        Uses CANONICAL_SPECIALTY_NAMES (properly accented) as the authoritative names.
+        If unaccented duplicates already exist in DB, they are NOT deleted here —
+        run cleanup_especialidad_duplicates to consolidate them.
+        """
+        for spec_name in CANONICAL_SPECIALTY_NAMES:
             if self.dry_run:
                 self._log(f"    [DRY-RUN] Would create/find especialidad: {spec_name}")
             else:
@@ -411,12 +453,17 @@ class Command(BaseCommand):
         return None
 
     def _extract_clean_especialidad_nombre(self, especialidad_raw: str) -> str:
-        """Extrae el nombre limpio de la especialidad (sin el sufijo de categoria).
+        """Extrae el nombre limpio de la especialidad y lo canoniza al nombre accented.
+
+        Uses get_canonical_specialty_name to normalize both the category suffix
+        removal AND accent/diacritic canonicalization (so 'Ingenieria Civil - Edificaciones'
+        maps to 'Ingeniería Civil').
 
         Ejemplos:
             'Ingeniería Civil - Edificaciones' -> 'Ingeniería Civil'
             'Ingeniería Civil - Habilitaciones Urbanas' -> 'Ingeniería Civil'
             'Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones' -> 'Ingeniería Eléctrica y Mecánica Eléctrica'
+            'Ingenieria Civil' -> 'Ingeniería Civil' (unaccented variant canonized)
             'Ingeniería Civil' -> 'Ingeniería Civil' (sin cambios si no tiene sufijo)
         """
         if not especialidad_raw:
@@ -424,9 +471,9 @@ class Command(BaseCommand):
 
         # Split por " - " y tomar la primera parte como nombre limpio
         parts = especialidad_raw.split(' - ')
-        if len(parts) >= 1:
-            return parts[0].strip()
-        return especialidad_raw.strip()
+        base_name = parts[0].strip() if parts else especialidad_raw.strip()
+        # Canonicalize to accented form
+        return get_canonical_specialty_name(base_name)
 
     def _process_delegados(self, delegados):
         """Crear/actualizar delegados desde datos seed."""
@@ -549,13 +596,33 @@ class Command(BaseCommand):
             return self._create_perfil_from_seed(cip, dele_data)
 
     def _create_perfil_from_seed(self, cip, dele_data):
-        """Crear PerfilIngeniero desde datos seed."""
+        """Crear o obtener PerfilIngeniero desde datos seed (fallback cuando no hay endpoint ni colegiados_seed)."""
+        dni = dele_data.get('dni')
+        nombre = dele_data.get('nombre', '')
+        paterno = dele_data.get('paterno', '')
+        materno = dele_data.get('materno', '')
+
+        # Buscar por DNI primero para evitar UNIQUE constraint
+        if dni:
+            existing = PerfilIngeniero.objects.filter(dni=dni).first()
+            if existing:
+                existing.cip = cip
+                existing.nombres = nombre
+                existing.apellido_paterno = paterno
+                existing.apellido_materno = materno
+                try:
+                    existing.save()
+                    self._log(f"    Updated PerfilIngeniero by DNI from seed: {existing.nombre_completo}")
+                    return existing
+                except Exception as e:
+                    self._log(self.style.WARNING(f"    Error updating PerfilIngeniero by DNI: {e}"))
+
         try:
             perfil = PerfilIngeniero.objects.create(
                 cip=cip,
-                nombres=dele_data.get('nombre', ''),
-                apellido_paterno=dele_data.get('paterno', ''),
-                apellido_materno=dele_data.get('materno', ''),
+                nombres=nombre,
+                apellido_paterno=paterno,
+                apellido_materno=materno,
             )
             self._log(f"    Created PerfilIngeniero from seed: {dele_data.get('nombre_completo')}")
             return perfil

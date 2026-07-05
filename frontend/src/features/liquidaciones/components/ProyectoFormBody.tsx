@@ -1,19 +1,18 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Building2, MapPin, User } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { GenericInput } from "@/components/genericForm/GenericInput";
 import { Button } from "@/components/ui/button";
-import type { EntidadResult } from "@/features/entidades/types/entidad";
-import { useDistritos } from "@/features/entidades/hooks/useDistritos";
-import { useProyectoCrear } from "../hooks/useProyecto";
-
-import type { ProyectoResumen } from "../types/liquidacion-edificaciones-form.types";
 import { InstitucionFormModal } from "@/features/entidades/components/InstitucionFormModal";
 import { PersonaNaturalFormModal } from "@/features/entidades/components/PersonaNaturalFormModal";
+import { useDistritos } from "@/features/entidades/hooks/useDistritos";
+import type { EntidadResult } from "@/features/entidades/types/entidad";
+import { useProyectoCrear } from "../hooks/useProyecto";
+import type { ProyectoResumen } from "../types/liquidacion-edificaciones-form.types";
 
 const proyectoSchema = z.object({
   denominacion: z.string().min(1, "La denominación es requerida"),
@@ -30,10 +29,13 @@ export interface ProyectoFormBodyProps {
 
 /**
  * Reusable project form body (without modal wrapper).
- * Used inline in LiquidacionEdificacionFormModal tabs.
+ * Used inline in LiquidacionStepperModal steps.
  * Uses its own react-hook-form instance.
  */
-export function ProyectoFormBody({ onSuccess, onCancel }: ProyectoFormBodyProps) {
+export function ProyectoFormBody({
+  onSuccess,
+  onCancel,
+}: ProyectoFormBodyProps) {
   const [entidad, setEntidad] = useState<EntidadResult | undefined>();
   const [showInstitucionModal, setShowInstitucionModal] = useState(false);
   const [showPersonaNaturalModal, setShowPersonaNaturalModal] = useState(false);
@@ -91,8 +93,6 @@ export function ProyectoFormBody({ onSuccess, onCancel }: ProyectoFormBodyProps)
     setShowInstitucionModal(false);
     setShowPersonaNaturalModal(false);
   };
-
-
 
   return (
     <>

@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Plus, X, Phone, Pencil } from "lucide-react";
+import { Pencil, Phone, Plus, User, X } from "lucide-react";
 import type { ContactoInline } from "../types/contacto";
 
 interface ContactosSectionProps {
@@ -84,14 +84,20 @@ export function ContactosSection({
                       </>
                     )}
                     {contacto.celular && (
-                      <span className="whitespace-nowrap" title={contacto.celular}>
+                      <span
+                        className="whitespace-nowrap"
+                        title={contacto.celular}
+                      >
                         {contacto.celular}
                       </span>
                     )}
                     {contacto.email && (
                       <>
                         <span className="text-muted-foreground/50">•</span>
-                        <span className="whitespace-nowrap truncate max-w-[150px] sm:max-w-[200px]" title={contacto.email}>
+                        <span
+                          className="whitespace-nowrap truncate max-w-[150px] sm:max-w-[200px]"
+                          title={contacto.email}
+                        >
                           {contacto.email}
                         </span>
                       </>
@@ -99,7 +105,10 @@ export function ContactosSection({
                     {contacto.dni && (
                       <>
                         <span className="text-muted-foreground/50">•</span>
-                        <span className="whitespace-nowrap" title={contacto.dni}>
+                        <span
+                          className="whitespace-nowrap"
+                          title={contacto.dni}
+                        >
                           DNI: {contacto.dni}
                         </span>
                       </>
@@ -153,21 +162,28 @@ export function ContactosSection({
           disabled={readOnly}
           className={`
             w-full flex flex-col items-center justify-center gap-3 p-8 rounded-xl border border-dashed transition-all
-            ${readOnly
-              ? "border-border bg-muted/30 cursor-not-allowed"
-              : "border-border hover:border-primary/40 hover:bg-secondary/30 cursor-pointer"
+            ${
+              readOnly
+                ? "border-border bg-muted/30 cursor-not-allowed"
+                : "border-border hover:border-primary/40 hover:bg-secondary/30 cursor-pointer"
             }
           `}
           aria-label="Agregar contacto"
         >
-          <div className={`
+          <div
+            className={`
             flex h-12 w-12 items-center justify-center rounded-full
             ${readOnly ? "bg-muted" : "bg-primary/10"}
-          `}>
-            <Plus className={`h-6 w-6 ${readOnly ? "text-muted-foreground" : "text-primary"}`} />
+          `}
+          >
+            <Plus
+              className={`h-6 w-6 ${readOnly ? "text-muted-foreground" : "text-primary"}`}
+            />
           </div>
           <div className="text-center">
-            <p className={`text-sm font-medium ${readOnly ? "text-muted-foreground" : "text-foreground"}`}>
+            <p
+              className={`text-sm font-medium ${readOnly ? "text-muted-foreground" : "text-foreground"}`}
+            >
               {readOnly ? "Sin contactos" : "Agregar contacto"}
             </p>
             {!readOnly && (

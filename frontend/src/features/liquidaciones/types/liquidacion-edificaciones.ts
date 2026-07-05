@@ -6,11 +6,11 @@
 
 export interface LiquidacionListItem {
   id: string;
-  public_id?: string;
+  public_id: string | null;
   numero_revision: number;
   estado: string;
-  municipalidad_id?: string | null;
-  municipalidad_nombre?: string | null;
+  municipalidad_id: string | null;
+  municipalidad_nombre: string | null;
   tipo_tramite?: TipoTramiteEdificaciones;
   tramite_accion?: TramiteAccion;
   valor_proyecto: number;
@@ -22,6 +22,34 @@ export interface LiquidacionListItem {
 
 export interface PaginatedLiquidaciones {
   items: LiquidacionListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+/**
+ * Item de lista para liquidaciones GENERALES (backend Phase 4+).
+ * Endpoint: GET /liquidaciones
+ *
+ * Diferencias con LiquidacionListItem (Edificaciones):
+ * - No tiene valor_proyecto, municipalidad_id, municipalidad_nombre
+ * - Usa tipo_liquidacion en lugar de tipo_tramite/tramite_accion
+ */
+export interface LiquidacionGeneralListItem {
+  id: string;
+  public_id: string | null;
+  estado: string;
+  tipo_liquidacion: string;
+  numero_revision: number;
+  proyecto_denominacion: string | null;
+  proyecto_public_id: string | null;
+  fecha_registro: string;
+  total: number;
+}
+
+export interface PaginatedLiquidacionesGenerales {
+  items: LiquidacionGeneralListItem[];
   total: number;
   page: number;
   page_size: number;
@@ -48,15 +76,27 @@ export interface ProyectistaSubmit {
   descripcion?: string;
 }
 
+// Proyecto Inline para crear al vuelo
+export interface ProyectoInline {
+  denominacion: string;
+  direccion?: string;
+  distrito_id?: string;
+  entidad_id?: string | null;
+}
+
 export interface PrimeraRevisionFormData {
-  proyecto_public_id: string;
+  // XOR: uno de los dos es requerido
+  proyecto_public_id?: string;
+  proyecto_inline?: ProyectoInline;
   municipalidad_id: string;
   tipo_tramite: TipoTramiteEdificaciones;
   valor_proyecto: number;
   observacion?: string;
   revisiones_ids: string[];
   proyectistas: ProyectistaSubmit[];
-  delegados_ids: string[];
+  // delegadas_ids fue eliminado del payload de creación
+  // tarifas_ids es opcional para compatibilidad con formularios deprecated
+  tarifas_ids?: string[];
 }
 
 export type TipoTramiteEdificaciones =
@@ -100,7 +140,8 @@ export interface SnapshotTarifa {
 export interface SnapshotRevision {
   id: string;
   // numero_revision fue removido de cada revisión — solo existe en nivel edificaciones
-  especialidad: string;
+  // NOTE: especialidades es M2M — lista de objetos {id, nombre}
+  especialidades: EspecialidadBasica[];
   tarifa: SnapshotTarifa;
   monto_base: number;
   cobra: boolean;
@@ -139,7 +180,7 @@ export interface SnapshotProyecto {
   id: string;
   public_id: string;
   nombre: string;
-  direccion: string;
+  direccion: string | null;
   valor_proyecto: number;
   // NOTE: backend EntidadOut has all optional fields
   entidad: {
@@ -156,18 +197,32 @@ export interface SnapshotLiquidacion {
   public_id: string;
   estado: string;
   fecha_creacion: string;
+  expediente: string | null;
+  observacion: string | null;
   proyecto: SnapshotProyecto;
   municipalidad: SnapshotMunicipalidad;
-  observacion: string;
 }
 
 export interface SnapshotProyectista {
   id: string;
-  cip: string | null;
-  dni: string;
-  cap: string | null;
-  nombres: string;
-  apellidos: string;
+  perfil_ingeniero_id: string;
+  perfil_ingeniero_nombres: string;
+  perfil_ingeniero_apellidos: string;
+  perfil_ingeniero_cip: string;
+  especialidad_id: string;
+  especialidad_nombre: string;
+  descripcion: string | null;
+}
+
+export interface SnapshotDelegado {
+  id: string;
+  perfil_ingeniero_id: string;
+  perfil_ingeniero_nombres: string;
+  perfil_ingeniero_apellidos: string;
+  perfil_ingeniero_cip: string;
+  especialidad_id: string;
+  especialidad_nombre: string;
+  tipo: string | null;
 }
 
 export interface SnapshotEdificaciones {
@@ -176,6 +231,7 @@ export interface SnapshotEdificaciones {
   tipo_tramite: TipoTramiteEdificaciones;
   tramite_accion: TramiteAccion;
   proyectistas: SnapshotProyectista[];
+  delegados: SnapshotDelegado[];
   revisiones: SnapshotRevision[];
 }
 
@@ -192,42 +248,219 @@ export interface LiquidacionSnapshot {
   // NOTE: _metadata not present in backend LiquidacionSnapshotOut for crearNuevaRevision
 }
 
+// ── Flat LiquidacionEdificacionOut Types (Phase 4+) ────────────────────────────
+
+/**
+ * Especialidad anidada en revisión — coincide con EspecialidadOut del backend.
+ */
+export interface EspecialidadOut {
+  id: string;
+  nombre: string;
+}
+
+/**
+ * Tarifa anidada en revisión — coincide con TarifaOut del backend.
+ */
+export interface TarifaOut {
+  id: string;
+  derecho_minimo: string | number;
+  derecho_maximo: string | number | null;
+  porcentaje_minimo_uit: string | number;
+}
+
+/**
+ * Revisión anidada — coincide con RevisionOut del backend.
+ */
+export interface RevisionOut {
+  id: string;
+  especialidades: EspecialidadOut[];
+  tarifa: TarifaOut;
+  monto_base: string | number;
+  cobra: boolean;
+}
+
+/**
+ * Entidad anidada — coincide con EntidadOut del backend.
+ */
+export interface EntidadOut {
+  id: string | null;
+  tipo: string | null;
+  nombre: string | null;
+  ruc: string | null;
+}
+
+/**
+ * Provincia básica anidada — coincide con ProvinciaBasicOut del backend.
+ */
+export interface ProvinciaBasicOut {
+  id: string;
+  nombre: string;
+}
+
+/**
+ * Distrito básico anidado — coincide con DistritoBasicOut del backend.
+ */
+export interface DistritoBasicOut {
+  id: string;
+  nombre: string;
+  provincia: ProvinciaBasicOut | null;
+}
+
+/**
+ * Municipalidad anidada — coincide con MunicipalidadOut del backend.
+ */
+export interface MunicipalidadOut {
+  id: string;
+  nombre: string;
+  codigo: string | null;
+  provincia: ProvinciaBasicOut | null;
+  distrito: DistritoBasicOut | null;
+}
+
+/**
+ * Valores financieros anidados — coincide con ValoresOut del backend.
+ */
+export interface ValoresOut {
+  subtotal: string | number;
+  igv: string | number;
+  total: string | number;
+  total_a_pagar: string | number;
+}
+
+/**
+ * Proyecto anidado — coincide con ProyectoOut del backend.
+ */
+export interface ProyectoOut {
+  id: string;
+  public_id: string;
+  nombre: string;
+  direccion: string | null;
+  valor_proyecto: string | number;
+  entidad: EntidadOut | null;
+}
+
+/**
+ * Proyectista anidado — coincide con ProyectistaOut del backend.
+ */
+export interface ProyectistaOut {
+  id: string;
+  perfil_ingeniero_id: string | null;
+  perfil_ingeniero_nombres: string | null;
+  perfil_ingeniero_apellidos: string | null;
+  perfil_ingeniero_cip: string | null;
+  especialidad_id: string | null;
+  especialidad_nombre: string | null;
+  descripcion: string | null;
+}
+
+/**
+ * Delegado anidado — coincide con DelegadoOut del backend.
+ */
+export interface DelegadoOut {
+  id: string;
+  perfil_ingeniero_id: string | null;
+  perfil_ingeniero_nombres: string | null;
+  perfil_ingeniero_apellidos: string | null;
+  perfil_ingeniero_cip: string | null;
+  especialidad_id: string | null;
+  especialidad_nombre: string | null;
+  tipo: string | null;
+}
+
+/**
+ * Contacto anidado — coincide con ContactoEdificacionOut del backend.
+ */
+export interface ContactoOut {
+  id: string;
+  nombres: string | null;
+  apellidos: string | null;
+  dni: string | null;
+  cargo: string | null;
+  telefono: string | null;
+  celular: string | null;
+  email: string | null;
+  direccion: string | null;
+  principal: boolean;
+  descripcion: string | null;
+}
+
+/**
+ * Respuesta plana de creación/detalle de edificación.
+ * Coincide con LiquidacionEdificacionOut del backend:
+ * - Estructura PLANA con objetos anidados (proyecto, municipalidad, valores, etc.)
+ * - Campos financieros duplicados al nivel raíz (subtotal, igv, total, total_a_pagar)
+ */
+export interface LiquidacionEdificacionOut {
+  id: string;
+  public_id: string;
+  estado: string;
+  fecha_registro: string;
+  expediente: string | null;
+  observacion: string | null;
+  numero_revision: number;
+  tipo_tramite: TipoTramiteEdificaciones;
+  tramite_accion: TramiteAccion;
+  proyecto: ProyectoOut;
+  entidad: EntidadOut | null;
+  municipalidad: MunicipalidadOut;
+  valores: ValoresOut;
+  proyectistas: ProyectistaOut[];
+  delegados: DelegadoOut[];
+  contactos: ContactoOut[];
+  revisiones: RevisionOut[];
+  // Campos financieros directos (duplicados de valores para conveniencia)
+  subtotal: string | number;
+  igv: string | number;
+  total: string | number;
+  total_a_pagar: string | number;
+}
+
+/**
+ * Respuesta paginada para lista de liquidaciones de edificaciones.
+ * El backend retorna LiquidacionEdificacionOut completo en cada item de items[].
+ */
+export interface PaginatedLiquidacionesEdificaciones {
+  items: LiquidacionEdificacionOut[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
 // ── Estado Modal ──────────────────────────────────────────────────────────────
 
-export type LiquidacionFormMode =
-  | { mode: "closed" }
-  | { mode: "create" };
-
+export type LiquidacionFormMode = { mode: "closed" } | { mode: "create" };
 
 // ── Snapshot List (cards) ──────────────────────────────────────────────────────
 
 export interface SnapshotTarifaCard {
   id: string;
-  derecho_minimo: number;
-  derecho_maximo: number | null;
-  porcentaje_minimo_uit: number;
+  derecho_minimo: string | number;
+  derecho_maximo: string | number | null;
+  porcentaje_minimo_uit: string | number;
 }
 
 export interface SnapshotRevisionCard {
   id: string;
   // numero_revision fue removido de cada revisión — solo existe en nivel edificaciones
-  especialidad: string;
+  // NOTE: especialidades es M2M — lista de objetos {id, nombre}
+  especialidades: EspecialidadBasica[];
   tarifa: SnapshotTarifaCard;
-  monto_base: number;
+  monto_base: string | number;
   cobra: boolean;
-  derecho?: number | null | undefined;
+  derecho?: string | number | null | undefined;
 }
 
 export interface SnapshotTotalesCard {
-  subtotal: number;
-  igv: number;
-  total: number;
-  liquidacion_total: number;
-  total_a_pagar: number;
+  subtotal: string | number;
+  igv: string | number;
+  total: string | number;
+  liquidacion_total: string | number;
+  total_a_pagar: string | number;
 }
 
 export interface SnapshotEntidadCard {
-  id: string;
+  id: string | null;
   tipo: string | null;
   nombre: string | null;
   ruc: string | null;
@@ -235,11 +468,13 @@ export interface SnapshotEntidadCard {
 
 export interface SnapshotProyectistaCard {
   id: string;
-  cip: string | null;
-  dni: string | null;
-  cap: string | null;
-  nombres: string;
-  apellidos: string;
+  perfil_ingeniero_id: string | null;
+  perfil_ingeniero_nombres: string | null;
+  perfil_ingeniero_apellidos: string | null;
+  perfil_ingeniero_cip: string | null;
+  especialidad_id: string | null;
+  especialidad_nombre: string | null;
+  descripcion: string | null;
 }
 
 export interface SnapshotProvinciaCard {
@@ -254,7 +489,7 @@ export interface SnapshotDistritoCard {
 }
 
 export interface SnapshotMunicipalidadCard {
-  id: string;
+  id: string | null;
   nombre: string;
   codigo: string | null;
   provincia: SnapshotProvinciaCard | null;
@@ -266,7 +501,7 @@ export interface SnapshotProyectoCard {
   public_id: string;
   nombre: string;
   direccion: string | null;
-  valor_proyecto: number;
+  valor_proyecto: string | number;
   entidad: SnapshotEntidadCard | null;
   distrito?: SnapshotDistritoCard | null | undefined;
 }
@@ -274,9 +509,10 @@ export interface SnapshotProyectoCard {
 export interface SnapshotEdificacionesCard {
   public_id: string;
   numero_revision: number;
-  tipo_tramite: TipoTramiteEdificaciones;
-  tramite_accion: TramiteAccion;
+  tipo_tramite?: TipoTramiteEdificaciones;
+  tramite_accion?: TramiteAccion;
   proyectistas: SnapshotProyectistaCard[];
+  delegados: unknown[];
   revisiones: SnapshotRevisionCard[];
 }
 
@@ -312,7 +548,7 @@ export interface CotizacionTarifa {
 
 export interface CotizacionRevision {
   id: string;
-  especialidad: string;
+  especialidades: EspecialidadBasica[];
   tarifa: CotizacionTarifa;
   monto_base: number;
   cobra: boolean;
@@ -330,6 +566,7 @@ export interface CotizacionMetadata {
   igv_valor: number;
   uit_valor: number;
   cobra: boolean;
+  valor_base_calculo: number;
 }
 
 export interface CotizacionQuote {

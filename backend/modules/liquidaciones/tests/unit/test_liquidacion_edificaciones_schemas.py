@@ -127,6 +127,137 @@ class TestPrimeraRevisionLiquidacionIn:
         schema = PrimeraRevisionLiquidacionIn(**data)
         assert schema.revisiones_ids == [rev1, rev1, rev2, rev2]
 
+    def test_proyecto_inline_accepted_by_schema(self):
+        """proyecto_inline (como objeto) es aceptado por el schema sin validar XOR."""
+        municipalidad_id = uuid.uuid4()
+        data = {
+            "municipalidad_id": municipalidad_id,
+            "tipo_tramite": "OBRA_NUEVA",
+            "valor_proyecto": 10000.0,
+            "valor_base_calculo": 10000.0,
+            "proyecto_inline": {
+                "denominacion": "Mi Proyecto Inline",
+                "direccion": "Calle Falsa 123",
+                "nombre_propietario": "Juan Perez Rodriguez",
+                "entidad": {
+                    "tipo_documento": "RUC",
+                    "numero_documento": "20456789012",
+                    "razon_social": "Empresa Test S.A.",
+                },
+            },
+        }
+        schema = PrimeraRevisionLiquidacionIn(**data)
+        assert schema.proyecto_inline is not None
+        assert schema.proyecto_inline.denominacion == "Mi Proyecto Inline"
+        assert schema.proyecto_inline.direccion == "Calle Falsa 123"
+        # proyecto_public_id es Optional[str] así que "" es válido como "not provided"
+        assert schema.proyecto_public_id is None
+
+    def test_proyecto_inline_con_distrito_y_entidad(self):
+        """proyecto_inline con distrito_id y entidad (inline) es aceptado."""
+        municipalidad_id = uuid.uuid4()
+        distrito_id = uuid.uuid4()
+        data = {
+            "municipalidad_id": municipalidad_id,
+            "tipo_tramite": "OBRA_NUEVA",
+            "valor_proyecto": 10000.0,
+            "valor_base_calculo": 10000.0,
+            "proyecto_inline": {
+                "denominacion": "Proyecto con Entidad",
+                "direccion": "Av.Principal 456",
+                "distrito_id": str(distrito_id),
+                "nombre_propietario": "Carlos Rodriguez Perez",
+                "entidad": {
+                    "tipo_documento": "RUC",
+                    "numero_documento": "20456789015",
+                    "razon_social": "Empresa Entidad S.A.",
+                },
+            },
+        }
+        schema = PrimeraRevisionLiquidacionIn(**data)
+        assert schema.proyecto_inline.distrito_id == distrito_id
+        assert schema.proyecto_inline.entidad.tipo_documento == "RUC"
+        assert schema.proyecto_inline.nombre_propietario == "Carlos Rodriguez Perez"
+
+    def test_tarifas_ids_default_is_none(self):
+        """tarifas_ids default es None (no []) para distinguir no proporcionado de vacío.
+
+        El schema usa default=None con min_length=1. Si se proporciona [],
+        falla validación Pydantic (422). Si no se proporciona, queda None.
+        """
+        municipalidad_id = uuid.uuid4()
+        data = {
+            "proyecto_public_id": "PROY-2026-00001",
+            "municipalidad_id": municipalidad_id,
+            "tipo_tramite": "OBRA_NUEVA",
+            "valor_proyecto": 10000.0,
+            "valor_base_calculo": 10000.0,
+        }
+        schema = PrimeraRevisionLiquidacionIn(**data)
+        assert schema.tarifas_ids is None
+
+    def test_tarifas_ids_with_one_uuid_valid(self):
+        """tarifas_ids con exactamente 1 UUID es aceptado por el schema."""
+        municipalidad_id = uuid.uuid4()
+        tarifa_id = uuid.uuid4()
+        data = {
+            "proyecto_public_id": "PROY-2026-00001",
+            "municipalidad_id": municipalidad_id,
+            "tipo_tramite": "OBRA_NUEVA",
+            "valor_proyecto": 10000.0,
+            "valor_base_calculo": 10000.0,
+            "tarifas_ids": [tarifa_id],
+        }
+        schema = PrimeraRevisionLiquidacionIn(**data)
+        assert schema.tarifas_ids == [tarifa_id]
+
+    def test_tarifas_ids_with_multiple_uuids_valid(self):
+        """tarifas_ids con múltiples UUIDs es aceptado por el schema (validación de negocio es en orchestrator)."""
+        municipalidad_id = uuid.uuid4()
+        t1 = uuid.uuid4()
+        t2 = uuid.uuid4()
+        t3 = uuid.uuid4()
+        data = {
+            "proyecto_public_id": "PROY-2026-00001",
+            "municipalidad_id": municipalidad_id,
+            "tipo_tramite": "OBRA_NUEVA",
+            "valor_proyecto": 10000.0,
+            "valor_base_calculo": 10000.0,
+            "tarifas_ids": [t1, t2, t3],
+        }
+        schema = PrimeraRevisionLiquidacionIn(**data)
+        assert schema.tarifas_ids == [t1, t2, t3]
+
+    def test_tarifas_ids_invalid_uuid_fails(self):
+        """tarifas_ids con UUID inválido falla validación del schema."""
+        from pydantic import ValidationError
+        municipalidad_id = uuid.uuid4()
+        data = {
+            "proyecto_public_id": "PROY-2026-00001",
+            "municipalidad_id": municipalidad_id,
+            "tipo_tramite": "OBRA_NUEVA",
+            "valor_proyecto": 10000.0,
+            "valor_base_calculo": 10000.0,
+            "tarifas_ids": ["not-a-valid-uuid"],
+        }
+        with pytest.raises(ValidationError) as exc_info:
+            PrimeraRevisionLiquidacionIn(**data)
+        assert "tarifas_ids" in str(exc_info.value)
+
+    def test_delegados_ids_not_in_primera_revision_schema(self):
+        """delegados_ids no existe en PrimeraRevisionLiquidacionIn (Fase 4)."""
+        municipalidad_id = uuid.uuid4()
+        data = {
+            "proyecto_public_id": "PROY-2026-00001",
+            "municipalidad_id": municipalidad_id,
+            "tipo_tramite": "OBRA_NUEVA",
+            "valor_proyecto": 10000.0,
+            "valor_base_calculo": 10000.0,
+        }
+        schema = PrimeraRevisionLiquidacionIn(**data)
+        # delegagos_ids no debe existir como campo
+        assert not hasattr(schema, 'delegados_ids')
+
 
 class TestNuevaRevisionLiquidacionIn:
     """Test NuevaRevisionLiquidacionIn schema validation."""

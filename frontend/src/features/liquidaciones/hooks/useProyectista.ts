@@ -2,8 +2,9 @@
  * Hook para crear/upsert proyectista.
  * Usa useApiCreate genérico del proyecto.
  */
-import { useApiCreate } from "@/hooks";
+
 import { z } from "zod";
+import { useApiCreate } from "@/hooks";
 import { apiResponseSchema } from "@/types/api.types";
 import type { ProyectistaInput } from "../types/proyectista";
 
@@ -19,7 +20,9 @@ const proyectistaPayloadSchema = z.object({
 });
 
 /** Full envelope schema using shared helper */
-const proyectistaUpsertResponseSchema = apiResponseSchema(proyectistaPayloadSchema);
+const proyectistaUpsertResponseSchema = apiResponseSchema(
+  proyectistaPayloadSchema,
+);
 
 export function useProyectistaUpsert() {
   const mutation = useApiCreate<

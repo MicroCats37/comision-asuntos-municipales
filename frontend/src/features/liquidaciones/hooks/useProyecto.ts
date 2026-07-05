@@ -2,15 +2,23 @@
  * Hook para operaciones con proyectos.
  */
 import { useMutation } from "@tanstack/react-query";
-import { useApiCreate } from "@/hooks";
-import { z } from "zod";
+import type { z } from "zod";
 import { notify } from "@/errors";
-import type { EntidadSimple, ProyectoInput } from "../services/proyecto.service";
-import { proyectoResponseSchema, buscarProyecto } from "../services/proyecto.service";
+import { useApiCreate } from "@/hooks";
+import type {
+  EntidadSimple,
+  ProyectoInput,
+} from "../services/proyecto.service";
+import {
+  buscarProyecto,
+  proyectoResponseSchema,
+} from "../services/proyecto.service";
 
 // Re-export types for convenience
-export type { EntidadSimple } from "../services/proyecto.service";
-export type { ProyectoResponse } from "../services/proyecto.service";
+export type {
+  EntidadSimple,
+  ProyectoResponse,
+} from "../services/proyecto.service";
 
 export function useProyectoCrear() {
   const mutation = useApiCreate<

@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Plus, X, HardHat } from "lucide-react";
+import { HardHat, Plus, User, X } from "lucide-react";
 import type { ProyectistaInline } from "../types/proyectista";
 
 /**
@@ -13,7 +13,9 @@ type BaseProyectista = {
   apellidos?: string;
 };
 
-interface ProyectistaSectionProps<T extends BaseProyectista = ProyectistaInline> {
+interface ProyectistaSectionProps<
+  T extends BaseProyectista = ProyectistaInline,
+> {
   /** List of currently selected proyectistas */
   selectedProyectistas: T[];
   /** Whether the section is read-only (no add/remove) */
@@ -30,7 +32,9 @@ interface ProyectistaSectionProps<T extends BaseProyectista = ProyectistaInline>
  * Reusable Proyectistas section for forms.
  * Displays selected proyectistas as cards and supports add/remove when not readOnly.
  */
-export function ProyectistasSection<T extends BaseProyectista = ProyectistaInline>({
+export function ProyectistasSection<
+  T extends BaseProyectista = ProyectistaInline,
+>({
   selectedProyectistas,
   readOnly = false,
   onAddProyectista,
@@ -88,32 +92,58 @@ export function ProyectistasSection<T extends BaseProyectista = ProyectistaInlin
                         CIP {cip}
                       </span>
                     )}
-                    {"especialidad_id" in proyectista && (proyectista as { especialidad_id?: string }).especialidad_id && (
-                      <>
-                        <span className="text-muted-foreground/50">•</span>
-                        <span className="whitespace-nowrap truncate max-w-[150px] sm:max-w-[200px]" title={especialidadLabels[(proyectista as { especialidad_id: string }).especialidad_id] ||
-                            (proyectista as { especialidad_id: string }).especialidad_id}>
-                          {especialidadLabels[(proyectista as { especialidad_id: string }).especialidad_id] ||
-                            (proyectista as { especialidad_id: string }).especialidad_id}
-                        </span>
-                      </>
-                    )}
-                    {"descripcion" in proyectista && (proyectista as { descripcion?: string }).descripcion && (
-                      <>
-                        <span className="text-muted-foreground/50">•</span>
-                        <span title={(proyectista as { descripcion: string }).descripcion} className="whitespace-nowrap truncate max-w-[120px] sm:max-w-[180px]">
-                          {(proyectista as { descripcion: string }).descripcion.length > 12
-                            ? `${(proyectista as { descripcion: string }).descripcion.slice(0, 12)}...`
-                            : (proyectista as { descripcion: string }).descripcion}
-                        </span>
-                      </>
-                    )}
+                    {"especialidad_id" in proyectista &&
+                      (proyectista as { especialidad_id?: string })
+                        .especialidad_id && (
+                        <>
+                          <span className="text-muted-foreground/50">•</span>
+                          <span
+                            className="whitespace-nowrap truncate max-w-[150px] sm:max-w-[200px]"
+                            title={
+                              especialidadLabels[
+                                (proyectista as { especialidad_id: string })
+                                  .especialidad_id
+                              ] ||
+                              (proyectista as { especialidad_id: string })
+                                .especialidad_id
+                            }
+                          >
+                            {especialidadLabels[
+                              (proyectista as { especialidad_id: string })
+                                .especialidad_id
+                            ] ||
+                              (proyectista as { especialidad_id: string })
+                                .especialidad_id}
+                          </span>
+                        </>
+                      )}
+                    {"descripcion" in proyectista &&
+                      (proyectista as { descripcion?: string }).descripcion && (
+                        <>
+                          <span className="text-muted-foreground/50">•</span>
+                          <span
+                            title={
+                              (proyectista as { descripcion: string })
+                                .descripcion
+                            }
+                            className="whitespace-nowrap truncate max-w-[120px] sm:max-w-[180px]"
+                          >
+                            {(proyectista as { descripcion: string })
+                              .descripcion.length > 12
+                              ? `${(proyectista as { descripcion: string }).descripcion.slice(0, 12)}...`
+                              : (proyectista as { descripcion: string })
+                                  .descripcion}
+                          </span>
+                        </>
+                      )}
                   </div>
                 </div>
                 {!readOnly && (
                   <button
                     type="button"
-                    onClick={() => cip !== "unknown" && onRemoveProyectista(cip)}
+                    onClick={() =>
+                      cip !== "unknown" && onRemoveProyectista(cip)
+                    }
                     className="ml-1 hover:bg-destructive/10 rounded p-1 transition-colors shrink-0"
                     aria-label={`Remover ${nombreCompleto}`}
                   >
@@ -145,21 +175,28 @@ export function ProyectistasSection<T extends BaseProyectista = ProyectistaInlin
           disabled={readOnly}
           className={`
             w-full flex flex-col items-center justify-center gap-3 p-8 rounded-xl border border-dashed transition-all
-            ${readOnly
-              ? "border-border bg-muted/30 cursor-not-allowed"
-              : "border-border hover:border-primary/40 hover:bg-secondary/30 cursor-pointer"
+            ${
+              readOnly
+                ? "border-border bg-muted/30 cursor-not-allowed"
+                : "border-border hover:border-primary/40 hover:bg-secondary/30 cursor-pointer"
             }
           `}
           aria-label="Agregar proyectista"
         >
-          <div className={`
+          <div
+            className={`
             flex h-12 w-12 items-center justify-center rounded-full
             ${readOnly ? "bg-muted" : "bg-primary/10"}
-          `}>
-            <Plus className={`h-6 w-6 ${readOnly ? "text-muted-foreground" : "text-primary"}`} />
+          `}
+          >
+            <Plus
+              className={`h-6 w-6 ${readOnly ? "text-muted-foreground" : "text-primary"}`}
+            />
           </div>
           <div className="text-center">
-            <p className={`text-sm font-medium ${readOnly ? "text-muted-foreground" : "text-foreground"}`}>
+            <p
+              className={`text-sm font-medium ${readOnly ? "text-muted-foreground" : "text-foreground"}`}
+            >
               {readOnly ? "Sin proyectistas" : "Agregar proyectista"}
             </p>
             {!readOnly && (

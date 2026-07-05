@@ -59,11 +59,8 @@ class EntidadesController:
             tipo_documento=payload.tipo_documento,
             numero_documento=payload.numero_documento,
             razon_social=payload.razon_social,
-            nombres=None,
-            apellidos=None,
             nombre_comercial=payload.nombre_comercial,
             direccion=payload.direccion,
-            distrito_id=payload.distrito_id,
         )
         return success_response(
             self.presenter.present_upsert(result, creado)
@@ -80,12 +77,9 @@ class EntidadesController:
         result, creado = await self.orchestrator.upsert_entidad(
             tipo_documento=payload.tipo_documento,
             numero_documento=payload.numero_documento,
-            razon_social=None,
-            nombres=payload.nombres,
-            apellidos=payload.apellidos,
+            razon_social=payload.razon_social,
             nombre_comercial=None,
             direccion=payload.direccion,
-            distrito_id=payload.distrito_id,
         )
         return success_response(
             self.presenter.present_upsert(result, creado)

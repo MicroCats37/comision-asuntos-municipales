@@ -2,10 +2,10 @@
 Unit tests for Liquidaciones Edificaciones calculation rules.
 
 Tests:
-- Revisiones que cobran: 1, 3, 5, 7 (2, 4, 6 no cobran)
+- Revisiones que cobran: 1, 3, 5 (2, 4, 6, 7 no cobran porque no existen)
 - Cálculo de derecho mínimo/máximo
 - Cálculo de monto base
-- Lógica de preparar_nueva_revision
+- Lógica de preparar_nueva_revision (secuencia: 1 -> 3 -> 5)
 
 NOTE: Calculation methods (_calcular_derecho, _calcular_monto_base) were moved
 from Flujo to Core Service per Django architecture contract (P2, P6).
@@ -23,11 +23,11 @@ from modules.liquidaciones.domain.services.core.liquidacion_edificaciones_core_s
 
 
 class TestRevisionCobraRegla:
-    """Test the REVISIONES_COBRAN rule: 1,3,5,7 cobran; 2,4,6 no."""
+    """Test the REVISIONES_COBRAN rule: 1,3,5 cobran; 2,4,6,7 no."""
 
-    def test_revisiones_cobran_es_1357(self):
-        """REVISIONES_COBRAN debe ser exactamente {1, 3, 5, 7}."""
-        assert REVISIONES_COBRAN == {1, 3, 5, 7}
+    def test_revisiones_cobran_es_135(self):
+        """REVISIONES_COBRAN debe ser exactamente {1, 3, 5}."""
+        assert REVISIONES_COBRAN == {1, 3, 5}
 
     def test_revision_1_cobra(self):
         """Revisión 1 debe cobrar."""
@@ -53,14 +53,13 @@ class TestRevisionCobraRegla:
         """Revisión 6 NO debe cobrar."""
         assert 6 not in REVISIONES_COBRAN
 
-    def test_revision_7_cobra(self):
-        """Revisión 7 debe cobrar."""
-        assert 7 in REVISIONES_COBRAN
+    def test_revision_7_no_cobra(self):
+        """Revisión 7 NO debe cobrar (no existe en la secuencia)."""
+        assert 7 not in REVISIONES_COBRAN
 
-    def test_revision_8_no_existe(self):
-        """Revisión 8 está más allá de MAX_REVISIONES=7."""
-        assert 8 not in REVISIONES_COBRAN
-        assert MAX_REVISIONES == 7
+    def test_revision_6_no_existe(self):
+        """Revisión 6 no puede crearse (MAX_REVISIONES=5)."""
+        assert 6 > MAX_REVISIONES
 
 
 class TestCalcularDerecho:
@@ -147,30 +146,28 @@ class TestCalcularMontoBase:
 
 
 class TestPrepararNuevaRevisionLogica:
-    """Test logic of preparar_nueva_revision without full DB (just constants)."""
+    """Test logic of preparar_nueva_revision without full DB (just constants).
 
-    def test_siguiente_revision_es_previa_mas_1(self):
-        """El siguiente número de revisión es previa + 1."""
-        assert 1 + 1 == 2
-        assert 2 + 1 == 3
-        assert 6 + 1 == 7
-        assert 7 + 1 == 8
+    Nueva secuencia: 1 -> 3 -> 5 (paso +2).
+    No se pueden crear revisiones 2, 4, 6, 7.
+    """
 
-    def test_revision_8_excede_max(self):
-        """Revisión 8 debe lanzar MaximoRevisionAlcanzadoError."""
-        assert 8 > MAX_REVISIONES
+    def test_siguiente_revision_es_previa_mas_2(self):
+        """El siguiente número de revisión es previa + 2."""
+        assert 1 + 2 == 3
+        assert 3 + 2 == 5
+        assert 5 + 2 == 7  # 7 exceedería MAX_REVISIONES=5
+
+    def test_revision_6_y_7_exceden_max(self):
+        """Revisión 6 y 7 deben lanzar MaximoRevisionAlcanzadoError (>5)."""
+        assert 6 > MAX_REVISIONES
+        assert 7 > MAX_REVISIONES
 
     def test_preparar_nueva_revision_cobra_segun_numero(self):
         """La función determina cobra según REVISIONES_COBRAN."""
-        # Desde revisión 1 -> siguiente 2, 2 no cobra
-        assert (1 + 1) not in REVISIONES_COBRAN
-        # Desde revisión 2 -> siguiente 3, 3 cobra
-        assert (2 + 1) in REVISIONES_COBRAN
-        # Desde revisión 3 -> siguiente 4, 4 no cobra
-        assert (3 + 1) not in REVISIONES_COBRAN
-        # Desde revisión 4 -> siguiente 5, 5 cobra
-        assert (4 + 1) in REVISIONES_COBRAN
-        # Desde revisión 5 -> siguiente 6, 6 no cobra
-        assert (5 + 1) not in REVISIONES_COBRAN
-        # Desde revisión 6 -> siguiente 7, 7 cobra
-        assert (6 + 1) in REVISIONES_COBRAN
+        # Desde revisión 1 -> siguiente 3, 3 cobra
+        assert (1 + 2) in REVISIONES_COBRAN
+        # Desde revisión 3 -> siguiente 5, 5 cobra
+        assert (3 + 2) in REVISIONES_COBRAN
+        # Desde revisión 5 -> siguiente 7, 7 no existe (excede MAX)
+        assert (5 + 2) > MAX_REVISIONES

@@ -2,8 +2,9 @@
  * Hook para obtener delegados vigentes para una municipalidad y revisión.
  * Usa useApiQuery genérico del proyecto.
  */
-import { useApiQuery } from "@/hooks";
+
 import { z } from "zod";
+import { useApiQuery } from "@/hooks";
 import { apiResponseSchema } from "@/types/api.types";
 import type { DelegadoVigente } from "../types/liquidacion-edificaciones";
 
@@ -31,17 +32,27 @@ const delegadosVigentesResponseSchema = apiResponseSchema(
 export function useDelegadosVigentes(
   municipalidadId: string | null,
   revisionId: string | null,
-  categoria: string = "Edificaciones"
+  categoria: string = "Edificaciones",
 ) {
   const query = useApiQuery<
     z.infer<typeof delegadosVigentesResponseSchema>,
     DelegadoVigente[]
   >({
-    queryKey: ["liquidaciones", "delegados-vigentes", municipalidadId, revisionId, categoria],
+    queryKey: [
+      "liquidaciones",
+      "delegados-vigentes",
+      municipalidadId,
+      revisionId,
+      categoria,
+    ],
     url: "/liquidaciones/edificaciones/delegados/vigentes",
     params:
       municipalidadId && revisionId
-        ? { municipalidad_id: municipalidadId, revision_id: revisionId, categoria }
+        ? {
+            municipalidad_id: municipalidadId,
+            revision_id: revisionId,
+            categoria,
+          }
         : undefined,
     schema: delegadosVigentesResponseSchema,
     queryOptions: {

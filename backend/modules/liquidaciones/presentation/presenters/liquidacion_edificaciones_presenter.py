@@ -1,6 +1,7 @@
 """
 LiquidacionEdificacionesPresenter — transforma resultados a esquemas HTTP.
 """
+import uuid
 from typing import Union
 
 from modules.liquidaciones.domain.schemas import (
@@ -9,9 +10,12 @@ from modules.liquidaciones.domain.schemas import (
     EdificacionRevisionData,
     CotizacionQuoteData,
     DelegadosVigentesResult,
+    ProyectistaEdificacionData,
+    DelegadoEdificacionData,
+    ContactoData,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
-    LiquidacionSnapshotOut,
+    LiquidacionEdificacionOut,
     NuevaRevisionFormularioOut,
     RevisionVigenteOut,
     CotizacionQuoteOut,
@@ -20,6 +24,20 @@ from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schema
     CotizacionTotalesOut,
     CotizacionMetadataOut,
     DelegadosVigentesOut,
+    EspecialidadBasicaOut,
+    EspecialidadOut,
+    EntidadOut,
+    ProyectoOut,
+    MunicipalidadOut,
+    ProvinciaBasicOut,
+    DistritoBasicOut,
+    ProyectistaOut,
+    DelegadoOut,
+    RevisionOut,
+    TarifaOut,
+    TotalesOut,
+    ContactoEdificacionOut,
+    ValoresOut,
 )
 
 
@@ -29,75 +47,74 @@ class LiquidacionEdificacionesPresenter:
     """
 
     @staticmethod
-    def present_snapshot(result: LiquidacionEdificacionesResult) -> LiquidacionSnapshotOut:
-        """
-        Transforma un LiquidacionEdificacionesResult a LiquidacionSnapshotOut.
-
-        Args:
-            result: LiquidacionEdificacionesResult del flujo
-
-        Returns:
-            LiquidacionSnapshotOut schema para respuesta HTTP
-        """
-        # Construir entidad si existe
-        entidad = None
-        if result.proyecto_entidad_id:
-            from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import EntidadOut
-            entidad = EntidadOut(
-                id=result.proyecto_entidad_id,
-                tipo=result.proyecto_entidad_tipo,
-                nombre=result.proyecto_entidad_nombre,
-                ruc=result.proyecto_entidad_ruc,
-            )
-
-        # Construir proyecto (sin proyectista — ahora vive en edificaciones)
-        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import ProyectoOut
-        proyecto = ProyectoOut(
-            id=result.proyecto_id,
-            public_id=result.proyecto_public_id,
-            nombre=result.proyecto_nombre,
-            direccion=result.proyecto_direccion,
-            valor_proyecto=float(result.valor_proyecto),
-            entidad=entidad,
-        )
-
-        # Construir municipalidad anidada
+    def _build_municipalidad_out(municipalidad_id, municipalidad_nombre) -> "MunicipalidadOut":
+        """Helper para construir MunicipalidadesSnapshotOut/MunicipalidadOut."""
         from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
-            LiquidacionOut,
-            MunicipalidadesSnapshotOut,
-            ProvinciaBasicSnapshotOut,
-            DistritoBasicSnapshotOut,
+            MunicipalidadOut,
         )
-        # Para la respuesta de crear_primera_revision, no tenemos toda la info de provincia/distrito
-        # ya que LiquidacionEdificacionesResult solo tiene municipalidad_id y municipalidad_nombre
-        municipalidad = MunicipalidadesSnapshotOut(
-            id=result.municipalidad_id,
-            nombre=result.municipalidad_nombre,
+        return MunicipalidadOut(
+            id=municipalidad_id or uuid.UUID('00000000-0000-0000-0000-000000000000'),
+            nombre=municipalidad_nombre or '',
             codigo=None,
             provincia=None,
             distrito=None,
         )
 
-        # Construir liquidacion (con expediente)
-        liquidacion = LiquidacionOut(
-            id=result.liquidacion_id,
-            public_id=result.liquidacion_public_id,
-            estado=result.estado,
-            fecha_creacion=result.fecha_creacion,
-            proyecto=proyecto,
-            municipalidad=municipalidad,
-            expediente=getattr(result, 'expediente', None),
-            observacion=result.observacion or '',
+    @staticmethod
+    def present(result: LiquidacionEdificacionesResult) -> LiquidacionEdificacionOut:
+        """
+        Transforma un LiquidacionEdificacionesResult (plano) a LiquidacionEdificacionOut.
+
+        Este es el método primario de presentación para los endpoints de lectura y creación
+        de liquidaciones de edificaciones (excepto cotizar).
+
+        Args:
+            result: LiquidacionEdificacionesResult con campos planos (Phase 2 refactor)
+
+        Returns:
+            LiquidacionEdificacionOut schema para respuesta HTTP
+        """
+        # ── Entidad ─────────────────────────────────────────────────────────────
+        entidad = None
+        if result.entidad_id or result.entidad_nombre:
+            entidad = EntidadOut(
+                id=result.entidad_id,
+                tipo=result.entidad_tipo,
+                nombre=result.entidad_nombre,
+                ruc=result.entidad_ruc,
+            )
+
+        # ── Proyecto ───────────────────────────────────────────────────────────
+        proyecto = ProyectoOut(
+            id=result.proyecto_id or uuid.UUID('00000000-0000-0000-0000-000000000000'),
+            public_id=result.proyecto_public_id or '',
+            nombre=result.proyecto_nombre or '',
+            direccion=result.proyecto_direccion,
+            valor_proyecto=float(result.valor_proyecto) if result.valor_proyecto else 0.0,
+            entidad=entidad,
         )
 
-        # Construir proyectistas desde edificaciones_proyectistas (ahora en result, no en proyecto)
-        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import ProyectistaOut
-        from modules.liquidaciones.domain.models import Proyectista
-        edificaciones_proyectistas = []
-        for p in result.edificaciones_proyectistas:
-            if isinstance(p, dict):
-                # Dict desde snapshot - nuevo formato con perfil_ingeniero_*
-                edificaciones_proyectistas.append(ProyectistaOut(
+        # ── Municipalidad ──────────────────────────────────────────────────────
+        municipalidad = LiquidacionEdificacionesPresenter._build_municipalidad_out(
+            result.municipalidad_id, result.municipalidad_nombre
+        )
+
+        # ── Proyectistas ───────────────────────────────────────────────────────
+        proyectistas_out = []
+        for p in result.proyectistas:
+            if isinstance(p, ProyectistaEdificacionData):
+                proyectistas_out.append(ProyectistaOut(
+                    id=p.id,
+                    perfil_ingeniero_id=p.perfil_ingeniero_id,
+                    perfil_ingeniero_nombres=p.perfil_ingeniero_nombres,
+                    perfil_ingeniero_apellidos=p.perfil_ingeniero_apellidos,
+                    perfil_ingeniero_cip=p.perfil_ingeniero_cip,
+                    especialidad_id=p.especialidad_id,
+                    especialidad_nombre=p.especialidad_nombre,
+                    descripcion=p.descripcion,
+                ))
+            elif isinstance(p, dict):
+                proyectistas_out.append(ProyectistaOut(
                     id=p.get('id'),
                     perfil_ingeniero_id=p.get('perfil_ingeniero_id'),
                     perfil_ingeniero_nombres=p.get('perfil_ingeniero_nombres'),
@@ -107,23 +124,9 @@ class LiquidacionEdificacionesPresenter:
                     especialidad_nombre=p.get('especialidad_nombre'),
                     descripcion=p.get('descripcion'),
                 ))
-            elif isinstance(p, Proyectista):
-                # Proyectista model instance - acceder via perfil_ingeniero FK
-                perfil = p.perfil_ingeniero
-                edificaciones_proyectistas.append(ProyectistaOut(
-                    id=p.id,
-                    perfil_ingeniero_id=str(p.perfil_ingeniero_id) if p.perfil_ingeniero_id else None,
-                    perfil_ingeniero_nombres=getattr(perfil, 'nombres', None) if perfil else None,
-                    perfil_ingeniero_apellidos=f"{getattr(perfil, 'apellido_paterno', '') if perfil else ''} {getattr(perfil, 'apellido_materno', '') if perfil else ''}".strip() or None,
-                    perfil_ingeniero_cip=getattr(perfil, 'cip', None) if perfil else None,
-                    especialidad_id=str(p.especialidad_id) if p.especialidad_id else None,
-                    especialidad_nombre=p.especialidad.nombre if p.especialidad else None,
-                    descripcion=p.descripcion,
-                ))
             else:
-                # ProyectistaSnapshotData u otro schema object
-                edificaciones_proyectistas.append(ProyectistaOut(
-                    id=p.id,
+                proyectistas_out.append(ProyectistaOut(
+                    id=getattr(p, 'id', None),
                     perfil_ingeniero_id=getattr(p, 'perfil_ingeniero_id', None),
                     perfil_ingeniero_nombres=getattr(p, 'perfil_ingeniero_nombres', None),
                     perfil_ingeniero_apellidos=getattr(p, 'perfil_ingeniero_apellidos', None),
@@ -133,17 +136,22 @@ class LiquidacionEdificacionesPresenter:
                     descripcion=getattr(p, 'descripcion', None),
                 ))
 
-        # Construir revisiones de edificaciones
-        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
-            DelegadoOut,
-            EdificacionesOut,
-            RevisionOut,
-            TarifaOut,
-        )
-        edificaciones_delegados = []
-        for d in result.edificaciones_delegados:
-            if isinstance(d, dict):
-                edificaciones_delegados.append(DelegadoOut(
+        # ── Delegados ──────────────────────────────────────────────────────────
+        delegados_out = []
+        for d in result.delegados:
+            if isinstance(d, DelegadoEdificacionData):
+                delegados_out.append(DelegadoOut(
+                    id=d.id,
+                    perfil_ingeniero_id=d.perfil_ingeniero_id,
+                    perfil_ingeniero_nombres=d.perfil_ingeniero_nombres,
+                    perfil_ingeniero_apellidos=d.perfil_ingeniero_apellidos,
+                    perfil_ingeniero_cip=d.perfil_ingeniero_cip,
+                    especialidad_id=d.especialidad_id,
+                    especialidad_nombre=d.especialidad_nombre,
+                    tipo=d.tipo,
+                ))
+            elif isinstance(d, dict):
+                delegados_out.append(DelegadoOut(
                     id=d.get('id'),
                     perfil_ingeniero_id=d.get('perfil_ingeniero_id'),
                     perfil_ingeniero_nombres=d.get('perfil_ingeniero_nombres'),
@@ -154,7 +162,7 @@ class LiquidacionEdificacionesPresenter:
                     tipo=d.get('tipo'),
                 ))
             else:
-                edificaciones_delegados.append(DelegadoOut(
+                delegados_out.append(DelegadoOut(
                     id=getattr(d, 'id', None),
                     perfil_ingeniero_id=getattr(d, 'perfil_ingeniero_id', None),
                     perfil_ingeniero_nombres=getattr(d, 'perfil_ingeniero_nombres', None),
@@ -165,28 +173,105 @@ class LiquidacionEdificacionesPresenter:
                     tipo=getattr(d, 'tipo', None),
                 ))
 
-        edificaciones_revisiones = []
-        for rev in result.edificaciones_revisiones:
-            # rev puede ser un dict o un EdificacionRevisionData
-            # NOTE: numero_revision fue removido de cada revisión — solo existe en nivel edificaciones
+        # ── Contactos ──────────────────────────────────────────────────────────
+        contactos_out = []
+        for c in result.contactos:
+            if isinstance(c, ContactoData):
+                contactos_out.append(ContactoEdificacionOut(
+                    id=c.id,
+                    nombres=c.nombres,
+                    apellidos=c.apellidos,
+                    dni=c.dni,
+                    cargo=c.cargo,
+                    telefono=c.telefono,
+                    celular=c.celular,
+                    email=c.email,
+                    direccion=c.direccion,
+                    principal=c.principal,
+                    descripcion=c.descripcion,
+                ))
+            elif isinstance(c, dict):
+                contactos_out.append(ContactoEdificacionOut(
+                    id=c.get('id'),
+                    nombres=c.get('nombres'),
+                    apellidos=c.get('apellidos'),
+                    dni=c.get('dni'),
+                    cargo=c.get('cargo'),
+                    telefono=c.get('telefono'),
+                    celular=c.get('celular'),
+                    email=c.get('email'),
+                    direccion=c.get('direccion'),
+                    principal=c.get('principal', False),
+                    descripcion=c.get('descripcion'),
+                ))
+            else:
+                contactos_out.append(ContactoEdificacionOut(
+                    id=getattr(c, 'id', None),
+                    nombres=getattr(c, 'nombres', None),
+                    apellidos=getattr(c, 'apellidos', None),
+                    dni=getattr(c, 'dni', None),
+                    cargo=getattr(c, 'cargo', None),
+                    telefono=getattr(c, 'telefono', None),
+                    celular=getattr(c, 'celular', None),
+                    email=getattr(c, 'email', None),
+                    direccion=getattr(c, 'direccion', None),
+                    principal=getattr(c, 'principal', False),
+                    descripcion=getattr(c, 'descripcion', None),
+                ))
+
+        # ── Revisiones ─────────────────────────────────────────────────────────
+        revisiones_out = []
+        for rev in result.revisiones:
             if isinstance(rev, EdificacionRevisionData):
-                edificaciones_revisiones.append(RevisionOut(
+                if rev.especialidades:
+                    especialidades_list = [
+                        EspecialidadOut(
+                            id=uuid.UUID(str(esp.id)) if not isinstance(esp.id, uuid.UUID) else esp.id,
+                            nombre=str(esp.nombre) if esp.nombre else '',
+                        )
+                        for esp in rev.especialidades
+                    ]
+                else:
+                    especialidades_list = [
+                        EspecialidadOut(
+                            id=uuid.UUID(str(rev.especialidad.id)) if not isinstance(rev.especialidad.id, uuid.UUID) else rev.especialidad.id,
+                            nombre=str(rev.especialidad.nombre) if rev.especialidad.nombre else '',
+                        )
+                    ]
+                revisiones_out.append(RevisionOut(
                     id=rev.id,
-                    especialidad=rev.especialidad.nombre if hasattr(rev.especialidad, 'nombre') else str(rev.especialidad),
+                    especialidades=especialidades_list,
                     tarifa=TarifaOut(
                         id=rev.tarifa.id,
                         derecho_minimo=float(rev.tarifa.derecho_minimo),
                         derecho_maximo=float(rev.tarifa.derecho_maximo) if rev.tarifa.derecho_maximo else None,
                         porcentaje_minimo_uit=float(rev.tarifa.porcentaje_minimo_uit),
                     ),
-                    monto_base=float(rev.monto_base) if hasattr(rev, 'monto_base') else 0.0,
-                    cobra=rev.cobra if hasattr(rev, 'cobra') else False,
+                    monto_base=0.0,
+                    cobra=False,
                 ))
-            else:
-                # fallback para dict
-                edificaciones_revisiones.append(RevisionOut(
+            elif isinstance(rev, dict):
+                esp_list = rev.get('especialidades', [])
+                if esp_list:
+                    especialidades_list = [
+                        EspecialidadOut(
+                            id=uuid.UUID(str(esp.get('id'))) if esp.get('id') else uuid.uuid4(),
+                            nombre=str(esp.get('nombre', '')) if esp.get('nombre') else '',
+                        )
+                        for esp in esp_list
+                    ]
+                else:
+                    tarifa_esp = rev.get('tarifa', {})
+                    singular_esp = rev.get('especialidad', '') or ''
+                    especialidades_list = [
+                        EspecialidadOut(
+                            id=uuid.UUID(str(tarifa_esp.get('id'))) if tarifa_esp.get('id') else uuid.uuid4(),
+                            nombre=str(singular_esp) if singular_esp else '',
+                        )
+                    ]
+                revisiones_out.append(RevisionOut(
                     id=str(rev.get('id', '')),
-                    especialidad=rev.get('especialidad', ''),
+                    especialidades=especialidades_list,
                     tarifa=TarifaOut(
                         id=str(rev.get('tarifa', {}).get('id', '')),
                         derecho_minimo=float(rev.get('tarifa', {}).get('derecho_minimo', 0)),
@@ -196,31 +281,51 @@ class LiquidacionEdificacionesPresenter:
                     monto_base=float(rev.get('monto_base', 0)),
                     cobra=rev.get('cobra', False),
                 ))
+            else:
+                revisiones_out.append(RevisionOut(
+                    id=getattr(rev, 'id', uuid.uuid4()),
+                    especialidades=[],
+                    tarifa=TarifaOut(
+                        id=getattr(getattr(rev, 'tarifa', None), 'id', uuid.uuid4()),
+                        derecho_minimo=0.0,
+                        derecho_maximo=None,
+                        porcentaje_minimo_uit=0.0,
+                    ),
+                    monto_base=0.0,
+                    cobra=False,
+                ))
 
-        edificaciones = EdificacionesOut(
-            public_id=result.edificaciones_public_id,
+        # ── Valores financieros ─────────────────────────────────────────────────
+        valores = ValoresOut(
+            subtotal=float(result.subtotal),
+            igv=float(result.igv),
+            total=float(result.total),
+            total_a_pagar=float(result.total_a_pagar),
+        )
+
+        # ── Armar LiquidacionEdificacionOut plano ────────────────────────────────
+        return LiquidacionEdificacionOut(
+            id=result.id,
+            public_id=result.public_id,
+            estado=result.estado,
+            fecha_registro=result.fecha_registro,
+            expediente=result.expediente,
+            observacion=result.observacion,
             numero_revision=result.numero_revision,
-            tipo_tramite=result.edificaciones_tipo_tramite,
-            tramite_accion=result.edificaciones_tramite_accion,
-            proyectistas=edificaciones_proyectistas,
-            delegados=edificaciones_delegados,
-            revisiones=edificaciones_revisiones,
-        )
-
-        # Construir totales
-        from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import TotalesOut
-        totales = TotalesOut(
-            subtotal=float(result.totales_subtotal),
-            igv=float(result.totales_igv),
-            total=float(result.totales_total_liquidacion),
-            liquidacion_total=float(result.totales_total_liquidacion),
-            total_a_pagar=float(result.totales_total_a_pagar),
-        )
-
-        return LiquidacionSnapshotOut(
-            liquidacion=liquidacion,
-            edificaciones=edificaciones,
-            totales=totales,
+            tipo_tramite=result.tipo_tramite,
+            tramite_accion=result.tramite_accion,
+            proyecto=proyecto,
+            entidad=entidad,
+            municipalidad=municipalidad,
+            valores=valores,
+            proyectistas=proyectistas_out,
+            delegados=delegados_out,
+            contactos=contactos_out,
+            revisiones=revisiones_out,
+            subtotal=float(result.subtotal),
+            igv=float(result.igv),
+            total=float(result.total),
+            total_a_pagar=float(result.total_a_pagar),
         )
 
     @staticmethod
@@ -290,7 +395,7 @@ class LiquidacionEdificacionesPresenter:
                     descripcion=p.descripcion,
                 ))
             else:
-                # ProyectistaSnapshotData u otro
+                # ProyectistaEdificacionData u otro
                 proyectistas_actuales.append(ProyectistaOut(
                     id=getattr(p, 'id', None),
                     perfil_ingeniero_id=getattr(p, 'perfil_ingeniero_id', None),
@@ -313,6 +418,7 @@ class LiquidacionEdificacionesPresenter:
             valor_base_calculo=float(result.valor_base_calculo),
             revisiones_vigentes=revisiones_vigentes,
             proyectistas_actuales=proyectistas_actuales,
+            tipo_tramite=result.tipo_tramite,
         )
 
     @staticmethod
@@ -328,9 +434,21 @@ class LiquidacionEdificacionesPresenter:
         """
         cotizacion_revisiones = []
         for rev in result.revisiones:
+            # rev.especialidades contains EspecialidadBasicaResult objects with id: uuid.UUID (stored as string internally)
+            # Explicitly convert to handle string-to-UUID coercion
+            if rev.especialidades:
+                especialidades_out = [
+                    EspecialidadBasicaOut(
+                        id=uuid.UUID(str(esp.id)) if not isinstance(esp.id, uuid.UUID) else esp.id,
+                        nombre=str(esp.nombre) if esp.nombre else '',
+                    )
+                    for esp in rev.especialidades
+                ]
+            else:
+                especialidades_out = []
             cotizacion_revisiones.append(CotizacionRevisionOut(
                 id=rev.id,
-                especialidad=rev.especialidad,
+                especialidades=especialidades_out,
                 tarifa=CotizacionTarifaOut(
                     id=rev.tarifa.id,
                     derecho_minimo=float(rev.tarifa.derecho_minimo),
@@ -355,6 +473,7 @@ class LiquidacionEdificacionesPresenter:
                 igv_valor=float(result.metadata.igv_valor),
                 uit_valor=float(result.metadata.uit_valor),
                 cobra=result.metadata.cobra,
+                valor_base_calculo=float(result.metadata.valor_base_calculo),
             ),
         )
 

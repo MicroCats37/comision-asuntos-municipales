@@ -15,17 +15,14 @@ class EntidadInstitucionIn(Schema):
     razon_social: str = Field(..., min_length=1, max_length=255, description="Razón social")
     nombre_comercial: Optional[str] = Field(None, max_length=255, description="Nombre comercial")
     direccion: Optional[str] = Field(None, max_length=255, description="Dirección")
-    distrito_id: Optional[uuid.UUID] = Field(None, description="ID del distrito (UUID)")
 
 
 class EntidadPersonaNaturalIn(Schema):
     """Payload para crear/upsert entidad tipo persona natural (DNI)."""
     tipo_documento: str = Field("DNI", description="Tipo de documento: DNI para personas naturales")
     numero_documento: str = Field(..., min_length=8, max_length=8, description="DNI (8 dígitos)")
-    nombres: str = Field(..., min_length=1, max_length=255, description="Nombres")
-    apellidos: str = Field(..., min_length=1, max_length=255, description="Apellidos")
+    razon_social: str = Field(..., min_length=1, max_length=255, description="Nombre completo (nombres + apellidos)")
     direccion: Optional[str] = Field(None, max_length=255, description="Dirección")
-    distrito_id: Optional[uuid.UUID] = Field(None, description="ID del distrito (UUID)")
 
 
 class EntidadOut(Schema):
@@ -34,12 +31,8 @@ class EntidadOut(Schema):
     tipo_documento: str
     numero_documento: str
     razon_social: Optional[str]
-    nombres: Optional[str]
-    apellidos: Optional[str]
     nombre_completo: str
     direccion: Optional[str]
-    distrito_id: Optional[uuid.UUID]
-    activo: bool
 
 
 class EntidadUpsertResponseOut(Schema):
@@ -48,12 +41,8 @@ class EntidadUpsertResponseOut(Schema):
     tipo_documento: str
     numero_documento: str
     razon_social: Optional[str]
-    nombres: Optional[str]
-    apellidos: Optional[str]
     nombre_completo: str
     direccion: Optional[str]
-    distrito_id: Optional[uuid.UUID]
-    activo: bool
     creado: bool  # True si se creó, False si se actualizó
 
 

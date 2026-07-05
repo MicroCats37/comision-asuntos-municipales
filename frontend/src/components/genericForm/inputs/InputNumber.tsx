@@ -9,7 +9,7 @@ import type { InputComponentProps } from "./types";
 /**
  * Input numérico.
  * Usa valueAsNumber de react-hook-form para conversión automática.
- * Soporta icono opcional a la izquierda.
+ * Soporta min/step para restricciones nativas del navegador.
  */
 export const InputNumber: React.FC<InputComponentProps> = ({
   field,
@@ -26,6 +26,8 @@ export const InputNumber: React.FC<InputComponentProps> = ({
       type="number"
       placeholder={field.placeholder}
       disabled={field.disabled}
+      min={field.min}
+      step={field.step}
       aria-invalid={!!error}
       className={`${hasIcon ? "pl-10" : ""} ${field.className || ""}`}
       {...register(field.name, { valueAsNumber: true })}

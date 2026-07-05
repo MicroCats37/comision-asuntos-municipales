@@ -51,6 +51,8 @@ interface SearchableSelectProps {
   errorMessage?: string;
   /** Whether to render the visible Label. Defaults to true. Set false when used inside GenericInput wrapper. */
   showLabel?: boolean;
+  /** Hides the error message text but keeps border styling. Use when GenericInput's FieldWrapper renders the error. Defaults to false. */
+  hideErrorMessage?: boolean;
 }
 
 export function SearchableSelect({
@@ -66,6 +68,7 @@ export function SearchableSelect({
   error = false,
   errorMessage,
   showLabel = true,
+  hideErrorMessage = false,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -289,7 +292,7 @@ export function SearchableSelect({
           </div>
         </PopoverContent>
       </Popover>
-      {error && errorMessage && (
+      {error && errorMessage && !hideErrorMessage && (
         <p className="text-sm text-destructive font-medium">{errorMessage}</p>
       )}
     </div>

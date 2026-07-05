@@ -22,22 +22,15 @@ class EntidadesCoreService:
             tipo_documento=data.tipo_documento,
             numero_documento=data.numero_documento,
             razon_social=data.razon_social,
-            nombres=data.nombres,
-            apellidos=data.apellidos,
             nombre_comercial=data.nombre_comercial,
             direccion=data.direccion,
-            distrito_id=data.distrito_id,
         )
 
     def _actualizar_entidad(self, entidad: Entidad, data: EntidadCreateData) -> Entidad:
         """Actualiza una entidad existente."""
         entidad.razon_social = data.razon_social
-        entidad.nombres = data.nombres
-        entidad.apellidos = data.apellidos
         entidad.nombre_comercial = data.nombre_comercial
         entidad.direccion = data.direccion
-        if data.distrito_id:
-            entidad.distrito_id = data.distrito_id
         entidad.save()
         return entidad
 
@@ -52,12 +45,8 @@ class EntidadesCoreService:
             tipo_documento=entidad.tipo_documento,
             numero_documento=entidad.numero_documento,
             razon_social=entidad.razon_social,
-            nombres=entidad.nombres,
-            apellidos=entidad.apellidos,
             nombre_completo=entidad.nombre_completo,
             direccion=entidad.direccion,
-            distrito_id=entidad.distrito_id,
-            activo=entidad.activo,
         )
 
     def _obtener_distritos(

@@ -1,14 +1,21 @@
 "use client";
 
-import { User, Award, CheckCircle2, XCircle, Loader2, Search } from "lucide-react";
-import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  Award,
+  CheckCircle2,
+  Loader2,
+  Search,
+  User,
+  XCircle,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
 import { GenericInput } from "@/components/genericForm/GenericInput";
+import { Button } from "@/components/ui/button";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { useIngenieroHabilitado } from "../hooks/useIngenieroHabilitado";
 import { notify } from "@/errors";
+import { useIngenieroHabilitado } from "../hooks/useIngenieroHabilitado";
 import type { ProyectistaFormModalProps } from "../types/liquidacion-edificaciones-form.types";
 import type { ProyectistaInline } from "../types/proyectista";
 
@@ -40,8 +47,12 @@ export function ProyectistaFormModal({
   const canSearch = digits.length >= 3 && digits.length <= 6;
 
   // Query ingeniero habilitado when cipToQuery is set (triggered by Buscar)
-  const { data: ingeniero, isFetching, isFetched, error } =
-    useIngenieroHabilitado(cipToQuery);
+  const {
+    data: ingeniero,
+    isFetching,
+    isFetched,
+    error,
+  } = useIngenieroHabilitado(cipToQuery);
 
   // After query completes, determine the validation outcome
   const queryDone = isFetched && !isFetching;
@@ -53,7 +64,9 @@ export function ProyectistaFormModal({
   useEffect(() => {
     if (!methodsRef.current) return;
     if (ingenieroFound && ingeniero?.cip) {
-      methodsRef.current.setValue("cip", ingeniero.cip, { shouldValidate: true });
+      methodsRef.current.setValue("cip", ingeniero.cip, {
+        shouldValidate: true,
+      });
     }
   }, [ingenieroFound, ingeniero?.cip]);
 
@@ -228,7 +241,9 @@ export function ProyectistaFormModal({
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Apellidos</p>
-                      <p className="text-sm font-medium">{ingeniero.apellidos}</p>
+                      <p className="text-sm font-medium">
+                        {ingeniero.apellidos}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">CIP</p>

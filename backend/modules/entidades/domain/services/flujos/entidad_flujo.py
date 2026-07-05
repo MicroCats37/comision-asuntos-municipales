@@ -22,11 +22,8 @@ class EntidadFlujo:
         tipo_documento: str,
         numero_documento: str,
         razon_social: str | None,
-        nombres: str | None,
-        apellidos: str | None,
         nombre_comercial: str | None,
         direccion: str | None,
-        distrito_id: str | None,
     ) -> tuple[EntidadResult, bool]:
         """
         Proceso para crear o actualizar una entidad.
@@ -38,11 +35,8 @@ class EntidadFlujo:
             tipo_documento=tipo_documento,
             numero_documento=numero_documento,
             razon_social=razon_social,
-            nombres=nombres,
-            apellidos=apellidos,
             nombre_comercial=nombre_comercial,
             direccion=direccion,
-            distrito_id=distrito_id,
         )
 
         # Buscar si existe

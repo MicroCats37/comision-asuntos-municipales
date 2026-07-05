@@ -1,11 +1,11 @@
 "use client";
 
-import { Phone, User, Mail, MapPin, Briefcase } from "lucide-react";
-import { z } from "zod";
+import { Briefcase, Mail, MapPin, Phone, User } from "lucide-react";
+import type { z } from "zod";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import type { ContactoFormModalProps } from "../types/liquidacion-edificaciones-form.types";
-import type { ContactoInline } from "../types/contacto";
 import { contactoInlineSchema } from "../schemas/liquidacion-edificaciones-form.schema";
+import type { ContactoInline } from "../types/contacto";
+import type { ContactoFormModalProps } from "../types/liquidacion-edificaciones-form.types";
 
 type ContactoFormData = z.infer<typeof contactoInlineSchema>;
 
@@ -148,7 +148,9 @@ export function ContactoFormModal({
               </div>
 
               <div>
-                <label className="text-sm font-medium text-primary">Cargo</label>
+                <label className="text-sm font-medium text-primary">
+                  Cargo
+                </label>
                 <input
                   type="text"
                   {...methods.register("cargo")}
@@ -170,7 +172,9 @@ export function ContactoFormModal({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-primary">Teléfono</label>
+                <label className="text-sm font-medium text-primary">
+                  Teléfono
+                </label>
                 <input
                   type="text"
                   {...methods.register("telefono")}
@@ -180,7 +184,9 @@ export function ContactoFormModal({
               </div>
 
               <div>
-                <label className="text-sm font-medium text-primary">Celular</label>
+                <label className="text-sm font-medium text-primary">
+                  Celular
+                </label>
                 <input
                   type="text"
                   {...methods.register("celular")}
@@ -206,7 +212,9 @@ export function ContactoFormModal({
             </div>
 
             <div>
-              <label className="text-sm font-medium text-primary">Dirección</label>
+              <label className="text-sm font-medium text-primary">
+                Dirección
+              </label>
               <input
                 type="text"
                 {...methods.register("direccion")}
@@ -232,13 +240,18 @@ export function ContactoFormModal({
                 {...methods.register("principal")}
                 className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
               />
-              <label htmlFor="principal" className="text-sm font-medium cursor-pointer">
+              <label
+                htmlFor="principal"
+                className="text-sm font-medium cursor-pointer"
+              >
                 Contacto principal
               </label>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-primary">Descripción / Nota</label>
+              <label className="text-sm font-medium text-primary">
+                Descripción / Nota
+              </label>
               <textarea
                 {...methods.register("descripcion")}
                 className="flex w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1.5 resize-none"

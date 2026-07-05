@@ -36,6 +36,10 @@ export interface FieldConfig {
   // Type coercion
   valueType?: "string" | "number" | "boolean";
   defaultValue?: unknown;
+
+  // Number-specific
+  min?: number;
+  step?: number;
 }
 
 /** Props que recibe cada componente de input del registry */
@@ -47,6 +51,8 @@ export interface InputComponentProps<
   control: Control<TFieldValues>;
   error?: { message?: string };
   id: string;
+  /** When true, the input component should not render error messages (GenericInput's wrapper handles it). Defaults to false. */
+  hideErrorMessage?: boolean;
 }
 
 /** Tipo para los componentes del registry */

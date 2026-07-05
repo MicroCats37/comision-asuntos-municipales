@@ -3,11 +3,11 @@
  * Usa useApiCreate genérico del proyecto.
  */
 import { useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
+import type { z } from "zod";
 import { useApiCreate } from "@/hooks";
-import { liquidacionSnapshotResponseSchema } from "../schemas/liquidacion.schema";
+import { liquidacionEdificacionOutResponseSchema } from "../schemas/liquidacion.schema";
 import type {
-  LiquidacionSnapshot,
+  LiquidacionEdificacionOut,
   PrimeraRevisionFormData,
 } from "../types/liquidacion-edificaciones";
 
@@ -17,11 +17,11 @@ export function useCrearPrimeraRevision() {
   const queryClient = useQueryClient();
 
   const mutation = useApiCreate<
-    z.infer<typeof liquidacionSnapshotResponseSchema>,
+    z.infer<typeof liquidacionEdificacionOutResponseSchema>,
     { liquidacion: PrimeraRevisionFormData }
   >({
     url: `${BASE_URL}/primera-revision`,
-    schema: liquidacionSnapshotResponseSchema,
+    schema: liquidacionEdificacionOutResponseSchema,
     options: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["liquidaciones"] });
@@ -30,13 +30,17 @@ export function useCrearPrimeraRevision() {
   });
 
   // Wrapper that formats payload as { liquidacion: ... } for the API
+  // and extracts the flat LiquidacionEdificacionOut from the response
   const crearMutation = {
     ...mutation,
     mutate: (payload: PrimeraRevisionFormData) => {
       mutation.mutate({ liquidacion: payload });
     },
-    mutateAsync: async (payload: PrimeraRevisionFormData) => {
-      return mutation.mutateAsync({ liquidacion: payload });
+    mutateAsync: async (
+      payload: PrimeraRevisionFormData,
+    ): Promise<LiquidacionEdificacionOut> => {
+      const result = await mutation.mutateAsync({ liquidacion: payload });
+      return (result as { data: LiquidacionEdificacionOut }).data;
     },
   };
 

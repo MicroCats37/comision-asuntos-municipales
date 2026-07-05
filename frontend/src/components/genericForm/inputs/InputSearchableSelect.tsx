@@ -18,6 +18,7 @@ export const InputSearchableSelect: React.FC<InputComponentProps> = ({
   control,
   error,
   id,
+  hideErrorMessage = false,
 }) => {
   if (!field.options) {
     console.warn(
@@ -88,6 +89,7 @@ export const InputSearchableSelect: React.FC<InputComponentProps> = ({
             errorMessage={error?.message}
             className={field.className}
             showLabel={false}
+            hideErrorMessage={hideErrorMessage}
           />
         );
       }}

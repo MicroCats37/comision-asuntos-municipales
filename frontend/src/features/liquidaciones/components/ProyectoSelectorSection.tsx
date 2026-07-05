@@ -60,8 +60,6 @@ export function ProyectoSelectorSection({
                 )}
               </div>
             )}
-
-
           </div>
         </div>
       ) : (

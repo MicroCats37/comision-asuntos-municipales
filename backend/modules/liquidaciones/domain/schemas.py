@@ -31,9 +31,18 @@ class EspecialidadData(BaseModel):
 
 
 class EdificacionRevisionData(BaseModel):
-    """Datos de una revisión de edificación."""
+    """
+    Datos de una revisión de edificación.
+
+    Una revisión puede cubrir múltiples especialidades (M2M).
+    El campo `especialidad` (singular) se conserva por compatibilidad con el
+   API response/presenter — contiene la primera especialidad.
+    El campo `especialidades` (plural) contiene TODAS las especialidades M2M
+    y se usa para validación y lógica de negocio.
+    """
     id: uuid.UUID
     especialidad: EspecialidadData
+    especialidades: Optional[list[EspecialidadData]] = None  # Todas las M2M
     tarifa: TarifaEdificacionData
     porcentaje_liquidacion: Decimal
     habilitada: bool
@@ -41,38 +50,59 @@ class EdificacionRevisionData(BaseModel):
 
 
 class LiquidacionEdificacionesResult(BaseModel):
-    """Resultado completo de una liquidación de edificaciones."""
-    liquidacion_id: uuid.UUID
-    liquidacion_public_id: str
-    numero_revision: int
+    """
+    DTO interno de dominio para armar el resultado de una liquidación de edificaciones.
+
+    Es un DTO de ensamblaje plano (todos los campos a nivel raíz) que el Presenter
+    recibe y transforma al schema HTTP ``LiquidacionEdificacionOut``, el cual SÍ tiene
+    objetos anidados para ``proyecto``, ``entidad``, ``municipalidad``, ``valores``,
+    ``proyectistas``, ``delegados``, ``contactos`` y ``revisiones``.
+
+    Campos:
+        id, public_id, estado, fecha_registro, expediente, observacion,
+        numero_revision, tipo_tramite, tramite_accion,
+        entidad_* (nested flat), proyecto_* (nested flat), municipalidad_* (nested flat),
+        proyectistas, delegados, contactos, revisiones,
+        subtotal, igv, total, total_a_pagar
+    """
+    # ── Campos scalar (nivel raíz) ──────────────────────────────────────────────
+    id: uuid.UUID  # liquidacion_id
+    public_id: str  # liquidacion_public_id
     estado: str
-    fecha_creacion: str
-    proyecto_id: uuid.UUID
-    proyecto_public_id: str
-    proyecto_nombre: str
-    proyecto_direccion: Optional[str]
-    proyecto_entidad_id: Optional[uuid.UUID]
-    proyecto_entidad_tipo: Optional[str]
-    proyecto_entidad_nombre: Optional[str]
-    proyecto_entidad_ruc: Optional[str]
-    municipalidad_id: uuid.UUID
-    municipalidad_nombre: str
+    fecha_registro: str  # fecha_creacion renombrado
     expediente: Optional[str] = None
-    # proyectistas ahora van en edificaciones_proyectistas, no en proyecto
-    edificaciones_proyectistas: list = Field(default_factory=list)  # list of ProyectistaSnapshotData
-    edificaciones_delegados: list = Field(default_factory=list)  # list of DelegadoSnapshotData
-    edificaciones_public_id: str
-    edificaciones_tipo_tramite: str
-    edificaciones_tramite_accion: str
-    observacion: Optional[str]
-    edificaciones_revisiones: list[EdificacionRevisionData]
+    observacion: Optional[str] = None
+    numero_revision: int
+    tipo_tramite: str  # edificaciones_tipo_tramite
+    tramite_accion: str  # edificaciones_tramite_accion
+    # ── Campos anidados (construidos en builder desde datos related) ────────────
+    # Entidad (nested)
+    entidad_id: Optional[uuid.UUID] = None
+    entidad_tipo: Optional[str] = None
+    entidad_nombre: Optional[str] = None
+    entidad_ruc: Optional[str] = None
+    # Proyecto (nested) — campos sueltos que el presenter combina
+    proyecto_id: Optional[uuid.UUID] = None
+    proyecto_public_id: Optional[str] = None
+    proyecto_nombre: Optional[str] = None
+    proyecto_direccion: Optional[str] = None
+    # Municipalidad (nested)
+    municipalidad_id: Optional[uuid.UUID] = None
+    municipalidad_nombre: Optional[str] = None
+    # ── Listas ─────────────────────────────────────────────────────────────────
+    proyectistas: list = Field(default_factory=list)  # ProyectistaEdificacionData
+    delegados: list = Field(default_factory=list)  # DelegadoEdificacionData
+    contactos: list = Field(default_factory=list)  # ContactoData (nuevos en Phase 2)
+    revisiones: list[EdificacionRevisionData] = Field(default_factory=list)
+    # ── Campos financieros directos (también van en valores nested) ──────────────
+    subtotal: Decimal  # totales_subtotal
+    igv: Decimal  # totales_igv
+    total: Decimal  # totales_total_liquidacion
+    total_a_pagar: Decimal  # totales_total_a_pagar
+    # ── Variables financieras (para reference nomás) ────────────────────────────
     igv_valor: Decimal
     uit_valor: Decimal
     valor_proyecto: Decimal
-    totales_subtotal: Decimal
-    totales_igv: Decimal
-    totales_total_liquidacion: Decimal
-    totales_total_a_pagar: Decimal
 
 
 class NuevaRevisionFormularioResult(BaseModel):
@@ -85,8 +115,9 @@ class NuevaRevisionFormularioResult(BaseModel):
     proyecto_nombre: str
     valor_proyecto: Decimal
     valor_base_calculo: Decimal
-    revisiones_vigentes: list[EdificacionRevisionData]
-    proyectistas_actuales: list = Field(default_factory=list)  # list of ProyectistaSnapshotData
+    revisiones_vigentes: "list[RevisionVigenteResult]"
+    proyectistas_actuales: list = Field(default_factory=list)  # list of ProyectistaEdificacionData
+    tipo_tramite: str  # Tipo de trámite de la liquidación previa
 
 
 class LiquidacionEdificacionesListItem(BaseModel):
@@ -106,65 +137,12 @@ class LiquidacionEdificacionesPaginatedResult(BaseModel):
     items: list[LiquidacionEdificacionesListItem]
     total: int
 
-
 # =============================================================================
-# Snapshot schemas — typed DTOs para el payload JSON del LiquidacionSnapshot
+# Proyectista y Delegado para resultados de edificaciones
 # =============================================================================
 
-class ProvinciaBasicSnapshotData(BaseModel):
-    """Provincia básica anidada dentro de DistritoSnapshotData y MunicipalidadesSnapshotData."""
-    id: uuid.UUID
-    nombre: str
-
-
-class DistritoBasicSnapshotData(BaseModel):
-    """Distrito básico anidado dentro de MunicipalidadesSnapshotData y ProyectoSnapshotData."""
-    id: uuid.UUID
-    nombre: str
-    provincia: Optional[ProvinciaBasicSnapshotData] = None
-
-
-class MunicipalidadesSnapshotData(BaseModel):
-    """Municipalidad anidada dentro de LiquidacionSnapshotData."""
-    id: uuid.UUID
-    nombre: str
-    codigo: Optional[str] = None
-    provincia: Optional[ProvinciaBasicSnapshotData] = None
-    distrito: Optional[DistritoBasicSnapshotData] = None
-
-
-class TarifaSnapshotData(BaseModel):
-    """Tarifa embebida dentro de RevisionSnapshotData."""
-    id: uuid.UUID
-    derecho_minimo: str
-    derecho_maximo: Optional[str]
-    porcentaje_minimo_uit: str
-
-
-class RevisionSnapshotData(BaseModel):
-    """Una revisión individual dentro del snapshot de edificaciones.
-    
-    NOTE: numero_revision fue removido de cada revisión — ya no se repite.
-    El número de revisión vive solo en el nivel edificaciones (edificaciones.numero_revision).
-    """
-    id: uuid.UUID
-    especialidad: str
-    tarifa: TarifaSnapshotData
-    monto_base: float
-    cobra: bool
-    derecho: float
-
-
-class EntidadSnapshotData(BaseModel):
-    """Entidad anidada dentro de ProyectoSnapshotData."""
-    id: Optional[uuid.UUID]
-    tipo: Optional[str]
-    nombre: Optional[str]
-    ruc: Optional[str]
-
-
-class ProyectistaSnapshotData(BaseModel):
-    """Proyectista anidado dentro de EdificacionesSnapshotData.
+class ProyectistaEdificacionData(BaseModel):
+    """Proyectista anidado dentro de edificaciones en LiquidacionEdificacionesResult.
 
     NOTE: Actualizado para usar PerfilIngeniero referenciado.
     """
@@ -178,8 +156,8 @@ class ProyectistaSnapshotData(BaseModel):
     descripcion: Optional[str] = None
 
 
-class DelegadoSnapshotData(BaseModel):
-    """Delegado anidado dentro de EdificacionesSnapshotData."""
+class DelegadoEdificacionData(BaseModel):
+    """Delegado anidado dentro de edificaciones en LiquidacionEdificacionesResult."""
     id: uuid.UUID
     perfil_ingeniero_id: Optional[uuid.UUID] = None
     perfil_ingeniero_nombres: Optional[str] = None
@@ -188,70 +166,6 @@ class DelegadoSnapshotData(BaseModel):
     especialidad_id: Optional[uuid.UUID] = None
     especialidad_nombre: Optional[str] = None
     tipo: Optional[str] = None
-
-
-class ProyectoSnapshotData(BaseModel):
-    """Proyecto anidado dentro de LiquidacionSnapshotData."""
-    id: uuid.UUID
-    public_id: str
-    nombre: str
-    direccion: str
-    valor_proyecto: float
-    entidad: Optional[EntidadSnapshotData]
-    distrito: Optional[DistritoBasicSnapshotData] = None
-    # NOTE: proyectista ya no está en proyecto — ahora vive en LiquidacionEdificaciones.proyectistas
-
-
-class LiquidacionSnapshotData(BaseModel):
-    """Sección 'liquidacion' del snapshot completo."""
-    id: uuid.UUID
-    public_id: str
-    numero_liquidacion: str
-    estado: str
-    fecha_creacion: str
-    proyecto: ProyectoSnapshotData
-    municipalidad: MunicipalidadesSnapshotData
-    expediente: Optional[str] = None
-    observacion: str
-
-
-class EdificacionesSnapshotData(BaseModel):
-    """Sección 'edificaciones' del snapshot completo."""
-    public_id: str
-    numero_revision: int
-    tipo_tramite: str
-    tramite_accion: str
-    proyectistas: list[ProyectistaSnapshotData] = Field(default_factory=list)
-    delegados: list[DelegadoSnapshotData] = Field(default_factory=list)
-    revisiones: list[RevisionSnapshotData]
-
-
-class TotalesSnapshotData(BaseModel):
-    """Sección 'totales' del snapshot completo."""
-    subtotal: float
-    sub_total: Optional[float] = None
-    igv: float
-    total: float
-    liquidacion_total: float
-    total_a_pagar: float
-
-
-class MetadataSnapshotData(BaseModel):
-    """Sección '_metadata' interna del snapshot."""
-    igv_valor: float
-    uit_valor: float
-    cobra: bool
-
-
-class LiquidacionSnapshotResult(BaseModel):
-    """
-    Schema completo del snapshot de liquidación.
-    Se usa como tipo de retorno tipado en _proceso_obtener_liquidacion.
-    """
-    liquidacion: LiquidacionSnapshotData
-    edificaciones: EdificacionesSnapshotData
-    totales: TotalesSnapshotData
-    _metadata: MetadataSnapshotData
 
 
 # =============================================================================
@@ -280,6 +194,21 @@ class ContactoInlineData(BaseModel):
 
     nombres: str
     apellidos: str
+    dni: Optional[str] = None
+    cargo: Optional[str] = None
+    telefono: Optional[str] = None
+    celular: Optional[str] = None
+    email: Optional[str] = None
+    direccion: Optional[str] = None
+    principal: bool = False
+    descripcion: Optional[str] = None
+
+
+class ContactoData(BaseModel):
+    """Datos de contacto para resultado de liquidación de edificaciones."""
+    id: uuid.UUID
+    nombres: Optional[str] = None
+    apellidos: Optional[str] = None
     dni: Optional[str] = None
     cargo: Optional[str] = None
     telefono: Optional[str] = None
@@ -336,65 +265,12 @@ class RevisionCalculoData(BaseModel):
     """
     id: uuid.UUID
     numero_revision: int
-    especialidad: str
+    especialidad: str  # Keep for backward compat — first especialidad name
+    especialidades: list[EspecialidadBasicaResult]  # All M2M especialidades
     tarifa: TarifaCalculoData
     monto_base: Decimal
     cobra: bool
     derecho: Decimal
-
-
-# =============================================================================
-# Fallback snapshot result — cuando no hay snapshot guardado
-# =============================================================================
-
-class ProyectoFallbackData(BaseModel):
-    """Proyecto en resultado sin snapshot."""
-    id: uuid.UUID
-    public_id: str
-    nombre: str
-    direccion: str
-    valor_proyecto: float
-
-
-class LiquidacionFallbackData(BaseModel):
-    """Sección liquidacion para resultado sin snapshot."""
-    id: uuid.UUID
-    public_id: str
-    numero_liquidacion: str
-    estado: str
-    fecha_creacion: str
-    proyecto: ProyectoFallbackData
-    municipalidad: MunicipalidadesSnapshotData
-    expediente: Optional[str] = None
-    observacion: str
-
-
-class EdificacionesFallbackData(BaseModel):
-    """Sección edificaciones para resultado sin snapshot (vacía)."""
-    public_id: str = ""
-    numero_revision: int = 0
-    tipo_tramite: str = ""
-    tramite_accion: str = ""
-    revisiones: list
-
-
-class TotalesFallbackData(BaseModel):
-    """Sección totales para resultado sin snapshot (en cero)."""
-    subtotal: float
-    igv: float
-    total: float
-    liquidacion_total: float
-    total_a_pagar: float
-
-
-class LiquidacionSnapshotFallbackResult(BaseModel):
-    """
-    Schema para resultado sin snapshot — cuándo la liquidación existe
-    pero no tiene snapshot calculado aún.
-    """
-    liquidacion: LiquidacionFallbackData
-    edificaciones: EdificacionesFallbackData
-    totales: TotalesFallbackData
 
 
 # =============================================================================
@@ -404,7 +280,7 @@ class LiquidacionSnapshotFallbackResult(BaseModel):
 class CotizacionRevisionData(BaseModel):
     """Resultado de cálculo de una revisión individual en cotización."""
     id: uuid.UUID
-    especialidad: str
+    especialidades: list[EspecialidadBasicaResult]  # Plural: todas las especialidades M2M
     tarifa: TarifaCalculoData
     monto_base: Decimal
     cobra: bool
@@ -425,6 +301,7 @@ class CotizacionMetadataData(BaseModel):
     igv_valor: Decimal
     uit_valor: Decimal
     cobra: bool
+    valor_base_calculo: Decimal
 
 
 class CotizacionQuoteData(BaseModel):
@@ -469,3 +346,77 @@ class DelegadoVigenteResult(BaseModel):
 class DelegadosVigentesResult(BaseModel):
     """Wrapper para lista de delegados vigentes."""
     delegados: list[DelegadoVigenteResult]
+
+
+# =============================================================================
+# General Liquidation DTOs — para LiquidacionGeneralController (Phase 4)
+# =============================================================================
+
+
+class LiquidacionGeneralListItem(BaseModel):
+    """
+    Item de lista paginada para liquidaciones generales.
+
+    Incluye campos comunes a todos los tipos de liquidación.
+    """
+    id: uuid.UUID
+    public_id: str
+    estado: str
+    tipo_liquidacion: str  # Slug format: habilitacion-urbana, inspeccion-obra, etc.
+    numero_revision: int
+    proyecto_denominacion: str
+    proyecto_public_id: str
+    fecha_registro: str
+    total: float
+    # Campos adicionales para frontend no-edificación
+    expediente: Optional[str] = None
+    observacion: Optional[str] = None
+    municipalidad_id: Optional[uuid.UUID] = None
+    municipalidad_nombre: Optional[str] = None
+    # valor_caracteristico: área para M2, cantidad_visitas para IO (None para edificaciones)
+    valor_caracteristico: Optional[float] = None
+    # Campos financieros para construir totales anidados
+    subtotal: Optional[float] = None
+    igv: Optional[float] = None
+    total_a_pagar: Optional[float] = None
+
+
+class LiquidacionGeneralPaginatedResult(BaseModel):
+    """Resultado paginado para listado de liquidaciones generales."""
+    items: list[LiquidacionGeneralListItem]
+    total: int
+
+
+class LiquidacionGeneralResult(BaseModel):
+    """
+    DTO interno para detalle de una liquidación general.
+
+    Incluye campos comunes a todos los tipos de liquidación
+    más información específica del proyecto.
+    """
+    id: uuid.UUID
+    public_id: str
+    estado: str
+    tipo_liquidacion: str
+    numero_revision: int
+    fecha_registro: str
+    expediente: Optional[str] = None
+    observacion: Optional[str] = None
+    # Entidad
+    entidad_id: Optional[uuid.UUID] = None
+    entidad_tipo: Optional[str] = None
+    entidad_nombre: Optional[str] = None
+    entidad_ruc: Optional[str] = None
+    # Proyecto
+    proyecto_id: Optional[uuid.UUID] = None
+    proyecto_public_id: Optional[str] = None
+    proyecto_nombre: Optional[str] = None
+    proyecto_direccion: Optional[str] = None
+    # Municipalidad
+    municipalidad_id: Optional[uuid.UUID] = None
+    municipalidad_nombre: Optional[str] = None
+    # Campos financieros
+    subtotal: Optional[Decimal] = None
+    igv: Optional[Decimal] = None
+    total: Optional[Decimal] = None
+    total_a_pagar: Optional[Decimal] = None

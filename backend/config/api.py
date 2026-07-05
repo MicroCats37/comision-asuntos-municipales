@@ -12,8 +12,14 @@ from modules.usuarios.presentation.controllers.auth_controller import AuthLoginC
 from modules.usuarios.presentation.controllers.ingeniero_habilitado_controller import IngenieroHabilitadoController
 from modules.finanzas.presentation.controllers.finanzas_controller import FinanzasController
 from modules.liquidaciones.presentation.controllers.liquidacion_edificaciones_controller import LiquidacionEdificacionesController
+from modules.liquidaciones.presentation.controllers.liquidaciones_general_controller import LiquidacionesGeneralController
 from modules.liquidaciones.presentation.controllers.proyectista_controller import ProyectistaController
 from modules.liquidaciones.presentation.controllers.proyecto_controller import ProyectoController
+from modules.liquidaciones.presentation.controllers.habilitacion_urbana_controller import HabilitacionUrbanaController
+from modules.liquidaciones.presentation.controllers.mecanica_suelos_controller import MecanicaSuelosController
+from modules.liquidaciones.presentation.controllers.impacto_vial_controller import ImpactoVialController
+from modules.liquidaciones.presentation.controllers.taludes_controller import TaludesController
+from modules.liquidaciones.presentation.controllers.inspeccion_obra_controller import InspeccionObraController
 from modules.entidades.presentation.controllers.entidad_controller import EntidadesController
 from modules.entidades.presentation.controllers.consulta_controller import ConsultaController
 
@@ -77,8 +83,14 @@ api.register_controllers(FinanzasController)
 
 # ── Liquidaciones Controllers ─
 api.register_controllers(LiquidacionEdificacionesController)
+api.register_controllers(LiquidacionesGeneralController)
 api.register_controllers(ProyectistaController)
 api.register_controllers(ProyectoController)
+api.register_controllers(HabilitacionUrbanaController)
+api.register_controllers(MecanicaSuelosController)
+api.register_controllers(ImpactoVialController)
+api.register_controllers(TaludesController)
+api.register_controllers(InspeccionObraController)
 
 # ── Entidades Controllers ─
 api.register_controllers(EntidadesController)

@@ -7,7 +7,6 @@ import React, {
   useContext,
   useImperativeHandle,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import {
@@ -15,8 +14,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogOverlay,
-  DialogPortal,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
@@ -136,7 +133,6 @@ const ModalTrigger = ({ children, asChild }: GenericModalTriggerProps) => (
 /** Size presets for GenericModal */
 export type GenericModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
-
 /** Pure layout container: Does not render the close button automatically. */
 const ModalContent = ({
   children,
@@ -146,34 +142,39 @@ const ModalContent = ({
   const { preventClose, hasHeader } = useGenericModal();
 
   return (
-    <DialogPortal>
-      <DialogOverlay
-  className="bg-black/50 backdrop-brightness-50"
-/>
-      <DialogContent
-        className={cn(
-          "grid grid-rows-[auto_1fr_auto] p-0 overflow-hidden",
-          "border border-border shadow-lg gap-0",
-          "left-4 right-4 top-4 bottom-4 translate-x-0 translate-y-0 w-auto max-w-none max-h-none",
-          "lg:left-1/2 lg:right-auto lg:top-1/2 lg:bottom-auto lg:-translate-x-1/2 lg:-translate-y-1/2",
-          "sm:left-1/8 sm:right-1/8 sm:top-1/2 sm:bottom-auto sm:translate-x-0 sm:-translate-y-1/2",
-          "sm:max-w-[95vw] sm:max-h-[90vh]",
-          className,
-        )}
-        showCloseButton={false}
-        onPointerDownOutside={(e) => {
-          if (preventClose) e.preventDefault();
-        }}
-        onEscapeKeyDown={(e) => {
-          if (preventClose) e.preventDefault();
-        }}
-      >
-        {!hasHeader && (
-          <DialogTitle className="sr-only">Modal Content</DialogTitle>
-        )}
-        {children}
-      </DialogContent>
-    </DialogPortal>
+    <DialogContent
+      overlayClassName="bg-black/50 backdrop-brightness-50"
+      className={cn(
+  // 1. Estructura interna básica
+  "grid grid-rows-[auto_1fr_auto] p-0 overflow-hidden border border-border shadow-lg gap-0",
+  
+  // 2. Comportamiento en Móvil (Reseteado y forzado a pantalla completa)
+  "fixed left-4 right-4 top-4 bottom-4 w-auto h-auto translate-x-0 translate-y-0",
+  
+  // 3. Comportamiento Desktop (A partir de SM) - Centrado perfecto
+  "sm:left-1/2 sm:top-1/2 sm:right-auto sm:bottom-auto",
+  "sm:-translate-x-1/2 sm:-translate-y-1/2",
+  
+  // 4. El tamaño dinámico adaptativo (Solo en Desktop)
+  "sm:w-max sm:h-auto",
+  "sm:max-w-[calc(100vw-32px)]", 
+  "sm:max-h-[calc(100vh-32px)]", 
+  
+  className,
+)}
+      showCloseButton={false}
+      onPointerDownOutside={(e) => {
+        if (preventClose) e.preventDefault();
+      }}
+      onEscapeKeyDown={(e) => {
+        if (preventClose) e.preventDefault();
+      }}
+    >
+      {!hasHeader && (
+        <DialogTitle className="sr-only">Modal Content</DialogTitle>
+      )}
+      {children}
+    </DialogContent>
   );
 };
 

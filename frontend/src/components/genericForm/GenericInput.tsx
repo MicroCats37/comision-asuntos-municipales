@@ -116,6 +116,10 @@ export interface FormField {
   labelClassName?: string; // Label-only styling
   containerClassName?: string;
   required?: boolean;
+
+  // Number-specific
+  min?: number;
+  step?: number;
 }
 
 export interface FormSection {
@@ -171,6 +175,10 @@ export const GenericInput: FC<GenericInputProps> = ({
   // Get component from registry
   const InputComponent = getInputComponent(field.type);
 
+  // When using DefaultFieldWrapper, suppress error display in the input component
+  // because the wrapper handles error rendering. This avoids duplicate error messages.
+  const isDefaultWrapper = FieldWrapper === DefaultFieldWrapper;
+
   // Render input inside wrapper
   return (
     <FieldWrapper field={field} error={error} labelId={labelId}>
@@ -180,6 +188,7 @@ export const GenericInput: FC<GenericInputProps> = ({
         control={control}
         error={error}
         id={labelId}
+        hideErrorMessage={isDefaultWrapper}
       />
     </FieldWrapper>
   );

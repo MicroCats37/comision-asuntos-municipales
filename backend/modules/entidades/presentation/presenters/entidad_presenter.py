@@ -44,12 +44,8 @@ class EntidadPresenter:
             tipo_documento=result.tipo_documento,
             numero_documento=result.numero_documento,
             razon_social=result.razon_social,
-            nombres=result.nombres,
-            apellidos=result.apellidos,
             nombre_completo=result.nombre_completo,
             direccion=result.direccion,
-            distrito_id=result.distrito_id,
-            activo=result.activo,
             creado=creado,
         )
 
@@ -72,12 +68,8 @@ class EntidadPresenter:
             tipo_documento=result.tipo_documento,
             numero_documento=result.numero_documento,
             razon_social=result.razon_social,
-            nombres=result.nombres,
-            apellidos=result.apellidos,
             nombre_completo=result.nombre_completo,
             direccion=result.direccion,
-            distrito_id=result.distrito_id,
-            activo=result.activo,
         )
 
     @staticmethod

@@ -1,44 +1,49 @@
 "use client";
 
-import { FileText, Plus } from "lucide-react";
+import { FileText, Search, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LiquidacionEdificacionFormModal } from "../components/LiquidacionEdificacionFormModal";
-import { LiquidacionSnapshotCard } from "../components/LiquidacionSnapshotCard";
-import { NuevaRevisionFormModal } from "../components/NuevaRevisionFormModal";
-import { useLiquidacionesSnapshots } from "../hooks/useLiquidaciones";
-import type { LiquidacionSnapshotListItem } from "../types/liquidacion-edificaciones";
+import { Input } from "@/components/ui/input";
+import { LiquidacionListCard } from "../components/LiquidacionListCard";
+import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
+import { useLiquidaciones } from "../hooks/useLiquidaciones";
 
+/**
+ * Vista genérica de Liquidaciones de Edificaciones (list).
+ * Muestra tarjetas con información resumida de cada liquidación.
+ *
+ * @deprecated Use LiquidacionesEdificacionesView — this is a duplicate
+ *   that was refactored to use non-snapshot list endpoint.
+ */
 export function LiquidacionesView() {
-  const [formOpen, setFormOpen] = useState(false);
-  const [nuevaRevisionBase, setNuevaRevisionBase] = useState<LiquidacionSnapshotListItem | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
 
   const {
-    items: snapshotItems,
-    total: snapshotTotal,
-    page: snapshotPage,
-    pageSize: snapshotPageSize,
-    isLoading: isSnapshotLoading,
-    isError: isSnapshotError,
-    refetch: refetchSnapshots,
-    setPage: setSnapshotPage,
-  } = useLiquidacionesSnapshots({ page: 1, pageSize: 10 });
+    items: liquidacionItems,
+    total: liquidacionTotal,
+    page: liquidacionPage,
+    pageSize: liquidacionPageSize,
+    isLoading: isLiquidacionLoading,
+    isError: isLiquidacionError,
+    refetch: refetchLiquidaciones,
+    setPage: setLiquidacionPage,
+  } = useLiquidaciones({ page: 1, pageSize: 10, proyectoPublicId });
 
-  const handleOpenCreate = () => {
-    setFormOpen(true);
+  const handleSearch = () => {
+    const trimmed = searchInput.trim();
+    setProyectoPublicId(trimmed ? trimmed : null);
   };
 
-  const handleFormSuccess = () => {
-    refetchSnapshots();
+  const handleClearFilter = () => {
+    setSearchInput("");
+    setProyectoPublicId(null);
   };
 
-  const handleNuevaRevision = (item: LiquidacionSnapshotListItem) => {
-    setNuevaRevisionBase(item);
-  };
-
-  const handleNuevaRevisionSuccess = () => {
-    setNuevaRevisionBase(null);
-    refetchSnapshots();
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
   };
 
   return (
@@ -59,82 +64,112 @@ export function LiquidacionesView() {
               </p>
             </div>
           </div>
-          <Button
-            onClick={handleOpenCreate}
-            className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20"
-          >
-            <Plus className="h-4 w-4" />
-            Nueva Liquidación
-          </Button>
+          <NuevaLiquidacionDropdown onSuccess={refetchLiquidaciones} />
+        </div>
+
+        {/* Filter Bar */}
+        <div className="flex items-center gap-4 p-4 bg-muted/20 rounded-xl border border-border/60">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-muted-foreground">Filtrar liquidaciones por ID de Proyecto:</span>
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Ej. PROY-2026-00001"
+                aria-label="ID de proyecto público"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-[220px] h-9"
+              />
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleSearch}
+                className="h-9 px-3 gap-1"
+              >
+                <Search className="h-4 w-4" />
+                Buscar
+              </Button>
+            </div>
+          </div>
+          {proyectoPublicId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearFilter}
+              className="h-8 px-2 gap-1 text-xs"
+            >
+              <X className="h-3 w-3" />
+              Limpiar filtro
+            </Button>
+          )}
         </div>
 
         {/* Cards View */}
         <div className="space-y-4">
-          {isSnapshotLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {isLiquidacionLoading ? (
+            <div className="flex flex-col gap-4">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="bg-card rounded-xl border shadow-sm h-64 animate-pulse"
+                  className="bg-card rounded-xl border shadow-sm h-48 animate-pulse"
                 />
               ))}
             </div>
-          ) : isSnapshotError ? (
+          ) : isLiquidacionError ? (
             <div className="flex items-center justify-center p-8 text-destructive">
               Error al cargar las liquidaciones
             </div>
-          ) : snapshotItems.length === 0 ? (
+          ) : liquidacionItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-xl">
               <FileText className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No hay liquidaciones registradas</p>
-              <Button
-                onClick={handleOpenCreate}
-                className="mt-4 gap-2"
-                variant="outline"
-              >
-                <Plus className="h-4 w-4" />
-                Nueva Liquidación
-              </Button>
+              <p className="text-muted-foreground">
+                No hay liquidaciones registradas
+              </p>
+              <div className="mt-4">
+                <NuevaLiquidacionDropdown onSuccess={refetchLiquidaciones} />
+              </div>
             </div>
           ) : (
             <>
               <div className="flex flex-col gap-4">
-                {snapshotItems.map((item) => (
-                  <LiquidacionSnapshotCard
-                    key={item.liquidacion_id}
-                    item={item}
-                    onNuevaRevision={handleNuevaRevision}
-                  />
+                {liquidacionItems.map((item) => (
+                  <LiquidacionListCard key={item.id} item={item} />
                 ))}
               </div>
               {/* Pagination for cards */}
-              {snapshotTotal > snapshotPageSize && (
+              {liquidacionTotal > liquidacionPageSize && (
                 <div className="flex items-center justify-between gap-4 pt-6 border-t border-border/50">
                   <span className="text-xs text-muted-foreground font-medium">
-                    Mostrando {snapshotItems.length} de {snapshotTotal} liquidaciones
+                    Mostrando {liquidacionItems.length} de {liquidacionTotal}{" "}
+                    liquidaciones
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setSnapshotPage(snapshotPage - 1)}
-                      disabled={snapshotPage <= 1}
+                      onClick={() => setLiquidacionPage(liquidacionPage - 1)}
+                      disabled={liquidacionPage <= 1}
                       className="h-9 px-4 text-xs font-semibold"
                     >
                       Anterior
                     </Button>
                     <div className="flex items-center gap-1 px-3 h-9 rounded-md bg-muted border border-border">
-                      <span className="text-xs font-bold text-foreground">{snapshotPage}</span>
+                      <span className="text-xs font-bold text-foreground">
+                        {liquidacionPage}
+                      </span>
                       <span className="text-xs text-muted-foreground">de</span>
                       <span className="text-xs font-bold text-foreground">
-                        {Math.ceil(snapshotTotal / snapshotPageSize)}
+                        {Math.ceil(liquidacionTotal / liquidacionPageSize)}
                       </span>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setSnapshotPage(snapshotPage + 1)}
-                      disabled={snapshotPage >= Math.ceil(snapshotTotal / snapshotPageSize)}
+                      onClick={() => setLiquidacionPage(liquidacionPage + 1)}
+                      disabled={
+                        liquidacionPage >=
+                        Math.ceil(liquidacionTotal / liquidacionPageSize)
+                      }
                       className="h-9 px-4 text-xs font-semibold"
                     >
                       Siguiente
@@ -145,21 +180,6 @@ export function LiquidacionesView() {
             </>
           )}
         </div>
-
-        {/* Create Primera Liquidacion Modal */}
-        <LiquidacionEdificacionFormModal
-          open={formOpen}
-          onOpenChange={setFormOpen}
-          onSuccess={handleFormSuccess}
-        />
-
-        {/* Nueva Revision Modal */}
-        <NuevaRevisionFormModal
-          liquidacionBase={nuevaRevisionBase}
-          open={nuevaRevisionBase !== null}
-          onOpenChange={(open) => !open && setNuevaRevisionBase(null)}
-          onSuccess={handleNuevaRevisionSuccess}
-        />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, Percent, Banknote } from "lucide-react";
+import { Banknote, Info, Percent } from "lucide-react";
 import type { VariablesFinancierasCardProps } from "../types/liquidacion-edificaciones-form.types";
 
 /** Format IGV as percentage: 0.18 -> "18%" */
@@ -63,11 +63,17 @@ export function VariablesFinancierasCard({
         <div className="space-y-0.5">
           <span className="flex items-center gap-1.5 text-foreground">
             <Percent className="h-3 w-3 text-primary/70" />
-            IGV: <strong className="text-primary">{formatIgv(variables.igv_valor)}</strong>
+            IGV:{" "}
+            <strong className="text-primary">
+              {formatIgv(variables.igv_valor)}
+            </strong>
           </span>
           <span className="flex items-center gap-1.5 text-foreground">
             <Banknote className="h-3 w-3 text-primary/70" />
-            UIT: <strong className="text-primary">{formatUit(variables.uit_valor)}</strong>
+            UIT:{" "}
+            <strong className="text-primary">
+              {formatUit(variables.uit_valor)}
+            </strong>
           </span>
           <span className="text-[10px] text-muted-foreground/70">
             Período: {variables.igv_periodo_inicio || "—"}

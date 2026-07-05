@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Loader2 } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
 import type { DelegadoVigente } from "../types/liquidacion-edificaciones";
 
 interface DelegadosSectionProps {
@@ -57,7 +57,9 @@ export function DelegadosSection({
         </div>
         <div className="flex items-center gap-2 py-2">
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Cargando delegados...</span>
+          <span className="text-sm text-muted-foreground">
+            Cargando delegados...
+          </span>
         </div>
       </div>
     );
@@ -81,7 +83,9 @@ export function DelegadosSection({
   }
 
   // Group delegates by specialty
-  const groupedByEspecialidad = delegados.reduce<Record<string, DelegadoVigente[]>>((acc, delegado) => {
+  const groupedByEspecialidad = delegados.reduce<
+    Record<string, DelegadoVigente[]>
+  >((acc, delegado) => {
     const specialtyName = delegado.especialidad.nombre;
     if (!acc[specialtyName]) {
       acc[specialtyName] = [];
@@ -92,7 +96,7 @@ export function DelegadosSection({
 
   // Sort specialties alphabetically
   const sortedSpecialties = Object.keys(groupedByEspecialidad).sort((a, b) =>
-    a.localeCompare(b, undefined, { sensitivity: "base" })
+    a.localeCompare(b, undefined, { sensitivity: "base" }),
   );
 
   return (
@@ -104,7 +108,8 @@ export function DelegadosSection({
           Delegados
         </h3>
         <span className="ml-auto text-[10px] font-medium opacity-75">
-          ({selectedIds.length} seleccionado{selectedIds.length !== 1 ? "s" : ""})
+          ({selectedIds.length} seleccionado
+          {selectedIds.length !== 1 ? "s" : ""})
         </span>
       </div>
 
@@ -128,29 +133,36 @@ export function DelegadosSection({
                 {specialtyDelegados.map((delegado) => {
                   const isSelected = selectedIds.includes(delegado.id);
                   return (
-                      <button
+                    <button
                       key={delegado.id}
                       type="button"
                       onClick={() => onToggleDelegado(delegado.id)}
                       className={`
                         w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-all text-left
-                        ${isSelected
-                          ? "bg-primary/10 border-primary/60 ring-2 ring-primary/30 hover:bg-primary/15 hover:border-primary/80 shadow-sm shadow-primary/15"
-                          : "bg-secondary/30 border-border/70 hover:bg-secondary/60 hover:border-primary/40 hover:shadow-sm hover:shadow-primary/10"
+                        ${
+                          isSelected
+                            ? "bg-primary/10 border-primary/60 ring-2 ring-primary/30 hover:bg-primary/15 hover:border-primary/80 shadow-sm shadow-primary/15"
+                            : "bg-secondary/30 border-border/70 hover:bg-secondary/60 hover:border-primary/40 hover:shadow-sm hover:shadow-primary/10"
                         }
                       `}
                     >
                       <div className="flex items-center gap-3">
                         {/* Avatar with selected accent ring */}
-                        <div className={`
+                        <div
+                          className={`
                           flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all
                           ${isSelected ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25 ring-2 ring-primary/40" : "bg-muted/80 text-muted-foreground"}
-                        `}>
-                          <Users className={`h-4 w-4 ${isSelected ? "" : ""}`} />
+                        `}
+                        >
+                          <Users
+                            className={`h-4 w-4 ${isSelected ? "" : ""}`}
+                          />
                         </div>
                         <div className="flex flex-col">
                           {/* Name - bold for emphasis */}
-                          <span className={`text-sm font-bold ${isSelected ? "text-foreground" : "text-foreground/90"}`}>
+                          <span
+                            className={`text-sm font-bold ${isSelected ? "text-foreground" : "text-foreground/90"}`}
+                          >
                             {delegado.nombre_completo}
                           </span>
                           {/* Metadata - subtle with badges, responsive wrapping */}
@@ -159,7 +171,9 @@ export function DelegadosSection({
                               CIP {delegado.cip}
                             </span>
                             <span className="text-muted-foreground/50">•</span>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded capitalize whitespace-nowrap ${isSelected ? "bg-primary/20 text-primary" : "bg-secondary/70 text-muted-foreground/80"}`}>
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded capitalize whitespace-nowrap ${isSelected ? "bg-primary/20 text-primary" : "bg-secondary/70 text-muted-foreground/80"}`}
+                            >
                               {delegado.tipo}
                             </span>
                           </div>
@@ -167,8 +181,18 @@ export function DelegadosSection({
                       </div>
                       {isSelected && (
                         <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-primary/30">
-                          <svg className="h-2.5 w-2.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          <svg
+                            className="h-2.5 w-2.5 text-primary-foreground"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
                           </svg>
                         </div>
                       )}

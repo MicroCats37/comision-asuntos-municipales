@@ -11,20 +11,21 @@ from .models import (
     ContactoProyecto,
     Delegado,
     Especialidad,
-    EdificacionesEspecialidades,
     LiquidacionGeneral,
     LiquidacionContacto,
     LiquidacionDocumentos,
-    LiquidacionEdificaciones,
-    LiquidacionEdificacionesProxy,
-    EdificacionesTarifa,
-    EdificacionesRevision,
+    LiquidacionEdificacion,
+    LiquidacionEdificacionProxy,
     Proyecto,
     ProyectoEmpresarial,
     ProyectoPersonaNatural,
     Proyectista,
     LiquidacionDelegado,
+    LiquidacionPorcentajeObra,
     MunicipalidadDelegado,
+    ReglaTarifaEdificacion,
+    TarifaLiquidacionBase,
+    TarifaPorcentajeObra,
 )
 from .domain.constants import EstadoLiquidacion, TipoTramiteEdificaciones, TramiteAccion
 
@@ -252,7 +253,6 @@ class ProyectoAdmin(SimpleHistoryAdmin):
         "denominacion",
         "nombre_propietario",
         "entidad__razon_social",
-        "entidad__apellidos",
     ]
     readonly_fields = ["created_at", "updated_at"]
     ordering = ["denominacion"]
@@ -298,8 +298,7 @@ class ProyectoPersonaNaturalAdmin(SimpleHistoryAdmin):
     ]
     search_fields = [
         "denominacion",
-        "entidad__nombres",
-        "entidad__apellidos",
+        "entidad__razon_social",
     ]
     readonly_fields = ["created_at", "updated_at"]
     ordering = ["denominacion"]
@@ -321,21 +320,22 @@ class ContactoProyectoAdmin(SimpleHistoryAdmin):
     readonly_fields = ["created_at", "updated_at"]
 
 
-class LiquidacionEdificacionesInline(NestedTabularInline):
-    """Inline para gestionar el perfil de Edificaciones de una LiquidacionGeneral."""
+class LiquidacionEdificacionInline(NestedTabularInline):
+    """Inline para gestionar el perfil de Edificacion de una LiquidacionGeneral."""
 
-    model = LiquidacionEdificaciones
+    model = LiquidacionEdificacion
     fk_name = "liquidacion"
-    fields = ["numero_revision", "tipo_tramite", "tramite_accion"]
+    # NOTE: valor_proyecto y valor_base_calculo viven en LiquidacionPorcentajeObra, no aqui
+    fields = ["tipo_tramite", "tramite_accion"]
     readonly_fields = ["created_at", "updated_at"]
     extra = 1
 
 
-@admin.register(LiquidacionEdificacionesProxy)
-class LiquidacionEdificacionesProxyAdmin(NestedModelAdmin, SimpleHistoryAdmin):
+@admin.register(LiquidacionEdificacionProxy)
+class LiquidacionEdificacionProxyAdmin(NestedModelAdmin, SimpleHistoryAdmin):
     """
-    Admin proxy para crear/editar Liquidaciones del régimen Edificaciones.
-    Internamente crea un registro LiquidacionGeneral (padre) con LiquidacionEdificaciones
+    Admin proxy para crear/editar Liquidaciones del régimen Edificacion.
+    Internamente crea un registro LiquidacionGeneral (padre) con LiquidacionEdificacion
     como inline hijo — el flujo Django estándar parent+inline.
     """
 
@@ -352,7 +352,6 @@ class LiquidacionEdificacionesProxyAdmin(NestedModelAdmin, SimpleHistoryAdmin):
     search_fields = [
         "proyecto__denominacion",
         "proyecto__entidad__razon_social",
-        "proyecto__entidad__apellidos",
     ]
     readonly_fields = [
         "created_at",
@@ -387,7 +386,6 @@ class LiquidacionEdificacionesProxyAdmin(NestedModelAdmin, SimpleHistoryAdmin):
                     "igv_porcentaje",
                     "uit",
                     "uit_porcentaje",
-                    "valor_proyecto",
                 ),
                 "description": "Debajo de cada referencia se muestra el dato aplicado de su tabla relacionada.",
             },
@@ -424,7 +422,7 @@ class LiquidacionEdificacionesProxyAdmin(NestedModelAdmin, SimpleHistoryAdmin):
         "igv",
         "uit",
     ]
-    inlines = [LiquidacionEdificacionesInline]
+    inlines = [LiquidacionEdificacionInline]
 
     def get_queryset(self, request):
         return (
@@ -440,9 +438,9 @@ class LiquidacionEdificacionesProxyAdmin(NestedModelAdmin, SimpleHistoryAdmin):
         )
 
     def liquidacion_proxy_numero_revision(self, obj):
-        """Muestra numero_revision desde LiquidacionEdificaciones inline."""
+        """Muestra numero_revision desde LiquidacionGeneral (fuente de verdad)."""
         try:
-            return obj.edificaciones.numero_revision if hasattr(obj, 'edificaciones') and obj.edificaciones else "-"
+            return obj.numero_revision if obj else "-"
         except Exception:
             return "-"
 
@@ -463,13 +461,12 @@ class LiquidacionEdificacionesProxyAdmin(NestedModelAdmin, SimpleHistoryAdmin):
     def liquidacion_previa_resumen(self, obj):
         if not obj or not hasattr(obj, 'edificaciones') or not obj.edificaciones:
             return "-"
-        # liquidacion_previa ahora es M2M liquidaciones_previas
         previas = list(obj.liquidaciones_previas.order_by('-created_at')[:1])
         if not previas:
             return "-"
         previa = previas[0]
         try:
-            num_rev = previa.edificaciones.numero_revision if hasattr(previa, 'edificaciones') and previa.edificaciones else "?"
+            num_rev = previa.numero_revision if hasattr(previa, 'numero_revision') else "?"
         except Exception:
             num_rev = "?"
         return f"Revisión {num_rev} — {previa.proyecto} — {previa.estado}"
@@ -502,6 +499,11 @@ class LiquidacionEdificacionesProxyAdmin(NestedModelAdmin, SimpleHistoryAdmin):
 
     def calculo_valor_obra(self, obj):
         if obj and obj.proyecto_id:
+            # Leer desde LiquidacionPorcentajeObra (valor_proyecto)
+            if hasattr(obj, 'liquidacion_porcentaje_obra') and obj.liquidacion_porcentaje_obra.exists():
+                lpo = obj.liquidacion_porcentaje_obra.first()
+                if lpo and lpo.valor_proyecto:
+                    return self._money(lpo.valor_proyecto)
             return self._money(obj.proyecto.valor_obra)
         return "-"
 
@@ -560,7 +562,7 @@ class LiquidacionGeneralAdmin(NestedModelAdmin, SimpleHistoryAdmin):
         "created_at",
     ]
     list_filter = ["estado", "created_at", "igv", "uit"]
-    search_fields = ["proyecto__denominacion", "proyecto__entidad__razon_social", "proyecto__entidad__apellidos"]
+    search_fields = ["proyecto__denominacion", "proyecto__entidad__razon_social"]
     readonly_fields = [
         "created_at",
         "updated_at",
@@ -594,7 +596,6 @@ class LiquidacionGeneralAdmin(NestedModelAdmin, SimpleHistoryAdmin):
                     "igv_porcentaje",
                     "uit",
                     "uit_porcentaje",
-                    "valor_proyecto",
                 ),
                 "description": "Debajo de cada referencia se muestra el dato aplicado de su tabla relacionada.",
             },
@@ -631,7 +632,7 @@ class LiquidacionGeneralAdmin(NestedModelAdmin, SimpleHistoryAdmin):
         "igv",
         "uit",
     ]
-    inlines = [LiquidacionDelegadoInline, LiquidacionEdificacionesInline]
+    inlines = [LiquidacionDelegadoInline, LiquidacionEdificacionInline]
 
     def get_queryset(self, request):
         return (
@@ -647,9 +648,9 @@ class LiquidacionGeneralAdmin(NestedModelAdmin, SimpleHistoryAdmin):
         )
 
     def liquidacion_numero_revision(self, obj):
-        """Muestra numero_revision desde LiquidacionEdificaciones."""
+        """Muestra numero_revision desde LiquidacionGeneral (fuente de verdad)."""
         try:
-            return obj.edificaciones.numero_revision if hasattr(obj, 'edificaciones') and obj.edificaciones else "-"
+            return obj.numero_revision if obj else "-"
         except Exception:
             return "-"
 
@@ -673,7 +674,7 @@ class LiquidacionGeneralAdmin(NestedModelAdmin, SimpleHistoryAdmin):
             return "-"
         previa = previas[0]
         try:
-            num_rev = previa.edificaciones.numero_revision if hasattr(previa, 'edificaciones') and previa.edificaciones else "?"
+            num_rev = previa.numero_revision if hasattr(previa, 'numero_revision') else "?"
         except Exception:
             num_rev = "?"
         return f"Revisión {num_rev} — {previa.proyecto} — {previa.estado}"
@@ -706,7 +707,12 @@ class LiquidacionGeneralAdmin(NestedModelAdmin, SimpleHistoryAdmin):
 
     def calculo_valor_obra(self, obj):
         if obj and obj.proyecto_id:
-            return self._money(obj.valor_proyecto)
+            # Leer desde LiquidacionPorcentajeObra (valor_proyecto)
+            if hasattr(obj, 'liquidacion_porcentaje_obra') and obj.liquidacion_porcentaje_obra.exists():
+                lpo = obj.liquidacion_porcentaje_obra.first()
+                if lpo and lpo.valor_proyecto:
+                    return self._money(lpo.valor_proyecto)
+            return self._money(obj.proyecto.valor_obra)
         return "-"
 
     calculo_valor_obra.short_description = "Valor de obra"
@@ -752,129 +758,24 @@ class LiquidacionGeneralAdmin(NestedModelAdmin, SimpleHistoryAdmin):
     delegados_display.short_description = "Delegados"
 
 
-class LiquidacionEdificacionesForm(forms.ModelForm):
+class LiquidacionEdificacionForm(forms.ModelForm):
     """
-    Formulario unificado para crear/editar LiquidacionEdificaciones.
-    Expone campos de LiquidacionGeneral (padre) junto con LiquidacionEdificaciones (hijo).
-    En modo add crea primero LiquidacionGeneral y luego LiquidacionEdificaciones.
-    En modo change sincroniza ambos registros.
-
-    NOTA: numero_revision vive en LiquidacionEdificaciones, no en LiquidacionGeneral.
-    liquidacion_previa era FK singular, ahora es M2M liquidaciones_previas.
-    expediente fue removido del modelo.
+    Formulario para crear/editar LiquidacionEdificacion.
+    Expone campos de LiquidacionEdificacion (tipo_tramite, tramite_accion).
+    Los valores de cálculo (valor_proyecto, valor_base_calculo) viven en LiquidacionPorcentajeObra.
     """
-
-    # ── Campos de LiquidacionGeneral (padre) ──────────────────────────────
-    proyecto = forms.ModelChoiceField(
-        queryset=Proyecto.objects.all(),
-        label="Proyecto",
-        required=True,
-    )
-    valor_proyecto = forms.DecimalField(
-        label="Valor de Obra",
-        required=True,
-        max_digits=12,
-        decimal_places=2,
-    )
-    fecha_registro = forms.DateField(
-        label="Fecha de Registro",
-        required=False,
-        widget=forms.DateInput(attrs={"type": "date"}),
-    )
-    usuario_creador = forms.ModelChoiceField(
-        queryset=None,  # se llena en __init__
-        label="Usuario Creador",
-        required=False,
-    )
-    igv = forms.ModelChoiceField(
-        queryset=IGV.objects.all(),
-        label="IGV",
-        required=True,
-    )
-    uit = forms.ModelChoiceField(
-        queryset=UIT.objects.all(),
-        label="UIT",
-        required=True,
-    )
-    estado = forms.ChoiceField(
-        label="Estado",
-        choices=EstadoLiquidacion.choices,
-        required=True,
-    )
-    # NOTE: liquidacion_previa era FK singular, ahora es M2M liquidaciones_previas en LiquidacionGeneral
-    # Ya no se expone como campo de formulario directo
-    observacion = forms.CharField(
-        label="Observación",
-        required=False,
-        max_length=2000,
-        widget=forms.Textarea(attrs={"rows": 3}),
-    )
 
     class Meta:
-        model = LiquidacionEdificaciones
-        fields = [
-            "proyecto",
-            "valor_proyecto",
-            "fecha_registro",
-            "usuario_creador",
-            "igv",
-            "uit",
-            "estado",
-            "observacion",
-            "revisiones",
-            # numero_revision vive en LiquidacionEdificaciones, no en LiquidacionGeneral
-        ]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-        self.fields["usuario_creador"].queryset = User.objects.all()
-        # En change, precargar datos del liquidacion padre
-        if self.instance.pk and hasattr(self.instance, "liquidacion"):
-            liq = self.instance.liquidacion
-            self.fields["proyecto"].initial = liq.proyecto_id
-            self.fields["valor_proyecto"].initial = liq.valor_proyecto
-            self.fields["fecha_registro"].initial = liq.fecha_registro
-            self.fields["usuario_creador"].initial = liq.usuario_creador_id
-            self.fields["igv"].initial = liq.igv_id
-            self.fields["uit"].initial = liq.uit_id
-            self.fields["estado"].initial = liq.estado
-            self.fields["observacion"].initial = liq.observacion
-
-    def save(self, commit=True):
-        # Si instance.pk tiene liquidacion ya asignada → update
-        if self.instance.pk and hasattr(self.instance, "liquidacion"):
-            liq = self.instance.liquidacion
-        else:
-            # Crear LiquidacionGeneral padre
-            liq = LiquidacionGeneral()
-        liq.proyecto = self.cleaned_data["proyecto"]
-        liq.valor_proyecto = self.cleaned_data["valor_proyecto"]
-        if self.cleaned_data.get("fecha_registro"):
-            liq.fecha_registro = self.cleaned_data["fecha_registro"]
-        if self.cleaned_data.get("usuario_creador"):
-            liq.usuario_creador = self.cleaned_data["usuario_creador"]
-        liq.igv = self.cleaned_data["igv"]
-        liq.uit = self.cleaned_data["uit"]
-        liq.estado = self.cleaned_data["estado"]
-        liq.observacion = self.cleaned_data.get("observacion") or ""
-        liq.save()
-        self.instance.liquidacion = liq
-        return super().save(commit=commit)
+        model = LiquidacionEdificacion
+        fields = ["tipo_tramite", "tramite_accion"]
 
 
-@admin.register(LiquidacionEdificaciones)
-class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
+@admin.register(LiquidacionEdificacion)
+class LiquidacionEdificacionAdmin(NestedModelAdmin, SimpleHistoryAdmin):
     """
-    Admin para LiquidacionEdificaciones — forma completa similar a LiquidacionGeneralAdmin.
-
-    Limitaciones:
-    - LiquidacionDelegadoInline no puede inlar abuelos directamente bajo LiquidacionEdificaciones
-      porque LiquidacionDelegado FK apunta a LiquidacionGeneral (padre), no a LiquidacionEdificaciones.
-      Los delegados se gestionan desde LiquidacionGeneralAdmin padre.
-    - EdificacionesClasificacionEspecialidadesInline tampoco funciona directamente porque
-      su FK apunta a EdificacionesClasificacion, no a LiquidacionEdificaciones.
+    Admin para LiquidacionEdificacion.
+    Muestra el tipo de trámite y acción, más datos de la LiquidacionGeneral padre.
+    Los valores de cálculo (valor_proyecto, valor_base_calculo) se leen desde LiquidacionPorcentajeObra.
     """
     list_display = ["liquidacion", "numero_revision_display", "created_at"]
     list_filter = ["liquidacion__estado"]
@@ -885,7 +786,6 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
         "created_at",
         "updated_at",
         "liquidacion",
-        # ── Cálculos referenciales (readonly, igual que LiquidacionGeneralAdmin) ──
         "proyecto_resumen",
         "liquidacion_previa_resumen",
         "delegados_display",
@@ -895,15 +795,12 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
         "calculo_subtotal",
         "calculo_igv",
         "calculo_total",
+        "valor_proyecto_display",
+        "valor_base_calculo_display",
     ]
-    autocomplete_fields = ["revisiones"]
-    filter_horizontal = ["proyectistas"]
+    autocomplete_fields = []
     ordering = ["-created_at"]
-    form = LiquidacionEdificacionesForm
-    # NOTA: No se pueden incluir inlines de LiquidacionDelegado porque su fk_name="liquidacion"
-    # apunta a LiquidacionGeneral, no a LiquidacionEdificaciones. Los delegados se gestionan
-    # desde LiquidacionGeneralAdmin. Tampoco se pueden inlar EdificacionesClasificacionEspecialidades.
-    inlines = []
+    form = LiquidacionEdificacionForm
 
     def get_queryset(self, request):
         return (
@@ -915,7 +812,7 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
                 "liquidacion__igv",
                 "liquidacion__uit",
             )
-            .prefetch_related("revisiones", "revisiones__tarifa", "revisiones__especialidades", "proyectistas")
+            .prefetch_related("liquidacion__liquidacion_porcentaje_obra__tarifa_aplicada")
         )
 
     def get_changeform_initial_data(self, request):
@@ -924,16 +821,37 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         readonly = list(super().get_readonly_fields(request, obj) or [])
-        if obj is not None:  # Change view — mostrar liquidacion como solo lectura
+        if obj is not None:
             readonly.append("liquidacion")
         return readonly
 
     def numero_revision_display(self, obj):
-        return obj.numero_revision
+        try:
+            return obj.liquidacion.numero_revision if obj and obj.liquidacion else "?"
+        except Exception:
+            return "?"
 
     numero_revision_display.short_description = "N° Revisión"
 
-    # ── Métodos de cálculo (copiados de LiquidacionGeneralAdmin para consistencia) ──
+    def valor_proyecto_display(self, obj):
+        """Muestra valor_proyecto desde LiquidacionPorcentajeObra."""
+        if obj and obj.liquidacion_id:
+            lpo_qs = LiquidacionPorcentajeObra.objects.filter(liquidacion_general=obj.liquidacion)
+            if lpo_qs.exists():
+                return self._money(lpo_qs.first().valor_proyecto)
+        return "-"
+
+    valor_proyecto_display.short_description = "Valor Proyecto"
+
+    def valor_base_calculo_display(self, obj):
+        """Muestra valor_base_calculo desde LiquidacionPorcentajeObra."""
+        if obj and obj.liquidacion_id:
+            lpo_qs = LiquidacionPorcentajeObra.objects.filter(liquidacion_general=obj.liquidacion)
+            if lpo_qs.exists():
+                return self._money(lpo_qs.first().valor_base_calculo)
+        return "-"
+
+    valor_base_calculo_display.short_description = "Valor Base Cálculo"
 
     def proyecto_resumen(self, obj):
         liq = obj.liquidacion if obj else None
@@ -955,7 +873,7 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
             return "-"
         previa = previas[0]
         try:
-            num_rev = previa.edificaciones.numero_revision if hasattr(previa, 'edificaciones') and previa.edificaciones else "?"
+            num_rev = previa.numero_revision if hasattr(previa, 'numero_revision') else "?"
         except Exception:
             num_rev = "?"
         return f"Revisión {num_rev} — {previa.proyecto} — {previa.estado}"
@@ -984,15 +902,20 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
         return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     def _calculo_subtotal(self, obj):
-        liq = obj.liquidacion if obj else None
-        if not liq or not liq.proyecto_id:
+        """Calcula desde LiquidacionPorcentajeObra si existe."""
+        if not obj or not obj.liquidacion_id:
             return None
-        return liq.valor_proyecto
+        lpo_qs = LiquidacionPorcentajeObra.objects.filter(liquidacion_general=obj.liquidacion)
+        if lpo_qs.exists():
+            return lpo_qs.first().valor_proyecto
+        return obj.liquidacion.proyecto.valor_obra if obj.liquidacion and obj.liquidacion.proyecto else None
 
     def calculo_valor_obra(self, obj):
-        liq = obj.liquidacion if obj else None
-        if liq and liq.proyecto_id:
-            return self._money(liq.valor_proyecto)
+        """Muestra valor de obra desde LiquidacionPorcentajeObra."""
+        if obj and obj.liquidacion_id:
+            lpo_qs = LiquidacionPorcentajeObra.objects.filter(liquidacion_general=obj.liquidacion)
+            if lpo_qs.exists():
+                return self._money(lpo_qs.first().valor_proyecto)
         return "-"
 
     calculo_valor_obra.short_description = "Valor de obra"
@@ -1043,55 +966,27 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
     delegados_display.short_description = "Delegados"
 
     def get_fieldsets(self, request, obj=None):
-        if obj is None:  # Add view
-            return [
-                (
-                    "Datos de la liquidación",
-                    {
-                        "fields": (
-                            "proyecto",
-                            "estado",
-                        ),
-                    },
-                ),
-                (
-                    "Configuración financiera",
-                    {
-                        "fields": (
-                            "igv",
-                            "uit",
-                            "valor_proyecto",
-                        ),
-                        "description": "Debajo de cada referencia se muestra el dato aplicado de su tabla relacionada.",
-                    },
-                ),
-                (
-                    "Delegados asignados",
-                    {
-                        "fields": ("delegados_display",),
-                    },
-                ),
-                (
-                    "Datos de Edificación",
-                    {
-                        "fields": ("revisiones",),
-                    },
-                ),
-                (
-                    "Delegados asignados",
-                    {
-                        "fields": ("delegados_display", "delegados"),
-                    },
-                ),
-            ]
-        else:  # Change view — incluye cálculos y datos completos
+        if obj is None:
             return [
                 (
                     "Datos de la liquidación",
                     {
                         "fields": (
                             "liquidacion",
-                            "proyecto",
+                            "tipo_tramite",
+                            "tramite_accion",
+                        ),
+                    },
+                ),
+            ]
+        else:
+            return [
+                (
+                    "Datos de la liquidación",
+                    {
+                        "fields": (
+                            "liquidacion",
+                            "proyecto_resumen",
                             "numero_revision_display",
                             "estado",
                             "liquidacion_previa_resumen",
@@ -1106,9 +1001,9 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
                             "igv_porcentaje",
                             "uit",
                             "uit_porcentaje",
-                            "valor_proyecto",
+                            "valor_proyecto_display",
+                            "valor_base_calculo_display",
                         ),
-                        "description": "Debajo de cada referencia se muestra el dato aplicado de su tabla relacionada.",
                     },
                 ),
                 (
@@ -1120,19 +1015,12 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
                             "calculo_igv",
                             "calculo_total",
                         ),
-                        "description": "Cálculo referencial usando el valor de obra del proyecto y el IGV seleccionado.",
                     },
                 ),
                 (
                     "Delegados asignados",
                     {
-                        "fields": ("delegados_display", "delegados"),
-                    },
-                ),
-                (
-                    "Datos de Edificación",
-                    {
-                        "fields": ("revisiones", "proyectistas"),
+                        "fields": ("delegados_display",),
                     },
                 ),
                 (
@@ -1148,15 +1036,22 @@ class LiquidacionEdificacionesAdmin(NestedModelAdmin, SimpleHistoryAdmin):
 @admin.register(LiquidacionDelegado)
 class LiquidacionDelegadoAdmin(SimpleHistoryAdmin):
     list_display = [
-        "liquidacion",
+        "liquidacion_public_id",
         "numero_revision_display",
         "proyecto",
         "delegado",
+        "periodo",
         "dictamen_revision",
-        "created_at",
+        "fecha_presentacion",
+        "fecha_revision",
     ]
-    list_filter = ["delegado__especialidad", "dictamen_revision"]
+    list_filter = [
+        "delegado__especialidad",
+        "dictamen_revision",
+        "periodo",
+    ]
     search_fields = [
+        "liquidacion__public_id",
         "liquidacion__proyecto__denominacion",
         "delegado__perfil_ingeniero__nombres",
         "delegado__perfil_ingeniero__apellido_paterno",
@@ -1164,12 +1059,20 @@ class LiquidacionDelegadoAdmin(SimpleHistoryAdmin):
     ]
     readonly_fields = ["created_at", "updated_at"]
     autocomplete_fields = ["liquidacion", "delegado"]
-    ordering = ["liquidacion", "delegado"]
+    ordering = ["-liquidacion__created_at", "delegado"]
+    date_hierarchy = "fecha_presentacion"
+
+    def liquidacion_public_id(self, obj):
+        return obj.liquidacion.public_id or str(obj.liquidacion_id)
+
+    liquidacion_public_id.short_description = "Liq. N°"
+    liquidacion_public_id.admin_order_field = "liquidacion__public_id"
 
     def numero_revision_display(self, obj):
-        """Obtiene numero_revision desde LiquidacionEdificaciones, no LiquidacionGeneral."""
+        """Obtiene numero_revision desde LiquidacionGeneral (fuente de verdad)."""
         try:
-            return obj.liquidacion.edificaciones.numero_revision if hasattr(obj.liquidacion, 'edificaciones') and obj.liquidacion.edificaciones else "?"
+            # numero_revision vive en LiquidacionGeneral, no en LiquidacionEdificacion
+            return obj.liquidacion.numero_revision if hasattr(obj.liquidacion, 'numero_revision') else "?"
         except Exception:
             return "?"
 
@@ -1207,61 +1110,99 @@ class UITAdmin(SimpleHistoryAdmin):
     ordering = ["-periodo_inicio"]
 
 
+@admin.register(ReglaTarifaEdificacion)
+class ReglaTarifaEdificacionAdmin(SimpleHistoryAdmin):
+    """Admin para ReglaTarifaEdificacion."""
+    list_display = ["tipo_tramite", "tramite_accion", "tarifa_base", "tarifa_porcentaje_display"]
+    list_filter = ["tipo_tramite", "tramite_accion"]
+    search_fields = [
+        "tarifa_base__detalle_porcentual__porcentaje_liquidacion",
+    ]
+    readonly_fields = ["created_at", "updated_at"]
+    ordering = ["tipo_tramite", "tramite_accion"]
+
+    def tarifa_porcentaje_display(self, obj):
+        """Muestra el porcentaje de la tarifa base."""
+        if obj and obj.tarifa_base_id:
+            try:
+                detalle = obj.tarifa_base.detalle_porcentual
+                if detalle:
+                    return f"{float(detalle.porcentaje_liquidacion) * 100:.2f}%"
+            except Exception:
+                pass
+        return "-"
+
+    tarifa_porcentaje_display.short_description = "% Tarifa"
+
+
+@admin.register(TarifaLiquidacionBase)
+class TarifaLiquidacionBaseAdmin(SimpleHistoryAdmin):
+    """Admin para TarifaLiquidacionBase."""
+    list_display = [
+        "id",
+        "tipo_liquidacion",
+        "periodo_inicio",
+        "periodo_fin",
+        "especialidades_display",
+        "created_at",
+    ]
+    list_filter = ["tipo_liquidacion", "periodo_inicio"]
+    search_fields = [
+        "tipo_liquidacion",
+    ]
+    readonly_fields = ["created_at", "updated_at"]
+    ordering = ["-periodo_inicio"]
+    filter_horizontal = ["especialidades"]
+
+    def especialidades_display(self, obj):
+        if not obj:
+            return "-"
+        specs = list(obj.especialidades.all())
+        if not specs:
+            return "-"
+        if len(specs) <= 4:
+            return ", ".join([s.nombre for s in specs])
+        return ", ".join([s.nombre for s in specs[:4]]) + f" (+{len(specs) - 4})"
+
+    especialidades_display.short_description = "Especialidades"
+
+
+@admin.register(TarifaPorcentajeObra)
+class TarifaPorcentajeObraAdmin(SimpleHistoryAdmin):
+    """Admin para TarifaPorcentajeObra."""
+    list_display = [
+        "id",
+        "tarifa_base",
+        "porcentaje_liquidacion_display",
+        "derecho_minimo",
+        "derecho_maximo",
+        "porcentaje_minimo_uit",
+        "created_at",
+    ]
+    list_filter = []
+    search_fields = [
+        "tarifa_base__tipo_liquidacion",
+    ]
+    readonly_fields = ["created_at", "updated_at"]
+    ordering = ["-created_at"]
+
+    def porcentaje_liquidacion_display(self, obj):
+        if obj and obj.porcentaje_liquidacion is not None:
+            return f"{float(obj.porcentaje_liquidacion) * 100:.4f}%"
+        return "-"
+
+    porcentaje_liquidacion_display.short_description = "% Liquidación"
+
+
 # EdificacionesClasificacion model moved to domain — admin registration pending model availability.
 
 
-@admin.register(EdificacionesEspecialidades)
-class EdificacionesEspecialidadesAdmin(SimpleHistoryAdmin):
-    list_display = ["grupo_especialidades_display", "periodo_inicio", "periodo_fin", "habilitada_display"]
-    list_filter = ["periodo_inicio"]
-    search_fields = ["especialidades__nombre"]
-    readonly_fields = ["created_at", "updated_at", "habilitada_display"]
-    filter_horizontal = ["especialidades"]
-    ordering = ["-periodo_inicio"]
-
-    def grupo_especialidades_display(self, obj):
-        especialidades = list(obj.especialidades.all())
-        if not especialidades:
-            return "-"
-        nombres = [e.nombre for e in especialidades]
-        if len(nombres) > 4:
-            return ", ".join(nombres[:4]) + f" (+{len(nombres) - 4})"
-        return ", ".join(nombres)
-
-    grupo_especialidades_display.short_description = "Especialidades"
-
-    def habilitada_display(self, obj):
-        return obj.habilitada if obj.habilitada is not None else None
-
-    habilitada_display.short_description = "Habilitada"
-
-
-@admin.register(EdificacionesTarifa)
-class EdificacionesTarifaAdmin(SimpleHistoryAdmin):
-    list_display = ["porcentaje_minimo_uit", "derecho_minimo", "derecho_maximo", "periodo_inicio", "periodo_fin"]
-    list_filter = ["periodo_inicio"]
-    search_fields = ["periodo_inicio"]
-    readonly_fields = ["created_at", "updated_at"]
-    ordering = ["-periodo_inicio"]
-
-
-@admin.register(EdificacionesRevision)
-class EdificacionesRevisionAdmin(SimpleHistoryAdmin):
-    list_display = ["tarifa", "especialidades_list", "porcentaje_liquidacion", "periodo_inicio", "periodo_fin", "habilitada"]
-    list_filter = ["tarifa"]
-    search_fields = ["especialidades__nombre"]
-    readonly_fields = ["created_at", "updated_at", "habilitada"]
-    filter_horizontal = ["especialidades"]
-    ordering = ["-periodo_inicio"]
-
-    def especialidades_list(self, obj):
-        """Muestra lista de especialidades como texto separado por comas."""
-        especialidades = list(obj.especialidades.all())
-        if not especialidades:
-            return "-"
-        return ", ".join(e.nombre for e in especialidades)
-
-    especialidades_list.short_description = "Especialidades"
+# Legacy models removed from admin registration:
+# - EdificacionesEspecialidades: usar EspecialidadesLiquidacion
+# - EdificacionesTarifa: usar TarifaLiquidacionBase + TarifaPorcentajeObra
+# - EdificacionesRevision: usar TarifaLiquidacionBase + TarifaPorcentajeObra
+# Estos modelos aún existen en el código (no eliminados) por si se necesitan para migración,
+# pero no están registrados en admin ni exportados como parte activa de la arquitectura.
 
 
 # EdificacionesClasificacionEspecialidades model removed - specialties now stored

@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Building2, MapPin } from "lucide-react";
+import { Building2, MapPin, Search } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { GenericInput } from "@/components/genericForm/GenericInput";
@@ -8,15 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import type { EntidadResult } from "@/features/entidades/types/entidad";
+import { InstitucionFormModal } from "@/features/entidades/components/InstitucionFormModal";
+import { PersonaNaturalFormModal } from "@/features/entidades/components/PersonaNaturalFormModal";
 import { useDistritos } from "@/features/entidades/hooks/useDistritos";
+import type { EntidadResult } from "@/features/entidades/types/entidad";
 import { useProyectoBuscar, useProyectoCrear } from "../hooks/useProyecto";
 import type {
   ProyectoFormModalProps,
   ProyectoResumen,
 } from "../types/liquidacion-edificaciones-form.types";
-import { InstitucionFormModal } from "@/features/entidades/components/InstitucionFormModal";
-import { PersonaNaturalFormModal } from "@/features/entidades/components/PersonaNaturalFormModal";
 
 const proyectoSchema = z.object({
   denominacion: z.string().min(1, "La denominación es requerida"),

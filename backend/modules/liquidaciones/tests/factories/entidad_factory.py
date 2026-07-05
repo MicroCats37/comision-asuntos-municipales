@@ -15,4 +15,13 @@ class EntidadFactory(DjangoModelFactory):
     numero_documento = factory.Sequence(lambda n: f"{n:011d}")  # 11 dígitos
     razon_social = factory.Faker("company")
     tipo_contribuyente = "GENERICO"
-    activo = True
+
+
+class PersonaNaturalFactory(DjangoModelFactory):
+    """Factory for Entidad (persona natural DNI) — used in tests."""
+    class Meta:
+        model = Entidad
+
+    tipo_documento = "DNI"
+    numero_documento = factory.Sequence(lambda n: f"{n:08d}")  # 8 dígitos
+    razon_social = factory.Faker("name")

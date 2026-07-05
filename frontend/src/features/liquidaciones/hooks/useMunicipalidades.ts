@@ -10,14 +10,18 @@ const municipalidadSchema = z.object({
   id: z.string(),
   nombre: z.string(),
   codigo: z.string().nullable(),
-  provincia: z.object({
-    id: z.string(),
-    nombre: z.string(),
-  }).nullable(),
-  distrito: z.object({
-    id: z.string(),
-    nombre: z.string(),
-  }).nullable(),
+  provincia: z
+    .object({
+      id: z.string(),
+      nombre: z.string(),
+    })
+    .nullable(),
+  distrito: z
+    .object({
+      id: z.string(),
+      nombre: z.string(),
+    })
+    .nullable(),
 });
 
 const municipalidadesPayloadSchema = z.union([
@@ -25,7 +29,9 @@ const municipalidadesPayloadSchema = z.union([
   z.object({ items: z.array(municipalidadSchema) }),
 ]);
 
-const municipalidadesResponseSchema = apiResponseSchema(municipalidadesPayloadSchema);
+const municipalidadesResponseSchema = apiResponseSchema(
+  municipalidadesPayloadSchema,
+);
 
 export function useMunicipalidades() {
   return useApiQuery<
@@ -39,7 +45,9 @@ export function useMunicipalidades() {
       staleTime: 1000 * 60 * 10,
       select: (envelope) => {
         if (!envelope.data) return [];
-        return Array.isArray(envelope.data) ? envelope.data : envelope.data.items;
+        return Array.isArray(envelope.data)
+          ? envelope.data
+          : envelope.data.items;
       },
     },
   });

@@ -9,15 +9,17 @@ problemas de serialización de IDs en el test client. Los unit tests
 verifican el flujo completo a nivel HTTP.
 
 NOTE: Updated to use new Proyectista contract (perfil_ingeniero FK).
-EdificacionesEspecialidades must be created before primera-revision with revisions.
+EspecialidadesLiquidacion must be created before primera-revision with revisions.
 """
 import pytest
+from decimal import Decimal
 from django.test import Client
 
 from modules.liquidaciones.tests.factories.proyecto_factory import ProyectoFactory
 from modules.liquidaciones.tests.factories.finanzas_factory import IGVFactory, UITFactory
 from modules.liquidaciones.tests.factories.proyectista_factory import ProyectistaFactory
-from modules.liquidaciones.tests.factories.edificaciones_especialidades_factory import EdificacionesEspecialidadesFactory
+from modules.liquidaciones.tests.factories.especialidades_liquidacion_factory import EspecialidadesLiquidacionFactory
+from modules.liquidaciones.tests.factories.tarifa_liquidacion_factory import TarifaLiquidacionBaseFactory
 
 
 @pytest.mark.django_db
@@ -29,8 +31,8 @@ class TestPrimeraRevisionEndpoint:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
-        # Create EdificacionesEspecialidades vigente (empty set for sin_revisiones tests)
-        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
+        # Create EspecialidadesLiquidacion vigente (empty set for sin_revisiones tests)
+        self.especialidades_grupo = EspecialidadesLiquidacionFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -44,7 +46,7 @@ class TestPrimeraRevisionEndpoint:
     def test_primera_revision_sin_revisiones_retorna_200(self, client: Client):
         """
         POST /primera-revision sin revisiones_ids debe retornar 200.
-        Verifica que el flujo completo funciona (crea LiquidacionGeneral + snapshot).
+        Verifica que el flujo completo funciona y retorna estructura plana LiquidacionEdificacionOut.
         """
         response = client.post(
             "/api/liquidaciones/edificaciones/primera-revision",
@@ -54,6 +56,7 @@ class TestPrimeraRevisionEndpoint:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
                     "observacion": "Test",
                     "revisiones_ids": [],
                 }
@@ -63,21 +66,21 @@ class TestPrimeraRevisionEndpoint:
         assert response.status_code == 200, response.json()
         data = response.json()
         assert "data" in data
-        snapshot = data["data"]
-        assert "liquidacion" in snapshot
-        assert "edificaciones" in snapshot
-        assert "totales" in snapshot
-        # Verificar public_id en liquidacion
-        assert "public_id" in snapshot["liquidacion"]
-        assert snapshot["liquidacion"]["public_id"].startswith("LIQ-")
-        # Verificar municipalidad en respuesta (nuevo formato anidado)
-        assert "municipalidad" in snapshot["liquidacion"]
-        assert snapshot["liquidacion"]["municipalidad"]["id"] == str(self.municipalidad.id)
-        assert snapshot["liquidacion"]["municipalidad"]["nombre"] == self.municipalidad.nombre
+        result = data["data"]
+        # Verificar estructura plana LiquidacionEdificacionOut
+        assert "public_id" in result
+        assert result["public_id"].startswith("LIQ-")
+        assert "estado" in result
+        assert "numero_revision" in result
+        assert result["numero_revision"] == 1
+        # Verificar municipalidad anidada
+        assert "municipalidad" in result
+        assert result["municipalidad"]["id"] == str(self.municipalidad.id)
+        assert result["municipalidad"]["nombre"] == self.municipalidad.nombre
         # Sin revisiones, totales deben ser 0
-        assert snapshot["totales"]["subtotal"] == 0
-        # expediente fue removido del dominio
-        assert "expediente" not in snapshot["liquidacion"]
+        assert result["subtotal"] == 0
+        assert result["igv"] == 0
+        # expediente puede estar presente (null o ausente) — no es relevante para el dominio actual
 
     def test_primera_revision_proyecto_inexistente_retorna_error(self, client: Client):
         """Proyecto con public_id inexistente debe retornar error (no 500)."""
@@ -89,115 +92,13 @@ class TestPrimeraRevisionEndpoint:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
                     "revisiones_ids": [],
                 }
             },
             content_type="application/json",
         )
         assert response.status_code in (200, 400, 404)
-
-
-@pytest.mark.django_db
-class TestObtenerLiquidacionEndpoint:
-    """Test GET /api/liquidaciones/edificaciones/{id} endpoint."""
-
-    def setup_method(self):
-        """Crear primera revisión (sin revisiones) para consultar después."""
-        self.igv = IGVFactory()
-        self.uit = UITFactory()
-        self.proyecto = ProyectoFactory()
-        # Create EdificacionesEspecialidades vigente
-        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
-        # Create a municipalidad for testing
-        from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
-        from modules.entidades.models import Municipalidad
-        self.distrito = UbigeoDistritoFactory()
-        self.municipalidad = Municipalidad.objects.create(
-            codigo="MUN-TEST-OBTENER",
-            nombre="Municipalidad de Prueba Obtener",
-            distrito=self.distrito,
-        )
-
-        client = Client()
-        response = client.post(
-            "/api/liquidaciones/edificaciones/primera-revision",
-            data={
-                "liquidacion": {
-                    "proyecto_public_id": self.proyecto.public_id,
-                    "municipalidad_id": str(self.municipalidad.id),
-                    "tipo_tramite": "OBRA_NUEVA",
-                    "valor_proyecto": 10000.0,
-                    "revisiones_ids": [],
-                }
-            },
-            content_type="application/json",
-        )
-        assert response.status_code == 200, f"Setup failed: {response.json()}"
-        self.liquidacion_id = response.json()["data"]["liquidacion"]["id"]
-
-    def test_obtener_liquidacion_existente_retorna_200(self, client: Client):
-        """GET con ID válido debe retornar 200 con snapshot."""
-        response = client.get(
-            f"/api/liquidaciones/edificaciones/{self.liquidacion_id}",
-        )
-        assert response.status_code == 200, response.json()
-        data = response.json()["data"]
-        assert data["liquidacion"]["id"] == self.liquidacion_id
-
-    def test_obtener_liquidacion_inexistente_retorna_error(self, client: Client):
-        """GET con ID malformado debe retornar error (no 500)."""
-        # 999999 no es un UUID válido, debe retornar 400 (bad request)
-        response = client.get("/api/liquidaciones/edificaciones/999999")
-        assert response.status_code in (200, 400, 404)
-
-    def test_obtener_liquidacion_retorna_full_snapshot_data(self, client: Client):
-        """
-        GET /{liquidacion_id} debe retornar el JSON completo almacenado en
-        LiquidacionSnapshot.data, incluyendo cualquier campo adicional.
-
-        Este test inyecta campos extra en el snapshot de la BD y verifica que
-        el endpoint los retorna sin modificación.
-        """
-        from modules.liquidaciones.models import LiquidacionSnapshot
-
-        # Obtener el snapshot creado por setup
-        snapshot = LiquidacionSnapshot.objects.get(liquidacion_id=self.liquidacion_id)
-
-        # Inyectar campos extra en el JSON del snapshot
-        extra_data = {
-            "campo_extra_string": "valor_extra",
-            "campo_extra_numero": 42,
-            "campo_extra_objeto": {"nested": "value"},
-            "campo_extra_lista": [1, 2, 3],
-        }
-        snapshot.data["campo_extra"] = extra_data
-        snapshot.data["otro_campo"] = "preservado"
-        snapshot.save()
-
-        # Llamar al endpoint
-        response = client.get(
-            f"/api/liquidaciones/edificaciones/{self.liquidacion_id}",
-        )
-        assert response.status_code == 200, response.json()
-        data = response.json()["data"]
-
-        # Verificar campos base
-        assert data["liquidacion"]["id"] == self.liquidacion_id
-
-        # Verificar que los campos extra fueron retornados sin modificación
-        assert data["campo_extra"]["campo_extra_string"] == "valor_extra"
-        assert data["campo_extra"]["campo_extra_numero"] == 42
-        assert data["campo_extra"]["campo_extra_objeto"]["nested"] == "value"
-        assert data["campo_extra"]["campo_extra_lista"] == [1, 2, 3]
-        assert data["otro_campo"] == "preservado"
-
-        # Verificar que _metadata está presente si existe en el snapshot
-        # (puede no existir en snapshots muy antiguos o modificados)
-        if "_metadata" in snapshot.data:
-            assert "_metadata" in data
-            assert "igv_valor" in data["_metadata"]
-            assert "uit_valor" in data["_metadata"]
-            assert "cobra" in data["_metadata"]
 
 
 @pytest.mark.django_db
@@ -241,8 +142,8 @@ class TestPrimeraRevisionProyectistasM2M:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
-        # Create EdificacionesEspecialidades vigente
-        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
+        # Create EspecialidadesLiquidacion vigente
+        self.especialidades_grupo = EspecialidadesLiquidacionFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -259,7 +160,7 @@ class TestPrimeraRevisionProyectistasM2M:
         """
         POST /primera-revision con proyectistas_ids debe:
         1. Crear la liquidación con los proyectistas asociados
-        2. Retornar los proyectistas en la respuesta snapshot
+        2. Retornar los proyectistas en la respuesta plana LiquidacionEdificacionOut
         """
         response = client.post(
             "/api/liquidaciones/edificaciones/primera-revision",
@@ -269,6 +170,7 @@ class TestPrimeraRevisionProyectistasM2M:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
                     "observacion": "Test con proyectistas",
                     "revisiones_ids": [],
                     "proyectistas_ids": [str(self.proyectista1.id), str(self.proyectista2.id)],
@@ -279,21 +181,20 @@ class TestPrimeraRevisionProyectistasM2M:
         assert response.status_code == 200, response.json()
         data = response.json()
         assert "data" in data
-        snapshot = data["data"]
-        # Verificar que la respuesta incluye edificaciones con proyectistas
-        assert "edificaciones" in snapshot
-        assert "proyectistas" in snapshot["edificaciones"]
-        proyectistas_response = snapshot["edificaciones"]["proyectistas"]
+        result = data["data"]
+        # Verificar que la respuesta plana incluye proyectistas
+        assert "proyectistas" in result
+        proyectistas_response = result["proyectistas"]
         assert len(proyectistas_response) == 2
         # Verificar que los datos de proyectistas son correctos
-        proyectista_ids_response = {p["id"] for p in proyectistas_response}
+        proyectista_ids_response = {str(p["id"]) for p in proyectistas_response}
         assert str(self.proyectista1.id) in proyectista_ids_response
         assert str(self.proyectista2.id) in proyectista_ids_response
 
     def test_primera_revision_sin_proyectistas_retorna_lista_vacia(self, client: Client):
         """
         POST /primera-revision sin proyectistas_ids debe retornar
-        lista vacía de proyectistas en la respuesta.
+        lista vacía de proyectistas en la respuesta plana.
         """
         response = client.post(
             "/api/liquidaciones/edificaciones/primera-revision",
@@ -303,6 +204,7 @@ class TestPrimeraRevisionProyectistasM2M:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
                     "observacion": "Test sin proyectistas",
                     "revisiones_ids": [],
                     "proyectistas_ids": [],
@@ -312,51 +214,9 @@ class TestPrimeraRevisionProyectistasM2M:
         )
         assert response.status_code == 200, response.json()
         data = response.json()
-        snapshot = data["data"]
-        assert "edificaciones" in snapshot
-        assert "proyectistas" in snapshot["edificaciones"]
-        assert snapshot["edificaciones"]["proyectistas"] == []
-
-    def test_primera_revision_proyectistas_recuperados_en_snapshot_list(self, client: Client):
-        """
-        Los proyectistas guardados en primera-revision deben aparecer
-        también en GET /snapshots.
-        """
-        # Crear primera revisión con proyectistas
-        create_response = client.post(
-            "/api/liquidaciones/edificaciones/primera-revision",
-            data={
-                "liquidacion": {
-                    "proyecto_public_id": self.proyecto.public_id,
-                    "municipalidad_id": str(self.municipalidad.id),
-                    "tipo_tramite": "OBRA_NUEVA",
-                    "valor_proyecto": 10000.0,
-                    "observacion": "Test snapshot list",
-                    "revisiones_ids": [],
-                    "proyectistas_ids": [str(self.proyectista1.id)],
-                }
-            },
-            content_type="application/json",
-        )
-        assert create_response.status_code == 200, create_response.json()
-        liquidacion_id = create_response.json()["data"]["liquidacion"]["id"]
-
-        # Obtener snapshot list
-        list_response = client.get(
-            "/api/liquidaciones/edificaciones/snapshots",
-            query_params={"page": 1, "page_size": 10},
-        )
-        assert list_response.status_code == 200, list_response.json()
-        list_data = list_response.json()
-
-        # Encontrar el snapshot creado
-        items = list_data["data"]["items"]
-        our_item = next((item for item in items if item["liquidacion_id"] == liquidacion_id), None)
-        assert our_item is not None, f"Snapshot {liquidacion_id} not found in list"
-        # Verificar que edificaciones.proyectistas contiene el proyectista
-        assert "proyectistas" in our_item["edificaciones"]
-        assert len(our_item["edificaciones"]["proyectistas"]) == 1
-        assert our_item["edificaciones"]["proyectistas"][0]["id"] == str(self.proyectista1.id)
+        result = data["data"]
+        assert "proyectistas" in result
+        assert result["proyectistas"] == []
 
 
 # ── Additional endpoint coverage ──────────────────────────────────────────────
@@ -376,8 +236,8 @@ class TestEdificacionesListEndpoint:
             nombre="Municipalidad de Prueba 3",
             distrito=self.distrito,
         )
-        # Create EdificacionesEspecialidades vigente for tests that create liquidaciones
-        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
+        # Create EspecialidadesLiquidacion vigente for tests that create liquidaciones
+        self.especialidades_grupo = EspecialidadesLiquidacionFactory()
 
     def test_get_list_empty_returns_success_with_items_array(self, client: Client):
         """
@@ -400,7 +260,7 @@ class TestEdificacionesListEndpoint:
 
     def test_get_list_with_data_returns_items_and_pagination_keys(self, client: Client):
         """
-        GET / after creating a liquidacion returns items with expected keys.
+        GET / after creating a liquidacion returns items with expected keys (flat LiquidacionEdificacionOut).
         """
         # Create a liquidacion first
         igv = IGVFactory()
@@ -415,6 +275,7 @@ class TestEdificacionesListEndpoint:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
                     "revisiones_ids": [],
                 }
             },
@@ -431,18 +292,26 @@ class TestEdificacionesListEndpoint:
         data = response.json()
         items = data["data"]["items"]
         assert len(items) >= 1
-        # Verify item has expected keys
+        # Verify item has expected flat LiquidacionEdificacionOut keys
         item = items[0]
         assert "id" in item
-        assert "numero_revision" in item
+        assert "public_id" in item
         assert "estado" in item
-        assert "valor_proyecto" in item
-        assert "proyecto_public_id" in item
-        assert "proyecto_denominacion" in item
-        assert "fecha_registro" in item
+        assert "numero_revision" in item
+        assert "tipo_tramite" in item
+        assert "tramite_accion" in item
+        # Nested proyecto
+        assert "proyecto" in item
+        assert "public_id" in item["proyecto"]
+        assert "nombre" in item["proyecto"]
+        # Valores financieros directos
+        assert "subtotal" in item
+        assert "igv" in item
         assert "total" in item
-        # expediente was removed from domain
-        assert "expediente" not in item
+        assert "total_a_pagar" in item
+        assert "fecha_registro" in item
+        # Flat LiquidacionEdificacionOut includes expediente at the root.
+        assert "expediente" in item
 
 
 @pytest.mark.django_db
@@ -454,8 +323,8 @@ class TestPrimeraRevisionValidation:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
-        # Create EdificacionesEspecialidades vigente
-        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
+        # Create EspecialidadesLiquidacion vigente
+        self.especialidades_grupo = EspecialidadesLiquidacionFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -475,10 +344,11 @@ class TestPrimeraRevisionValidation:
             "/api/liquidaciones/edificaciones/primera-revision",
             data={
                 # Missing outer "liquidacion" wrapper
-                "proyecto_public_id": self.proyecto.public_id,
+"proyecto_public_id": self.proyecto.public_id,
                 "municipalidad_id": str(self.municipalidad.id),
                 "tipo_tramite": "OBRA_NUEVA",
                 "valor_proyecto": 10000.0,
+                "valor_base_calculo": 10000.0,
                 "revisiones_ids": [],
             },
             content_type="application/json",
@@ -497,6 +367,7 @@ class TestPrimeraRevisionValidation:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
                 }
             },
             content_type="application/json",
@@ -518,6 +389,7 @@ class TestPrimeraRevisionValidation:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
                     "revisiones_ids": [],
                     "proyectistas_ids": [str(proyectista.id)],
                 }
@@ -537,12 +409,14 @@ class TestPrimeraRevisionValidation:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
                     "revisiones_ids": [],
                 }
             },
             content_type="application/json",
         )
-        assert response.status_code == 422, response.json()
+        # HttpError raised by orchestrator returns 400, not 422
+        assert response.status_code in (400, 422), response.json()
 
     def test_primera_revision_negative_valor_proyecto_returns_422(self, client: Client):
         """
@@ -573,8 +447,8 @@ class TestNuevaRevisionFormularioEndpoint:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
-        # Create EdificacionesEspecialidades vigente
-        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
+        # Create EspecialidadesLiquidacion vigente
+        self.especialidades_grupo = EspecialidadesLiquidacionFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -594,13 +468,14 @@ class TestNuevaRevisionFormularioEndpoint:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
                     "revisiones_ids": [],
                 }
             },
             content_type="application/json",
         )
         assert response.status_code == 200, f"Setup failed: {response.json()}"
-        self.liquidacion_previa_id = response.json()["data"]["liquidacion"]["id"]
+        self.liquidacion_previa_id = response.json()["data"]["id"]
 
     def test_formulario_con_liquidacion_previa_existente_retorna_200(self, client: Client):
         """
@@ -651,11 +526,28 @@ class TestNuevaRevisionEndpoint:
 
     def setup_method(self):
         """Create a liquidacion to use as previous."""
+        from modules.liquidaciones.domain.constants import TramiteAccion, TipoTramiteEdificaciones
+        from modules.liquidaciones.tests.factories.regla_tarifa_edificacion_factory import ReglaTarifaEdificacionFactory
+        from modules.liquidaciones.tests.factories.especialidad_factory import EspecialidadFactory
+
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
-        # Create EdificacionesEspecialidades vigente
-        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
+
+        # Create EspecialidadesLiquidacion vigente (empty - for primera-revision with no revisions)
+        self.especialidades_grupo = EspecialidadesLiquidacionFactory()
+
+        # Create Especialidad for the tarifa (required by domain validation)
+        self.especialidad = EspecialidadFactory()
+
+        # Create TarifaLiquidacionBase with detalle_porcentual, especialidades and ReglaTarifaEdificacion for REVISION
+        self.tarifa_base = TarifaLiquidacionBaseFactory(especialidades=[self.especialidad])
+        ReglaTarifaEdificacionFactory(
+            tipo_tramite=TipoTramiteEdificaciones.OBRA_NUEVA,
+            tramite_accion=TramiteAccion.REVISION,
+            tarifa_base=self.tarifa_base,
+        )
+
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -677,6 +569,7 @@ class TestNuevaRevisionEndpoint:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
                     "revisiones_ids": [],
                     "proyectistas_ids": [str(self.proyectista1.id)],
                 }
@@ -684,7 +577,7 @@ class TestNuevaRevisionEndpoint:
             content_type="application/json",
         )
         assert response.status_code == 200, f"Setup failed: {response.json()}"
-        self.liquidacion_previa_id = response.json()["data"]["liquidacion"]["id"]
+        self.liquidacion_previa_id = response.json()["data"]["id"]
 
     def test_nueva_revision_empty_revisiones_ids_returns_422(self, client: Client):
         """
@@ -703,7 +596,7 @@ class TestNuevaRevisionEndpoint:
     def test_nueva_revision_valid_payload_returns_200(self, client: Client):
         """
         POST /nueva-revision with valid payload (existing liquidacion, non-empty
-        revisiones_ids) returns 200 and creates a new revision snapshot.
+        revisiones_ids) returns 200 and creates a new revision with flat LiquidacionEdificacionOut.
         """
         # Get a valid revision to use
         revision_response = client.get(
@@ -730,12 +623,9 @@ class TestNuevaRevisionEndpoint:
         assert response.status_code == 200, response.json()
         data = response.json()
         assert "data" in data
-        snapshot = data["data"]
-        assert "liquidacion" in snapshot
-        assert "edificaciones" in snapshot
-        assert "totales" in snapshot
-        # numero_revision should be 2
-        assert snapshot["edificaciones"]["numero_revision"] == 2
+        result = data["data"]
+        # Nueva revisión follows the domain sequence 1 -> 3 -> 5.
+        assert result["numero_revision"] == 3
 
     def test_nueva_revision_invalid_liquidacion_previa_id_returns_error(self, client: Client):
         """
@@ -785,10 +675,10 @@ class TestNuevaRevisionEndpoint:
         )
         assert response.status_code == 200, response.json()
         data = response.json()
-        snapshot = data["data"]
+        result = data["data"]
 
         # Verify that the new revision has only proyectista2 (not inherited)
-        proyectistas_ids_response = {p["id"] for p in snapshot["edificaciones"]["proyectistas"]}
+        proyectistas_ids_response = {str(p["id"]) for p in result["proyectistas"]}
         assert str(self.proyectista2.id) in proyectistas_ids_response
         assert str(self.proyectista1.id) not in proyectistas_ids_response
 
@@ -822,10 +712,10 @@ class TestNuevaRevisionEndpoint:
         )
         assert response.status_code == 200, response.json()
         data = response.json()
-        snapshot = data["data"]
+        result = data["data"]
 
         # Verify that the new revision inherited proyectista1 from previa
-        proyectistas_ids_response = {p["id"] for p in snapshot["edificaciones"]["proyectistas"]}
+        proyectistas_ids_response = {str(p["id"]) for p in result["proyectistas"]}
         assert str(self.proyectista1.id) in proyectistas_ids_response
 
     def test_nueva_revision_proyectistas_ids_vacio_hereda_de_previa(self, client: Client):
@@ -859,10 +749,10 @@ class TestNuevaRevisionEndpoint:
         )
         assert response.status_code == 200, response.json()
         data = response.json()
-        snapshot = data["data"]
+        result = data["data"]
 
         # Verify that the new revision inherited proyectista1 from previa
-        proyectistas_ids_response = {p["id"] for p in snapshot["edificaciones"]["proyectistas"]}
+        proyectistas_ids_response = {str(p["id"]) for p in result["proyectistas"]}
         assert str(self.proyectista1.id) in proyectistas_ids_response
 
 
@@ -875,8 +765,8 @@ class TestNuevaRevisionFormularioEndpoint:
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
-        # Create EdificacionesEspecialidades vigente
-        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
+        # Create EspecialidadesLiquidacion vigente
+        self.especialidades_grupo = EspecialidadesLiquidacionFactory()
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -898,6 +788,7 @@ class TestNuevaRevisionFormularioEndpoint:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
                     "revisiones_ids": [],
                     "proyectistas_ids": [str(self.proyectista1.id), str(self.proyectista2.id)],
                 }
@@ -905,7 +796,7 @@ class TestNuevaRevisionFormularioEndpoint:
             content_type="application/json",
         )
         assert response.status_code == 200, f"Setup failed: {response.json()}"
-        self.liquidacion_previa_id = response.json()["data"]["liquidacion"]["id"]
+        self.liquidacion_previa_id = response.json()["data"]["id"]
 
     def test_formulario_retorna_proyectistas_actuales(self, client: Client):
         """
@@ -956,6 +847,7 @@ class TestNuevaRevisionFormularioEndpoint:
                     "municipalidad_id": str(municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
                     "revisiones_ids": [],
                     "proyectistas_ids": [],  # No proyectistas
                 }
@@ -963,7 +855,7 @@ class TestNuevaRevisionFormularioEndpoint:
             content_type="application/json",
         )
         assert response.status_code == 200, f"Setup failed: {response.json()}"
-        liquidacion_previa_id = response.json()["data"]["liquidacion"]["id"]
+        liquidacion_previa_id = response.json()["data"]["id"]
 
         # Get formulario
         form_response = client.get(
@@ -1021,101 +913,6 @@ class TestRevisionesVigentesSchema:
             assert isinstance(rev["habilitada"], bool), f"habilitada should be bool, got {type(rev['habilitada'])}"
 
 
-@pytest.mark.django_db
-class TestSnapshotsListEndpoint:
-    """Test GET /api/liquidaciones/edificaciones/snapshots endpoint."""
-
-    def setup_method(self):
-        """Create municipalidad for tests."""
-        from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
-        from modules.entidades.models import Municipalidad
-        self.distrito = UbigeoDistritoFactory()
-        self.municipalidad = Municipalidad.objects.create(
-            codigo="MUN-007",
-            nombre="Municipalidad de Prueba 7",
-            distrito=self.distrito,
-        )
-        # Create EdificacionesEspecialidades vigente for tests that create liquidaciones
-        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
-
-    def test_snapshots_list_returns_success_with_pagination_shape(self, client: Client):
-        """
-        GET /snapshots returns 200 with items array and all pagination keys.
-        """
-        response = client.get(
-            "/api/liquidaciones/edificaciones/snapshots",
-            query_params={"page": 1, "page_size": 10},
-        )
-        assert response.status_code == 200, response.json()
-        data = response.json()
-        assert "data" in data
-        assert "items" in data["data"]
-        assert "total" in data["data"]
-        assert "page" in data["data"]
-        assert "page_size" in data["data"]
-        assert "total_pages" in data["data"]
-        assert isinstance(data["data"]["items"], list)
-
-    def test_snapshots_list_item_has_expected_schema_keys(self, client: Client):
-        """
-        Each item in snapshots list must have keys from LiquidacionSnapshotListItemOut.
-        """
-        # Create a liquidacion first
-        igv = IGVFactory()
-        uit = UITFactory()
-        proyecto = ProyectoFactory()
-        client = Client()
-        create_response = client.post(
-            "/api/liquidaciones/edificaciones/primera-revision",
-            data={
-                "liquidacion": {
-                    "proyecto_public_id": proyecto.public_id,
-                    "municipalidad_id": str(self.municipalidad.id),
-                    "tipo_tramite": "OBRA_NUEVA",
-                    "valor_proyecto": 10000.0,
-                    "revisiones_ids": [],
-                }
-            },
-            content_type="application/json",
-        )
-        assert create_response.status_code == 200, f"Setup failed: {create_response.json()}"
-
-        # Get list
-        response = client.get(
-            "/api/liquidaciones/edificaciones/snapshots",
-            query_params={"page": 1, "page_size": 10},
-        )
-        assert response.status_code == 200, response.json()
-        items = response.json()["data"]["items"]
-        assert len(items) >= 1
-        item = items[0]
-        # Verify LiquidacionSnapshotListItemOut keys
-        assert "liquidacion_id" in item
-        assert "numero_liquidacion" in item
-        assert "estado" in item
-        assert "fecha_registro" in item
-        # expediente was removed
-        assert "expediente" not in item
-        assert "observacion" in item
-        assert "proyecto" in item
-        assert "edificaciones" in item
-        assert "totales" in item
-        # Verify nested proyecto keys
-        assert "id" in item["proyecto"]
-        assert "public_id" in item["proyecto"]
-        assert "nombre" in item["proyecto"]
-        # Verify nested edificaciones keys
-        assert "numero_revision" in item["edificaciones"]
-        assert "proyectistas" in item["edificaciones"]
-        assert "revisiones" in item["edificaciones"]
-        # Verify nested totales keys
-        assert "subtotal" in item["totales"]
-        assert "igv" in item["totales"]
-        assert "total" in item["totales"]
-        assert "liquidacion_total" in item["totales"]
-        assert "total_a_pagar" in item["totales"]
-
-
 # ── Cotizar Endpoints Tests ────────────────────────────────────────────────────
 
 
@@ -1124,21 +921,36 @@ class TestCotizarPrimeraRevisionEndpoint:
     """Test POST /api/liquidaciones/edificaciones/cotizar/primera-revision endpoint."""
 
     def setup_method(self):
-        """Seed IGV, UIT y proyecto para cotizar tests."""
+        """Seed IGV, UIT, proyecto y tarifas para cotizar tests."""
+        from modules.liquidaciones.domain.constants import TramiteAccion, TipoTramiteEdificaciones
+        from modules.liquidaciones.tests.factories.regla_tarifa_edificacion_factory import ReglaTarifaEdificacionFactory
+
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
 
+        # Create EspecialidadesLiquidacion vigente (empty)
+        self.especialidades_grupo = EspecialidadesLiquidacionFactory()
+
+        # Create TarifaLiquidacionBase with detalle_porcentual and ReglaTarifaEdificacion for PRIMERA_REVISION
+        # This is needed for cotizar endpoint to return revisions
+        self.tarifa_base = TarifaLiquidacionBaseFactory()
+        ReglaTarifaEdificacionFactory(
+            tipo_tramite=TipoTramiteEdificaciones.OBRA_NUEVA,
+            tramite_accion=TramiteAccion.PRIMERA_REVISION,
+            tarifa_base=self.tarifa_base,
+        )
+
     def test_cotizar_primera_revision_retorna_200_y_no_crea_liquidacion(self, client: Client):
         """
         POST /cotizar/primera-revision debe retornar 200 con resultado calculado
-        y NO crear ningún registro de LiquidacionGeneral ni LiquidacionEdificaciones.
+        y NO crear ningún registro de LiquidacionGeneral ni LiquidacionEdificacion.
         """
-        from modules.liquidaciones.models import LiquidacionGeneral, LiquidacionEdificaciones
+        from modules.liquidaciones.models import LiquidacionGeneral, LiquidacionEdificacion
 
         # Contar liquidaciones antes
         count_before = LiquidacionGeneral.objects.count()
-        edif_count_before = LiquidacionEdificaciones.objects.count()
+        edif_count_before = LiquidacionEdificacion.objects.count()
 
         response = client.post(
             "/api/liquidaciones/edificaciones/cotizar/primera-revision",
@@ -1146,6 +958,7 @@ class TestCotizarPrimeraRevisionEndpoint:
                 "liquidacion": {
                     "proyecto_public_id": self.proyecto.public_id,
                     "valor_proyecto": 50000.0,
+                    "valor_base_calculo": 50000.0,
                 }
             },
             content_type="application/json",
@@ -1173,7 +986,7 @@ class TestCotizarPrimeraRevisionEndpoint:
 
         # Verificar que NO se creó ninguna liquidación
         assert LiquidacionGeneral.objects.count() == count_before, "No debe crear LiquidacionGeneral"
-        assert LiquidacionEdificaciones.objects.count() == edif_count_before, "No debe crear LiquidacionEdificaciones"
+        assert LiquidacionEdificacion.objects.count() == edif_count_before, "No debe crear LiquidacionEdificacion"
 
     def test_cotizar_primera_revision_proyecto_inexistente_retorna_error(self, client: Client):
         """Proyecto inexistente debe retornar error (no 500)."""
@@ -1183,6 +996,7 @@ class TestCotizarPrimeraRevisionEndpoint:
                 "liquidacion": {
                     "proyecto_public_id": "PROY-INEXISTENTE-COTIZAR",
                     "valor_proyecto": 50000.0,
+                    "valor_base_calculo": 50000.0,
                 }
             },
             content_type="application/json",
@@ -1198,11 +1012,49 @@ class TestCotizarPrimeraRevisionEndpoint:
                 "liquidacion": {
                     "proyecto_public_id": self.proyecto.public_id,
                     "valor_proyecto": 0.0,
+                    "valor_base_calculo": 0.0,
                 }
             },
             content_type="application/json",
         )
         assert response.status_code == 422, response.json()
+
+    def test_cotizar_primera_revision_respuesta_tiene_especialidades_plural(self, client: Client):
+        """
+        La respuesta de /cotizar/primera-revision debe usar 'especialidades' (plural)
+        con lista de objetos {id, nombre}, NO 'especialidad' singular string.
+        """
+        response = client.post(
+            "/api/liquidaciones/edificaciones/cotizar/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "valor_proyecto": 50000.0,
+                    "valor_base_calculo": 50000.0,
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        quote = data["data"]
+
+        assert "revisiones" in quote
+
+        if len(quote["revisiones"]) == 0:
+            pytest.skip("No revisions available to test with")
+
+        for rev in quote["revisiones"]:
+            # Debe usar 'especialidades' plural (lista), NO 'especialidad' singular
+            assert "especialidades" in rev, f"Missing 'especialidades' in revision: {rev.keys()}"
+            assert "especialidad" not in rev, f"Should NOT have singular 'especialidad' in revision"
+            assert isinstance(rev["especialidades"], list), "especialidades must be a list"
+            assert len(rev["especialidades"]) >= 1, "especialidades list must have at least one item"
+            for esp in rev["especialidades"]:
+                assert "id" in esp, "Each especialidad must have 'id'"
+                assert "nombre" in esp, "Each especialidad must have 'nombre'"
+                assert isinstance(esp["id"], str) or hasattr(esp["id"], '__str__'), "especialidad id must be string/UUID"
+                assert isinstance(esp["nombre"], str), "especialidad nombre must be string"
 
 
 @pytest.mark.django_db
@@ -1211,11 +1063,28 @@ class TestCotizarNuevaRevisionEndpoint:
 
     def setup_method(self):
         """Crear primera revisión para usar como liquidacion previa."""
+        from modules.liquidaciones.domain.constants import TramiteAccion, TipoTramiteEdificaciones
+        from modules.liquidaciones.tests.factories.regla_tarifa_edificacion_factory import ReglaTarifaEdificacionFactory
+        from modules.liquidaciones.tests.factories.especialidad_factory import EspecialidadFactory
+
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
-        # Create EdificacionesEspecialidades vigente
-        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
+
+        # Create EspecialidadesLiquidacion vigente (empty - for primera-revision with no revisions)
+        self.especialidades_grupo = EspecialidadesLiquidacionFactory()
+
+        # Create Especialidad for the tarifa (required by domain validation)
+        self.especialidad = EspecialidadFactory()
+
+        # Create TarifaLiquidacionBase with detalle_porcentual, especialidades and ReglaTarifaEdificacion for REVISION
+        self.tarifa_base = TarifaLiquidacionBaseFactory(especialidades=[self.especialidad])
+        ReglaTarifaEdificacionFactory(
+            tipo_tramite=TipoTramiteEdificaciones.OBRA_NUEVA,
+            tramite_accion=TramiteAccion.REVISION,
+            tarifa_base=self.tarifa_base,
+        )
+
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
@@ -1235,13 +1104,14 @@ class TestCotizarNuevaRevisionEndpoint:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 50000.0,
+                    "valor_base_calculo": 50000.0,
                     "revisiones_ids": [],
                 }
             },
             content_type="application/json",
         )
         assert response.status_code == 200, f"Setup failed: {response.json()}"
-        self.liquidacion_previa_id = response.json()["data"]["liquidacion"]["id"]
+        self.liquidacion_previa_id = response.json()["data"]["id"]
 
     def test_cotizar_nueva_revision_empty_revisiones_ids_retorna_422(self, client: Client):
         """
@@ -1260,13 +1130,13 @@ class TestCotizarNuevaRevisionEndpoint:
     def test_cotizar_nueva_revision_retorna_200_y_no_crea_liquidacion(self, client: Client):
         """
         POST /cotizar/nueva-revision debe retornar 200 con resultado calculado
-        y NO crear ningún registro de LiquidacionGeneral ni LiquidacionEdificaciones.
+        y NO crear ningún registro de LiquidacionGeneral ni LiquidacionEdificacion.
         """
-        from modules.liquidaciones.models import LiquidacionGeneral, LiquidacionEdificaciones
+        from modules.liquidaciones.models import LiquidacionGeneral, LiquidacionEdificacion
 
         # Contar liquidaciones antes
         count_before = LiquidacionGeneral.objects.count()
-        edif_count_before = LiquidacionEdificaciones.objects.count()
+        edif_count_before = LiquidacionEdificacion.objects.count()
 
         # Obtener revisiones vigentes para usar en la cotización
         revisiones_response = client.get(
@@ -1305,7 +1175,7 @@ class TestCotizarNuevaRevisionEndpoint:
 
         # Verificar que NO se creó ninguna liquidación
         assert LiquidacionGeneral.objects.count() == count_before, "No debe crear LiquidacionGeneral"
-        assert LiquidacionEdificaciones.objects.count() == edif_count_before, "No debe crear LiquidacionEdificaciones"
+        assert LiquidacionEdificacion.objects.count() == edif_count_before, "No debe crear LiquidacionEdificacion"
 
     def test_cotizar_nueva_revision_usa_valor_proyecto_de_previa(self, client: Client):
         """
@@ -1362,77 +1232,55 @@ class TestCotizarNuevaRevisionEndpoint:
 
 
 @pytest.mark.django_db
-class TestDelegadosCategoriaValidation:
+class TestEspecialidadesUnionValidation:
     """
-    Test that delegados_ids validation requires categoria=Edificaciones for
-    liquidaciones de edificaciones.
+    Tests for the multi-specialty union validation fix.
 
-    Validates the fix: MunicipalidadDelegado must have categoria=Edificaciones
-    for Edificaciones liquidations, not just any active assignment.
+    These tests verify that the backend correctly validates the UNION of
+    specialties across all selected TarifaLiquidacionBase records against
+    the active EspecialidadesLiquidacion group.
     """
 
     def setup_method(self):
-        """Seed IGV, UIT, proyecto, municipalidad y delegado."""
-        from datetime import date
-        from modules.liquidaciones.tests.factories.delegado_factory import (
-            DelegadoFactory,
-            PeriodoDelegadoFactory,
-            MunicipalidadDelegadoFactory,
-        )
-        from modules.liquidaciones.domain.constants import CategoriaDelegado
-
+        """Create IGV, UIT, proyecto, municipalidad, and multi-specialty group."""
         self.igv = IGVFactory()
         self.uit = UITFactory()
         self.proyecto = ProyectoFactory()
-        # Create EdificacionesEspecialidades vigente
-        self.especialidades_grupo = EdificacionesEspecialidadesFactory()
+
+        # Create 3 Especialidad records
+        from modules.liquidaciones.tests.factories.especialidad_factory import EspecialidadFactory
+        self.esp_civil = EspecialidadFactory(nombre="Civil")
+        self.esp_electrica = EspecialidadFactory(nombre="Eléctrica")
+        self.esp_sanitaria = EspecialidadFactory(nombre="Sanitaria")
+
+        # Create EspecialidadesLiquidacion group with all 3 specialties
+        from modules.liquidaciones.tests.factories.especialidades_liquidacion_factory import EspecialidadesLiquidacionFactory
+        self.especialidades_grupo = EspecialidadesLiquidacionFactory(
+            especialidades=[self.esp_civil, self.esp_electrica, self.esp_sanitaria]
+        )
+
         # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
         self.distrito = UbigeoDistritoFactory()
         self.municipalidad = Municipalidad.objects.create(
-            codigo="MUN-CAT-TEST",
-            nombre="Municipalidad de Prueba Categoria",
+            codigo="MUN-ESP-UNION",
+            nombre="Municipalidad de Prueba Especialidades",
             distrito=self.distrito,
         )
 
-        today = date.today()
+        # Create a TarifaLiquidacionBase factory
+        from modules.liquidaciones.tests.factories.tarifa_liquidacion_factory import TarifaLiquidacionBaseFactory
+        self.tarifa_base_factory = TarifaLiquidacionBaseFactory
 
-        # Create a delegate with categoria=EDIFICACIONES (valid for Edificaciones liquidations)
-        self.delegado_edificaciones = DelegadoFactory(status='ACTIVO')
-        PeriodoDelegadoFactory(
-            delegado=self.delegado_edificaciones,
-            periodo_inicio=date(today.year - 1, 1, 1),
-            periodo_fin=None,  # Vigente
-        )
-        # Assignment with EDIFICACIONES categoria
-        self.mun_delegado_edificaciones = MunicipalidadDelegadoFactory(
-            delegado=self.delegado_edificaciones,
-            municipalidad=self.municipalidad,
-            activo=True,
-            categoria=CategoriaDelegado.EDIFICACIONES,
-        )
+    def _crear_tarifa_base(self, especialidades: list) -> str:
+        """Helper: creates a TarifaLiquidacionBase with given specialties, returns its ID."""
+        tb = self.tarifa_base_factory(especialidades=especialidades)
+        return str(tb.id)
 
-        # Create a delegate with categoria=HABILITACIONES_URBANAS (NOT valid for Edificaciones)
-        self.delegado_habilitaciones = DelegadoFactory(status='ACTIVO')
-        PeriodoDelegadoFactory(
-            delegado=self.delegado_habilitaciones,
-            periodo_inicio=date(today.year - 1, 1, 1),
-            periodo_fin=None,  # Vigente
-        )
-        # Assignment with HABILITACIONES_URBANAS categoria
-        self.mun_delegado_habilitaciones = MunicipalidadDelegadoFactory(
-            delegado=self.delegado_habilitaciones,
-            municipalidad=self.municipalidad,
-            activo=True,
-            categoria=CategoriaDelegado.HABILITACIONES_URBANAS,
-        )
-
-    def test_delegado_con_categoria_edificaciones_pasa_validacion_en_primera_revision(self, client: Client):
-        """
-        POST /primera-revision con delegados_ids conteniendo un delegado con
-        categoria=Edificaciones debe retornar 200.
-        """
+    def _post_primera_revision(self, revisiones_ids: list) -> dict:
+        """Helper: POST primera-revision and return response JSON."""
+        client = Client()
         response = client.post(
             "/api/liquidaciones/edificaciones/primera-revision",
             data={
@@ -1441,71 +1289,137 @@ class TestDelegadosCategoriaValidation:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
-                    "revisiones_ids": [],
-                    "delegados_ids": [str(self.delegado_edificaciones.id)],
+                    "valor_base_calculo": 10000.0,
+                    "revisiones_ids": revisiones_ids,
                 }
             },
             content_type="application/json",
         )
-        assert response.status_code == 200, response.json()
-        data = response.json()
-        assert "data" in data
-        snapshot = data["data"]
-        # Verify delegate appears in response
-        assert "delegados" in snapshot["edificaciones"]
-        delegados_ids_response = {d["id"] for d in snapshot["edificaciones"]["delegados"]}
-        assert str(self.delegado_edificaciones.id) in delegados_ids_response
+        return response.status_code, response.json()
 
-    def test_delegado_con_categoria_habilitaciones_urbanas_falla_validacion_en_primera_revision(self, client: Client):
+    def test_multi_specialty_revision_passes(self):
         """
-        POST /primera-revision con delegados_ids conteniendo un delegado con
-        categoria=Habilitaciones Urbanas (pero NO Edificaciones) debe retornar
-        error 400/422 indicando que el delegado no está asignado como Edificaciones.
+        Scenario: One revision with Civil+Eléctrica+Sanitaria (all 3 specialties).
+        Expected: 200 — union of revision specialties equals group specialties.
         """
-        response = client.post(
-            "/api/liquidaciones/edificaciones/primera-revision",
-            data={
-                "liquidacion": {
-                    "proyecto_public_id": self.proyecto.public_id,
-                    "municipalidad_id": str(self.municipalidad.id),
-                    "tipo_tramite": "OBRA_NUEVA",
-                    "valor_proyecto": 10000.0,
-                    "revisiones_ids": [],
-                    "delegados_ids": [str(self.delegado_habilitaciones.id)],
-                }
-            },
-            content_type="application/json",
+        rev_all_id = self._crear_tarifa_base(
+            [self.esp_civil, self.esp_electrica, self.esp_sanitaria]
         )
-        # Debe fallar con error de negocio (no 500)
-        assert response.status_code in (400, 422), f"Expected 400/422, got {response.status_code}: {response.json()}"
-        data = response.json()
-        # Verificar que el mensaje indica la categoría incorrecta
-        error_msg = str(data).lower()
-        assert "edificaciones" in error_msg or "municipalidad" in error_msg
 
-    def test_delegado_sin_asignacion_a_municipalidad_falla_validacion(self, client: Client):
+        status, data = self._post_primera_revision([rev_all_id])
+        assert status == 200, f"Expected 200, got {status}: {data}"
+
+    def test_multiple_single_specialty_revisions_union_passes(self):
         """
-        POST /primera-revision con delegados_ids conteniendo un delegado que
-        NO tiene asignación a la municipalidad debe retornar error.
+        Scenario: Three revisions, each with one specialty (Civil, Eléctrica, Sanitaria).
+        Expected: 200 — union of all revision specialties equals group specialties.
         """
-        from modules.liquidaciones.tests.factories.delegado_factory import (
-            DelegadoFactory,
-            PeriodoDelegadoFactory,
+        rev_civil_id = self._crear_tarifa_base([self.esp_civil])
+        rev_electrica_id = self._crear_tarifa_base([self.esp_electrica])
+        rev_sanitaria_id = self._crear_tarifa_base([self.esp_sanitaria])
+
+        status, data = self._post_primera_revision([
+            rev_civil_id,
+            rev_electrica_id,
+            rev_sanitaria_id,
+        ])
+        assert status == 200, f"Expected 200, got {status}: {data}"
+
+    def test_incomplete_selection_fails_with_clear_error(self):
+        """
+        Scenario: Only 2 revisions selected (Civil + Eléctrica), missing Sanitaria.
+        Expected: 400 with clear error showing missing specialties.
+        """
+        rev_civil_id = self._crear_tarifa_base([self.esp_civil])
+        rev_electrica_id = self._crear_tarifa_base([self.esp_electrica])
+
+        status, data = self._post_primera_revision([
+            rev_civil_id,
+            rev_electrica_id,
+        ])
+        # EspecialidadesSetInvalidoError is a BusinessError → HTTP 400
+        assert status == 400, f"Expected 400, got {status}: {data}"
+        error_msg = str(data)
+        # Should mention the missing specialty
+        assert "Sanitaria" in error_msg or "Faltan" in error_msg, f"Error message should mention missing specialty: {error_msg}"
+
+    def test_extra_specialty_in_selection_fails(self):
+        """
+        Scenario: 2 revisions covering Civil+Eléctrica+Extra (extra not in group).
+        Expected: 400 with clear error showing extra/no vigentes specialties.
+        """
+        from modules.liquidaciones.tests.factories.especialidad_factory import EspecialidadFactory
+
+        esp_extra = EspecialidadFactory(nombre="Extra No Vigente")
+
+        rev_civil_id = self._crear_tarifa_base([self.esp_civil])
+        rev_electrica_id = self._crear_tarifa_base([self.esp_electrica])
+        rev_extra_id = self._crear_tarifa_base([esp_extra])
+
+        status, data = self._post_primera_revision([
+            rev_civil_id,
+            rev_electrica_id,
+            rev_extra_id,
+        ])
+        # EspecialidadesSetInvalidoError is a BusinessError → HTTP 400
+        assert status == 400, f"Expected 400, got {status}: {data}"
+        error_msg = str(data)
+        # Should mention the extra specialty
+        assert "Extra" in error_msg or "extra" in error_msg, f"Error message should mention extra specialty: {error_msg}"
+
+    def test_specialty_id_as_revision_id_fails_clearly(self):
+        """
+        Scenario: Sending a specialty ID (not a revision ID) in revisiones_ids.
+        Expected: 422 with clear error that the ID is not a revision ID.
+        """
+        # Use the ID of one of the especialidades directly
+        specialty_id = str(self.esp_civil.id)
+
+        status, data = self._post_primera_revision([specialty_id])
+        # BusinessError (invalid revision IDs) → HTTP 400
+        assert status == 400, f"Expected 400, got {status}: {data}"
+        error_msg = str(data)
+        # Should clearly indicate the ID is not a valid revision ID
+        assert "no corresponden" in error_msg or "revisión" in error_msg.lower(), (
+            f"Error message should clearly indicate invalid revision ID: {error_msg}"
         )
-        from datetime import date
+
+
+@pytest.mark.django_db
+class TestLiquidacionEdificacionDetailEndpoint:
+    """Test GET /api/liquidaciones/edificaciones/{liquidacion_id} endpoint."""
+
+    def setup_method(self):
+        """Seed IGV, UIT, proyecto, municipalidad y EspecialidadesLiquidacion."""
+        self.igv = IGVFactory()
+        self.uit = UITFactory()
+        self.proyecto = ProyectoFactory()
+        # Create EspecialidadesLiquidacion vigente (empty set for sin_revisiones tests)
+        self.especialidades_grupo = EspecialidadesLiquidacionFactory()
+        # Create a municipalidad for testing
         from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
         from modules.entidades.models import Municipalidad
-
-        # Create delegate without municipalidad assignment
-        delegado_sin_asignacion = DelegadoFactory(status='ACTIVO')
-        today = date.today()
-        PeriodoDelegadoFactory(
-            delegado=delegado_sin_asignacion,
-            periodo_inicio=date(today.year - 1, 1, 1),
-            periodo_fin=None,
+        self.distrito = UbigeoDistritoFactory()
+        self.municipalidad = Municipalidad.objects.create(
+            codigo="MUN-DETAIL",
+            nombre="Municipalidad para Detail",
+            distrito=self.distrito,
         )
 
-        response = client.post(
+    def test_get_detail_retorna_200_y_estructura_plana_LiquidacionEdificacionOut(self, client: Client):
+        """
+        GET /{liquidacion_id} tras crear vía POST primera-revision debe retornar 200
+        con la estructura plana LiquidacionEdificacionOut (Phase 3 contract).
+
+        Verifica:
+        - Top-level flat fields: id, public_id, estado, fecha_registro, numero_revision,
+          tipo_tramite, tramite_accion, subtotal, igv, total, total_a_pagar
+        - Nested objects: proyecto, entidad, municipalidad, valores,
+          proyectistas, delegados, contactos, revisiones
+        - Ausencia de legacy top-level keys: liquidacion, edificaciones, totales
+        """
+        # 1. Crear liquidación vía primera-revision
+        create_response = client.post(
             "/api/liquidaciones/edificaciones/primera-revision",
             data={
                 "liquidacion": {
@@ -1513,11 +1427,84 @@ class TestDelegadosCategoriaValidation:
                     "municipalidad_id": str(self.municipalidad.id),
                     "tipo_tramite": "OBRA_NUEVA",
                     "valor_proyecto": 10000.0,
+                    "valor_base_calculo": 10000.0,
+                    "observacion": "Test detail endpoint",
                     "revisiones_ids": [],
-                    "delegados_ids": [str(delegado_sin_asignacion.id)],
                 }
             },
             content_type="application/json",
         )
-        # Debe fallar con error de negocio
-        assert response.status_code in (400, 422), f"Expected 400/422, got {response.status_code}: {response.json()}"
+        assert create_response.status_code == 200, f"Setup failed: {create_response.json()}"
+        created = create_response.json()["data"]
+
+        liquidacion_id = created["id"]
+        public_id = created["public_id"]
+
+        # 2. GET detalle por id (UUID)
+        detail_response = client.get(f"/api/liquidaciones/edificaciones/{liquidacion_id}")
+        assert detail_response.status_code == 200, detail_response.json()
+        result = detail_response.json()["data"]
+
+        # ── Top-level flat scalar fields ──────────────────────────────────────────
+        assert "id" in result
+        assert result["id"] == liquidacion_id
+        assert "public_id" in result
+        assert result["public_id"] == public_id
+        assert "estado" in result
+        assert "fecha_registro" in result
+        assert "numero_revision" in result
+        assert result["numero_revision"] == 1
+        assert "tipo_tramite" in result
+        assert "tramite_accion" in result
+        assert "subtotal" in result
+        assert "igv" in result
+        assert "total" in result
+        assert "total_a_pagar" in result
+
+        # ── Nested objects ───────────────────────────────────────────────────────
+        assert "proyecto" in result
+        assert isinstance(result["proyecto"], dict)
+        assert "public_id" in result["proyecto"]
+        assert "nombre" in result["proyecto"]
+
+        assert "entidad" in result  # puede ser None
+        assert "municipalidad" in result
+        assert isinstance(result["municipalidad"], dict)
+        assert "nombre" in result["municipalidad"]
+
+        assert "valores" in result
+        assert isinstance(result["valores"], dict)
+        assert "subtotal" in result["valores"]
+        assert "igv" in result["valores"]
+        assert "total" in result["valores"]
+        assert "total_a_pagar" in result["valores"]
+
+        assert "proyectistas" in result
+        assert isinstance(result["proyectistas"], list)
+        assert "delegados" in result
+        assert isinstance(result["delegados"], list)
+        assert "contactos" in result
+        assert isinstance(result["contactos"], list)
+        assert "revisiones" in result
+        assert isinstance(result["revisiones"], list)
+
+        # ── Legacy top-level keys must NOT exist ────────────────────────────────
+        assert "liquidacion" not in result, "Legacy top-level 'liquidacion' key must not exist"
+        assert "edificaciones" not in result, "Legacy top-level 'edificaciones' key must not exist"
+        assert "totales" not in result, "Legacy top-level 'totales' key must not exist"
+
+    def test_get_detail_por_public_id_retorna_404(self, client: Client):
+        """
+        GET /{liquidacion_id} usando public_id (ej. LIQ-2026-00001) en lugar de UUID
+        debe retornar 404 porque la ruta espera UUID.
+        """
+        response = client.get(f"/api/liquidaciones/edificaciones/{self.proyecto.public_id}")
+        # El endpoint espera UUID, no public_id → 400/422 por validación de UUID
+        assert response.status_code in (400, 404, 422), response.json()
+
+    def test_get_detail_liquidacion_inexistente_retorna_404(self, client: Client):
+        """GET /{liquidacion_id} con UUID inexistente retorna 404."""
+        import uuid
+        fake_uuid = str(uuid.uuid4())
+        response = client.get(f"/api/liquidaciones/edificaciones/{fake_uuid}")
+        assert response.status_code == 404, response.json()

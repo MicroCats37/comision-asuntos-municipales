@@ -47,3 +47,25 @@ class ProyectoOrchestrator:
         if not result:
             return None
         return result.model_dump(mode='json')
+
+    async def listar_proyectos_con_liquidaciones(
+        self,
+        page: int,
+        page_size: int,
+    ) -> dict:
+        """
+        Lista todos los proyectos con sus liquidaciones de edificaciones,
+        con paginación.
+
+        Args:
+            page: Número de página (1-indexed)
+            page_size: Elementos por página
+
+        Returns:
+            dict con items y total (para usar con PaginatedData wrapper)
+        """
+        result = await self.flujo._proceso_listar_con_liquidaciones_paginado(
+            page=page,
+            page_size=page_size,
+        )
+        return result.model_dump(mode='json')

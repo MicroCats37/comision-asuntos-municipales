@@ -1,0 +1,196 @@
+{
+  "version": "1.0",
+  "periodo": "2026",
+  "descripcion": "Tarifas para todas las liquidaciones - CIP CAM 2026. Incluye Edificacion, Habilitacion Urbana, Mecanica Suelos, Impacto Vial, Taludes, Inspeccion Obra.",
+  "notas": [
+    "IMPACTO_VIAL y TALUDES: La cartilla indica 0.15% valor obra + IGV, pero el modelo actual usa LiquidacionPorMetroCuadrado. Se poblará como M2 S/0.20/m2 para mantener consistencia con el sistema. MISMATCH documentado.",
+    "PLANTAS_TIPICAS: La cartilla indica 'monto declarado en presupuesto'. No hay modelo actual para este tipo de tarifa. NO SE POBLA.",
+    "INSPECCION_OBRA: Los costos por visita se calcularon como 0.032/0.037/0.042/0.088 * UIT(2026)=5500. Si la UIT cambia, este seed queda obsoleto y debe regenerarse."
+  ],
+  "tarifas_edificacion": [
+    {
+      "tipo_liquidacion": "EDIFICACION",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "especialidades": [
+        "Ingenieria Civil",
+        "Ingenieria Sanitaria",
+        "Ingenieria Electrica y Mecanica Electrica"
+      ],
+      "porcentaje_liquidacion": "0.0015",
+      "derecho_minimo": "129.80",
+      "derecho_maximo": null,
+      "porcentaje_minimo_uit": "0.02",
+      "reglas": [
+        {"tipo_tramite": "OBRA_NUEVA", "tramite_accion": "PRIMERA_REVISION"},
+        {"tipo_tramite": "DEMOLICION", "tramite_accion": "PRIMERA_REVISION"},
+        {"tipo_tramite": "REINTEGRO", "tramite_accion": "PRIMERA_REVISION"},
+        {"tipo_tramite": "AMPLIACION", "tramite_accion": "PRIMERA_REVISION"},
+        {"tipo_tramite": "REMODELACION", "tramite_accion": "PRIMERA_REVISION"},
+        {"tipo_tramite": "PROYECTO_CON_PLANTAS_TIPICAS", "tramite_accion": "PRIMERA_REVISION"}
+      ]
+    },
+    {
+      "tipo_liquidacion": "EDIFICACION",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "especialidades": [
+        "Ingenieria Civil"
+      ],
+      "porcentaje_liquidacion": "0.0005",
+      "derecho_minimo": "129.80",
+      "derecho_maximo": null,
+      "porcentaje_minimo_uit": "0.02",
+      "reglas": [
+        {"tipo_tramite": "OBRA_NUEVA", "tramite_accion": "REVISION"},
+        {"tipo_tramite": "MODIFICACION_LICENCIA", "tramite_accion": "REVISION"},
+        {"tipo_tramite": "VARIACION_PROYECTO_APROBADO", "tramite_accion": "REVISION"}
+      ]
+    },
+    {
+      "tipo_liquidacion": "EDIFICACION",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "especialidades": [
+        "Ingenieria Sanitaria"
+      ],
+      "porcentaje_liquidacion": "0.0005",
+      "derecho_minimo": "129.80",
+      "derecho_maximo": null,
+      "porcentaje_minimo_uit": "0.02",
+      "reglas": [
+        {"tipo_tramite": "OBRA_NUEVA", "tramite_accion": "REVISION"},
+        {"tipo_tramite": "MODIFICACION_LICENCIA", "tramite_accion": "REVISION"},
+        {"tipo_tramite": "VARIACION_PROYECTO_APROBADO", "tramite_accion": "REVISION"}
+      ]
+    },
+    {
+      "tipo_liquidacion": "EDIFICACION",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "especialidades": [
+        "Ingenieria Electrica y Mecanica Electrica"
+      ],
+      "porcentaje_liquidacion": "0.0005",
+      "derecho_minimo": "129.80",
+      "derecho_maximo": null,
+      "porcentaje_minimo_uit": "0.02",
+      "reglas": [
+        {"tipo_tramite": "OBRA_NUEVA", "tramite_accion": "REVISION"},
+        {"tipo_tramite": "MODIFICACION_LICENCIA", "tramite_accion": "REVISION"},
+        {"tipo_tramite": "VARIACION_PROYECTO_APROBADO", "tramite_accion": "REVISION"}
+      ]
+    }
+  ],
+  "tarifas_m2": [
+    {
+      "tipo_liquidacion": "HABILITACION_URBANA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "costo_por_m2": "0.20",
+      "area_minima": "5000.00",
+      "derecho_minimo": "1000.00",
+      "derecho_maximo": "10000.00",
+      "reglas": [
+        {"tramite_accion": "PRIMERA_REVISION"}
+      ]
+    },
+    {
+      "tipo_liquidacion": "MECANICA_SUELOS",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "costo_por_m2": "0.20",
+      "area_minima": "5000.00",
+      "derecho_minimo": "1000.00",
+      "derecho_maximo": "10000.00",
+      "reglas": [
+        {"tramite_accion": "PRIMERA_REVISION"}
+      ]
+    },
+    {
+      "tipo_liquidacion": "IMPACTO_VIAL",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "costo_por_m2": "0.20",
+      "area_minima": "5000.00",
+      "derecho_minimo": "1000.00",
+      "derecho_maximo": "10000.00",
+      "nota": "MISMATCH: Cartilla dice 0.15% valor obra, modelo actual usa M2. Se pobló como M2.",
+      "reglas": [
+        {"tramite_accion": "PRIMERA_REVISION"}
+      ]
+    },
+    {
+      "tipo_liquidacion": "TALUDES",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "costo_por_m2": "0.20",
+      "area_minima": "5000.00",
+      "derecho_minimo": "1000.00",
+      "derecho_maximo": "10000.00",
+      "nota": "MISMATCH: Cartilla dice 0.15% valor obra, modelo actual usa M2. Se pobló como M2.",
+      "reglas": [
+        {"tramite_accion": "PRIMERA_REVISION"}
+      ]
+    }
+  ],
+  "tarifas_inspeccion": [
+    {
+      "tipo_liquidacion": "INSPECCION_OBRA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "categoria": "C1",
+      "costo_por_visita": "176.00",
+      "visitas_minimas": 1,
+      "uit_año": 2026,
+      "uit_valor": 5500,
+      "porcentaje_uit": "0.032",
+      "reglas": [
+        {"tramite_accion": "PRIMERA_REVISION"}
+      ]
+    },
+    {
+      "tipo_liquidacion": "INSPECCION_OBRA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "categoria": "C2",
+      "costo_por_visita": "203.50",
+      "visitas_minimas": 1,
+      "uit_año": 2026,
+      "uit_valor": 5500,
+      "porcentaje_uit": "0.037",
+      "reglas": [
+        {"tramite_accion": "PRIMERA_REVISION"}
+      ]
+    },
+    {
+      "tipo_liquidacion": "INSPECCION_OBRA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "categoria": "C3",
+      "costo_por_visita": "231.00",
+      "visitas_minimas": 1,
+      "uit_año": 2026,
+      "uit_valor": 5500,
+      "porcentaje_uit": "0.042",
+      "reglas": [
+        {"tramite_accion": "PRIMERA_REVISION"}
+      ]
+    },
+    {
+      "tipo_liquidacion": "INSPECCION_OBRA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "categoria": "C4",
+      "costo_por_visita": "484.00",
+      "visitas_minimas": 1,
+      "uit_año": 2026,
+      "uit_valor": 5500,
+      "porcentaje_uit": "0.088",
+      "reglas": [
+        {"tramite_accion": "PRIMERA_REVISION"},
+        {"tramite_accion": "REVISION"}
+      ]
+    }
+  ]
+}

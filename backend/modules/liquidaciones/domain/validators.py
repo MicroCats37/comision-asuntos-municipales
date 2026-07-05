@@ -5,7 +5,15 @@ from django.core.exceptions import ValidationError
 
 from utils.ubigeo_schema import is_valid_district_choice
 
-from ..domain.constants import PROYECTO_CON_PLANTAS_TIPICAS_TIPO
+from ..domain.constants import PROYECTO_CON_PLANTAS_TIPICAS_TIPO, MODIFICACION_LICENCIA_TIPO, VARIACION_PROYECTO_APROBADO_TIPO
+
+
+# Tipos de trámite que permiten valor_base_calculo diferente de valor_proyecto
+TIPOS_VALOR_BASE_ALTERNATIVO = {
+    PROYECTO_CON_PLANTAS_TIPICAS_TIPO,
+    MODIFICACION_LICENCIA_TIPO,
+    VARIACION_PROYECTO_APROBADO_TIPO,
+}
 
 
 def validate_distrito(value: str) -> None:
@@ -32,15 +40,15 @@ def validate_valor_base_calculo(
     """
     Valida que valor_base_calculo sea consistente con tipo_tramite.
 
-    Para tipos normales (no PROYECTO_CON_PLANTAS_TIPICAS):
+    Para tipos normales:
         - valor_base_calculo debe ser igual a valor_proyecto
 
-    Para PROYECTO_CON_PLANTAS_TIPICAS:
+    Para PROYECTO_CON_PLANTAS_TIPICAS, MODIFICACION_LICENCIA, y VARIACION_PROYECTO_APROBADO:
         - valor_base_calculo puede ser diferente (valor alternativo para cálculo)
 
     Lanza ValidationError si la validación falla.
     """
-    if tipo_tramite != PROYECTO_CON_PLANTAS_TIPICAS_TIPO:
+    if tipo_tramite not in TIPOS_VALOR_BASE_ALTERNATIVO:
         if valor_base_calculo != valor_proyecto:
             raise ValidationError(
                 f"Para el tipo de trámite '{tipo_tramite}', valor_base_calculo debe ser igual a valor_proyecto. "

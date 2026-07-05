@@ -1,24 +1,40 @@
 "use client";
 
-import { FileText, MessageSquare, Building2, CheckCircle2, Loader2, MapPin, Banknote, Hash, FileCheck } from "lucide-react";
-import { useCallback, useState, useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
+import {
+  Banknote,
+  Building2,
+  CheckCircle2,
+  FileCheck,
+  FileText,
+  Hash,
+  Loader2,
+  MapPin,
+  MessageSquare,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { GenericInput } from "@/components/genericForm/GenericInput";
 import { GenericModal } from "@/components/genericModal/GenericModal";
-import { useCrearNuevaRevision } from "../hooks/useNuevaRevision";
-import { useCotizacionNuevaRevision } from "../hooks/useCotizacion";
-import { useVariablesFinancieras } from "../hooks/useVariablesFinancieras";
-import { useRevisionesVigentes } from "../hooks/useRevisionesVigentes";
-import { ProyectistaFormModal } from "./ProyectistaFormModal";
-import { RevisionesVigentesTable } from "./RevisionesVigentesTable";
-import { CotizacionSection } from "./CotizacionSection";
-import { ProyectistasSection } from "./ProyectistasSection";
+import { Button } from "@/components/ui/button";
 import { notify } from "@/errors";
-import type { ProyectistaResult, ProyectistaInline } from "../types/proyectista";
-import type { CotizacionQuote, LiquidacionSnapshotListItem } from "../types/liquidacion-edificaciones";
-import { z } from "zod";
+import { useCotizacionNuevaRevision } from "../hooks/useCotizacion";
+import { useCrearNuevaRevision } from "../hooks/useNuevaRevision";
+import { useRevisionesVigentes } from "../hooks/useRevisionesVigentes";
+import { useVariablesFinancieras } from "../hooks/useVariablesFinancieras";
+import type {
+  CotizacionQuote,
+  LiquidacionSnapshotListItem,
+} from "../types/liquidacion-edificaciones";
+import type {
+  ProyectistaInline,
+  ProyectistaResult,
+} from "../types/proyectista";
+import { CotizacionSection } from "./CotizacionSection";
+import { ProyectistaFormModal } from "./ProyectistaFormModal";
+import { ProyectistasSection } from "./ProyectistasSection";
+import { RevisionesVigentesTable } from "./RevisionesVigentesTable";
 
 /** Format enum values to human-readable labels */
 function formatEnumLabel(value: string | undefined | null): string {
@@ -60,7 +76,9 @@ export function NuevaRevisionFormModal({
   const [showProyectistaModal, setShowProyectistaModal] = useState(false);
 
   // Selected proyectistas — initialized empty; synced via useEffect when liquidacionBase changes
-  const [selectedProyectistas, setSelectedProyectistas] = useState<ProyectistaResult[]>([]);
+  const [selectedProyectistas, setSelectedProyectistas] = useState<
+    ProyectistaResult[]
+  >([]);
 
   // Sync selectedProyectistas when liquidacionBase changes (modal opened / base data loaded)
   useEffect(() => {
@@ -71,13 +89,13 @@ export function NuevaRevisionFormModal({
     setSelectedProyectistas(
       liquidacionBase.edificaciones.proyectistas.map((p) => ({
         id: p.id,
-        nombres: p.nombres,
-        apellidos: p.apellidos,
-        cip: p.cip ?? undefined,
-        dni: p.dni ?? "",
-        cap: p.cap ?? undefined,
+        nombres: p.perfil_ingeniero_nombres ?? "",
+        apellidos: p.perfil_ingeniero_apellidos ?? "",
+        cip: p.perfil_ingeniero_cip ?? undefined,
+        dni: undefined,
+        cap: undefined,
         creado: false,
-      }))
+      })),
     );
   }, [liquidacionBase]);
 
@@ -85,7 +103,8 @@ export function NuevaRevisionFormModal({
   const [selectedRevisionIds, setSelectedRevisionIds] = useState<string[]>([]);
 
   // Cotización state
-  const [cotizacionQuote, setCotizacionQuote] = useState<CotizacionQuote | null>(null);
+  const [cotizacionQuote, setCotizacionQuote] =
+    useState<CotizacionQuote | null>(null);
 
   // Data hooks
   const { data: variablesFinancieras, isLoading: isLoadingVariables } =
@@ -98,29 +117,34 @@ export function NuevaRevisionFormModal({
   const cotizacionMutation = useCotizacionNuevaRevision();
 
   // Handle proyectista saved (created or selected)
-  const handleProyectistaSaved = useCallback((proyectista: ProyectistaInline) => {
-    setSelectedProyectistas((prev) => {
-      if (prev.some((p) => p.cip === proyectista.cip)) {
-        return prev;
-      }
-      // Convert ProyectistaInline to ProyectistaResult for local state
-      const result: ProyectistaResult = {
-        id: proyectista.cip, // Use cip as id since it's the unique identifier
-        nombres: proyectista.nombres ?? "",
-        apellidos: proyectista.apellidos ?? "",
-        cip: proyectista.cip,
-        dni: "",
-        cap: proyectista.capitulo ?? undefined,
-        creado: false,
-      };
-      return [...prev, result];
-    });
-    setShowProyectistaModal(false);
-  }, []);
+  const handleProyectistaSaved = useCallback(
+    (proyectista: ProyectistaInline) => {
+      setSelectedProyectistas((prev) => {
+        if (prev.some((p) => p.cip === proyectista.cip)) {
+          return prev;
+        }
+        // Convert ProyectistaInline to ProyectistaResult for local state
+        const result: ProyectistaResult = {
+          id: proyectista.cip, // Use cip as id since it's the unique identifier
+          nombres: proyectista.nombres ?? "",
+          apellidos: proyectista.apellidos ?? "",
+          cip: proyectista.cip,
+          dni: "",
+          cap: proyectista.capitulo ?? undefined,
+          creado: false,
+        };
+        return [...prev, result];
+      });
+      setShowProyectistaModal(false);
+    },
+    [],
+  );
 
   // Remove proyectista from selection
   const handleRemoveProyectista = useCallback((proyectistaId: string) => {
-    setSelectedProyectistas((prev) => prev.filter((p) => p.id !== proyectistaId));
+    setSelectedProyectistas((prev) =>
+      prev.filter((p) => p.id !== proyectistaId),
+    );
   }, []);
 
   // Handle revision toggle
@@ -136,7 +160,9 @@ export function NuevaRevisionFormModal({
   }, []);
 
   // Clear cotizacion when relevant fields change
-  const watchedValuesRef = useRef<{ revisiones_ids: string[] }>({ revisiones_ids: [] });
+  const watchedValuesRef = useRef<{ revisiones_ids: string[] }>({
+    revisiones_ids: [],
+  });
   useEffect(() => {
     if (cotizacionQuote !== null) {
       setCotizacionQuote(null);
@@ -258,9 +284,9 @@ export function NuevaRevisionFormModal({
               id="nueva-revision-form"
               onSubmit={formMethods.handleSubmit(handleSubmit)}
             >
-            <div className="h-full flex flex-col min-h-0">
-              {/* Grid layout */}
-              <style>{`
+              <div className="h-full flex flex-col min-h-0">
+                {/* Grid layout */}
+                <style>{`
                 @media (min-width: 768px) {
                   .nueva-revision-grid {
                     grid-template-areas:
@@ -282,207 +308,237 @@ export function NuevaRevisionFormModal({
                 }
               `}</style>
 
-              <div className="nueva-revision-grid grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0">
+                <div className="nueva-revision-grid grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0">
+                  {/* ── DATOS INHERITADOS (Read-only) ─────────────────── */}
+                  <div
+                    className="rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-auto min-h-0"
+                    style={{ gridArea: "datos" }}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
+                      <Building2 className="h-4 w-4" />
+                      <h3 className="text-sm font-semibold uppercase tracking-wide">
+                        Datos de Liquidación Previa
+                      </h3>
+                    </div>
 
-                {/* ── DATOS INHERITADOS (Read-only) ─────────────────── */}
-                <div
-                  className="rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-auto min-h-0"
-                  style={{ gridArea: 'datos' }}
-                >
-                  {/* Header */}
-                  <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
-                    <Building2 className="h-4 w-4" />
-                    <h3 className="text-sm font-semibold uppercase tracking-wide">
-                      Datos de Liquidación Previa
-                    </h3>
-                  </div>
+                    {/* Trámite info — displayed as chips */}
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Tipo de Trámite
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-sm font-semibold text-primary">
+                          <FileCheck className="h-3.5 w-3.5" />
+                          {formatEnumLabel(
+                            liquidacionBase?.edificaciones.tipo_tramite,
+                          )}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary border border-border text-sm font-semibold text-foreground">
+                          {formatEnumLabel(
+                            liquidacionBase?.edificaciones.tramite_accion,
+                          )}
+                        </span>
+                      </div>
+                    </div>
 
-                  {/* Trámite info — displayed as chips */}
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Tipo de Trámite
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-sm font-semibold text-primary">
-                        <FileCheck className="h-3.5 w-3.5" />
-                        {formatEnumLabel(liquidacionBase?.edificaciones.tipo_tramite)}
+                    {/* Revisión number */}
+                    <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/40 border border-border/50">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Número de Revisión
                       </span>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary border border-border text-sm font-semibold text-foreground">
-                        {formatEnumLabel(liquidacionBase?.edificaciones.tramite_accion)}
+                      <span className="text-sm font-bold text-foreground">
+                        {numeroRevision} → {nuevoNumeroRevision}
                       </span>
                     </div>
-                  </div>
 
-                  {/* Revisión number */}
-                  <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/40 border border-border/50">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Número de Revisión
-                    </span>
-                    <span className="text-sm font-bold text-foreground">
-                      {numeroRevision} → {nuevoNumeroRevision}
-                    </span>
-                  </div>
-
-                  {/* Project info section */}
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Proyecto
-                    </p>
-                    <div className="rounded-lg border border-border/50 bg-card overflow-hidden">
-                      {/* ID */}
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
-                        <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          <Hash className="h-3 w-3" /> ID Proyecto
-                        </span>
-                        <span className="text-xs font-mono font-medium text-foreground truncate max-w-[140px]" title={liquidacionBase?.proyecto.public_id}>
-                          {liquidacionBase?.proyecto.public_id ?? "—"}
-                        </span>
-                      </div>
-                      {/* Nombre */}
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
-                        <span className="text-xs text-muted-foreground">Nombre</span>
-                        <span className="text-xs font-semibold text-foreground text-right truncate max-w-[160px]" title={liquidacionBase?.proyecto.nombre}>
-                          {liquidacionBase?.proyecto.nombre ?? "—"}
-                        </span>
-                      </div>
-                      {/* Valor */}
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
-                        <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          <Banknote className="h-3 w-3" /> Valor (S/)
-                        </span>
-                        <span className="text-xs font-bold text-foreground">
-                          {liquidacionBase?.proyecto.valor_proyecto != null
-                            ? liquidacionBase.proyecto.valor_proyecto.toLocaleString("es-PE", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })
-                            : "—"}
-                        </span>
-                      </div>
-                      {/* Entidad */}
-                      {liquidacionBase?.proyecto.entidad && (
-                        <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
-                          <span className="text-xs text-muted-foreground">Entidad</span>
-                          <span className="text-xs font-semibold text-foreground text-right truncate max-w-[160px]" title={liquidacionBase.proyecto.entidad?.nombre ?? ""}>
-                            {liquidacionBase.proyecto.entidad?.nombre ?? "—"}
-                          </span>
-                        </div>
-                      )}
-                      {/* Dirección */}
-                      {liquidacionBase?.proyecto.direccion && (
+                    {/* Project info section */}
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Proyecto
+                      </p>
+                      <div className="rounded-lg border border-border/50 bg-card overflow-hidden">
+                        {/* ID */}
                         <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
                           <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            <MapPin className="h-3 w-3" /> Dirección
+                            <Hash className="h-3 w-3" /> ID Proyecto
                           </span>
-                          <span className="text-xs font-semibold text-foreground text-right truncate max-w-[160px]" title={liquidacionBase.proyecto.direccion ?? ""}>
-                            {liquidacionBase.proyecto.direccion ?? "—"}
+                          <span
+                            className="text-xs font-mono font-medium text-foreground truncate max-w-[140px]"
+                            title={liquidacionBase?.proyecto.public_id}
+                          >
+                            {liquidacionBase?.proyecto.public_id ?? "—"}
                           </span>
                         </div>
-                      )}
-                      {/* Distrito */}
-                      {liquidacionBase?.proyecto.distrito && (
+                        {/* Nombre */}
                         <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
-                          <span className="text-xs text-muted-foreground">Distrito</span>
-                          <span className="text-xs font-semibold text-foreground">
-                            {liquidacionBase.proyecto.distrito?.nombre ?? "—"}
+                          <span className="text-xs text-muted-foreground">
+                            Nombre
+                          </span>
+                          <span
+                            className="text-xs font-semibold text-foreground text-right truncate max-w-[160px]"
+                            title={liquidacionBase?.proyecto.nombre}
+                          >
+                            {liquidacionBase?.proyecto.nombre ?? "—"}
                           </span>
                         </div>
-                      )}
-                      {/* Municipalidad */}
-                      {liquidacionBase?.municipalidad && (
-                        <div className="flex items-center justify-between px-3 py-2">
-                          <span className="text-xs text-muted-foreground">Municipalidad</span>
-                          <span className="text-xs font-semibold text-foreground">
-                            {liquidacionBase.municipalidad.nombre ?? "—"}
+                        {/* Valor */}
+                        <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <Banknote className="h-3 w-3" /> Valor (S/)
+                          </span>
+                          <span className="text-xs font-bold text-foreground">
+                            {liquidacionBase?.proyecto.valor_proyecto != null
+                              ? liquidacionBase.proyecto.valor_proyecto.toLocaleString(
+                                  "es-PE",
+                                  {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  },
+                                )
+                              : "—"}
                           </span>
                         </div>
-                      )}
+                        {/* Entidad */}
+                        {liquidacionBase?.proyecto.entidad && (
+                          <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
+                            <span className="text-xs text-muted-foreground">
+                              Entidad
+                            </span>
+                            <span
+                              className="text-xs font-semibold text-foreground text-right truncate max-w-[160px]"
+                              title={
+                                liquidacionBase.proyecto.entidad?.nombre ?? ""
+                              }
+                            >
+                              {liquidacionBase.proyecto.entidad?.nombre ?? "—"}
+                            </span>
+                          </div>
+                        )}
+                        {/* Dirección */}
+                        {liquidacionBase?.proyecto.direccion && (
+                          <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                              <MapPin className="h-3 w-3" /> Dirección
+                            </span>
+                            <span
+                              className="text-xs font-semibold text-foreground text-right truncate max-w-[160px]"
+                              title={liquidacionBase.proyecto.direccion ?? ""}
+                            >
+                              {liquidacionBase.proyecto.direccion ?? "—"}
+                            </span>
+                          </div>
+                        )}
+                        {/* Distrito */}
+                        {liquidacionBase?.proyecto.distrito && (
+                          <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
+                            <span className="text-xs text-muted-foreground">
+                              Distrito
+                            </span>
+                            <span className="text-xs font-semibold text-foreground">
+                              {liquidacionBase.proyecto.distrito?.nombre ?? "—"}
+                            </span>
+                          </div>
+                        )}
+                        {/* Municipalidad */}
+                        {liquidacionBase?.municipalidad && (
+                          <div className="flex items-center justify-between px-3 py-2">
+                            <span className="text-xs text-muted-foreground">
+                              Municipalidad
+                            </span>
+                            <span className="text-xs font-semibold text-foreground">
+                              {liquidacionBase.municipalidad.nombre ?? "—"}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Liquidación ID */}
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/40 border border-border/50">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        ID Liquidación Previa
+                      </span>
+                      <span
+                        className="text-xs font-mono font-medium text-primary truncate max-w-[140px]"
+                        title={liquidacionBase?.liquidacion_id ?? ""}
+                      >
+                        {liquidacionBase?.liquidacion_id
+                          ? `...${liquidacionBase.liquidacion_id.slice(-8)}`
+                          : "—"}
+                      </span>
+                    </div>
+
+                    {/* Observación field */}
+                    <div className="pt-2">
+                      <GenericInput
+                        field={{
+                          name: "observacion",
+                          label: "Observación (opcional)",
+                          type: "textarea",
+                          placeholder: "Observaciones adicionales...",
+                          icon: MessageSquare,
+                          labelClassName: "text-primary font-semibold",
+                        }}
+                        register={register as any}
+                        control={control as any}
+                        errors={errors}
+                      />
                     </div>
                   </div>
 
-                  {/* Liquidación ID */}
-                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/40 border border-border/50">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      ID Liquidación Previa
-                    </span>
-                    <span className="text-xs font-mono font-medium text-primary truncate max-w-[140px]" title={liquidacionBase?.liquidacion_id ?? ""}>
-                      {liquidacionBase?.liquidacion_id
-                        ? `...${liquidacionBase.liquidacion_id.slice(-8)}`
-                        : "—"}
-                    </span>
+                  {/* ── Revisiones/Especialidades ─────────────────────────── */}
+                  <div
+                    className="rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-auto min-h-0"
+                    style={{ gridArea: "revisiones" }}
+                  >
+                    <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
+                      <FileText className="h-4 w-4" />
+                      <h3 className="text-sm font-semibold uppercase tracking-wide">
+                        Revisiones / Especialidades
+                      </h3>
+                      <span className="ml-auto text-[10px] font-medium opacity-75">
+                        (seleccionar mínimo 1)
+                      </span>
+                    </div>
+
+                    <RevisionesVigentesTable
+                      revisiones={revisionesVigentes || []}
+                      selectedId={selectedRevisionIds[0] ?? null}
+                      onSelectRevision={handleRevisionToggle}
+                      isLoading={isLoadingRevisiones}
+                    />
                   </div>
 
-                  {/* Observación field */}
-                  <div className="pt-2">
-                    <GenericInput
-                      field={{
-                        name: "observacion",
-                        label: "Observación (opcional)",
-                        type: "textarea",
-                        placeholder: "Observaciones adicionales...",
-                        icon: MessageSquare,
-                        labelClassName: "text-primary font-semibold",
-                      }}
-                      register={register as any}
-                      control={control as any}
-                      errors={errors}
+                  {/* ── Proyectistas ──────────────────────────────────────── */}
+                  <div
+                    className="rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-auto min-h-0"
+                    style={{ gridArea: "proyectistas" }}
+                  >
+                    <ProyectistasSection
+                      selectedProyectistas={selectedProyectistas}
+                      onAddProyectista={() => setShowProyectistaModal(true)}
+                      onRemoveProyectista={handleRemoveProyectista}
+                    />
+                  </div>
+
+                  {/* ── Cotizar / Resumen de Cálculo ────────────────────────── */}
+                  <div
+                    className="overflow-auto min-h-0"
+                    style={{ gridArea: "cotizacion" }}
+                  >
+                    <CotizacionSection
+                      quote={cotizacionQuote}
+                      isLoading={cotizacionMutation.isPending}
+                      onCotizar={handleCotizar}
+                      hasErrors={Object.keys(errors).length > 0}
+                      hasValidValorBase={hasProject}
+                      variablesFinancieras={variablesFinancieras}
+                      isLoadingVariables={isLoadingVariables}
                     />
                   </div>
                 </div>
-
-                {/* ── Revisiones/Especialidades ─────────────────────────── */}
-                <div
-                  className="rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-auto min-h-0"
-                  style={{ gridArea: 'revisiones' }}
-                >
-                  <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
-                    <FileText className="h-4 w-4" />
-                    <h3 className="text-sm font-semibold uppercase tracking-wide">
-                      Revisiones / Especialidades
-                    </h3>
-                    <span className="ml-auto text-[10px] font-medium opacity-75">
-                      (seleccionar mínimo 1)
-                    </span>
-                  </div>
-
-                  <RevisionesVigentesTable
-                    revisiones={revisionesVigentes || []}
-                    selectedIds={selectedRevisionIds}
-                    onToggleRevision={handleRevisionToggle}
-                    isLoading={isLoadingRevisiones}
-                  />
-                </div>
-
-                {/* ── Proyectistas ──────────────────────────────────────── */}
-                <div
-                  className="rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-auto min-h-0"
-                  style={{ gridArea: 'proyectistas' }}
-                >
-                  <ProyectistasSection
-                    selectedProyectistas={selectedProyectistas}
-                    onAddProyectista={() => setShowProyectistaModal(true)}
-                    onRemoveProyectista={handleRemoveProyectista}
-                  />
-                </div>
-
-                {/* ── Cotizar / Resumen de Cálculo ────────────────────────── */}
-                <div
-                  className="overflow-auto min-h-0"
-                  style={{ gridArea: 'cotizacion' }}
-                >
-                  <CotizacionSection
-                    quote={cotizacionQuote}
-                    isLoading={cotizacionMutation.isPending}
-                    onCotizar={handleCotizar}
-                    hasErrors={Object.keys(errors).length > 0}
-                    hasProject={hasProject}
-                    hasValidValorProyecto={hasProject}
-                    variablesFinancieras={variablesFinancieras}
-                    isLoadingVariables={isLoadingVariables}
-                  />
-                </div>
               </div>
-            </div>
             </form>
           </GenericModal.Body>
 
@@ -503,12 +559,18 @@ export function NuevaRevisionFormModal({
               <Button
                 type="submit"
                 form="nueva-revision-form"
-                disabled={crearMutation.isPending || selectedRevisionIds.length === 0}
+                disabled={
+                  crearMutation.isPending || selectedRevisionIds.length === 0
+                }
                 className="flex-1 h-10 sm:h-12 rounded-xl sm:rounded-2xl font-bold shadow-lg shadow-primary/25 gap-2 sm:max-w-[160px] text-base transition-all duration-200 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 disabled:hover:translate-y-0 disabled:hover:shadow-lg"
                 aria-label="Crear Revisión"
               >
-                {crearMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                {!crearMutation.isPending && <CheckCircle2 className="h-4 w-4 sm:hidden" />}
+                {crearMutation.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
+                {!crearMutation.isPending && (
+                  <CheckCircle2 className="h-4 w-4 sm:hidden" />
+                )}
                 <span className="hidden sm:inline">
                   {crearMutation.isPending ? "Creando..." : "Crear Revisión"}
                 </span>

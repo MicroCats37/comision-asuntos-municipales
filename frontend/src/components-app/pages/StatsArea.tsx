@@ -91,7 +91,7 @@ export function StatsArea({ familiaresCount, conocidosCount, cupos }: StatsAreaP
         iconBg="bg-emerald-500"
         iconColor="text-white"
         icon={<ShieldCheck className="h-6 w-6" />}
-        decorativeIcon={<ShieldCheck className="h-20 w-20 text-emerald-600" />}
+        decorativeIcon={<ShieldCheck className="h-20 w-20 text-secondary-foreground" />}
       >
         <div>
           <h3 className="text-lg font-black text-foreground mb-1 tracking-tight">
@@ -99,7 +99,7 @@ export function StatsArea({ familiaresCount, conocidosCount, cupos }: StatsAreaP
           </h3>
           <p className="text-xs text-muted-foreground font-medium leading-relaxed max-w-sm">
             Tus familiares nucleares pueden disfrutar de{" "}
-            <span className="text-emerald-600 font-bold uppercase tracking-tighter text-[10px]">
+            <span className="text-secondary-foreground font-bold uppercase tracking-tighter text-[10px]">
               ingreso libre (S/ 0.00)
             </span>{" "}
             en todas nuestras sedes.

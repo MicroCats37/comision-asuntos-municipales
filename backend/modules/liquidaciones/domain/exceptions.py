@@ -57,3 +57,8 @@ class EspecialidadesSetInvalidoError(BusinessError):
 class RevisionesMultipleError(BusinessError):
     """Excepción cuando se intenta crear una nueva revisión con más de una revisión (actualmente se permite exactamente una)."""
     pass
+
+
+class RevisionIdsInvalidosError(BusinessError):
+    """Excepción cuando uno o más IDs en revisiones_ids no corresponden a ninguna TarifaLiquidacionBase."""
+    pass

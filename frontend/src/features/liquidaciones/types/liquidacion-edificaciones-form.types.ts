@@ -2,10 +2,13 @@
  * Tipos para el formulario de Liquidación Edificaciones.
  */
 import type { EntidadResult } from "@/features/entidades/types/entidad";
-import type { ProyectistaResult, ProyectistaInline } from "./proyectista";
-import type { RevisionVigente } from "./revisiones-vigentes";
-import type { TipoTramiteEdificaciones, VariablesFinancieras } from "./liquidacion-edificaciones";
 import type { ContactoInline } from "./contacto";
+import type {
+  TipoTramiteEdificaciones,
+  VariablesFinancieras,
+} from "./liquidacion-edificaciones";
+import type { ProyectistaInline, ProyectistaResult } from "./proyectista";
+import type { RevisionVigente } from "./revisiones-vigentes";
 
 // ── Entidad Simple (matches backend ProyectoSerializer response) ─────────────
 
@@ -13,6 +16,14 @@ export interface EntidadSimple {
   id: string | null;
   tipo: string | null;
   nombre: string | null;
+}
+
+// ── Entidad Inline for proyecto_inline ─────────────────────────────────────
+
+export interface EntidadInlineSubmit {
+  tipo_documento: string;
+  numero_documento: string;
+  razon_social: string;
 }
 
 // ── Proyecto ────────────────────────────────────────────────────────────────
@@ -45,8 +56,19 @@ export interface LiquidacionEdificacionFormState {
 
 // ── Form Schema Type ────────────────────────────────────────────────────────
 
+// Proyecto Inline para crear proyecto al vuelo
+export interface ProyectoInlineSubmit {
+  denominacion: string;
+  direccion?: string;
+  distrito_id?: string;
+  nombre_propietario: string;
+  entidad: EntidadInlineSubmit;
+}
+
 export interface LiquidacionEdificacionSubmitData {
-  proyecto_public_id: string;
+  // XOR: uno de los dos es requerido
+  proyecto_public_id?: string;
+  proyecto_inline?: ProyectoInlineSubmit;
   municipalidad_id: string;
   tipo_tramite: TipoTramiteEdificaciones;
   valor_proyecto: number;
@@ -56,7 +78,9 @@ export interface LiquidacionEdificacionSubmitData {
   revisiones_ids: string[];
   proyectistas: ProyectistaInline[];
   contactos: ContactoInline[];
-  delegados_ids: string[];
+  // delegadas_ids fue eliminado del payload de creación
+  // tarifas_ids es opcional para compatibilidad con formularios deprecated
+  tarifas_ids?: string[];
 }
 
 // ── Props Interfaces ────────────────────────────────────────────────────────
@@ -68,10 +92,9 @@ export interface VariablesFinancierasCardProps {
 
 export interface RevisionesVigentesTableProps {
   revisiones: RevisionVigente[];
-  selectedIds: string[];
-  onToggleRevision: (id: string) => void;
+  selectedId: string | null;
+  onSelectRevision: (id: string) => void;
   isLoading?: boolean;
-  /** IDs of revisions that are locked/mandatory (cannot be toggled) */
   lockedIds?: string[];
 }
 
