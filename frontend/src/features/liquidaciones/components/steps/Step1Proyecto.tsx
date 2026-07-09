@@ -10,22 +10,23 @@ import { FormSectionHeader } from "@/components-app/forms/FormSectionHeader";
 import { notify } from "@/errors";
 import { useProyectoBuscar } from "../../hooks/useProyecto";
 import { normalizeProyectoResponse } from "../../services/proyecto.service";
-import { useLiquidacionStepperUIStore } from "../../store";
-import type { CachedProyecto } from "../../store/stepper-ui.store";
+import type { CachedProyecto } from "../../store";
+import type { LiquidacionStepperStore } from "../../store";
 import { EntidadLookupField } from "../EntidadLookupField";
 
 interface Step1ProyectoProps {
   methods: UseFormReturn<FieldValues>;
   isActive: boolean;
+  store: LiquidacionStepperStore;
 }
 
-export function Step1Proyecto({ methods, isActive }: Step1ProyectoProps) {
+export function Step1Proyecto({ methods, isActive, store }: Step1ProyectoProps) {
   const {
     selectedProyecto,
     setSelectedProyecto,
     proyectoInline,
     setProyectoInline,
-  } = useLiquidacionStepperUIStore();
+  } = store;
 
   const buscarMutation = useProyectoBuscar();
 
@@ -51,7 +52,6 @@ export function Step1Proyecto({ methods, isActive }: Step1ProyectoProps) {
   // Sync watched entidad fields to store
   useEffect(() => {
     if (!isActive) return;
-    const store = useLiquidacionStepperUIStore.getState();
     if (store.selectedProyecto) return;
 
     if (
@@ -199,7 +199,6 @@ export function Step1Proyecto({ methods, isActive }: Step1ProyectoProps) {
       shouldDirty: true,
     });
 
-    const store = useLiquidacionStepperUIStore.getState();
     const current = store.proyectoInline ?? {
       denominacion: "",
       direccion: "",

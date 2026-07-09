@@ -1,5 +1,5 @@
 /**
- * Hook para obtener delegados vigentes para una municipalidad y revisión.
+ * Hook para obtener delegados vigentes para una municipalidad, tipo de liquidacion y tarifa.
  * Usa useApiQuery genérico del proyecto.
  */
 
@@ -23,7 +23,7 @@ const delegadoVigentePayloadSchema = z.object({
 });
 
 /** Wrapper schema for delegados vigentes API response */
-const delegadosVigentesResponseSchema = apiResponseSchema(
+export const delegadosVigentesResponseSchema = apiResponseSchema(
   z.object({
     delegados: z.array(delegadoVigentePayloadSchema),
   }),
@@ -31,8 +31,8 @@ const delegadosVigentesResponseSchema = apiResponseSchema(
 
 export function useDelegadosVigentes(
   municipalidadId: string | null,
+  tipoLiquidacion: string | null,
   revisionId: string | null,
-  categoria: string = "Edificaciones",
 ) {
   const query = useApiQuery<
     z.infer<typeof delegadosVigentesResponseSchema>,
@@ -42,21 +42,21 @@ export function useDelegadosVigentes(
       "liquidaciones",
       "delegados-vigentes",
       municipalidadId,
+      tipoLiquidacion,
       revisionId,
-      categoria,
     ],
-    url: "/liquidaciones/edificaciones/delegados/vigentes",
+    url: "/liquidaciones/delegados/vigentes",
     params:
-      municipalidadId && revisionId
+      municipalidadId && tipoLiquidacion && revisionId
         ? {
             municipalidad_id: municipalidadId,
+            tipo_liquidacion: tipoLiquidacion,
             revision_id: revisionId,
-            categoria,
           }
         : undefined,
     schema: delegadosVigentesResponseSchema,
     queryOptions: {
-      enabled: !!municipalidadId && !!revisionId,
+      enabled: !!municipalidadId && !!tipoLiquidacion && !!revisionId,
       staleTime: 1000 * 60 * 5, // 5 minutes
       select: (data) => {
         if (!data.data) {

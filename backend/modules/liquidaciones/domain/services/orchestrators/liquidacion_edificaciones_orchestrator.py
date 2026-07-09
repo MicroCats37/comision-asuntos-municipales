@@ -45,13 +45,14 @@ class LiquidacionesEdificacionesOrchestrator:
         valor_base_calculo: float | None,
         observacion: str | None,
         revisiones_ids: list[str],
+        # Fase 6: tarifas_ids es ahora requerido — auto-selección eliminada
+        tarifas_ids: list[str],
         proyectistas_inline: list[ProyectistaInlineData] | None = None,
         proyectistas_ids: list[str] | None = None,
         # NOTE: delegados_ids fue eliminado de crear_primera_revision (Fase 4).
         # Los delegados se manejarán en un endpoint POST posterior separate.
         contactos_inline: list[ContactoInlineData] | None = None,
         proyecto_inline: ProyectoInlineData | None = None,
-        tarifas_ids: list[str] | None = None,
     ) -> LiquidacionEdificacionesResult:
         """Crear primera revisión — delega a flujo."""
         # XOR validation: exactamente uno de proyecto_public_id o proyecto_inline debe estar presente
@@ -151,10 +152,11 @@ class LiquidacionesEdificacionesOrchestrator:
 
     async def cotizar_primera_revision(
         self,
-        tipo_tramite: str | None,
+        tipo_tramite: str,
         valor_proyecto: float,
         valor_base_calculo: float,
-        tarifas_ids: list[str] | None = None,
+        # Fase 6: tarifas_ids es ahora requerido — auto-selección eliminada
+        tarifas_ids: list[str],
     ) -> CotizacionQuoteData:
         """Cotizar primera revisión (sin guardar en BD) — delega a flujo."""
         return await self.flujo._proceso_cotizar_primera_revision(

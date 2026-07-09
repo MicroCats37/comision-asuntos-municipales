@@ -7,6 +7,12 @@ import os
 
 os.environ.setdefault("NINJA_SKIP_REGISTRY", "1")
 
+# Force CIP simulator in tests to avoid real HTTP calls to external CIP API.
+# This overrides development.py's CIP_USE_SIMULATOR = False so that
+# test_ingeniero_habilitado_integration.py and other tests using the
+# ICipClient dependency get CipClientSimulator instead of RealCipClient.
+os.environ["CIP_USE_SIMULATOR"] = "True"
+
 import pytest
 from pathlib import Path
 

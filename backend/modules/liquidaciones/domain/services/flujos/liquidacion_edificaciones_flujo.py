@@ -80,13 +80,14 @@ class LiquidacionesEdificacionesFlujo:
         valor_base_calculo: Optional[Decimal],
         observacion: Optional[str],
         revisiones_ids: list[str],
+        # Fase 6: tarifas_ids es ahora requerido — auto-selección eliminada
+        tarifas_ids: list[str],
         proyectistas_inline: Optional[list[ProyectistaInlineData]] = None,
         proyectistas_ids: Optional[list[str]] = None,
         # NOTE: delegados_ids fue eliminado de _proceso_primera_revision (Fase 4).
         # Los delegados se manejarán en un endpoint POST posterior separate.
         contactos_inline: Optional[list[ContactoInlineData]] = None,
         proyecto_inline: Optional[ProyectoInlineData] = None,
-        tarifas_ids: Optional[list[str]] = None,
     ):
         """
         Proceso para crear primera revisión (nueva-liquidacion) de edificaciones.
@@ -167,23 +168,12 @@ class LiquidacionesEdificacionesFlujo:
 
         # Obtener datos de revisiones
         if not revisiones_ids:
-            if tarifas_ids is not None:
-                # Fase 3: usar la tarifa seleccionada específicamente (ya validada en paso anterior)
-                # _obtener_revisiones_por_ids retorna EdificacionRevisionData con especialidades y tarifa
-                revisiones_data = await sync_to_async(self.core._obtener_revisiones_por_ids)(tarifas_ids)
-            else:
-                # Auto-selección: todas las activas de EDIFICACION
-                revisiones_data = await sync_to_async(self.core._obtener_revisiones_vigentes_result)()
-                # Transformar RevisionVigenteResult (flat) a estructura anidada con .tarifa y .especialidad
-                revisiones_data = [self.core.to_revision_con_tarifa(rev) for rev in revisiones_data]
+            # Fase 3/6: usar la tarifa seleccionada específicamente (ya validada en paso anterior)
+            # _obtener_revisiones_por_ids retorna EdificacionRevisionData con especialidades y tarifa
+            # NOTA: tarifas_ids es ahora requerido (no puede ser None) — auto-selección eliminada
+            revisiones_data = await sync_to_async(self.core._obtener_revisiones_por_ids)(tarifas_ids)
         else:
             revisiones_data = await sync_to_async(self.core._obtener_revisiones_por_ids)(revisiones_ids)
-
-        # 5b. Validar exact-set de especialidades vigentes (primera revisión)
-        # NOTA: Cuando tarifas_ids es proporcionado explícitamente, se salta esta validación
-        # porque el usuario ya seleccionó una tarifa específica (no quiere auto-selección).
-        if tarifas_ids is None:
-            await self._validar_especialidades_exact_set(revisiones_data)
 
         # 6. Si hay proyectistas_inline (inline con CIP), validar TODOS los CIPs
         # ALL-OR-NOTHING: si cualquier CIP falla o no está habilitado, se rechaza toda la operación
@@ -368,8 +358,8 @@ class LiquidacionesEdificacionesFlujo:
                 f"Ya existe la revisión {nuevo_numero} para este proyecto"
             )
 
-        # 5. Determinar si cobra
-        cobra = nuevo_numero in REVISIONES_COBRAN
+        # 5. Determinar si cobra — todas las revisiones cobran
+        cobra = True
 
         # 6. Validar tarifas_ids (exactamente 1 elemento si se provee)
         # Las tarifas se validan con tipo_tramite de la liquidación previa y TramiteAccion.REVISION
@@ -601,8 +591,8 @@ class LiquidacionesEdificacionesFlujo:
                 f"La revisión {siguiente_numero} excede el máximo permitido."
             )
 
-        # 4. Determinar si cobrará
-        cobra = siguiente_numero in REVISIONES_COBRAN
+        # 4. Determinar si cobrará — todas las revisiones cobran
+        cobra = True
 
         # 5. Obtener tarifas disponibles filtradas por tipo_tramite + REVISION
         # El tipo_tramite viene de la liquidación previa
@@ -722,10 +712,8 @@ class LiquidacionesEdificacionesFlujo:
                     for esp in rev_data.especialidades.all():
                         result.add((str(esp.id), esp.nombre))
                         nombres_revisiones.add(esp.nombre)
-                # Caso 3: result object sin `especialidades` — usar `especialidad` singular (retrocompatibilidad)
-                elif hasattr(rev_data, 'especialidad') and hasattr(rev_data.especialidad, 'id'):
-                    result.add((str(rev_data.especialidad.id), rev_data.especialidad.nombre))
-                    nombres_revisiones.add(rev_data.especialidad.nombre)
+                # NOTA: Caso 3 (fallback a especialidad singular) fue eliminado
+                # porque no debe usarse lógica de "primera especialidad"
             return result, nombres_revisiones
 
         result_tuple = await sync_to_async(_sync_get_especialidades_revisiones)()
@@ -762,17 +750,16 @@ class LiquidacionesEdificacionesFlujo:
 
     async def _proceso_cotizar_primera_revision(
         self,
-        tipo_tramite: str | None,
+        tipo_tramite: str,
         valor_proyecto: Decimal,
         valor_base_calculo: Optional[Decimal],
-        tarifas_ids: Optional[list[str]] = None,
+        tarifas_ids: list[str],
     ) -> CotizacionQuoteData:
         """
         Cotiza primera revisión sin guardar en BD.
 
         1. Obtener IGV/UIT vigentes
-        2. Fase 3: Si tarifas_ids tiene exactamente 1 elemento, usar esa tarifa específica.
-           Caso contrario, obtener revisiones vigentes filtradas por EDIFICACION (auto-selección).
+        2. Fase 6: Usar tarifas_ids proporcionado (auto-selección eliminada).
         3. Calcular con cobra=True (primera siempre cobra)
         4. Retornar resultado de cotización
 
@@ -783,43 +770,24 @@ class LiquidacionesEdificacionesFlujo:
         filtrada por tipo_liquidacion=EDIFICACION).
         
         Args:
-            tipo_tramite: Tipo de trámite de edificación (requerido si tarifas_ids es proporcionado).
+            tipo_tramite: Tipo de trámite de edificación (requerido junto con tarifas_ids).
             valor_proyecto: Valor del proyecto/obra.
             valor_base_calculo: Valor base de cálculo.
-            tarifas_ids: Lista de IDs de tarifas a usar (exactamente 1 elemento para Fase 3).
+            tarifas_ids: Lista de IDs de tarifas a usar (exactamente 1 elemento — requerido).
         """
         # 1. Obtener IGV/UIT vigentes
         variables = await sync_to_async(self.core._obtener_variables_financieras_vigentes)()
 
-        # 2. Fase 3: Obtener revisiones
-        if tarifas_ids is not None:
-            # Validar exactamente 1 elemento
-            if len(tarifas_ids) != 1:
-                from ...exceptions import BusinessError
-                raise BusinessError(
-                    f"tarifas_ids debe contener exactamente 1 elemento para cotización, "
-                    f"pero se recibieron {len(tarifas_ids)} elementos."
-                )
-            # Cuando se provee tarifas_ids, tipo_tramite es requerido para validar la ReglaTarifaEdificacion
-            if tipo_tramite is None:
-                from ...exceptions import BusinessError
-                raise BusinessError(
-                    "tipo_tramite es requerido cuando se provee tarifas_ids. "
-                    "Proporcione el tipo de trámite de edificación (OBRA_NUEVA, DEMOLICION, AMPLIACION, etc.)."
-                )
-            # Validar y usar la tarifa seleccionada específicamente (incluye verificar que tenga especialidades
-            # y que tenga ReglaTarifaEdificacion para tipo_tramite + PRIMERA_REVISION)
-            await sync_to_async(self.core._validar_tarifa_por_tipo_tramite)(
-                tarifas_ids,
-                tipo_tramite=tipo_tramite,
-                tramite_accion=TramiteAccion.PRIMERA_REVISION,
-            )
-            revisiones_data = await sync_to_async(self.core._obtener_revisiones_por_ids)(tarifas_ids)
-        else:
-            # Auto-selección: todas las activas de EDIFICACION
-            revisiones_data = await sync_to_async(self.core._obtener_revisiones_vigentes_result)()
-            # Transformar RevisionVigenteResult (flat) a estructura anidada con .tarifa y .especialidad
-            revisiones_data = [self.core.to_revision_con_tarifa(rev) for rev in revisiones_data]
+        # 2. Fase 3/6: Obtener revisiones usando tarifas_ids (ahora requerido)
+        # NOTA: tarifas_ids es ahora requerido — auto-selección eliminada.
+        # La validación de len(tarifas_ids)==1 ya está en el schema (min_length=1, max_length=1).
+        # tipo_tramite es requerido en el schema cuando se usa tarifas_ids.
+        await sync_to_async(self.core._validar_tarifa_por_tipo_tramite)(
+            tarifas_ids,
+            tipo_tramite=tipo_tramite,
+            tramite_accion=TramiteAccion.PRIMERA_REVISION,
+        )
+        revisiones_data = await sync_to_async(self.core._obtener_revisiones_por_ids)(tarifas_ids)
 
         # 3. Calcular — primera revisión siempre cobra
         # Si valor_base_calculo es None, usar valor_proyecto
@@ -920,8 +888,8 @@ class LiquidacionesEdificacionesFlujo:
 
         revisiones_data = await sync_to_async(self.core._obtener_revisiones_por_ids)(revisiones_ids)
 
-        # 7. Determinar si cobra según número de revisión
-        cobra = nuevo_numero in REVISIONES_COBRAN
+        # 7. Determinar si cobra — todas las revisiones cobran
+        cobra = True
 
         # 8. Obtener valor_proyecto y valor_base_calculo de LiquidacionPorcentajeObra de la liquidación previa
         def _get_lpo_previa():

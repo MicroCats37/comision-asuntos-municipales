@@ -1,8 +1,8 @@
 """
-Unit tests for tariff validation rules (ReglaTarifaLiquidacion and ReglaTarifaInspeccionObra).
+Unit tests for tariff validation rules (ReglaTarifaEdificacion and ReglaTarifaInspeccionObra).
 
 Tests:
-- ReglaTarifaLiquidacion: resolves by tipo_liquidacion + tramite_accion
+- ReglaTarifaEdificacion: resolves by tipo_liquidacion + tramite_accion
 - ReglaTarifaInspeccionObra: resolves by categoria + tramite_accion
 - XOR validation logic in orchestrators
 - THE GAP from Phase 5: tarifas_ids is validated (len=1) but NOT USED

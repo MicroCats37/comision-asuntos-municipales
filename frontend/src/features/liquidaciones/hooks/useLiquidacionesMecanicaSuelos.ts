@@ -1,14 +1,16 @@
 /**
  * Hook para lista de liquidaciones de Mecánica de Suelos con paginación.
  * Endpoint: GET /liquidaciones/mecanica-suelos
+ *
+ * Versión específica para MS — sin dispatch por kind.
  */
 import { useState } from "react";
 import { useApiQuery } from "@/hooks";
-import { liquidacionesNoEdificacionResponseSchema } from "../schemas/liquidacion-no-edificacion.schema";
+import { liquidacionesMecanicaSuelosResponseSchema } from "../schemas/liquidacion-mecanica-suelos.schema";
 import type {
-  LiquidacionesNoEdificacionPaginated,
-  LiquidacionNoEdificacionListItem,
-} from "../types/liquidacion-no-edificacion.types";
+  LiquidacionesMecanicaSuelosPaginated,
+  LiquidacionMecanicaSuelosListItem,
+} from "../types/liquidacion-mecanica-suelos.types";
 
 interface UseLiquidacionesMecanicaSuelosProps {
   page?: number;
@@ -35,13 +37,13 @@ export function useLiquidacionesMecanicaSuelos({
       currentPageSize,
     ],
     url: "/liquidaciones/mecanica-suelos",
-    schema: liquidacionesNoEdificacionResponseSchema,
+    schema: liquidacionesMecanicaSuelosResponseSchema,
     params,
     queryOptions: {
-      select: (data): LiquidacionesNoEdificacionPaginated => {
+      select: (data): LiquidacionesMecanicaSuelosPaginated => {
         if (!data.data) {
           return {
-            items: [] as LiquidacionNoEdificacionListItem[],
+            items: [] as LiquidacionMecanicaSuelosListItem[],
             total: 0,
             page: currentPage,
             page_size: currentPageSize,

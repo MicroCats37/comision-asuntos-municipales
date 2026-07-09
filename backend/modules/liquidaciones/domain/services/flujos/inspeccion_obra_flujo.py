@@ -13,14 +13,14 @@ from typing import Optional
 from asgiref.sync import sync_to_async
 from injector import inject
 
-from modules.liquidaciones.domain.services.core.liquidaciones_nuevas_core import (
+from modules.liquidaciones.domain.services.core.inspeccion_obra_core import (
     InspeccionObraCoreService,
 )
 from modules.liquidaciones.domain.services.core.proyecto_core_service import (
     ProyectoService,
 )
-from modules.liquidaciones.domain.services.builders.liquidaciones_nuevas_result_builder import (
-    LiquidacionesNuevasResultBuilder,
+from modules.liquidaciones.domain.services.builders.inspeccion_obra_result_builder import (
+    InspeccionObraResultBuilder,
 )
 from modules.liquidaciones.domain.schemas_proyecto import ProyectoInlineData
 from modules.liquidaciones.domain.constants import TramiteAccion
@@ -154,7 +154,7 @@ class InspeccionObraFlujo:
                     if liquidacion.igv
                     else Decimal("0.18")
                 )
-                result = LiquidacionesNuevasResultBuilder.build_result_visitas(
+                result = InspeccionObraResultBuilder.build_result(
                     liquidacion=liquidacion,
                     proyecto=proyecto,
                     liquidacion_visitas=liquidacion_visitas,
@@ -205,7 +205,7 @@ class InspeccionObraFlujo:
         """
         from decimal import Decimal
 
-        from modules.liquidaciones.domain.schemas_nuevos import (
+        from modules.liquidaciones.domain.schemas.shared import (
             CotizacionVisitasQuoteData,
             CotizacionVisitasRevisionData,
             CotizacionTotalesData,

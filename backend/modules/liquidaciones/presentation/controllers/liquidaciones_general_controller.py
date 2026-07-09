@@ -5,7 +5,9 @@ Solo delega a LiquidacionesGeneralOrchestrator y retorna vía presenter.
 
 Endpoints:
 - GET /: Listar liquidaciones generales con paginación
-- GET /{liquidacion_id}: Obtener detalle de una liquidación por ID
+- GET /especialidades-vigentes?tipo_liquidacion=...: Catálogo de especialidades vigentes
+- GET /delegados/vigentes?municipalidad_id=&tipo_liquidacion=&revision_id=: Delegados vigentes
+- GET /general/{liquidacion_id}: Obtener detalle de una liquidación por ID
 - PATCH /{liquidacion_id}/delegados: Batch create/update/delete de delegados
 """
 import uuid
@@ -20,6 +22,8 @@ from core.pagination import PaginatedData
 from ..schemas.liquidacion_general_schemas import (
     LiquidacionGeneralOut,
     LiquidacionGeneralListItemOut,
+    EspecialidadesCatalogoOut,
+    DelegadosVigentesOut,
 )
 from ..schemas.delegados_batch_schemas import (
     LiquidacionDelegadoBatchIn,
@@ -67,23 +71,20 @@ class LiquidacionesGeneralController:
         self,
         page: int = Query(1, ge=1, description="Número de página"),
         page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),
-        tipo_liquidacion: str = Query(
-            None,
-            description="Filtrar por tipo de liquidación (ej. EDIFICACION, HABILITACION_URBANA)",
-        ),
     ):
         """
-        Listar liquidaciones generales con paginación.
+        Listar TODAS las liquidaciones generales con paginación.
 
         Retorna una colección/página de elementos con información
-        básica de todas las liquidaciones o filtradas por tipo.
+        básica de cualquier tipo de liquidación (Edificación,
+        Habilitación Urbana, Mecánica de Suelos, Impacto Vial,
+        Taludes, Inspección de Obra).
 
-        Soporta filtrado opcional por tipo_liquidacion.
+        No filtra por tipo — incluye todos los tipos.
         """
         result = await self.orchestrator.listar_liquidaciones(
             page=page,
             page_size=page_size,
-            tipo_liquidacion=tipo_liquidacion,
         )
 
         # Transformar cada LiquidacionGeneralListItem a LiquidacionGeneralListItemOut
@@ -115,6 +116,50 @@ class LiquidacionesGeneralController:
         """
         result = await self.orchestrator.obtener_liquidacion_por_id(liquidacion_id)
         return success_response(LiquidacionGeneralPresenter.present(result))
+
+    @route.get("/especialidades-vigentes", response={200: ApiResponse[EspecialidadesCatalogoOut]}, auth=None)
+    async def obtener_especialidades_vigentes(
+        self,
+        tipo_liquidacion: str = Query(..., description="Tipo de liquidación (slug o enum, ej. habilitacion-urbana, HABILITACION_URBANA)"),
+    ):
+        """
+        Obtiene las especialidades vigentes para un tipo de liquidación dado.
+
+        Retorna un catálogo de especialidades activas basadas en el grupo
+        EspecialidadesLiquidacion vigente para el tipo especificado.
+
+        Tipos soportados (slugs):
+        - habilitacion-urbana
+        - mecanica-suelos
+        - impacto-vial
+        - taludes
+        - inspeccion-obra
+        - edificacion
+
+        Args:
+            tipo_liquidacion: Slug o valor enum del tipo de liquidación
+
+        Returns:
+            EspecialidadesCatalogoOut con lista de especialidades {id, nombre}
+        """
+        result = await self.orchestrator.obtener_especialidades_vigentes_por_tipo(
+            tipo_liquidacion=tipo_liquidacion,
+        )
+        return success_response({'items': result})
+
+    @route.get("/delegados/vigentes", response={200: ApiResponse[DelegadosVigentesOut]}, auth=None)
+    async def obtener_delegados_vigentes(
+        self,
+        municipalidad_id: str = Query(..., description="ID de la municipalidad (UUID)"),
+        tipo_liquidacion: str = Query(..., description="Tipo de liquidación (slug o enum)"),
+        revision_id: str = Query(..., description="ID de la TarifaLiquidacionBase para filtrar por especialidades"),
+    ):
+        result = await self.orchestrator.obtener_delegados_vigentes(
+            municipalidad_id=municipalidad_id,
+            tipo_liquidacion=tipo_liquidacion,
+            revision_id=revision_id,
+        )
+        return success_response(LiquidacionGeneralPresenter.present_delegados_vigentes(result))
 
     @route.patch(
         "/{liquidacion_id}/delegados",

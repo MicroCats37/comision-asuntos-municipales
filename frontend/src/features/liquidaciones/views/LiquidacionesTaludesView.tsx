@@ -5,13 +5,8 @@
 "use client";
 
 import {
-  ClipboardCheck,
-  FileText,
   Hash,
-  Home,
-  Scale,
   Search,
-  Truck,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -21,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionTaludesCard } from "../components/LiquidacionTaludesCard";
 import { useLiquidacionesTaludes } from "../hooks/useLiquidacionesTaludes";
-import type { LiquidacionNoEdificacionListItem } from "../types/liquidacion-no-edificacion.types";
+import type { LiquidacionTaludesListItem } from "../types/liquidacion-taludes.types";
 
 const KIND_ICON: LucideIcon = Hash;
 
@@ -62,7 +57,7 @@ export function LiquidacionesTaludesView({
     }
   };
 
-  const handleVerDetalle = (item: LiquidacionNoEdificacionListItem) => {
+  const handleVerDetalle = (item: LiquidacionTaludesListItem) => {
     console.log("Ver detalle:", item.public_id);
   };
 

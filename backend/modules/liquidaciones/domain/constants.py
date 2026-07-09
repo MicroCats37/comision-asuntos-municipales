@@ -85,6 +85,7 @@ class TramiteAccion(models.TextChoices):
 # Mapas de slug (usado en URLs y payloads frontend) → valor enum TipoLiquidacion.
 # Se usan para normalizar tipo_liquidacion en requests de cotizar/crear.
 KIND_SLUG_TO_TIPO_LIQUIDACION: dict[str, str] = {
+    "edificacion": TipoLiquidacion.EDIFICACION,
     "habilitacion-urbana": TipoLiquidacion.HABILITACION_URBANA,
     "mecanica-suelos": TipoLiquidacion.MECANICA_SUELOS,
     "impacto-vial": TipoLiquidacion.IMPACTO_VIAL,

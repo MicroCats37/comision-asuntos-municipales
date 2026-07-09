@@ -418,14 +418,14 @@ class TestDelegadosBatchEndpoint:
             f"Expected 400/404/422, got {invalid_update_response.status_code}: {invalid_update_response.json()}"
 
         # Verify the original association is still intact (rollback worked)
-        get_response = client.get(f"/api/liquidaciones/{liquidacion_id}")
+        # Note: The correct endpoint for getting liquidacion detail is /liquidaciones/edificaciones/{id}
+        get_response = client.get(f"/api/liquidaciones/edificaciones/{liquidacion_id}")
         assert get_response.status_code == 200
         liquidacion_data = get_response.json()["data"]
         
         # The liquidacion should still have the original delegate from the first create
         # (no changes from the failed update should persist)
-        # Note: The current endpoint is GET /liquidaciones/{id}, not returning delegados
-        # so we verify by checking that the batch endpoint can still create normally
+        # We verify by checking that the batch endpoint can still create normally
         verify_response = client.patch(
             f"/api/liquidaciones/{liquidacion_id}/delegados",
             data={

@@ -1,5 +1,5 @@
 """
-Cálculos Helpers — funciones puras de cálculo para los nuevos formularios.
+Cálculos Helpers — funciones puras de cálculo para especialidades M2 y visitas.
 
 Contiene helpers stateless para:
 - Cálculo por metro cuadrado (M2) para habilitación urbana, mecánica de suelos,

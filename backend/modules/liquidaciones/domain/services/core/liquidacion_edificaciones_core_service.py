@@ -195,7 +195,6 @@ class LiquidacionesEdificacionesService:
         for tb in tarifa_bases_qs:
             # M2M: obtener TODAS las especialidades
             especialidades_orm = list(tb.especialidades.all())
-            primera_esp = especialidades_orm[0] if especialidades_orm else None
             todas_especialidades = [
                 EspecialidadData(
                     id=esp.id,
@@ -203,30 +202,18 @@ class LiquidacionesEdificacionesService:
                 )
                 for esp in especialidades_orm
             ]
+            if not todas_especialidades:
+                raise ValueError(
+                    f"La tarifa base {tb.id} no tiene especialidades asociadas. "
+                    f"Cada tarifa debe tener al menos una especialidad."
+                )
             # Obtener la tarifa porcentual (ahora via reverse OneToOne)
             tarifa_pct = tb.detalle_porcentual
             # Verificar si está vigente
             habilitada = esta_vigente(tb.periodo_inicio, tb.periodo_fin)
 
-            # Si no hay especialidad (caso excepcional dado que validación exige al menos 1),
-            # usar la primera especialidad de todas_especialidades o fallar con mensaje claro.
-            if primera_esp is None and todas_especialidades:
-                primera_esp_data = todas_especialidades[0]
-            elif primera_esp is None:
-                # No debería ocurrir si la validación de tarifas se cumple,
-                # pero por seguridad se usa la primera disponible de la lista.
-                primera_esp_data = todas_especialidades[0] if todas_especialidades else None
-                if primera_esp_data is None:
-                    raise ValueError(
-                        f"La tarifa base {tb.id} no tiene especialidades asociadas. "
-                        f"Cada tarifa debe tener al menos una especialidad."
-                    )
-            else:
-                primera_esp_data = EspecialidadData(id=primera_esp.id, nombre=primera_esp.nombre)
-
             result.append(EdificacionRevisionData(
                 id=tb.id,
-                especialidad=primera_esp_data,
                 especialidades=todas_especialidades,
                 tarifa=TarifaEdificacionData(
                     id=tarifa_pct.id,
@@ -267,28 +254,13 @@ class LiquidacionesEdificacionesService:
         """
         Genera un public_id único para una LiquidacionGeneral.
 
-        Formato: LIQ-{year}-{count:05d}
-
-        Returns:
-            public_id generado
-        """
-        year = timezone.now().year
-        count = LiquidacionGeneral.objects.filter(
-            public_id__startswith=f"LIQ-{year}-"
-        ).count()
-        return f"LIQ-{year}-{count + 1:05d}"
-
-    def _generar_public_id_liquidacion_edificaciones(self) -> str:
-        """
-        Genera un public_id único para una LiquidacionEdificacion.
-
         Formato: LIQ-EDIF-{year}-{count:05d}
 
         Returns:
             public_id generado
         """
         year = timezone.now().year
-        count = LiquidacionEdificacion.objects.filter(
+        count = LiquidacionGeneral.objects.filter(
             public_id__startswith=f"LIQ-EDIF-{year}-"
         ).count()
         return f"LIQ-EDIF-{year}-{count + 1:05d}"
@@ -360,12 +332,10 @@ class LiquidacionesEdificacionesService:
         Los valores de cálculo (valor_proyecto, valor_base_calculo) viven en
         LiquidacionPorcentajeObra (creado por el flujo).
         """
-        public_id = self._generar_public_id_liquidacion_edificaciones()
         liq_edif = LiquidacionEdificacion.objects.create(
             liquidacion=liquidacion,
             tipo_tramite=tipo_tramite,
             tramite_accion=tramite_accion,
-            public_id=public_id,
         )
         if proyectistas_ids:
             from modules.liquidaciones.domain.models import Proyectista, LiquidacionProyectista
@@ -576,8 +546,8 @@ class LiquidacionesEdificacionesService:
         lpo_list = list(liquidacion.liquidacion_porcentaje_obra.all())
 
         # Las revisiones que cobran son 1, 3, 5
-        REVISIONES_COBRAN = {1, 3, 5}
-        cobra = liquidacion.numero_revision in REVISIONES_COBRAN
+        # Todas las revisiones cobran
+        cobra = True
 
         for lpo in lpo_list:
             tarifa = lpo.tarifa_aplicada
@@ -587,7 +557,6 @@ class LiquidacionesEdificacionesService:
                 especialidades_orm = list(tarifa.tarifa_base.especialidades.all())
             else:
                 especialidades_orm = []
-            primera_esp = especialidades_orm[0] if especialidades_orm else None
 
             revision_results.append({
                 'id': str(lpo.id),
@@ -597,7 +566,7 @@ class LiquidacionesEdificacionesService:
                     'derecho_maximo': float(tarifa.derecho_maximo) if tarifa and tarifa.derecho_maximo is not None else None,
                     'porcentaje_minimo_uit': float(tarifa.porcentaje_minimo_uit) if tarifa and tarifa.porcentaje_minimo_uit is not None else None,
                 },
-                'especialidad_nombre': primera_esp.nombre if primera_esp else '',
+                # No se usa especialidad_nombre singular — mantenido por compatibilidad dict
                 'especialidades': [{'id': str(esp.id), 'nombre': esp.nombre} for esp in especialidades_orm],
                 'monto_base': float(lpo.valor_base_calculo) if lpo.valor_base_calculo else 0.0,
                 'cobra': cobra,
@@ -738,16 +707,10 @@ class LiquidacionesEdificacionesService:
 
             if numero_revision is not None:
                 # Create flow: RevisionCalculoData con numero_revision por item
-                # For RevisionConTarifaData, build single-item especialidades list
-                if not hasattr(rev_data, 'especialidades') and hasattr(rev_data, 'especialidad_nombre'):
-                    especialidades_list = [EspecialidadBasicaResult(
-                        id=rev_data.id,  # Use revision id as placeholder (no real specialty id in this path)
-                        nombre=rev_data.especialidad_nombre,
-                    )]
+                # RevisionConTarifaData now only has especialidades via RevisionVigenteResult
                 revision_results.append(RevisionCalculoData(
                     id=str(rev_data.id),
                     numero_revision=numero_revision,
-                    especialidad=rev_data.especialidad_nombre if hasattr(rev_data, 'especialidad_nombre') else (especialidades_list[0].nombre if especialidades_list else ""),
                     especialidades=especialidades_list,
                     tarifa=TarifaCalculoData(
                         id=str(rev_data.tarifa.id),
@@ -761,12 +724,6 @@ class LiquidacionesEdificacionesService:
                 ))
             else:
                 # Cotizar flow: CotizacionRevisionData sin numero_revision por item
-                # For RevisionConTarifaData, build single-item especialidades list
-                if not hasattr(rev_data, 'especialidades') and hasattr(rev_data, 'especialidad_nombre'):
-                    especialidades_list = [EspecialidadBasicaResult(
-                        id=rev_data.id,
-                        nombre=rev_data.especialidad_nombre,
-                    )]
                 revision_results.append(CotizacionRevisionData(
                     id=rev_data.id,
                     especialidades=especialidades_list,
@@ -801,12 +758,6 @@ class LiquidacionesEdificacionesService:
         Returns:
             RevisionConTarifaData con estructura anidada
         """
-        # M2M: RevisionVigenteResult.especialidades es una lista;
-        # RevisionConTarifaData.especialidad_nombre espera un string.
-        # Se toma la primera especialidad (igual que _obtener_revisiones_por_ids).
-        primera_esp = rev.especialidades[0] if rev.especialidades else None
-        especialidad_nombre = primera_esp.nombre if primera_esp else ""
-
         return RevisionConTarifaData(
             id=rev.id,
             porcentaje_liquidacion=rev.porcentaje_liquidacion,
@@ -816,7 +767,6 @@ class LiquidacionesEdificacionesService:
                 derecho_maximo=rev.derecho_maximo,
                 porcentaje_minimo_uit=rev.porcentaje_minimo_uit,
             ),
-            especialidad_nombre=especialidad_nombre,
         )
 
     def _crear_proyecto_inline(self, data: ProyectoInlineData) -> Proyecto:

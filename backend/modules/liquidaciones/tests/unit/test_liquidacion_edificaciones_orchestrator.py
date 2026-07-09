@@ -148,6 +148,7 @@ class TestOrchestratorXORValidationAsync:
                         razon_social="Empresa Test S.A.",
                     ),
                 ),
+                tarifas_ids=[uuid.uuid4()],
             )
 
         assert exc_info.value.status_code == 400
@@ -179,6 +180,7 @@ class TestOrchestratorXORValidationAsync:
                 observacion=None,
                 revisiones_ids=[],
                 proyecto_inline=None,  # Nor this
+                tarifas_ids=[uuid.uuid4()],
             )
 
         assert exc_info.value.status_code == 400
@@ -209,6 +211,7 @@ class TestOrchestratorXORValidationAsync:
             observacion=None,
             revisiones_ids=[],
             proyecto_inline=None,
+            tarifas_ids=[uuid.uuid4()],
         )
 
         mock_flujo._proceso_primera_revision.assert_called_once()
@@ -247,6 +250,7 @@ class TestOrchestratorXORValidationAsync:
                     razon_social="Empresa Inline S.A.",
                 ),
             ),
+            tarifas_ids=[uuid.uuid4()],
         )
 
         mock_flujo._proceso_primera_revision.assert_called_once()
@@ -287,6 +291,7 @@ class TestOrchestratorXORValidationAsync:
                     razon_social="Empresa Inline 2 S.A.",
                 ),
             ),
+            tarifas_ids=[uuid.uuid4()],
         )
 
         mock_flujo._proceso_primera_revision.assert_called_once()

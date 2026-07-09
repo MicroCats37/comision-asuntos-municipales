@@ -13,7 +13,7 @@ import { GenericInput } from "@/components/genericForm/GenericInput";
 import { FormSectionHeader } from "@/components-app/forms/FormSectionHeader";
 import { notify } from "@/errors";
 import { useCotizacionPrimeraRevision } from "../../hooks/useCotizacion";
-import { useLiquidacionStepperUIStore } from "../../store";
+import { useEdificacionStepperStore } from "../../store";
 import type { VariablesFinancieras } from "../../types/liquidacion-edificaciones";
 import type { RevisionVigente } from "../../types/revisiones-vigentes";
 import { CotizacionSection } from "../CotizacionSection";
@@ -79,7 +79,7 @@ export function Step2Liquidacion({
     cotizacion,
     setCotizacionQuote,
     setCotizacionError,
-  } = useLiquidacionStepperUIStore();
+  } = useEdificacionStepperStore();
 
   const { watch, setValue } = methods;
   const watchedMunicipalidadId = watch("municipalidad_id");

@@ -2,18 +2,21 @@
  * Hooks para crear y cotizar liquidaciones de Mecánica de Suelos (primera revisión).
  * Endpoint: POST /liquidaciones/mecanica-suelos/primera-revision
  * Endpoint: POST /liquidaciones/mecanica-suelos/cotizar/primera-revision
+ *
+ * Versión específica para MS — sin dispatch por kind.
  */
 import { useQueryClient } from "@tanstack/react-query";
 import type { z } from "zod";
 import { useApiCreate } from "@/hooks";
 import {
-  cotizacionNoEdificacionResponseSchema,
-  crearLiquidacionNoEdificacionResponseSchema,
-} from "../schemas/liquidacion-no-edificacion.schema";
+  cotizacionMecanicaSuelosResponseSchema,
+  crearMecanicaSuelosResponseSchema,
+} from "../schemas/liquidacion-mecanica-suelos.schema";
 import type {
-  CotizacionNoEdificacionResponse,
-  LiquidacionM2BaseIn,
-} from "../types/liquidacion-no-edificacion.types";
+  CotizacionMecanicaSuelosResponse,
+  CrearMecanicaSuelosPrimeraRevisionIn,
+} from "../types/liquidacion-mecanica-suelos.types";
+import { mecanicaSuelosService } from "../services/mecanica-suelos.service";
 
 /**
  * Hook para crear primera revisión de Mecánica de Suelos.
@@ -22,11 +25,11 @@ export function useCrearMecanicaSuelosPrimeraRevision() {
   const queryClient = useQueryClient();
 
   const mutation = useApiCreate<
-    z.infer<typeof crearLiquidacionNoEdificacionResponseSchema>,
-    { liquidacion: LiquidacionM2BaseIn }
+    z.infer<typeof crearMecanicaSuelosResponseSchema>,
+    { liquidacion: CrearMecanicaSuelosPrimeraRevisionIn }
   >({
     url: "/liquidaciones/mecanica-suelos/primera-revision",
-    schema: crearLiquidacionNoEdificacionResponseSchema,
+    schema: crearMecanicaSuelosResponseSchema,
     options: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["liquidaciones"] });
@@ -36,10 +39,10 @@ export function useCrearMecanicaSuelosPrimeraRevision() {
 
   const crearMutation = {
     ...mutation,
-    mutate: (payload: LiquidacionM2BaseIn) => {
+    mutate: (payload: CrearMecanicaSuelosPrimeraRevisionIn) => {
       mutation.mutate({ liquidacion: payload });
     },
-    mutateAsync: async (payload: LiquidacionM2BaseIn) => {
+    mutateAsync: async (payload: CrearMecanicaSuelosPrimeraRevisionIn) => {
       return mutation.mutateAsync({ liquidacion: payload });
     },
   };
@@ -52,34 +55,24 @@ export function useCrearMecanicaSuelosPrimeraRevision() {
  */
 export function useCotizarMecanicaSuelosPrimeraRevision() {
   const mutation = useApiCreate<
-    z.infer<typeof cotizacionNoEdificacionResponseSchema>,
-    { liquidacion: { tipo_liquidacion: "mecanica-suelos"; area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] } }
+    z.infer<typeof cotizacionMecanicaSuelosResponseSchema>,
+    { liquidacion: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] } }
   >({
     url: "/liquidaciones/mecanica-suelos/cotizar/primera-revision",
-    schema: cotizacionNoEdificacionResponseSchema,
+    schema: cotizacionMecanicaSuelosResponseSchema,
     options: {},
   });
 
   const cotizacionMutation = {
     ...mutation,
     mutate: (payload: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] }) => {
-      mutation.mutate({
-        liquidacion: {
-          tipo_liquidacion: "mecanica-suelos" as const,
-          ...payload,
-        },
-      });
+      mutation.mutate({ liquidacion: payload });
     },
     mutateAsync: async (
       payload: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] },
-    ): Promise<CotizacionNoEdificacionResponse> => {
-      const result = await mutation.mutateAsync({
-        liquidacion: {
-          tipo_liquidacion: "mecanica-suelos" as const,
-          ...payload,
-        },
-      });
-      return result.data as CotizacionNoEdificacionResponse;
+    ): Promise<CotizacionMecanicaSuelosResponse> => {
+      const result = await mutation.mutateAsync({ liquidacion: payload });
+      return result.data as CotizacionMecanicaSuelosResponse;
     },
   };
 

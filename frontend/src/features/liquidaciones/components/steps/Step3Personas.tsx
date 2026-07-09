@@ -1,13 +1,14 @@
 "use client";
 
 import type { FieldValues, UseFormReturn } from "react-hook-form";
-import { useLiquidacionStepperUIStore } from "../../store";
+import type { LiquidacionStepperStore } from "../../store";
 import { ContactosSection } from "../ContactosSection";
 import { ProyectistasSection } from "../ProyectistasSection";
 
 interface Step3PersonasProps {
   methods: UseFormReturn<FieldValues>;
   isActive: boolean;
+  store: LiquidacionStepperStore;
   especialidadOptions?: Array<{ label: string; value: string }>;
   especialidadLabels?: Record<string, string>;
   onOpenProyectistaModal: () => void;
@@ -20,6 +21,7 @@ interface Step3PersonasProps {
 export function Step3Personas({
   methods: _methods,
   isActive,
+  store,
   especialidadOptions: _especialidadOptions,
   especialidadLabels = {},
   onOpenProyectistaModal,
@@ -28,8 +30,7 @@ export function Step3Personas({
   onEditContacto,
   onRemoveContacto,
 }: Step3PersonasProps) {
-  const { selectedProyectistas, selectedContactos } =
-    useLiquidacionStepperUIStore();
+  const { selectedProyectistas, selectedContactos } = store;
 
   if (!isActive) return null;
 

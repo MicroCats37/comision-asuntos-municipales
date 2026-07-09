@@ -4,6 +4,8 @@ Módulo Usuarios — Cableado de Inyección de Dependencias.
 Usa el patrón Module de injector para vincular servicios.
 Se registra en settings vía NINJA_EXTRA["INJECTOR_MODULES"] o similar.
 """
+import os
+
 from django.conf import settings
 from injector import Module, singleton, Binder
 
@@ -41,7 +43,16 @@ class UsuariosModule(Module):
         # Servicios de ingeniero habilitado
         # En DEBUG: usar simulador para desarrollo sin API real
         # En producción: usar cliente real cuando esté disponible
-        use_simulator = getattr(settings, 'CIP_USE_SIMULATOR', settings.DEBUG)
+        # Check env var first (set by conftest.py in tests), then fall back to settings.
+        # This allows conftest.py to force simulator usage even when running with
+        # development.py settings that have CIP_USE_SIMULATOR = False.
+        env_simulator = os.environ.get('CIP_USE_SIMULATOR', '').lower()
+        if env_simulator in ('true', '1', 'yes'):
+            use_simulator = True
+        elif env_simulator in ('false', '0', 'no'):
+            use_simulator = False
+        else:
+            use_simulator = getattr(settings, 'CIP_USE_SIMULATOR', settings.DEBUG)
         if use_simulator:
             binder.bind(ICipClient, to=CipClientSimulator, scope=singleton)
         else:

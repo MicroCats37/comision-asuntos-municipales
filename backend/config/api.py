@@ -82,15 +82,17 @@ api.register_controllers(IngenieroHabilitadoController)
 api.register_controllers(FinanzasController)
 
 # ── Liquidaciones Controllers ─
+# Specific controllers registered BEFORE general to avoid route collision
+# (specific routes like /liquidaciones/edificaciones are matched before /liquidaciones/{id})
 api.register_controllers(LiquidacionEdificacionesController)
-api.register_controllers(LiquidacionesGeneralController)
-api.register_controllers(ProyectistaController)
-api.register_controllers(ProyectoController)
 api.register_controllers(HabilitacionUrbanaController)
 api.register_controllers(MecanicaSuelosController)
 api.register_controllers(ImpactoVialController)
 api.register_controllers(TaludesController)
 api.register_controllers(InspeccionObraController)
+api.register_controllers(LiquidacionesGeneralController)
+api.register_controllers(ProyectistaController)
+api.register_controllers(ProyectoController)
 
 # ── Entidades Controllers ─
 api.register_controllers(EntidadesController)

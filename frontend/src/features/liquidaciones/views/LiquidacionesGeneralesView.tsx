@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { useLiquidacionesGenerales } from "../hooks/useLiquidacionesGenerales";
-import type { LiquidacionGeneralListItem } from "../types/liquidacion-edificaciones";
+import type { LiquidacionGeneralListItem } from "../types/liquidacion-general";
+import { kindLabel } from "../components/LiquidacionGeneralCard";
 
 /**
  * Vista de Liquidaciones Generales.
@@ -110,27 +111,14 @@ export function LiquidacionesGeneralesView() {
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Proyecto
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Tipo Trámite
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Rev.
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Valor Proyecto
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Fecha
-                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Código</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Proyecto</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Tipo</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Municipalidad</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">Rev</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">Estado</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Total</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Fecha</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
@@ -169,43 +157,36 @@ export function LiquidacionesGeneralesView() {
                       className="hover:bg-muted/30 transition-colors"
                     >
                       <td className="px-4 py-3">
+                        <span className="text-sm font-mono font-semibold text-primary">
+                          {item.public_id}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
                         <div>
                           <p className="font-medium text-sm text-foreground">
-                            {item.proyecto_denominacion || "—"}
+                            {item.proyecto?.nombre || "—"}
                           </p>
                           <p className="text-xs text-muted-foreground font-mono">
-                            {item.proyecto_public_id}
+                            {item.proyecto?.public_id}
                           </p>
                         </div>
                       </td>
                       <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/60 border border-border/80 text-xs font-semibold">
+                          {kindLabel(item.tipo_liquidacion)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
                         <span className="text-sm text-muted-foreground">
-                          {item.tipo_liquidacion?.replace(/_/g, " ") || "—"}
+                          {item.municipalidad?.nombre || "—"}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="text-sm font-medium">
-                          N° {item.numero_revision}
-                        </span>
+                      <td className="px-4 py-3 text-center">
+                        <span className="text-sm font-medium">N° {item.numero_revision}</span>
                       </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider ${
-                            item.estado === "PAGADO"
-                              ? "bg-emerald-500/10 text-secondary-foreground border border-emerald-500/20"
-                              : item.estado === "PENDIENTE"
-                              ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                              : item.estado === "ANULADO"
-                              ? "bg-destructive/10 text-destructive border border-destructive/20"
-                              : "bg-muted text-muted-foreground border border-border"
-                          }`}
-                        >
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${item.estado === "PAGADO" ? "bg-emerald-500/10 text-secondary-foreground border border-emerald-500/20" : item.estado === "PENDIENTE" ? "bg-amber-500/10 text-amber-600 border border-amber-500/20" : item.estado === "ANULADO" ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-muted text-muted-foreground border border-border"}`}>
                           {item.estado}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className="text-sm font-medium">
-                          —
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -216,11 +197,7 @@ export function LiquidacionesGeneralesView() {
                       <td className="px-4 py-3">
                         <span className="text-sm text-muted-foreground">
                           {item.fecha_registro
-                            ? new Date(item.fecha_registro).toLocaleDateString("es-PE", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              })
+                            ? new Date(item.fecha_registro).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })
                             : "—"}
                         </span>
                       </td>

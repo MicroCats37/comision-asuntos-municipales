@@ -6,15 +6,27 @@ independientemente del tipo (EDIFICACION, HABILITACION_URBANA, etc.).
 
 NO usa transaction.atomic internamente — el flujo lo provee si es necesario.
 """
+import uuid as _uuid
+from datetime import date
 from decimal import Decimal
 from typing import Optional
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Prefetch
 
 from modules.liquidaciones.models import LiquidacionGeneral
 from modules.liquidaciones.domain.schemas import (
     LiquidacionGeneralPaginatedResult,
     LiquidacionGeneralListItem,
     LiquidacionGeneralResult,
+    ProyectoListItemInfo,
+    EntidadListItemInfo,
+    MunicipalidadInfo,
+    ValoresListItemInfo,
+    ProyectistaListItemData,
+    DelegadoListItemData,
+    ContactoListItemData,
+    TarifaRevisionData,
+    EspecialidadRevisionData,
+    RevisionListItemData,
 )
 
 
@@ -32,7 +44,7 @@ class LiquidacionesGeneralService:
         tipo_liquidacion: Optional[str] = None,
     ) -> tuple[list[dict], int]:
         """
-        Lista liquidaciones generales con paginación.
+        Lista liquidaciones generales con paginación y datos ricos.
 
         Args:
             page: Número de página (1-indexed)
@@ -42,18 +54,36 @@ class LiquidacionesGeneralService:
         Returns:
             (lista_de_datos_materializados, total)
         """
-        from modules.liquidaciones.domain.constants import TIPO_LIQUIDACION_TO_KIND_SLUG
+        from modules.liquidaciones.models import LiquidacionProyectista, LiquidacionDelegado, LiquidacionContacto
 
         qs = LiquidacionGeneral.objects.all()
 
-        # Filtro opcional por tipo de liquidación
         if tipo_liquidacion:
             qs = qs.filter(tipo_liquidacion=tipo_liquidacion)
 
         qs = qs.select_related(
-            'proyecto', 'proyecto__entidad', 'municipalidad'
+            'proyecto', 'proyecto__entidad', 'municipalidad', 'igv',
         ).prefetch_related(
-            'liquidacion_m2', 'liquidacion_visitas'
+            'liquidacion_m2',
+            'liquidacion_visitas',
+            'edificaciones',
+            'liquidacion_porcentaje_obra__tarifa_aplicada__tarifa_base__especialidades',
+            Prefetch(
+                'liquidacion_proyectistas',
+                queryset=LiquidacionProyectista.objects.select_related(
+                    'proyectista__perfil_ingeniero', 'proyectista__especialidad'
+                )
+            ),
+            Prefetch(
+                'liquidacion_delegados',
+                queryset=LiquidacionDelegado.objects.select_related(
+                    'delegado__perfil_ingeniero', 'delegado__especialidad'
+                )
+            ),
+            Prefetch(
+                'contactos',
+                queryset=LiquidacionContacto.objects.select_related('contacto')
+            ),
         ).order_by('-created_at')
 
         total = qs.count()
@@ -66,57 +96,232 @@ class LiquidacionesGeneralService:
 
         items = []
         for liq in liquidaciones:
-            # Obtener total desde sub_total
             subtotal_val = float(liq.sub_total) if liq.sub_total else 0.0
             igv_valor = float(liq.igv.valor) if liq.igv and liq.igv.valor else 0.0
             igv_amount = subtotal_val * igv_valor
             total_liquidacion = subtotal_val + igv_amount
-            total_a_pagar = total_liquidacion  # total_a_pagar = total_liquidacion en este contexto
 
-            # Obtener valor_caracteristico según tipo
-            valor_caracteristico = None
-            tipo_liq_slug = TIPO_LIQUIDACION_TO_KIND_SLUG.get(liq.tipo_liquidacion, liq.tipo_liquidacion)
+            tipo_liq_slug = (
+                liq.tipo_liquidacion.lower().replace('_', '-')
+                if liq.tipo_liquidacion else 'edificacion'
+            )
 
-            if tipo_liq_slug in ("habilitacion-urbana", "mecanica-suelos", "impacto-vial", "taludes"):
-                # M2 types - get area_solicitada from liquidacion_m2
-                m2_data = getattr(liq, 'liquidacion_m2', None)
-                if m2_data:
-                    try:
-                        m2_obj = m2_data.first()
-                        if m2_obj:
-                            valor_caracteristico = float(m2_obj.area_solicitada)
-                    except Exception:
-                        pass
-            elif tipo_liq_slug == "inspeccion-obra":
-                # IO type - get cantidad_visitas from liquidacion_visitas
-                io_data = getattr(liq, 'liquidacion_visitas', None)
-                if io_data:
-                    try:
-                        io_obj = io_data.first()
-                        if io_obj:
-                            valor_caracteristico = float(io_obj.cantidad_visitas)
-                    except Exception:
-                        pass
+            # --- Proyecto ---
+            valor_proyecto = 0.0
+            lpo_list = list(liq.liquidacion_porcentaje_obra.all())
+            if lpo_list and lpo_list[0].valor_proyecto:
+                valor_proyecto = float(lpo_list[0].valor_proyecto)
+
+            proyecto_dict = {
+                'id': str(liq.proyecto.id) if liq.proyecto else '',
+                'public_id': str(liq.proyecto.public_id) if liq.proyecto and liq.proyecto.public_id else '',
+                'nombre': liq.proyecto.denominacion if liq.proyecto else '',
+                'direccion': liq.proyecto.direccion if liq.proyecto else None,
+                'valor_proyecto': valor_proyecto,
+                'entidad_id': str(liq.proyecto.entidad.id) if liq.proyecto and liq.proyecto.entidad else None,
+                'entidad_tipo': liq.proyecto.entidad.tipo_documento if liq.proyecto and liq.proyecto.entidad else None,
+                'entidad_nombre': liq.proyecto.entidad.razon_social if liq.proyecto and liq.proyecto.entidad else None,
+                'entidad_ruc': liq.proyecto.entidad.numero_documento if liq.proyecto and liq.proyecto.entidad else None,
+            }
+
+            # --- Entidad ---
+            entidad_dict = None
+            if liq.proyecto and liq.proyecto.entidad:
+                entidad_dict = {
+                    'id': str(liq.proyecto.entidad.id),
+                    'tipo': liq.proyecto.entidad.tipo_documento,
+                    'nombre': liq.proyecto.entidad.razon_social,
+                    'ruc': liq.proyecto.entidad.numero_documento,
+                }
+
+            # --- Municipalidad ---
+            muni_dict = {
+                'id': str(liq.municipalidad.id) if liq.municipalidad else '',
+                'nombre': liq.municipalidad.nombre if liq.municipalidad else '',
+                'codigo': None,
+                'provincia': None,
+                'distrito': None,
+            }
+
+            # --- Valores ---
+            valores_dict = {
+                'subtotal': subtotal_val,
+                'igv': igv_amount,
+                'total': total_liquidacion,
+                'total_a_pagar': total_liquidacion,
+            }
+
+            # --- Proyectistas ---
+            proyectistas_list = []
+            for lp in liq.liquidacion_proyectistas.all():
+                p = lp.proyectista
+                perfil = p.perfil_ingeniero if p else None
+                esp = p.especialidad if p else None
+                proyectistas_list.append({
+                    'id': str(p.id) if p else '',
+                    'perfil_ingeniero_id': str(perfil.id) if perfil else None,
+                    'perfil_ingeniero_nombres': perfil.nombres if perfil else None,
+                    'perfil_ingeniero_apellidos': f"{perfil.apellido_paterno or ''} {perfil.apellido_materno or ''}".strip() or None if perfil else None,
+                    'perfil_ingeniero_cip': perfil.cip if perfil else None,
+                    'especialidad_id': str(esp.id) if esp else None,
+                    'especialidad_nombre': esp.nombre if esp else None,
+                    'descripcion': p.descripcion if p and p.descripcion else '',
+                })
+
+            # --- Delegados ---
+            delegados_list = []
+            for ld in liq.liquidacion_delegados.all():
+                d = ld.delegado
+                perfil = d.perfil_ingeniero if d else None
+                esp = d.especialidad if d else None
+                delegados_list.append({
+                    'id': str(d.id) if d else '',
+                    'perfil_ingeniero_id': str(perfil.id) if perfil else None,
+                    'perfil_ingeniero_nombres': perfil.nombres if perfil else None,
+                    'perfil_ingeniero_apellidos': f"{perfil.apellido_paterno or ''} {perfil.apellido_materno or ''}".strip() or None if perfil else None,
+                    'perfil_ingeniero_cip': perfil.cip if perfil else None,
+                    'especialidad_id': str(esp.id) if esp else None,
+                    'especialidad_nombre': esp.nombre if esp else None,
+                    'tipo': ld.periodo if ld.periodo else None,
+                })
+
+            # --- Contactos ---
+            contactos_list = []
+            for lc in liq.contactos.all():
+                c = lc.contacto
+                contactos_list.append({
+                    'id': str(c.id) if c else '',
+                    'nombres': c.nombres if c else None,
+                    'apellidos': c.apellidos if c else None,
+                    'dni': getattr(c, 'dni', None),
+                    'cargo': getattr(c, 'cargo', None),
+                    'telefono': getattr(c, 'telefono', None),
+                    'celular': getattr(c, 'celular', None),
+                    'email': getattr(c, 'email', None),
+                    'direccion': getattr(c, 'direccion', None),
+                    'principal': lc.principal,
+                    'descripcion': lc.descripcion,
+                })
+
+            # --- Revisiones ---
+            revisiones_list = []
+            tipo_enum = liq.tipo_liquidacion
+
+            if tipo_enum == 'EDIFICACION':
+                for lpo in lpo_list:
+                    tarifa = lpo.tarifa_aplicada
+                    especialidades_list = []
+                    if tarifa and tarifa.tarifa_base:
+                        for esp in tarifa.tarifa_base.especialidades.all():
+                            especialidades_list.append({
+                                'id': str(esp.id),
+                                'nombre': esp.nombre,
+                            })
+                    revisiones_list.append({
+                        'id': str(lpo.id),
+                        'especialidades': especialidades_list,
+                        'tarifa': {
+                            'id': str(tarifa.id) if tarifa else '',
+                            'derecho_minimo': float(tarifa.derecho_minimo) if tarifa and tarifa.derecho_minimo is not None else None,
+                            'derecho_maximo': float(tarifa.derecho_maximo) if tarifa and tarifa.derecho_maximo is not None else None,
+                            'porcentaje_minimo_uit': float(tarifa.porcentaje_minimo_uit) if tarifa and tarifa.porcentaje_minimo_uit is not None else None,
+                        },
+                        'monto_base': float(lpo.valor_base_calculo) if lpo.valor_base_calculo else 0.0,
+                        'cobra': liq.numero_revision in (1, 3, 5),
+                    })
+            elif tipo_enum in ('HABILITACION_URBANA', 'MECANICA_SUELOS', 'IMPACTO_VIAL', 'TALUDES'):
+                m2_data = liq.liquidacion_m2.first()
+                if m2_data and m2_data.tarifa_aplicada:
+                    t = m2_data.tarifa_aplicada
+                    especialidades_list = []
+                    if t.tarifa_base:
+                        for esp in t.tarifa_base.especialidades.all():
+                            especialidades_list.append({
+                                'id': str(esp.id),
+                                'nombre': esp.nombre,
+                            })
+                    revisiones_list.append({
+                        'id': str(m2_data.id),
+                        'especialidades': especialidades_list,
+                        'tarifa': {
+                            'id': str(t.id),
+                            'derecho_minimo': float(t.derecho_minimo) if t.derecho_minimo is not None else None,
+                            'derecho_maximo': float(t.derecho_maximo) if t.derecho_maximo is not None else None,
+                            'porcentaje_minimo_uit': None,
+                        },
+                        'monto_base': float(m2_data.area_base_calculo) if m2_data.area_base_calculo else 0.0,
+                        'cobra': False,
+                    })
+            elif tipo_enum == 'INSPECCION_OBRA':
+                v_data = liq.liquidacion_visitas.first()
+                if v_data and v_data.tarifa_aplicada:
+                    t = v_data.tarifa_aplicada
+                    especialidades_list = []
+                    if t.tarifa_base:
+                        for esp in t.tarifa_base.especialidades.all():
+                            especialidades_list.append({
+                                'id': str(esp.id),
+                                'nombre': esp.nombre,
+                            })
+                    revisiones_list.append({
+                        'id': str(v_data.id),
+                        'especialidades': especialidades_list,
+                        'tarifa': {
+                            'id': str(t.id),
+                            'derecho_minimo': None,
+                            'derecho_maximo': None,
+                            'porcentaje_minimo_uit': None,
+                        },
+                        'monto_base': float(v_data.visitas_base_calculo) if v_data.visitas_base_calculo else 0,
+                        'cobra': False,
+                    })
+
+            # --- tramite_accion y tipo_tramite ---
+            tramite_accion = None
+            tipo_tramite = None
+            if tipo_enum == 'EDIFICACION' and liq.edificaciones:
+                tramite_accion = liq.edificaciones.tramite_accion
+                tipo_tramite = liq.edificaciones.tipo_tramite
+            elif tipo_enum in ('HABILITACION_URBANA', 'MECANICA_SUELOS', 'IMPACTO_VIAL', 'TALUDES'):
+                type_attr_map = {
+                    'HABILITACION_URBANA': 'habilitacion_urbana',
+                    'MECANICA_SUELOS': 'mecanica_suelos',
+                    'IMPACTO_VIAL': 'impacto_vial',
+                    'TALUDES': 'taludes',
+                }
+                attr_name = type_attr_map.get(tipo_enum)
+                if attr_name:
+                    ext_model = getattr(liq, attr_name, None)
+                    if ext_model:
+                        tramite_accion = getattr(ext_model, 'tramite_accion', None)
+            elif tipo_enum == 'INSPECCION_OBRA':
+                ext_model = getattr(liq, 'inspeccion_obra', None)
+                if ext_model:
+                    tramite_accion = getattr(ext_model, 'tramite_accion', None)
 
             items.append({
                 'id': str(liq.id),
                 'public_id': liq.public_id or '',
                 'estado': liq.estado,
-                'tipo_liquidacion': tipo_liq_slug,  # Convertido a slug
+                'tipo_liquidacion': tipo_liq_slug,
                 'numero_revision': liq.numero_revision,
-                'proyecto_denominacion': liq.proyecto.denominacion if liq.proyecto else '',
-                'proyecto_public_id': str(liq.proyecto.public_id) if liq.proyecto and liq.proyecto.public_id else '',
                 'fecha_registro': liq.created_at.isoformat() if liq.created_at else '',
-                'total': total_liquidacion,
-                # Campos adicionales para no-edificación
+                'tramite_accion': tramite_accion,
+                'tipo_tramite': tipo_tramite,
                 'expediente': liq.expediente,
                 'observacion': liq.observacion,
-                'municipalidad_id': liq.municipalidad.id if liq.municipalidad else None,
-                'municipalidad_nombre': liq.municipalidad.nombre if liq.municipalidad else None,
-                'valor_caracteristico': valor_caracteristico,
+                'proyecto': proyecto_dict,
+                'entidad': entidad_dict,
+                'municipalidad': muni_dict,
+                'valores': valores_dict,
+                'proyectistas': proyectistas_list,
+                'delegados': delegados_list,
+                'contactos': contactos_list,
+                'revisiones': revisiones_list,
                 'subtotal': subtotal_val,
                 'igv': igv_amount,
-                'total_a_pagar': total_a_pagar,
+                'total': total_liquidacion,
+                'total_a_pagar': total_liquidacion,
             })
         return items, total
 
@@ -211,3 +416,104 @@ class LiquidacionesGeneralService:
             total=Decimal(str(total_liquidacion + igv_amount)) if total_liquidacion or igv_amount else Decimal('0'),
             total_a_pagar=Decimal(str(total_a_pagar)) if total_a_pagar else Decimal('0'),
         )
+
+    def _obtener_delegados_vigentes(
+        self,
+        municipalidad_id: str,
+        fecha: date,
+        tipo_liquidacion: str,
+        revision_id: str,
+        categoria: str | None = None,
+    ) -> list:
+        from django.db.models import Q, OuterRef, Subquery, Exists
+        from ...models import Delegado, EspecialidadesLiquidacion, TarifaLiquidacionBase
+        from ...models.delegado import MunicipalidadDelegado
+        from ...constants import DelegadoStatus
+        from ...schemas import DelegadoVigenteResult, EspecialidadBasicaResult
+
+        tipo_subquery = MunicipalidadDelegado.objects.filter(
+            delegado=OuterRef('pk'),
+            municipalidad_id=municipalidad_id,
+        ).values_list('tipo', flat=True)[:1]
+
+        muni_filter = MunicipalidadDelegado.objects.filter(
+            delegado=OuterRef('pk'),
+            municipalidad_id=municipalidad_id,
+            activo=True,
+        )
+        if categoria:
+            muni_filter = muni_filter.filter(categoria=categoria)
+
+        queryset = (
+            Delegado.objects
+            .select_related('perfil_ingeniero', 'especialidad')
+            .annotate(municipalidad_tipo=Subquery(tipo_subquery))
+            .filter(
+                Q(periodos_asignados__periodo_fin__gte=fecha) | Q(periodos_asignados__periodo_fin__isnull=True),
+                status=DelegadoStatus.ACTIVO,
+                periodos_asignados__periodo_inicio__lte=fecha,
+            )
+            .filter(Exists(muni_filter))
+            .distinct()
+        )
+
+        grupo_vigente = EspecialidadesLiquidacion.objects.filter(
+            tipo_liquidacion=tipo_liquidacion,
+            periodo_inicio__lte=fecha,
+        ).filter(
+            Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha)
+        ).first()
+
+        if grupo_vigente:
+            especialidades_vigente_ids = set(
+                grupo_vigente.especialidades.values_list('id', flat=True)
+            )
+
+            tarifa_base = None
+            try:
+                tarifa_base = TarifaLiquidacionBase.objects.prefetch_related(
+                    'especialidades'
+                ).get(id=revision_id)
+            except TarifaLiquidacionBase.DoesNotExist:
+                try:
+                    from ...models import LiquidacionPorcentajeObra
+                    lpo = LiquidacionPorcentajeObra.objects.select_related(
+                        'tarifa_aplicada__tarifa_base'
+                    ).get(id=revision_id)
+                    tarifa_base = lpo.tarifa_aplicada.tarifa_base
+                except (LiquidacionPorcentajeObra.DoesNotExist, AttributeError):
+                    pass
+
+            if tarifa_base:
+                tarifa_base_especialidades_ids = set(
+                    tarifa_base.especialidades.values_list('id', flat=True)
+                )
+            else:
+                tarifa_base_especialidades_ids = set()
+
+            allowed_especialidades = especialidades_vigente_ids & tarifa_base_especialidades_ids
+
+            if allowed_especialidades:
+                queryset = queryset.filter(especialidad_id__in=allowed_especialidades)
+            else:
+                return []
+        else:
+            return []
+
+        items = []
+        for dele in queryset:
+            perfil = dele.perfil_ingeniero
+            especialidad_data = None
+            if dele.especialidad:
+                especialidad_data = EspecialidadBasicaResult(
+                    id=dele.especialidad.id,
+                    nombre=dele.especialidad.nombre,
+                )
+            items.append(DelegadoVigenteResult(
+                id=dele.id,
+                nombre_completo=perfil.nombre_completo if perfil else '',
+                cip=perfil.cip if perfil else '',
+                especialidad=especialidad_data,
+                tipo=dele.municipalidad_tipo,
+            ))
+        return items

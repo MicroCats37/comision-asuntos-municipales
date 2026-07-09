@@ -28,34 +28,6 @@ export interface PaginatedLiquidaciones {
   total_pages: number;
 }
 
-/**
- * Item de lista para liquidaciones GENERALES (backend Phase 4+).
- * Endpoint: GET /liquidaciones
- *
- * Diferencias con LiquidacionListItem (Edificaciones):
- * - No tiene valor_proyecto, municipalidad_id, municipalidad_nombre
- * - Usa tipo_liquidacion en lugar de tipo_tramite/tramite_accion
- */
-export interface LiquidacionGeneralListItem {
-  id: string;
-  public_id: string | null;
-  estado: string;
-  tipo_liquidacion: string;
-  numero_revision: number;
-  proyecto_denominacion: string | null;
-  proyecto_public_id: string | null;
-  fecha_registro: string;
-  total: number;
-}
-
-export interface PaginatedLiquidacionesGenerales {
-  items: LiquidacionGeneralListItem[];
-  total: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
-}
-
 // ── Variables Financieras ─────────────────────────────────────────────────────
 
 export interface VariablesFinancieras {
@@ -584,11 +556,19 @@ export interface CotizacionQuote {
  */
 export interface ProyectistaActual {
   id: string;
-  cip: string | null;
-  dni: string;
-  cap: string | null;
-  nombres: string;
-  apellidos: string;
+  perfil_ingeniero_id?: string | null;
+  perfil_ingeniero_nombres?: string | null;
+  perfil_ingeniero_apellidos?: string | null;
+  perfil_ingeniero_cip?: string | null;
+  especialidad_id?: string | null;
+  especialidad_nombre?: string | null;
+  descripcion?: string | null;
+  // legacy
+  cip?: string | null;
+  dni?: string;
+  cap?: string | null;
+  nombres?: string;
+  apellidos?: string;
 }
 
 /**
@@ -627,6 +607,7 @@ export interface NuevaRevisionFormularioResponse {
   /** Revisiones vigentes available for this project — same shape as RevisionVigente[] */
   revisiones_vigentes: NuevaRevisionFormularioRevisionVigente[];
   proyectistas_actuales: ProyectistaActual[];
+  tipo_tramite: string;
 }
 
 /**
@@ -652,7 +633,7 @@ export interface EspecialidadBasicaDelegado {
 
 /**
  * Delegado vigente para selección en formulario.
- * Retornado por GET /liquidaciones/edificaciones/delegados/vigentes
+ * Retornado por GET /liquidaciones/delegados/vigentes
  */
 export interface DelegadoVigente {
   id: string;

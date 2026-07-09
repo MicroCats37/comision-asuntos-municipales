@@ -13,14 +13,14 @@ from typing import Optional
 from asgiref.sync import sync_to_async
 from injector import inject
 
-from modules.liquidaciones.domain.services.core.liquidaciones_nuevas_core import (
+from modules.liquidaciones.domain.services.core.impacto_vial_core import (
     ImpactoVialCoreService,
 )
 from modules.liquidaciones.domain.services.core.proyecto_core_service import (
     ProyectoService,
 )
-from modules.liquidaciones.domain.services.builders.liquidaciones_nuevas_result_builder import (
-    LiquidacionesNuevasResultBuilder,
+from modules.liquidaciones.domain.services.builders.impacto_vial_result_builder import (
+    ImpactoVialResultBuilder,
 )
 from modules.liquidaciones.domain.schemas_proyecto import ProyectoInlineData
 from modules.liquidaciones.domain.constants import TipoLiquidacion, TramiteAccion
@@ -151,7 +151,7 @@ class ImpactoVialFlujo:
                     if liquidacion.igv
                     else Decimal("0.18")
                 )
-                result = LiquidacionesNuevasResultBuilder.build_result_m2(
+                result = ImpactoVialResultBuilder.build_result(
                     liquidacion=liquidacion,
                     proyecto=proyecto,
                     liquidacion_m2=liquidacion_m2,
@@ -202,7 +202,7 @@ class ImpactoVialFlujo:
         """
         from decimal import Decimal
 
-        from modules.liquidaciones.domain.schemas_nuevos import (
+        from modules.liquidaciones.domain.schemas.shared import (
             CotizacionM2QuoteData,
             CotizacionM2RevisionData,
             CotizacionTotalesData,

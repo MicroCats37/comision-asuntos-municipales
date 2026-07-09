@@ -45,10 +45,10 @@ class Command(BaseCommand):
             if dry_run:
                 existing = UIT.objects.filter(periodo_inicio=periodo_inicio).first()
                 if existing:
-                    self.stdout.write(f"  [DRY-RUN] UIT {item['valor']} ({periodo_inicio}) → ya existe")
+                    self.stdout.write(f"  [DRY-RUN] UIT {item['valor']} ({periodo_inicio}) -> ya existe")
                     uit_updated += 1
                 else:
-                    self.stdout.write(f"  [DRY-RUN] UIT {item['valor']} ({periodo_inicio}) → CREAR")
+                    self.stdout.write(f"  [DRY-RUN] UIT {item['valor']} ({periodo_inicio}) -> CREAR")
                     uit_created += 1
                 continue
 
@@ -89,10 +89,10 @@ class Command(BaseCommand):
             if dry_run:
                 existing = IGV.objects.filter(periodo_inicio=periodo_inicio).first()
                 if existing:
-                    self.stdout.write(f"  [DRY-RUN] IGV {item['valor']} ({periodo_inicio}) → ya existe")
+                    self.stdout.write(f"  [DRY-RUN] IGV {item['valor']} ({periodo_inicio}) -> ya existe")
                     igv_updated += 1
                 else:
-                    self.stdout.write(f"  [DRY-RUN] IGV {item['valor']} ({periodo_inicio}) → CREAR")
+                    self.stdout.write(f"  [DRY-RUN] IGV {item['valor']} ({periodo_inicio}) -> CREAR")
                     igv_created += 1
                 continue
 

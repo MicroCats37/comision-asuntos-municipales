@@ -1,6 +1,6 @@
 """
 Presentation schemas — Esquemas HTTP para Liquidaciones General.
-
+ 
 Usa BaseSchema del proyecto para heredar sanitize de strings vacíos.
 """
 import uuid
@@ -9,6 +9,22 @@ from typing import Optional
 from pydantic import ConfigDict
 from core.types import BaseSchema
 
+
+class EspecialidadBasicaOut(BaseSchema):
+    """Especialidad básica para catálogo de especialidades vigentes."""
+    id: uuid.UUID
+    nombre: str
+
+
+class EspecialidadesCatalogoOut(BaseSchema):
+    """Respuesta de catálogo de especialidades vigentes filtradas por tipo_liquidacion."""
+    items: list[EspecialidadBasicaOut] = Field(
+        default_factory=list,
+        description="Lista de especialidades vigentes para el tipo de liquidación dado"
+    )
+
+
+# ── Schemas para detalle general (LiquidacionGeneralOut) ──────────────────────
 
 class ProyectoGeneralOut(BaseSchema):
     """Proyecto básico para respuesta general."""
@@ -60,32 +76,156 @@ class LiquidacionGeneralOut(BaseSchema):
     total_a_pagar: float
 
 
-class TotalesListItemOut(BaseSchema):
-    """Totales para item de lista."""
+# ── Schemas para listado rico (LiquidacionGeneralListItemOut) ─────────────────
+
+class EntidadListItemOut(BaseSchema):
+    """Entidad anidada en item de lista."""
+    id: Optional[uuid.UUID] = None
+    tipo: Optional[str] = None
+    nombre: Optional[str] = None
+    ruc: Optional[str] = None
+
+
+class ProyectoListItemOut(BaseSchema):
+    """Proyecto anidado en item de lista."""
+    id: uuid.UUID
+    public_id: str
+    nombre: str
+    direccion: Optional[str] = None
+    valor_proyecto: float = 0.0
+    entidad: Optional[EntidadListItemOut] = None
+
+
+class MunicipalidadListItemOut(BaseSchema):
+    """Municipalidad anidada en item de lista."""
+    id: uuid.UUID
+    nombre: str
+    codigo: Optional[str] = None
+    provincia: Optional[str] = None
+    distrito: Optional[str] = None
+
+
+class ValoresListItemOut(BaseSchema):
+    """Valores financieros en item de lista."""
     subtotal: float
     igv: float
     total: float
-    liquidacion_total: float
     total_a_pagar: float
 
 
+class ProyectistaListItemOut(BaseSchema):
+    """Proyectista en item de lista."""
+    id: uuid.UUID
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+
+
+class DelegadoListItemOut(BaseSchema):
+    """Delegado en item de lista."""
+    id: uuid.UUID
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    tipo: Optional[str] = None
+
+
+class ContactoListItemOut(BaseSchema):
+    """Contacto en item de lista."""
+    id: uuid.UUID
+    nombres: Optional[str] = None
+    apellidos: Optional[str] = None
+    dni: Optional[str] = None
+    cargo: Optional[str] = None
+    telefono: Optional[str] = None
+    celular: Optional[str] = None
+    email: Optional[str] = None
+    direccion: Optional[str] = None
+    principal: bool = False
+    descripcion: Optional[str] = None
+
+
+class TarifaRevisionOut(BaseSchema):
+    """Tarifa dentro de revision en item de lista."""
+    id: uuid.UUID
+    derecho_minimo: Optional[float] = None
+    derecho_maximo: Optional[float] = None
+    porcentaje_minimo_uit: Optional[float] = None
+
+
+class EspecialidadRevisionOut(BaseSchema):
+    """Especialidad dentro de revision."""
+    id: uuid.UUID
+    nombre: str
+
+
+class RevisionListItemOut(BaseSchema):
+    """Revision en item de lista."""
+    id: uuid.UUID
+    especialidades: list[EspecialidadRevisionOut] = Field(default_factory=list)
+    tarifa: Optional[TarifaRevisionOut] = None
+    monto_base: float = 0.0
+    cobra: bool = False
+
+
 class LiquidacionGeneralListItemOut(BaseSchema):
-    """Item de lista en respuesta paginada general."""
+    """
+    Item de lista en respuesta paginada general.
+
+    Estructura rica común a todos los tipos de liquidación.
+    """
     id: uuid.UUID
     public_id: str
     estado: str
-    tipo_liquidacion: str  # Slug format: habilitacion-urbana, inspeccion-obra, etc.
+    tipo_liquidacion: str
     numero_revision: int
-    proyecto_denominacion: str
-    proyecto_public_id: str
     fecha_registro: str
-    total: float
-    # Campos adicionales para frontend no-edificación
+    tramite_accion: Optional[str] = None
+    tipo_tramite: Optional[str] = None
     expediente: Optional[str] = None
     observacion: Optional[str] = None
-    municipalidad_id: Optional[str] = None
-    municipalidad_nombre: Optional[str] = None
-    # valor_caracteristico: área para M2, cantidad_visitas para IO
-    valor_caracteristico: Optional[float] = None
-    # Totales anidados
-    totales: Optional[TotalesListItemOut] = None
+    proyecto: ProyectoListItemOut
+    entidad: Optional[EntidadListItemOut] = None
+    municipalidad: MunicipalidadListItemOut
+    valores: ValoresListItemOut
+    proyectistas: list[ProyectistaListItemOut] = Field(default_factory=list)
+    delegados: list[DelegadoListItemOut] = Field(default_factory=list)
+    contactos: list[ContactoListItemOut] = Field(default_factory=list)
+    revisiones: list[RevisionListItemOut] = Field(default_factory=list)
+    subtotal: float
+    igv: float
+    total: float
+    total_a_pagar: float
+
+
+# ── Delegados Vigentes ────────────────────────────────────────────────────────
+
+
+class EspecialidadBasicaDelegadoOut(BaseSchema):
+    """Especialidad básica para delegado vigente."""
+    id: uuid.UUID
+    nombre: str
+
+
+class DelegadoVigenteOut(BaseSchema):
+    """Delegado vigente — datos para selection en formulario."""
+    id: uuid.UUID = Field(..., description="ID del delegado (UUID)")
+    nombre_completo: str = Field(..., description="Nombre completo del ingeniero")
+    cip: str = Field(..., description="Número de CIP del ingeniero")
+    especialidad: EspecialidadBasicaDelegadoOut = Field(..., description="Especialidad del delegado")
+    tipo: str = Field(..., description="Tipo de delegado: titular o alterno")
+
+
+class DelegadosVigentesOut(BaseSchema):
+    """Respuesta de delegados vigentes para una municipalidad."""
+    delegados: list[DelegadoVigenteOut] = Field(
+        default_factory=list,
+        description="Lista de delegados vigentes para la municipalidad y tarifa seleccionadas"
+    )

@@ -11,6 +11,7 @@ from .models import (
     ContactoProyecto,
     Delegado,
     Especialidad,
+    EspecialidadesLiquidacion,
     LiquidacionGeneral,
     LiquidacionContacto,
     LiquidacionDocumentos,
@@ -1099,6 +1100,29 @@ class EspecialidadAdmin(SimpleHistoryAdmin):
     search_fields = ["nombre"]
     readonly_fields = ["created_at", "updated_at"]
     ordering = ["nombre"]
+
+
+@admin.register(EspecialidadesLiquidacion)
+class EspecialidadesLiquidacionAdmin(SimpleHistoryAdmin):
+    """
+    Admin para EspecialidadesLiquidacion.
+
+    Permite inspeccionar y gestionar los grupos de especialidades vigentes
+    para cada tipo de liquidación (EDIFICACION, HABILITACION_URBANA, etc.).
+    """
+    list_display = ["tipo_liquidacion", "periodo_inicio", "periodo_fin", "especialidades_count"]
+    list_filter = ["tipo_liquidacion", "periodo_inicio"]
+    search_fields = ["tipo_liquidacion"]
+    readonly_fields = ["created_at", "updated_at", "especialidades_count"]
+    filter_horizontal = ["especialidades"]
+    ordering = ["-periodo_inicio"]
+
+    def especialidades_count(self, obj):
+        if obj:
+            return obj.especialidades.count()
+        return 0
+
+    especialidades_count.short_description = "# Especialidades"
 
 
 @admin.register(UIT)

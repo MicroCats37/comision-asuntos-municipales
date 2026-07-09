@@ -1,7 +1,7 @@
 """
 ImpactoVialController — controlador HTTP ligero para Impacto Vial.
 
-Solo delega a ImpactoVialOrchestrator y retorna vía NuevosPresenters.
+Solo delega a ImpactoVialOrchestrator y retorna vía ImpactoVialPresenter.
 Patrón: JSON Estricto (Patrón 3) — recibe payload JSON tipado, convierte DTOs, llama orchestrator.
 
 NO lógica de negocio, NO ORM directo, NO transacciones en controller.
@@ -25,15 +25,17 @@ from modules.liquidaciones.domain.schemas_proyecto import (
     EntidadInlineData as DomainEntidadInlineData,
     ProyectoInlineData as DomainProyectoInlineData,
 )
-from modules.liquidaciones.presentation.schemas_nuevos import (
-    CrearLiquidacionImpactoVialWrapperIn,
-    LiquidacionImpactoVialOut,
-    CotizarLiquidacionM2WrapperIn,
+from modules.liquidaciones.presentation.schemas_especialidades import (
     CotizacionM2QuoteOut,
     TarifasVigentesM2Out,
 )
-from modules.liquidaciones.domain.constants import TramiteAccion, normalizar_tipo_liquidacion
-from modules.liquidaciones.presentation.presenters.nuevos_presenters import NuevosPresenters
+from modules.liquidaciones.presentation.schemas.impacto_vial_schemas import (
+    CrearLiquidacionImpactoVialWrapperIn,
+    CotizarLiquidacionIVWrapperIn,
+    LiquidacionImpactoVialOut,
+)
+from modules.liquidaciones.domain.constants import TramiteAccion, TipoLiquidacion
+from modules.liquidaciones.presentation.presenters.impacto_vial_presenter import ImpactoVialPresenter
 from modules.liquidaciones.presentation.presenters.liquidacion_general_presenter import LiquidacionGeneralPresenter
 from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
     LiquidacionGeneralListItemOut,
@@ -140,13 +142,13 @@ class ImpactoVialController:
             tarifas_ids=tarifas_ids,
         )
         return success_response(
-            NuevosPresenters.present_impacto_vial(result, calculo_m2)
+            ImpactoVialPresenter.present(result, calculo_m2)
         )
 
     @route.post("/cotizar/primera-revision", response={200: ApiResponse[CotizacionM2QuoteOut]}, auth=None)
     async def cotizar_primera_revision(
         self,
-        payload: CotizarLiquidacionM2WrapperIn,
+        payload: CotizarLiquidacionIVWrapperIn,
     ):
         """
         Cotizar primera revisión de Impacto Vial sin guardar en BD.
@@ -155,19 +157,19 @@ class ImpactoVialController:
         No crea ningún registro en la base de datos.
 
         Body:
-        - tipo_liquidacion: IMPACTO_VIAL
-        - area_solicitada: Área solicitada en metros cuadrados
-        - tarifas_ids: IDs de tarifas a usar (exactamente 1 elemento si se proporciona)
+        - liquidacion:
+          - area_solicitada: Área solicitada en metros cuadrados
+          - tarifas_ids: IDs de tarifas a usar (exactamente 1 elemento si se proporciona)
+
+        Nota: tipo_liquidacion se inyecta internamente como IMPACTO_VIAL.
         """
         liquidacion_data = payload.liquidacion
-        # Normalizar tipo_liquidacion de slug (frontend) a enum (backend)
-        tipo_liq_normalizado = normalizar_tipo_liquidacion(liquidacion_data.tipo_liquidacion)
         result = await self.orchestrator.cotizar_primera_revision(
-            tipo_liquidacion=tipo_liq_normalizado,
+            tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL.value,
             area_solicitada=liquidacion_data.area_solicitada,
             tarifas_ids=[str(tid) for tid in liquidacion_data.tarifas_ids] if liquidacion_data.tarifas_ids else None,
         )
-        return success_response(NuevosPresenters.present_cotizacion_m2(result))
+        return success_response(ImpactoVialPresenter.present_cotizacion(result))
 
     @route.get("/tarifas-vigentes", response={200: ApiResponse[TarifasVigentesM2Out]}, auth=None)
     async def obtener_tarifas_vigentes(

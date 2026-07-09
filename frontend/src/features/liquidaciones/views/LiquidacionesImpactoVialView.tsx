@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionImpactoVialCard } from "../components/LiquidacionImpactoVialCard";
 import { useLiquidacionesImpactoVial } from "../hooks/useLiquidacionesImpactoVial";
-import type { LiquidacionNoEdificacionListItem } from "../types/liquidacion-no-edificacion.types";
+import type { LiquidacionImpactoVialListItem } from "../types/liquidacion-impacto-vial.types";
 
 const KIND_ICON: LucideIcon = Truck;
 
@@ -62,7 +62,7 @@ export function LiquidacionesImpactoVialView({
     }
   };
 
-  const handleVerDetalle = (item: LiquidacionNoEdificacionListItem) => {
+  const handleVerDetalle = (item: LiquidacionImpactoVialListItem) => {
     console.log("Ver detalle:", item.public_id);
   };
 

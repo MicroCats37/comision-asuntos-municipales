@@ -11,6 +11,7 @@ from ninja.errors import HttpError
 
 from ..flujos.liquidacion_general_flujo import LiquidacionesGeneralFlujo
 from ...schemas import LiquidacionGeneralPaginatedResult, LiquidacionGeneralResult
+from ...schemas import EspecialidadBasicaResult, DelegadosVigentesResult
 
 
 class LiquidacionesGeneralOrchestrator:
@@ -80,3 +81,34 @@ class LiquidacionesGeneralOrchestrator:
             raise HttpError(404, f"Liquidación con ID '{liquidacion_id}' no encontrada.")
 
         return result
+
+    async def obtener_especialidades_vigentes_por_tipo(
+        self,
+        tipo_liquidacion: str,
+    ) -> list[EspecialidadBasicaResult]:
+        """
+        Obtiene las especialidades vigentes para un tipo de liquidación dado.
+
+        Args:
+            tipo_liquidacion: Slug (ej. "habilitacion-urbana") o enum (ej. "HABILITACION_URBANA")
+
+        Returns:
+            Lista de EspecialidadBasicaResult con id y nombre. Empty list si no hay grupo vigente.
+        """
+        return await self.flujo._proceso_especialidades_vigentes_por_tipo(
+            tipo_liquidacion=tipo_liquidacion,
+        )
+
+    async def obtener_delegados_vigentes(
+        self,
+        municipalidad_id: str,
+        tipo_liquidacion: str,
+        revision_id: str,
+        categoria: str | None = None,
+    ) -> DelegadosVigentesResult:
+        return await self.flujo._proceso_delegados_vigentes(
+            municipalidad_id=municipalidad_id,
+            tipo_liquidacion=tipo_liquidacion,
+            revision_id=revision_id,
+            categoria=categoria,
+        )

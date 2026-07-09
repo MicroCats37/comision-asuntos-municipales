@@ -232,12 +232,8 @@ class LiquidacionEdificacionesPresenter:
                         for esp in rev.especialidades
                     ]
                 else:
-                    especialidades_list = [
-                        EspecialidadOut(
-                            id=uuid.UUID(str(rev.especialidad.id)) if not isinstance(rev.especialidad.id, uuid.UUID) else rev.especialidad.id,
-                            nombre=str(rev.especialidad.nombre) if rev.especialidad.nombre else '',
-                        )
-                    ]
+                    # Sin especialidades — usar lista vacía, no fallback a singular
+                    especialidades_list = []
                 revisiones_out.append(RevisionOut(
                     id=rev.id,
                     especialidades=especialidades_list,
@@ -261,14 +257,8 @@ class LiquidacionEdificacionesPresenter:
                         for esp in esp_list
                     ]
                 else:
-                    tarifa_esp = rev.get('tarifa', {})
-                    singular_esp = rev.get('especialidad', '') or ''
-                    especialidades_list = [
-                        EspecialidadOut(
-                            id=uuid.UUID(str(tarifa_esp.get('id'))) if tarifa_esp.get('id') else uuid.uuid4(),
-                            nombre=str(singular_esp) if singular_esp else '',
-                        )
-                    ]
+                    # Sin especialidades — usar lista vacía, no fallback a singular
+                    especialidades_list = []
                 revisiones_out.append(RevisionOut(
                     id=str(rev.get('id', '')),
                     especialidades=especialidades_list,

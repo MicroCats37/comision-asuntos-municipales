@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionHabilitacionUrbanaCard } from "../components/LiquidacionHabilitacionUrbanaCard";
 import { useLiquidacionesHabilitacionUrbana } from "../hooks/useLiquidacionesHabilitacionUrbana";
-import type { LiquidacionNoEdificacionListItem } from "../types/liquidacion-no-edificacion.types";
+import type { LiquidacionHabilitacionUrbanaListItem } from "../types/liquidacion-habilitacion-urbana.types";
 
 const KIND_ICON: LucideIcon = Home;
 
@@ -62,7 +62,7 @@ export function LiquidacionesHabilitacionUrbanaView({
     }
   };
 
-  const handleVerDetalle = (item: LiquidacionNoEdificacionListItem) => {
+  const handleVerDetalle = (item: LiquidacionHabilitacionUrbanaListItem) => {
     console.log("Ver detalle:", item.public_id);
   };
 

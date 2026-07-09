@@ -1,18 +1,30 @@
 """
 LiquidacionGeneralPresenter — transforma resultados a esquemas HTTP para liquidaciones generales.
 """
-import uuid
-from typing import Union
+import uuid as _uuid
+from typing import Optional
 
 from modules.liquidaciones.domain.schemas import (
     LiquidacionGeneralResult,
     LiquidacionGeneralListItem,
+    DelegadosVigentesResult,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
     LiquidacionGeneralOut,
     LiquidacionGeneralListItemOut,
     ProyectoGeneralOut,
     EntidadGeneralOut,
+    ProyectoListItemOut,
+    EntidadListItemOut,
+    MunicipalidadListItemOut,
+    ValoresListItemOut,
+    ProyectistaListItemOut,
+    DelegadoListItemOut,
+    ContactoListItemOut,
+    TarifaRevisionOut,
+    EspecialidadRevisionOut,
+    RevisionListItemOut,
+    DelegadosVigentesOut,
 )
 
 
@@ -33,7 +45,6 @@ class LiquidacionGeneralPresenter:
         Returns:
             LiquidacionGeneralOut schema para respuesta HTTP
         """
-        # ── Entidad ─────────────────────────────────────────────────────────────
         entidad = None
         if result.entidad_id or result.entidad_nombre:
             entidad = EntidadGeneralOut(
@@ -43,23 +54,20 @@ class LiquidacionGeneralPresenter:
                 ruc=result.entidad_ruc,
             )
 
-        # ── Proyecto ───────────────────────────────────────────────────────────
         proyecto = None
         if result.proyecto_id or result.proyecto_nombre:
             proyecto = ProyectoGeneralOut(
-                id=result.proyecto_id or uuid.UUID('00000000-0000-0000-0000-000000000000'),
+                id=result.proyecto_id or _uuid.UUID('00000000-0000-0000-0000-000000000000'),
                 public_id=result.proyecto_public_id or '',
                 nombre=result.proyecto_nombre or '',
                 direccion=result.proyecto_direccion,
             )
 
-        # ── Valores financieros ───────────────────────────────────────────────
         subtotal = float(result.subtotal) if result.subtotal else 0.0
         igv = float(result.igv) if result.igv else 0.0
         total = float(result.total) if result.total else 0.0
         total_a_pagar = float(result.total_a_pagar) if result.total_a_pagar else 0.0
 
-        # ── Armar LiquidacionGeneralOut ───────────────────────────────────────
         return LiquidacionGeneralOut(
             id=result.id,
             public_id=result.public_id,
@@ -79,6 +87,36 @@ class LiquidacionGeneralPresenter:
         )
 
     @staticmethod
+    def _build_proyecto(result: LiquidacionGeneralListItem) -> ProyectoListItemOut:
+        entidad = None
+        if result.proyecto.entidad_id or result.proyecto.entidad_nombre:
+            entidad = EntidadListItemOut(
+                id=result.proyecto.entidad_id,
+                tipo=result.proyecto.entidad_tipo,
+                nombre=result.proyecto.entidad_nombre,
+                ruc=result.proyecto.entidad_ruc,
+            )
+        return ProyectoListItemOut(
+            id=result.proyecto.id,
+            public_id=result.proyecto.public_id,
+            nombre=result.proyecto.nombre,
+            direccion=result.proyecto.direccion,
+            valor_proyecto=result.proyecto.valor_proyecto,
+            entidad=entidad,
+        )
+
+    @staticmethod
+    def _build_entidad(result: LiquidacionGeneralListItem) -> Optional[EntidadListItemOut]:
+        if not result.entidad or not result.entidad.id:
+            return None
+        return EntidadListItemOut(
+            id=result.entidad.id,
+            tipo=result.entidad.tipo,
+            nombre=result.entidad.nombre,
+            ruc=result.entidad.ruc,
+        )
+
+    @staticmethod
     def present_list_item(result: LiquidacionGeneralListItem) -> LiquidacionGeneralListItemOut:
         """
         Transforma un LiquidacionGeneralListItem a LiquidacionGeneralListItemOut.
@@ -89,38 +127,92 @@ class LiquidacionGeneralPresenter:
         Returns:
             LiquidacionGeneralListItemOut schema para respuesta HTTP
         """
-        from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import TotalesListItemOut
-
-        # Construir totales anidados si tenemos datos financieros
-        totales = None
-        if result.subtotal is not None or result.igv is not None:
-            subtotal = result.subtotal if result.subtotal is not None else 0.0
-            igv = result.igv if result.igv is not None else 0.0
-            total_liq = result.total if result.total is not None else subtotal + igv
-            totales = TotalesListItemOut(
-                subtotal=subtotal,
-                igv=igv,
-                total=total_liq,
-                liquidacion_total=total_liq,
-                total_a_pagar=result.total_a_pagar if result.total_a_pagar is not None else total_liq,
-            )
-
         return LiquidacionGeneralListItemOut(
             id=result.id,
             public_id=result.public_id,
             estado=result.estado,
-            tipo_liquidacion=result.tipo_liquidacion,  # Ya viene en slug del core
+            tipo_liquidacion=result.tipo_liquidacion,
             numero_revision=result.numero_revision,
-            proyecto_denominacion=result.proyecto_denominacion,
-            proyecto_public_id=result.proyecto_public_id,
             fecha_registro=result.fecha_registro,
-            total=result.total,
+            tramite_accion=result.tramite_accion,
+            tipo_tramite=result.tipo_tramite,
             expediente=result.expediente,
             observacion=result.observacion,
-            municipalidad_id=result.municipalidad_id,
-            municipalidad_nombre=result.municipalidad_nombre,
-            valor_caracteristico=result.valor_caracteristico,
-            totales=totales,
+            proyecto=LiquidacionGeneralPresenter._build_proyecto(result),
+            entidad=LiquidacionGeneralPresenter._build_entidad(result),
+            municipalidad=MunicipalidadListItemOut(
+                id=result.municipalidad.id,
+                nombre=result.municipalidad.nombre,
+                codigo=result.municipalidad.codigo,
+                provincia=result.municipalidad.provincia,
+                distrito=result.municipalidad.distrito,
+            ),
+            valores=ValoresListItemOut(
+                subtotal=result.valores.subtotal,
+                igv=result.valores.igv,
+                total=result.valores.total,
+                total_a_pagar=result.valores.total_a_pagar,
+            ),
+            proyectistas=[
+                ProyectistaListItemOut(
+                    id=p.id,
+                    perfil_ingeniero_id=p.perfil_ingeniero_id,
+                    perfil_ingeniero_nombres=p.perfil_ingeniero_nombres,
+                    perfil_ingeniero_apellidos=p.perfil_ingeniero_apellidos,
+                    perfil_ingeniero_cip=p.perfil_ingeniero_cip,
+                    especialidad_id=p.especialidad_id,
+                    especialidad_nombre=p.especialidad_nombre,
+                    descripcion=p.descripcion,
+                ) for p in result.proyectistas
+            ],
+            delegados=[
+                DelegadoListItemOut(
+                    id=d.id,
+                    perfil_ingeniero_id=d.perfil_ingeniero_id,
+                    perfil_ingeniero_nombres=d.perfil_ingeniero_nombres,
+                    perfil_ingeniero_apellidos=d.perfil_ingeniero_apellidos,
+                    perfil_ingeniero_cip=d.perfil_ingeniero_cip,
+                    especialidad_id=d.especialidad_id,
+                    especialidad_nombre=d.especialidad_nombre,
+                    tipo=d.tipo,
+                ) for d in result.delegados
+            ],
+            contactos=[
+                ContactoListItemOut(
+                    id=c.id,
+                    nombres=c.nombres,
+                    apellidos=c.apellidos,
+                    dni=c.dni,
+                    cargo=c.cargo,
+                    telefono=c.telefono,
+                    celular=c.celular,
+                    email=c.email,
+                    direccion=c.direccion,
+                    principal=c.principal,
+                    descripcion=c.descripcion,
+                ) for c in result.contactos
+            ],
+            revisiones=[
+                RevisionListItemOut(
+                    id=r.id,
+                    especialidades=[
+                        EspecialidadRevisionOut(id=e.id, nombre=e.nombre)
+                        for e in r.especialidades
+                    ],
+                    tarifa=TarifaRevisionOut(
+                        id=r.tarifa.id,
+                        derecho_minimo=r.tarifa.derecho_minimo,
+                        derecho_maximo=r.tarifa.derecho_maximo,
+                        porcentaje_minimo_uit=r.tarifa.porcentaje_minimo_uit,
+                    ) if r.tarifa else None,
+                    monto_base=r.monto_base,
+                    cobra=r.cobra,
+                ) for r in result.revisiones
+            ],
+            subtotal=result.subtotal,
+            igv=result.igv,
+            total=result.total,
+            total_a_pagar=result.total_a_pagar,
         )
 
     @staticmethod
@@ -137,3 +229,26 @@ class LiquidacionGeneralPresenter:
             Lista de LiquidacionGeneralListItemOut
         """
         return [LiquidacionGeneralPresenter.present_list_item(r) for r in results]
+
+    @staticmethod
+    def present_delegados_vigentes(result: DelegadosVigentesResult) -> DelegadosVigentesOut:
+        from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
+            DelegadoVigenteOut,
+            EspecialidadBasicaDelegadoOut,
+        )
+
+        return DelegadosVigentesOut(
+            delegados=[
+                DelegadoVigenteOut(
+                    id=d.id,
+                    nombre_completo=d.nombre_completo,
+                    cip=d.cip,
+                    especialidad=EspecialidadBasicaDelegadoOut(
+                        id=d.especialidad.id,
+                        nombre=d.especialidad.nombre,
+                    ) if d.especialidad else None,
+                    tipo=d.tipo,
+                )
+                for d in result.delegados
+            ]
+        )

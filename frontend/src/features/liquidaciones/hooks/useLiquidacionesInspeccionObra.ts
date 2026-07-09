@@ -1,14 +1,16 @@
 /**
  * Hook para lista de liquidaciones de Inspección de Obra con paginación.
  * Endpoint: GET /liquidaciones/inspeccion-obra
+ *
+ * Versión específica para Inspección de Obra — sin dispatch por kind.
  */
 import { useState } from "react";
 import { useApiQuery } from "@/hooks";
-import { liquidacionesNoEdificacionResponseSchema } from "../schemas/liquidacion-no-edificacion.schema";
+import { liquidacionesInspeccionObraResponseSchema } from "../schemas/liquidacion-inspeccion-obra.schema";
 import type {
-  LiquidacionesNoEdificacionPaginated,
-  LiquidacionNoEdificacionListItem,
-} from "../types/liquidacion-no-edificacion.types";
+  LiquidacionesInspeccionObraPaginated,
+  LiquidacionInspeccionObraListItem,
+} from "../types/liquidacion-inspeccion-obra.types";
 
 interface UseLiquidacionesInspeccionObraProps {
   page?: number;
@@ -35,13 +37,13 @@ export function useLiquidacionesInspeccionObra({
       currentPageSize,
     ],
     url: "/liquidaciones/inspeccion-obra",
-    schema: liquidacionesNoEdificacionResponseSchema,
+    schema: liquidacionesInspeccionObraResponseSchema,
     params,
     queryOptions: {
-      select: (data): LiquidacionesNoEdificacionPaginated => {
+      select: (data): LiquidacionesInspeccionObraPaginated => {
         if (!data.data) {
           return {
-            items: [] as LiquidacionNoEdificacionListItem[],
+            items: [] as LiquidacionInspeccionObraListItem[],
             total: 0,
             page: currentPage,
             page_size: currentPageSize,

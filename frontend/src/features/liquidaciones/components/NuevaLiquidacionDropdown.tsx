@@ -244,7 +244,7 @@ export function NuevaLiquidacionDropdown({
         open={nuevaRevisionOpen}
         onOpenChange={setNuevaRevisionOpen}
         onSuccess={handleSuccess}
-        liquidacionBase={null}
+        liquidacionPreviaId={null}
       />
 
       {/* ── No Edificación: Habilitación Urbana ─────────────────────────────── */}

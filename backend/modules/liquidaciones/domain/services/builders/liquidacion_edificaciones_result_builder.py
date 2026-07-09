@@ -158,18 +158,18 @@ class LiquidacionEdificacionesResultBuilder:
         revisiones = []
         for rev in revision_results:
             if hasattr(rev, 'especialidades') and rev.especialidades:
-                primera_esp = rev.especialidades[0]
-                esp_id = primera_esp.id
-                esp_nombre = primera_esp.nombre
+                # Construir lista completa de especialidades para el campo plural
+                todas_especialidades = [
+                    EspecialidadData(id=esp.id, nombre=esp.nombre)
+                    for esp in rev.especialidades
+                ]
             else:
-                esp_id = getattr(rev, 'tarifa', None) and getattr(rev.tarifa, 'id', None)
-                esp_nombre = getattr(rev, 'especialidad_nombre', None) or getattr(rev, 'especialidad', None) or ''
+                # Sin especialidades disponibles — usar lista vacía, no None
+                # para evitar rely en lógica de primera especialidad
+                todas_especialidades = []
             revisiones.append(EdificacionRevisionData(
                 id=rev.id,
-                especialidad=EspecialidadData(
-                    id=esp_id,
-                    nombre=esp_nombre,
-                ),
+                especialidades=todas_especialidades,
                 tarifa=TarifaEdificacionData(
                     id=rev.tarifa.id,
                     derecho_minimo=rev.tarifa.derecho_minimo,

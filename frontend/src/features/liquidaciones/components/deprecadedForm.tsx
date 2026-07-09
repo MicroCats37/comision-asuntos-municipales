@@ -425,7 +425,8 @@ export function LiquidacionEdificacionFormModal({
 
   const { data: delegadosVigentes, isLoading: isLoadingDelegados } = useDelegadosVigentes(
     watchedMunicipalidadId || null,
-    singleRevisionId
+    "edificacion",
+    singleRevisionId,
   );
 
   // ── Handle proyecto created inline or selected from search ──────────────────

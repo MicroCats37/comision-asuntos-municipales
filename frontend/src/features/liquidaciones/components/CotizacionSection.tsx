@@ -107,7 +107,7 @@ export function CotizacionSection({
                     : "bg-muted text-muted-foreground"
                 }`}
               >
-                {quote._metadata.cobra ? "Cobra" : "No cobra"}
+                
               </span>
             </div>
           </div>

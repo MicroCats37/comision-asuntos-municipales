@@ -18,8 +18,8 @@ import { useCallback, useEffect, useRef } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
 import { Badge } from "@/components/ui/badge";
 import { useCotizacionPrimeraRevision } from "../../hooks/useCotizacion";
-import { useLiquidacionStepperUIStore } from "../../store";
 import type { VariablesFinancieras } from "../../types/liquidacion-edificaciones";
+import type { LiquidacionStepperStore } from "../../store";
 
 const TIPO_TRAMITE_LABELS: Record<string, string> = {
   OBRA_NUEVA: "Obra nueva",
@@ -67,6 +67,7 @@ function SectionTitle({ icon: Icon, title }: SectionTitleProps) {
 interface Step5ConfirmacionProps {
   methods: UseFormReturn<FieldValues>;
   isActive: boolean;
+  store: LiquidacionStepperStore;
   // Data for labels
   municipalidades?: Array<{ id: string; nombre: string }>;
   especialidadLabels?: Record<string, string>;
@@ -77,6 +78,7 @@ interface Step5ConfirmacionProps {
 export function Step5Confirmacion({
   methods,
   isActive,
+  store,
   municipalidades = [],
   especialidadLabels = {},
   variablesFinancieras,
@@ -92,7 +94,7 @@ export function Step5Confirmacion({
     setCotizacionQuote,
     setCotizacionCalculating,
     setCotizacionError,
-  } = useLiquidacionStepperUIStore();
+  } = store;
 
   const cotizacionMutation = useCotizacionPrimeraRevision();
   const hasAutoCalculated = useRef(false);

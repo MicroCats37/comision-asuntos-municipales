@@ -4,9 +4,10 @@ import { FileText, Search, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LiquidacionListCard } from "../components/LiquidacionListCard";
+import { LiquidacionGeneralCard } from "../components/LiquidacionGeneralCard";
+import type { LiquidacionGeneralListItem } from "../types/liquidacion-general";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
-import { useLiquidaciones } from "../hooks/useLiquidaciones";
+import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificaciones";
 
 /**
  * Vista de Liquidaciones de Edificaciones (list).
@@ -31,7 +32,7 @@ export function LiquidacionesEdificacionesView() {
     isError: isLiquidacionError,
     refetch: refetchLiquidaciones,
     setPage: setLiquidacionPage,
-  } = useLiquidaciones({ page: 1, pageSize: 10, proyectoPublicId });
+  } = useLiquidacionesEdificaciones({ page: 1, pageSize: 10, proyectoPublicId });
 
   const handleSearch = () => {
     const trimmed = searchInput.trim();
@@ -136,7 +137,7 @@ export function LiquidacionesEdificacionesView() {
             <>
               <div className="flex flex-col gap-4">
                 {liquidacionItems.map((item) => (
-                  <LiquidacionListCard key={item.id} item={item} />
+                  <LiquidacionGeneralCard key={item.id} item={item as unknown as LiquidacionGeneralListItem} />
                 ))}
               </div>
               {/* Pagination for cards */}

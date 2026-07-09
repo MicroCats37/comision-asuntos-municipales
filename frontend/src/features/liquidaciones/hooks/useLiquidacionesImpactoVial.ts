@@ -1,14 +1,16 @@
 /**
  * Hook para lista de liquidaciones de Impacto Vial con paginación.
  * Endpoint: GET /liquidaciones/impacto-vial
+ *
+ * Versión específica para IV — sin dispatch por kind.
  */
 import { useState } from "react";
 import { useApiQuery } from "@/hooks";
-import { liquidacionesNoEdificacionResponseSchema } from "../schemas/liquidacion-no-edificacion.schema";
+import { liquidacionesImpactoVialResponseSchema } from "../schemas/liquidacion-impacto-vial.schema";
 import type {
-  LiquidacionesNoEdificacionPaginated,
-  LiquidacionNoEdificacionListItem,
-} from "../types/liquidacion-no-edificacion.types";
+  LiquidacionesImpactoVialPaginated,
+  LiquidacionImpactoVialListItem,
+} from "../types/liquidacion-impacto-vial.types";
 
 interface UseLiquidacionesImpactoVialProps {
   page?: number;
@@ -35,13 +37,13 @@ export function useLiquidacionesImpactoVial({
       currentPageSize,
     ],
     url: "/liquidaciones/impacto-vial",
-    schema: liquidacionesNoEdificacionResponseSchema,
+    schema: liquidacionesImpactoVialResponseSchema,
     params,
     queryOptions: {
-      select: (data): LiquidacionesNoEdificacionPaginated => {
+      select: (data): LiquidacionesImpactoVialPaginated => {
         if (!data.data) {
           return {
-            items: [] as LiquidacionNoEdificacionListItem[],
+            items: [] as LiquidacionImpactoVialListItem[],
             total: 0,
             page: currentPage,
             page_size: currentPageSize,

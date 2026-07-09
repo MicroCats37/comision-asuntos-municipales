@@ -4,14 +4,14 @@ Integration tests for GET /tarifas-vigentes endpoints (non-edificacion).
 Tests the full stack for M2-type (MecanicaSuelos, HabilitacionUrbana,
 ImpactoVial, Taludes) and InspeccionObra (Visitas) tariff selection endpoints.
 
-Pattern follows test_liquidaciones_nuevas_integration.py.
+Pattern follows test_impacto_vial_integration.py and test_inspeccion_obra_integration.py.
 """
 import pytest
 from decimal import Decimal
 
 from django.test import Client
 
-from modules.liquidaciones.tests.factories.tarifas_nuevas_factory import (
+from modules.liquidaciones.tests.factories.tarifas_test_factory import (
     TarifaLiquidacionBaseM2Factory,
     TarifaLiquidacionBaseVisitasFactory,
     TarifaPorMetroCuadradoFactory,
@@ -31,7 +31,7 @@ class TestTarifasVigentesM2Endpoint:
         """Create a vigente M2 tariff with regla for PRIMERA_REVISION."""
         # TarifaM2 for MECANICA_SUELOS
         # detalle_m2 is created automatically via TarifaLiquidacionBaseM2Factory.post_generation
-        self.tarifa_base = TarifaLiquidacionBaseM2Factory(
+        self.tarifa_base =         TarifaLiquidacionBaseM2Factory(
             tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
         )
         ReglaTarifaLiquidacionFactory(

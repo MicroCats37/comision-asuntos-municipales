@@ -2,19 +2,21 @@
  * Hooks para crear y cotizar liquidaciones de Inspección de Obra (primera revisión).
  * Endpoint: POST /liquidaciones/inspeccion-obra/primera-revision
  * Endpoint: POST /liquidaciones/inspeccion-obra/cotizar/primera-revision
+ *
+ * Versión específica para Inspección de Obra — sin dispatch por kind.
  */
 import { useQueryClient } from "@tanstack/react-query";
 import type { z } from "zod";
 import { useApiCreate } from "@/hooks";
 import {
-  cotizacionNoEdificacionResponseSchema,
-  crearLiquidacionNoEdificacionResponseSchema,
-} from "../schemas/liquidacion-no-edificacion.schema";
+  cotizacionIOResponseSchema,
+  crearInspeccionObraResponseSchema,
+} from "../schemas/liquidacion-inspeccion-obra.schema";
 import type {
-  CotizacionNoEdificacionResponse,
-  CrearLiquidacionInspeccionObraIn,
-  CotizarInspeccionObraPrimeraRevisionIn,
-} from "../types/liquidacion-no-edificacion.types";
+  CotizacionIOResponse,
+  CrearInspeccionObraPrimeraRevisionIn,
+} from "../types/liquidacion-inspeccion-obra.types";
+import type { CotizarInspeccionObraPrimeraRevisionIn } from "../types/liquidacion-inspeccion-obra.types";
 
 /**
  * Hook para crear primera revisión de Inspección de Obra.
@@ -23,11 +25,11 @@ export function useCrearInspeccionObraPrimeraRevision() {
   const queryClient = useQueryClient();
 
   const mutation = useApiCreate<
-    z.infer<typeof crearLiquidacionNoEdificacionResponseSchema>,
-    { liquidacion: CrearLiquidacionInspeccionObraIn }
+    z.infer<typeof crearInspeccionObraResponseSchema>,
+    { liquidacion: CrearInspeccionObraPrimeraRevisionIn }
   >({
     url: "/liquidaciones/inspeccion-obra/primera-revision",
-    schema: crearLiquidacionNoEdificacionResponseSchema,
+    schema: crearInspeccionObraResponseSchema,
     options: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["liquidaciones"] });
@@ -37,10 +39,10 @@ export function useCrearInspeccionObraPrimeraRevision() {
 
   const crearMutation = {
     ...mutation,
-    mutate: (payload: CrearLiquidacionInspeccionObraIn) => {
+    mutate: (payload: CrearInspeccionObraPrimeraRevisionIn) => {
       mutation.mutate({ liquidacion: payload });
     },
-    mutateAsync: async (payload: CrearLiquidacionInspeccionObraIn) => {
+    mutateAsync: async (payload: CrearInspeccionObraPrimeraRevisionIn) => {
       return mutation.mutateAsync({ liquidacion: payload });
     },
   };
@@ -53,11 +55,11 @@ export function useCrearInspeccionObraPrimeraRevision() {
  */
 export function useCotizarInspeccionObraPrimeraRevision() {
   const mutation = useApiCreate<
-    z.infer<typeof cotizacionNoEdificacionResponseSchema>,
+    z.infer<typeof cotizacionIOResponseSchema>,
     { liquidacion: CotizarInspeccionObraPrimeraRevisionIn }
   >({
     url: "/liquidaciones/inspeccion-obra/cotizar/primera-revision",
-    schema: cotizacionNoEdificacionResponseSchema,
+    schema: cotizacionIOResponseSchema,
     options: {},
   });
 
@@ -68,9 +70,9 @@ export function useCotizarInspeccionObraPrimeraRevision() {
     },
     mutateAsync: async (
       payload: CotizarInspeccionObraPrimeraRevisionIn,
-    ): Promise<CotizacionNoEdificacionResponse> => {
+    ): Promise<CotizacionIOResponse> => {
       const result = await mutation.mutateAsync({ liquidacion: payload });
-      return result.data as CotizacionNoEdificacionResponse;
+      return result.data as CotizacionIOResponse;
     },
   };
 

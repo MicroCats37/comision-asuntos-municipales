@@ -1,7 +1,7 @@
 """
 InspeccionObraController — controlador HTTP ligero para Inspección de Obra.
 
-Solo delega a InspeccionObraOrchestrator y retorna vía NuevosPresenters.
+Solo delega a InspeccionObraOrchestrator y retorna vía InspeccionObraPresenter.
 Patrón: JSON Estricto (Patrón 3) — recibe payload JSON tipado, convierte DTOs, llama orchestrator.
 
 NO lógica de negocio, NO ORM directo, NO transacciones en controller.
@@ -25,15 +25,17 @@ from modules.liquidaciones.domain.schemas_proyecto import (
     EntidadInlineData as DomainEntidadInlineData,
     ProyectoInlineData as DomainProyectoInlineData,
 )
-from modules.liquidaciones.presentation.schemas_nuevos import (
-    CrearLiquidacionInspeccionObraWrapperIn,
-    LiquidacionInspeccionObraOut,
+from modules.liquidaciones.presentation.schemas_especialidades import (
     CotizarLiquidacionInspeccionObraWrapperIn,
     CotizacionVisitasQuoteOut,
     TarifasVigentesVisitasOut,
 )
+from modules.liquidaciones.presentation.schemas.inspeccion_obra_schemas import (
+    CrearLiquidacionInspeccionObraWrapperIn,
+    LiquidacionInspeccionObraOut,
+)
 from modules.liquidaciones.domain.constants import TramiteAccion
-from modules.liquidaciones.presentation.presenters.nuevos_presenters import NuevosPresenters
+from modules.liquidaciones.presentation.presenters.inspeccion_obra_presenter import InspeccionObraPresenter
 from modules.liquidaciones.presentation.presenters.liquidacion_general_presenter import LiquidacionGeneralPresenter
 from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
     LiquidacionGeneralListItemOut,
@@ -141,7 +143,7 @@ class InspeccionObraController:
             tarifas_ids=tarifas_ids,
         )
         return success_response(
-            NuevosPresenters.present_inspeccion_obra(result, calculo_visitas)
+            InspeccionObraPresenter.present(result, calculo_visitas)
         )
 
     @route.post("/cotizar/primera-revision", response={200: ApiResponse[CotizacionVisitasQuoteOut]}, auth=None)
@@ -166,7 +168,7 @@ class InspeccionObraController:
             categoria=liquidacion_data.categoria,
             tarifas_ids=[str(tid) for tid in liquidacion_data.tarifas_ids] if liquidacion_data.tarifas_ids else None,
         )
-        return success_response(NuevosPresenters.present_cotizacion_visitas(result))
+        return success_response(InspeccionObraPresenter.present_cotizacion(result))
 
     @route.get("/tarifas-vigentes", response={200: ApiResponse[TarifasVigentesVisitasOut]}, auth=None)
     async def obtener_tarifas_vigentes(

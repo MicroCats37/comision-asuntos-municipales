@@ -3,8 +3,7 @@
 export { ContactoFormModal } from "./ContactoFormModal";
 export { ContactosSection } from "./ContactosSection";
 export { DelegadosSection } from "./DelegadosSection";
-export { LiquidacionCard } from "./LiquidacionCard";
-export { LiquidacionSnapshotCard } from "./LiquidacionSnapshotCard";
+export { LiquidacionEdificacionCard } from "./LiquidacionEdificacionCard";
 export { LiquidacionStepperModal } from "./LiquidacionStepperModal";
 export { LiquidacionInspeccionObraStepperModal } from "./LiquidacionInspeccionObraStepperModal";
 export { NuevaRevisionFormModal } from "./NuevaRevisionFormModal";
@@ -15,9 +14,8 @@ export { ProyectoSelectorSection } from "./ProyectoSelectorSection";
 export { RevisionesVigentesTable } from "./RevisionesVigentesTable";
 export { VariablesFinancierasCard } from "./VariablesFinancierasCard";
 
-// No Edificación — M2 family
+// M2 family (HU, MS, IV, Taludes)
 export {
-  LiquidacionM2StepperModal,
   LiquidacionHabilitacionUrbanaStepperModal,
   LiquidacionMecanicaSuelosStepperModal,
   LiquidacionImpactoVialStepperModal,

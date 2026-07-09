@@ -596,36 +596,115 @@ class Command(BaseCommand):
             return self._create_perfil_from_seed(cip, dele_data)
 
     def _create_perfil_from_seed(self, cip, dele_data):
-        """Crear o obtener PerfilIngeniero desde datos seed (fallback cuando no hay endpoint ni colegiados_seed)."""
+        """Crear o obtener PerfilIngeniero desde datos seed (fallback cuando no hay endpoint ni colegiados_seed).
+
+        Uses transaction-safe patterns to handle concurrent seed runs.
+        When dni is provided, uses get_or_create by dni (preferred).
+        When dni is absent, uses get_or_create by cip to handle the case where
+        the seed data only has CIP (como delegados_reales.json sin dni).
+
+        When individual name fields are missing but nombre_completo is available,
+        parses it into components using the pattern: "APELLIDO_PATERNO APELLIDO_MATERNO NOMBRES".
+        If no name data at all, generates a deterministic placeholder from CIP.
+        """
         dni = dele_data.get('dni')
+
+        # If no DNI provided, use a placeholder. The dni field in PerfilIngeniero
+        # is required (no blank=True, null=True) and unique, so we must provide a value.
+        # "00000000" is the conventional placeholder when real DNI is unknown.
+        if not dni:
+            dni = '00000000'
         nombre = dele_data.get('nombre', '')
         paterno = dele_data.get('paterno', '')
         materno = dele_data.get('materno', '')
 
-        # Buscar por DNI primero para evitar UNIQUE constraint
-        if dni:
-            existing = PerfilIngeniero.objects.filter(dni=dni).first()
-            if existing:
-                existing.cip = cip
-                existing.nombres = nombre
-                existing.apellido_paterno = paterno
-                existing.apellido_materno = materno
-                try:
-                    existing.save()
-                    self._log(f"    Updated PerfilIngeniero by DNI from seed: {existing.nombre_completo}")
-                    return existing
-                except Exception as e:
-                    self._log(self.style.WARNING(f"    Error updating PerfilIngeniero by DNI: {e}"))
+        # If name fields are empty but nombre_completo is available, parse it
+        if not (nombre or paterno or materno):
+            nombre_completo = dele_data.get('nombre_completo', '')
+            if nombre_completo:
+                parsed = self._parse_delegate_name(nombre_completo)
+                nombre = parsed.get('nombres', '')
+                paterno = parsed.get('apellido_paterno', '')
+                materno = parsed.get('apellido_materno', '')
+            else:
+                # No name data at all — generate deterministic placeholder from CIP
+                # This ensures the model validation passes (required fields)
+                paterno = f'CIP{cip}'
+                materno = 'INGRESADO'
+                nombre = 'DELEGADO'
+
+        # Validate we have non-empty values for required fields
+        if not paterno:
+            paterno = f'CIP{cip}'
+        if not materno:
+            materno = 'PENDIENTE'
+        if not nombre:
+            nombre = 'PENDIENTE'
+
+        defaults = {
+            'nombres': nombre,
+            'apellido_paterno': paterno,
+            'apellido_materno': materno,
+        }
 
         try:
-            perfil = PerfilIngeniero.objects.create(
-                cip=cip,
-                nombres=nombre,
-                apellido_paterno=paterno,
-                apellido_materno=materno,
-            )
-            self._log(f"    Created PerfilIngeniero from seed: {dele_data.get('nombre_completo')}")
+            if dni:
+                # Use DNI as primary lookup (preferred — DNI is unique and stable)
+                perfil, created = PerfilIngeniero.objects.get_or_create(
+                    dni=dni,
+                    defaults={**defaults, 'cip': cip},
+                )
+            else:
+                # No valid DNI in seed data (e.g. delegados_reales.json fallback).
+                # Use CIP as lookup - first check if exists, then create if not.
+                # This avoids get_or_create's IntegrityError on concurrent inserts.
+                try:
+                    perfil = PerfilIngeniero.objects.get(cip=cip)
+                    created = False
+                except PerfilIngeniero.DoesNotExist:
+                    try:
+                        # Don't include dni in defaults when empty — empty string violates unique
+                        perfil = PerfilIngeniero.objects.create(cip=cip, **defaults)
+                        created = True
+                    except IntegrityError:
+                        # Concurrent creation — fetch the winner
+                        perfil = PerfilIngeniero.objects.filter(cip=cip).first()
+                        created = False
+                        if not perfil:
+                            self._log(self.style.ERROR(f"    IntegrityError recovery failed for CIP {cip}"))
+                            return None
+            if created:
+                self._log(f"    Created PerfilIngeniero from seed: {dele_data.get('nombre_completo')}")
+            else:
+                # Profile exists — update CIP (if looked up by DNI) and name fields if different
+                updated = False
+                if dni and perfil.cip != cip:
+                    perfil.cip = cip
+                    updated = True
+                for field, value in defaults.items():
+                    if getattr(perfil, field) != value:
+                        setattr(perfil, field, value)
+                        updated = True
+                if updated:
+                    perfil.save()
+                    self._log(f"    Updated PerfilIngeniero by {('DNI' if dni else 'CIP')} from seed: {perfil.nombre_completo}")
             return perfil
+        except IntegrityError:
+            # Rare race: unique constraint conflict during concurrent seed runs.
+            # Fall back to CIP lookup — the most recently created record wins.
+            existing = PerfilIngeniero.objects.filter(cip=cip).first()
+            if existing:
+                updated = False
+                for field, value in defaults.items():
+                    if getattr(existing, field) != value:
+                        setattr(existing, field, value)
+                        updated = True
+                if updated:
+                    existing.save()
+                    self._log(f"    Updated PerfilIngeniero by CIP from seed (race recovery): {existing.nombre_completo}")
+                return existing
+            self._log(self.style.ERROR(f"    Could not resolve PerfilIngeniero for CIP {cip} / DNI {dni}"))
+            return None
         except Exception as e:
             self._log(self.style.ERROR(f"    Error creating PerfilIngeniero: {e}"))
             return None

@@ -5,8 +5,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LiquidacionListCard } from "../components/LiquidacionListCard";
+import { NuevaRevisionFormModal } from "../components/NuevaRevisionFormModal";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
-import { useLiquidaciones } from "../hooks/useLiquidaciones";
+import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificaciones";
+import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificaciones";
 
 /**
  * Vista genérica de Liquidaciones de Edificaciones (list).
@@ -18,6 +20,7 @@ import { useLiquidaciones } from "../hooks/useLiquidaciones";
 export function LiquidacionesView() {
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
+  const [nuevaRevisionLiquidacionId, setNuevaRevisionLiquidacionId] = useState<string | null>(null);
 
   const {
     items: liquidacionItems,
@@ -28,7 +31,7 @@ export function LiquidacionesView() {
     isError: isLiquidacionError,
     refetch: refetchLiquidaciones,
     setPage: setLiquidacionPage,
-  } = useLiquidaciones({ page: 1, pageSize: 10, proyectoPublicId });
+  } = useLiquidacionesEdificaciones({ page: 1, pageSize: 10, proyectoPublicId });
 
   const handleSearch = () => {
     const trimmed = searchInput.trim();
@@ -133,7 +136,7 @@ export function LiquidacionesView() {
             <>
               <div className="flex flex-col gap-4">
                 {liquidacionItems.map((item) => (
-                  <LiquidacionListCard key={item.id} item={item} />
+                  <LiquidacionListCard key={item.id} item={item} onNuevaRevision={(it) => setNuevaRevisionLiquidacionId(it.id)} />
                 ))}
               </div>
               {/* Pagination for cards */}
@@ -181,6 +184,13 @@ export function LiquidacionesView() {
           )}
         </div>
       </div>
+
+      <NuevaRevisionFormModal
+        open={!!nuevaRevisionLiquidacionId}
+        onOpenChange={(open) => { if (!open) setNuevaRevisionLiquidacionId(null); }}
+        liquidacionPreviaId={nuevaRevisionLiquidacionId}
+        onSuccess={() => { setNuevaRevisionLiquidacionId(null); refetchLiquidaciones(); }}
+      />
     </div>
   );
 }

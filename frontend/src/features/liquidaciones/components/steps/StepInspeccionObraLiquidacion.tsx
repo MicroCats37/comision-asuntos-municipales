@@ -9,9 +9,9 @@ import type { FieldValues, UseFormReturn } from "react-hook-form";
 import { GenericInput } from "@/components/genericForm/GenericInput";
 import { FormSectionHeader } from "@/components-app/forms/FormSectionHeader";
 import { notify } from "@/errors";
-import { useLiquidacionStepperUIStore } from "../../store";
-import { CATEGORIAS_IO } from "../../types/liquidacion-no-edificacion.types";
-import type { CotizacionIOResponse } from "../../types/liquidacion-no-edificacion.types";
+import { useInspeccionObraStepperStore } from "../../store";
+import { CATEGORIAS_IO } from "../../types/liquidacion-inspeccion-obra.types";
+import type { CotizacionIOResponse } from "../../types/liquidacion-inspeccion-obra.types";
 import { useTarifasVigentesInspeccionObra } from "../../hooks/useTarifasVigentes";
 
 const CATEGORIA_OPTIONS = CATEGORIAS_IO.map((c) => ({
@@ -74,7 +74,7 @@ export function StepInspeccionObraLiquidacion({
   setCotizacionError,
   setCotizacionCalculating,
 }: StepInspeccionObraLiquidacionProps) {
-  const store = useLiquidacionStepperUIStore();
+  const store = useInspeccionObraStepperStore();
   const { watch } = methods;
   const watchedMunicipalidadId = watch("municipalidad_id");
   const watchedCantidadVisitas = watch("cantidad_visitas");

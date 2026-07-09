@@ -1,14 +1,16 @@
 /**
  * Hook para lista de liquidaciones de Habilitación Urbana con paginación.
  * Endpoint: GET /liquidaciones/habilitacion-urbana
+ *
+ * Versión específica para HU — sin dispatch por kind.
  */
 import { useState } from "react";
 import { useApiQuery } from "@/hooks";
-import { liquidacionesNoEdificacionResponseSchema } from "../schemas/liquidacion-no-edificacion.schema";
+import { liquidacionesHabilitacionUrbanaResponseSchema } from "../schemas/liquidacion-habilitacion-urbana.schema";
 import type {
-  LiquidacionesNoEdificacionPaginated,
-  LiquidacionNoEdificacionListItem,
-} from "../types/liquidacion-no-edificacion.types";
+  LiquidacionesHabilitacionUrbanaPaginated,
+  LiquidacionHabilitacionUrbanaListItem,
+} from "../types/liquidacion-habilitacion-urbana.types";
 
 interface UseLiquidacionesHabilitacionUrbanaProps {
   page?: number;
@@ -35,13 +37,13 @@ export function useLiquidacionesHabilitacionUrbana({
       currentPageSize,
     ],
     url: "/liquidaciones/habilitacion-urbana",
-    schema: liquidacionesNoEdificacionResponseSchema,
+    schema: liquidacionesHabilitacionUrbanaResponseSchema,
     params,
     queryOptions: {
-      select: (data): LiquidacionesNoEdificacionPaginated => {
+      select: (data): LiquidacionesHabilitacionUrbanaPaginated => {
         if (!data.data) {
           return {
-            items: [] as LiquidacionNoEdificacionListItem[],
+            items: [] as LiquidacionHabilitacionUrbanaListItem[],
             total: 0,
             page: currentPage,
             page_size: currentPageSize,

@@ -8,11 +8,15 @@ import { useForm, useWatch } from "react-hook-form";
 import { AppStepperFormModal } from "@/components-app/forms/AppStepperFormModal";
 import { notify } from "@/errors";
 import { useCrearPrimeraRevision } from "../hooks/useCrearLiquidacion";
+import { useEspecialidadesVigentesLiquidacion } from "../hooks/useEspecialidadesVigentesLiquidacion";
 import { useMunicipalidades } from "../hooks/useMunicipalidades";
 import { useRevisionesVigentes } from "../hooks/useRevisionesVigentes";
 import { useVariablesFinancieras } from "../hooks/useVariablesFinancieras";
 import { liquidacionEdificacionFormSchema } from "../schemas/liquidacion-edificaciones-form.schema";
-import { useLiquidacionStepperUIStore } from "../store";
+import {
+  useEdificacionStepperStore,
+  type LiquidacionStepperStore,
+} from "../store";
 import type { ContactoInline } from "../types/contacto";
 import type { LiquidacionEdificacionSubmitData } from "../types/liquidacion-edificaciones-form.types";
 import type { LiquidacionStepperModalProps } from "../types/liquidacion-stepper.types";
@@ -135,34 +139,50 @@ export function LiquidacionStepperModal({
       tramite_accion: "PRIMERA_REVISION",
     });
 
-  // ── Metadatos de especialidades ─────────────────────────────────────────────
+  // ── Especialidades vigentes del catálogo general ────────────────────────────
+  // Usa el endpoint GET /api/liquidaciones/especialidades-vigentes?tipo_liquidacion=edificacion
+  // en lugar de derivarlas de revisionesVigentes (que contiene tarifas, no solo especialidades).
+  const { data: especialidadesData } =
+    useEspecialidadesVigentesLiquidacion("edificacion");
+
+  // ── Metadatos de especialidades (del catálogo general) ───────────────────────
   const especialidadOptions: Array<{ label: string; value: string }> =
-    revisionesVigentes
+    especialidadesData?.items
       ? [
           ...new Map(
-            revisionesVigentes
-              .flatMap((rev) =>
-                rev.especialidades.map((esp) => ({
-                  label: esp.nombre,
-                  value: esp.id,
-                })),
-              )
-              .map((opt) => [opt.value, opt]),
+            especialidadesData.items.map((esp) => ({
+              label: esp.nombre,
+              value: esp.id,
+            })).map((opt) => [opt.value, opt]),
           ).values(),
         ]
       : [];
 
   const especialidadLabels: Record<string, string> = {};
-  if (revisionesVigentes) {
-    for (const rev of revisionesVigentes) {
-      for (const esp of rev.especialidades) {
-        especialidadLabels[esp.id] = esp.nombre;
-      }
+  if (especialidadesData?.items) {
+    for (const esp of especialidadesData.items) {
+      especialidadLabels[esp.id] = esp.nombre;
     }
   }
 
   // ── Store Zustand (estado UI del stepper) ──────────────────────────────────
-  const store = useLiquidacionStepperUIStore();
+  // Aisled store por flujo: cada modal usa su propio store para evitar fugas de estado.
+  const store = useEdificacionStepperStore();
+
+  // ── Reset on close ─────────────────────────────────────────────────────────
+  // Cuando el modal se cierra (X, backdrop, o cancel), se resetea el store y el formulario.
+  // El éxito ya hace reset dentro de handleSubmit; el error NO hace reset.
+  // Seleccionar reset como función estable para evitar loop infinito:
+  // useEffect depende de store completo → identity cambia en cada render → reset → loop.
+  const resetStepper = useEdificacionStepperStore((state) => state.reset);
+  const { reset: resetForm } = formMethods;
+
+  useEffect(() => {
+    if (!open) {
+      resetStepper();
+      resetForm();
+    }
+  }, [open, resetStepper, resetForm]);
 
   // ── Modales hijos ────────────────────────────────────────────────────────────
   // Estos modales se renderizan FUERA de AppStepperFormModal para evitar
@@ -289,7 +309,7 @@ export function LiquidacionStepperModal({
           methods: UseFormReturn<FieldValues>;
           currentStep: number;
           isActive: boolean;
-        }) => <Step1Proyecto methods={methods} isActive={isActive} />,
+        }) => <Step1Proyecto methods={methods} isActive={isActive} store={store} />,
       },
 
       // ── Step 3: Personas ──────────────────────────────────────────────────────
@@ -312,6 +332,7 @@ export function LiquidacionStepperModal({
           <Step3Personas
             methods={methods}
             isActive={isActive}
+            store={store}
             especialidadOptions={especialidadOptions}
             especialidadLabels={especialidadLabels}
             onOpenProyectistaModal={() => setShowProyectistaModal(true)}
@@ -348,6 +369,7 @@ export function LiquidacionStepperModal({
           <Step5Confirmacion
             methods={methods}
             isActive={isActive}
+            store={store}
             municipalidades={municipalidades?.map((m) => ({
               id: m.id,
               nombre: m.nombre,

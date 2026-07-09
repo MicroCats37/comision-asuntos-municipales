@@ -35,13 +35,9 @@ class EdificacionRevisionData(BaseModel):
     Datos de una revisión de edificación.
 
     Una revisión puede cubrir múltiples especialidades (M2M).
-    El campo `especialidad` (singular) se conserva por compatibilidad con el
-   API response/presenter — contiene la primera especialidad.
-    El campo `especialidades` (plural) contiene TODAS las especialidades M2M
-    y se usa para validación y lógica de negocio.
+    El campo `especialidades` (plural) contiene TODAS las especialidades M2M.
     """
     id: uuid.UUID
-    especialidad: EspecialidadData
     especialidades: Optional[list[EspecialidadData]] = None  # Todas las M2M
     tarifa: TarifaEdificacionData
     porcentaje_liquidacion: Decimal
@@ -265,7 +261,6 @@ class RevisionCalculoData(BaseModel):
     """
     id: uuid.UUID
     numero_revision: int
-    especialidad: str  # Keep for backward compat — first especialidad name
     especialidades: list[EspecialidadBasicaResult]  # All M2M especialidades
     tarifa: TarifaCalculoData
     monto_base: Decimal
@@ -320,14 +315,13 @@ class CotizacionQuoteData(BaseModel):
 class RevisionConTarifaData(BaseModel):
     """
     Wrapper que transforma RevisionVigenteResult (flat) en estructura con
-    .tarifa y .especialidad anidados para reutilización en cálculo.
+    .tarifa para reutilización en cálculo.
 
     Reemplaza el helper _to_revision_calculo_data con fake inline class.
     """
     id: uuid.UUID
     porcentaje_liquidacion: Decimal
     tarifa: TarifaCalculoData
-    especialidad_nombre: str
 
 
 # =============================================================================
@@ -353,32 +347,134 @@ class DelegadosVigentesResult(BaseModel):
 # =============================================================================
 
 
+class MunicipalidadInfo(BaseModel):
+    """Información de municipalidad para item de lista."""
+    id: uuid.UUID
+    nombre: str
+    codigo: Optional[str] = None
+    provincia: Optional[str] = None
+    distrito: Optional[str] = None
+
+
+class ProyectoListItemInfo(BaseModel):
+    """Proyecto anidado en item de lista."""
+    id: uuid.UUID
+    public_id: str
+    nombre: str
+    direccion: Optional[str] = None
+    valor_proyecto: float = 0.0
+    entidad_id: Optional[uuid.UUID] = None
+    entidad_tipo: Optional[str] = None
+    entidad_nombre: Optional[str] = None
+    entidad_ruc: Optional[str] = None
+
+
+class EntidadListItemInfo(BaseModel):
+    """Entidad anidada en item de lista."""
+    id: Optional[uuid.UUID] = None
+    tipo: Optional[str] = None
+    nombre: Optional[str] = None
+    ruc: Optional[str] = None
+
+
+class ValoresListItemInfo(BaseModel):
+    """Valores financieros en item de lista."""
+    subtotal: float
+    igv: float
+    total: float
+    total_a_pagar: float
+
+
+class ProyectistaListItemData(BaseModel):
+    """Proyectista en item de lista."""
+    id: uuid.UUID
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+
+
+class DelegadoListItemData(BaseModel):
+    """Delegado en item de lista."""
+    id: uuid.UUID
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    tipo: Optional[str] = None
+
+
+class ContactoListItemData(BaseModel):
+    """Contacto en item de lista."""
+    id: uuid.UUID
+    nombres: Optional[str] = None
+    apellidos: Optional[str] = None
+    dni: Optional[str] = None
+    cargo: Optional[str] = None
+    telefono: Optional[str] = None
+    celular: Optional[str] = None
+    email: Optional[str] = None
+    direccion: Optional[str] = None
+    principal: bool = False
+    descripcion: Optional[str] = None
+
+
+class TarifaRevisionData(BaseModel):
+    """Tarifa dentro de revision en item de lista."""
+    id: uuid.UUID
+    derecho_minimo: Optional[float] = None
+    derecho_maximo: Optional[float] = None
+    porcentaje_minimo_uit: Optional[float] = None
+
+
+class EspecialidadRevisionData(BaseModel):
+    """Especialidad dentro de revision."""
+    id: uuid.UUID
+    nombre: str
+
+
+class RevisionListItemData(BaseModel):
+    """Revision en item de lista."""
+    id: uuid.UUID
+    especialidades: list[EspecialidadRevisionData] = Field(default_factory=list)
+    tarifa: Optional[TarifaRevisionData] = None
+    monto_base: float = 0.0
+    cobra: bool = False
+
+
 class LiquidacionGeneralListItem(BaseModel):
     """
     Item de lista paginada para liquidaciones generales.
 
-    Incluye campos comunes a todos los tipos de liquidación.
+    Estructura rica común a todos los tipos de liquidación.
     """
     id: uuid.UUID
     public_id: str
     estado: str
-    tipo_liquidacion: str  # Slug format: habilitacion-urbana, inspeccion-obra, etc.
+    tipo_liquidacion: str
     numero_revision: int
-    proyecto_denominacion: str
-    proyecto_public_id: str
     fecha_registro: str
-    total: float
-    # Campos adicionales para frontend no-edificación
+    tramite_accion: Optional[str] = None
+    tipo_tramite: Optional[str] = None
     expediente: Optional[str] = None
     observacion: Optional[str] = None
-    municipalidad_id: Optional[uuid.UUID] = None
-    municipalidad_nombre: Optional[str] = None
-    # valor_caracteristico: área para M2, cantidad_visitas para IO (None para edificaciones)
-    valor_caracteristico: Optional[float] = None
-    # Campos financieros para construir totales anidados
-    subtotal: Optional[float] = None
-    igv: Optional[float] = None
-    total_a_pagar: Optional[float] = None
+    proyecto: ProyectoListItemInfo
+    entidad: Optional[EntidadListItemInfo] = None
+    municipalidad: MunicipalidadInfo
+    valores: ValoresListItemInfo
+    proyectistas: list[ProyectistaListItemData] = Field(default_factory=list)
+    delegados: list[DelegadoListItemData] = Field(default_factory=list)
+    contactos: list[ContactoListItemData] = Field(default_factory=list)
+    revisiones: list[RevisionListItemData] = Field(default_factory=list)
+    subtotal: float = 0.0
+    igv: float = 0.0
+    total: float = 0.0
+    total_a_pagar: float = 0.0
 
 
 class LiquidacionGeneralPaginatedResult(BaseModel):
@@ -420,3 +516,15 @@ class LiquidacionGeneralResult(BaseModel):
     igv: Optional[Decimal] = None
     total: Optional[Decimal] = None
     total_a_pagar: Optional[Decimal] = None
+
+
+# =============================================================================
+# Pydantic v2 Forward Reference Resolution
+# =============================================================================
+# NuevaRevisionFormularioResult (line ~108) references RevisionVigenteResult (line ~232)
+# via string forward ref "list[RevisionVigenteResult]". In Pydantic v2, forward
+# references defined as strings must be resolved via model_rebuild() AFTER all
+# classes are defined. Rebuild here ensures NuevaRevisionFormularioResult can be
+# instantiated correctly at runtime.
+NuevaRevisionFormularioResult.model_rebuild()
+

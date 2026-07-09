@@ -13,14 +13,14 @@ from typing import Optional
 from asgiref.sync import sync_to_async
 from injector import inject
 
-from modules.liquidaciones.domain.services.core.liquidaciones_nuevas_core import (
+from modules.liquidaciones.domain.services.core.taludes_core import (
     TaludesCoreService,
 )
 from modules.liquidaciones.domain.services.core.proyecto_core_service import (
     ProyectoService,
 )
-from modules.liquidaciones.domain.services.builders.liquidaciones_nuevas_result_builder import (
-    LiquidacionesNuevasResultBuilder,
+from modules.liquidaciones.domain.services.builders.taludes_result_builder import (
+    TaludesResultBuilder,
 )
 from modules.liquidaciones.domain.schemas_proyecto import ProyectoInlineData
 from modules.liquidaciones.domain.constants import TipoLiquidacion, TramiteAccion
@@ -151,7 +151,7 @@ class TaludesFlujo:
                     if liquidacion.igv
                     else Decimal("0.18")
                 )
-                result = LiquidacionesNuevasResultBuilder.build_result_m2(
+                result = TaludesResultBuilder.build_result(
                     liquidacion=liquidacion,
                     proyecto=proyecto,
                     liquidacion_m2=liquidacion_m2,
@@ -202,7 +202,7 @@ class TaludesFlujo:
         """
         from decimal import Decimal
 
-        from modules.liquidaciones.domain.schemas_nuevos import (
+        from modules.liquidaciones.domain.schemas.shared import (
             CotizacionM2QuoteData,
             CotizacionM2RevisionData,
             CotizacionTotalesData,

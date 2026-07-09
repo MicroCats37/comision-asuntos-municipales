@@ -69,9 +69,6 @@ export function useCrearNuevaRevision() {
         queryClient.invalidateQueries({
           queryKey: ["liquidaciones", "edificaciones"],
         });
-        queryClient.invalidateQueries({
-          queryKey: ["liquidaciones", "no-edificacion"],
-        });
       },
     },
   });

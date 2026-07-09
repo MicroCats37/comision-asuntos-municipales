@@ -40,7 +40,7 @@ export function ProyectoSelectorSection({
                 </p>
               </div>
               <Badge variant="outline" className="ml-2">
-                {proyecto.id}
+                {proyecto.public_id}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">

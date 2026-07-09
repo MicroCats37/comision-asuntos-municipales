@@ -8,13 +8,11 @@ from injector import Module, singleton, Binder
 from .domain.services.core.liquidacion_edificaciones_core_service import LiquidacionesEdificacionesService
 from .domain.services.core.proyectista_core_service import ProyectistaService
 from .domain.services.core.proyecto_core_service import ProyectoService
-from .domain.services.core.liquidaciones_nuevas_core import (
-    HabilitacionUrbanaCoreService,
-    MecanicaSuelosCoreService,
-    ImpactoVialCoreService,
-    TaludesCoreService,
-    InspeccionObraCoreService,
-)
+from .domain.services.core.habilitacion_urbana_core import HabilitacionUrbanaCoreService
+from .domain.services.core.mecanica_suelos_core import MecanicaSuelosCoreService
+from .domain.services.core.impacto_vial_core import ImpactoVialCoreService
+from .domain.services.core.taludes_core import TaludesCoreService
+from .domain.services.core.inspeccion_obra_core import InspeccionObraCoreService
 from .domain.services.flujos.liquidacion_edificaciones_flujo import LiquidacionesEdificacionesFlujo
 from .domain.services.flujos.proyectista_flujo import ProyectistaFlujo
 from .domain.services.flujos.proyecto_flujo import ProyectoFlujo

@@ -1,7 +1,7 @@
 """
 TaludesController — controlador HTTP ligero para Taludes.
 
-Solo delega a TaludesOrchestrator y retorna vía NuevosPresenters.
+Solo delega a TaludesOrchestrator y retorna vía TaludesPresenter.
 Patrón: JSON Estricto (Patrón 3) — recibe payload JSON tipado, convierte DTOs, llama orchestrator.
 
 NO lógica de negocio, NO ORM directo, NO transacciones en controller.
@@ -25,15 +25,17 @@ from modules.liquidaciones.domain.schemas_proyecto import (
     EntidadInlineData as DomainEntidadInlineData,
     ProyectoInlineData as DomainProyectoInlineData,
 )
-from modules.liquidaciones.presentation.schemas_nuevos import (
-    CrearLiquidacionTaludesWrapperIn,
-    LiquidacionTaludesOut,
-    CotizarLiquidacionM2WrapperIn,
+from modules.liquidaciones.presentation.schemas_especialidades import (
     CotizacionM2QuoteOut,
     TarifasVigentesM2Out,
 )
-from modules.liquidaciones.domain.constants import TramiteAccion, normalizar_tipo_liquidacion
-from modules.liquidaciones.presentation.presenters.nuevos_presenters import NuevosPresenters
+from modules.liquidaciones.presentation.schemas.taludes_schemas import (
+    CrearLiquidacionTaludesWrapperIn,
+    CotizarLiquidacionTaludesWrapperIn,
+    LiquidacionTaludesOut,
+)
+from modules.liquidaciones.domain.constants import TramiteAccion, TipoLiquidacion
+from modules.liquidaciones.presentation.presenters.taludes_presenter import TaludesPresenter
 from modules.liquidaciones.presentation.presenters.liquidacion_general_presenter import LiquidacionGeneralPresenter
 from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
     LiquidacionGeneralListItemOut,
@@ -139,13 +141,13 @@ class TaludesController:
             tarifas_ids=tarifas_ids,
         )
         return success_response(
-            NuevosPresenters.present_taludes(result, calculo_m2)
+            TaludesPresenter.present(result, calculo_m2)
         )
 
     @route.post("/cotizar/primera-revision", response={200: ApiResponse[CotizacionM2QuoteOut]}, auth=None)
     async def cotizar_primera_revision(
         self,
-        payload: CotizarLiquidacionM2WrapperIn,
+        payload: CotizarLiquidacionTaludesWrapperIn,
     ):
         """
         Cotizar primera revisión de Taludes sin guardar en BD.
@@ -154,19 +156,19 @@ class TaludesController:
         No crea ningún registro en la base de datos.
 
         Body:
-        - tipo_liquidacion: TALUDES
-        - area_solicitada: Área solicitada en metros cuadrados
-        - tarifas_ids: IDs de tarifas a usar (exactamente 1 elemento si se proporciona)
+        - liquidacion:
+          - area_solicitada: Área solicitada en metros cuadrados
+          - tarifas_ids: IDs de tarifas a usar (exactamente 1 elemento si se proporciona)
+
+        Nota: tipo_liquidacion se inyecta internamente como TALUDES.
         """
         liquidacion_data = payload.liquidacion
-        # Normalizar tipo_liquidacion de slug (frontend) a enum (backend)
-        tipo_liq_normalizado = normalizar_tipo_liquidacion(liquidacion_data.tipo_liquidacion)
         result = await self.orchestrator.cotizar_primera_revision(
-            tipo_liquidacion=tipo_liq_normalizado,
+            tipo_liquidacion=TipoLiquidacion.TALUDES.value,
             area_solicitada=liquidacion_data.area_solicitada,
             tarifas_ids=[str(tid) for tid in liquidacion_data.tarifas_ids] if liquidacion_data.tarifas_ids else None,
         )
-        return success_response(NuevosPresenters.present_cotizacion_m2(result))
+        return success_response(TaludesPresenter.present_cotizacion(result))
 
     @route.get("/tarifas-vigentes", response={200: ApiResponse[TarifasVigentesM2Out]}, auth=None)
     async def obtener_tarifas_vigentes(

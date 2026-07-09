@@ -2,18 +2,21 @@
  * Hooks para crear y cotizar liquidaciones de Habilitación Urbana (primera revisión).
  * Endpoint: POST /liquidaciones/habilitacion-urbana/primera-revision
  * Endpoint: POST /liquidaciones/habilitacion-urbana/cotizar/primera-revision
+ *
+ * Versión específica para HU — sin dispatch por kind.
  */
 import { useQueryClient } from "@tanstack/react-query";
 import type { z } from "zod";
 import { useApiCreate } from "@/hooks";
 import {
-  cotizacionNoEdificacionResponseSchema,
-  crearLiquidacionNoEdificacionResponseSchema,
-} from "../schemas/liquidacion-no-edificacion.schema";
+  cotizacionHabilitacionUrbanaResponseSchema,
+  crearHabilitacionUrbanaResponseSchema,
+} from "../schemas/liquidacion-habilitacion-urbana.schema";
 import type {
-  CotizacionNoEdificacionResponse,
-  LiquidacionM2BaseIn,
-} from "../types/liquidacion-no-edificacion.types";
+  CotizacionHabilitacionUrbanaResponse,
+  CrearHabilitacionUrbanaPrimeraRevisionIn,
+} from "../types/liquidacion-habilitacion-urbana.types";
+import { habilitacionUrbanaService } from "../services/habilitacion-urbana.service";
 
 /**
  * Hook para crear primera revisión de Habilitación Urbana.
@@ -22,11 +25,11 @@ export function useCrearHabilitacionUrbanaPrimeraRevision() {
   const queryClient = useQueryClient();
 
   const mutation = useApiCreate<
-    z.infer<typeof crearLiquidacionNoEdificacionResponseSchema>,
-    { liquidacion: LiquidacionM2BaseIn }
+    z.infer<typeof crearHabilitacionUrbanaResponseSchema>,
+    { liquidacion: CrearHabilitacionUrbanaPrimeraRevisionIn }
   >({
     url: "/liquidaciones/habilitacion-urbana/primera-revision",
-    schema: crearLiquidacionNoEdificacionResponseSchema,
+    schema: crearHabilitacionUrbanaResponseSchema,
     options: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["liquidaciones"] });
@@ -36,10 +39,10 @@ export function useCrearHabilitacionUrbanaPrimeraRevision() {
 
   const crearMutation = {
     ...mutation,
-    mutate: (payload: LiquidacionM2BaseIn) => {
+    mutate: (payload: CrearHabilitacionUrbanaPrimeraRevisionIn) => {
       mutation.mutate({ liquidacion: payload });
     },
-    mutateAsync: async (payload: LiquidacionM2BaseIn) => {
+    mutateAsync: async (payload: CrearHabilitacionUrbanaPrimeraRevisionIn) => {
       return mutation.mutateAsync({ liquidacion: payload });
     },
   };
@@ -52,34 +55,24 @@ export function useCrearHabilitacionUrbanaPrimeraRevision() {
  */
 export function useCotizarHabilitacionUrbanaPrimeraRevision() {
   const mutation = useApiCreate<
-    z.infer<typeof cotizacionNoEdificacionResponseSchema>,
-    { liquidacion: { tipo_liquidacion: "habilitacion-urbana"; area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] } }
+    z.infer<typeof cotizacionHabilitacionUrbanaResponseSchema>,
+    { liquidacion: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] } }
   >({
     url: "/liquidaciones/habilitacion-urbana/cotizar/primera-revision",
-    schema: cotizacionNoEdificacionResponseSchema,
+    schema: cotizacionHabilitacionUrbanaResponseSchema,
     options: {},
   });
 
   const cotizacionMutation = {
     ...mutation,
     mutate: (payload: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] }) => {
-      mutation.mutate({
-        liquidacion: {
-          tipo_liquidacion: "habilitacion-urbana" as const,
-          ...payload,
-        },
-      });
+      mutation.mutate({ liquidacion: payload });
     },
     mutateAsync: async (
       payload: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] },
-    ): Promise<CotizacionNoEdificacionResponse> => {
-      const result = await mutation.mutateAsync({
-        liquidacion: {
-          tipo_liquidacion: "habilitacion-urbana" as const,
-          ...payload,
-        },
-      });
-      return result.data as CotizacionNoEdificacionResponse;
+    ): Promise<CotizacionHabilitacionUrbanaResponse> => {
+      const result = await mutation.mutateAsync({ liquidacion: payload });
+      return result.data as CotizacionHabilitacionUrbanaResponse;
     },
   };
 

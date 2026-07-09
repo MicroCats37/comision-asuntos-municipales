@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionMecanicaSuelosCard } from "../components/LiquidacionMecanicaSuelosCard";
 import { useLiquidacionesMecanicaSuelos } from "../hooks/useLiquidacionesMecanicaSuelos";
-import type { LiquidacionNoEdificacionListItem } from "../types/liquidacion-no-edificacion.types";
+import type { LiquidacionMecanicaSuelosListItem } from "../types/liquidacion-mecanica-suelos.types";
 
 const KIND_ICON: LucideIcon = Scale;
 
@@ -62,7 +62,7 @@ export function LiquidacionesMecanicaSuelosView({
     }
   };
 
-  const handleVerDetalle = (item: LiquidacionNoEdificacionListItem) => {
+  const handleVerDetalle = (item: LiquidacionMecanicaSuelosListItem) => {
     console.log("Ver detalle:", item.public_id);
   };
 

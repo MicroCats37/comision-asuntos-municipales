@@ -332,11 +332,11 @@ class LiquidacionEdificacionesController:
         result = await self.orchestrator.obtener_especialidades_vigentes()
         return success_response({'especialidades': result})
 
-    @route.get("/delegados/vigentes", response={200: ApiResponse[DelegadosVigentesOut]}, auth=None)
+    @route.get("/delegados/vigentes", response={200: ApiResponse[DelegadosVigentesOut]}, auth=None, deprecated=True)
     async def obtener_delegados_vigentes(
         self,
         municipalidad_id: str = Query(..., description="ID de la municipalidad (UUID)"),
-        revision_id: str = Query(..., description="ID de la revisión de edificación (UUID)"),
+        revision_id: str = Query(..., description="[DEPRECADO] Usar GET /api/liquidaciones/delegados/vigentes en su lugar"),
         categoria: str = Query(None, description="Categoría del delegado: Edificaciones o Habilitaciones Urbanas"),
     ):
         """

@@ -1,14 +1,16 @@
 /**
  * Hook para lista de liquidaciones de Taludes con paginación.
  * Endpoint: GET /liquidaciones/taludes
+ *
+ * Versión específica para Taludes — sin dispatch por kind.
  */
 import { useState } from "react";
 import { useApiQuery } from "@/hooks";
-import { liquidacionesNoEdificacionResponseSchema } from "../schemas/liquidacion-no-edificacion.schema";
+import { liquidacionesTaludesResponseSchema } from "../schemas/liquidacion-taludes.schema";
 import type {
-  LiquidacionesNoEdificacionPaginated,
-  LiquidacionNoEdificacionListItem,
-} from "../types/liquidacion-no-edificacion.types";
+  LiquidacionesTaludesPaginated,
+  LiquidacionTaludesListItem,
+} from "../types/liquidacion-taludes.types";
 
 interface UseLiquidacionesTaludesProps {
   page?: number;
@@ -35,13 +37,13 @@ export function useLiquidacionesTaludes({
       currentPageSize,
     ],
     url: "/liquidaciones/taludes",
-    schema: liquidacionesNoEdificacionResponseSchema,
+    schema: liquidacionesTaludesResponseSchema,
     params,
     queryOptions: {
-      select: (data): LiquidacionesNoEdificacionPaginated => {
+      select: (data): LiquidacionesTaludesPaginated => {
         if (!data.data) {
           return {
-            items: [] as LiquidacionNoEdificacionListItem[],
+            items: [] as LiquidacionTaludesListItem[],
             total: 0,
             page: currentPage,
             page_size: currentPageSize,

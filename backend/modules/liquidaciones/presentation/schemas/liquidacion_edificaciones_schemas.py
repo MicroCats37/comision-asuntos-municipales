@@ -122,13 +122,13 @@ class PrimeraRevisionLiquidacionIn(BaseSchema):
         default=[],
         description="[DEPRECATED] Usar proyectistas (inline con CIP) en su lugar"
     )
-    # NUEVO: Tarifas IDs (array, exactamente 1 elemento para esta fase)
-    # NOTA: default=None (no []) para distinguir "no proporcionado" de "proporcionado vacío".
-    # Si se proporciona y está vacío, el campo falla min_length=1 y retorna 422.
-    # El flujo trata None como auto-selección y [] como error (len != 1).
+    # NUEVO Fase 6: Tarifas IDs (array, exactamente 1 elemento para esta fase)
+    # REQUERIDO: frontend siempre envía tarifas_ids, backend ya no hace auto-selección.
+    # Validación: debe tener exactamente 1 elemento (min_length=1, max_length=1).
     tarifas_ids: list[uuid.UUID] = Field(
-        default=None,
+        ...,
         min_length=1,
+        max_length=1,
         description="IDs de tarifas a aplicar en la liquidación. Para esta fase debe ser exactamente 1."
     )
     # NOTE: delegados_ids fue eliminado de PrimeraRevisionLiquidacionIn (Fase 4).
@@ -435,21 +435,23 @@ class CotizacionPrimeraRevisionIn(BaseSchema):
     filtrada por tipo_liquidacion=EDIFICACION, y usa los valores proporcionados.
     No requiere proyecto_public_id ya que el cálculo solo usa valores y tarifas.
     
-    Fase 3: si se provee tarifas_ids con exactamente 1 elemento, se usa esa tarifa
-    para el cálculo en lugar de seleccionar todas las activas automáticamente.
+    Fase 6: tarifas_ids es ahora requerido — auto-selección eliminada.
+    tipo_tramite es requerido junto con tarifas_ids para validar ReglaTarifaEdificacion.
     """
-    tipo_tramite: Optional[str] = Field(
-        default=None,
-        description="Tipo de trámite de edificación: OBRA_NUEVA, DEMOLICION, AMPLIACION, REMODELACION, MODIFICACION_LICENCIA, REINTEGRO, PROYECTO_CON_PLANTAS_TIPICAS. Requerido cuando se usa tarifas_ids."
+    tipo_tramite: str = Field(
+        ...,
+        description="Tipo de trámite de edificación: OBRA_NUEVA, DEMOLICION, AMPLIACION, REMODELACION, MODIFICACION_LICENCIA, REINTEGRO, PROYECTO_CON_PLANTAS_TIPICAS. Requerido junto con tarifas_ids."
     )
     valor_proyecto: float = Field(..., gt=0, description="Valor del proyecto/obra")
     valor_base_calculo: float = Field(..., gt=0, description="Valor base de cálculo. Para tipos normales debe ser igual a valor_proyecto. Para PROYECTO_CON_PLANTAS_TIPICAS puede ser diferente.")
     # NUEVO Fase 3: Tarifas IDs (array, exactamente 1 elemento)
-    # NOTA: default=None (no []) para distinguir "no proporcionado" de "proporcionado vacío".
+    # REQUERIDO: frontend siempre envía tarifas_ids, backend ya no hace auto-selección.
+    # Validación: debe tener exactamente 1 elemento (min_length=1, max_length=1).
     tarifas_ids: list[uuid.UUID] = Field(
-        default=None,
+        ...,
         min_length=1,
-        description="IDs de tarifas a usar en la cotización. Para esta fase debe ser exactamente 1 si se proporciona."
+        max_length=1,
+        description="IDs de tarifas a usar en la cotización. Para esta fase debe ser exactamente 1."
     )
 
 

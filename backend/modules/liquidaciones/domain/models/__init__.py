@@ -23,7 +23,7 @@ from .liquidacion.liquidacion_mecanica_suelos import LiquidacionMecanicaSuelos
 from .liquidacion.liquidacion_impacto_vial import LiquidacionImpactoVial
 from .liquidacion.liquidacion_taludes import LiquidacionTaludes
 from .liquidacion.liquidacion_inspeccion_obra import LiquidacionInspeccionObra
-from .liquidacion.calculos_nuevos import (
+from .liquidacion.calculos_tarifas import (
     LiquidacionPorMetroCuadrado,
     LiquidacionPorCategoriaVisitas,
 )
@@ -53,7 +53,7 @@ __all__ = [
     # Modelo de detalle para edificaciones
     "LiquidacionEdificacion",
     "LiquidacionEdificacionProxy",
-    # Modelos de nuevos formularios
+    # Modelos de especialidades M2 y visitas
     "LiquidacionHabilitacionUrbana",
     "LiquidacionMecanicaSuelos",
     "LiquidacionImpactoVial",
@@ -68,7 +68,6 @@ __all__ = [
     "TarifaLiquidacionBase",
     "LiquidacionPorcentajeObra",
     "EspecialidadesLiquidacion",
-    "ReglaTarifaEdificacion",
     # Tarifas y reglas nuevas
     "TarifaPorMetroCuadrado",
     "TarifaPorCategoriaVisitas",

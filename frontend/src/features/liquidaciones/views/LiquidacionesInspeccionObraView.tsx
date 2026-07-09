@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionInspeccionObraCard } from "../components/LiquidacionInspeccionObraCard";
 import { useLiquidacionesInspeccionObra } from "../hooks/useLiquidacionesInspeccionObra";
-import type { LiquidacionNoEdificacionListItem } from "../types/liquidacion-no-edificacion.types";
+import type { LiquidacionInspeccionObraListItem } from "../types/liquidacion-inspeccion-obra.types";
 
 const KIND_ICON: LucideIcon = ClipboardCheck;
 
@@ -62,7 +62,7 @@ export function LiquidacionesInspeccionObraView({
     }
   };
 
-  const handleVerDetalle = (item: LiquidacionNoEdificacionListItem) => {
+  const handleVerDetalle = (item: LiquidacionInspeccionObraListItem) => {
     console.log("Ver detalle:", item.public_id);
   };
 

@@ -8,31 +8,29 @@
  *   4. Confirmación   → revisión final + submit
  *
  * ── Arquitectura ─────────────────────────────────────────────────────────────
- *   AppStepperFormModal (genérico) + stepper-ui.store.ts (Zustand)
+ *   AppStepperFormModal (genérico) + stepper-ui-store-factory.ts (Zustand)
  *   React Hook Form + Zod (validación por paso)
- *   Phase 2 hooks: useCotizarNoEdificacionInspeccionObra, useCrearNoEdificacionInspeccionObra
- *
- * NO tiene branching M2 vs IO — es exclusivamente para Inspección de Obra.
+ *   Hooks IO-específicos: useCrearInspeccionObraPrimeraRevision,
+ *                          useCotizarInspeccionObraPrimeraRevision
  */
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Building2, CheckCircle, FileText, Users } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
 import { useForm } from "react-hook-form";
 import { AppStepperFormModal } from "@/components-app/forms/AppStepperFormModal";
 import { notify } from "@/errors";
-import { useCrearNoEdificacionInspeccionObra } from "../hooks/useNoEdificacion";
-import { useCotizarNoEdificacionInspeccionObra } from "../hooks/useNoEdificacion";
+import { useCrearInspeccionObraPrimeraRevision } from "../hooks/useInspeccionObra";
+import { useCotizarInspeccionObraPrimeraRevision } from "../hooks/useInspeccionObra";
 import { useMunicipalidades } from "../hooks/useMunicipalidades";
-import { stepInspeccionObraSchema } from "../schemas/liquidacion-no-edificacion.schema";
-import { useLiquidacionStepperUIStore, type CotizacionState } from "../store";
-import type {
-  ContactoInline,
-  CrearLiquidacionInspeccionObraIn,
-  CotizacionIOResponse,
-} from "../types/liquidacion-no-edificacion.types";
+import { useEspecialidadesVigentesLiquidacion } from "../hooks/useEspecialidadesVigentesLiquidacion";
+import { stepInspeccionObraSchema } from "../schemas/liquidacion-inspeccion-obra.schema";
+import { useInspeccionObraStepperStore, type CotizacionState } from "../store";
+import type { ContactoInline } from "../types/contacto";
+import type { CotizacionIOResponse } from "../types/liquidacion-inspeccion-obra.types";
+import type { CrearInspeccionObraPrimeraRevisionIn } from "../types/liquidacion-inspeccion-obra.types";
 import type { ProyectistaInline } from "../types/proyectista";
 import { ContactoFormModal } from "./ContactoFormModal";
 import { ProyectistaFormModal } from "./ProyectistaFormModal";
@@ -40,10 +38,17 @@ import { Step1Proyecto } from "./steps/Step1Proyecto";
 import { Step3Personas } from "./steps/Step3Personas";
 import { StepInspeccionObraLiquidacion } from "./steps/StepInspeccionObraLiquidacion";
 import {
-  NoEdificacionConfirmacionStep,
-  CATEGORIA_LABELS,
+  StepInspeccionObraConfirmacion,
   type LiquidacionDisplayItem,
-} from "./steps/NoEdificacionConfirmacionStep";
+} from "./steps/StepInspeccionObraConfirmacion";
+
+/** Labels para categorías IO */
+const CATEGORIA_LABELS: Record<string, string> = {
+  C1: "Categoría C1",
+  C2: "Categoría C2",
+  C3: "Categoría C3",
+  C4: "Categoría C4",
+};
 
 type FormData = {
   municipalidad_id: string;
@@ -72,10 +77,30 @@ export function LiquidacionInspeccionObraStepperModal({
   onOpenChange,
   onSuccess,
 }: LiquidacionInspeccionObraStepperModalProps) {
-  const crearMutation = useCrearNoEdificacionInspeccionObra();
-  const cotizarMutation = useCotizarNoEdificacionInspeccionObra();
+  const crearMutation = useCrearInspeccionObraPrimeraRevision();
+  const cotizarMutation = useCotizarInspeccionObraPrimeraRevision();
   const { data: municipalidades, isLoading: isLoadingMunicipalidades } =
     useMunicipalidades();
+
+  // ── Especialidades vigentes para el tipo de liquidación ───────────────────
+  const { data: especialidadesData } = useEspecialidadesVigentesLiquidacion("inspeccion-obra");
+  const especialidadOptions: Array<{ label: string; value: string }> =
+    especialidadesData?.items
+      ? [
+          ...new Map(
+            especialidadesData.items.map((esp) => ({
+              label: esp.nombre,
+              value: esp.id,
+            })).map((opt) => [opt.value, opt]),
+          ).values(),
+        ]
+      : [];
+  const especialidadLabels: Record<string, string> = {};
+  if (especialidadesData?.items) {
+    for (const esp of especialidadesData.items) {
+      especialidadLabels[esp.id] = esp.nombre;
+    }
+  }
 
   const formMethods = useForm<FormData>({
     resolver: zodResolver(stepInspeccionObraSchema),
@@ -89,7 +114,20 @@ export function LiquidacionInspeccionObraStepperModal({
     mode: "onBlur",
   });
 
-  const store = useLiquidacionStepperUIStore();
+  const store = useInspeccionObraStepperStore();
+
+  // ── Reset on close ─────────────────────────────────────────────────────────
+  // Seleccionar reset como función estable para evitar loop infinito:
+  // useEffect depende de store completo → identity cambia en cada render → reset → loop.
+  const resetStepper = useInspeccionObraStepperStore((state) => state.reset);
+  const { reset: resetForm } = formMethods;
+
+  useEffect(() => {
+    if (!open) {
+      resetStepper();
+      resetForm();
+    }
+  }, [open, resetStepper, resetForm]);
 
   // ── Modales hijos ────────────────────────────────────────────────────────────
   const [showProyectistaModal, setShowProyectistaModal] = useState(false);
@@ -203,7 +241,7 @@ export function LiquidacionInspeccionObraStepperModal({
         methods: UseFormReturn<FieldValues>;
         currentStep: number;
         isActive: boolean;
-      }) => <Step1Proyecto methods={methods} isActive={isActive} />,
+      }) => <Step1Proyecto methods={methods} isActive={isActive} store={store} />,
     },
 
     // Step 3: Personas
@@ -223,8 +261,9 @@ export function LiquidacionInspeccionObraStepperModal({
         <Step3Personas
           methods={methods}
           isActive={isActive}
-          especialidadOptions={[]}
-          especialidadLabels={{}}
+          store={store}
+          especialidadOptions={especialidadOptions}
+          especialidadLabels={especialidadLabels}
           onOpenProyectistaModal={() => setShowProyectistaModal(true)}
           onRemoveProyectista={(cip) => store.removeProyectista(cip)}
           onOpenContactoModal={() => {
@@ -256,7 +295,7 @@ export function LiquidacionInspeccionObraStepperModal({
       }) => {
         const data = methods.getValues();
         return (
-          <NoEdificacionConfirmacionStep
+          <StepInspeccionObraConfirmacion
             methods={methods}
             isActive={isActive}
             tipoLabel={TIPO_LABEL}
@@ -292,7 +331,7 @@ export function LiquidacionInspeccionObraStepperModal({
         ({ localId: _lid, ...contacto }) => contacto,
       );
 
-      const submitData: CrearLiquidacionInspeccionObraIn = {
+      const submitData: CrearInspeccionObraPrimeraRevisionIn = {
         ...(hasProyectoInline
           ? {
               proyecto_inline: {
@@ -333,7 +372,7 @@ export function LiquidacionInspeccionObraStepperModal({
         open={open}
         onOpenChange={onOpenChange}
         title={`Nueva Liquidación ${TIPO_LABEL}`}
-        eyebrow="No Edificación"
+        eyebrow="Inspección de Obra"
         icon={<FileText className="h-5 w-5 text-primary" />}
         description={`Registra una nueva liquidación de ${TIPO_LABEL.toLowerCase()}`}
         steps={steps}
@@ -353,7 +392,7 @@ export function LiquidacionInspeccionObraStepperModal({
         open={showProyectistaModal}
         onOpenChange={setShowProyectistaModal}
         onSaved={handleProyectistaSaved}
-        especialidadOptions={[]}
+        especialidadOptions={especialidadOptions}
       />
 
       <ContactoFormModal

@@ -4,7 +4,7 @@ Management command para poblar TODAS las tarifas de liquidaciones.
 Pobla:
     - EDIFICACION: TarifaLiquidacionBase + TarifaPorcentajeObra + ReglaTarifaEdificacion
     - HABILITACION_URBANA, MECANICA_SUELOS, IMPACTO_VIAL, TALUDES:
-      TarifaLiquidacionBase + TarifaPorMetroCuadrado + ReglaTarifaLiquidacion
+      TarifaLiquidacionBase + TarifaPorMetroCuadrado + ReglaTarifaEdificacion
     - INSPECCION_OBRA: TarifaLiquidacionBase + TarifaPorCategoriaVisitas + ReglaTarifaInspeccionObra
 
 Uso:
@@ -477,7 +477,7 @@ class Command(BaseCommand):
         )
         self._log(f"    TarifaPorMetroCuadrado: {'created' if m2_created else 'updated'}")
 
-        # Create/update ReglaTarifaLiquidacion entries
+        # Create/update ReglaTarifaLiquidacion entries (M2 only uses tramite_accion)
         for regla_data in reglas:
             tramite_accion = regla_data.get('tramite_accion')
 

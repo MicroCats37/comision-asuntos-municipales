@@ -378,39 +378,6 @@ export const liquidacionesEdificacionPaginatedResponseSchema = apiResponseSchema
 );
 
 /**
- * Schema para item de lista paginada de liquidaciones GENERALES.
- * Coincide con LiquidacionGeneralListItemOut del backend (Phase 4+):
- * - Endpoint: GET /liquidaciones
- * - No tiene campos de Edificaciones: valor_proyecto, municipalidad_id/nombre, tipo_tramite, tramite_accion
- * - Usa tipo_liquidacion en lugar de tipo_tramite/tramite_accion
- */
-const liquidacionGeneralListItemPayloadSchema = z.object({
-  id: z.string(),
-  public_id: z.string().nullable(),
-  estado: z.string(),
-  tipo_liquidacion: z.string(),
-  numero_revision: z.number(),
-  proyecto_denominacion: z.string().nullable(),
-  proyecto_public_id: z.string().nullable(),
-  fecha_registro: z.string(),
-  total: z.number(),
-});
-
-/** Schema payload para lista paginada general */
-const paginatedLiquidacionGeneralListPayloadSchema = z.object({
-  items: z.array(liquidacionGeneralListItemPayloadSchema),
-  total: z.number(),
-  page: z.number(),
-  page_size: z.number(),
-  total_pages: z.number(),
-});
-
-/** Wrapper schema para lista paginada general (ApiResponse[PaginatedData[LiquidacionGeneralListItemOut]]) */
-export const liquidacionGeneralListResponseSchema = apiResponseSchema(
-  paginatedLiquidacionGeneralListPayloadSchema,
-);
-
-/**
  * @deprecated Usar liquidacionEdificacionesListResponseSchema.
  * Este schema espera la estructura antigua con objetos anidados en cada item.
  */
@@ -629,11 +596,19 @@ const revisionVigenteFormularioSchema = z.object({
 /** Schema for proyectista actual item in formulario response */
 const proyectistaActualSchema = z.object({
   id: z.string(),
-  cip: z.string().nullable(),
-  dni: z.string(),
-  cap: z.string().nullable(),
-  nombres: z.string(),
-  apellidos: z.string(),
+  perfil_ingeniero_id: z.string().nullable().optional(),
+  perfil_ingeniero_nombres: z.string().nullable().optional(),
+  perfil_ingeniero_apellidos: z.string().nullable().optional(),
+  perfil_ingeniero_cip: z.string().nullable().optional(),
+  especialidad_id: z.string().nullable().optional(),
+  especialidad_nombre: z.string().nullable().optional(),
+  descripcion: z.string().nullable().optional(),
+  // legacy fallback fields
+  cip: z.string().nullable().optional(),
+  dni: z.string().optional(),
+  cap: z.string().nullable().optional(),
+  nombres: z.string().optional(),
+  apellidos: z.string().optional(),
 });
 
 /** Payload schema for GET /nueva-revision/formulario response */
@@ -648,6 +623,7 @@ const nuevaRevisionFormularioPayloadSchema = z.object({
   valor_base_calculo: z.number(),
   revisiones_vigentes: z.array(revisionVigenteFormularioSchema),
   proyectistas_actuales: z.array(proyectistaActualSchema),
+  tipo_tramite: z.string(),
 });
 
 /** Wrapper schema for nueva revision formulario response */

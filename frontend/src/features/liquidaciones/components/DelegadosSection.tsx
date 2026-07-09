@@ -129,7 +129,7 @@ export function DelegadosSection({
               </div>
 
               {/* Delegates in this specialty */}
-              <div className="flex flex-col gap-2 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 w-full">
                 {specialtyDelegados.map((delegado) => {
                   const isSelected = selectedIds.includes(delegado.id);
                   return (

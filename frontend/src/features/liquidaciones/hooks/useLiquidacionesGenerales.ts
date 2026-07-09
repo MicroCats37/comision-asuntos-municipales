@@ -8,11 +8,11 @@
  */
 import { useState } from "react";
 import { useApiQuery } from "@/hooks";
-import { liquidacionGeneralListResponseSchema } from "../schemas/liquidacion.schema";
+import { liquidacionGeneralListResponseSchema } from "../schemas/liquidacion-general.schema";
 import type {
   LiquidacionGeneralListItem,
   PaginatedLiquidacionesGenerales,
-} from "../types/liquidacion-edificaciones";
+} from "../types/liquidacion-general";
 
 interface UseLiquidacionesGeneralesProps {
   page?: number;

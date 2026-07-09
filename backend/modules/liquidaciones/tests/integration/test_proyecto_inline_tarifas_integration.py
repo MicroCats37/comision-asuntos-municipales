@@ -456,10 +456,10 @@ class TestCotizarTarifasIds:
         self.esp1 = EspecialidadFactory()
         self.tarifa_base = TarifaLiquidacionBaseFactory(especialidades=[self.esp1])
 
-    def test_cotizar_primera_revision_sin_tarifas_ids_retorna_200(self, client: Client):
+    def test_cotizar_primera_revision_sin_tarifas_ids_retorna_422(self, client: Client):
         """
-        POST /cotizar/primera-revision sin tarifas_ids (cotización automática)
-        debe retornar 200 — no requiere proyecto ni tarifas_ids.
+        POST /cotizar/primera-revision sin tarifas_ids (auto-selección eliminada en Fase 6)
+        debe retornar 422 — tarifas_ids es ahora requerido.
         """
         from modules.liquidaciones.models import LiquidacionGeneral
 
@@ -476,7 +476,7 @@ class TestCotizarTarifasIds:
             content_type="application/json",
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == 422, response.json()
         # No debe crear liquidación
         assert LiquidacionGeneral.objects.count() == count_before
 

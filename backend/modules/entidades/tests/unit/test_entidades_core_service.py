@@ -169,5 +169,10 @@ class TestEntidadesCoreService:
             municipalidad_provincial.id,
             municipalidad_distrital.id,
         }
-        assert any(isinstance(municipalidad, MunicipalidadProvincial) for municipalidad in result)
-        assert any(isinstance(municipalidad, MunicipalidadDistrital) for municipalidad in result)
+        # Verify tipo semantics via es_provincial / es_distrital properties (proxy model semantics)
+        # _obtener_municipalidades returns base model instances from filter(activo=True) on
+        # the base Municipalidad table, so isinstance proxy checks would fail.
+        # Instead, assert the active municipality semantics via the es_provincial/es_distrital
+        # properties that indicate whether the provincial or district FK is set.
+        assert any(municipalidad.es_provincial for municipalidad in result)
+        assert any(municipalidad.es_distrital for municipalidad in result)

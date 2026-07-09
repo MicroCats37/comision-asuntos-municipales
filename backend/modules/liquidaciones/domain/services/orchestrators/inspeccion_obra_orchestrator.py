@@ -179,7 +179,7 @@ class InspeccionObraOrchestrator:
             visitas_minimas, categoria, habilitada.
         """
         return await sync_to_async(
-            self.flujo.core._tarifas_core._obtener_tarifas_visitas_vigentes
+            self.flujo.core.obtener_tarifas_vigentes
         )(
             tramite_accion=tramite_accion,
             categoria=categoria,

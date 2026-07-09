@@ -157,8 +157,7 @@ class TaludesOrchestrator:
             derecho_minimo, derecho_maximo, habilitada.
         """
         return await sync_to_async(
-            self.flujo.core._tarifas_core._obtener_tarifas_m2_vigentes
+            self.flujo.core.obtener_tarifas_vigentes
         )(
-            tipo_liquidacion="TALUDES",
             tramite_accion=tramite_accion,
         )

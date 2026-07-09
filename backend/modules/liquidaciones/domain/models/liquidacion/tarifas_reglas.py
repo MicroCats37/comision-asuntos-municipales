@@ -1,5 +1,5 @@
 """
-Tarifas y Reglas — tarifas y reglas de resolución para los nuevos formularios.
+Tarifas y Reglas — tarifas y reglas de resolución por especialidad.
 
 Este archivo contiene:
 - TarifaPorMetroCuadrado: tarifa por metro cuadrado con límites
