@@ -83,7 +83,7 @@ export function useCrearNuevaRevision() {
       payload: NuevaRevisionFormData,
     ): Promise<LiquidacionEdificacionOut> => {
       const result = await mutation.mutateAsync(payload);
-      return (result as { data: LiquidacionEdificacionOut }).data;
+      return (result as unknown as { data: LiquidacionEdificacionOut }).data;
     },
   };
 

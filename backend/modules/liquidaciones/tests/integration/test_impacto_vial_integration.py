@@ -165,3 +165,89 @@ class TestImpactoVialEndpoint:
         assert snapshot["tipo_liquidacion"] == "IMPACTO_VIAL"
         assert "totales" in snapshot
         assert "subtotal" in snapshot["totales"]
+
+    def test_impacto_vial_no_igv_total_igual_subtotal(self, client: Client):
+        """
+        Impacto Vial (M2) debe tener igv_monto=0 y total=subtotal.
+        No se aplica IGV a liquidaciones por metro cuadrado.
+        """
+        response = client.post(
+            "/api/liquidaciones/impacto-vial/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "area_solicitada": 150.0,
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        data = response.json()
+        snapshot = data["data"]
+
+        totales = snapshot["totales"]
+        # M2 specialties: igv_monto = 0
+        assert totales["igv"] == 0, "M2 liquidaciones no deben tener IGV"
+        # total = subtotal (sin IGV)
+        assert totales["total"] == totales["subtotal"], "total debe igualar subtotal para M2"
+        # total_a_pagar debe ser igual al total (sin IGV)
+        assert totales["total_a_pagar"] == totales["subtotal"]
+
+    def test_impacto_vial_derecho_maximo_caps_subtotal(self, client: Client):
+        """
+        Cuando area_solicitada * costo_por_m2 supera derecho_maximo,
+        el subtotal/derecho debe quedar capped en derecho_maximo,
+        con igv=0 y total=derecho_maximo.
+        """
+        from modules.liquidaciones.tests.factories.tarifas_test_factory import (
+            TarifaPorMetroCuadradoFactory,
+        )
+
+        # Override existing TarifaPorMetroCuadrado on self.tarifa_base:
+        # derecho_maximo=10000.00 (IMPACTO_VIAL seed value)
+        # costo_por_m2=50 * 250m2 = 12500 > 10000 → capped
+        from modules.liquidaciones.domain.models.liquidacion.tarifas_reglas import (
+            TarifaPorMetroCuadrado as TarifaPorMetroCuadradoModel,
+        )
+        TarifaPorMetroCuadradoModel.objects.update_or_create(
+            tarifa_base=self.tarifa_base,
+            defaults={
+                "costo_por_m2": Decimal("50.0000"),
+                "area_m2": Decimal("100.00"),
+                "derecho_minimo": Decimal("500.00"),
+                "derecho_maximo": Decimal("10000.00"),
+            },
+        )
+
+        response = client.post(
+            "/api/liquidaciones/impacto-vial/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "area_solicitada": 250.0,
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        data = response.json()
+        snapshot = data["data"]
+
+        totales = snapshot["totales"]
+        # IGV stays 0 for M2
+        assert totales["igv"] == 0, "M2 liquidaciones no deben tener IGV"
+        # subtotal must be capped at derecho_maximo = 10000.00
+        assert totales["subtotal"] == Decimal("10000.00"), (
+            f"subtotal debe ser 10000.00 (derecho_maximo),got {totales['subtotal']}"
+        )
+        # total = subtotal (no IGV)
+        assert totales["total"] == totales["subtotal"]
+        # total_a_pagar = subtotal
+        assert totales["total_a_pagar"] == totales["subtotal"]
+        # derecho in calculo_m2 must also be capped at derecho_maximo
+        assert "calculo_m2" in snapshot, "calculo_m2 must be present in snapshot"
+        assert snapshot["calculo_m2"]["derecho"] == Decimal("10000.00"), (
+            f"calculo_m2.derecho must be 10000.00 (derecho_maximo), got {snapshot['calculo_m2']['derecho']}"
+        )

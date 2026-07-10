@@ -220,6 +220,7 @@ class LiquidacionesEdificacionesService:
                     derecho_minimo=tarifa_pct.derecho_minimo,
                     derecho_maximo=tarifa_pct.derecho_maximo,
                     porcentaje_minimo_uit=tarifa_pct.porcentaje_minimo_uit,
+                    porcentaje_liquidacion=tarifa_pct.porcentaje_liquidacion,
                 ),
                 porcentaje_liquidacion=tarifa_pct.porcentaje_liquidacion,
                 habilitada=habilitada,
@@ -565,11 +566,10 @@ class LiquidacionesEdificacionesService:
                     'derecho_minimo': float(tarifa.derecho_minimo) if tarifa and tarifa.derecho_minimo is not None else None,
                     'derecho_maximo': float(tarifa.derecho_maximo) if tarifa and tarifa.derecho_maximo is not None else None,
                     'porcentaje_minimo_uit': float(tarifa.porcentaje_minimo_uit) if tarifa and tarifa.porcentaje_minimo_uit is not None else None,
+                    'porcentaje_liquidacion': float(tarifa.porcentaje_liquidacion) if hasattr(tarifa, 'porcentaje_liquidacion') and tarifa.porcentaje_liquidacion is not None else None,
                 },
                 # No se usa especialidad_nombre singular — mantenido por compatibilidad dict
                 'especialidades': [{'id': str(esp.id), 'nombre': esp.nombre} for esp in especialidades_orm],
-                'monto_base': float(lpo.valor_base_calculo) if lpo.valor_base_calculo else 0.0,
-                'cobra': cobra,
                 'numero_revision': liquidacion.numero_revision,
             })
 
@@ -717,6 +717,7 @@ class LiquidacionesEdificacionesService:
                         derecho_minimo=rev_data.tarifa.derecho_minimo,
                         derecho_maximo=rev_data.tarifa.derecho_maximo,
                         porcentaje_minimo_uit=rev_data.tarifa.porcentaje_minimo_uit,
+                        porcentaje_liquidacion=getattr(rev_data.tarifa, 'porcentaje_liquidacion', None),
                     ),
                     monto_base=monto_base,
                     cobra=cobra,
@@ -732,6 +733,7 @@ class LiquidacionesEdificacionesService:
                         derecho_minimo=rev_data.tarifa.derecho_minimo,
                         derecho_maximo=rev_data.tarifa.derecho_maximo,
                         porcentaje_minimo_uit=rev_data.tarifa.porcentaje_minimo_uit,
+                        porcentaje_liquidacion=getattr(rev_data.tarifa, 'porcentaje_liquidacion', None),
                     ),
                     monto_base=monto_base,
                     cobra=cobra,

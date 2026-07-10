@@ -39,6 +39,7 @@ class LiquidacionesGeneralFlujo:
         page: int,
         page_size: int,
         tipo_liquidacion: Optional[str] = None,
+        liquidacion_id: Optional[str] = None,
     ) -> LiquidacionGeneralPaginatedResult:
         """
         Proceso para listar liquidaciones con paginación.
@@ -47,13 +48,14 @@ class LiquidacionesGeneralFlujo:
             page: Número de página (1-indexed)
             page_size: Elementos por página
             tipo_liquidacion: Filtro opcional por tipo de liquidación
+            liquidacion_id: Filtro opcional por ID de liquidación
 
         Returns:
             LiquidacionGeneralPaginatedResult con items y total
         """
         return await sync_to_async(
             self.core._listar_liquidaciones_paginado_result
-        )(page=page, page_size=page_size, tipo_liquidacion=tipo_liquidacion)
+        )(page=page, page_size=page_size, tipo_liquidacion=tipo_liquidacion, liquidacion_id=liquidacion_id)
 
     async def _proceso_obtener_liquidacion_detalle(
         self,

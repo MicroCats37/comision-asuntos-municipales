@@ -16,12 +16,13 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionInspeccionObraCard } from "../components/LiquidacionInspeccionObraCard";
 import { useLiquidacionesInspeccionObra } from "../hooks/useLiquidacionesInspeccionObra";
-import type { LiquidacionInspeccionObraListItem } from "../types/liquidacion-inspeccion-obra.types";
+import type { LiquidacionCardBase } from "../types/liquidacion-general";
 
 const KIND_ICON: LucideIcon = ClipboardCheck;
 
@@ -32,6 +33,7 @@ interface LiquidacionesInspeccionObraViewProps {
 export function LiquidacionesInspeccionObraView({
   onSuccess,
 }: LiquidacionesInspeccionObraViewProps) {
+  const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
 
@@ -62,8 +64,8 @@ export function LiquidacionesInspeccionObraView({
     }
   };
 
-  const handleVerDetalle = (item: LiquidacionInspeccionObraListItem) => {
-    console.log("Ver detalle:", item.public_id);
+  const handleVerDetalle = (item: LiquidacionCardBase) => {
+    router.push(`/liquidaciones/inspeccion-obra/${item.id}`);
   };
 
   return (

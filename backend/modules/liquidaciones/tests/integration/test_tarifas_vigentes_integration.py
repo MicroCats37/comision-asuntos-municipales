@@ -64,7 +64,7 @@ class TestTarifasVigentesM2Endpoint:
         assert str(self.tarifa_base.id) in tarifa_ids
 
     def test_mecanica_suelos_tarifas_vigentes_campos_esperados(self, client: Client):
-        """Each tarifa has expected keys: tarifa_id, detalle_id, costo_por_m2, area_minima, derecho_minimo, habilitada."""
+        """Each tarifa has expected keys: tarifa_id, detalle_id, costo_por_m2, area_m2, derecho_minimo, habilitada."""
         response = client.get("/api/liquidaciones/mecanica-suelos/tarifas-vigentes")
         assert response.status_code == 200
         tarifas = response.json()["data"]["tarifas"]
@@ -73,7 +73,7 @@ class TestTarifasVigentesM2Endpoint:
         assert "tarifa_id" in tarifa
         assert "detalle_id" in tarifa
         assert "costo_por_m2" in tarifa
-        assert "area_minima" in tarifa
+        assert "area_m2" in tarifa
         assert "derecho_minimo" in tarifa
         assert "derecho_maximo" in tarifa
         assert "habilitada" in tarifa

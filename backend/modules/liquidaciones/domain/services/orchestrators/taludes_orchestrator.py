@@ -153,7 +153,7 @@ class TaludesOrchestrator:
 
         Returns:
             Lista de diccionarios con tarifas M2 vigentes.
-            Cada dict contiene: tarifa_id, detalle_id, costo_por_m2, area_minima,
+            Cada dict contiene: tarifa_id, detalle_id, costo_por_m2, area_m2,
             derecho_minimo, derecho_maximo, habilitada.
         """
         return await sync_to_async(

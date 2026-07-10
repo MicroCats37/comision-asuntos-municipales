@@ -11,6 +11,7 @@ import type {
   TarifaVigenteInspeccionObra,
 } from "../types/liquidacion-inspeccion-obra.types";
 import type { CotizarInspeccionObraPrimeraRevisionIn } from "../types/liquidacion-inspeccion-obra.types";
+import type { LiquidacionGeneralOut } from "../types/liquidacion-general";
 
 const BASE_URL = "/liquidaciones/inspeccion-obra";
 
@@ -59,9 +60,9 @@ export const inspeccionObraService = {
    */
   async obtenerLiquidacion(
     liquidacionId: string,
-  ): Promise<CrearInspeccionObraResponse> {
+  ): Promise<LiquidacionGeneralOut> {
     const { data } = await api.get(`${BASE_URL}/${liquidacionId}`);
-    return (data as { data: CrearInspeccionObraResponse }).data;
+    return (data as { data: LiquidacionGeneralOut }).data;
   },
 
   /**

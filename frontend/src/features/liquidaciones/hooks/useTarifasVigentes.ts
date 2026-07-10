@@ -52,6 +52,7 @@ export function useTarifasVigentesInspeccionObra(
     schema: tarifasVigentesInspeccionObraResponseSchema,
     params: Object.keys(params).length > 0 ? params : undefined,
     queryOptions: {
+      enabled: !!filters?.categoria,
       staleTime: 1000 * 60 * 5, // 5 minutes
       select: (data) => {
         if (!data.data) return [] as TarifaVigenteInspeccionObra[];

@@ -32,7 +32,7 @@ def _build_tarifa_m2_calculo_data(tarifa_m2) -> TarifaM2CalculoData:
     return TarifaM2CalculoData(
         id=tarifa_m2.id,
         costo_por_m2=tarifa_m2.costo_por_m2,
-        area_minima=tarifa_m2.area_minima,
+        area_m2=tarifa_m2.area_m2,
         derecho_minimo=tarifa_m2.derecho_minimo,
         derecho_maximo=tarifa_m2.derecho_maximo,
     )

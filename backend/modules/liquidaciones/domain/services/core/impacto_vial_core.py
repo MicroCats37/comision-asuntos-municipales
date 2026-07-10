@@ -199,7 +199,7 @@ class ImpactoVialCoreService:
         area_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada_dec,
             costo_m2=tarifa_m2.costo_por_m2,
-            area_minima=tarifa_m2.area_minima,
+            area_m2=tarifa_m2.area_m2,
             derecho_minimo=tarifa_m2.derecho_minimo,
             derecho_maximo=tarifa_m2.derecho_maximo,
         )
@@ -316,7 +316,7 @@ class ImpactoVialCoreService:
 
         Returns:
             Lista de diccionarios con tarifas M2 vigentes.
-            Cada dict contiene: tarifa_id, detalle_id, costo_por_m2, area_minima,
+            Cada dict contiene: tarifa_id, detalle_id, costo_por_m2, area_m2,
             derecho_minimo, derecho_maximo, habilitada.
         """
         reglas = ReglaTarifaLiquidacion.objects.filter(
@@ -339,7 +339,7 @@ class ImpactoVialCoreService:
                 "tarifa_id": str(tarifa_base.id),
                 "detalle_id": str(detalle_m2.id),
                 "costo_por_m2": float(detalle_m2.costo_por_m2),
-                "area_minima": float(detalle_m2.area_minima),
+                "area_m2": float(detalle_m2.area_m2),
                 "derecho_minimo": float(detalle_m2.derecho_minimo),
                 "derecho_maximo": float(detalle_m2.derecho_maximo) if detalle_m2.derecho_maximo is not None else None,
                 "habilitada": esta_vigente(tarifa_base.periodo_inicio, tarifa_base.periodo_fin),

@@ -242,9 +242,8 @@ class LiquidacionEdificacionesPresenter:
                         derecho_minimo=float(rev.tarifa.derecho_minimo),
                         derecho_maximo=float(rev.tarifa.derecho_maximo) if rev.tarifa.derecho_maximo else None,
                         porcentaje_minimo_uit=float(rev.tarifa.porcentaje_minimo_uit),
+                        porcentaje_liquidacion=float(rev.tarifa.porcentaje_liquidacion),
                     ),
-                    monto_base=0.0,
-                    cobra=False,
                 ))
             elif isinstance(rev, dict):
                 esp_list = rev.get('especialidades', [])
@@ -267,9 +266,8 @@ class LiquidacionEdificacionesPresenter:
                         derecho_minimo=float(rev.get('tarifa', {}).get('derecho_minimo', 0)),
                         derecho_maximo=float(rev.get('tarifa', {}).get('derecho_maximo', 0)) if rev.get('tarifa', {}).get('derecho_maximo') else None,
                         porcentaje_minimo_uit=float(rev.get('tarifa', {}).get('porcentaje_minimo_uit', 0)),
+                        porcentaje_liquidacion=float(rev.get('tarifa', {}).get('porcentaje_liquidacion', 0)) if rev.get('tarifa', {}).get('porcentaje_liquidacion') else 0.0,
                     ),
-                    monto_base=float(rev.get('monto_base', 0)),
-                    cobra=rev.get('cobra', False),
                 ))
             else:
                 revisiones_out.append(RevisionOut(
@@ -280,9 +278,8 @@ class LiquidacionEdificacionesPresenter:
                         derecho_minimo=0.0,
                         derecho_maximo=None,
                         porcentaje_minimo_uit=0.0,
+                        porcentaje_liquidacion=0.0,
                     ),
-                    monto_base=0.0,
-                    cobra=False,
                 ))
 
         # ── Valores financieros ─────────────────────────────────────────────────

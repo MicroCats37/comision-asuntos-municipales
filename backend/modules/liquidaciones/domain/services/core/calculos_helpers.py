@@ -16,21 +16,21 @@ from typing import Optional
 def _calcular_monto_m2(
     area_solicitada: Decimal,
     costo_m2: Decimal,
-    area_minima: Decimal,
+    area_m2: Decimal,
     derecho_minimo: Decimal,
     derecho_maximo: Optional[Decimal],
 ) -> tuple[Decimal, Decimal]:
     """
-    Calcula el monto por metro cuadrado con aplicación de área mínima y límites.
+    Calcula el monto por metro cuadrado con aplicación de área base y límites.
 
-    El área de cálculo es max(area_solicitada, area_minima).
+    El área de cálculo es max(area_solicitada, area_m2).
     El derecho se calcula como area_calculo * costo_m2, luego clampado
     entre derecho_minimo y derecho_maximo.
 
     Args:
         area_solicitada: Área total solicitada en m2.
         costo_m2: Costo por metro cuadrado en soles.
-        area_minima: Área mínima en m2 (se usa max(area_solicitada, area_minima)).
+        area_m2: Área base en m2 (se usa max(area_solicitada, area_m2)).
         derecho_minimo: Monto mínimo absoluto del derecho en soles.
         derecho_maximo: Monto máximo absoluto del derecho en soles (None = sin tope).
 
@@ -41,12 +41,12 @@ def _calcular_monto_m2(
     """
     # Convertir todos los inputs numéricos a Decimal para evitar float*Decimal
     area_solicitada_d = Decimal(str(area_solicitada))
-    area_minima_d = Decimal(str(area_minima))
+    area_m2_d = Decimal(str(area_m2))
     derecho_minimo_d = Decimal(str(derecho_minimo))
     derecho_maximo_d = Decimal(str(derecho_maximo)) if derecho_maximo is not None else None
 
     # Monto base = área de cálculo * costo por m2
-    area_calculo = max(area_solicitada_d, area_minima_d)
+    area_calculo = max(area_solicitada_d, area_m2_d)
     monto_base = area_calculo * costo_m2
 
     # Aplicar derecho mínimo

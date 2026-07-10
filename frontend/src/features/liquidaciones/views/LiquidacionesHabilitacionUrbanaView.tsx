@@ -16,11 +16,13 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionHabilitacionUrbanaCard } from "../components/LiquidacionHabilitacionUrbanaCard";
 import { useLiquidacionesHabilitacionUrbana } from "../hooks/useLiquidacionesHabilitacionUrbana";
+import type { LiquidacionCardBase } from "../types/liquidacion-general";
 import type { LiquidacionHabilitacionUrbanaListItem } from "../types/liquidacion-habilitacion-urbana.types";
 
 const KIND_ICON: LucideIcon = Home;
@@ -32,6 +34,7 @@ interface LiquidacionesHabilitacionUrbanaViewProps {
 export function LiquidacionesHabilitacionUrbanaView({
   onSuccess,
 }: LiquidacionesHabilitacionUrbanaViewProps) {
+  const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
 
@@ -62,8 +65,8 @@ export function LiquidacionesHabilitacionUrbanaView({
     }
   };
 
-  const handleVerDetalle = (item: LiquidacionHabilitacionUrbanaListItem) => {
-    console.log("Ver detalle:", item.public_id);
+  const handleVerDetalle = (item: LiquidacionCardBase) => {
+    router.push(`/liquidaciones/habilitacion-urbana/${item.id}`);
   };
 
   return (

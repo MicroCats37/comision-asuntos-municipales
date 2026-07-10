@@ -113,7 +113,7 @@ class TarifaPorMetroCuadradoFactory(DjangoModelFactory):
         model = TarifaPorMetroCuadradoModel
 
     costo_por_m2 = Decimal("50.0000")  # S/ 50 por m2
-    area_minima = Decimal("100.00")  # 100 m2 mínimo
+    area_m2 = Decimal("100.00")  # 100 m2 mínimo
     derecho_minimo = Decimal("500.00")  # S/ 500 mínimo
     derecho_maximo = Decimal("5000.00")  # S/ 5000 máximo
 

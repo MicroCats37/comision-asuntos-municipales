@@ -81,7 +81,7 @@ export const cotizarInspeccionObraPayloadSchema = z.object({
     .int("Cantidad de visitas debe ser un número entero")
     .positive("Cantidad de visitas debe ser al menos 1"),
   categoria: categoriaIOSchema,
-  municipalidad_id: z.string().uuid("Municipalidad es requerida"),
+  // municipalidad_id NO es requerida para cotizar; solo para creación final
   tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
 });
 
@@ -239,9 +239,16 @@ const contactoListItemSchema = z.object({
 
 const tarifaRevisionListItemSchema = z.object({
   id: z.string(),
+  costo_por_m2: z.number().nullable(),
+  area_m2: z.number().nullable(),
   derecho_minimo: z.number().nullable(),
   derecho_maximo: z.number().nullable(),
   porcentaje_minimo_uit: z.number().nullable(),
+  porcentaje_liquidacion: z.number().nullable(),
+  costo_por_visita: z.number().nullable(),
+  visitas_minimas: z.number().nullable(),
+  cantidad_visitas: z.number().nullable(),
+  categoria: z.string().nullable(),
 });
 
 const especialidadRevisionListItemSchema = z.object({
@@ -253,8 +260,6 @@ const revisionListItemSchema = z.object({
   id: z.string(),
   especialidades: z.array(especialidadRevisionListItemSchema),
   tarifa: tarifaRevisionListItemSchema,
-  monto_base: z.number(),
-  cobra: z.boolean(),
 });
 
 /** Item de lista */
@@ -265,10 +270,6 @@ const liquidacionInspeccionObraListItemSchema = z.object({
   tipo_liquidacion: z.string(),
   numero_revision: z.number(),
   fecha_registro: z.string(),
-  tramite_accion: z.string().nullable(),
-  tipo_tramite: z.string().nullable(),
-  expediente: z.string().nullable(),
-  observacion: z.string().nullable(),
   proyecto: proyectoListItemSchema,
   entidad: entidadListItemSchema,
   municipalidad: municipalidadListItemSchema,
@@ -277,10 +278,6 @@ const liquidacionInspeccionObraListItemSchema = z.object({
   delegados: z.array(delegadoListItemSchema),
   contactos: z.array(contactoListItemSchema),
   revisiones: z.array(revisionListItemSchema),
-  subtotal: z.number(),
-  igv: z.number(),
-  total: z.number(),
-  total_a_pagar: z.number(),
 });
 
 /** Payload para respuesta de lista */
@@ -295,6 +292,11 @@ const liquidacionesInspeccionObraPayloadSchema = z.object({
 /** Wrapper para respuesta de lista */
 export const liquidacionesInspeccionObraResponseSchema = apiResponseSchema(
   liquidacionesInspeccionObraPayloadSchema,
+);
+
+/** Wrapper para respuesta de detalle (single item) */
+export const liquidacionInspeccionObraDetailResponseSchema = apiResponseSchema(
+  liquidacionInspeccionObraListItemSchema,
 );
 
 // ── Form Step Schemas ──────────────────────────────────────────────────────────
@@ -320,7 +322,6 @@ export type StepInspeccionObraData = z.infer<typeof stepInspeccionObraSchema>;
 /** Tarifa vigente en respuesta del endpoint */
 const tarifaVigenteInspeccionObraSchema = z.object({
   tarifa_id: z.string(),
-  detalle_id: z.string(),
   costo_por_visita: z.number(),
   visitas_minimas: z.number(),
   categoria: z.string(),

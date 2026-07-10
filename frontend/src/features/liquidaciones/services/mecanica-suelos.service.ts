@@ -15,6 +15,7 @@ import { cotizacionMecanicaSuelosResponseSchema } from "../schemas/liquidacion-m
 import { crearMecanicaSuelosResponseSchema } from "../schemas/liquidacion-mecanica-suelos.schema";
 import { liquidacionesMecanicaSuelosResponseSchema } from "../schemas/liquidacion-mecanica-suelos.schema";
 import { tarifasVigentesMecanicaSuelosResponseSchema } from "../schemas/liquidacion-mecanica-suelos.schema";
+import type { LiquidacionGeneralOut } from "../types/liquidacion-general";
 
 const BASE_URL = "/liquidaciones/mecanica-suelos";
 
@@ -63,9 +64,9 @@ export const mecanicaSuelosService = {
    */
   async obtenerLiquidacion(
     liquidacionId: string,
-  ): Promise<CrearMecanicaSuelosResponse> {
+  ): Promise<LiquidacionGeneralOut> {
     const { data } = await api.get(`${BASE_URL}/${liquidacionId}`);
-    return (data as { data: CrearMecanicaSuelosResponse }).data;
+    return (data as { data: LiquidacionGeneralOut }).data;
   },
 
   /**

@@ -20,7 +20,6 @@ from ninja import Query
 from core.responses import ApiResponse, success_response
 from core.pagination import PaginatedData
 from ..schemas.liquidacion_general_schemas import (
-    LiquidacionGeneralOut,
     LiquidacionGeneralListItemOut,
     EspecialidadesCatalogoOut,
     DelegadosVigentesOut,
@@ -100,7 +99,7 @@ class LiquidacionesGeneralController:
             total_pages=total_pages,
         ))
 
-    @route.get("/general/{liquidacion_id}", response={200: ApiResponse[LiquidacionGeneralOut]}, auth=None)
+    @route.get("/general/{liquidacion_id}", response={200: ApiResponse[LiquidacionGeneralListItemOut]}, auth=None)
     async def obtener_detalle_liquidacion(
         self,
         liquidacion_id: str,
@@ -108,14 +107,14 @@ class LiquidacionesGeneralController:
         """
         Obtener detalle de una liquidación por ID.
 
-        Retorna un objeto LiquidacionGeneralOut con todos los campos
-        comunes a todos los tipos de liquidación.
+        Retorna un objeto LiquidacionGeneralListItemOut con todos los campos
+        ricos (proyectistas, delegados, revisiones, contactos) — mismo shape que la lista.
 
         Args:
             liquidacion_id: UUID de la liquidación
         """
-        result = await self.orchestrator.obtener_liquidacion_por_id(liquidacion_id)
-        return success_response(LiquidacionGeneralPresenter.present(result))
+        result = await self.orchestrator.obtener_liquidacion_list_item_por_id(liquidacion_id)
+        return success_response(LiquidacionGeneralPresenter.present_list_item(result))
 
     @route.get("/especialidades-vigentes", response={200: ApiResponse[EspecialidadesCatalogoOut]}, auth=None)
     async def obtener_especialidades_vigentes(

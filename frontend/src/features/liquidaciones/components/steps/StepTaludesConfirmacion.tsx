@@ -141,7 +141,18 @@ export function StepTaludesConfirmacion({
 
   return (
     <div className="space-y-6 min-w-0 max-w-full">
-      
+      {/* Header summary */}
+      <div className="flex items-center gap-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
+        <div className="p-2.5 bg-primary/15 rounded-lg text-primary shadow-sm">
+          <BadgeCheck className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-base font-bold text-foreground leading-tight">Revisión final</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Verifica que toda la información sea correcta antes de crear la liquidación
+          </p>
+        </div>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-4 min-w-0">
         {/* Left column: Proyecto + Liquidación */}
@@ -345,10 +356,6 @@ function TaludesCotizacionDisplay({
         <div className="flex justify-between gap-2">
           <span className="text-muted-foreground">Subtotal</span>
           <span className="font-medium">{formatSoles(quote.totales.subtotal)}</span>
-        </div>
-        <div className="flex justify-between gap-2">
-          <span className="text-muted-foreground">IGV ({quote._metadata.igv_valor * 100}%)</span>
-          <span className="font-medium">{formatSoles(quote.totales.igv)}</span>
         </div>
       </div>
       <div className="rounded-lg border border-primary bg-primary/5 p-4 space-y-2">

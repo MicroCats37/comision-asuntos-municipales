@@ -20,7 +20,7 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import type { LiquidacionGeneralListItem } from "../types/liquidacion-general";
+import type { LiquidacionCardBase } from "../types/liquidacion-general";
 import { LiquidacionCardHeader } from "./LiquidacionCardHeader";
 import { GestionarDelegadosModal } from "./GestionarDelegadosModal";
 import { LiquidacionPDFModal } from "./LiquidacionPDFModal";
@@ -85,11 +85,29 @@ function LabelValue({ label, value, className, valueClassName }: {
 }
 
 interface Props {
-  item: LiquidacionGeneralListItem;
-  onVerDetalle?: (item: LiquidacionGeneralListItem) => void;
+  item: LiquidacionCardBase;
+  onVerDetalle?: (item: LiquidacionCardBase) => void;
+  /**
+   * Optional slot for type-specific summary content.
+   * Edificación passes tipo_tramite + tramite_accion.
+   * M2 types pass "Cálculo por área" or "Cálculo por visitas" placeholder.
+   * If not provided, renders a neutral generic summary (kind + revision + expediente).
+   */
+  typeSpecificSummary?: React.ReactNode;
+  /**
+   * Optional slot for type-specific values content.
+   * Edificación passes valor_proyecto.
+   * If not provided, renders standard valores section without valor_proyecto.
+   */
+  typeSpecificValues?: React.ReactNode;
 }
 
-export function LiquidacionGeneralCard({ item, onVerDetalle }: Props) {
+export function LiquidacionGeneralCard({
+  item,
+  onVerDetalle,
+  typeSpecificSummary,
+  typeSpecificValues,
+}: Props) {
   const {
     public_id,
     estado,
@@ -105,7 +123,6 @@ export function LiquidacionGeneralCard({ item, onVerDetalle }: Props) {
     expediente,
     observacion,
     tipo_liquidacion,
-    tramite_accion,
   } = item;
 
   const hasMultipleProyectistas = proyectistas.length > 1;
@@ -160,14 +177,15 @@ export function LiquidacionGeneralCard({ item, onVerDetalle }: Props) {
       />
 
       <CollapsibleContent className="p-5 space-y-4 border-t border-border/40 bg-muted/10">
-        {/* ─── Resumen ─── */}
+        {/* ─── Resumen — type-specific or neutral generic ─── */}
         <SectionCard icon={<FileText className="h-3.5 w-3.5" />} title={kindLabel(tipoLiquidacion)} className="border-border/60">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <LabelValue label="Tipo" value={kindLabel(tipoLiquidacion)} />
-            <LabelValue label="Acción" value={tramite_accion ?? "—"} />
-            <LabelValue label="Revisión" value={`N° ${item.numero_revision}`} />
-            <LabelValue label="Expediente" value={expediente || "—"} />
-          </div>
+          {typeSpecificSummary ?? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <LabelValue label="Tipo" value={kindLabel(tipoLiquidacion)} />
+              <LabelValue label="Revisión" value={`N° ${item.numero_revision}`} />
+              <LabelValue label="Expediente" value={expediente || "—"} />
+            </div>
+          )}
         </SectionCard>
 
         {/* ─── Three-column: Proyecto + Municipalidad + Valores ─── */}
@@ -202,11 +220,18 @@ export function LiquidacionGeneralCard({ item, onVerDetalle }: Props) {
           </SectionCard>
 
           <SectionCard icon={<Banknote className="h-3.5 w-3.5" />} title="Valores" className="border-border/60">
-            <div className="space-y-2.5">
-              <LabelValue label="Valor del Proyecto" value={formatCurrency(proyecto.valor_proyecto)} />
-              <LabelValue label="Subtotal" value={formatCurrency(valores.subtotal)} />
-              <LabelValue label="Total a Pagar" value={formatCurrency(valores.total_a_pagar)} valueClassName="text-primary font-bold" />
-            </div>
+            {typeSpecificValues ? (
+              <div className="space-y-2.5">
+                {typeSpecificValues}
+                <LabelValue label="Subtotal" value={formatCurrency(valores.subtotal)} />
+                <LabelValue label="Total a Pagar" value={formatCurrency(valores.total_a_pagar)} valueClassName="text-primary font-bold" />
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                <LabelValue label="Subtotal" value={formatCurrency(valores.subtotal)} />
+                <LabelValue label="Total a Pagar" value={formatCurrency(valores.total_a_pagar)} valueClassName="text-primary font-bold" />
+              </div>
+            )}
           </SectionCard>
         </div>
 
@@ -246,27 +271,150 @@ export function LiquidacionGeneralCard({ item, onVerDetalle }: Props) {
             className="border-border/60"
           >
             {revisiones.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {revisiones.map((rev) => (
-                  <div key={rev.id} className="group/chip inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60 hover:bg-secondary/60 hover:border-primary/20 transition-all">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover/chip:bg-primary/15 transition-colors">
-                      <Building2 className="h-3.5 w-3.5 text-primary" />
+              (() => {
+                // Deduplicate specialties by id — show one chip per specialty, no UIT/monto
+                const seen = new Set<string>();
+                const uniqueEspecialidades = revisiones.flatMap((rev) =>
+                  rev.especialidades.filter((esp) => {
+                    if (seen.has(esp.id)) return false;
+                    seen.add(esp.id);
+                    return true;
+                  })
+                );
+                return (
+                  <div className="space-y-3">
+                    {/* Specialty chips */}
+                    <div className="flex flex-wrap gap-2">
+                      {uniqueEspecialidades.map((esp) => (
+                        <div
+                          key={esp.id}
+                          className="group/chip inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60 hover:bg-secondary/60 hover:border-primary/20 transition-all"
+                        >
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover/chip:bg-primary/15 transition-colors">
+                            <Building2 className="h-3.5 w-3.5 text-primary" />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span
+                              className="text-xs font-bold text-foreground leading-tight truncate max-w-[160px]"
+                              title={esp.nombre}
+                            >
+                              {esp.nombre}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-bold text-foreground leading-tight truncate max-w-[120px]">
-                        {rev.especialidades.map((e) => e.nombre).join(", ")}
-                      </span>
-                      {rev.tarifa?.porcentaje_minimo_uit != null && (
-                        <span className="text-[10px] text-muted-foreground">{Number(rev.tarifa.porcentaje_minimo_uit).toFixed(4)} UIT</span>
-                      )}
-                    </div>
-                    <div className="ml-1 flex flex-col items-end gap-0.5">
-                      <span className="text-xs font-black text-primary">{formatCurrency(rev.monto_base)}</span>
-                      
+                    {/* Tariff data per revision */}
+                    <div className="space-y-2">
+                      {revisiones.map((rev, idx) => (
+                        <div key={rev.id} className="rounded-lg border border-border/40 bg-muted/20 p-2.5">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
+                              Revisión {idx + 1}
+                            </span>
+                          </div>
+                          {tipoLiquidacion === "inspeccion-obra" ? (
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="flex flex-col">
+                                <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                  Costo/Visita
+                                </span>
+                                <span className="text-xs font-medium text-foreground">
+                                  {rev.tarifa?.costo_por_visita != null
+                                    ? formatCurrency(rev.tarifa.costo_por_visita)
+                                    : "—"}
+                                </span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                  Cant. Visitas
+                                </span>
+                                <span className="text-xs font-medium text-foreground">
+                                  {rev.tarifa?.cantidad_visitas ?? "—"}
+                                </span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                  Categoría
+                                </span>
+                                <span className="text-xs font-medium text-foreground">
+                                  {rev.tarifa?.categoria ?? "—"}
+                                </span>
+                              </div>
+                            </div>
+                          ) : tipoLiquidacion === "edificacion" ? (
+                              <div className="grid grid-cols-3 gap-2">
+                                <div className="flex flex-col">
+                                  <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                    % Liquidación
+                                  </span>
+                                <span className="text-xs font-medium text-foreground">
+                                  {rev.tarifa?.porcentaje_liquidacion != null
+                                    ? `${(rev.tarifa.porcentaje_liquidacion * 100).toFixed(2)}%`
+                                    : "—"}
+                                </span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                  Derecho Mín.
+                                </span>
+                                <span className="text-xs font-medium text-foreground">
+                                  {rev.tarifa?.derecho_minimo != null
+                                    ? formatCurrency(rev.tarifa.derecho_minimo)
+                                    : "—"}
+                                </span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                  Derecho Máx.
+                                </span>
+                                <span className="text-xs font-medium text-foreground">
+                                  {rev.tarifa?.derecho_maximo != null
+                                    ? formatCurrency(rev.tarifa.derecho_maximo)
+                                    : "—"}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="flex flex-col">
+                                <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                  Costo (S/ m²)
+                                </span>
+                                <span className="text-xs font-medium text-foreground">
+                                  {rev.tarifa?.costo_por_m2 != null
+                                    ? formatCurrency(rev.tarifa.costo_por_m2)
+                                    : "—"}
+                                </span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                  Derecho Mín.
+                                </span>
+                                <span className="text-xs font-medium text-foreground">
+                                  {rev.tarifa?.derecho_minimo != null
+                                    ? formatCurrency(rev.tarifa.derecho_minimo)
+                                    : "—"}
+                                </span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                  Derecho Máx.
+                                </span>
+                                <span className="text-xs font-medium text-foreground">
+                                  {rev.tarifa?.derecho_maximo != null
+                                    ? formatCurrency(rev.tarifa.derecho_maximo)
+                                    : "—"}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })()
             ) : (
               <p className="text-xs text-muted-foreground/60 italic">Sin revisiones registradas</p>
             )}
@@ -330,8 +478,12 @@ export function LiquidacionGeneralCard({ item, onVerDetalle }: Props) {
         <SectionCard icon={<Banknote className="h-3.5 w-3.5" />} title="Totales" className="border-border/60">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <LabelValue label="Subtotal" value={formatCurrency(valores.subtotal)} />
-            <LabelValue label="IGV" value={formatCurrency(valores.igv)} />
-            <LabelValue label="Total" value={formatCurrency(valores.total)} />
+            {"igv" in valores && valores.igv != null && (
+              <LabelValue label="IGV" value={formatCurrency(valores.igv)} />
+            )}
+            {"total" in valores && valores.total != null && (
+              <LabelValue label="Total" value={formatCurrency(valores.total)} />
+            )}
             <div className="flex flex-col bg-primary/5 border border-primary/10 rounded-lg px-3 py-2 -my-0.5">
               <span className="text-[9px] font-bold text-primary uppercase tracking-wider mb-0.5">Total a Pagar</span>
               <span className="text-base font-black text-primary">{formatCurrency(valores.total_a_pagar)}</span>

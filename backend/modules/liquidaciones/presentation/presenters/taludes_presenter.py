@@ -1,6 +1,7 @@
 """
 TaludesPresenter — transforma resultados domain a schemas HTTP para Taludes.
 """
+import uuid as _uuid
 from typing import Optional, Union
 
 from modules.liquidaciones.domain.schemas.taludes import (
@@ -10,8 +11,13 @@ from modules.liquidaciones.domain.schemas.shared import (
     LiquidacionM2CalculoData,
     CotizacionM2QuoteData,
 )
+from modules.liquidaciones.domain.schemas import (
+    LiquidacionGeneralListItem,
+    LiquidacionGeneralResult,
+)
 from modules.liquidaciones.presentation.schemas.taludes_schemas import (
     LiquidacionTaludesOut,
+    LiquidacionTaludesListItemOut,
     TarifaM2Out,
     LiquidacionM2CalculoOut,
     TotalesOut,
@@ -22,6 +28,18 @@ from modules.liquidaciones.presentation.schemas.taludes_schemas import (
     CotizacionM2QuoteOut,
     CotizacionM2RevisionOut,
     CotizacionM2MetadataOut,
+)
+from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
+    EntidadListItemOut,
+    ProyectoListItemOut,
+    MunicipalidadListItemOut,
+    ValoresM2CleanOut,
+    ProyectistaListItemOut,
+    DelegadoListItemOut,
+    ContactoListItemOut,
+    RevisionListItemCleanOut,
+    TarifaRevisionOut,
+    EspecialidadRevisionOut,
 )
 
 
@@ -95,7 +113,7 @@ class TaludesPresenter:
         return TarifaM2Out(
             id=calculo.tarifa.id,
             costo_por_m2=float(calculo.tarifa.costo_por_m2),
-            area_minima=float(calculo.tarifa.area_minima),
+            area_m2=float(calculo.tarifa.area_m2),
             derecho_minimo=float(calculo.tarifa.derecho_minimo),
             derecho_maximo=float(calculo.tarifa.derecho_maximo) if calculo.tarifa.derecho_maximo else None,
         )
@@ -154,7 +172,7 @@ class TaludesPresenter:
                 tarifa=TarifaM2Out(
                     id=calculo_rev.tarifa.id,
                     costo_por_m2=float(calculo_rev.tarifa.costo_por_m2),
-                    area_minima=float(calculo_rev.tarifa.area_minima),
+                    area_m2=float(calculo_rev.tarifa.area_m2),
                     derecho_minimo=float(calculo_rev.tarifa.derecho_minimo),
                     derecho_maximo=float(calculo_rev.tarifa.derecho_maximo) if calculo_rev.tarifa.derecho_maximo else None,
                 ),
@@ -171,4 +189,185 @@ class TaludesPresenter:
                 uit_valor=float(result.metadata.uit_valor),
                 area_solicitada=float(result.metadata.area_solicitada) if result.metadata.area_solicitada else None,
             ),
+        )
+
+    # =============================================================================
+    # Presenter para Lista
+    # =============================================================================
+
+    @staticmethod
+    def _build_entidad_list(result: LiquidacionGeneralListItem) -> Optional[EntidadListItemOut]:
+        """Construir entidad anidada para list item."""
+        if not result.entidad or not result.entidad.id:
+            return None
+        return EntidadListItemOut(
+            id=result.entidad.id,
+            tipo=result.entidad.tipo,
+            nombre=result.entidad.nombre,
+            ruc=result.entidad.ruc,
+        )
+
+    @staticmethod
+    def _build_proyecto_list(result: LiquidacionGeneralListItem) -> ProyectoListItemOut:
+        """Construir proyecto anidado para list item."""
+        return ProyectoListItemOut(
+            id=result.proyecto.id,
+            public_id=result.proyecto.public_id,
+            nombre=result.proyecto.nombre,
+            direccion=result.proyecto.direccion,
+            valor_proyecto=result.proyecto.valor_proyecto,
+            entidad=TaludesPresenter._build_entidad_list(result),
+        )
+
+    @staticmethod
+    def present_list_item(result: LiquidacionGeneralListItem) -> LiquidacionTaludesListItemOut:
+        """
+        Transforma un LiquidacionGeneralListItem a LiquidacionTaludesListItemOut.
+        """
+        return LiquidacionTaludesListItemOut(
+            id=result.id,
+            public_id=result.public_id,
+            tipo_liquidacion=result.tipo_liquidacion,
+            estado=result.estado,
+            numero_revision=result.numero_revision,
+            fecha_registro=result.fecha_registro,
+            proyecto=TaludesPresenter._build_proyecto_list(result),
+            entidad=TaludesPresenter._build_entidad_list(result),
+            municipalidad=MunicipalidadListItemOut(
+                id=result.municipalidad.id,
+                nombre=result.municipalidad.nombre,
+                codigo=result.municipalidad.codigo,
+                provincia=result.municipalidad.provincia,
+                distrito=result.municipalidad.distrito,
+            ),
+            valores=ValoresM2CleanOut(
+                subtotal=result.valores.subtotal,
+                total_a_pagar=result.valores.total_a_pagar,
+            ),
+            proyectistas=[
+                ProyectistaListItemOut(
+                    id=p.id,
+                    perfil_ingeniero_id=p.perfil_ingeniero_id,
+                    perfil_ingeniero_nombres=p.perfil_ingeniero_nombres,
+                    perfil_ingeniero_apellidos=p.perfil_ingeniero_apellidos,
+                    perfil_ingeniero_cip=p.perfil_ingeniero_cip,
+                    especialidad_id=p.especialidad_id,
+                    especialidad_nombre=p.especialidad_nombre,
+                    descripcion=p.descripcion,
+                ) for p in result.proyectistas
+            ],
+            delegados=[
+                DelegadoListItemOut(
+                    id=d.id,
+                    perfil_ingeniero_id=d.perfil_ingeniero_id,
+                    perfil_ingeniero_nombres=d.perfil_ingeniero_nombres,
+                    perfil_ingeniero_apellidos=d.perfil_ingeniero_apellidos,
+                    perfil_ingeniero_cip=d.perfil_ingeniero_cip,
+                    especialidad_id=d.especialidad_id,
+                    especialidad_nombre=d.especialidad_nombre,
+                    tipo=d.tipo,
+                ) for d in result.delegados
+            ],
+            contactos=[
+                ContactoListItemOut(
+                    id=c.id,
+                    nombres=c.nombres,
+                    apellidos=c.apellidos,
+                    dni=c.dni,
+                    cargo=c.cargo,
+                    telefono=c.telefono,
+                    celular=c.celular,
+                    email=c.email,
+                    direccion=c.direccion,
+                    principal=c.principal,
+                    descripcion=c.descripcion,
+                ) for c in result.contactos
+            ],
+            revisiones=[
+                RevisionListItemCleanOut(
+                    id=r.id,
+                    especialidades=[
+                        EspecialidadRevisionOut(id=e.id, nombre=e.nombre)
+                        for e in r.especialidades
+                    ],
+                    tarifa=TarifaRevisionOut(**r.tarifa.model_dump()) if r.tarifa else None,
+                ) for r in result.revisiones
+            ],
+        )
+
+    @staticmethod
+    def present_list(
+        results: list[LiquidacionGeneralListItem],
+    ) -> list[LiquidacionTaludesListItemOut]:
+        """
+        Transforma una lista de LiquidacionGeneralListItem a lista de LiquidacionTaludesListItemOut.
+        """
+        return [TaludesPresenter.present_list_item(r) for r in results]
+
+    # =============================================================================
+    # Presenter para Detalle (desde LiquidacionGeneralResult plano)
+    # =============================================================================
+
+    @staticmethod
+    def _build_entidad_detail(result: LiquidacionGeneralResult) -> Optional[EntidadListItemOut]:
+        """Construir entidad anidada para detail item desde campos planos."""
+        if not result.entidad_id:
+            return None
+        return EntidadListItemOut(
+            id=result.entidad_id,
+            tipo=result.entidad_tipo,
+            nombre=result.entidad_nombre,
+            ruc=result.entidad_ruc,
+        )
+
+    @staticmethod
+    def _build_proyecto_detail(result: LiquidacionGeneralResult) -> ProyectoListItemOut:
+        """Construir proyecto anidado para detail item desde campos planos."""
+        return ProyectoListItemOut(
+            id=result.proyecto_id or _uuid.UUID('00000000-0000-0000-0000-000000000000'),
+            public_id=result.proyecto_public_id or '',
+            nombre=result.proyecto_nombre or '',
+            direccion=result.proyecto_direccion,
+            valor_proyecto=0.0,
+            entidad=TaludesPresenter._build_entidad_detail(result),
+        )
+
+    @staticmethod
+    def present_detail_item(result: LiquidacionGeneralResult) -> LiquidacionTaludesListItemOut:
+        """
+        Transforma un LiquidacionGeneralResult (DTO plano) a LiquidacionTaludesListItemOut.
+
+        Args:
+            result: LiquidacionGeneralResult con campos planos del detalle
+
+        Returns:
+            LiquidacionTaludesListItemOut schema para respuesta HTTP de detalle
+        """
+        subtotal = float(result.subtotal) if result.subtotal else 0.0
+        total_a_pagar = float(result.total_a_pagar) if result.total_a_pagar else 0.0
+
+        return LiquidacionTaludesListItemOut(
+            id=result.id,
+            public_id=result.public_id,
+            tipo_liquidacion=result.tipo_liquidacion,
+            estado=result.estado,
+            numero_revision=result.numero_revision,
+            fecha_registro=result.fecha_registro,
+            proyecto=TaludesPresenter._build_proyecto_detail(result),
+            entidad=TaludesPresenter._build_entidad_detail(result),
+            municipalidad=MunicipalidadListItemOut(
+                id=result.municipalidad_id or _uuid.UUID('00000000-0000-0000-0000-000000000000'),
+                nombre=result.municipalidad_nombre or '',
+                codigo=None,
+                provincia=None,
+                distrito=None,
+            ),
+            valores=ValoresM2CleanOut(
+                subtotal=subtotal,
+                total_a_pagar=total_a_pagar,
+            ),
+            proyectistas=[],
+            delegados=[],
+            contactos=[],
+            revisiones=[],
         )

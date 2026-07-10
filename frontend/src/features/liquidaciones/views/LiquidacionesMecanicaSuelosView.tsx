@@ -16,12 +16,13 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionMecanicaSuelosCard } from "../components/LiquidacionMecanicaSuelosCard";
 import { useLiquidacionesMecanicaSuelos } from "../hooks/useLiquidacionesMecanicaSuelos";
-import type { LiquidacionMecanicaSuelosListItem } from "../types/liquidacion-mecanica-suelos.types";
+import type { LiquidacionCardBase } from "../types/liquidacion-general";
 
 const KIND_ICON: LucideIcon = Scale;
 
@@ -32,6 +33,7 @@ interface LiquidacionesMecanicaSuelosViewProps {
 export function LiquidacionesMecanicaSuelosView({
   onSuccess,
 }: LiquidacionesMecanicaSuelosViewProps) {
+  const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
 
@@ -62,8 +64,8 @@ export function LiquidacionesMecanicaSuelosView({
     }
   };
 
-  const handleVerDetalle = (item: LiquidacionMecanicaSuelosListItem) => {
-    console.log("Ver detalle:", item.public_id);
+  const handleVerDetalle = (item: LiquidacionCardBase) => {
+    router.push(`/liquidaciones/mecanica-suelos/${item.id}`);
   };
 
   return (

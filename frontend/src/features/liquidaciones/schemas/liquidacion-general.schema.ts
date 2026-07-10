@@ -73,9 +73,6 @@ const contactoSchema = z.object({
 
 const tarifaRevisionSchema = z.object({
   id: z.string(),
-  derecho_minimo: z.number().nullable(),
-  derecho_maximo: z.number().nullable(),
-  porcentaje_minimo_uit: z.number().nullable(),
 });
 
 const especialidadRevisionSchema = z.object({
@@ -87,8 +84,6 @@ const revisionSchema = z.object({
   id: z.string(),
   especialidades: z.array(especialidadRevisionSchema),
   tarifa: tarifaRevisionSchema.nullable(),
-  monto_base: z.number(),
-  cobra: z.boolean(),
 });
 
 /**
@@ -132,4 +127,42 @@ export const paginatedLiquidacionGeneralListPayloadSchema = z.object({
 /** Wrapper schema para lista paginada general (ApiResponse[PaginatedData[LiquidacionGeneralListItemOut]]) */
 export const liquidacionGeneralListResponseSchema = apiResponseSchema(
   paginatedLiquidacionGeneralListPayloadSchema,
+);
+
+// ── Schemas para detalle general (LiquidacionGeneralOut) ──────────────────────
+
+const proyectoGeneralSchema = z.object({
+  id: z.string(),
+  public_id: z.string(),
+  nombre: z.string(),
+  direccion: z.string().nullable(),
+});
+
+const entidadGeneralSchema = z.object({
+  id: z.string().nullable(),
+  tipo: z.string().nullable(),
+  nombre: z.string().nullable(),
+  ruc: z.string().nullable(),
+});
+
+export const liquidacionGeneralOutSchema = z.object({
+  id: z.string(),
+  public_id: z.string(),
+  estado: z.string(),
+  tipo_liquidacion: z.string(),
+  numero_revision: z.number(),
+  fecha_registro: z.string(),
+  expediente: z.string().nullable(),
+  observacion: z.string().nullable(),
+  municipalidad_nombre: z.string().nullable(),
+  proyecto: proyectoGeneralSchema.nullable(),
+  entidad: entidadGeneralSchema.nullable(),
+  subtotal: z.number(),
+  igv: z.number(),
+  total: z.number(),
+  total_a_pagar: z.number(),
+});
+
+export const liquidacionGeneralDetailResponseSchema = apiResponseSchema(
+  liquidacionGeneralOutSchema,
 );

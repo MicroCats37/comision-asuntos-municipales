@@ -40,7 +40,7 @@ export function useCrearPrimeraRevision() {
       payload: PrimeraRevisionFormData,
     ): Promise<LiquidacionEdificacionOut> => {
       const result = await mutation.mutateAsync({ liquidacion: payload });
-      return (result as { data: LiquidacionEdificacionOut }).data;
+      return (result as unknown as { data: LiquidacionEdificacionOut }).data;
     },
   };
 

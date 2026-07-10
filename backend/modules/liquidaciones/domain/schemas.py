@@ -22,6 +22,7 @@ class TarifaEdificacionData(BaseModel):
     derecho_minimo: Decimal
     derecho_maximo: Optional[Decimal]
     porcentaje_minimo_uit: Decimal
+    porcentaje_liquidacion: Decimal
 
 
 class EspecialidadData(BaseModel):
@@ -252,6 +253,7 @@ class TarifaCalculoData(BaseModel):
     derecho_minimo: Decimal
     derecho_maximo: Optional[Decimal]
     porcentaje_minimo_uit: Decimal
+    porcentaje_liquidacion: Optional[Decimal] = None  # Only for Edificación
 
 
 class RevisionCalculoData(BaseModel):
@@ -425,11 +427,26 @@ class ContactoListItemData(BaseModel):
 
 
 class TarifaRevisionData(BaseModel):
-    """Tarifa dentro de revision en item de lista."""
+    """Tarifa dentro de revision en item de lista.
+
+    Contiene todos los campos de cálculo tipo-específicos para que
+    los presenters los lean directamente sin necesidad de `detalle`.
+    """
     id: uuid.UUID
+    # Common to all types
     derecho_minimo: Optional[float] = None
     derecho_maximo: Optional[float] = None
     porcentaje_minimo_uit: Optional[float] = None
+    # Edificación
+    porcentaje_liquidacion: Optional[float] = None
+    # M2 (HU, MS, IV, Taludes)
+    costo_por_m2: Optional[float] = None
+    area_m2: Optional[float] = None
+    # IO
+    costo_por_visita: Optional[float] = None
+    visitas_minimas: Optional[int] = None
+    cantidad_visitas: Optional[int] = None
+    categoria: Optional[str] = None
 
 
 class EspecialidadRevisionData(BaseModel):
@@ -443,8 +460,11 @@ class RevisionListItemData(BaseModel):
     id: uuid.UUID
     especialidades: list[EspecialidadRevisionData] = Field(default_factory=list)
     tarifa: Optional[TarifaRevisionData] = None
-    monto_base: float = 0.0
-    cobra: bool = False
+
+
+# =============================================================================
+# General Liquidation DTOs — para LiquidacionGeneralController (Phase 4)
+# =============================================================================
 
 
 class LiquidacionGeneralListItem(BaseModel):

@@ -16,11 +16,13 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionImpactoVialCard } from "../components/LiquidacionImpactoVialCard";
 import { useLiquidacionesImpactoVial } from "../hooks/useLiquidacionesImpactoVial";
+import type { LiquidacionCardBase } from "../types/liquidacion-general";
 import type { LiquidacionImpactoVialListItem } from "../types/liquidacion-impacto-vial.types";
 
 const KIND_ICON: LucideIcon = Truck;
@@ -32,6 +34,7 @@ interface LiquidacionesImpactoVialViewProps {
 export function LiquidacionesImpactoVialView({
   onSuccess,
 }: LiquidacionesImpactoVialViewProps) {
+  const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
 
@@ -62,8 +65,8 @@ export function LiquidacionesImpactoVialView({
     }
   };
 
-  const handleVerDetalle = (item: LiquidacionImpactoVialListItem) => {
-    console.log("Ver detalle:", item.public_id);
+  const handleVerDetalle = (item: LiquidacionCardBase) => {
+    router.push(`/liquidaciones/impacto-vial/${item.id}`);
   };
 
   return (

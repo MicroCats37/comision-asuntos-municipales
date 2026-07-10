@@ -10,7 +10,7 @@ from injector import inject
 from ninja.errors import HttpError
 
 from ..flujos.liquidacion_general_flujo import LiquidacionesGeneralFlujo
-from ...schemas import LiquidacionGeneralPaginatedResult, LiquidacionGeneralResult
+from ...schemas import LiquidacionGeneralPaginatedResult, LiquidacionGeneralResult, LiquidacionGeneralListItem
 from ...schemas import EspecialidadBasicaResult, DelegadosVigentesResult
 
 
@@ -33,6 +33,7 @@ class LiquidacionesGeneralOrchestrator:
         page: int,
         page_size: int,
         tipo_liquidacion: str | None = None,
+        liquidacion_id: str | None = None,
     ) -> LiquidacionGeneralPaginatedResult:
         """
         Lista liquidaciones paginadas — delega a flujo.
@@ -41,6 +42,7 @@ class LiquidacionesGeneralOrchestrator:
             page: Número de página (1-indexed)
             page_size: Elementos por página (max 100)
             tipo_liquidacion: Filtro opcional por tipo de liquidación
+            liquidacion_id: Filtro opcional por ID de liquidación
 
         Returns:
             LiquidacionGeneralPaginatedResult con items y total
@@ -55,7 +57,36 @@ class LiquidacionesGeneralOrchestrator:
             page=page,
             page_size=page_size,
             tipo_liquidacion=tipo_liquidacion,
+            liquidacion_id=liquidacion_id,
         )
+
+    async def obtener_liquidacion_list_item_por_id(
+        self,
+        liquidacion_id: str,
+    ) -> LiquidacionGeneralListItem:
+        """
+        Obtiene una liquidación por ID retornando el mismo LiquidacionGeneralListItem
+        que la lista — con todos los datos ricos (proyectistas, delegados, revisiones, etc.).
+
+        Args:
+            liquidacion_id: UUID de la liquidación
+
+        Returns:
+            LiquidacionGeneralListItem con datos completos
+
+        Raises:
+            HttpError(404): Si la liquidación no existe
+        """
+        result = await self.flujo._proceso_listar_liquidaciones(
+            page=1,
+            page_size=1,
+            liquidacion_id=liquidacion_id,
+        )
+
+        if not result.items:
+            raise HttpError(404, f"Liquidación con ID '{liquidacion_id}' no encontrada.")
+
+        return result.items[0]
 
     async def obtener_liquidacion_por_id(
         self,

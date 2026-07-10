@@ -56,7 +56,7 @@ export function useCrearMecanicaSuelosPrimeraRevision() {
 export function useCotizarMecanicaSuelosPrimeraRevision() {
   const mutation = useApiCreate<
     z.infer<typeof cotizacionMecanicaSuelosResponseSchema>,
-    { liquidacion: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] } }
+    { liquidacion: { area_solicitada: number; tarifas_ids: string[] } }
   >({
     url: "/liquidaciones/mecanica-suelos/cotizar/primera-revision",
     schema: cotizacionMecanicaSuelosResponseSchema,
@@ -65,11 +65,11 @@ export function useCotizarMecanicaSuelosPrimeraRevision() {
 
   const cotizacionMutation = {
     ...mutation,
-    mutate: (payload: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] }) => {
+    mutate: (payload: { area_solicitada: number; tarifas_ids: string[] }) => {
       mutation.mutate({ liquidacion: payload });
     },
     mutateAsync: async (
-      payload: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] },
+      payload: { area_solicitada: number; tarifas_ids: string[] },
     ): Promise<CotizacionMecanicaSuelosResponse> => {
       const result = await mutation.mutateAsync({ liquidacion: payload });
       return result.data as CotizacionMecanicaSuelosResponse;

@@ -1,6 +1,7 @@
 """
 InspeccionObraPresenter — transforma resultados domain a schemas HTTP para Inspección de Obra.
 """
+import uuid as _uuid
 from typing import Optional, Union
 
 from modules.liquidaciones.domain.schemas.inspeccion_obra import (
@@ -10,6 +11,7 @@ from modules.liquidaciones.domain.schemas.shared import (
     LiquidacionVisitasCalculoData,
     CotizacionVisitasQuoteData,
 )
+from modules.liquidaciones.domain.schemas import LiquidacionGeneralListItem, LiquidacionGeneralResult
 from modules.liquidaciones.presentation.schemas.inspeccion_obra_schemas import (
     LiquidacionInspeccionObraOut,
     TarifaVisitasOut,
@@ -22,6 +24,19 @@ from modules.liquidaciones.presentation.schemas.inspeccion_obra_schemas import (
     CotizacionVisitasQuoteOut,
     CotizacionVisitasRevisionOut,
     CotizacionVisitasMetadataOut,
+    LiquidacionIOListItemOut,
+)
+from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
+    EntidadListItemOut,
+    ProyectoListItemOut,
+    MunicipalidadListItemOut,
+    ValoresListItemOut,
+    ProyectistaListItemOut,
+    DelegadoListItemOut,
+    ContactoListItemOut,
+    TarifaRevisionOut,
+    EspecialidadRevisionOut,
+    RevisionListItemCleanOut,
 )
 
 
@@ -170,4 +185,192 @@ class InspeccionObraPresenter:
                 uit_valor=float(result.metadata.uit_valor),
                 cantidad_visitas=result.metadata.cantidad_visitas,
             ),
+        )
+
+    # =============================================================================
+    # Presenter para Lista
+    # =============================================================================
+
+    @staticmethod
+    def _build_entidad_list(result: LiquidacionGeneralListItem) -> Optional[EntidadListItemOut]:
+        """Construir entidad anidada para list item."""
+        if not result.entidad or not result.entidad.id:
+            return None
+        return EntidadListItemOut(
+            id=result.entidad.id,
+            tipo=result.entidad.tipo,
+            nombre=result.entidad.nombre,
+            ruc=result.entidad.ruc,
+        )
+
+    @staticmethod
+    def _build_proyecto_list(result: LiquidacionGeneralListItem) -> ProyectoListItemOut:
+        """Construir proyecto anidado para list item."""
+        return ProyectoListItemOut(
+            id=result.proyecto.id,
+            public_id=result.proyecto.public_id,
+            nombre=result.proyecto.nombre,
+            direccion=result.proyecto.direccion,
+            valor_proyecto=result.proyecto.valor_proyecto,
+            entidad=InspeccionObraPresenter._build_entidad_list(result),
+        )
+
+    @staticmethod
+    @staticmethod
+    def present_list_item(result: LiquidacionGeneralListItem) -> LiquidacionIOListItemOut:
+        """
+        Transforma un LiquidacionGeneralListItem a LiquidacionIOListItemOut.
+        """
+        return LiquidacionIOListItemOut(
+            id=result.id,
+            public_id=result.public_id,
+            tipo_liquidacion=result.tipo_liquidacion,
+            estado=result.estado,
+            numero_revision=result.numero_revision,
+            fecha_registro=result.fecha_registro,
+            proyecto=InspeccionObraPresenter._build_proyecto_list(result),
+            entidad=InspeccionObraPresenter._build_entidad_list(result),
+            municipalidad=MunicipalidadListItemOut(
+                id=result.municipalidad.id,
+                nombre=result.municipalidad.nombre,
+                codigo=result.municipalidad.codigo,
+                provincia=result.municipalidad.provincia,
+                distrito=result.municipalidad.distrito,
+            ),
+            valores=ValoresListItemOut(
+                subtotal=result.valores.subtotal,
+                igv=result.valores.igv,
+                total=result.valores.total,
+                total_a_pagar=result.valores.total_a_pagar,
+            ),
+            proyectistas=[
+                ProyectistaListItemOut(
+                    id=p.id,
+                    perfil_ingeniero_id=p.perfil_ingeniero_id,
+                    perfil_ingeniero_nombres=p.perfil_ingeniero_nombres,
+                    perfil_ingeniero_apellidos=p.perfil_ingeniero_apellidos,
+                    perfil_ingeniero_cip=p.perfil_ingeniero_cip,
+                    especialidad_id=p.especialidad_id,
+                    especialidad_nombre=p.especialidad_nombre,
+                    descripcion=p.descripcion,
+                ) for p in result.proyectistas
+            ],
+            delegados=[
+                DelegadoListItemOut(
+                    id=d.id,
+                    perfil_ingeniero_id=d.perfil_ingeniero_id,
+                    perfil_ingeniero_nombres=d.perfil_ingeniero_nombres,
+                    perfil_ingeniero_apellidos=d.perfil_ingeniero_apellidos,
+                    perfil_ingeniero_cip=d.perfil_ingeniero_cip,
+                    especialidad_id=d.especialidad_id,
+                    especialidad_nombre=d.especialidad_nombre,
+                    tipo=d.tipo,
+                ) for d in result.delegados
+            ],
+            contactos=[
+                ContactoListItemOut(
+                    id=c.id,
+                    nombres=c.nombres,
+                    apellidos=c.apellidos,
+                    dni=c.dni,
+                    cargo=c.cargo,
+                    telefono=c.telefono,
+                    celular=c.celular,
+                    email=c.email,
+                    direccion=c.direccion,
+                    principal=c.principal,
+                    descripcion=c.descripcion,
+                ) for c in result.contactos
+            ],
+            revisiones=[
+                RevisionListItemCleanOut(
+                    id=r.id,
+                    especialidades=[
+                        EspecialidadRevisionOut(id=e.id, nombre=e.nombre)
+                        for e in r.especialidades
+                    ],
+                    tarifa=TarifaRevisionOut(**r.tarifa.model_dump()) if r.tarifa else None,
+                ) for r in result.revisiones
+            ],
+        )
+
+    @staticmethod
+    def present_list(
+        results: list[LiquidacionGeneralListItem],
+    ) -> list[LiquidacionIOListItemOut]:
+        """
+        Transforma una lista de LiquidacionGeneralListItem a lista de LiquidacionIOListItemOut.
+        """
+        return [InspeccionObraPresenter.present_list_item(r) for r in results]
+
+    # =============================================================================
+    # Presenter para Detalle (desde LiquidacionGeneralResult plano)
+    # =============================================================================
+
+    @staticmethod
+    def _build_entidad_detail(result: LiquidacionGeneralResult) -> Optional[EntidadListItemOut]:
+        """Construir entidad anidada para detail item desde campos planos."""
+        if not result.entidad_id:
+            return None
+        return EntidadListItemOut(
+            id=result.entidad_id,
+            tipo=result.entidad_tipo,
+            nombre=result.entidad_nombre,
+            ruc=result.entidad_ruc,
+        )
+
+    @staticmethod
+    def _build_proyecto_detail(result: LiquidacionGeneralResult) -> ProyectoListItemOut:
+        """Construir proyecto anidado para detail item desde campos planos."""
+        return ProyectoListItemOut(
+            id=result.proyecto_id or _uuid.UUID('00000000-0000-0000-0000-000000000000'),
+            public_id=result.proyecto_public_id or '',
+            nombre=result.proyecto_nombre or '',
+            direccion=result.proyecto_direccion,
+            valor_proyecto=0.0,
+            entidad=InspeccionObraPresenter._build_entidad_detail(result),
+        )
+
+    @staticmethod
+    def present_detail_item(result: LiquidacionGeneralResult) -> LiquidacionIOListItemOut:
+        """
+        Transforma un LiquidacionGeneralResult (DTO plano) a LiquidacionIOListItemOut.
+
+        Args:
+            result: LiquidacionGeneralResult con campos planos del detalle
+
+        Returns:
+            LiquidacionIOListItemOut schema para respuesta HTTP de detalle
+        """
+        subtotal = float(result.subtotal) if result.subtotal else 0.0
+        igv = float(result.igv) if result.igv else 0.0
+        total = float(result.total) if result.total else 0.0
+        total_a_pagar = float(result.total_a_pagar) if result.total_a_pagar else 0.0
+
+        return LiquidacionIOListItemOut(
+            id=result.id,
+            public_id=result.public_id,
+            tipo_liquidacion=result.tipo_liquidacion,
+            estado=result.estado,
+            numero_revision=result.numero_revision,
+            fecha_registro=result.fecha_registro,
+            proyecto=InspeccionObraPresenter._build_proyecto_detail(result),
+            entidad=InspeccionObraPresenter._build_entidad_detail(result),
+            municipalidad=MunicipalidadListItemOut(
+                id=result.municipalidad_id or _uuid.UUID('00000000-0000-0000-0000-000000000000'),
+                nombre=result.municipalidad_nombre or '',
+                codigo=None,
+                provincia=None,
+                distrito=None,
+            ),
+            valores=ValoresListItemOut(
+                subtotal=subtotal,
+                igv=igv,
+                total=total,
+                total_a_pagar=total_a_pagar,
+            ),
+            proyectistas=[],
+            delegados=[],
+            contactos=[],
+            revisiones=[],
         )

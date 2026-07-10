@@ -42,11 +42,11 @@ class TarifaPorMetroCuadrado(BaseModel):
         verbose_name="Costo por M2",
         help_text="Costo por metro cuadrado en soles.",
     )
-    area_minima = models.DecimalField(
+    area_m2 = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        verbose_name="Área Mínima",
-        help_text="Área mínima en metros cuadrados para el cálculo (se usa max(area_solicitada, area_minima)).",
+        verbose_name="Área m²",
+        help_text="Área base en metros cuadrados para el cálculo (se usa max(area_solicitada, area_m2)).",
     )
     derecho_minimo = models.DecimalField(
         max_digits=12,
@@ -176,12 +176,14 @@ class ReglaTarifaInspeccionObra(BaseModel):
         verbose_name="Categoría de Inspección",
         help_text="Categoría de inspección de obra: A, B, C, etc.",
     )
+    
     tramite_accion = models.CharField(
         max_length=20,
         choices=TramiteAccion.choices,
         verbose_name="Acción de Trámite",
         help_text="Acción de trámite: PRIMERA_REVISION o REVISION.",
     )
+    
     tarifa_base = models.ForeignKey(
         TarifaLiquidacionBase,
         on_delete=models.CASCADE,

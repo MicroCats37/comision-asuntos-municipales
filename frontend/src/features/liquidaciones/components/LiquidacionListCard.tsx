@@ -29,8 +29,8 @@ import type {
   LiquidacionEdificacionOut,
   ContactoOut,
   DelegadoOut,
+  EspecialidadOut,
   ProyectistaOut,
-  RevisionOut,
 } from "../types/liquidacion-edificaciones";
 import { GestionarDelegadosModal } from "./GestionarDelegadosModal";
 
@@ -241,30 +241,20 @@ function ContactoChip({ contacto }: { contacto: ContactoOut }) {
   );
 }
 
-/** Revision chip */
-function RevisionChip({ rev }: { rev: RevisionOut }) {
-  const especialidadesLabel = rev.especialidades
-    .map((e) => e.nombre)
-    .join(", ");
+
+
+/** Especialidad chip — shows ONE specialty name per chip */
+function EspecialidadChip({ esp }: { esp: EspecialidadOut }) {
   return (
     <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-secondary/40 border border-border/60">
       <Building2 className="h-3 w-3 text-primary shrink-0" />
       <div className="flex flex-col min-w-0">
         <span
           className="text-xs font-semibold text-foreground truncate max-w-[120px]"
-          title={especialidadesLabel}
+          title={esp.nombre}
         >
-          {especialidadesLabel || "Sin especialidad"}
+          {esp.nombre}
         </span>
-        <span className="text-[10px] text-muted-foreground">
-          {Number(rev.tarifa.porcentaje_minimo_uit).toFixed(4)} UIT
-        </span>
-      </div>
-      <div className="flex flex-col items-end gap-0.5 ml-1">
-        <span className="text-xs font-bold text-primary">
-          {formatCurrency(Number(rev.monto_base))}
-        </span>
-        
       </div>
     </div>
   );
@@ -650,12 +640,56 @@ export function LiquidacionListCard({ item, onNuevaRevision }: LiquidacionListCa
             )}
           </SectionCard>
 
-          {/* Revisiones / Especialidades Card */}
+          {/* Revisiones / Especialidades Card — deduplicate especialidades by id */}
           <SectionCard
             icon={<Building2 className="h-3.5 w-3.5" />}
             title={
               <span className="flex items-center gap-1.5">
                 Especialidades
+                <span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-[9px] font-bold text-muted-foreground">
+                  {(() => {
+                    const seen = new Set<string>();
+                    revisiones.forEach((rev) =>
+                      rev.especialidades.forEach((esp) => seen.add(esp.id))
+                    );
+                    return seen.size;
+                  })()}
+                </span>
+              </span>
+            }
+            className="border-border/60"
+          >
+            {revisiones.length > 0 ? (
+              (() => {
+                const seen = new Set<string>();
+                const uniqueEspecialidades = revisiones.flatMap((rev) =>
+                  rev.especialidades.filter((esp) => {
+                    if (seen.has(esp.id)) return false;
+                    seen.add(esp.id);
+                    return true;
+                  })
+                );
+                return (
+                  <div className="flex flex-wrap gap-2">
+                    {uniqueEspecialidades.map((esp) => (
+                      <EspecialidadChip key={esp.id} esp={esp} />
+                    ))}
+                  </div>
+                );
+              })()
+            ) : (
+              <p className="text-xs text-muted-foreground/60 italic">
+                Sin especialidades registradas
+              </p>
+            )}
+          </SectionCard>
+
+          {/* Tarifas Card — shows each revision's tariff data */}
+          <SectionCard
+            icon={<Scale className="h-3.5 w-3.5" />}
+            title={
+              <span className="flex items-center gap-1.5">
+                Tarifas
                 <span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-[9px] font-bold text-muted-foreground">
                   {revisiones.length}
                 </span>
@@ -664,14 +698,62 @@ export function LiquidacionListCard({ item, onNuevaRevision }: LiquidacionListCa
             className="border-border/60"
           >
             {revisiones.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {revisiones.map((rev) => (
-                  <RevisionChip key={rev.id} rev={rev} />
+              <div className="space-y-3">
+                {revisiones.map((rev, idx) => (
+                  <div key={rev.id} className="rounded-lg border border-border/40 bg-muted/20 p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                        Revisión {idx + 1}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {rev.especialidades.map((esp) => (
+                          <span
+                            key={esp.id}
+                            className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/10 text-[10px] font-semibold text-primary"
+                          >
+                            {esp.nombre}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          % Liquidación
+                        </span>
+                        <span className="text-sm font-bold text-foreground">
+                          {rev.tarifa?.porcentaje_liquidacion != null
+                            ? `${Number(rev.tarifa.porcentaje_liquidacion).toFixed(4)}%`
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Derecho Mín.
+                        </span>
+                        <span className="text-sm font-medium text-foreground">
+                          {rev.tarifa?.derecho_minimo != null
+                            ? formatCurrency(Number(rev.tarifa.derecho_minimo))
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Derecho Máx.
+                        </span>
+                        <span className="text-sm font-medium text-foreground">
+                          {rev.tarifa?.derecho_maximo != null
+                            ? formatCurrency(Number(rev.tarifa.derecho_maximo))
+                            : "—"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground/60 italic">
-                Sin especialidades registradas
+                Sin tarifas registradas
               </p>
             )}
           </SectionCard>

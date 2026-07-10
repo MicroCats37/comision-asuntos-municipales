@@ -2,12 +2,114 @@
 
 import { FileText, Search, X } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LiquidacionGeneralCard } from "../components/LiquidacionGeneralCard";
-import type { LiquidacionGeneralListItem } from "../types/liquidacion-general";
+import {
+  formatCurrency,
+  LiquidacionGeneralCard,
+} from "../components/LiquidacionGeneralCard";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificaciones";
+import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificaciones";
+import type { LiquidacionCardBase, LiquidacionGeneralListItem } from "../types/liquidacion-general";
+
+/** Format enum value to title case */
+const formatEnumLabel = (value: string | null | undefined): string => {
+  if (!value) return "—";
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+};
+
+/** Full enum labels for better UX */
+const getTipoTramiteLabel = (value: string | null | undefined): string => {
+  switch (value) {
+    case "OBRA_NUEVA":
+      return "Obra Nueva";
+    case "DEMOLICION":
+      return "Demolición";
+    case "AMPLIACION":
+      return "Ampliación";
+    case "REMODELACION":
+      return "Remodelación";
+    case "MODIFICACION_LICENCIA":
+      return "Modificación de Licencia";
+    default:
+      return formatEnumLabel(value);
+  }
+};
+
+const getTramiteAccionLabel = (value: string | null | undefined): string => {
+  switch (value) {
+    case "PRIMERA_REVISION":
+      return "1ra. Revisión";
+    case "REVISION":
+      return "Revisión";
+    default:
+      return formatEnumLabel(value);
+  }
+};
+
+/**
+ * Edificación-specific summary block showing tipo_tramite, tramite_accion, revision.
+ */
+function EdificacionSummary({ item }: { item: LiquidacionEdificacionOut }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          Tipo de Trámite
+        </span>
+        <span className="text-sm font-medium text-foreground">
+          {getTipoTramiteLabel(item.tipo_tramite)}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          Acción
+        </span>
+        <span className="text-sm font-medium text-foreground">
+          {getTramiteAccionLabel(item.tramite_accion)}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          Revisión
+        </span>
+        <span className="text-sm font-medium text-foreground">
+          N° {item.numero_revision}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          Expediente
+        </span>
+        <span className="text-sm font-medium text-foreground">
+          {item.expediente || "—"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Edificación-specific values block showing valor_proyecto.
+ */
+function EdificacionValues({ item }: { item: LiquidacionEdificacionOut }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+        Valor del Proyecto
+      </span>
+      <span className="text-sm font-medium text-foreground">
+        {formatCurrency(Number(item.proyecto.valor_proyecto))}
+      </span>
+    </div>
+  );
+}
 
 /**
  * Vista de Liquidaciones de Edificaciones (list).
@@ -20,6 +122,7 @@ import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificac
  *   detail endpoint separately.
  */
 export function LiquidacionesEdificacionesView() {
+  const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
 
@@ -32,7 +135,11 @@ export function LiquidacionesEdificacionesView() {
     isError: isLiquidacionError,
     refetch: refetchLiquidaciones,
     setPage: setLiquidacionPage,
-  } = useLiquidacionesEdificaciones({ page: 1, pageSize: 10, proyectoPublicId });
+  } = useLiquidacionesEdificaciones({
+    page: 1,
+    pageSize: 10,
+    proyectoPublicId,
+  });
 
   const handleSearch = () => {
     const trimmed = searchInput.trim();
@@ -48,6 +155,10 @@ export function LiquidacionesEdificacionesView() {
     if (e.key === "Enter") {
       handleSearch();
     }
+  };
+
+  const handleVerDetalle = (item: LiquidacionCardBase) => {
+    router.push(`/liquidaciones/edificaciones/${item.id}`);
   };
 
   return (
@@ -74,7 +185,9 @@ export function LiquidacionesEdificacionesView() {
         {/* Filter Bar */}
         <div className="flex items-center gap-4 p-4 bg-muted/20 rounded-xl border border-border/60">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-muted-foreground">Filtrar liquidaciones por ID de Proyecto:</span>
+            <span className="text-sm font-semibold text-muted-foreground">
+              Filtrar liquidaciones por ID de Proyecto:
+            </span>
             <div className="flex items-center gap-2">
               <Input
                 placeholder="Ej. PROY-2026-00001"
@@ -137,7 +250,13 @@ export function LiquidacionesEdificacionesView() {
             <>
               <div className="flex flex-col gap-4">
                 {liquidacionItems.map((item) => (
-                  <LiquidacionGeneralCard key={item.id} item={item as unknown as LiquidacionGeneralListItem} />
+                  <LiquidacionGeneralCard
+                    key={item.id}
+                    item={item as unknown as LiquidacionGeneralListItem}
+                    onVerDetalle={handleVerDetalle}
+                    typeSpecificSummary={<EdificacionSummary item={item} />}
+                    typeSpecificValues={<EdificacionValues item={item} />}
+                  />
                 ))}
               </div>
               {/* Pagination for cards */}

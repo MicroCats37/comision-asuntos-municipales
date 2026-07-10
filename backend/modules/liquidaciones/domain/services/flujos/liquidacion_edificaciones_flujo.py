@@ -1332,6 +1332,7 @@ class LiquidacionesEdificacionesFlujo:
                 'derecho_minimo': Decimal(str(tarifa_data.get('derecho_minimo', 0))),
                 'derecho_maximo': Decimal(str(tarifa_data['derecho_maximo'])) if tarifa_data.get('derecho_maximo') else None,
                 'porcentaje_minimo_uit': Decimal(str(tarifa_data.get('porcentaje_minimo_uit', 0))),
+                'porcentaje_liquidacion': Decimal(str(tarifa_data.get('porcentaje_liquidacion', 0))),
             })()
 
             # Construir revision con atributos

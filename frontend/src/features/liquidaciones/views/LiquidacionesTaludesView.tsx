@@ -11,11 +11,13 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionTaludesCard } from "../components/LiquidacionTaludesCard";
 import { useLiquidacionesTaludes } from "../hooks/useLiquidacionesTaludes";
+import type { LiquidacionCardBase } from "../types/liquidacion-general";
 import type { LiquidacionTaludesListItem } from "../types/liquidacion-taludes.types";
 
 const KIND_ICON: LucideIcon = Hash;
@@ -27,6 +29,7 @@ interface LiquidacionesTaludesViewProps {
 export function LiquidacionesTaludesView({
   onSuccess,
 }: LiquidacionesTaludesViewProps) {
+  const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
 
@@ -57,8 +60,8 @@ export function LiquidacionesTaludesView({
     }
   };
 
-  const handleVerDetalle = (item: LiquidacionTaludesListItem) => {
-    console.log("Ver detalle:", item.public_id);
+  const handleVerDetalle = (item: LiquidacionCardBase) => {
+    router.push(`/liquidaciones/taludes/${item.id}`);
   };
 
   return (

@@ -188,6 +188,7 @@ class TarifaOut(BaseSchema):
     derecho_minimo: float
     derecho_maximo: Optional[float]
     porcentaje_minimo_uit: float
+    porcentaje_liquidacion: float
 
 
 class EspecialidadOut(BaseSchema):
@@ -201,8 +202,6 @@ class RevisionOut(BaseSchema):
     id: uuid.UUID
     especialidades: list[EspecialidadOut]
     tarifa: TarifaOut
-    monto_base: float
-    cobra: bool
 
 
 class TotalesOut(BaseSchema):
@@ -316,8 +315,8 @@ class LiquidacionEdificacionOut(BaseSchema):
     de edificaciones (excepto cotizar).
 
     Estructura plana con objetos anidados para ``proyecto``, ``entidad``,
-    ``municipalidad``, ``valores``, ``proyectistas``, ``delegados``, ``contactos``
-    y ``revisiones``.
+    ``municipalidad``, ``valores``, ``proyectistas``, ``delegados``, ``contactos``,
+    ``revisiones``.
 
     Campos:
         id, public_id, estado, fecha_registro, expediente, observacion,
@@ -330,6 +329,7 @@ class LiquidacionEdificacionOut(BaseSchema):
     id: uuid.UUID
     public_id: str
     estado: str
+    tipo_liquidacion: str = "edificacion"
     fecha_registro: str
     expediente: Optional[str] = None
     observacion: Optional[str] = None

@@ -28,7 +28,7 @@ interface StepImpactoVialLiquidacionProps {
   /** Cotizar mutation */
   cotizarMutation: {
     mutateAsync: (
-      payload: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] },
+      payload: { area_solicitada: number; tarifas_ids: string[] },
     ) => Promise<CotizacionImpactoVialResponse>;
     isPending: boolean;
   };
@@ -78,7 +78,8 @@ export function StepImpactoVialLiquidacion({
   const hasValidMunicipalidad = !!watchedMunicipalidadId && watchedMunicipalidadId.length > 0;
   const hasValidArea = Number(watchedAreaSolicitada) > 0;
   const hasValidTarifas = store.selectedTarifasIds.length >= 1;
-  const canCotizar = hasValidMunicipalidad && hasValidArea && hasValidTarifas;
+  // Cotizar solo requiere área + tarifas; municipalidad es para creación final
+  const canCotizar = hasValidArea && hasValidTarifas;
 
   const runCotizacion = useCallback(async () => {
     const l = latestRef.current;
@@ -91,7 +92,6 @@ export function StepImpactoVialLiquidacion({
     try {
       const result = await cotizarMutation.mutateAsync({
         area_solicitada: Number(l.watchedAreaSolicitada),
-        municipalidad_id: l.watchedMunicipalidadId as string,
         tarifas_ids: store.selectedTarifasIds,
       });
       setCotizacionQuote(result);
@@ -231,7 +231,6 @@ export function StepImpactoVialLiquidacion({
           </button>
           {!canCotizar && !cotizarMutation.isPending && (
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              {!hasValidMunicipalidad && <span>• Selecciona una municipalidad</span>}
               {!hasValidArea && <span>• Ingresa un área válida (mayor a 0)</span>}
               {!hasValidTarifas && <span>• Agrega al menos una tarifa</span>}
             </div>
@@ -278,12 +277,6 @@ function ImpactoVialCotizacionDisplay({
             </span>
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Área base cálculo</span>
-            <span className="font-semibold text-foreground">
-              {quote.calculo_m2.area_base_calculo.toLocaleString("es-PE")} m²
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Derecho</span>
             <span className="font-semibold text-foreground">
               {formatSoles(quote.calculo_m2.derecho)}
@@ -296,10 +289,6 @@ function ImpactoVialCotizacionDisplay({
         <div className="flex flex-col gap-1 text-sm">
           <span className="text-muted-foreground text-xs">Subtotal</span>
           <span className="font-medium">{formatSoles(quote.totales.subtotal)}</span>
-        </div>
-        <div className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground text-xs">IGV ({quote._metadata.igv_valor * 100}%)</span>
-          <span className="font-medium">{formatSoles(quote.totales.igv)}</span>
         </div>
         <div className="flex flex-col gap-1 text-sm">
           <span className="text-muted-foreground text-xs">Total</span>
@@ -324,9 +313,8 @@ function TarifasSelectorImpactoVial({
 }: {
   tarifas: Array<{
     tarifa_id: string;
-    detalle_id: string;
     costo_por_m2: number;
-    area_minima: number;
+    area_m2: number;
     derecho_minimo: number;
     derecho_maximo: number | null;
     habilitada: boolean;
@@ -394,9 +382,6 @@ function TarifasSelectorImpactoVial({
                   <div className="flex flex-col gap-0.5 min-w-0">
                     <span className="text-xs font-semibold text-foreground truncate">
                       S/ {tarifa.costo_por_m2.toFixed(2)}/m²
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      Área mín: {tarifa.area_minima.toLocaleString("es-PE")} m²
                     </span>
                   </div>
                   <div className="flex flex-col gap-0.5 items-end shrink-0">

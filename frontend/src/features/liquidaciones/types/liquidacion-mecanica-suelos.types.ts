@@ -66,10 +66,10 @@ export interface CrearMecanicaSuelosPrimeraRevisionIn {
 
 /**
  * Payload para cotizar primera revisión de Mecánica de Suelos.
+ * municipalidad_id NO es requerida para cotizar; solo para creación final.
  */
 export interface CotizarMecanicaSuelosPrimeraRevisionIn {
   area_solicitada: number;
-  municipalidad_id: string;
   tarifas_ids: string[];
 }
 
@@ -81,7 +81,7 @@ export interface CotizarMecanicaSuelosPrimeraRevisionIn {
 export interface CotizacionMecanicaSuelosTarifa {
   id: string;
   costo_por_m2: number;
-  area_minima: number;
+  area_m2: number;
   derecho_minimo: number;
   derecho_maximo: number | null;
 }
@@ -175,10 +175,8 @@ export interface MunicipalidadListItem {
   distrito: null;
 }
 
-export interface ValoresListItem {
+export interface ValoresM2ListItem {
   subtotal: number;
-  igv: number;
-  total: number;
   total_a_pagar: number;
 }
 
@@ -220,9 +218,11 @@ export interface ContactoListItem {
 
 export interface TarifaRevisionListItem {
   id: string;
-  derecho_minimo: number | null;
-  derecho_maximo: number | null;
-  porcentaje_minimo_uit: number | null;
+  // M2 fields
+  costo_por_m2?: number | null;
+  area_m2?: number | null;
+  derecho_minimo?: number | null;
+  derecho_maximo?: number | null;
 }
 
 export interface EspecialidadRevisionListItem {
@@ -234,8 +234,6 @@ export interface RevisionListItem {
   id: string;
   especialidades: EspecialidadRevisionListItem[];
   tarifa: TarifaRevisionListItem;
-  monto_base: number;
-  cobra: boolean;
 }
 
 // ── List Types ────────────────────────────────────────────────────────────────
@@ -250,22 +248,14 @@ export interface LiquidacionMecanicaSuelosListItem {
   tipo_liquidacion: string;
   numero_revision: number;
   fecha_registro: string;
-  tramite_accion: string | null;
-  tipo_tramite: string | null;
-  expediente: string | null;
-  observacion: string | null;
   proyecto: ProyectoListItem;
   entidad: EntidadListItem;
   municipalidad: MunicipalidadListItem;
-  valores: ValoresListItem;
+  valores: ValoresM2ListItem;
   proyectistas: ProyectistaListItem[];
   delegados: DelegadoListItem[];
   contactos: ContactoListItem[];
   revisiones: RevisionListItem[];
-  subtotal: number;
-  igv: number;
-  total: number;
-  total_a_pagar: number;
 }
 
 /**
@@ -286,9 +276,8 @@ export interface LiquidacionesMecanicaSuelosPaginated {
  */
 export interface TarifaVigenteMecanicaSuelos {
   tarifa_id: string;
-  detalle_id: string;
   costo_por_m2: number;
-  area_minima: number;
+  area_m2: number;
   derecho_minimo: number;
   derecho_maximo: number | null;
   habilitada: boolean;

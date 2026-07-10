@@ -138,7 +138,7 @@ class TarifaM2Out(BaseSchema):
 
     id: uuid.UUID
     costo_por_m2: float
-    area_minima: float
+    area_m2: float
     derecho_minimo: float
     derecho_maximo: Optional[float]
 
@@ -288,3 +288,25 @@ class CotizacionM2QuoteOut(BaseSchema):
         if "metadata" in data:
             data["_metadata"] = data.pop("metadata")
         return data
+
+
+# =============================================================================
+# Schema de salida — List Item Taludes
+# =============================================================================
+
+
+from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
+    LiquidacionSpecificListItemBase,
+    RevisionListItemCleanOut,
+    ValoresM2CleanOut,
+)
+
+
+class LiquidacionTaludesListItemOut(LiquidacionSpecificListItemBase):
+    """
+    Schema de respuesta para item de lista de Taludes.
+
+    Hereda de LiquidacionSpecificListItemBase (limpio, sin campos de Edificación).
+    Usa ValoresM2CleanOut (sin IGV).
+    """
+    valores: ValoresM2CleanOut

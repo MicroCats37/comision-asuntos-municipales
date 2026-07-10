@@ -355,10 +355,6 @@ function HabilitacionUrbanaCotizacionDisplay({
           <span className="text-muted-foreground">Subtotal</span>
           <span className="font-medium">{formatSoles(quote.totales.subtotal)}</span>
         </div>
-        <div className="flex justify-between gap-2">
-          <span className="text-muted-foreground">IGV ({quote._metadata.igv_valor * 100}%)</span>
-          <span className="font-medium">{formatSoles(quote.totales.igv)}</span>
-        </div>
       </div>
       <div className="rounded-lg border border-primary bg-primary/5 p-4 space-y-2">
         <span className="flex items-center gap-1.5 text-sm font-semibold text-primary">

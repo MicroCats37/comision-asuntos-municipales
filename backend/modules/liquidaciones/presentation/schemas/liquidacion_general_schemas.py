@@ -5,7 +5,7 @@ Usa BaseSchema del proyecto para heredar sanitize de strings vacíos.
 """
 import uuid
 from ninja import Field
-from typing import Optional
+from typing import Optional, Literal
 from pydantic import ConfigDict
 from core.types import BaseSchema
 
@@ -153,11 +153,27 @@ class ContactoListItemOut(BaseSchema):
 
 
 class TarifaRevisionOut(BaseSchema):
-    """Tarifa dentro de revision en item de lista."""
+    """Tarifa dentro de revision en item de lista.
+
+    Contiene todos los campos de cálculo tipo-específicos
+    (costo_m2, costo_por_visita, etc.) para que los componentes
+    los lean directamente de revisiones[n].tarifa.
+    """
     id: uuid.UUID
+    # Common to all types
     derecho_minimo: Optional[float] = None
     derecho_maximo: Optional[float] = None
     porcentaje_minimo_uit: Optional[float] = None
+    # Edificación
+    porcentaje_liquidacion: Optional[float] = None
+    # M2 fields (for HU, MS, IV, Taludes)
+    costo_por_m2: Optional[float] = None
+    area_m2: Optional[float] = None
+    # IO fields (for Inspeccion Obra)
+    costo_por_visita: Optional[float] = None
+    visitas_minimas: Optional[int] = None
+    cantidad_visitas: Optional[int] = None
+    categoria: Optional[str] = None
 
 
 class EspecialidadRevisionOut(BaseSchema):
@@ -171,8 +187,50 @@ class RevisionListItemOut(BaseSchema):
     id: uuid.UUID
     especialidades: list[EspecialidadRevisionOut] = Field(default_factory=list)
     tarifa: Optional[TarifaRevisionOut] = None
-    monto_base: float = 0.0
-    cobra: bool = False
+
+
+# =============================================================================
+# Clean base for SPECIFIC list endpoints (HU, MS, IV, IO, Taludes)
+# WITHOUT: tipo_tramite, tramite_accion, expediente (Edificación-specific)
+# WITHOUT: duplicate root subtotal/igv/total/total_a_pagar (use valores only)
+# WITHOUT: monto_base/cobra in revisiones
+# =============================================================================
+
+
+class RevisionListItemCleanOut(BaseSchema):
+    """Revision en item de lista — clean version sin monto_base/cobra."""
+    id: uuid.UUID
+    especialidades: list[EspecialidadRevisionOut] = Field(default_factory=list)
+    tarifa: Optional[TarifaRevisionOut] = None
+
+
+class ValoresM2CleanOut(BaseSchema):
+    """Valores financieros para M2 (HU, MS, IV, Taludes) — sin IGV."""
+    subtotal: float
+    total_a_pagar: float
+
+
+class LiquidacionSpecificListItemBase(BaseSchema):
+    """
+    Base limpia para items de lista de tipos específicos (HU, MS, IV, IO, Taludes).
+
+    Sin campos de Edificación (tipo_tramite, tramite_accion, expediente).
+    Sin campos financieros duplicados al root (usar valores.subtotal, etc.).
+    """
+    id: uuid.UUID
+    public_id: str
+    tipo_liquidacion: str
+    estado: str
+    numero_revision: int
+    fecha_registro: str
+    proyecto: ProyectoListItemOut
+    entidad: Optional[EntidadListItemOut] = None
+    municipalidad: MunicipalidadListItemOut
+    valores: ValoresListItemOut  # Will be overridden per-type (M2 vs IO)
+    proyectistas: list[ProyectistaListItemOut] = Field(default_factory=list)
+    delegados: list[DelegadoListItemOut] = Field(default_factory=list)
+    contactos: list[ContactoListItemOut] = Field(default_factory=list)
+    revisiones: list[RevisionListItemCleanOut] = Field(default_factory=list)
 
 
 class LiquidacionGeneralListItemOut(BaseSchema):

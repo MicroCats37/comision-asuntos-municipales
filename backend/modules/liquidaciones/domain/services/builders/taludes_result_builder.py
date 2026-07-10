@@ -56,8 +56,9 @@ class TaludesResultBuilder:
             LiquidacionTaludesResult,
         )
 
-        igv_monto = subtotal * igv_valor
-        total = subtotal + igv_monto
+        # M2: derecho es el total final — sin IGV
+        igv_monto = Decimal("0")
+        total = subtotal
 
         # Construir tarifa data usando helper
         tarifa_m2 = liquidacion_m2.tarifa_aplicada

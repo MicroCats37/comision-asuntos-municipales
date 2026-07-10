@@ -86,7 +86,7 @@ class TarifaM2CalculoData(BaseModel):
 
     id: uuid.UUID
     costo_por_m2: Decimal
-    area_minima: Decimal
+    area_m2: Decimal
     derecho_minimo: Decimal
     derecho_maximo: Optional[Decimal]
 

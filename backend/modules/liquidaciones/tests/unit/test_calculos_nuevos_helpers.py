@@ -2,7 +2,7 @@
 Unit tests for calculation helpers (_calcular_monto_m2 and _calcular_monto_visitas).
 
 Tests:
-- M2: area_minima floor, clamps (min/max), decimal precision
+- M2: area_m2 floor, clamps (min/max), decimal precision
 - Visitas: visitas_minimas floor, decimal multiplication
 - Edge cases: zero values, exact boundary values
 
@@ -24,18 +24,18 @@ class TestCalcularMontoM2:
 
     def test_area_solicitada_mayor_a_minima_usa_area_solicitada(self):
         """
-        Si area_solicitada > area_minima, debe usar area_solicitada para cálculo.
+        Si area_solicitada > area_m2, debe usar area_solicitada para cálculo.
         """
         area_solicitada = Decimal("150.00")  # 150 m2
         costo_m2 = Decimal("50.0000")  # S/ 50/m2
-        area_minima = Decimal("100.00")  # 100 m2 mínimo
+        area_m2 = Decimal("100.00")  # 100 m2 mínimo
         derecho_minimo = Decimal("500.00")
         derecho_maximo = Decimal("5000.00")
 
         area_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada,
             costo_m2=costo_m2,
-            area_minima=area_minima,
+            area_m2=area_m2,
             derecho_minimo=derecho_minimo,
             derecho_maximo=derecho_maximo,
         )
@@ -45,21 +45,21 @@ class TestCalcularMontoM2:
         # derecho = 150 * 50 = 7500, pero está capped at derecho_maximo = 5000
         assert derecho == Decimal("5000.00")
 
-    def test_area_solicitada_menor_a_minima_usa_area_minima(self):
+    def test_area_solicitada_menor_a_minima_usa_area_m2(self):
         """
-        Si area_solicitada < area_minima, debe usar area_minima para cálculo.
+        Si area_solicitada < area_m2, debe usar area_m2 para cálculo.
         Escenario del spec: área 50m2 con mínimo 100m2 → usar 100m2.
         """
         area_solicitada = Decimal("50.00")  # 50 m2 (menor al mínimo)
         costo_m2 = Decimal("50.0000")  # S/ 50/m2
-        area_minima = Decimal("100.00")  # 100 m2 mínimo
+        area_m2 = Decimal("100.00")  # 100 m2 mínimo
         derecho_minimo = Decimal("500.00")
         derecho_maximo = None  # Sin tope
 
         area_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada,
             costo_m2=costo_m2,
-            area_minima=area_minima,
+            area_m2=area_m2,
             derecho_minimo=derecho_minimo,
             derecho_maximo=derecho_maximo,
         )
@@ -69,20 +69,20 @@ class TestCalcularMontoM2:
         # derecho = 100 * 50 = 5000 (sin tope, está sobre mínimo)
         assert derecho == Decimal("5000.00")
 
-    def test_area_solicitada_igual_a_minima_usa_area_minima(self):
+    def test_area_solicitada_igual_a_minima_usa_area_m2(self):
         """
-        Si area_solicitada == area_minima, debe usar ese valor.
+        Si area_solicitada == area_m2, debe usar ese valor.
         """
         area_solicitada = Decimal("100.00")
         costo_m2 = Decimal("50.0000")
-        area_minima = Decimal("100.00")
+        area_m2 = Decimal("100.00")
         derecho_minimo = Decimal("500.00")
         derecho_maximo = None
 
         area_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada,
             costo_m2=costo_m2,
-            area_minima=area_minima,
+            area_m2=area_m2,
             derecho_minimo=derecho_minimo,
             derecho_maximo=derecho_maximo,
         )
@@ -97,14 +97,14 @@ class TestCalcularMontoM2:
         """
         area_solicitada = Decimal("5.00")
         costo_m2 = Decimal("10.0000")
-        area_minima = Decimal("100.00")  # Se usa 100 no 5
+        area_m2 = Decimal("100.00")  # Se usa 100 no 5
         derecho_minimo = Decimal("500.00")
         derecho_maximo = None
 
         area_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada,
             costo_m2=costo_m2,
-            area_minima=area_minima,
+            area_m2=area_m2,
             derecho_minimo=derecho_minimo,
             derecho_maximo=derecho_maximo,
         )
@@ -120,14 +120,14 @@ class TestCalcularMontoM2:
         """
         area_solicitada = Decimal("1.00")
         costo_m2 = Decimal("10.0000")
-        area_minima = Decimal("100.00")  # Se usa 100
+        area_m2 = Decimal("100.00")  # Se usa 100
         derecho_minimo = Decimal("500.00")
         derecho_maximo = None
 
         area_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada,
             costo_m2=costo_m2,
-            area_minima=area_minima,
+            area_m2=area_m2,
             derecho_minimo=derecho_minimo,
             derecho_maximo=derecho_maximo,
         )
@@ -142,14 +142,14 @@ class TestCalcularMontoM2:
         """
         area_solicitada = Decimal("150.00")
         costo_m2 = Decimal("50.0000")
-        area_minima = Decimal("100.00")
+        area_m2 = Decimal("100.00")
         derecho_minimo = Decimal("500.00")
         derecho_maximo = Decimal("5000.00")
 
         area_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada,
             costo_m2=costo_m2,
-            area_minima=area_minima,
+            area_m2=area_m2,
             derecho_minimo=derecho_minimo,
             derecho_maximo=derecho_maximo,
         )
@@ -165,14 +165,14 @@ class TestCalcularMontoM2:
         """
         area_solicitada = Decimal("80.00")
         costo_m2 = Decimal("50.0000")
-        area_minima = Decimal("100.00")  # Usa 100
+        area_m2 = Decimal("100.00")  # Usa 100
         derecho_minimo = Decimal("500.00")
         derecho_maximo = Decimal("5000.00")
 
         area_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada,
             costo_m2=costo_m2,
-            area_minima=area_minima,
+            area_m2=area_m2,
             derecho_minimo=derecho_minimo,
             derecho_maximo=derecho_maximo,
         )
@@ -188,14 +188,14 @@ class TestCalcularMontoM2:
         """
         area_solicitada = Decimal("200.00")
         costo_m2 = Decimal("50.0000")
-        area_minima = Decimal("100.00")
+        area_m2 = Decimal("100.00")
         derecho_minimo = Decimal("500.00")
         derecho_maximo = None
 
         area_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada,
             costo_m2=costo_m2,
-            area_minima=area_minima,
+            area_m2=area_m2,
             derecho_minimo=derecho_minimo,
             derecho_maximo=derecho_maximo,
         )
@@ -210,14 +210,14 @@ class TestCalcularMontoM2:
         """
         area_solicitada = Decimal("123.4567")
         costo_m2 = Decimal("12.3456")
-        area_minima = Decimal("50.00")
+        area_m2 = Decimal("50.00")
         derecho_minimo = Decimal("100.00")
         derecho_maximo = None
 
         area_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada,
             costo_m2=costo_m2,
-            area_minima=area_minima,
+            area_m2=area_m2,
             derecho_minimo=derecho_minimo,
             derecho_maximo=derecho_maximo,
         )
@@ -228,18 +228,18 @@ class TestCalcularMontoM2:
 
     def test_cero_area_solicitada_con_minimo_positivo(self):
         """
-        Escenario edge: area_solicitada=0, area_minima=100 → usa 100.
+        Escenario edge: area_solicitada=0, area_m2=100 → usa 100.
         """
         area_solicitada = Decimal("0.00")
         costo_m2 = Decimal("50.0000")
-        area_minima = Decimal("100.00")
+        area_m2 = Decimal("100.00")
         derecho_minimo = Decimal("500.00")
         derecho_maximo = Decimal("5000.00")
 
         area_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada,
             costo_m2=costo_m2,
-            area_minima=area_minima,
+            area_m2=area_m2,
             derecho_minimo=derecho_minimo,
             derecho_maximo=derecho_maximo,
         )
@@ -256,14 +256,14 @@ class TestCalcularMontoM2:
         """
         area_solicitada = Decimal("10.00")
         costo_m2 = Decimal("10.0000")
-        area_minima = Decimal("10.00")
+        area_m2 = Decimal("10.00")
         derecho_minimo = Decimal("1000.00")
         derecho_maximo = Decimal("1000.00")
 
         area_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada,
             costo_m2=costo_m2,
-            area_minima=area_minima,
+            area_m2=area_m2,
             derecho_minimo=derecho_minimo,
             derecho_maximo=derecho_maximo,
         )

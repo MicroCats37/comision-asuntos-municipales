@@ -265,3 +265,25 @@ class CotizacionVisitasQuoteOut(BaseSchema):
         if "metadata" in data:
             data["_metadata"] = data.pop("metadata")
         return data
+
+
+# =============================================================================
+# Schema de salida — List Item IO
+# =============================================================================
+
+
+from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
+    LiquidacionSpecificListItemBase,
+    RevisionListItemCleanOut,
+    ValoresListItemOut,
+)
+
+
+class LiquidacionIOListItemOut(LiquidacionSpecificListItemBase):
+    """
+    Schema de respuesta para item de lista de Inspección de Obra.
+
+    Hereda de LiquidacionSpecificListItemBase (limpio, sin campos de Edificación).
+    Usa ValoresListItemOut completo (con IGV para IO).
+    """
+    valores: ValoresListItemOut

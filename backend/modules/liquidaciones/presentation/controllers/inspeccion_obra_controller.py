@@ -33,13 +33,10 @@ from modules.liquidaciones.presentation.schemas_especialidades import (
 from modules.liquidaciones.presentation.schemas.inspeccion_obra_schemas import (
     CrearLiquidacionInspeccionObraWrapperIn,
     LiquidacionInspeccionObraOut,
+    LiquidacionIOListItemOut,
 )
 from modules.liquidaciones.domain.constants import TramiteAccion
 from modules.liquidaciones.presentation.presenters.inspeccion_obra_presenter import InspeccionObraPresenter
-from modules.liquidaciones.presentation.presenters.liquidacion_general_presenter import LiquidacionGeneralPresenter
-from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
-    LiquidacionGeneralListItemOut,
-)
 
 
 @api_controller(
@@ -66,7 +63,7 @@ class InspeccionObraController:
         self.orchestrator = orchestrator
         self.general_orchestrator = general_orchestrator
 
-    @route.get("/", response={200: ApiResponse[PaginatedData[LiquidacionGeneralListItemOut]]}, auth=None)
+    @route.get("/", response={200: ApiResponse[PaginatedData[LiquidacionIOListItemOut]]}, auth=None)
     async def listar_liquidaciones(
         self,
         page: int = Query(1, ge=1, description="Número de página"),
@@ -84,7 +81,7 @@ class InspeccionObraController:
             tipo_liquidacion="INSPECCION_OBRA",
         )
 
-        items_out = LiquidacionGeneralPresenter.present_list(result.items)
+        items_out = InspeccionObraPresenter.present_list(result.items)
 
         total_pages = (result.total + page_size - 1) // page_size if result.total > 0 else 1
 
@@ -196,3 +193,17 @@ class InspeccionObraController:
             categoria=categoria,
         )
         return success_response({'tarifas': result})
+
+    @route.get("/{liquidacion_id}", response={200: ApiResponse[LiquidacionIOListItemOut]}, auth=None)
+    async def obtener_detalle_liquidacion(
+        self,
+        liquidacion_id: str,
+    ):
+        """
+        Obtener detalle de una liquidación de Inspección de Obra por ID.
+
+        Retorna un objeto LiquidacionIOListItemOut con todos los campos: proyecto,
+        municipalidad, valores, revisiones, proyectistas, delegados, contactos.
+        """
+        result = await self.general_orchestrator.obtener_liquidacion_list_item_por_id(liquidacion_id)
+        return success_response(InspeccionObraPresenter.present_list_item(result))

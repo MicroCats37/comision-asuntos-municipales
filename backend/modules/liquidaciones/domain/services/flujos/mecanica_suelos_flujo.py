@@ -238,15 +238,15 @@ class MecanicaSuelosFlujo:
         area_base_calculo, derecho = _calcular_monto_m2(
             area_solicitada=area_solicitada_dec,
             costo_m2=tarifa_m2.costo_por_m2,
-            area_minima=tarifa_m2.area_minima,
+            area_m2=tarifa_m2.area_m2,
             derecho_minimo=tarifa_m2.derecho_minimo,
             derecho_maximo=tarifa_m2.derecho_maximo,
         )
 
-        # Calcular totales
+        # Calcular totales — M2 sin IGV (derecho es el total final)
         subtotal = derecho
-        igv_monto = subtotal * igv_valor
-        total_liquidacion = subtotal + igv_monto
+        igv_monto = Decimal("0")
+        total_liquidacion = subtotal
 
         # 4. Retornar resultado de cotización
         return CotizacionM2QuoteData(
@@ -258,7 +258,7 @@ class MecanicaSuelosFlujo:
                 tarifa=TarifaM2CalculoData(
                     id=tarifa_m2.id,
                     costo_por_m2=tarifa_m2.costo_por_m2,
-                    area_minima=tarifa_m2.area_minima,
+                    area_m2=tarifa_m2.area_m2,
                     derecho_minimo=tarifa_m2.derecho_minimo,
                     derecho_maximo=tarifa_m2.derecho_maximo,
                 ),

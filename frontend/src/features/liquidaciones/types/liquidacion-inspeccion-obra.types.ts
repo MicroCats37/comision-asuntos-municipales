@@ -81,7 +81,7 @@ export interface CrearInspeccionObraPrimeraRevisionIn {
 export interface CotizarInspeccionObraPrimeraRevisionIn {
   cantidad_visitas: number;
   categoria: CategoriaIO;
-  municipalidad_id: string;
+  // municipalidad_id NO es requerida para cotizar; solo para creación final
   tarifas_ids: string[];
 }
 
@@ -231,9 +231,12 @@ export interface ContactoListItem {
 
 export interface TarifaRevisionListItem {
   id: string;
-  derecho_minimo: number | null;
-  derecho_maximo: number | null;
-  porcentaje_minimo_uit: number | null;
+  // IO fields
+  costo_por_visita?: number | null;
+  visitas_minimas?: number | null;
+  categoria?: string | null;
+  // cantidad de visitas solicitada (populated by backend)
+  cantidad_visitas?: number | null;
 }
 
 export interface EspecialidadRevisionListItem {
@@ -245,8 +248,6 @@ export interface RevisionListItem {
   id: string;
   especialidades: EspecialidadRevisionListItem[];
   tarifa: TarifaRevisionListItem;
-  monto_base: number;
-  cobra: boolean;
 }
 
 // ── List Types ────────────────────────────────────────────────────────────────
@@ -261,10 +262,6 @@ export interface LiquidacionInspeccionObraListItem {
   tipo_liquidacion: string;
   numero_revision: number;
   fecha_registro: string;
-  tramite_accion: string | null;
-  tipo_tramite: string | null;
-  expediente: string | null;
-  observacion: string | null;
   proyecto: ProyectoListItem;
   entidad: EntidadListItem;
   municipalidad: MunicipalidadListItem;
@@ -273,10 +270,6 @@ export interface LiquidacionInspeccionObraListItem {
   delegados: DelegadoListItem[];
   contactos: ContactoListItem[];
   revisiones: RevisionListItem[];
-  subtotal: number;
-  igv: number;
-  total: number;
-  total_a_pagar: number;
 }
 
 /**
@@ -297,7 +290,6 @@ export interface LiquidacionesInspeccionObraPaginated {
  */
 export interface TarifaVigenteInspeccionObra {
   tarifa_id: string;
-  detalle_id: string;
   costo_por_visita: number;
   visitas_minimas: number;
   categoria: string;

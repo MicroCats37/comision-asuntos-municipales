@@ -63,10 +63,9 @@ export type PrimeraRevisionImpactoVialData = z.infer<typeof primeraRevisionImpac
 
 // ── Cotizar Schemas ────────────────────────────────────────────────────────────
 
-/** Payload para cotizar primera revisión */
+/** Payload para cotizar primera revisión — municipalidad NO requerida para cotizar; solo para creación final */
 export const cotizarImpactoVialPayloadSchema = z.object({
   area_solicitada: z.number().positive("El área debe ser positiva"),
-  municipalidad_id: z.string().uuid("Municipalidad es requerida"),
   tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
 });
 
@@ -97,7 +96,7 @@ const cotizacionImpactoVialMetadataSchema = z.object({
 const cotizacionImpactoVialTarifaSchema = z.object({
   id: z.string(),
   costo_por_m2: z.number(),
-  area_minima: z.number(),
+  area_m2: z.number(),
   derecho_minimo: z.number(),
   derecho_maximo: z.number().nullable(),
 });
@@ -180,10 +179,9 @@ const municipalidadListItemSchema = z.object({
   distrito: z.null(),
 });
 
-const valoresListItemSchema = z.object({
+/** Schema for M2 list items — only has subtotal and total_a_pagar (no igv/total) */
+const valoresM2ListItemSchema = z.object({
   subtotal: z.number(),
-  igv: z.number(),
-  total: z.number(),
   total_a_pagar: z.number(),
 });
 
@@ -225,9 +223,15 @@ const contactoListItemSchema = z.object({
 
 const tarifaRevisionListItemSchema = z.object({
   id: z.string(),
+  costo_por_m2: z.number().nullable(),
+  area_m2: z.number().nullable(),
   derecho_minimo: z.number().nullable(),
   derecho_maximo: z.number().nullable(),
   porcentaje_minimo_uit: z.number().nullable(),
+  porcentaje_liquidacion: z.number().nullable(),
+  costo_por_visita: z.number().nullable(),
+  visitas_minimas: z.number().nullable(),
+  categoria: z.string().nullable(),
 });
 
 const especialidadRevisionListItemSchema = z.object({
@@ -239,8 +243,6 @@ const revisionListItemSchema = z.object({
   id: z.string(),
   especialidades: z.array(especialidadRevisionListItemSchema),
   tarifa: tarifaRevisionListItemSchema,
-  monto_base: z.number(),
-  cobra: z.boolean(),
 });
 
 /** Item de lista */
@@ -251,22 +253,14 @@ const liquidacionImpactoVialListItemSchema = z.object({
   tipo_liquidacion: z.string(),
   numero_revision: z.number(),
   fecha_registro: z.string(),
-  tramite_accion: z.string().nullable(),
-  tipo_tramite: z.string().nullable(),
-  expediente: z.string().nullable(),
-  observacion: z.string().nullable(),
   proyecto: proyectoListItemSchema,
   entidad: entidadListItemSchema,
   municipalidad: municipalidadListItemSchema,
-  valores: valoresListItemSchema,
+  valores: valoresM2ListItemSchema,
   proyectistas: z.array(proyectistaListItemSchema),
   delegados: z.array(delegadoListItemSchema),
   contactos: z.array(contactoListItemSchema),
   revisiones: z.array(revisionListItemSchema),
-  subtotal: z.number(),
-  igv: z.number(),
-  total: z.number(),
-  total_a_pagar: z.number(),
 });
 
 /** Payload para respuesta de lista */
@@ -281,6 +275,11 @@ const liquidacionesImpactoVialPayloadSchema = z.object({
 /** Wrapper para respuesta de lista */
 export const liquidacionesImpactoVialResponseSchema = apiResponseSchema(
   liquidacionesImpactoVialPayloadSchema,
+);
+
+/** Wrapper para respuesta de detalle (single item) */
+export const liquidacionImpactoVialDetailResponseSchema = apiResponseSchema(
+  liquidacionImpactoVialListItemSchema,
 );
 
 // ── Form Step Schemas ──────────────────────────────────────────────────────────
@@ -304,9 +303,8 @@ export type StepImpactoVialData = z.infer<typeof stepImpactoVialSchema>;
 /** Tarifa vigente en respuesta del endpoint */
 const tarifaVigenteImpactoVialSchema = z.object({
   tarifa_id: z.string(),
-  detalle_id: z.string(),
   costo_por_m2: z.number(),
-  area_minima: z.number(),
+  area_m2: z.number(),
   derecho_minimo: z.number(),
   derecho_maximo: z.number().nullable(),
   habilitada: z.boolean(),

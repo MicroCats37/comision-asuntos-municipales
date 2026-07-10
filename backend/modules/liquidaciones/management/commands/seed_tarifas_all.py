@@ -412,7 +412,7 @@ class Command(BaseCommand):
         periodo_inicio_str = tarifa_data.get('periodo_inicio', '2026-01-01')
         periodo_fin_str = tarifa_data.get('periodo_fin')
         costo_por_m2 = Decimal(str(tarifa_data.get('costo_por_m2', '0')))
-        area_minima = Decimal(str(tarifa_data.get('area_minima', '0')))
+        area_m2 = Decimal(str(tarifa_data.get('area_m2', '0')))
         derecho_minimo = Decimal(str(tarifa_data.get('derecho_minimo', '0')))
         derecho_maximo_str = tarifa_data.get('derecho_maximo')
         reglas = tarifa_data.get('reglas', [])
@@ -428,7 +428,7 @@ class Command(BaseCommand):
         if self.dry_run:
             self._log(f"\n  [DRY-RUN] Would create/update TarifaLiquidacionBase M2:")
             self._log(f"    tipo_liquidacion={tipo_liquidacion}, periodo_inicio={periodo_inicio}")
-            self._log(f"    costo_por_m2={costo_por_m2}, area_min={area_minima}")
+            self._log(f"    costo_por_m2={costo_por_m2}, area_m2={area_m2}")
             self._log(f"    derecho_min={derecho_minimo}, derecho_max={derecho_maximo}")
             result['tarifa'] = 1
             result['reglas'] = len(reglas)
@@ -470,7 +470,7 @@ class Command(BaseCommand):
             tarifa_base=tarifa_base,
             defaults={
                 'costo_por_m2': costo_por_m2,
-                'area_minima': area_minima,
+                'area_m2': area_m2,
                 'derecho_minimo': derecho_minimo,
                 'derecho_maximo': derecho_maximo,
             },

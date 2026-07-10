@@ -36,7 +36,6 @@ interface StepInspeccionObraLiquidacionProps {
       payload: {
         cantidad_visitas: number;
         categoria: "C1" | "C2" | "C3" | "C4";
-        municipalidad_id: string;
         tarifas_ids: string[];
       },
     ) => Promise<CotizacionIOResponse>;
@@ -80,19 +79,23 @@ export function StepInspeccionObraLiquidacion({
   const watchedCantidadVisitas = watch("cantidad_visitas");
   const watchedCategoria = watch("categoria");
 
-  // Fetch tarifas vigentes from the new endpoint, filtered by category
-  const { data: tarifasVigentes, isLoading: isLoadingTarifas } = useTarifasVigentesInspeccionObra({
-    categoria: watchedCategoria,
-  });
+  const hasValidMunicipalidad = !!watchedMunicipalidadId && watchedMunicipalidadId.length > 0;
+  const hasValidVisitas = Number(watchedCantidadVisitas) >= 1;
+  const hasValidCategoria = !!watchedCategoria && watchedCategoria.length > 0;
+
+  // Fetch tarifas vigentes from the new endpoint, filtered by category.
+  // Hook is only called (with valid category filter) when hasValidCategoria is true,
+  // avoiding a fetch with undefined categoria and preventing unwanted auto-selection.
+  const { data: tarifasVigentes, isLoading: isLoadingTarifas } = useTarifasVigentesInspeccionObra(
+    hasValidCategoria ? { categoria: watchedCategoria } : undefined,
+  );
 
   const latestRef = useRef({ watchedMunicipalidadId, watchedCantidadVisitas, watchedCategoria });
   latestRef.current = { watchedMunicipalidadId, watchedCantidadVisitas, watchedCategoria };
 
-  const hasValidMunicipalidad = !!watchedMunicipalidadId && watchedMunicipalidadId.length > 0;
-  const hasValidVisitas = Number(watchedCantidadVisitas) >= 1;
-  const hasValidCategoria = !!watchedCategoria && watchedCategoria.length > 0;
   const hasValidTarifas = store.selectedTarifasIds.length >= 1;
-  const canCotizar = hasValidMunicipalidad && hasValidVisitas && hasValidCategoria && hasValidTarifas;
+  // Cotizar solo requiere visitas + categoría + tarifas; municipalidad es para creación final
+  const canCotizar = hasValidVisitas && hasValidCategoria && hasValidTarifas;
 
   const runCotizacion = useCallback(async () => {
     const l = latestRef.current;
@@ -106,7 +109,6 @@ export function StepInspeccionObraLiquidacion({
       const result = await cotizarMutation.mutateAsync({
         cantidad_visitas: Number(l.watchedCantidadVisitas),
         categoria: l.watchedCategoria as "C1" | "C2" | "C3" | "C4",
-        municipalidad_id: l.watchedMunicipalidadId as string,
         tarifas_ids: store.selectedTarifasIds,
       });
       setCotizacionQuote(result);
@@ -119,9 +121,10 @@ export function StepInspeccionObraLiquidacion({
     }
   }, [canCotizar, cotizarMutation, setCotizacionCalculating, setCotizacionError, setCotizacionQuote, store.selectedTarifasIds]);
 
-  // Auto-select唯一 enabled tariff when list loads and nothing is selected yet
+  // Auto-select唯一 enabled tariff when list loads, nothing is selected, and a valid category exists
   useEffect(() => {
     if (
+      hasValidCategoria &&
       tarifasVigentes &&
       tarifasVigentes.length > 0 &&
       store.selectedTarifasIds.length === 0
@@ -131,7 +134,7 @@ export function StepInspeccionObraLiquidacion({
         store.setSelectedTarifasId(enabledTarifas[0].tarifa_id);
       }
     }
-  }, [tarifasVigentes, store.selectedTarifasIds.length, store, store.selectedTarifasIds]);
+  }, [hasValidCategoria, tarifasVigentes, store.selectedTarifasIds.length, store, store.selectedTarifasIds]);
 
   // Reset selected tariff when category changes (tariffs are category-specific)
   useEffect(() => {
@@ -253,12 +256,19 @@ export function StepInspeccionObraLiquidacion({
           />
 
           {/* ── Tarifas IDs ─────────────────────────────────────────────── */}
-          <TarifasSelectorInspeccion
-            tarifas={tarifasVigentes ?? []}
-            selectedTarifaId={store.selectedTarifasIds[0] ?? null}
-            onSelect={handleSelectTarifa}
-            isLoading={isLoadingTarifas}
-          />
+          {!hasValidCategoria ? (
+            <p className="text-xs text-muted-foreground italic">
+              Selecciona una categoría para ver las tarifas disponibles.
+            </p>
+          ) : (
+            <TarifasSelectorInspeccion
+              tarifas={tarifasVigentes ?? []}
+              selectedTarifaId={store.selectedTarifasIds[0] ?? null}
+              onSelect={handleSelectTarifa}
+              isLoading={isLoadingTarifas}
+              cantidadVisitas={watchedCantidadVisitas}
+            />
+          )}
         </div>
 
         {/* Columna 2: Cotización */}
@@ -276,7 +286,6 @@ export function StepInspeccionObraLiquidacion({
           </button>
           {!canCotizar && !cotizarMutation.isPending && (
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              {!hasValidMunicipalidad && <span>• Selecciona una municipalidad</span>}
               {!hasValidVisitas && <span>• Ingresa un número de visitas válido (mínimo 1)</span>}
               {!hasValidCategoria && <span>• Selecciona una categoría</span>}
               {!hasValidTarifas && <span>• Agrega al menos una tarifa</span>}
@@ -295,10 +304,10 @@ function TarifasSelectorInspeccion({
   selectedTarifaId,
   onSelect,
   isLoading,
+  cantidadVisitas,
 }: {
   tarifas: Array<{
     tarifa_id: string;
-    detalle_id: string;
     costo_por_visita: number;
     visitas_minimas: number;
     categoria: string;
@@ -307,6 +316,7 @@ function TarifasSelectorInspeccion({
   selectedTarifaId: string | null;
   onSelect: (tarifaId: string) => void;
   isLoading: boolean;
+  cantidadVisitas?: number;
 }) {
   const formatSoles = (value: number) =>
     `S/ ${value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`;
@@ -384,7 +394,7 @@ function TarifasSelectorInspeccion({
                       {getCategoriaLabel(tarifa.categoria)}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
-                      {tarifa.visitas_minimas} visita(s) mín.
+                      {cantidadVisitas ?? tarifa.visitas_minimas} visita(s)
                     </span>
                   </div>
                   <div className="flex flex-col gap-0.5 items-end shrink-0">

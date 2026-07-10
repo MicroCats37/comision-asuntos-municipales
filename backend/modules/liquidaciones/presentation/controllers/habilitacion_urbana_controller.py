@@ -33,13 +33,13 @@ from modules.liquidaciones.presentation.schemas.habilitacion_urbana_schemas impo
     CrearLiquidacionHabilitacionUrbanaWrapperIn,
     CotizarLiquidacionHUWrapperIn,
     LiquidacionHabilitacionUrbanaOut,
+    LiquidacionHUListItemOut,
+)
+from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
+    LiquidacionGeneralOut,
 )
 from modules.liquidaciones.domain.constants import TramiteAccion, TipoLiquidacion
 from modules.liquidaciones.presentation.presenters.habilitacion_urbana_presenter import HabilitacionUrbanaPresenter
-from modules.liquidaciones.presentation.presenters.liquidacion_general_presenter import LiquidacionGeneralPresenter
-from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
-    LiquidacionGeneralListItemOut,
-)
 
 
 @api_controller(
@@ -66,7 +66,7 @@ class HabilitacionUrbanaController:
         self.orchestrator = orchestrator
         self.general_orchestrator = general_orchestrator
 
-    @route.get("/", response={200: ApiResponse[PaginatedData[LiquidacionGeneralListItemOut]]}, auth=None)
+    @route.get("/", response={200: ApiResponse[PaginatedData[LiquidacionHUListItemOut]]}, auth=None)
     async def listar_liquidaciones(
         self,
         page: int = Query(1, ge=1, description="Número de página"),
@@ -84,7 +84,7 @@ class HabilitacionUrbanaController:
             tipo_liquidacion="HABILITACION_URBANA",
         )
 
-        items_out = LiquidacionGeneralPresenter.present_list(result.items)
+        items_out = HabilitacionUrbanaPresenter.present_list(result.items)
 
         total_pages = (result.total + page_size - 1) // page_size if result.total > 0 else 1
 
@@ -182,7 +182,21 @@ class HabilitacionUrbanaController:
         Obtiene las tarifas vigentes de Habilitación Urbana para selección en formulario.
 
         Retorna lista de tarifas M2 con: tarifa_id (para usar en tarifas_ids),
-        detalle_id, costo_por_m2, area_minima, derecho_minimo, derecho_maximo, habilitada.
+        detalle_id, costo_por_m2, area_m2, derecho_minimo, derecho_maximo, habilitada.
         """
         result = await self.orchestrator.obtener_tarifas_vigentes(tramite_accion=tramite_accion)
         return success_response({'tarifas': result})
+
+    @route.get("/{liquidacion_id}", response={200: ApiResponse[LiquidacionHUListItemOut]}, auth=None)
+    async def obtener_detalle_liquidacion(
+        self,
+        liquidacion_id: str,
+    ):
+        """
+        Obtener detalle de una liquidación de Habilitación Urbana por ID.
+
+        Retorna un objeto LiquidacionHUListItemOut con todos los campos: proyecto,
+        municipalidad, valores, revisiones, proyectistas, delegados, contactos.
+        """
+        result = await self.general_orchestrator.obtener_liquidacion_list_item_por_id(liquidacion_id)
+        return success_response(HabilitacionUrbanaPresenter.present_list_item(result))

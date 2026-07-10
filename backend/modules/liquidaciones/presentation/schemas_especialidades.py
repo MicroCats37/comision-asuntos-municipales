@@ -90,7 +90,7 @@ class TarifaM2Out(BaseSchema):
 
     id: uuid.UUID
     costo_por_m2: float
-    area_minima: float
+    area_m2: float
     derecho_minimo: float
     derecho_maximo: Optional[float]
 
@@ -253,7 +253,7 @@ class TarifaVigenteM2Out(BaseSchema):
     tarifa_id: uuid.UUID = Field(..., description="ID de TarifaLiquidacionBase (úsalo en tarifas_ids del payload)")
     detalle_id: uuid.UUID = Field(..., description="ID de TarifaPorMetroCuadrado")
     costo_por_m2: float = Field(..., description="Costo por metro cuadrado (S/)")
-    area_minima: float = Field(..., description="Área mínima en m² para aplicar este costo")
+    area_m2: float = Field(..., description="Área m² base para aplicar este costo")
     derecho_minimo: float = Field(..., description="Derecho mínimo a cobrar (S/)")
     derecho_maximo: Optional[float] = Field(None, description="Derecho máximo a cobrar (S/), null = sin límite")
     habilitada: bool = Field(..., description="Si la tarifa está habilitada para uso")

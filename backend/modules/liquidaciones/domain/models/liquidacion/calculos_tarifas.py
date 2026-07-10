@@ -19,7 +19,7 @@ class LiquidacionPorMetroCuadrado(BaseModel):
     Cálculo por metro cuadrado de una liquidación.
 
     Separa los datos de cálculo de la liquidación: relación con LiquidacionGeneral,
-    área solicitada, área base de cálculo (tras evaluar area_minima),
+    área solicitada, área base de cálculo (tras evaluar area_m2),
     derecho calculado con clamps aplicados, y referencia a la tarifa por m2 aplicada.
     """
 
@@ -41,7 +41,7 @@ class LiquidacionPorMetroCuadrado(BaseModel):
         max_digits=12,
         decimal_places=2,
         verbose_name="Área Base de Cálculo",
-        help_text="Área real aplicada tras evaluar area_minima (max(area_solicitada, area_minima)).",
+        help_text="Área real aplicada tras evaluar area_m2 (max(area_solicitada, area_m2)).",
     )
     derecho = models.DecimalField(
         max_digits=12,

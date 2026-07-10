@@ -175,8 +175,9 @@ class LiquidacionEdificacionesResultBuilder:
                     derecho_minimo=rev.tarifa.derecho_minimo,
                     derecho_maximo=rev.tarifa.derecho_maximo,
                     porcentaje_minimo_uit=rev.tarifa.porcentaje_minimo_uit,
+                    porcentaje_liquidacion=rev.tarifa.porcentaje_liquidacion,
                 ),
-                porcentaje_liquidacion=Decimal('0'),
+                porcentaje_liquidacion=rev.tarifa.porcentaje_liquidacion,
                 habilitada=True,
             ))
 

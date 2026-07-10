@@ -42,6 +42,7 @@ class LiquidacionesGeneralService:
         page: int,
         page_size: int,
         tipo_liquidacion: Optional[str] = None,
+        liquidacion_id: Optional[str] = None,
     ) -> tuple[list[dict], int]:
         """
         Lista liquidaciones generales con paginación y datos ricos.
@@ -50,6 +51,7 @@ class LiquidacionesGeneralService:
             page: Número de página (1-indexed)
             page_size: Elementos por página
             tipo_liquidacion: Filtro opcional por tipo de liquidación
+            liquidacion_id: Filtro opcional por ID de liquidación (para obtener un solo item)
 
         Returns:
             (lista_de_datos_materializados, total)
@@ -60,6 +62,9 @@ class LiquidacionesGeneralService:
 
         if tipo_liquidacion:
             qs = qs.filter(tipo_liquidacion=tipo_liquidacion)
+
+        if liquidacion_id:
+            qs = qs.filter(id=liquidacion_id)
 
         qs = qs.select_related(
             'proyecto', 'proyecto__entidad', 'municipalidad', 'igv',
@@ -217,6 +222,7 @@ class LiquidacionesGeneralService:
                                 'id': str(esp.id),
                                 'nombre': esp.nombre,
                             })
+                    # All tariff fields from TarifaPorcentajeObra
                     revisiones_list.append({
                         'id': str(lpo.id),
                         'especialidades': especialidades_list,
@@ -225,13 +231,14 @@ class LiquidacionesGeneralService:
                             'derecho_minimo': float(tarifa.derecho_minimo) if tarifa and tarifa.derecho_minimo is not None else None,
                             'derecho_maximo': float(tarifa.derecho_maximo) if tarifa and tarifa.derecho_maximo is not None else None,
                             'porcentaje_minimo_uit': float(tarifa.porcentaje_minimo_uit) if tarifa and tarifa.porcentaje_minimo_uit is not None else None,
+                            'porcentaje_liquidacion': float(tarifa.porcentaje_liquidacion) if tarifa and tarifa.porcentaje_liquidacion is not None else None,
                         },
-                        'monto_base': float(lpo.valor_base_calculo) if lpo.valor_base_calculo else 0.0,
-                        'cobra': liq.numero_revision in (1, 3, 5),
                     })
             elif tipo_enum in ('HABILITACION_URBANA', 'MECANICA_SUELOS', 'IMPACTO_VIAL', 'TALUDES'):
-                m2_data = liq.liquidacion_m2.first()
-                if m2_data and m2_data.tarifa_aplicada:
+                # Iterate over ALL liquidacion_m2 records, not just first
+                for m2_data in liq.liquidacion_m2.all():
+                    if not m2_data.tarifa_aplicada:
+                        continue
                     t = m2_data.tarifa_aplicada
                     especialidades_list = []
                     if t.tarifa_base:
@@ -240,21 +247,27 @@ class LiquidacionesGeneralService:
                                 'id': str(esp.id),
                                 'nombre': esp.nombre,
                             })
+                    # Get completo M2 fields from TarifaPorMetroCuadrado (direct attributes)
+                    costo_por_m2 = float(t.costo_por_m2) if t.costo_por_m2 is not None else None
+                    area_m2 = float(t.area_m2) if t.area_m2 is not None else None
+                    derecho_minimo = float(t.derecho_minimo) if t.derecho_minimo is not None else None
+                    derecho_maximo = float(t.derecho_maximo) if t.derecho_maximo is not None else None
                     revisiones_list.append({
                         'id': str(m2_data.id),
                         'especialidades': especialidades_list,
                         'tarifa': {
                             'id': str(t.id),
-                            'derecho_minimo': float(t.derecho_minimo) if t.derecho_minimo is not None else None,
-                            'derecho_maximo': float(t.derecho_maximo) if t.derecho_maximo is not None else None,
-                            'porcentaje_minimo_uit': None,
+                            'costo_por_m2': costo_por_m2,
+                            'area_m2': area_m2,
+                            'derecho_minimo': derecho_minimo,
+                            'derecho_maximo': derecho_maximo,
                         },
-                        'monto_base': float(m2_data.area_base_calculo) if m2_data.area_base_calculo else 0.0,
-                        'cobra': False,
                     })
             elif tipo_enum == 'INSPECCION_OBRA':
-                v_data = liq.liquidacion_visitas.first()
-                if v_data and v_data.tarifa_aplicada:
+                # Iterate over ALL liquidacion_visitas records, not just first
+                for v_data in liq.liquidacion_visitas.all():
+                    if not v_data.tarifa_aplicada:
+                        continue
                     t = v_data.tarifa_aplicada
                     especialidades_list = []
                     if t.tarifa_base:
@@ -263,17 +276,19 @@ class LiquidacionesGeneralService:
                                 'id': str(esp.id),
                                 'nombre': esp.nombre,
                             })
+                    # Get completo IO fields from TarifaPorCategoriaVisitas (direct attributes)
+                    costo_por_visita = float(t.costo_por_visita) if t.costo_por_visita is not None else None
+                    visitas_minimas = t.visitas_minimas
                     revisiones_list.append({
                         'id': str(v_data.id),
                         'especialidades': especialidades_list,
                         'tarifa': {
                             'id': str(t.id),
-                            'derecho_minimo': None,
-                            'derecho_maximo': None,
-                            'porcentaje_minimo_uit': None,
+                            'costo_por_visita': costo_por_visita,
+                            'visitas_minimas': visitas_minimas,
+                            'cantidad_visitas': v_data.cantidad_visitas,
+                            'categoria': v_data.categoria,
                         },
-                        'monto_base': float(v_data.visitas_base_calculo) if v_data.visitas_base_calculo else 0,
-                        'cobra': False,
                     })
 
             # --- tramite_accion y tipo_tramite ---
@@ -330,9 +345,12 @@ class LiquidacionesGeneralService:
         page: int,
         page_size: int,
         tipo_liquidacion: Optional[str] = None,
+        liquidacion_id: Optional[str] = None,
     ) -> LiquidacionGeneralPaginatedResult:
         """Lista liquidaciones paginadas con datos para tabla (retorna result object)."""
-        items_data, total = self._listar_liquidaciones_paginado(page, page_size, tipo_liquidacion)
+        items_data, total = self._listar_liquidaciones_paginado(
+            page, page_size, tipo_liquidacion, liquidacion_id
+        )
 
         items = [
             LiquidacionGeneralListItem(**item)

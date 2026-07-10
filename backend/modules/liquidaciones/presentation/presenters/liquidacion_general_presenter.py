@@ -199,14 +199,7 @@ class LiquidacionGeneralPresenter:
                         EspecialidadRevisionOut(id=e.id, nombre=e.nombre)
                         for e in r.especialidades
                     ],
-                    tarifa=TarifaRevisionOut(
-                        id=r.tarifa.id,
-                        derecho_minimo=r.tarifa.derecho_minimo,
-                        derecho_maximo=r.tarifa.derecho_maximo,
-                        porcentaje_minimo_uit=r.tarifa.porcentaje_minimo_uit,
-                    ) if r.tarifa else None,
-                    monto_base=r.monto_base,
-                    cobra=r.cobra,
+                    tarifa=TarifaRevisionOut(**r.tarifa.model_dump()) if r.tarifa else None,
                 ) for r in result.revisiones
             ],
             subtotal=result.subtotal,

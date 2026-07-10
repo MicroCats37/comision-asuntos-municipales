@@ -55,7 +55,7 @@ export function useCrearImpactoVialPrimeraRevision() {
 export function useCotizarImpactoVialPrimeraRevision() {
   const mutation = useApiCreate<
     z.infer<typeof cotizacionImpactoVialResponseSchema>,
-    { liquidacion: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] } }
+    { liquidacion: { area_solicitada: number; tarifas_ids: string[] } }
   >({
     url: "/liquidaciones/impacto-vial/cotizar/primera-revision",
     schema: cotizacionImpactoVialResponseSchema,
@@ -64,11 +64,11 @@ export function useCotizarImpactoVialPrimeraRevision() {
 
   const cotizacionMutation = {
     ...mutation,
-    mutate: (payload: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] }) => {
+    mutate: (payload: { area_solicitada: number; tarifas_ids: string[] }) => {
       mutation.mutate({ liquidacion: payload });
     },
     mutateAsync: async (
-      payload: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] },
+      payload: { area_solicitada: number; tarifas_ids: string[] },
     ): Promise<CotizacionImpactoVialResponse> => {
       const result = await mutation.mutateAsync({ liquidacion: payload });
       return result.data as CotizacionImpactoVialResponse;
