@@ -12,7 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       # Puerto externo (host): ${DB_EXTERNAL_PORT:-7000} → interno5432
-      - "${DB_EXTERNAL_PORT:-7000}:5432"
+      - "${DB_EXTERNAL_PORT:-7002}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cam_user} -d ${DB_NAME:-cam_db}"]
       interval: 5s
@@ -44,18 +44,17 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:8000/api}
     container_name: cam_frontend
-    env_file:
-      - frontend/.env.local
     environment:
-      PORT: ${FRONTEND_PORT:-70020}
+      PORT: ${FRONTEND_PORT:-7000}
       HOSTNAME: ${FRONTEND_HOSTNAME:-0.0.0.0}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:8000/api}
     ports:
-      # Puerto externo (host): ${FRONTEND_PORT:-70020} → interno 70020
-      - "${FRONTEND_PORT:-70020}:${FRONTEND_PORT:-70020}"
+      # Puerto externo (host): ${FRONTEND_PORT:-7000} → interno 7000
+      - "${FRONTEND_PORT:-7000}:${FRONTEND_PORT:-7000}"
     depends_on:
       - backend
     restart: unless-stopped

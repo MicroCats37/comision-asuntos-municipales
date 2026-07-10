@@ -18,6 +18,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Set environment variables for build
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the Next.js application
@@ -42,10 +44,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Expose the port (default: 70020)
-EXPOSE ${PORT:-70020}
+EXPOSE ${PORT:-7000}
 
 # Set environment variables with defaults
-ENV PORT=${PORT:-70020}
+ENV PORT=${PORT:-7000}
 ENV HOSTNAME=${HOSTNAME:-0.0.0.0}
 
 # Start the Next.js standalone server
