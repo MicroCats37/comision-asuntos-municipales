@@ -21,7 +21,9 @@ from modules.liquidaciones.models import (
     LiquidacionGeneral,
     LiquidacionInspeccionObra,
     LiquidacionPorCategoriaVisitas,
+    LiquidacionProyectista,
 )
+from modules.liquidaciones.tests.factories.especialidad_factory import EspecialidadFactory
 
 
 @pytest.mark.django_db
@@ -172,3 +174,129 @@ class TestInspeccionObraEndpoint:
         assert "totales" in snapshot
         assert "calculo_visitas" in snapshot
         assert snapshot["calculo_visitas"]["categoria"] == "A"
+
+
+@pytest.mark.django_db
+class TestInspeccionObraProyectistas:
+    """Test proyectistas inline in IO creation via POST /primera-revision."""
+
+    def setup_method(self):
+        """Seed IGV, UIT, proyecto, municipalidad, and especialidad."""
+        self.igv = IGVFactory()
+        self.uit = UITFactory()
+        self.proyecto = ProyectoFactory()
+
+        from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
+        from modules.entidades.models import Municipalidad
+        self.distrito = UbigeoDistritoFactory()
+        self.municipalidad = Municipalidad.objects.create(
+            codigo="MUN-IO-PRO-001",
+            nombre="Municipalidad de Prueba IO Proyectistas",
+            distrito=self.distrito,
+        )
+
+        # Create especialidad for inline proyectistas
+        self.especialidad = EspecialidadFactory()
+
+        # Create tarifa visitas + regla for INSPECCION_OBRA + categoria A
+        self.tarifa_base = TarifaLiquidacionBaseVisitasFactory(
+            tipo_liquidacion="INSPECCION_OBRA",
+        )
+        if not hasattr(self.tarifa_base, 'detalle_visitas') or self.tarifa_base.detalle_visitas is None:
+            TarifaPorCategoriaVisitasFactory(tarifa_base=self.tarifa_base)
+
+        from modules.liquidaciones.domain.constants import TramiteAccion
+        ReglaTarifaInspeccionObraFactory(
+            tarifa_base=self.tarifa_base,
+            categoria='A',
+            tramite_accion=TramiteAccion.PRIMERA_REVISION,
+        )
+
+    def test_crear_io_con_proyectistas_vacios_retorna_200(self, client: Client):
+        """
+        POST /primera-revision con proyectistas=[] (vacío) debe retornar 200.
+        """
+        response = client.post(
+            "/api/liquidaciones/inspeccion-obra/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "cantidad_visitas": 2,
+                    "categoria": "A",
+                    "expediente": "EXP-IO-PRO-001",
+                    "proyectistas": [],
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.json()
+
+    def test_crear_io_con_proyectistas_inline_valido_retorna_200(self, client: Client):
+        """
+        POST /primera-revision con proyectistas inline (CIP válido, habilitado)
+        debe retornar 200 y crear la asociación LiquidacionProyectista.
+        """
+        response = client.post(
+            "/api/liquidaciones/inspeccion-obra/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "cantidad_visitas": 2,
+                    "categoria": "A",
+                    "expediente": "EXP-IO-PRO-002",
+                    "proyectistas": [
+                        {
+                            "cip": "000001",
+                            "especialidad_id": str(self.especialidad.id),
+                            "descripcion": "Proyectista de prueba",
+                        }
+                    ],
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        liquidacion_id = data["data"]["liquidacion"]["id"]
+
+        # Verify LiquidacionProyectista was created and associated
+        lp_count = LiquidacionProyectista.objects.filter(
+            liquidacion_general_id=liquidacion_id
+        ).count()
+        assert lp_count == 1, f"Expected 1 LiquidacionProyectista, got {lp_count}"
+
+        lp = LiquidacionProyectista.objects.get(liquidacion_general_id=liquidacion_id)
+        assert lp.proyectista is not None
+        assert lp.proyectista.perfil_ingeniero.cip == "000001"
+
+    def test_crear_io_con_cip_invalido_retorna_error(self, client: Client):
+        """
+        POST /primera-revision con CIP no reconocido (no existe en CIP simulator)
+        debe retornar error (no 200).
+        """
+        response = client.post(
+            "/api/liquidaciones/inspeccion-obra/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "cantidad_visitas": 2,
+                    "categoria": "A",
+                    "expediente": "EXP-IO-PRO-003",
+                    "proyectistas": [
+                        {
+                            "cip": "999999",
+                            "especialidad_id": str(self.especialidad.id),
+                            "descripcion": "CIP inexistente",
+                        }
+                    ],
+                }
+            },
+            content_type="application/json",
+        )
+        # CIP no reconocido → HttpError 404 o similar (no 200)
+        assert response.status_code != 200, (
+            f"Expected non-200 for invalid CIP, got {response.status_code}: {response.json()}"
+        )

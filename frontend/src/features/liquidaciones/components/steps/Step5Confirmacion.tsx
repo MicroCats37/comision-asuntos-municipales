@@ -130,8 +130,10 @@ export function Step5Confirmacion({
   const hasAllDependencies =
     hasValidValorBase && hasVariablesFinancieras && hasTarifa;
 
-  const formatSoles = (value: number) =>
-    `S/ ${value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`;
+  const formatSoles = (value: number | null | undefined) =>
+    value != null
+      ? `S/ ${value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`
+      : "—";
 
   // Stable refs for latest values used in the cotizacion callback
   const latestRef = useRef({
@@ -422,20 +424,18 @@ export function Step5Confirmacion({
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                           <DataRow label="Monto base">
-                            {formatSoles(rev.monto_base)}
+                            {formatSoles(rev?.monto_base)}
                           </DataRow>
                           <DataRow label="Der. Mín.">
-                            {formatSoles(rev.tarifa.derecho_minimo)}
+                            {formatSoles(rev.tarifa?.derecho_minimo)}
                           </DataRow>
                           <DataRow label="Der. Máx.">
-                            {rev.tarifa.derecho_maximo !== null
-                              ? formatSoles(rev.tarifa.derecho_maximo)
-                              : "—"}
+                            {formatSoles(rev.tarifa?.derecho_maximo)}
                           </DataRow>
                           <DataRow label="% UIT Mín.">
-                            {(rev.tarifa.porcentaje_minimo_uit * 100).toFixed(
-                              1,
-                            )}
+                            {rev.tarifa?.porcentaje_minimo_uit != null
+                              ? (rev.tarifa.porcentaje_minimo_uit * 100).toFixed(1)
+                              : "—"}
                             %
                           </DataRow>
                         </div>

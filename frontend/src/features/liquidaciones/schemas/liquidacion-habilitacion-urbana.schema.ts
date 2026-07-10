@@ -4,7 +4,7 @@
  */
 import { z } from "zod";
 import { apiResponseSchema } from "@/types/api.types";
-import { contactoInlineSchema } from "./liquidacion-edificaciones-form.schema";
+import { contactoInlineSchema, proyectistaInlineSchema } from "./liquidacion-edificaciones-form.schema";
 
 // ── Inner Schemas (data fields only) ──────────────────────────────────────────
 
@@ -56,6 +56,7 @@ export const primeraRevisionHabilitacionUrbanaSchema = z.object({
   expediente: z.string().optional(),
   observacion: z.string().optional(),
   tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
+  proyectistas: z.array(proyectistaInlineSchema).default([]),
   contactos: z.array(contactoInlineSchema).default([]),
 });
 

@@ -11,6 +11,7 @@ from ninja.errors import HttpError
 
 from ..flujos.habilitacion_urbana_flujo import HabilitacionUrbanaFlujo
 from ...schemas_proyecto import ProyectoInlineData
+from ...schemas import ProyectistaInlineData
 from ...exceptions import NotFoundError
 from ...constants import TramiteAccion
 
@@ -42,6 +43,7 @@ class HabilitacionUrbanaOrchestrator:
         observacion: str | None,
         proyecto_inline: ProyectoInlineData | None = None,
         tarifas_ids: list[str] | None = None,
+        proyectistas_inline: list[ProyectistaInlineData] | None = None,
     ):
         """
         Crear primera revisión de Habilitación Urbana.
@@ -56,6 +58,7 @@ class HabilitacionUrbanaOrchestrator:
             observacion: Observación (opcional).
             proyecto_inline: Datos del proyecto inline a crear (mutuamente excluyente con proyecto_public_id).
             tarifas_ids: IDs de tarifas (exactamente 1 elemento si se proporciona).
+            proyectistas_inline: Lista de proyectistas inline con CIP (opcional).
 
         Returns:
             LiquidacionHabilitacionUrbanaResult
@@ -101,6 +104,7 @@ class HabilitacionUrbanaOrchestrator:
             observacion=observacion,
             proyecto_inline=proyecto_inline,
             tarifa_id=tarifa_id,
+            proyectistas_inline=proyectistas_inline,
         )
 
     async def cotizar_primera_revision(

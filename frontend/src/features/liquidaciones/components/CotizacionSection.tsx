@@ -98,7 +98,7 @@ export function CotizacionSection({
             </span>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">
-                UIT: S/ {quote._metadata.uit_valor.toFixed(2)}
+                UIT: S/ {quote._metadata?.uit_valor?.toFixed(2) ?? "—"}
               </span>
               <span
                 className={`text-xs px-2 py-1 rounded-full font-medium ${
@@ -142,24 +142,26 @@ export function CotizacionSection({
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">Monto base</span>
                       <span className="font-semibold text-foreground">
-                        S/ {rev.monto_base.toFixed(2)}
+                        {rev.monto_base != null ? `S/ ${rev.monto_base.toFixed(2)}` : "—"}
                       </span>
                     </div>
 
                     {/* Tarifa details */}
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border-t border-border/50 pt-2">
                       <span>
-                        Der. mín: S/ {rev.tarifa.derecho_minimo.toFixed(2)}
+                        Der. mín: {rev.tarifa?.derecho_minimo != null ? `S/ ${rev.tarifa.derecho_minimo.toFixed(2)}` : "—"}
                       </span>
                       <span>
                         Der. máx:{" "}
-                        {rev.tarifa.derecho_maximo !== null
+                        {rev.tarifa?.derecho_maximo != null
                           ? `S/ ${rev.tarifa.derecho_maximo.toFixed(2)}`
                           : "Sin máximo"}
                       </span>
                       <span>
                         % UIT mín:{" "}
-                        {(rev.tarifa.porcentaje_minimo_uit * 100).toFixed(1)}%
+                        {rev.tarifa?.porcentaje_minimo_uit != null
+                          ? (rev.tarifa.porcentaje_minimo_uit * 100).toFixed(1)
+                          : "—"}%
                       </span>
                     </div>
                     {!rev.cobra && (

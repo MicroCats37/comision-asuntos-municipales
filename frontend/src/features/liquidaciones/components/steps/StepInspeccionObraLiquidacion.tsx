@@ -443,7 +443,7 @@ function IOCotizacionDisplay({
       <div className="flex items-center justify-between flex-wrap gap-2">
         <span className="text-sm font-medium">Revisión #{quote.numero_revision}</span>
         <span className="text-xs text-muted-foreground">
-          UIT: S/ {quote._metadata.uit_valor.toFixed(2)}
+          UIT: S/ {quote._metadata?.uit_valor?.toFixed(2) ?? "—"}
         </span>
       </div>
 

@@ -62,6 +62,19 @@ class ProyectoInlineIn(BaseSchema):
     )
 
 
+class ProyectistaInlineIn(BaseSchema):
+    """
+    Proyectista inline para crear liquidación de taludes.
+
+    Validación:
+    - Para cada item se llama al servicio CIP externo
+    - Si cualquier CIP falla o no está habilitado (condicion != '1'), se rechaza TODA la operación
+    """
+    cip: str = Field(..., description="Número de CIP del ingeniero (6 dígitos)")
+    especialidad_id: uuid.UUID = Field(..., description="ID de la especialidad (UUID)")
+    descripcion: Optional[str] = Field(None, description="Descripción opcional del proyectista")
+
+
 class ContactoInlineIn(BaseSchema):
     """Contacto inline para crear y asociar a una liquidacion."""
 
@@ -115,6 +128,11 @@ class CrearLiquidacionTaludesIn(BaseSchema):
         default=None,
         min_length=1,
         description="IDs de tarifas a aplicar. Para esta fase debe ser exactamente 1.",
+    )
+    # NUEVO: Proyectistas inline con validación CIP (opcional)
+    proyectistas: list[ProyectistaInlineIn] = Field(
+        default=[],
+        description="Lista de proyectistas inline con CIP. Si se provee, reemplaza completamente a proyectistas_ids."
     )
     contactos: list[ContactoInlineIn] = Field(
         default=[],

@@ -131,6 +131,17 @@ class HabilitacionUrbanaController:
         # Convertir tarifas_ids UUIDs -> strings
         tarifas_ids = [str(tid) for tid in data.tarifas_ids] if data.tarifas_ids else None
 
+        # Parseo de proyectistas inline desde el payload
+        from modules.liquidaciones.domain.schemas import ProyectistaInlineData
+        proyectistas_inline = [
+            ProyectistaInlineData(
+                cip=p.cip,
+                especialidad_id=p.especialidad_id,
+                descripcion=p.descripcion,
+            )
+            for p in data.proyectistas
+        ] if data.proyectistas else None
+
         result, calculo_m2 = await self.orchestrator.crear_primera_revision(
             proyecto_public_id=data.proyecto_public_id,
             municipalidad_id=str(data.municipalidad_id),
@@ -139,6 +150,7 @@ class HabilitacionUrbanaController:
             observacion=data.observacion,
             proyecto_inline=proyecto_inline,
             tarifas_ids=tarifas_ids,
+            proyectistas_inline=proyectistas_inline,
         )
         return success_response(
             HabilitacionUrbanaPresenter.present(result, calculo_m2)

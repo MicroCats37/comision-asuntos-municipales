@@ -264,7 +264,7 @@ function ImpactoVialCotizacionDisplay({
       <div className="flex items-center justify-between flex-wrap gap-2">
         <span className="text-sm font-medium">Revisión #{quote.numero_revision}</span>
         <span className="text-xs text-muted-foreground">
-          UIT: S/ {quote._metadata.uit_valor.toFixed(2)}
+          UIT: S/ {quote._metadata?.uit_valor?.toFixed(2) ?? "—"}
         </span>
       </div>
 
@@ -381,7 +381,7 @@ function TarifasSelectorImpactoVial({
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex flex-col gap-0.5 min-w-0">
                     <span className="text-xs font-semibold text-foreground truncate">
-                      S/ {tarifa.costo_por_m2.toFixed(2)}/m²
+                      {tarifa.costo_por_m2 != null ? `S/ ${tarifa.costo_por_m2.toFixed(2)}/m²` : "—"}
                     </span>
                   </div>
                   <div className="flex flex-col gap-0.5 items-end shrink-0">
