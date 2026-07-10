@@ -12,7 +12,7 @@ export const AUTH_COOKIES = {
 
 export const COOKIE_OPTIONS = {
   httpOnly: false,
-  secure: process.env.NODE_ENV === "production",
+  secure: process.env.NEXT_PUBLIC_COOKIE_SECURE === "true",
   sameSite: "lax" as const,
   path: "/",
 };

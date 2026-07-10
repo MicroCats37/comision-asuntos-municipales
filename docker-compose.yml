@@ -47,7 +47,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:8000/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:7001/api}
+        NEXT_PUBLIC_COOKIE_SECURE: ${NEXT_PUBLIC_COOKIE_SECURE:-false}
     container_name: cam_frontend
     environment:
       PORT: ${FRONTEND_PORT:-7000}
