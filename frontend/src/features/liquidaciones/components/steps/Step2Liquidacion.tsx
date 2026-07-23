@@ -26,7 +26,7 @@ const TIPO_TRAMITE_OPTIONS = [
   { value: "REMODELACION", label: "Remodelación" },
   { value: "MODIFICACION_LICENCIA", label: "Modificación de licencia" },
   { value: "REINTEGRO", label: "Reintegro" },
-  { value: "PROYECTO_CON_PLANTAS_TIPICAS", label: "Proyecto con plantas típicas" },
+   { value: "PROYECTO_CON_PLANTAS_TIPICAS", label: "Proyecto con plantas típicas" }
 ] as const;
 
 const PROYECTO_CON_PLANTAS_TIPICAS_TIPO = "PROYECTO_CON_PLANTAS_TIPICAS";

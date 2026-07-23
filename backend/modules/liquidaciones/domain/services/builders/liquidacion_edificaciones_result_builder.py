@@ -272,6 +272,7 @@ class LiquidacionEdificacionesResultBuilder:
             # Municipalidad
             municipalidad_id=liquidacion.municipalidad.id,
             municipalidad_nombre=liquidacion.municipalidad.nombre,
+            municipalidad_codigo=liquidacion.municipalidad.codigo,
             # Listas
             proyectistas=proyectistas,
             delegados=delegados,

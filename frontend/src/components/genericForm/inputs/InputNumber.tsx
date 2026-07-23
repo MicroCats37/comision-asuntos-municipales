@@ -30,6 +30,7 @@ export const InputNumber: React.FC<InputComponentProps> = ({
       step={field.step}
       aria-invalid={!!error}
       className={`${hasIcon ? "pl-10" : ""} ${field.className || ""}`}
+      onKeyDown={field.onKeyDown}
       {...register(field.name, { valueAsNumber: true })}
     />
   );

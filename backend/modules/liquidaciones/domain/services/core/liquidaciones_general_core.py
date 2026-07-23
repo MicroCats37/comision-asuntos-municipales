@@ -30,6 +30,15 @@ from modules.liquidaciones.domain.schemas import (
 )
 
 
+# M² liquidacion types — IGV must NOT be added to total_a_pagar
+M2_LIQUIDACION_TYPES = frozenset({
+    "HABILITACION_URBANA",
+    "MECANICA_SUELOS",
+    "IMPACTO_VIAL",
+    "TALUDES",
+})
+
+
 class LiquidacionesGeneralService:
     """
     Servicio core sync para operaciones de Liquidaciones Generales.
@@ -111,6 +120,14 @@ class LiquidacionesGeneralService:
                 if liq.tipo_liquidacion else 'edificacion'
             )
 
+            # M² types must not add IGV to total_a_pagar
+            is_m2 = liq.tipo_liquidacion in M2_LIQUIDACION_TYPES
+            if is_m2:
+                igv_amount = 0.0
+                total_a_pagar = subtotal_val
+            else:
+                total_a_pagar = total_liquidacion
+
             # --- Proyecto ---
             valor_proyecto = 0.0
             lpo_list = list(liq.liquidacion_porcentaje_obra.all())
@@ -153,7 +170,7 @@ class LiquidacionesGeneralService:
                 'subtotal': subtotal_val,
                 'igv': igv_amount,
                 'total': total_liquidacion,
-                'total_a_pagar': total_liquidacion,
+                'total_a_pagar': total_a_pagar,
             }
 
             # --- Proyectistas ---
@@ -336,7 +353,7 @@ class LiquidacionesGeneralService:
                 'subtotal': subtotal_val,
                 'igv': igv_amount,
                 'total': total_liquidacion,
-                'total_a_pagar': total_liquidacion,
+                'total_a_pagar': total_a_pagar,
             })
         return items, total
 
@@ -399,7 +416,13 @@ class LiquidacionesGeneralService:
 
         total_liquidacion = float(subtotal) if subtotal else 0.0
         igv_amount = total_liquidacion * float(igv_valor) if igv_valor else 0.0
-        total_a_pagar = total_liquidacion + igv_amount
+        # M² types must not add IGV to total_a_pagar
+        is_m2 = liquidacion.tipo_liquidacion in M2_LIQUIDACION_TYPES
+        if is_m2:
+            igv_amount = 0.0
+            total_a_pagar = total_liquidacion
+        else:
+            total_a_pagar = total_liquidacion + igv_amount
 
         # Obtener nombre de municipalidad
         municipalidad_nombre = None

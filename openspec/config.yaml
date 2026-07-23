@@ -1,0 +1,58 @@
+# OpenSpec config — comision-asuntos-municipales
+schema: spec-driven
+
+context: |
+  Backend: Django 5.2.11 + Django Ninja + DRF | pytest + pytest-django + pytest-asyncio + pytest-cov
+  Frontend: Next.js 16.2.9 + Tailwind v4 + TypeScript | Biome (lint/format) | Zustand + TanStack Query v5
+  No frontend test runner (vitest/jest absent)
+  Modules: entidades, finanzas, liquidaciones, usuarios
+  Active change: specific-liquidacion-list-responses (in progress)
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    - Follow existing code patterns
+    tdd: false
+    test_command: "pytest"
+  verify:
+    test_command: "pytest"
+    build_command: "npm run build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+
+strict_tdd: false
+
+testing:
+  backend:
+    runner: pytest
+    command: "pytest"
+    layers:
+      unit: true
+      integration: true
+      e2e: false
+    coverage: true
+    coverage_command: "pytest --cov=modules --cov-report=html"
+  frontend:
+    runner: null
+    layers:
+      unit: false
+      integration: false
+      e2e: false
+    linter: biome
+    linter_command: "npm run lint"
+    formatter: biome
+    formatter_command: "npm run format"
+    type_checker: tsc
+    type_checker_command: "tsc --noEmit"
+    build_command: "npm run build"

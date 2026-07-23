@@ -8,7 +8,6 @@ import {
   Building2,
   FileDown,
   FileText,
-  HardHat,
   Hash,
   Home,
   MapPin,
@@ -405,39 +404,6 @@ function RevisionesSection({ revisiones, tipoLiquidacion }: {
   );
 }
 
-// ── Proyectistas Section ───────────────────────────────────────────────────────
-
-function ProyectistasSection({ proyectistas }: { proyectistas: ProyectistaListItem[] }) {
-  if (proyectistas.length === 0) {
-    return <p className="text-xs text-muted-foreground/60 italic">Sin proyectistas registrados</p>;
-  }
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {proyectistas.map((p) => (
-        <div key={p.id} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <HardHat className="h-3.5 w-3.5 text-primary" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-bold text-foreground">
-              {[p.perfil_ingeniero_nombres, p.perfil_ingeniero_apellidos].filter(Boolean).join(" ") || "Sin nombre"}
-            </span>
-            <div className="flex items-center gap-2">
-              {p.perfil_ingeniero_cip && (
-                <span className="text-[10px] text-muted-foreground">CIP: {p.perfil_ingeniero_cip}</span>
-              )}
-              {p.especialidad_nombre && (
-                <span className="text-[10px] text-primary/70">• {p.especialidad_nombre}</span>
-              )}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ── Delegados Section ───────────────────────────────────────────────────────────
 
 function DelegadosSection({ delegados }: { delegados: DelegadoListItem[] }) {
@@ -721,14 +687,6 @@ export function LiquidacionDetalleCompleta({
           <span className="text-xs text-muted-foreground">({item.revisiones.length} {item.revisiones.length === 1 ? "revisión" : "revisiones"})</span>
         </div>
         <RevisionesSection revisiones={item.revisiones} tipoLiquidacion={tipoLiquidacion} />
-      </PageSection>
-
-      <hr className="border-border" />
-
-      {/* ── Proyectistas ───────────────────────────────────────────────────── */}
-      <PageSection className="py-4">
-        <SectionLabel>{item.proyectistas.length > 1 ? "Proyectistas" : "Proyectista"}</SectionLabel>
-        <ProyectistasSection proyectistas={item.proyectistas} />
       </PageSection>
 
       <hr className="border-border" />

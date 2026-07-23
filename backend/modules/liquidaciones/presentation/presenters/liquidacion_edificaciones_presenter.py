@@ -47,7 +47,7 @@ class LiquidacionEdificacionesPresenter:
     """
 
     @staticmethod
-    def _build_municipalidad_out(municipalidad_id, municipalidad_nombre) -> "MunicipalidadOut":
+    def _build_municipalidad_out(municipalidad_id, municipalidad_nombre, municipalidad_codigo=None) -> "MunicipalidadOut":
         """Helper para construir MunicipalidadesSnapshotOut/MunicipalidadOut."""
         from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
             MunicipalidadOut,
@@ -55,7 +55,7 @@ class LiquidacionEdificacionesPresenter:
         return MunicipalidadOut(
             id=municipalidad_id or uuid.UUID('00000000-0000-0000-0000-000000000000'),
             nombre=municipalidad_nombre or '',
-            codigo=None,
+            codigo=municipalidad_codigo,
             provincia=None,
             distrito=None,
         )
@@ -96,7 +96,7 @@ class LiquidacionEdificacionesPresenter:
 
         # ── Municipalidad ──────────────────────────────────────────────────────
         municipalidad = LiquidacionEdificacionesPresenter._build_municipalidad_out(
-            result.municipalidad_id, result.municipalidad_nombre
+            result.municipalidad_id, result.municipalidad_nombre, result.municipalidad_codigo
         )
 
         # ── Proyectistas ───────────────────────────────────────────────────────

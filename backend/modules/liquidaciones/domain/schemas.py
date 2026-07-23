@@ -86,6 +86,7 @@ class LiquidacionEdificacionesResult(BaseModel):
     # Municipalidad (nested)
     municipalidad_id: Optional[uuid.UUID] = None
     municipalidad_nombre: Optional[str] = None
+    municipalidad_codigo: Optional[str] = None
     # ── Listas ─────────────────────────────────────────────────────────────────
     proyectistas: list = Field(default_factory=list)  # ProyectistaEdificacionData
     delegados: list = Field(default_factory=list)  # DelegadoEdificacionData
@@ -547,4 +548,3 @@ class LiquidacionGeneralResult(BaseModel):
 # classes are defined. Rebuild here ensures NuevaRevisionFormularioResult can be
 # instantiated correctly at runtime.
 NuevaRevisionFormularioResult.model_rebuild()
-

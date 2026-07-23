@@ -3,6 +3,7 @@
  * Usa useApiCreate genérico del proyecto.
  */
 import { useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import type { z } from "zod";
 import { useApiCreate } from "@/hooks";
 import {
@@ -37,7 +38,7 @@ export function useCotizacionPrimeraRevision() {
     options: {},
   });
 
-  const cotizacionMutation = {
+  const cotizacionMutation = useMemo(() => ({
     ...mutation,
     mutate: (payload: {
       tipo_tramite?: string;
@@ -56,7 +57,7 @@ export function useCotizacionPrimeraRevision() {
       const result = await mutation.mutateAsync({ liquidacion: payload });
       return result.data as CotizacionQuote;
     },
-  };
+  }), [mutation]);
 
   return cotizacionMutation;
 }

@@ -9,6 +9,7 @@ import {
   FileText,
   Hash,
   Home,
+  Plus,
   Scale,
   Search,
   Truck,
@@ -19,8 +20,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionInspeccionObraCard } from "../components/LiquidacionInspeccionObraCard";
+import { LiquidacionInspeccionObraSingleFormModal } from "../components/LiquidacionInspeccionObraSingleFormModal";
 import { useLiquidacionesInspeccionObra } from "../hooks/useLiquidacionesInspeccionObra";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
 
@@ -36,6 +37,7 @@ export function LiquidacionesInspeccionObraView({
   const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
+  const [ioModalOpen, setIoModalOpen] = useState(false);
 
   const {
     items: liquidationItems,
@@ -44,7 +46,7 @@ export function LiquidacionesInspeccionObraView({
     pageSize: liquidationPageSize,
     isLoading: isLiquidationLoading,
     isError: isLiquidationError,
-    refetch: refetchLiquidations,
+    refetch: refetchLiquidaciones,
     setPage: setLiquidationPage,
   } = useLiquidacionesInspeccionObra({ page: 1, pageSize: 10 });
 
@@ -72,7 +74,7 @@ export function LiquidacionesInspeccionObraView({
     <div className="page-section">
       <div className="space-y-6">
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
               <KIND_ICON className="h-6 w-6 text-primary" />
@@ -84,7 +86,13 @@ export function LiquidacionesInspeccionObraView({
               </p>
             </div>
           </div>
-          <NuevaLiquidacionDropdown onSuccess={refetchLiquidations} />
+          <Button
+            className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+            onClick={() => setIoModalOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Nueva Liquidación
+          </Button>
         </div>
 
         {/* Filter Bar */}
@@ -146,7 +154,13 @@ export function LiquidacionesInspeccionObraView({
               <KIND_ICON className="h-10 w-10 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No hay liquidaciones registradas</p>
               <div className="mt-4">
-                <NuevaLiquidacionDropdown onSuccess={refetchLiquidations} />
+                <Button
+                  className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20"
+                  onClick={() => setIoModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Nueva Liquidación
+                </Button>
               </div>
             </div>
           ) : (
@@ -198,6 +212,12 @@ export function LiquidacionesInspeccionObraView({
           )}
         </div>
       </div>
+
+      <LiquidacionInspeccionObraSingleFormModal
+        open={ioModalOpen}
+        onOpenChange={setIoModalOpen}
+        onSuccess={refetchLiquidaciones}
+      />
     </div>
   );
 }

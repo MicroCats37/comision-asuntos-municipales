@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Search } from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { Control, FieldErrors } from "react-hook-form";
 import { useController } from "react-hook-form";
@@ -26,6 +27,13 @@ interface EntidadLookupFieldProps {
   control: Control<any>;
   errors: FieldErrors<any>;
   onFieldChange?: (field: string, value: string) => void;
+  razonSocialSideSlot?: ReactNode;
+  /** Configurable field names so multiple liquidation modules can share this component. */
+  fieldNames?: {
+    tipoDocumento: string;
+    numeroDocumento: string;
+    razonSocial: string;
+  };
 }
 
 interface LookupState {
@@ -49,7 +57,15 @@ export function EntidadLookupField({
   control,
   errors,
   onFieldChange,
+  razonSocialSideSlot,
+  fieldNames: fieldNamesConfig,
 }: EntidadLookupFieldProps) {
+  // Default field names — Edificaciones uses these exact names
+  const fn = fieldNamesConfig ?? {
+    tipoDocumento: "entidad_tipo_documento",
+    numeroDocumento: "entidad_numero_documento",
+    razonSocial: "entidad_razon_social",
+  };
   // ── Local search UI state (independent from RHF until lookup completes) ────
   const [lookupState, setLookupState] = useState<LookupState>({
     tipo_documento: "DNI",
@@ -63,17 +79,17 @@ export function EntidadLookupField({
 
   // ── RHF controllers (useController for each form field) ──────────────────
   const tipoDocCtrl = useController({
-    name: "entidad_tipo_documento",
+    name: fn.tipoDocumento,
     control,
     rules: { required: "Tipo de documento es requerido" },
   });
   const numDocCtrl = useController({
-    name: "entidad_numero_documento",
+    name: fn.numeroDocumento,
     control,
     rules: { required: "Número de documento es requerido" },
   });
   const razonSocialCtrl = useController({
-    name: "entidad_razon_social",
+    name: fn.razonSocial,
     control,
     rules: { required: "Razón social o nombre completo es requerido" },
   });
@@ -137,9 +153,9 @@ export function EntidadLookupField({
     numDocCtrl.field.onChange(numDoc);
     razonSocialCtrl.field.onChange(razonSocial);
 
-    onFieldChange?.("entidad_tipo_documento", tipoDoc);
-    onFieldChange?.("entidad_numero_documento", numDoc);
-    onFieldChange?.("entidad_razon_social", razonSocial);
+    onFieldChange?.(fn.tipoDocumento, tipoDoc);
+    onFieldChange?.(fn.numeroDocumento, numDoc);
+    onFieldChange?.(fn.razonSocial, razonSocial);
   };
 
   const handleLookup = async () => {
@@ -186,120 +202,127 @@ export function EntidadLookupField({
         Datos de la Entidad
       </p>
 
-      {/* ── Tipo de Documento (único RadioGroup, no duplicado) ────────────── */}
-      <div>
-        <Label className="text-primary font-semibold text-sm">
-          Tipo de Documento
-        </Label>
-        <RadioGroup
-          value={lookupState.tipo_documento}
-          onValueChange={(val) => {
-            const tipo = val as "DNI" | "RUC";
-            isInternalUpdate.current = true;
-            setLookupState({ tipo_documento: tipo, numero_documento: "" });
-            tipoDocCtrl.field.onChange(val);
-            onFieldChange?.("entidad_tipo_documento", val);
-          }}
-          className="flex gap-4 mt-2"
-        >
-          {TIPO_DOCUMENTO_OPTIONS.map((opt) => (
-            <div key={opt.value} className="flex items-center space-x-2">
-              <RadioGroupItem
-                value={opt.value}
-                id={`entidad-tipo-${opt.value}`}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-3 min-w-0">
+          {/* ── Tipo de Documento (único RadioGroup, no duplicado) ────────────── */}
+          <div>
+            <Label className="text-primary font-semibold text-sm">
+              Tipo de Documento
+            </Label>
+            <RadioGroup
+              value={lookupState.tipo_documento}
+              onValueChange={(val) => {
+                const tipo = val as "DNI" | "RUC";
+                isInternalUpdate.current = true;
+                setLookupState({ tipo_documento: tipo, numero_documento: "" });
+                tipoDocCtrl.field.onChange(val);
+                onFieldChange?.(fn.tipoDocumento, val);
+              }}
+              className="flex gap-4 mt-2"
+            >
+              {TIPO_DOCUMENTO_OPTIONS.map((opt) => (
+                <div key={opt.value} className="flex items-center space-x-2">
+                  <RadioGroupItem
+                    value={opt.value}
+                    id={`entidad-tipo-${opt.value}`}
+                  />
+                  <Label
+                    htmlFor={`entidad-tipo-${opt.value}`}
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    {opt.label}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+
+          {/* ── Número de Documento + Buscar (único input, no duplicado) ──────── */}
+          <div className="space-y-2 min-w-0">
+            <Label
+              htmlFor="entidad-numero"
+              className="text-primary font-semibold text-sm"
+            >
+              Número de Documento
+            </Label>
+            <div className="flex gap-2 min-w-0">
+              <input
+                id="entidad-numero"
+                type="text"
+                value={lookupState.numero_documento}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!/^\d*$/.test(val)) return;
+                  const maxLen = lookupState.tipo_documento === "DNI" ? 8 : 11;
+                  if (val.length > maxLen) return;
+                  setLookupState((s) => ({ ...s, numero_documento: val }));
+                  numDocCtrl.field.onChange(val);
+                  onFieldChange?.(fn.numeroDocumento, val);
+                }}
+                placeholder={
+                  lookupState.tipo_documento === "DNI"
+                    ? "Ej: 87654321"
+                    : "Ej: 20456789012"
+                }
+                className="min-w-0 flex-1 h-10 rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
-              <Label
-                htmlFor={`entidad-tipo-${opt.value}`}
-                className="text-sm font-normal cursor-pointer"
+              <Button
+                type="button"
+                size="default"
+                onClick={handleLookup}
+                disabled={isConsulting || !isLookupValid}
+                className="h-10 rounded-xl gap-2 shrink-0"
               >
-                {opt.label}
-              </Label>
+                {isConsulting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+                Buscar
+              </Button>
             </div>
-          ))}
-        </RadioGroup>
-      </div>
-
-      {/* ── Número de Documento + Buscar (único input, no duplicado) ──────── */}
-      <div className="space-y-2">
-        <Label
-          htmlFor="entidad-numero"
-          className="text-primary font-semibold text-sm"
-        >
-          Número de Documento
-        </Label>
-        <div className="flex gap-2">
-          <input
-            id="entidad-numero"
-            type="text"
-            value={lookupState.numero_documento}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (!/^\d*$/.test(val)) return;
-              const maxLen = lookupState.tipo_documento === "DNI" ? 8 : 11;
-              if (val.length > maxLen) return;
-              setLookupState((s) => ({ ...s, numero_documento: val }));
-              numDocCtrl.field.onChange(val);
-              onFieldChange?.("entidad_numero_documento", val);
-            }}
-            placeholder={
-              lookupState.tipo_documento === "DNI"
-                ? "Ej: 87654321"
-                : "Ej: 20456789012"
-            }
-            className="flex-1 h-10 rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          />
-          <Button
-            type="button"
-            size="default"
-            onClick={handleLookup}
-            disabled={isConsulting || !isLookupValid}
-            className="h-10 rounded-xl gap-2 shrink-0"
-          >
-            {isConsulting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Search className="h-4 w-4" />
+            {numDocCtrl.fieldState.error && (
+              <p className="text-sm text-destructive font-medium">
+                {numDocCtrl.fieldState.error.message}
+              </p>
             )}
-            Buscar
-          </Button>
+          </div>
         </div>
-        {numDocCtrl.fieldState.error && (
-          <p className="text-sm text-destructive font-medium">
-            {numDocCtrl.fieldState.error.message}
-          </p>
-        )}
-      </div>
 
-      {/* ── Razón Social / Nombre Completo (auto-fill desde búsqueda) ─────── */}
-      <div className="space-y-2">
-        <Label
-          htmlFor="entidad-razon"
-          className="text-primary font-semibold text-sm"
-        >
-          {lookupState.tipo_documento === "RUC"
-            ? "Razón Social"
-            : "Nombre Completo"}
-        </Label>
-        <input
-          id="entidad-razon"
-          type="text"
-          value={razonSocialCtrl.field.value || ""}
-          onChange={razonSocialCtrl.field.onChange}
-          onBlur={razonSocialCtrl.field.onBlur}
-          ref={razonSocialCtrl.field.ref}
-          name={razonSocialCtrl.field.name}
-          placeholder={
-            lookupState.tipo_documento === "RUC"
-              ? "Nombre de la empresa"
-              : "Nombres y apellidos"
-          }
-          className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        />
-        {razonSocialCtrl.fieldState.error && (
-          <p className="text-sm text-destructive font-medium">
-            {razonSocialCtrl.fieldState.error.message}
-          </p>
-        )}
+        <div className="space-y-3 min-w-0">
+        {/* ── Razón Social / Nombre Completo (auto-fill desde búsqueda) ─────── */}
+        <div className="space-y-2 min-w-0">
+          <Label
+            htmlFor="entidad-razon"
+            className="text-primary font-semibold text-sm"
+          >
+            {lookupState.tipo_documento === "RUC"
+              ? "Razón Social"
+              : "Nombre Completo"}
+          </Label>
+          <input
+            id="entidad-razon"
+            type="text"
+            value={razonSocialCtrl.field.value || ""}
+            onChange={razonSocialCtrl.field.onChange}
+            onBlur={razonSocialCtrl.field.onBlur}
+            ref={razonSocialCtrl.field.ref}
+            name={razonSocialCtrl.field.name}
+            placeholder={
+              lookupState.tipo_documento === "RUC"
+                ? "Nombre de la empresa"
+                : "Nombres y apellidos"
+            }
+            className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+          {razonSocialCtrl.fieldState.error && (
+            <p className="text-sm text-destructive font-medium">
+              {razonSocialCtrl.fieldState.error.message}
+            </p>
+          )}
+        </div>
+        {razonSocialSideSlot}
+        </div>
       </div>
     </div>
   );

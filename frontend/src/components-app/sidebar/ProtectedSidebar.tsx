@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, FolderOpen, LogOutIcon, Menu, X, ChevronDown } from "lucide-react";
+import { FileText, LogOutIcon, Menu, X, ChevronDown } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import {
@@ -14,28 +14,12 @@ import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
- * Navigation items for protected routes.
- * isActive is determined dynamically via usePathname in the component.
- */
-const navItems = [
-  {
-    title: "Proyectos",
-    icon: FolderOpen,
-    href: "/proyectos",
-  },
-];
-
-/**
  * Accordion group for Liquidaciones with General and Edificaciones sub-items.
  */
 const liquidacionesGroup = {
   title: "Liquidación",
   icon: FileText,
   children: [
-    {
-      title: "General",
-      href: "/liquidaciones",
-    },
     {
       title: "Edificaciones",
       href: "/liquidaciones/edificaciones",
@@ -115,26 +99,6 @@ export function ProtectedSidebar({ user }: { user: MeResponse }) {
       {/* Navigation */}
       <nav className="flex-1 overflow-auto p-2">
         <div className="space-y-1">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={handleNavClick}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
-                )}
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                <span className="min-w-0 truncate">{item.title}</span>
-              </a>
-            );
-          })}
-
           {/* Liquidación Accordion Group */}
           <div className="relative">
             <button

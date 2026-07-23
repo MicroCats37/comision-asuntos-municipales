@@ -1,8 +1,10 @@
 // genericForm/inputs/registry.ts
 // Registro central de todos los inputs disponibles
 
+import { FormattedNumberInput } from "./FormattedNumberInput";
 import { InputCheckbox } from "./InputCheckbox";
 import { InputDatePicker } from "./InputDatePicker";
+import { InputFormattedNumber } from "./InputFormattedNumber";
 import { InputHidden } from "./InputHidden";
 import { InputImage } from "./InputImage";
 import { InputNumber } from "./InputNumber";
@@ -10,7 +12,7 @@ import { InputPassword } from "./InputPassword";
 import { InputRadio } from "./InputRadio";
 import { InputSearchableSelect } from "./InputSearchableSelect";
 import { InputSelect } from "./InputSelect";
-// Imports de inputs básicos
+// Inputs básicos
 import { InputText } from "./InputText";
 import { InputTextarea } from "./InputTextarea";
 import type { InputComponent } from "./types";
@@ -43,6 +45,9 @@ export const inputRegistry: Record<string, InputComponent> = {
   // Avanzados (requieren dependencias adicionales)
   date: InputDatePicker,
   image: InputImage,
+
+  // Formatted
+  "formatted-number": InputFormattedNumber,
 };
 
 /**

@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CE CIP Lima | Sede Campestre",
-  description: "Portal de gestión - Centro de Esparcimiento CIP Lima",
+  title: "CAM",
+  description: "CAM",
 };
 
 export default function RootLayout({

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Search, X } from "lucide-react";
+import { FileText, Plus, Search, X } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import {
   formatCurrency,
   LiquidacionGeneralCard,
 } from "../components/LiquidacionGeneralCard";
-import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
+import { LiquidacionEdificacionesSingleFormModal } from "../components/LiquidacionEdificacionesSingleFormModal";
+import { printLiquidacionDocument } from "../components/LiquidacionPDFModal";
 import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificaciones";
 import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificaciones";
 import type { LiquidacionCardBase, LiquidacionGeneralListItem } from "../types/liquidacion-general";
@@ -111,6 +112,22 @@ function EdificacionValues({ item }: { item: LiquidacionEdificacionOut }) {
   );
 }
 
+function toPdfItem(item: LiquidacionEdificacionOut): LiquidacionCardBase {
+  return {
+    ...item,
+    valores: {
+      subtotal: Number(item.valores.subtotal),
+      igv: Number(item.valores.igv),
+      total: Number(item.valores.total),
+      total_a_pagar: Number(item.valores.total_a_pagar),
+    },
+    proyecto: {
+      ...item.proyecto,
+      valor_proyecto: Number(item.proyecto.valor_proyecto),
+    },
+  } as LiquidacionCardBase;
+}
+
 /**
  * Vista de Liquidaciones de Edificaciones (list).
  * Muestra tarjetas con información resumida de cada liquidación.
@@ -125,6 +142,7 @@ export function LiquidacionesEdificacionesView() {
   const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
+  const [stepperOpen, setStepperOpen] = useState(false);
 
   const {
     items: liquidacionItems,
@@ -161,11 +179,15 @@ export function LiquidacionesEdificacionesView() {
     router.push(`/liquidaciones/edificaciones/${item.id}`);
   };
 
+  const handleLiquidacionCreated = (item: LiquidacionEdificacionOut) => {
+    void printLiquidacionDocument(toPdfItem(item));
+  };
+
   return (
     <div className="page-section">
       <div className="space-y-6">
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
               <FileText className="h-6 w-6 text-primary" />
@@ -179,7 +201,13 @@ export function LiquidacionesEdificacionesView() {
               </p>
             </div>
           </div>
-          <NuevaLiquidacionDropdown onSuccess={refetchLiquidaciones} />
+          <Button
+            className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+            onClick={() => setStepperOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Nueva Liquidación
+          </Button>
         </div>
 
         {/* Filter Bar */}
@@ -243,7 +271,13 @@ export function LiquidacionesEdificacionesView() {
                 No hay liquidaciones registradas
               </p>
               <div className="mt-4">
-                <NuevaLiquidacionDropdown onSuccess={refetchLiquidaciones} />
+                <Button
+                  className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20"
+                  onClick={() => setStepperOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Nueva Liquidación
+                </Button>
               </div>
             </div>
           ) : (
@@ -304,6 +338,13 @@ export function LiquidacionesEdificacionesView() {
           )}
         </div>
       </div>
+
+      <LiquidacionEdificacionesSingleFormModal
+        open={stepperOpen}
+        onOpenChange={setStepperOpen}
+        onSuccess={refetchLiquidaciones}
+        onCreated={handleLiquidacionCreated}
+      />
     </div>
   );
 }

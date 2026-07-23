@@ -40,6 +40,8 @@ export interface FieldConfig {
   // Number-specific
   min?: number;
   step?: number;
+  /** Keyboard handler for number inputs (e.g., onKeyDown for Enter) */
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
 }
 
 /** Props que recibe cada componente de input del registry */

@@ -7,7 +7,6 @@ import {
   Calendar,
   ChevronDown,
   FileText,
-  HardHat,
   Hash,
   MapPin,
   Plus,
@@ -145,7 +144,7 @@ function LabelValue({
  * LiquidacionEdificacionCard — renders an Edificaciones liquidacion
  * for Edificaciones details.
  *
- * The accordion shows the full Edificaciones breakdown (proyectistas,
+ * The accordion shows the full Edificaciones breakdown (delegados,
  * especialidades/revisiones, and totales) that was previously shown flat.
  */
 export function LiquidacionEdificacionCard({
@@ -180,8 +179,6 @@ export function LiquidacionEdificacionCard({
   ]
     .filter(Boolean)
     .join(", ");
-
-  const hasMultipleProyectistas = edificaciones.proyectistas.length > 1;
 
   return (
     <Collapsible className="group bg-card rounded-2xl border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden">
@@ -310,50 +307,8 @@ export function LiquidacionEdificacionCard({
           </SectionCard>
         </div>
 
-        {/* ─── Two-column grid: Proyectistas + Especialidades ─── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Proyectistas Card */}
-          <SectionCard
-            icon={<User className="h-3.5 w-3.5" />}
-            title={hasMultipleProyectistas ? "Proyectistas" : "Proyectista"}
-            className="border-border/60"
-          >
-            {edificaciones.proyectistas &&
-            edificaciones.proyectistas.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {edificaciones.proyectistas.map((proj) => (
-                  <div
-                    key={proj.id}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60 hover:bg-secondary/60 hover:border-primary/20 transition-all"
-                  >
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <HardHat className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-foreground">
-                        {[
-                          proj.perfil_ingeniero_nombres,
-                          proj.perfil_ingeniero_apellidos,
-                        ]
-                          .filter(Boolean)
-                          .join(" ") || "Sin nombre"}
-                      </span>
-                      {proj.perfil_ingeniero_cip && (
-                        <span className="text-[10px] text-muted-foreground">
-                          CIP: {proj.perfil_ingeniero_cip}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground/60 italic">
-                Sin proyectistas registrados
-              </p>
-            )}
-          </SectionCard>
-
+        {/* ─── Especialidades ─── */}
+        <div className="grid grid-cols-1 gap-4">
           {/* Especialidades Card — deduplicate by specialty id, show one chip per specialty */}
           <SectionCard
             icon={<Building2 className="h-3.5 w-3.5" />}

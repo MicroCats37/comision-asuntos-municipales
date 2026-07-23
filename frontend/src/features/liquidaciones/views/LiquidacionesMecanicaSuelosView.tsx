@@ -9,6 +9,7 @@ import {
   FileText,
   Hash,
   Home,
+  Plus,
   Scale,
   Search,
   Truck,
@@ -19,10 +20,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionMecanicaSuelosCard } from "../components/LiquidacionMecanicaSuelosCard";
+import { LiquidacionMecanicaSuelosSingleFormModal } from "../components/LiquidacionMecanicaSuelosSingleFormModal";
+import { printMecanicaSuelosDocument, type MSPrintData } from "../components/mecanica-suelos-print";
 import { useLiquidacionesMecanicaSuelos } from "../hooks/useLiquidacionesMecanicaSuelos";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
+import type { CrearMecanicaSuelosResponse } from "../types/liquidacion-mecanica-suelos.types";
 
 const KIND_ICON: LucideIcon = Scale;
 
@@ -36,6 +39,7 @@ export function LiquidacionesMecanicaSuelosView({
   const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
+  const [msModalOpen, setMsModalOpen] = useState(false);
 
   const {
     items: liquidationItems,
@@ -44,7 +48,7 @@ export function LiquidacionesMecanicaSuelosView({
     pageSize: liquidationPageSize,
     isLoading: isLiquidationLoading,
     isError: isLiquidationError,
-    refetch: refetchLiquidations,
+    refetch: refetchLiquidaciones,
     setPage: setLiquidationPage,
   } = useLiquidacionesMecanicaSuelos({ page: 1, pageSize: 10 });
 
@@ -68,11 +72,34 @@ export function LiquidacionesMecanicaSuelosView({
     router.push(`/liquidaciones/mecanica-suelos/${item.id}`);
   };
 
+  const handleLiquidacionCreated = (created: CrearMecanicaSuelosResponse) => {
+    const printData: MSPrintData = {
+      public_id: created.liquidacion.public_id,
+      fecha_registro: created.liquidacion.fecha_creacion,
+      expediente: created.liquidacion.expediente,
+      municipalidad_codigo: null,
+      municipalidad_nombre: "—",
+      area_solicitada: 0,
+      costo_por_m2: 0,
+      derecho_minimo: 0,
+      derecho_maximo: null,
+      subtotal: created.totales.subtotal,
+      igv: created.totales.igv,
+      total: created.totales.total,
+      liquidacion_total: created.totales.liquidacion_total,
+      total_a_pagar: created.totales.total_a_pagar,
+      proyecto_nombre: "—",
+      proponente_nombre: "—",
+    };
+
+    void printMecanicaSuelosDocument(printData);
+  };
+
   return (
     <div className="page-section">
       <div className="space-y-6">
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
               <KIND_ICON className="h-6 w-6 text-primary" />
@@ -84,7 +111,13 @@ export function LiquidacionesMecanicaSuelosView({
               </p>
             </div>
           </div>
-          <NuevaLiquidacionDropdown onSuccess={refetchLiquidations} />
+          <Button
+            className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+            onClick={() => setMsModalOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Nueva Liquidación
+          </Button>
         </div>
 
         {/* Filter Bar */}
@@ -146,7 +179,13 @@ export function LiquidacionesMecanicaSuelosView({
               <KIND_ICON className="h-10 w-10 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No hay liquidaciones registradas</p>
               <div className="mt-4">
-                <NuevaLiquidacionDropdown onSuccess={refetchLiquidations} />
+                <Button
+                  className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20"
+                  onClick={() => setMsModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Nueva Liquidación
+                </Button>
               </div>
             </div>
           ) : (
@@ -198,6 +237,13 @@ export function LiquidacionesMecanicaSuelosView({
           )}
         </div>
       </div>
+
+      <LiquidacionMecanicaSuelosSingleFormModal
+        open={msModalOpen}
+        onOpenChange={setMsModalOpen}
+        onSuccess={refetchLiquidaciones}
+        onCreated={handleLiquidacionCreated}
+      />
     </div>
   );
 }

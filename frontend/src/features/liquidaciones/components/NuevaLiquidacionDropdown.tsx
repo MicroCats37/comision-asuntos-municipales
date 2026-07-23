@@ -29,7 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LiquidacionStepperModal } from "@/features/liquidaciones/components/LiquidacionStepperModal";
+import { LiquidacionEdificacionFormModal } from "@/features/liquidaciones/components/deprecadedForm";
 import { NuevaRevisionFormModal } from "@/features/liquidaciones/components/NuevaRevisionFormModal";
 import {
   LiquidacionHabilitacionUrbanaStepperModal,
@@ -37,6 +37,7 @@ import {
   LiquidacionImpactoVialStepperModal,
   LiquidacionTaludesStepperModal,
   LiquidacionInspeccionObraStepperModal,
+  LiquidacionInspeccionObraSingleFormModal,
 } from "@/features/liquidaciones/components";
 
 // ── Tipos de revisión ──────────────────────────────────────────────────────────
@@ -234,7 +235,7 @@ export function NuevaLiquidacionDropdown({
       </Dialog>
 
       {/* ── Modales finales ────────────────────────────────────────────────── */}
-      <LiquidacionStepperModal
+      <LiquidacionEdificacionFormModal
         open={stepperOpen}
         onOpenChange={setStepperOpen}
         onSuccess={handleSuccess}
@@ -276,7 +277,7 @@ export function NuevaLiquidacionDropdown({
       />
 
       {/* ── No Edificación: Inspección de Obra ────────────────────────────── */}
-      <LiquidacionInspeccionObraStepperModal
+      <LiquidacionInspeccionObraSingleFormModal
         open={ioModalOpen}
         onOpenChange={setIoModalOpen}
         onSuccess={handleSuccess}

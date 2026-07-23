@@ -906,3 +906,112 @@ class TestEdificacionListTarifaContract:
             f"derecho_minimo should be {expected_derecho_minimo} "
             f"(from TarifaPorcentajeObra), got: {tarifa['derecho_minimo']}"
         )
+
+
+@pytest.mark.django_db
+class TestM2ListTotalAPagarContract:
+    """
+    Contract tests for m² liquidaciones (HU, MS, IV, Taludes) top-level total_a_pagar.
+
+    For m² types:
+      - igv == 0 (IGV is not added to m² liquidations)
+      - total_a_pagar == subtotal (top-level total_a_pagar must match subtotal, NOT total)
+    """
+
+    def setup_method(self):
+        """Seed IGV, UIT, proyecto, municipalidad, and IV tariff."""
+        self.igv = IGVFactory()
+        self.uit = UITFactory()
+        self.proyecto = ProyectoFactory()
+        self.especialidades_grupo = EspecialidadesLiquidacionFactory()
+
+        from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
+        from modules.entidades.models import Municipalidad
+        self.distrito = UbigeoDistritoFactory()
+        self.municipalidad = Municipalidad.objects.create(
+            codigo="MUN-M2-001",
+            nombre="Municipalidad M2",
+            distrito=self.distrito,
+        )
+        self.tarifa_base = TarifaLiquidacionBaseM2Factory(tipo_liquidacion="IMPACTO_VIAL")
+        ReglaTarifaLiquidacionFactory(tarifa_base=self.tarifa_base)
+
+    def test_m2_list_total_a_pagar_equals_subtotal(self, client: Client):
+        """
+        M² liquidacion list item top-level total_a_pagar must equal subtotal (not total).
+
+        IGV is 0 for m² types, so total == subtotal. The top-level total_a_pagar
+        field must match subtotal, NOT total (which would be total_liquidacion).
+        """
+        # Create IV liquidacion
+        response = client.post(
+            "/api/liquidaciones/impacto-vial/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "area_solicitada": 200.0,
+                    "observacion": "Test M2 total_a_pagar",
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.json()
+
+        # Verify via general list endpoint
+        response = client.get("/api/liquidaciones/", {"page": 1, "page_size": 10})
+        assert response.status_code == 200, response.json()
+
+        data = response.json()
+        iv_items = [
+            i for i in data["data"]["items"]
+            if i.get("tipo_liquidacion") == "impacto-vial"
+        ]
+        assert len(iv_items) >= 1, "Expected at least 1 IV liquidacion in general list"
+
+        item = iv_items[0]
+        valores = item.get("valores", {})
+
+        # M² types have igv == 0
+        assert valores.get("igv") == 0, (
+            f"M² liquidacion igv must be 0, got {valores.get('igv')}"
+        )
+        # top-level total_a_pagar must equal subtotal (not total with IGV)
+        assert item.get("total_a_pagar") == valores.get("subtotal"), (
+            f"M² total_a_pagar ({item.get('total_a_pagar')}) must equal "
+            f"subtotal ({valores.get('subtotal')}), not total ({valores.get('total')})"
+        )
+
+    def test_m2_list_igv_is_zero(self, client: Client):
+        """M² liquidacion list item igv must be 0 in valores."""
+        # Create IV liquidacion
+        response = client.post(
+            "/api/liquidaciones/impacto-vial/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "area_solicitada": 150.0,
+                    "observacion": "Test M2 igv=0",
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.json()
+
+        # Verify via general list endpoint
+        response = client.get("/api/liquidaciones/", {"page": 1, "page_size": 10})
+        assert response.status_code == 200, response.json()
+
+        data = response.json()
+        iv_items = [
+            i for i in data["data"]["items"]
+            if i.get("tipo_liquidacion") == "impacto-vial"
+        ]
+        assert len(iv_items) >= 1
+        item = iv_items[0]
+        valores = item.get("valores", {})
+
+        assert valores.get("igv") == 0, (
+            f"M² valores.igv must be 0, got {valores.get('igv')}"
+        )

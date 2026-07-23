@@ -1,7 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import type { ComponentType, FC, ReactNode } from "react";
+import type { ComponentType, FC, ReactNode, KeyboardEvent } from "react";
 import type {
   Control,
   FieldErrors,
@@ -94,7 +94,8 @@ export type FieldType =
   | "date"
   | "image"
   | "custom"
-  | "searchable-select";
+  | "searchable-select"
+  | "formatted-number";
 
 export interface FormField {
   name: string;
@@ -120,6 +121,9 @@ export interface FormField {
   // Number-specific
   min?: number;
   step?: number;
+
+  // Keyboard
+  onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;
 }
 
 export interface FormSection {

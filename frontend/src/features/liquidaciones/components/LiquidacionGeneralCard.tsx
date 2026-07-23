@@ -7,7 +7,6 @@ import {
   Building2,
   FileDown,
   FileText,
-  HardHat,
   Hash,
   MapPin,
   Pen,
@@ -23,7 +22,7 @@ import { cn } from "@/lib/utils";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
 import { LiquidacionCardHeader } from "./LiquidacionCardHeader";
 import { GestionarDelegadosModal } from "./GestionarDelegadosModal";
-import { LiquidacionPDFModal } from "./LiquidacionPDFModal";
+import { printLiquidacionDocument } from "./LiquidacionPDFModal";
 
 const KIND_LABEL: Record<string, string> = {
   "habilitacion-urbana": "Habilitación Urbana",
@@ -116,7 +115,6 @@ export function LiquidacionGeneralCard({
     proyecto,
     entidad,
     valores,
-    proyectistas,
     delegados,
     contactos,
     revisiones,
@@ -125,9 +123,7 @@ export function LiquidacionGeneralCard({
     tipo_liquidacion,
   } = item;
 
-  const hasMultipleProyectistas = proyectistas.length > 1;
   const [delegadosModalOpen, setDelegadosModalOpen] = useState(false);
-  const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const tipoLiquidacion = tipo_liquidacion || "edificacion";
 
   return (
@@ -146,8 +142,8 @@ export function LiquidacionGeneralCard({
           <div className="flex items-center gap-2">
             <span
               role="button" tabIndex={0}
-              onClick={(e) => { e.stopPropagation(); setPdfModalOpen(true); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setPdfModalOpen(true); } }}
+              onClick={(e) => { e.stopPropagation(); void printLiquidacionDocument(item); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); void printLiquidacionDocument(item); } }}
               className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer select-none transition-colors"
             >
               <FileDown className="h-3 w-3" />
@@ -235,36 +231,8 @@ export function LiquidacionGeneralCard({
           </SectionCard>
         </div>
 
-        {/* ─── Two-column: Proyectistas + Revisiones ─── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SectionCard
-            icon={<User className="h-3.5 w-3.5" />}
-            title={hasMultipleProyectistas ? "Proyectistas" : "Proyectista"}
-            className="border-border/60"
-          >
-            {proyectistas.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {proyectistas.map((p) => (
-                  <div key={p.id} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60 hover:bg-secondary/60 hover:border-primary/20 transition-all">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <HardHat className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-foreground">
-                        {[p.perfil_ingeniero_nombres, p.perfil_ingeniero_apellidos].filter(Boolean).join(" ") || "Sin nombre"}
-                      </span>
-                      {p.perfil_ingeniero_cip && (
-                        <span className="text-[10px] text-muted-foreground">CIP: {p.perfil_ingeniero_cip}</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground/60 italic">Sin proyectistas registrados</p>
-            )}
-          </SectionCard>
-
+        {/* ─── Revisiones ─── */}
+        <div className="grid grid-cols-1 gap-4">
           <SectionCard
             icon={<Building2 className="h-3.5 w-3.5" />}
             title={<span className="flex items-center gap-1.5">Revisiones<span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-[9px] font-bold text-muted-foreground">{revisiones.length}</span></span>}
@@ -510,11 +478,6 @@ export function LiquidacionGeneralCard({
         tipoLiquidacion={tipoLiquidacion}
         revisionIds={revisiones.map((r) => r.id)}
         delegadosActuales={delegados}
-      />
-      <LiquidacionPDFModal
-        open={pdfModalOpen}
-        onOpenChange={setPdfModalOpen}
-        item={item}
       />
     </Collapsible>
   );

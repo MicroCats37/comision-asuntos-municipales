@@ -9,6 +9,7 @@ import {
   FileText,
   Hash,
   Home,
+  Plus,
   Scale,
   Search,
   Truck,
@@ -19,11 +20,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionHabilitacionUrbanaCard } from "../components/LiquidacionHabilitacionUrbanaCard";
+import { LiquidacionHabilitacionUrbanaSingleFormModal } from "../components/LiquidacionHabilitacionUrbanaSingleFormModal";
+import { printHabilitacionUrbanaDocument, type HuPrintData } from "../components/habilitacion-urbana-print";
 import { useLiquidacionesHabilitacionUrbana } from "../hooks/useLiquidacionesHabilitacionUrbana";
+import { useMunicipalidades } from "../hooks/useMunicipalidades";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
-import type { LiquidacionHabilitacionUrbanaListItem } from "../types/liquidacion-habilitacion-urbana.types";
+import type { CrearHabilitacionUrbanaResponse } from "../types/liquidacion-habilitacion-urbana.types";
 
 const KIND_ICON: LucideIcon = Home;
 
@@ -37,6 +40,7 @@ export function LiquidacionesHabilitacionUrbanaView({
   const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
+  const [huModalOpen, setHuModalOpen] = useState(false);
 
   const {
     items: liquidationItems,
@@ -45,9 +49,11 @@ export function LiquidacionesHabilitacionUrbanaView({
     pageSize: liquidationPageSize,
     isLoading: isLiquidationLoading,
     isError: isLiquidationError,
-    refetch: refetchLiquidations,
+    refetch: refetchLiquidaciones,
     setPage: setLiquidationPage,
   } = useLiquidacionesHabilitacionUrbana({ page: 1, pageSize: 10 });
+
+  const { data: municipalidades } = useMunicipalidades();
 
   const handleSearch = () => {
     const trimmed = searchInput.trim();
@@ -69,11 +75,38 @@ export function LiquidacionesHabilitacionUrbanaView({
     router.push(`/liquidaciones/habilitacion-urbana/${item.id}`);
   };
 
+  const handleLiquidacionCreated = (created: CrearHabilitacionUrbanaResponse) => {
+    // HU create response structure:
+    // { liquidacion: { id, public_id, estado, fecha_creacion, expediente, observacion }, totales: { subtotal, igv, total, liquidacion_total, total_a_pagar } }
+    // Note: municipalidad and proyecto info are NOT in the create response.
+    // The print document will use placeholders for these fields.
+    const printData: HuPrintData = {
+      public_id: created.liquidacion.public_id,
+      fecha_registro: created.liquidacion.fecha_creacion,
+      expediente: created.liquidacion.expediente,
+      municipalidad_codigo: null,
+      municipalidad_nombre: "—",
+      area_solicitada: 0,
+      costo_por_m2: 0,
+      derecho_minimo: 0,
+      derecho_maximo: null,
+      subtotal: created.totales.subtotal,
+      igv: created.totales.igv,
+      total: created.totales.total,
+      liquidacion_total: created.totales.liquidacion_total,
+      total_a_pagar: created.totales.total_a_pagar,
+      proyecto_nombre: "—",
+      proponente_nombre: "—",
+    };
+
+    void printHabilitacionUrbanaDocument(printData);
+  };
+
   return (
     <div className="page-section">
       <div className="space-y-6">
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
               <KIND_ICON className="h-6 w-6 text-primary" />
@@ -85,7 +118,13 @@ export function LiquidacionesHabilitacionUrbanaView({
               </p>
             </div>
           </div>
-          <NuevaLiquidacionDropdown onSuccess={refetchLiquidations} />
+          <Button
+            className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+            onClick={() => setHuModalOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Nueva Liquidación
+          </Button>
         </div>
 
         {/* Filter Bar */}
@@ -147,7 +186,13 @@ export function LiquidacionesHabilitacionUrbanaView({
               <KIND_ICON className="h-10 w-10 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No hay liquidaciones registradas</p>
               <div className="mt-4">
-                <NuevaLiquidacionDropdown onSuccess={refetchLiquidations} />
+                <Button
+                  className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20"
+                  onClick={() => setHuModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Nueva Liquidación
+                </Button>
               </div>
             </div>
           ) : (
@@ -200,6 +245,13 @@ export function LiquidacionesHabilitacionUrbanaView({
           )}
         </div>
       </div>
+
+      <LiquidacionHabilitacionUrbanaSingleFormModal
+        open={huModalOpen}
+        onOpenChange={setHuModalOpen}
+        onSuccess={refetchLiquidaciones}
+        onCreated={handleLiquidacionCreated}
+      />
     </div>
   );
 }

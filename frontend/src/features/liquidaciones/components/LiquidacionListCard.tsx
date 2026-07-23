@@ -9,7 +9,6 @@ import {
   ChevronDown,
   FileText,
   Hash,
-  HardHat,
   MapPin,
   Pen,
   Phone,
@@ -30,7 +29,6 @@ import type {
   ContactoOut,
   DelegadoOut,
   EspecialidadOut,
-  ProyectistaOut,
 } from "../types/liquidacion-edificaciones";
 import { GestionarDelegadosModal } from "./GestionarDelegadosModal";
 
@@ -169,31 +167,6 @@ function LabelValue({
   );
 }
 
-/** Proyectista chip */
-function ProyectistaChip({ proj }: { proj: ProyectistaOut }) {
-  const nombre = [
-    proj.perfil_ingeniero_nombres,
-    proj.perfil_ingeniero_apellidos,
-  ]
-    .filter(Boolean)
-    .join(" ");
-  return (
-    <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-secondary/40 border border-border/60">
-      <HardHat className="h-3 w-3 text-primary shrink-0" />
-      <div className="flex flex-col min-w-0">
-        <span className="text-xs font-semibold text-foreground truncate max-w-[160px]">
-          {nombre || "Sin nombre"}
-        </span>
-        {proj.perfil_ingeniero_cip && (
-          <span className="text-[10px] text-muted-foreground">
-            CIP: {proj.perfil_ingeniero_cip}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /** Delegado chip */
 function DelegadoChip({ del }: { del: DelegadoOut }) {
   const nombre = [
@@ -265,7 +238,7 @@ function EspecialidadChip({ esp }: { esp: EspecialidadOut }) {
  * (GET /liquidaciones/edificaciones).
  *
  * Uses LiquidacionEdificacionOut fields which include rich nested data:
- * proyecto, municipalidad, valores, proyectistas, delegados, contactos, revisiones.
+ * proyecto, municipalidad, valores, delegados, contactos, revisiones.
  *
  * Shows all available key fields in an expandable accordion layout.
  */
@@ -284,7 +257,6 @@ export function LiquidacionListCard({ item, onNuevaRevision }: LiquidacionListCa
     entidad,
     municipalidad,
     valores,
-    proyectistas,
     delegados,
     contactos,
     revisiones,
@@ -410,12 +382,6 @@ export function LiquidacionListCard({ item, onNuevaRevision }: LiquidacionListCa
             </div>
             {/* Quick counts */}
             <div className="flex flex-wrap gap-1.5 justify-end">
-              {proyectistas.length > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/60 border border-border/80 text-[10px] font-semibold text-secondary-foreground-foreground">
-                  <HardHat className="h-2.5 w-2.5" />
-                  {proyectistas.length}
-                </span>
-              )}
               {delegados.length > 0 && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/60 border border-border/80 text-[10px] font-semibold text-secondary-foreground-foreground">
                   <Users className="h-2.5 w-2.5" />
@@ -547,31 +513,8 @@ export function LiquidacionListCard({ item, onNuevaRevision }: LiquidacionListCa
           </SectionCard>
         </div>
 
-        {/* Proyectistas + Delegados row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Proyectistas Card */}
-          <SectionCard
-            icon={<HardHat className="h-3.5 w-3.5" />}
-            title={
-              proyectistas.length > 1
-                ? `Proyectistas (${proyectistas.length})`
-                : "Proyectista"
-            }
-            className="border-border/60"
-          >
-            {proyectistas.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {proyectistas.map((proj) => (
-                  <ProyectistaChip key={proj.id} proj={proj} />
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground/60 italic">
-                Sin proyectistas registrados
-              </p>
-            )}
-          </SectionCard>
-
+        {/* Delegados */}
+        <div className="grid grid-cols-1 gap-4">
           {/* Delegados Card */}
           <SectionCard
             icon={<User className="h-3.5 w-3.5" />}
