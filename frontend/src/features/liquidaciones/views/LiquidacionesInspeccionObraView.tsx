@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LiquidacionInspeccionObraCard } from "../components/LiquidacionInspeccionObraCard";
 import { LiquidacionInspeccionObraSingleFormModal } from "../components/LiquidacionInspeccionObraSingleFormModal";
+import { printInspeccionObraDocument, adaptIOToPrintData } from "../components/inspeccion-obra-print";
 import { useLiquidacionesInspeccionObra } from "../hooks/useLiquidacionesInspeccionObra";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
 
@@ -217,6 +218,19 @@ export function LiquidacionesInspeccionObraView({
         open={ioModalOpen}
         onOpenChange={setIoModalOpen}
         onSuccess={refetchLiquidaciones}
+        onCreated={(created, cotizacion) => {
+          // Post-create direct print for IO — uses cotizacion data if available
+          // IO create response lacks full tariff breakdown, so cotizacion (from form state)
+          // is passed as second argument to provide cantidad_visitas, categoria, etc.
+          const printData = adaptIOToPrintData({
+            public_id: created.liquidacion.public_id,
+            fecha_registro: created.liquidacion.fecha_creacion,
+            expediente: created.liquidacion.expediente,
+            totales: created.totales,
+            cotizacion: cotizacion ?? null,
+          });
+          void printInspeccionObraDocument(printData);
+        }}
       />
     </div>
   );
