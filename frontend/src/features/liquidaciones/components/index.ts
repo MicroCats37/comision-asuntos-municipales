@@ -9,6 +9,7 @@ export { LiquidacionStepperModal } from "./LiquidacionStepperModal";
 export { LiquidacionInspeccionObraStepperModal } from "./LiquidacionInspeccionObraStepperModal";
 export { LiquidacionInspeccionObraSingleFormModal } from "./LiquidacionInspeccionObraSingleFormModal";
 export { NuevaRevisionFormModal } from "./NuevaRevisionFormModal";
+export { NuevaRevisionEdificacionesFormModal } from "./NuevaRevisionEdificacionesFormModal";
 export { ProyectistaFormModal } from "./ProyectistaFormModal";
 export { ProyectistasSection } from "./ProyectistasSection";
 export { ProyectoFormModal } from "./ProyectoFormModal";

@@ -5,7 +5,14 @@ import { FileDown, Loader2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
-import { kindLabel, formatCurrency, formatDate } from "./LiquidacionGeneralCard";
+import { formatCurrency, formatDate } from "./LiquidacionGeneralCard";
+import { useAuthStore } from "@/features/auth/store/auth.store";
+
+/** Current user info passed to PDF for "Hecho por" display */
+export interface PdfCurrentUser {
+  nombres: string;
+  apellidos: string;
+}
 
 interface LiquidacionPDFModalProps {
   open: boolean;
@@ -17,6 +24,11 @@ export function LiquidacionPDFModal({ open, onOpenChange, item }: LiquidacionPDF
   const { public_id } = item;
   const [generando, setGenerando] = useState(false);
   const [imprimiendo, setImprimiendo] = useState(false);
+
+  const currentUser = useAuthStore((state) => state.user);
+  const pdfUser: PdfCurrentUser | undefined = currentUser
+    ? { nombres: currentUser.nombres, apellidos: currentUser.apellidos }
+    : undefined;
 
   const handleDescargarPDF = useCallback(async () => {
     setGenerando(true);
@@ -48,7 +60,7 @@ export function LiquidacionPDFModal({ open, onOpenChange, item }: LiquidacionPDF
       frameDocument.write('<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#FFFFFF;"></body></html>');
       frameDocument.close();
 
-      const pdfElement = buildLiquidacionPdfElement(item, frameDocument);
+      const pdfElement = buildLiquidacionPdfElement(item, frameDocument, pdfUser);
       frameDocument.body.appendChild(pdfElement);
 
       let canvas: HTMLCanvasElement;
@@ -88,18 +100,18 @@ export function LiquidacionPDFModal({ open, onOpenChange, item }: LiquidacionPDF
     } finally {
       setGenerando(false);
     }
-  }, [item, public_id]);
+  }, [item, public_id, pdfUser]);
 
   const handleImprimir = useCallback(async () => {
     setImprimiendo(true);
     try {
-      await printLiquidacionDocument(item);
+      await printLiquidacionDocument(item, pdfUser);
     } catch (err) {
       console.error("Error imprimiendo liquidación:", err);
     } finally {
       setImprimiendo(false);
     }
-  }, [item]);
+  }, [item, pdfUser]);
 
   return (
     <GenericModal open={open} onOpenChange={onOpenChange}>
@@ -150,7 +162,7 @@ export function LiquidacionPDFModal({ open, onOpenChange, item }: LiquidacionPDF
   );
 }
 
-export async function printLiquidacionDocument(item: LiquidacionCardBase) {
+export async function printLiquidacionDocument(item: LiquidacionCardBase, currentUser?: PdfCurrentUser) {
   const frame = document.createElement("iframe");
   applyStyles(frame, {
     position: "fixed",
@@ -174,7 +186,7 @@ export async function printLiquidacionDocument(item: LiquidacionCardBase) {
     frameDocument.write(`<!doctype html><html><head><meta charset="utf-8"><title>${item.public_id}</title></head><body style="margin:0;background:#FFFFFF;"></body></html>`);
     frameDocument.close();
 
-    const pdfElement = buildLiquidacionPdfElement(item, frameDocument);
+    const pdfElement = buildLiquidacionPdfElement(item, frameDocument, currentUser);
     applyStyles(pdfElement, {
       position: "static",
       left: "auto",
@@ -195,18 +207,142 @@ export async function printLiquidacionDocument(item: LiquidacionCardBase) {
   }
 }
 
-function buildLiquidacionPdfElement(item: LiquidacionCardBase, ownerDocument: Document) {
-  const { public_id, fecha_registro, proyecto, municipalidad, valores, revisiones, tipo_liquidacion, expediente } = item;
+/**
+ * Extracts full name from a contact: `${nombres} ${apellidos}` trimmed, fallback `—`.
+ */
+function getContactName(contactos: LiquidacionCardBase["contactos"]): string {
+  const contact = contactos?.find((c) => c.principal) ?? contactos?.[0];
+  if (!contact) return "—";
+  const name = `${contact.nombres?.trim() ?? ""} ${contact.apellidos?.trim() ?? ""}`.trim();
+  return name || "—";
+}
+
+/**
+ * Extracts phone from a contact: telefono ?? celular ?? `—`.
+ */
+function getContactPhone(contactos: LiquidacionCardBase["contactos"]): string {
+  const contact = contactos?.find((c) => c.principal) ?? contactos?.[0];
+  if (!contact) return "—";
+  return contact.telefono ?? contact.celular ?? "—";
+}
+
+/**
+ * Formats an ISO datetime string to Peru locale (es-PE) with date and time,
+ * e.g. "24 DE JULIO DE 2026 06:30".
+ * Uses the timezone offset from the ISO string to display the local time.
+ */
+function formatPrintedDateTime(isoDatetime: string): string {
+  const date = new Date(isoDatetime);
+  if (Number.isNaN(date.getTime())) {
+    return formatDate(isoDatetime).toUpperCase();
+  }
+  const dateStr = date.toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" }).toUpperCase();
+  const timeStr = date.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${dateStr} ${timeStr}`;
+}
+
+/**
+ * Returns the PDF section title based on tipo_liquidacion.
+ * Uses the same wording as the standalone type-specific print renderers.
+ */
+function getPdfTitleByTipo(tipo_liquidacion: string): string {
+  const TITLES: Record<string, string> = {
+    "edificacion": "LIQUIDACION DE DERECHOS POR CALIFICACION DE PROYECTOS DE INGENIERIA",
+    "impacto-vial": "LIQUIDACION DE DERECHOS POR IMPACTO VIAL",
+    "taludes": "LIQUIDACION DE DERECHOS POR TALUDES",
+    "habilitacion-urbana": "LIQUIDACION DE DERECHOS POR HABILITACION URBANA",
+    "mecanica-suelos": "LIQUIDACION DE DERECHOS POR MECANICA DE SUELOS",
+    "inspeccion-obra": "LIQUIDACION DE DERECHOS POR INSPECCION DE OBRA",
+  };
+  return TITLES[tipo_liquidacion] ?? tipo_liquidacion.replace(/[-_]/g, " ").toUpperCase();
+}
+
+/**
+ * Appends the 6 common field rows to the details element.
+ * These fields are shared across all liquidation types.
+ */
+function appendCommonFields(
+  details: HTMLElement,
+  item: LiquidacionCardBase,
+) {
+  const { proyecto, municipalidad } = item;
+  appendReceiptRow(details, "RUC", proyecto?.entidad?.ruc || "—");
+  appendReceiptRow(details, "RAZON SOCIAL", proyecto?.entidad?.nombre || "—");
+  appendReceiptRow(details, "NOMBRE DEL PROPIETARIO", proyecto?.entidad?.nombre || proyecto?.nombre || "—");
+  appendReceiptRow(details, "NOMBRE DEL PROYECTO", proyecto?.nombre || "—");
+  appendReceiptRow(details, "DPTO. / PROV. / DISTRITO", municipalidad?.nombre || "—");
+  appendReceiptRow(details, "DIRECCION DE LA OBRA", proyecto?.direccion || "—");
+}
+
+/**
+ * Appends type-specific field rows to the details element.
+ * Called after appendCommonFields.
+ *
+ * Type-specific fields per user requirements:
+ * - Edificaciones / Impacto Vial / Taludes: VALOR DE OBRA + PORCENTAJE
+ * - Habilitación Urbana / Mecánica de Suelos: ÁREA + COSTO POR m²
+ * - Inspección de Obra: CANTIDAD DE VISITAS + CATEGORÍA
+ */
+function renderSpecificFieldsByTipo(
+  tipo_liquidacion: string,
+  details: HTMLElement,
+  firstRevision: LiquidacionCardBase["revisiones"][0] | undefined,
+  proyecto: LiquidacionCardBase["proyecto"],
+) {
+  const firstTarifa = firstRevision?.tarifa;
+
+  if (tipo_liquidacion === "habilitacion-urbana" || tipo_liquidacion === "mecanica-suelos") {
+    const area = firstTarifa?.area_m2 ?? 0;
+    const costoM2 = firstTarifa?.costo_por_m2 ?? 0;
+    if (area > 0) {
+      appendReceiptRow(details, "AREA", `${area.toLocaleString("es-PE")} m²`);
+    }
+    if (costoM2 > 0) {
+      appendReceiptRow(details, "COSTO POR M2", formatCurrency(costoM2));
+    }
+    return;
+  }
+
+  if (tipo_liquidacion === "inspeccion-obra") {
+    const cantidadVisitas = firstTarifa?.cantidad_visitas ?? 0;
+    const categoria = firstTarifa?.categoria ?? null;
+    if (cantidadVisitas > 0) {
+      appendReceiptRow(details, "CANTIDAD DE VISITAS", `${cantidadVisitas}`);
+    }
+    if (categoria) {
+      appendReceiptRow(details, "CATEGORIA", categoria);
+    }
+    return;
+  }
+
+  // Edificaciones / Impacto Vial / Taludes — VALOR DE OBRA + PORCENTAJE
+  const valorObra = proyecto?.valor_proyecto ?? 0;
+  const porcentajeDecimal = firstTarifa?.porcentaje_liquidacion ?? null;
+  if (valorObra > 0) {
+    appendReceiptRow(details, "VALOR DE OBRA", formatCurrency(valorObra));
+  }
+  if (porcentajeDecimal != null) {
+    const pctDisplay = (Number(porcentajeDecimal) * 100).toFixed(2);
+    appendReceiptRow(details, "PORCENTAJE", `${pctDisplay}%`);
+  }
+}
+
+
+
+function buildLiquidacionPdfElement(
+  item: LiquidacionCardBase,
+  ownerDocument: Document,
+  currentUser?: PdfCurrentUser,
+) {
+  const { public_id, fecha_registro, proyecto, municipalidad, valores, revisiones, tipo_liquidacion, contactos } = item;
   const root = ownerDocument.createElement("div");
   const firstRevision = revisiones[0];
-  const firstTarifa = firstRevision?.tarifa;
-  const porcentajeLiquidacion = firstTarifa?.porcentaje_liquidacion != null
-    ? `${(Number(firstTarifa.porcentaje_liquidacion) * 100).toFixed(2)}%`
+  const printedDateTime = formatPrintedDateTime(fecha_registro);
+  const contactName = getContactName(contactos);
+  const contactPhone = getContactPhone(contactos);
+  const hechoPor = currentUser
+    ? `${currentUser.nombres} ${currentUser.apellidos}`.trim() || "—"
     : "—";
-  const date = new Date(fecha_registro);
-  const printedDate = Number.isNaN(date.getTime())
-    ? formatDate(fecha_registro).toUpperCase()
-    : date.toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" }).toUpperCase();
 
   applyStyles(root, {
     position: "absolute",
@@ -217,22 +353,22 @@ function buildLiquidacionPdfElement(item: LiquidacionCardBase, ownerDocument: Do
     backgroundColor: "#FFFFFF",
     color: "#111827",
     fontFamily: "'Courier New', Courier, monospace",
-    padding: "18px",
+    padding: "14px",
     boxSizing: "border-box",
   });
 
   const paper = append(root, "div", {
     border: "2px solid #111827",
     borderRadius: "14px",
-    padding: "14px 18px",
+    padding: "12px 16px",
     minHeight: "455px",
     boxSizing: "border-box",
   });
 
   const header = append(paper, "div", {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) 330px",
-    gap: "18px",
+    gridTemplateColumns: "minmax(0, 1fr) 310px",
+    gap: "12px",
     alignItems: "start",
   });
 
@@ -263,7 +399,7 @@ function buildLiquidacionPdfElement(item: LiquidacionCardBase, ownerDocument: Do
   appendText(notice, "p", `Codigo de Pago ${municipalidad?.codigo || "—"}`, { margin: "2px 0 0", fontSize: "11px" });
   appendText(notice, "p", `Nro: ${public_id}`, { margin: "10px 0 0", fontSize: "15px", letterSpacing: "0.08em", overflowWrap: "anywhere" });
 
-  appendText(paper, "h2", "LIQUIDACION DE DERECHOS POR CALIFICACION DE PROYECTOS DE INGENIERIA", {
+  appendText(paper, "h2", getPdfTitleByTipo(tipo_liquidacion), {
     margin: "12px 0 8px",
     fontFamily: "Arial, Helvetica, sans-serif",
     fontSize: "18px",
@@ -271,40 +407,71 @@ function buildLiquidacionPdfElement(item: LiquidacionCardBase, ownerDocument: Do
     letterSpacing: "-0.03em",
   });
 
-  const details = append(paper, "div", { display: "grid", gridTemplateColumns: "245px 1fr", gap: "3px 12px", fontSize: "12px", lineHeight: "1.25" });
-  appendReceiptRow(details, "RUC", proyecto?.entidad?.ruc || "—");
-  appendReceiptRow(details, "RAZON SOCIAL", proyecto?.entidad?.nombre || "—");
-  appendReceiptRow(details, "NOMBRE DEL PROPIETARIO", proyecto?.entidad?.nombre || proyecto?.nombre || "—");
-  appendReceiptRow(details, "NOMBRE DEL PROYECTO", proyecto?.nombre || kindLabel(tipo_liquidacion));
-  appendReceiptRow(details, "DPTO. / PROV./ DISTRITO", municipalidad?.nombre || "—");
-  appendReceiptRow(details, "DIRECCION DE LA OBRA", proyecto?.direccion || "—");
-  appendReceiptRow(details, "VALOR DE LA OBRA DECLARADO S/.", formatCurrency(proyecto?.valor_proyecto ?? valores.subtotal).replace("S/ ", ""));
+  const details = append(paper, "div", {
+    display: "flex",
+    flexDirection: "column",
+    gap: "1px",
+    fontSize: "12px",
+    lineHeight: "1.35",
+  });
+  appendCommonFields(details, item);
 
-  const middle = append(paper, "div", { display: "grid", gridTemplateColumns: "1fr 260px", gap: "22px", marginTop: "18px", alignItems: "start" });
-  const calc = append(middle, "div", { fontSize: "12px", lineHeight: "1.5" });
-  appendText(calc, "p", `PORCENTAJE A APLICAR SOBRE DEL VALOR DE LA OBRA ${porcentajeLiquidacion}`, { margin: "0", fontWeight: "700", maxWidth: "620px" });
-  const derechoMinimo = firstTarifa?.derecho_minimo != null ? formatCurrency(firstTarifa.derecho_minimo) : "—";
-  appendText(calc, "p", `Derecho minimo ${derechoMinimo} + IGV ***`, { margin: "4px 0 0" });
+  const lowerBody = append(paper, "div", {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 240px",
+    columnGap: "22px",
+    alignItems: "start",
+    marginTop: "14px",
+  });
 
-  const totals = append(middle, "div", { fontSize: "12px", lineHeight: "1.55" });
+  const specificFields = append(lowerBody, "div", {
+    display: "flex",
+    flexDirection: "column",
+    gap: "3px",
+    fontSize: "13px",
+    lineHeight: "1.4",
+  });
+  renderSpecificFieldsByTipo(tipo_liquidacion, specificFields, firstRevision, proyecto);
+
+  // Append Derecho mínimo + IGV field — displayed for all types when derecho_minimo > 0
+  const derechoMinimo = firstRevision?.tarifa?.derecho_minimo ?? 0;
+  if (derechoMinimo > 0) {
+    appendReceiptRow(specificFields, "DERECHO MINIMO", `${formatCurrency(derechoMinimo)} + IGV`);
+  }
+
+  const totals = append(lowerBody, "div", {
+    display: "flex",
+    flexDirection: "column",
+    gap: "2px",
+    fontSize: "13px",
+    lineHeight: "1.4",
+    paddingTop: "0",
+  });
   appendTotalLine(totals, "SUBTOTAL S/.", formatCurrency(valores.subtotal).replace("S/ ", ""));
-  appendTotalLine(totals, "I.G.V. S/.", "igv" in valores ? formatCurrency(valores.igv).replace("S/ ", "") : "—");
-  const totalBox = append(totals, "div", { display: "grid", gridTemplateColumns: "1fr auto", gap: "12px", border: "1px solid #111827", borderRadius: "10px", padding: "2px 6px", marginTop: "4px" });
-  appendText(totalBox, "span", "TOTAL S/.", { fontWeight: "700" });
-  appendText(totalBox, "span", formatCurrency(valores.total_a_pagar).replace("S/ ", ""));
+  appendTotalLine(totals, "I.G.V. S/.", formatCurrency(valores.igv).replace("S/ ", ""));
+  const totalBox = append(totals, "div", {
+    display: "flex",
+    gap: "8px",
+    border: "1px solid #111827",
+    borderRadius: "8px",
+    padding: "5px 10px",
+    marginTop: "4px",
+  });
+  appendText(totalBox, "span", "TOTAL S/.", { fontWeight: "700", fontSize: "13px" });
+  appendText(totalBox, "span", formatCurrency(valores.total_a_pagar).replace("S/ ", ""), { fontWeight: "700", fontSize: "13px" });
 
-  const pay = append(paper, "div", { display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: "16px", marginTop: "18px" });
+  const pay = append(paper, "div", { display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: "16px", marginTop: "16px" });
   append(pay, "div");
-  appendText(pay, "div", `TOTAL A PAGAR S/. ${formatCurrency(valores.total_a_pagar).replace("S/ ", "")}`, { textAlign: "center", fontSize: "24px", fontWeight: "700", letterSpacing: "0.08em" });
+  appendText(pay, "div", `TOTAL A PAGAR S/. ${formatCurrency(valores.total_a_pagar).replace("S/ ", "")}`, { textAlign: "center", fontSize: "28px", fontWeight: "700", letterSpacing: "0.06em" });
   append(pay, "div");
 
-  const footer = append(paper, "div", { display: "grid", gridTemplateColumns: "270px 1fr 210px", gap: "16px", alignItems: "end", marginTop: "16px", fontSize: "12px" });
+  const footer = append(paper, "div", { display: "grid", gridTemplateColumns: "1fr 1.4fr 1fr", gap: "12px", alignItems: "end", marginTop: "10px", fontSize: "12px" });
   const left = append(footer, "div", { lineHeight: "1.35" });
   appendText(left, "p", "COMISION DE ASUNTOS MUNICIPALES", { margin: "0", fontSize: "10px", fontWeight: "700" });
   appendText(left, "p", "Tel.: 202-5066", { margin: "0", fontSize: "10px" });
-  appendText(left, "p", "Tramitado por —", { margin: "8px 0 0" });
-  appendText(left, "p", "TELEFONO      —", { margin: "10px 0 0" });
-  appendText(left, "p", printedDate, { margin: "16px 0 0", letterSpacing: "0.08em" });
+  appendText(left, "p", `Tramitado por ${contactName}`, { margin: "8px 0 0" });
+  appendText(left, "p", `TELEFONO      ${contactPhone}`, { margin: "10px 0 0" });
+  appendText(left, "p", printedDateTime, { margin: "16px 0 0", letterSpacing: "0.08em" });
 
   appendText(footer, "div", "ESTE DOCUMENTO NO ES\nCOMPROBANTE DE PAGO", {
     whiteSpace: "pre-line",
@@ -316,15 +483,16 @@ function buildLiquidacionPdfElement(item: LiquidacionCardBase, ownerDocument: Do
   });
 
   const right = append(footer, "div", { lineHeight: "1.45" });
-  appendText(right, "p", "Hecho por —", { margin: "0" });
-  appendText(right, "p", new Date().toLocaleTimeString("es-PE", { hour12: false }), { margin: "12px 0 0" });
+  appendText(right, "p", `Hecho por ${hechoPor}`, { margin: "0" });
+  appendText(right, "p", printedDateTime, { margin: "12px 0 0" });
 
   return root;
 }
 
 function appendReceiptRow(parent: HTMLElement, label: string, value: string) {
-  appendText(parent, "span", label, { fontWeight: "700" });
-  appendText(parent, "span", `: ${value}`, { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
+  const row = append(parent, "div", { display: "flex", gap: "6px", alignItems: "baseline" });
+  appendText(row, "span", label, { fontWeight: "700", minWidth: "180px", flexShrink: "0" });
+  appendText(row, "span", `: ${value}`, { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
 }
 
 function appendTotalLine(parent: HTMLElement, label: string, value: string) {

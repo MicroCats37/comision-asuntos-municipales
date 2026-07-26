@@ -33,6 +33,7 @@ class LiquidacionImpactoVialResult(BaseModel):
     proyecto_entidad_tipo: Optional[str]
     proyecto_entidad_nombre: Optional[str]
     proyecto_entidad_ruc: Optional[str]
+    proyecto_valor_proyecto: Decimal = Decimal("0")
     municipalidad_id: uuid.UUID
     municipalidad_nombre: str
     expediente: Optional[str] = None

@@ -13,6 +13,7 @@ import {
   Scale,
   Search,
   Truck,
+  UserCheck,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -21,11 +22,14 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LiquidacionImpactoVialCard } from "../components/LiquidacionImpactoVialCard";
+import { ConsultarIngenieroDialog } from "../components/ConsultarIngenieroDialog";
 import { LiquidacionImpactoVialSingleFormModal } from "../components/LiquidacionImpactoVialSingleFormModal";
-import { printImpactoVialDocument, type IVPrintData } from "../components/impacto-vial-print";
 import { useLiquidacionesImpactoVial } from "../hooks/useLiquidacionesImpactoVial";
+import { IVToCardBase } from "../components/impacto-vial-print";
+import { printLiquidacionDocument } from "../components/LiquidacionPDFModal";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
 import type { CrearImpactoVialResponse } from "../types/liquidacion-impacto-vial.types";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 
 const KIND_ICON: LucideIcon = Truck;
 
@@ -40,6 +44,9 @@ export function LiquidacionesImpactoVialView({
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
   const [ivModalOpen, setIvModalOpen] = useState(false);
+  const [consultDialogOpen, setConsultDialogOpen] = useState(false);
+  const currentUser = useAuthStore((state) => state.user);
+  const pdfUser = currentUser ? { nombres: currentUser.nombres, apellidos: currentUser.apellidos } : undefined;
 
   const {
     items: liquidationItems,
@@ -73,26 +80,9 @@ export function LiquidacionesImpactoVialView({
   };
 
   const handleLiquidacionCreated = (created: CrearImpactoVialResponse) => {
-    const printData: IVPrintData = {
-      public_id: created.liquidacion.public_id,
-      fecha_registro: created.liquidacion.fecha_creacion,
-      expediente: created.liquidacion.expediente,
-      municipalidad_codigo: null,
-      municipalidad_nombre: "—",
-      area_solicitada: 0,
-      costo_por_m2: 0,
-      derecho_minimo: 0,
-      derecho_maximo: null,
-      subtotal: created.totales.subtotal,
-      igv: created.totales.igv,
-      total: created.totales.total,
-      liquidacion_total: created.totales.liquidacion_total,
-      total_a_pagar: created.totales.total_a_pagar,
-      proyecto_nombre: "—",
-      proponente_nombre: "—",
-    };
-
-    void printImpactoVialDocument(printData);
+    setIvModalOpen(false);
+    // Post-create direct print using unified renderer (same as card/list PDF button)
+    void printLiquidacionDocument(IVToCardBase(created), pdfUser);
   };
 
   return (
@@ -117,6 +107,14 @@ export function LiquidacionesImpactoVialView({
           >
             <Plus className="h-4 w-4" />
             Nueva Liquidación
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+            onClick={() => setConsultDialogOpen(true)}
+          >
+            <UserCheck className="h-4 w-4" />
+            Consultar ingeniero
           </Button>
         </div>
 
@@ -243,6 +241,11 @@ export function LiquidacionesImpactoVialView({
         onOpenChange={setIvModalOpen}
         onSuccess={refetchLiquidaciones}
         onCreated={handleLiquidacionCreated}
+      />
+
+      <ConsultarIngenieroDialog
+        open={consultDialogOpen}
+        onOpenChange={setConsultDialogOpen}
       />
     </div>
   );

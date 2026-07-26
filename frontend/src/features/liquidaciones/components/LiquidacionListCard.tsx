@@ -24,6 +24,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { formatDecimalPercent } from "@/utils/number-formatter";
 import type {
   LiquidacionEdificacionOut,
   ContactoOut,
@@ -666,7 +667,7 @@ export function LiquidacionListCard({ item, onNuevaRevision }: LiquidacionListCa
                         </span>
                         <span className="text-sm font-bold text-foreground">
                           {rev.tarifa?.porcentaje_liquidacion != null
-                            ? `${Number(rev.tarifa.porcentaje_liquidacion).toFixed(4)}%`
+                            ? formatDecimalPercent(rev.tarifa.porcentaje_liquidacion)
                             : "—"}
                         </span>
                       </div>

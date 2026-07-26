@@ -6,7 +6,8 @@ from injector import inject
 
 from ..core.perfil_ingeniero_core_service import PerfilIngenieroCoreService
 from ...schemas.ingeniero_habilitado_schemas import CipColegiadoData, IngenieroHabilitadoResult
-from ....infrastructure.services import ICipClient, CipServiceUnavailableError
+from ....infrastructure.services import ICipClient
+from core.exceptions import CipServiceUnavailableError
 
 
 class IngenieroHabilitadoFlujo:

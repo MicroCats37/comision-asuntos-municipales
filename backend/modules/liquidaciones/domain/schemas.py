@@ -443,6 +443,7 @@ class TarifaRevisionData(BaseModel):
     # M2 (HU, MS, IV, Taludes)
     costo_por_m2: Optional[float] = None
     area_m2: Optional[float] = None
+    area_solicitada: Optional[float] = None  # User-requested area (from LiquidacionPorMetroCuadrado)
     # IO
     costo_por_visita: Optional[float] = None
     visitas_minimas: Optional[int] = None

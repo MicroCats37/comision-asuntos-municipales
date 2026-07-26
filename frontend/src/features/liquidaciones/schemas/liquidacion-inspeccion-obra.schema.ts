@@ -137,31 +137,6 @@ const cotizacionIOPayloadSchema = z.object({
 export const cotizacionIOResponseSchema =
   apiResponseSchema(cotizacionIOPayloadSchema);
 
-// ── Crear Liquidación Response Schema ────────────────────────────────────────
-
-/** Payload para respuesta de creación */
-const crearInspeccionObraPayloadSchema = z.object({
-  liquidacion: z.object({
-    id: z.string(),
-    public_id: z.string(),
-    estado: z.string(),
-    fecha_creacion: z.string(),
-    expediente: z.string().nullable(),
-    observacion: z.string().nullable(),
-  }),
-  totales: z.object({
-    subtotal: z.number(),
-    igv: z.number(),
-    total: z.number(),
-    liquidacion_total: z.number(),
-    total_a_pagar: z.number(),
-  }),
-});
-
-/** Wrapper para respuesta de creación */
-export const crearInspeccionObraResponseSchema =
-  apiResponseSchema(crearInspeccionObraPayloadSchema);
-
 // ── List Response Schemas ─────────────────────────────────────────────────────
 
 // ── List Item Sub-schemas ─────────────────────────────────────────────────────
@@ -299,6 +274,15 @@ export const liquidacionesInspeccionObraResponseSchema = apiResponseSchema(
 export const liquidacionInspeccionObraDetailResponseSchema = apiResponseSchema(
   liquidacionInspeccionObraListItemSchema,
 );
+
+// ── Crear Liquidación Response Schema ────────────────────────────────────────
+
+/** Payload para respuesta de creación — flat list item structure */
+const crearInspeccionObraPayloadSchema = liquidacionInspeccionObraListItemSchema;
+
+/** Wrapper para respuesta de creación */
+export const crearInspeccionObraResponseSchema =
+  apiResponseSchema(crearInspeccionObraPayloadSchema);
 
 // ── Form Step Schemas ──────────────────────────────────────────────────────────
 

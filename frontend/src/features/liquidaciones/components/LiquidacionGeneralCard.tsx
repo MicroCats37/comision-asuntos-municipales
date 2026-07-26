@@ -23,6 +23,7 @@ import type { LiquidacionCardBase } from "../types/liquidacion-general";
 import { LiquidacionCardHeader } from "./LiquidacionCardHeader";
 import { GestionarDelegadosModal } from "./GestionarDelegadosModal";
 import { printLiquidacionDocument } from "./LiquidacionPDFModal";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 
 const KIND_LABEL: Record<string, string> = {
   "habilitacion-urbana": "Habilitación Urbana",
@@ -125,6 +126,8 @@ export function LiquidacionGeneralCard({
 
   const [delegadosModalOpen, setDelegadosModalOpen] = useState(false);
   const tipoLiquidacion = tipo_liquidacion || "edificacion";
+  const currentUser = useAuthStore((state) => state.user);
+  const pdfUser = currentUser ? { nombres: currentUser.nombres, apellidos: currentUser.apellidos } : undefined;
 
   return (
     <Collapsible className="group bg-card rounded-2xl border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden">
@@ -142,8 +145,8 @@ export function LiquidacionGeneralCard({
           <div className="flex items-center gap-2">
             <span
               role="button" tabIndex={0}
-              onClick={(e) => { e.stopPropagation(); void printLiquidacionDocument(item); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); void printLiquidacionDocument(item); } }}
+              onClick={(e) => { e.stopPropagation(); void printLiquidacionDocument(item, pdfUser); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); void printLiquidacionDocument(item, pdfUser); } }}
               className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer select-none transition-colors"
             >
               <FileDown className="h-3 w-3" />
@@ -310,7 +313,7 @@ export function LiquidacionGeneralCard({
                                 </span>
                               </div>
                             </div>
-                          ) : tipoLiquidacion === "edificacion" ? (
+                          ) : tipoLiquidacion === "edificacion" || tipoLiquidacion === "impacto-vial" || tipoLiquidacion === "taludes" ? (
                               <div className="grid grid-cols-3 gap-2">
                                 <div className="flex flex-col">
                                   <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">

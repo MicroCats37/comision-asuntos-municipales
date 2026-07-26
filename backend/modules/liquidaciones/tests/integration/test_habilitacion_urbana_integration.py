@@ -105,7 +105,8 @@ class TestHabilitacionUrbanaProyectistas:
         )
         assert response.status_code == 200, response.json()
         data = response.json()
-        liquidacion_id = data["data"]["liquidacion"]["id"]
+        # Flat list item response: data.data is the LiquidacionHUListItemOut directly
+        liquidacion_id = data["data"]["id"]
 
         # Verify LiquidacionProyectista was created and associated
         lp_count = LiquidacionProyectista.objects.filter(
@@ -145,3 +146,58 @@ class TestHabilitacionUrbanaProyectistas:
         assert response.status_code != 200, (
             f"Expected non-200 for invalid CIP, got {response.status_code}: {response.json()}"
         )
+
+    def test_crear_habilitacion_urbana_respuesta_tiene_estructura_correcta(self, client: Client):
+        """
+        La respuesta debe tener la estructura correcta con flat list item:
+        id, public_id, tipo_liquidacion, estado, fecha_registro,
+        proyecto, municipalidad, valores{subtotal,igv,total,total_a_pagar},
+        revisiones[0]{tarifa{costo_por_m2,area_solicitada,area_m2,derecho_minimo,derecho_maximo}}.
+        """
+        response = client.post(
+            "/api/liquidaciones/habilitacion-urbana/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "area_solicitada": 100.0,
+                    "expediente": "EXP-HU-STRUCT-001",
+                    "proyectistas": [],
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        data = response.json()
+        snapshot = data["data"]
+
+        # Flat list item structure
+        assert "id" in snapshot
+        assert "public_id" in snapshot
+        assert "tipo_liquidacion" in snapshot
+        assert snapshot["tipo_liquidacion"] == "habilitacion-urbana"
+        assert "estado" in snapshot
+        assert "fecha_registro" in snapshot
+        # proyecto nested
+        assert "proyecto" in snapshot
+        assert "nombre" in snapshot["proyecto"]
+        # municipalidad
+        assert "municipalidad" in snapshot
+        assert "nombre" in snapshot["municipalidad"]
+        # valores financieros (M2 types: igv=0, total=subtotal)
+        valores = snapshot["valores"]
+        assert valores["subtotal"] > 0
+        assert valores["igv"] == 0  # M2 types don't add IGV
+        assert valores["total"] == valores["subtotal"]  # M2: total == subtotal
+        assert valores["total_a_pagar"] == valores["subtotal"]
+        # Revision con tarifa M2
+        assert "revisiones" in snapshot
+        assert len(snapshot["revisiones"]) > 0
+        tarifa = snapshot["revisiones"][0]["tarifa"]
+        assert tarifa is not None
+        assert "costo_por_m2" in tarifa
+        assert "area_m2" in tarifa
+        assert "area_solicitada" in tarifa
+        assert tarifa["area_solicitada"] == 100.0  # User's input area
+        assert "derecho_minimo" in tarifa
+        assert "derecho_maximo" in tarifa

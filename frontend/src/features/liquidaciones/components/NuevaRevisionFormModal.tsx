@@ -10,6 +10,13 @@ import { z } from "zod";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { notify } from "@/errors";
 import api from "@/lib/api";
 import { useCotizacionNuevaRevision } from "../hooks/useCotizacion";
@@ -28,6 +35,18 @@ function formatEnumLabel(value: string | undefined | null): string {
   if (!value) return "—";
   return value.split("_").map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ");
 }
+
+/** Options for tipo_tramite dropdown — mirrors backend enum TipoTramiteEdificaciones */
+const TIPO_TRAMITE_OPTIONS = [
+  { value: "OBRA_NUEVA", label: "Obra nueva" },
+  { value: "DEMOLICION", label: "Demolición" },
+  { value: "AMPLIACION", label: "Ampliación" },
+  { value: "REMODELACION", label: "Remodelación" },
+  { value: "MODIFICACION_LICENCIA", label: "Modificación de licencia" },
+  { value: "REINTEGRO", label: "Reintegro" },
+  { value: "PROYECTO_CON_PLANTAS_TIPICAS", label: "Proyecto con plantas típicas" },
+  { value: "VARIACION_PROYECTO_APROBADO", label: "Variación proyecto aprobado" },
+] as const;
 
 const nuevaRevisionSchema = z.object({
   observacion: z.string().optional(),
@@ -51,7 +70,11 @@ export function NuevaRevisionFormModal({ liquidacionPreviaId: initialId, open, o
   useEffect(() => {
     setLiquidacionPreviaId(initialId);
     setSearchInput("");
+    setSelectedTipoTramite("");
   }, [initialId, open]);
+
+  // Initialize tipo_tramite from formulario (inherited from previous liquidacion)
+  const [selectedTipoTramite, setSelectedTipoTramite] = useState<string>("");
 
   const handleSearch = useCallback(async () => {
     const q = searchInput.trim();
@@ -98,6 +121,13 @@ export function NuevaRevisionFormModal({ liquidacionPreviaId: initialId, open, o
   const [cotizacionQuote, setCotizacionQuote] = useState<CotizacionQuote | null>(null);
 
   const { data: formulario, isLoading: isLoadingFormulario } = useNuevaRevisionFormulario(liquidacionPreviaId, open && !!liquidacionPreviaId);
+
+  // Sync selectedTipoTramite when formulario loads (preselect inherited tipo_tramite)
+  useEffect(() => {
+    if (formulario?.tipo_tramite) {
+      setSelectedTipoTramite(formulario.tipo_tramite);
+    }
+  }, [formulario?.tipo_tramite]);
 
   useEffect(() => {
     if (!formulario?.proyectistas_actuales) {
@@ -147,10 +177,11 @@ export function NuevaRevisionFormModal({ liquidacionPreviaId: initialId, open, o
       const result = await cotizacionMutation.mutateAsync({
         liquidacion_previa_id: liquidacionPreviaId,
         revisiones_ids: selectedRevisionIds,
+        tipo_tramite: selectedTipoTramite || undefined,
       });
       setCotizacionQuote(result);
     } catch { /* handled */ }
-  }, [cotizacionMutation, liquidacionPreviaId, selectedRevisionIds]);
+  }, [cotizacionMutation, liquidacionPreviaId, selectedRevisionIds, selectedTipoTramite]);
 
   const handleSubmit = async (data: FormData) => {
     if (!liquidacionPreviaId) { notify.error("Seleccione una liquidación previa"); return; }
@@ -162,6 +193,7 @@ export function NuevaRevisionFormModal({ liquidacionPreviaId: initialId, open, o
       revisiones_ids: selectedRevisionIds,
       proyectistas_ids: selectedProyectistas.map((p) => p.id),
       observacion: data.observacion || undefined,
+      tipo_tramite: selectedTipoTramite || undefined,
     });
     notify.success("Nueva revisión creada correctamente");
     setSelectedRevisionIds([]);
@@ -252,7 +284,21 @@ export function NuevaRevisionFormModal({ liquidacionPreviaId: initialId, open, o
                     <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Datos de Liquidación Previa</h4>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <LabelValue label="Tipo de Trámite" value={formatEnumLabel(formulario.tipo_tramite)} />
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Tipo de Trámite</span>
+                      <Select value={selectedTipoTramite} onValueChange={setSelectedTipoTramite}>
+                        <SelectTrigger className="h-7 text-xs mt-0.5">
+                          <SelectValue placeholder="Seleccione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TIPO_TRAMITE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <LabelValue label="Revisión actual" value={`N° ${numeroRevision}`} />
                     <LabelValue label="Nueva revisión" value={`N° ${nuevoNumeroRevision}`} />
                     <LabelValue label="¿Cobra?" value={formulario.cobra ? "Sí" : "No"} valueClassName={formulario.cobra ? "text-emerald-600" : ""} />

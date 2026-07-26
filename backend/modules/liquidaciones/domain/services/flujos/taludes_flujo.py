@@ -55,7 +55,7 @@ class TaludesFlujo:
         self,
         proyecto_public_id: Optional[str],
         municipalidad_id: str,
-        area_solicitada: Decimal,
+        valor_proyecto: Decimal,
         expediente: Optional[str],
         observacion: Optional[str],
         proyecto_inline: Optional[ProyectoInlineData] = None,
@@ -67,7 +67,7 @@ class TaludesFlujo:
 
         1. Obtener o crear proyecto (inline o por public_id)
         2. Buscar municipalidad por ID
-        3. Buscar/validar tarifa M2:
+        3. Buscar/validar tarifa porcentual:
            - Si tarifa_id proporcionado: usar ese ID y validar que corresponde a TALUDES + tramite_accion
            - Si no: auto-seleccionar por reglas (tipo_liquidacion + tramite_accion)
         4. Si hay proyectistas_inline, validar CIPs (ALL-OR-NOTHING)
@@ -75,7 +75,7 @@ class TaludesFlujo:
            a. Crear LiquidacionGeneral
            b. Crear LiquidacionTaludes
            c. Upsert proyectistas si hay
-           d. Crear LiquidacionPorMetroCuadrado
+           d. Crear LiquidacionPorcentajeObra
            e. Guardar sub_total en LiquidacionGeneral
         6. Construir y retornar resultado tipado
         """
@@ -103,18 +103,18 @@ class TaludesFlujo:
 
             raise NotFoundError(f"Municipalidad con id={municipalidad_id}")
 
-        # 3. Buscar/validar tarifa M2
+        # 3. Buscar/validar tarifa porcentual
         try:
             if tarifa_id:
                 # Usar la tarifa seleccionada y validarla
-                tarifa_m2 = await sync_to_async(self.core._validar_tarifa_m2_por_id)(
+                tarifa_porc = await sync_to_async(self.core._validar_tarifa_porcentaje_por_id)(
                     tarifa_id=tarifa_id,
                     tipo_liquidacion=TipoLiquidacion.TALUDES,
                     tramite_accion=TramiteAccion.PRIMERA_REVISION,
                 )
             else:
                 # Auto-selección por reglas
-                tarifa_m2 = await sync_to_async(self.core._buscar_tarifa_m2)(
+                tarifa_porc = await sync_to_async(self.core._buscar_tarifa_porcentaje)(
                     TramiteAccion.PRIMERA_REVISION
                 )
         except ValueError as e:
@@ -160,15 +160,25 @@ class TaludesFlujo:
                             proyectista_id=pid,
                         )
 
-                # 5d. Crear LiquidacionPorMetroCuadrado
-                liquidacion_m2 = self.core._crear_calculo_m2(
+                # 5d. Crear LiquidacionPorcentajeObra
+                # Para Taludes: valor_base_calculo = valor_proyecto (same as IV/Edificaciones)
+                valor_proyecto_dec = Decimal(str(valor_proyecto))
+                liquidacion_porc = self.core._crear_calculo_porcentaje(
                     liquidacion_general=liquidacion,
-                    area_solicitada=area_solicitada,
-                    tarifa_m2=tarifa_m2,
+                    valor_proyecto=valor_proyecto_dec,
+                    valor_base_calculo=valor_proyecto_dec,
+                    tarifa_porcentaje=tarifa_porc,
                 )
 
-                # 5e. Guardar sub_total (= derecho del M2, ya calculado y almacenado)
-                derecho = liquidacion_m2.derecho
+                # 5e. Calcular derecho con mínimo UIT y guardar sub_total
+                # monto_base = valor_base_calculo * porcentaje_liquidacion
+                monto_base = valor_proyecto_dec * tarifa_porc.porcentaje_liquidacion
+                # derecho = clamp(monto_base, derecho_minimo, derecho_maximo)
+                derecho = monto_base
+                if monto_base < tarifa_porc.derecho_minimo:
+                    derecho = tarifa_porc.derecho_minimo
+                if tarifa_porc.derecho_maximo is not None and derecho > tarifa_porc.derecho_maximo:
+                    derecho = tarifa_porc.derecho_maximo
 
                 liquidacion.sub_total = derecho
                 liquidacion.save(update_fields=["sub_total"])
@@ -179,12 +189,17 @@ class TaludesFlujo:
                     if liquidacion.igv
                     else Decimal("0.18")
                 )
-                result = TaludesResultBuilder.build_result(
+                igv_monto = derecho * igv_valor
+                total_liquidacion = derecho + igv_monto
+
+                result = TaludesResultBuilder.build_result_porcentaje(
                     liquidacion=liquidacion,
                     proyecto=proyecto,
-                    liquidacion_m2=liquidacion_m2,
+                    liquidacion_porcentaje=liquidacion_porc,
                     subtotal=derecho,
                     igv_valor=igv_valor,
+                    igv_monto=igv_monto,
+                    total_liquidacion=total_liquidacion,
                 )
                 return result
 
@@ -208,8 +223,7 @@ class TaludesFlujo:
 
         ALL-OR-NOTHING: Si cualquier CIP falla o no está habilitado, se rechaza toda la operación.
         """
-        from core.exceptions import CipNotFoundError
-        from modules.usuarios.infrastructure.services import CipServiceUnavailableError
+        from core.exceptions import CipNotFoundError, CipServiceUnavailableError
         from modules.usuarios.domain.schemas.ingeniero_habilitado_schemas import CipColegiadoData
 
         for p in proyectistas_inline:
@@ -300,14 +314,16 @@ class TaludesFlujo:
     async def _proceso_cotizar_primera_revision(
         self,
         tipo_liquidacion: str,
-        area_solicitada: float,
+        valor_proyecto: float,
         tarifa_id: str | None = None,
     ):
         """
         Cotiza primera revisión de Taludes sin guardar en BD.
 
+        Cálculo: porcentaje del valor de obra (Edificaciones-style) con IGV.
+
         1. Obtener IGV/UIT vigentes
-        2. Buscar/validar tarifa M2:
+        2. Buscar/validar tarifa porcentual:
            - Si tarifa_id proporcionado: usar ese ID y validar que corresponde a TALUDES
            - Si no: auto-seleccionar por reglas (tipo_liquidacion + tramite_accion)
         3. Calcular usando helpers (sin persistencia)
@@ -317,75 +333,78 @@ class TaludesFlujo:
 
         Args:
             tipo_liquidacion: Tipo de liquidación (debe ser TALUDES).
-            area_solicitada: Área solicitada en m2.
+            valor_proyecto: Valor del proyecto en soles.
             tarifa_id: ID de la tarifa específica a usar (opcional).
 
         Returns:
-            CotizacionM2QuoteData
+            CotizacionQuoteData (Edificaciones-style con IGV)
         """
         from decimal import Decimal
 
-        from modules.liquidaciones.domain.schemas.shared import (
-            CotizacionM2QuoteData,
-            CotizacionM2RevisionData,
+        from modules.liquidaciones.domain.schemas import (
+            CotizacionQuoteData,
+            CotizacionRevisionData,
             CotizacionTotalesData,
             CotizacionMetadataData,
-            TarifaM2CalculoData,
-        )
-        from modules.liquidaciones.domain.services.core.calculos_helpers import (
-            _calcular_monto_m2,
+            TarifaCalculoData,
         )
 
         # 1. Obtener IGV/UIT vigentes
         variables = await sync_to_async(self.core._obtener_variables_financieras_vigentes)()
         igv_valor, uit_valor = variables
 
-        # 2. Buscar/validar tarifa M2
+        # 2. Buscar/validar tarifa porcentual
         try:
             if tarifa_id:
-                tarifa_m2 = await sync_to_async(self.core._validar_tarifa_m2_por_id)(
+                tarifa_porc = await sync_to_async(self.core._validar_tarifa_porcentaje_por_id)(
                     tarifa_id=tarifa_id,
                     tipo_liquidacion=tipo_liquidacion,
                     tramite_accion=TramiteAccion.PRIMERA_REVISION,
                 )
             else:
-                tarifa_m2 = await sync_to_async(self.core._buscar_tarifa_m2)(
+                tarifa_porc = await sync_to_async(self.core._buscar_tarifa_porcentaje)(
                     TramiteAccion.PRIMERA_REVISION
                 )
         except ValueError as e:
             from modules.liquidaciones.domain.exceptions import NotFoundError
             raise NotFoundError(str(e))
 
-        # 3. Calcular (sin persistencia)
-        area_solicitada_dec = Decimal(str(area_solicitada))
-        area_base_calculo, derecho = _calcular_monto_m2(
-            area_solicitada=area_solicitada_dec,
-            costo_m2=tarifa_m2.costo_por_m2,
-            area_m2=tarifa_m2.area_m2,
-            derecho_minimo=tarifa_m2.derecho_minimo,
-            derecho_maximo=tarifa_m2.derecho_maximo,
-        )
+        # 3. Calcular (sin persistencia) — Edificaciones-style
+        valor_proyecto_dec = Decimal(str(valor_proyecto))
+        valor_base_calculo = valor_proyecto_dec  # Para Taludes: igual al valor_proyecto
+        monto_base = valor_base_calculo * tarifa_porc.porcentaje_liquidacion
 
-        # Calcular totales — M2 sin IGV (derecho es el total final)
+        # Aplicar derecho mínimo y máximo
+        derecho = monto_base
+        if monto_base < tarifa_porc.derecho_minimo:
+            derecho = tarifa_porc.derecho_minimo
+        if tarifa_porc.derecho_maximo is not None and derecho > tarifa_porc.derecho_maximo:
+            derecho = tarifa_porc.derecho_maximo
+
+        # Calcular totales con IGV
         subtotal = derecho
-        igv_monto = Decimal("0")
-        total_liquidacion = subtotal
+        igv_monto = subtotal * igv_valor
+        total_liquidacion = subtotal + igv_monto
 
-        # 4. Retornar resultado de cotización
-        return CotizacionM2QuoteData(
+        # 4. Retornar resultado de cotización (Edificaciones-style)
+        return CotizacionQuoteData(
             numero_revision=1,
-            calculo_m2=CotizacionM2RevisionData(
-                area_solicitada=area_solicitada_dec,
-                area_base_calculo=area_base_calculo,
-                derecho=derecho,
-                tarifa=TarifaM2CalculoData(
-                    id=tarifa_m2.id,
-                    costo_por_m2=tarifa_m2.costo_por_m2,
-                    area_m2=tarifa_m2.area_m2,
-                    derecho_minimo=tarifa_m2.derecho_minimo,
-                    derecho_maximo=tarifa_m2.derecho_maximo,
-                ),
-            ),
+            revisiones=[
+                CotizacionRevisionData(
+                    id=tarifa_porc.tarifa_base.id,
+                    especialidades=[],
+                    tarifa=TarifaCalculoData(
+                        id=tarifa_porc.id,
+                        derecho_minimo=tarifa_porc.derecho_minimo,
+                        derecho_maximo=tarifa_porc.derecho_maximo,
+                        porcentaje_minimo_uit=tarifa_porc.porcentaje_minimo_uit,
+                        porcentaje_liquidacion=tarifa_porc.porcentaje_liquidacion,
+                    ),
+                    monto_base=monto_base,
+                    cobra=True,
+                    derecho=derecho,
+                )
+            ],
             totales=CotizacionTotalesData(
                 subtotal=subtotal,
                 igv=igv_monto,
@@ -396,6 +415,7 @@ class TaludesFlujo:
             metadata=CotizacionMetadataData(
                 igv_valor=igv_valor,
                 uit_valor=uit_valor,
-                area_solicitada=area_solicitada_dec,
+                cobra=True,
+                valor_base_calculo=valor_base_calculo,
             ),
         )

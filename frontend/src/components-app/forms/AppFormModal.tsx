@@ -77,7 +77,7 @@ export function AppFormModal<T extends FieldValues>({
   onPrimary,
   secondaryLabel = "Cancelar",
   onSecondary,
-  preventClose = false,
+  preventClose = true,
   size,
   schema,
   initialData,

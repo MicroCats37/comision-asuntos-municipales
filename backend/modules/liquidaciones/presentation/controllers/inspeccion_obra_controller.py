@@ -93,7 +93,7 @@ class InspeccionObraController:
             total_pages=total_pages,
         ))
 
-    @route.post("/primera-revision", response={200: ApiResponse[LiquidacionInspeccionObraOut]}, auth=None)
+    @route.post("/primera-revision", response={200: ApiResponse[LiquidacionIOListItemOut]}, auth=None)
     async def crear_inspeccion_obra(
         self,
         payload: CrearLiquidacionInspeccionObraWrapperIn,
@@ -151,8 +151,12 @@ class InspeccionObraController:
             tarifas_ids=tarifas_ids,
             proyectistas_inline=proyectistas_inline,
         )
+        # Fetch complete record with all relations for post-create PDF
+        list_item = await self.general_orchestrator.obtener_liquidacion_list_item_por_id(
+            str(result.liquidacion_id)
+        )
         return success_response(
-            InspeccionObraPresenter.present(result, calculo_visitas)
+            InspeccionObraPresenter.present_list_item(list_item)
         )
 
     @route.post("/cotizar/primera-revision", response={200: ApiResponse[CotizacionVisitasQuoteOut]}, auth=None)

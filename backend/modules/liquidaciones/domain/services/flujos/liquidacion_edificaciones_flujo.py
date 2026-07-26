@@ -300,6 +300,7 @@ class LiquidacionesEdificacionesFlujo:
         delegados_ids: Optional[list[str]] = None,
         contactos_inline: Optional[list[ContactoInlineData]] = None,
         tarifas_ids: Optional[list[str]] = None,
+        tipo_tramite: Optional[str] = None,
     ):
         """
         Proceso para crear nueva revisión de edificaciones.
@@ -362,8 +363,9 @@ class LiquidacionesEdificacionesFlujo:
         cobra = True
 
         # 6. Validar tarifas_ids (exactamente 1 elemento si se provee)
-        # Las tarifas se validan con tipo_tramite de la liquidación previa y TramiteAccion.REVISION
+        # Las tarifas se validan con tipo_tramite proporcionado o heredado de la liquidación previa
         tipo_tramite_previo = liq_edif_previa.tipo_tramite
+        tipo_tramite_final = tipo_tramite if tipo_tramite is not None else tipo_tramite_previo
         tarifas_validadas = []
         if tarifas_ids is not None and len(tarifas_ids) != 1:
             from ...exceptions import BusinessError
@@ -374,7 +376,7 @@ class LiquidacionesEdificacionesFlujo:
         if tarifas_ids is not None:
             tarifas_validadas = await sync_to_async(self.core._validar_tarifa_por_tipo_tramite)(
                 tarifas_ids,
-                tipo_tramite=tipo_tramite_previo,
+                tipo_tramite=tipo_tramite_final,
                 tramite_accion=TramiteAccion.REVISION,
             )
 
@@ -477,9 +479,10 @@ class LiquidacionesEdificacionesFlujo:
 
                 # 10. Crear LiquidacionEdificaciones (sin numero_revision — vive en LiquidacionGeneral)
                 # Nota: valor_proyecto y valor_base_calculo ya NO se pasan — viven en LiquidacionPorcentajeObra
+                # tipo_tramite: usar el proporcionado o heredar de la liquidación previa
                 liq_edif = self.core._crear_liquidacion_edificaciones(
                     liquidacion=liquidacion,
-                    tipo_tramite=liq_edif_previa.tipo_tramite,  # Heredado de la liquidación previa
+                    tipo_tramite=tipo_tramite_final,
                     tramite_accion=TramiteAccion.REVISION,
                     proyectistas_ids=final_proyectistas_ids,
                 )
@@ -823,6 +826,7 @@ class LiquidacionesEdificacionesFlujo:
         self,
         liquidacion_previa_id: str,
         revisiones_ids: list[str],
+        tipo_tramite: Optional[str] = None,
     ) -> CotizacionQuoteData:
         """
         Cotiza nueva revisión sin guardar en BD.
@@ -838,6 +842,9 @@ class LiquidacionesEdificacionesFlujo:
         9. Retornar resultado de cotización
 
         No crea ningún registro en BD.
+
+        Si tipo_tramite es proporcionado, se usa para filtrar las tarifas;
+        de lo contrario se hereda de la liquidación previa.
         """
         # 1. Buscar liquidación previa
         previa = await sync_to_async(self.core._obtener_liquidacion_por_id)(liquidacion_previa_id)
@@ -932,9 +939,17 @@ class LiquidacionesEdificacionesFlujo:
         page: int,
         page_size: int,
         proyecto_public_id: str | None = None,
+        numero_documento: str | None = None,
+        latest_per_project: bool = False,
     ) -> LiquidacionEdificacionesPaginatedResult:
         """Lista liquidaciones paginadas — delega a core via sync_to_async."""
-        return await sync_to_async(self.core._listar_liquidaciones_paginado_result)(page, page_size, proyecto_public_id)
+        return await sync_to_async(self.core._listar_liquidaciones_paginado_result)(
+            page,
+            page_size,
+            proyecto_public_id,
+            numero_documento,
+            latest_per_project,
+        )
 
     async def obtener_revisiones_vigentes(
         self,
@@ -969,8 +984,7 @@ class LiquidacionesEdificacionesFlujo:
             CipServiceUnavailableError: Si el servicio CIP no está disponible
             BusinessError: Si algún ingeniero no está habilitado (condicion != '1')
         """
-        from core.exceptions import CipNotFoundError
-        from modules.usuarios.infrastructure.services import CipServiceUnavailableError
+        from core.exceptions import CipNotFoundError, CipServiceUnavailableError
         from modules.usuarios.domain.schemas.ingeniero_habilitado_schemas import CipColegiadoData
 
         for p in proyectistas_inline:

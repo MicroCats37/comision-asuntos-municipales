@@ -64,6 +64,16 @@ class CipNotFoundError(HttpError):
         super().__init__(404, f"CIP {cip} no encontrado")
 
 
+class CipServiceUnavailableError(HttpError):
+    """Excepción cuando el servicio CIP externo no está disponible (timeout, 5xx, etc.)."""
+
+    code: str = "CIP_SERVICE_UNAVAILABLE"
+
+    def __init__(self, detail: str = "Servicio CIP no disponible"):
+        self.code = self.code
+        super().__init__(503, detail)
+
+
 # --- 2. Registro de Manejadores Globales ---
 
 

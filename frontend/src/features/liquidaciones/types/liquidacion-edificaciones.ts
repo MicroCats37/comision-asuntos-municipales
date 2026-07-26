@@ -514,6 +514,7 @@ export interface CotizacionTarifa {
   derecho_minimo: number;
   derecho_maximo: number | null;
   porcentaje_minimo_uit: number;
+  porcentaje_liquidacion: number;
 }
 
 export interface CotizacionRevision {
@@ -616,7 +617,10 @@ export interface NuevaRevisionFormData {
   liquidacion_previa_id: string;
   revisiones_ids: string[];
   proyectistas_ids: string[];
+  contactos?: import("./contacto").ContactoInline[];
   observacion?: string;
+  /** Tipo de trámite — si se omite, el backend hereda de la liquidación previa */
+  tipo_tramite?: string;
 }
 
 // ── Delegados Vigentes ────────────────────────────────────────────────────────

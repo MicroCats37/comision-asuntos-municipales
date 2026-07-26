@@ -28,7 +28,7 @@ interface StepImpactoVialLiquidacionProps {
   /** Cotizar mutation */
   cotizarMutation: {
     mutateAsync: (
-      payload: { area_solicitada: number; tarifas_ids: string[] },
+      payload: { valor_proyecto: number; tarifas_ids: string[] },
     ) => Promise<CotizacionImpactoVialResponse>;
     isPending: boolean;
   };
@@ -91,7 +91,7 @@ export function StepImpactoVialLiquidacion({
     setCotizacionCalculating(true);
     try {
       const result = await cotizarMutation.mutateAsync({
-        area_solicitada: Number(l.watchedAreaSolicitada),
+        valor_proyecto: Number(l.watchedAreaSolicitada),
         tarifas_ids: store.selectedTarifasIds,
       });
       setCotizacionQuote(result);
@@ -268,23 +268,6 @@ function ImpactoVialCotizacionDisplay({
         </span>
       </div>
 
-      {quote.calculo_m2 && (
-        <div className="space-y-2 text-sm p-3 rounded-lg border border-border bg-card">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Área solicitada</span>
-            <span className="font-semibold text-foreground">
-              {quote.calculo_m2.area_solicitada.toLocaleString("es-PE")} m²
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Derecho</span>
-            <span className="font-semibold text-foreground">
-              {formatSoles(quote.calculo_m2.derecho)}
-            </span>
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-2 gap-3 border-t border-border pt-3">
         <div className="flex flex-col gap-1 text-sm">
           <span className="text-muted-foreground text-xs">Subtotal</span>
@@ -313,10 +296,10 @@ function TarifasSelectorImpactoVial({
 }: {
   tarifas: Array<{
     tarifa_id: string;
-    costo_por_m2: number;
-    area_m2: number;
+    porcentaje_liquidacion: number;
     derecho_minimo: number;
     derecho_maximo: number | null;
+    porcentaje_minimo_uit: number;
     habilitada: boolean;
   }>;
   selectedTarifaId: string | null;
@@ -325,6 +308,8 @@ function TarifasSelectorImpactoVial({
 }) {
   const formatSoles = (value: number) =>
     `S/ ${value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`;
+  const formatPercent = (value: number) =>
+    `${(value * 100).toFixed(4)}%`;
 
   if (isLoading) {
     return (
@@ -381,8 +366,13 @@ function TarifasSelectorImpactoVial({
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex flex-col gap-0.5 min-w-0">
                     <span className="text-xs font-semibold text-foreground truncate">
-                      {tarifa.costo_por_m2 != null ? `S/ ${tarifa.costo_por_m2.toFixed(2)}/m²` : "—"}
+                      {tarifa.porcentaje_liquidacion != null ? `${formatPercent(tarifa.porcentaje_liquidacion)}` : "—"}
                     </span>
+                    {tarifa.porcentaje_minimo_uit != null && (
+                      <span className="text-[10px] text-muted-foreground">
+                        % UIT mín: {formatPercent(tarifa.porcentaje_minimo_uit)}
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-col gap-0.5 items-end shrink-0">
                     <span className="text-[10px] text-muted-foreground">

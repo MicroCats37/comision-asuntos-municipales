@@ -59,6 +59,7 @@ import type { ContactoInline } from "../types/contacto";
 import type {
   CotizacionIOResponse,
   CrearInspeccionObraPrimeraRevisionIn,
+  CrearInspeccionObraResponse,
   TarifaVigenteInspeccionObra,
 } from "../types/liquidacion-inspeccion-obra.types";
 import { ContactoFormModal } from "./ContactoFormModal";
@@ -131,31 +132,11 @@ export interface LiquidacionInspeccionObraSingleFormModalProps {
   onSuccess?: () => void;
   /**
    * Called after successful creation.
-   * - created: full liquidacion data including fecha_creacion and expediente needed for print
-   * - cotizacion: the quoted calculation data (cotizacionQuote) at time of creation;
-   *   contains cantidad_visitas, categoria, costo_por_visita, visitas_minimas for print.
-   *   Undefined if user created without quoting first.
+   * - created: full liquidacion data (flat list item) with proyecto, municipalidad,
+   *   valores, revisiones[0].tarifa for immediate post-create PDF — no refetch needed.
+   *   cotizacion param removed: tariff data is now in created.revisiones[0].tarifa.
    */
-  onCreated?: (
-    created: {
-      liquidacion: {
-        id: string;
-        public_id: string;
-        estado: string;
-        fecha_creacion: string;
-        expediente: string | null;
-        observacion: string | null;
-      };
-      totales: {
-        subtotal: number;
-        igv: number;
-        total: number;
-        liquidacion_total: number;
-        total_a_pagar: number;
-      };
-    },
-    cotizacion?: CotizacionIOResponse | null,
-  ) => void;
+  onCreated?: (created: CrearInspeccionObraResponse) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -584,26 +565,9 @@ export function LiquidacionInspeccionObraSingleFormModal({
         store.reset();
         liqReset();
         onSuccess?.();
-        // onCreated receives full liquidacion data + cotizacionQuote for print
+        // onCreated receives the API response data (flat list item — no refetch needed for print)
         if (response?.data) {
-          const created = response.data as {
-            liquidacion: {
-              id: string;
-              public_id: string;
-              estado: string;
-              fecha_creacion: string;
-              expediente: string | null;
-              observacion: string | null;
-            };
-            totales: {
-              subtotal: number;
-              igv: number;
-              total: number;
-              liquidacion_total: number;
-              total_a_pagar: number;
-            };
-          };
-          onCreated?.(created, cotizacionQuote);
+          onCreated?.(response.data);
         }
         onOpenChange(false);
       } catch {

@@ -216,7 +216,6 @@ class InspeccionObraPresenter:
         )
 
     @staticmethod
-    @staticmethod
     def present_list_item(result: LiquidacionGeneralListItem) -> LiquidacionIOListItemOut:
         """
         Transforma un LiquidacionGeneralListItem a LiquidacionIOListItemOut.

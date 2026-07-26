@@ -161,12 +161,12 @@ export function ProtectedSidebar({ user }: { user: MeResponse }) {
         <div className="flex items-center gap-3 px-3 py-3">
           <Avatar size="sm" className="shrink-0">
             <AvatarFallback>
-              {user.nombre?.charAt(0) ?? ""}{user.apellido?.charAt(0) ?? ""}
+              {user.nombres?.charAt(0) ?? ""}{user.apellidos?.charAt(0) ?? ""}
             </AvatarFallback>
           </Avatar>
           <div className="flex min-w-0 flex-col">
             <p className="truncate text-sm font-medium">
-              {user.nombre} {user.apellido}
+              {user.nombres} {user.apellidos}
             </p>
           </div>
         </div>

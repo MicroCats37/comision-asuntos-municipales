@@ -32,6 +32,7 @@ interface CotizacionSectionProps {
   hideButton?: boolean;
   valorBaseActual?: number;
   tarifaSeleccionada?: TarifaReference | null;
+  revisionLabel?: string | null;
 }
 
 const formatSoles = (value?: number | null): string => {
@@ -61,6 +62,7 @@ export function CotizacionSection({
   hideButton = false,
   valorBaseActual,
   tarifaSeleccionada,
+  revisionLabel,
 }: CotizacionSectionProps) {
   const hasVariablesFinancieras = !!variablesFinancieras;
   const valorBaseCotizado = quote?._metadata?.valor_base_calculo;
@@ -198,9 +200,11 @@ export function CotizacionSection({
                 </div>
                 <div className="min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-sm font-medium mr-1">
-                      Revisión #{quote.numero_revision}
-                    </span>
+                    {revisionLabel !== null && (
+                      <span className="text-sm font-medium mr-1">
+                        {revisionLabel ?? `Revisión #${quote.numero_revision}`}
+                      </span>
+                    )}
                     {tarifaSeleccionada?.especialidades.map((e) => (
                       <Badge key={e.id} variant="default" className="text-[10px] font-medium px-1.5 py-0.5">
                         {e.nombre}

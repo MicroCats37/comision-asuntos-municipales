@@ -122,31 +122,6 @@ const cotizacionHabilitacionUrbanaPayloadSchema = z.object({
 export const cotizacionHabilitacionUrbanaResponseSchema =
   apiResponseSchema(cotizacionHabilitacionUrbanaPayloadSchema);
 
-// ── Crear Liquidación Response Schema ────────────────────────────────────────
-
-/** Payload para respuesta de creación */
-const crearHabilitacionUrbanaPayloadSchema = z.object({
-  liquidacion: z.object({
-    id: z.string(),
-    public_id: z.string(),
-    estado: z.string(),
-    fecha_creacion: z.string(),
-    expediente: z.string().nullable(),
-    observacion: z.string().nullable(),
-  }),
-  totales: z.object({
-    subtotal: z.number(),
-    igv: z.number(),
-    total: z.number(),
-    liquidacion_total: z.number(),
-    total_a_pagar: z.number(),
-  }),
-});
-
-/** Wrapper para respuesta de creación */
-export const crearHabilitacionUrbanaResponseSchema =
-  apiResponseSchema(crearHabilitacionUrbanaPayloadSchema);
-
 // ── List Response Schemas ─────────────────────────────────────────────────────
 
 // ── List Item Sub-schemas ─────────────────────────────────────────────────────
@@ -180,9 +155,11 @@ const municipalidadListItemSchema = z.object({
   distrito: z.null(),
 });
 
-/** Schema for M2 list items — only has subtotal and total_a_pagar (no igv/total) */
+/** Schema for M2 list items — includes igv/total for percentage-based types */
 const valoresM2ListItemSchema = z.object({
   subtotal: z.number(),
+  igv: z.number(),
+  total: z.number(),
   total_a_pagar: z.number(),
 });
 
@@ -282,6 +259,15 @@ export const liquidacionesHabilitacionUrbanaResponseSchema = apiResponseSchema(
 export const liquidacionHabilitacionUrbanaDetailResponseSchema = apiResponseSchema(
   liquidacionHabilitacionUrbanaListItemSchema,
 );
+
+// ── Crear Liquidación Response Schema ────────────────────────────────────────
+
+/** Payload para respuesta de creación — flat list item structure */
+const crearHabilitacionUrbanaPayloadSchema = liquidacionHabilitacionUrbanaListItemSchema;
+
+/** Wrapper para respuesta de creación */
+export const crearHabilitacionUrbanaResponseSchema =
+  apiResponseSchema(crearHabilitacionUrbanaPayloadSchema);
 
 // ── Form Step Schemas ────────────────────────────────────────────────────────
 

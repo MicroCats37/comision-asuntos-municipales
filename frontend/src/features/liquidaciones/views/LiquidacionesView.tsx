@@ -1,11 +1,12 @@
 "use client";
 
-import { FileText, Plus, Search, X } from "lucide-react";
+import { FileText, Plus, Search, UserCheck, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ConsultarIngenieroDialog } from "../components/ConsultarIngenieroDialog";
 import { LiquidacionListCard } from "../components/LiquidacionListCard";
-import { NuevaRevisionFormModal } from "../components/NuevaRevisionFormModal";
+import { NuevaRevisionEdificacionesFormModal } from "../components/NuevaRevisionEdificacionesFormModal";
 import { LiquidacionStepperModal } from "../components/LiquidacionStepperModal";
 import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificaciones";
 import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificaciones";
@@ -22,6 +23,7 @@ export function LiquidacionesView() {
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
   const [nuevaRevisionLiquidacionId, setNuevaRevisionLiquidacionId] = useState<string | null>(null);
   const [stepperOpen, setStepperOpen] = useState(false);
+  const [consultDialogOpen, setConsultDialogOpen] = useState(false);
 
   const {
     items: liquidacionItems,
@@ -61,6 +63,14 @@ export function LiquidacionesView() {
           >
             <Plus className="h-4 w-4" />
             Nueva Liquidación
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+            onClick={() => setConsultDialogOpen(true)}
+          >
+            <UserCheck className="h-4 w-4" />
+            Consultar ingeniero
           </Button>
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
@@ -198,7 +208,7 @@ export function LiquidacionesView() {
         </div>
       </div>
 
-      <NuevaRevisionFormModal
+      <NuevaRevisionEdificacionesFormModal
         open={!!nuevaRevisionLiquidacionId}
         onOpenChange={(open) => { if (!open) setNuevaRevisionLiquidacionId(null); }}
         liquidacionPreviaId={nuevaRevisionLiquidacionId}
@@ -209,6 +219,11 @@ export function LiquidacionesView() {
         open={stepperOpen}
         onOpenChange={setStepperOpen}
         onSuccess={refetchLiquidaciones}
+      />
+
+      <ConsultarIngenieroDialog
+        open={consultDialogOpen}
+        onOpenChange={setConsultDialogOpen}
       />
     </div>
   );

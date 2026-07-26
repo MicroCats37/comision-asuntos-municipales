@@ -141,24 +141,9 @@ export interface CotizacionIOResponse {
 
 /**
  * Respuesta de creación de Inspección de Obra.
+ * Now returns the flat list item shape with all related data for immediate post-create PDF.
  */
-export interface CrearInspeccionObraResponse {
-  liquidacion: {
-    id: string;
-    public_id: string;
-    estado: string;
-    fecha_creacion: string;
-    expediente: string | null;
-    observacion: string | null;
-  };
-  totales: {
-    subtotal: number;
-    igv: number;
-    total: number;
-    liquidacion_total: number;
-    total_a_pagar: number;
-  };
-}
+export type CrearInspeccionObraResponse = LiquidacionInspeccionObraListItem;
 
 // ── Nested Types for List Items ──────────────────────────────────────────────
 

@@ -33,6 +33,9 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion import (
     TarifaPorcentajeObra,
     ReglaTarifaEdificacion,
 )
+from modules.liquidaciones.domain.models.liquidacion.tarifas_reglas import (
+    ReglaTarifaLiquidacion,
+)
 from modules.liquidaciones.domain.models.especialidades import Especialidad
 from modules.liquidaciones.domain.constants import TipoLiquidacion, TipoTramiteEdificaciones, TramiteAccion
 
@@ -97,6 +100,21 @@ class Command(BaseCommand):
             default=None,
             help='Ruta al archivo JSON seed de tarifas',
         )
+        parser.add_argument(
+            '--liquidaciones',
+            type=str,
+            default=None,
+            help=(
+                'Tipos de liquidacion a procesar (comma-separated). '
+                'Ej: "EDIFICACION" (default) o "IMPACTO_VIAL,TALUDES". '
+                'Cuando se especifica, solo esos tipos seran eliminados y seeded.'
+            ),
+        )
+        parser.add_argument(
+            '--skip-delete',
+            action='store_true',
+            help='Omite la eliminacion de tarifas existentes (solo hace seeding)',
+        )
 
     def handle(self, *args, **options):
         self.dry_run = options['dry_run']
@@ -105,9 +123,21 @@ class Command(BaseCommand):
             if options['seed_path']
             else self.SEEDS_DIR / "tarifas_edificacion.json"
         )
+        liquidaciones_raw = options.get('liquidaciones')
+        self.skip_delete = options.get('skip_delete', False)
+
+        # Parse liquidation types to process
+        if liquidaciones_raw:
+            self.liquidaciones_to_process = [
+                lt.strip().upper() for lt in liquidaciones_raw.split(',') if lt.strip()
+            ]
+        else:
+            self.liquidaciones_to_process = [TipoLiquidacion.EDIFICACION]
 
         self._log(f"\n[seed_tarifas_edificacion] Starting...")
-
+        self._log(f"  Liquidaciones to process: {self.liquidaciones_to_process}")
+        if self.skip_delete:
+            self._log(self.style.WARNING("  SKIP-DELETE MODE - No existing tariffs will be deleted"))
         if self.dry_run:
             self._log(self.style.WARNING("  DRY-RUN MODE - No database writes will occur"))
 
@@ -116,22 +146,32 @@ class Command(BaseCommand):
         if not seed_data:
             raise CommandError("Failed to load seed data")
 
-        # STEP 1: Delete existing EDIFICACION tariffs (unless dry-run)
-        if not self.dry_run:
-            deleted_reglas, deleted_tarifas = self._delete_existing_edificacion_tariffs()
-            self._log(f"  Deleted {deleted_reglas} existing ReglaTarifaEdificacion records")
-            self._log(f"  Deleted {deleted_tarifas} existing TarifaLiquidacionBase records (and their TarifaPorcentajeObra)")
+        # STEP 1: Delete existing tariffs for target liquidation types (unless dry-run or skip-delete)
+        if not self.dry_run and not self.skip_delete:
+            deleted_reglas_liq, deleted_reglas_edif, deleted_tarifas = self._delete_existing_tariffs()
+            self._log(f"  Deleted {deleted_reglas_liq} ReglaTarifaLiquidacion records")
+            self._log(f"  Deleted {deleted_reglas_edif} ReglaTarifaEdificacion records")
+            self._log(f"  Deleted {deleted_tarifas} TarifaLiquidacionBase records "
+                      f"(and their TarifaPorMetroCuadrado / TarifaPorcentajeObra via CASCADE)")
         else:
-            self._log(f"  [DRY-RUN] Would delete all existing EDIFICACION tariffs")
+            if self.dry_run:
+                self._log(f"  [DRY-RUN] Would delete existing tariffs for: {self.liquidaciones_to_process}")
+            else:
+                self._log(f"  [SKIP-DELETE] Skipped deletion of existing tariffs")
 
-        # Process tarifas
+        # STEP 2: Process tarifas from seed JSON (filtered to target liquidation types)
         tarifas_created = 0
         tarifas_updated = 0
         reglas_created = 0
         reglas_updated = 0
         especialidades_ensured = 0
+        skipped_not_in_scope = 0
 
         for tarifa_data in seed_data.get('tarifas', []):
+            tipo_liq = tarifa_data.get('tipo_liquidacion', 'EDIFICACION')
+            if tipo_liq not in self.liquidaciones_to_process:
+                skipped_not_in_scope += 1
+                continue
             result = self._process_tarifa(tarifa_data)
             if result['tarifa_created']:
                 tarifas_created += 1
@@ -153,49 +193,70 @@ class Command(BaseCommand):
         self._log(self.style.SUCCESS(
             f"\n[seed_tarifas_edificacion] Completed:"
         ))
+        self._log(f"  Liquidaciones processed: {self.liquidaciones_to_process}")
         self._log(f"  Tarifas: {tarifas_created} created, {tarifas_updated} updated")
         self._log(f"  Reglas: {reglas_created} created, {reglas_updated} updated")
         self._log(f"  Especialidades ensured: {especialidades_ensured}")
+        if skipped_not_in_scope > 0:
+            self._log(f"  Skipped (not in scope): {skipped_not_in_scope}")
 
-    def _delete_existing_edificacion_tariffs(self):
+    def _delete_existing_tariffs(self):
         """
-        Delete all existing EDIFICACION tariffs from the database.
+        Delete all existing tariffs for the configured liquidation types.
 
-        This deletes:
-        1. All ReglaTarifaEdificacion records linked to EDIFICACION TarifaLiquidacionBase
-        2. All TarifaPorcentajeObra records linked to EDIFICACION TarifaLiquidacionBase
-           (via CASCADE from TarifaLiquidacionBase.delete())
-        3. All TarifaLiquidacionBase records with tipo_liquidacion=EDIFICACION
+        This deletes for each tipo_liquidacion in self.liquidaciones_to_process:
+        1. All ReglaTarifaLiquidacion records (old m2 rule system)
+        2. All ReglaTarifaEdificacion records (percentage rule system)
+        3. All TarifaLiquidacionBase records — CASCADE deletes:
+           - TarifaPorMetroCuadrado (OneToOne)
+           - TarifaPorcentajeObra (OneToOne)
+           - LiquidacionPorMetroCuadrado (FK from TarifaPorMetroCuadrado CASCADE)
 
-        Returns (deleted_reglas_count, deleted_tarifas_count).
+        Returns (deleted_reglas_liq_count, deleted_reglas_edif_count, deleted_tarifas_count).
         """
-        # Get all EDIFICACION TarifaLiquidacionBase IDs first
-        edificacion_bases = TarifaLiquidacionBase.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.EDIFICACION
-        )
+        total_reglas_liq = 0
+        total_reglas_edif = 0
+        total_tarifas = 0
 
-        # Count reglas before deletion
-        regla_count = ReglaTarifaEdificacion.objects.filter(
-            tarifa_base__tipo_liquidacion=TipoLiquidacion.EDIFICACION
-        ).count()
+        for tipo_liq in self.liquidaciones_to_process:
+            self._log(f"    Processing deletion for: {tipo_liq}")
 
-        # Count tarifa bases before deletion
-        base_count = edificacion_bases.count()
+            # Count before deletion
+            reglas_liq_count = ReglaTarifaLiquidacion.objects.filter(
+                tarifa_base__tipo_liquidacion=tipo_liq
+            ).count()
+            reglas_edif_count = ReglaTarifaEdificacion.objects.filter(
+                tarifa_base__tipo_liquidacion=tipo_liq
+            ).count()
+            bases = TarifaLiquidacionBase.objects.filter(tipo_liquidacion=tipo_liq)
+            bases_count = bases.count()
 
-        # Delete all ReglaTarifaEdificacion for EDIFICACION
-        reglas_deleted, _ = ReglaTarifaEdificacion.objects.filter(
-            tarifa_base__tipo_liquidacion=TipoLiquidacion.EDIFICACION
-        ).delete()
+            # Delete ReglaTarifaLiquidacion for this type
+            deleted_liq, _ = ReglaTarifaLiquidacion.objects.filter(
+                tarifa_base__tipo_liquidacion=tipo_liq
+            ).delete()
+            total_reglas_liq += deleted_liq
 
-        # Delete all TarifaLiquidacionBase for EDIFICACION (CASCADE deletes TarifaPorcentajeObra)
-        tarifas_deleted, _ = edificacion_bases.delete()
+            # Delete ReglaTarifaEdificacion for this type
+            deleted_edif, _ = ReglaTarifaEdificacion.objects.filter(
+                tarifa_base__tipo_liquidacion=tipo_liq
+            ).delete()
+            total_reglas_edif += deleted_edif
 
-        self._log(self.style.WARNING(
-            f"    Cleared {regla_count} reglas and {base_count} tarifa bases "
-            f"(plus linked TarifaPorcentajeObra via CASCADE)"
-        ))
+            # Delete TarifaLiquidacionBase (CASCADE deletes TarifaPorMetroCuadrado,
+            # TarifaPorcentajeObra, and LiquidacionPorMetroCuadrado via FK CASCADE)
+            deleted_bases, _ = bases.delete()
+            total_tarifas += deleted_bases
 
-        return regla_count, base_count
+            self._log(self.style.WARNING(
+                f"      Cleared {deleted_liq} ReglaTarifaLiquidacion, "
+                f"{deleted_edif} ReglaTarifaEdificacion, "
+                f"{deleted_bases} TarifaLiquidacionBase "
+                f"(plus cascade-deleted TarifaPorMetroCuadrado/TarifaPorcentajeObra/"
+                f"LiquidacionPorMetroCuadrado)"
+            ))
+
+        return total_reglas_liq, total_reglas_edif, total_tarifas
 
     def _log(self, msg):
         """Registra mensaje de forma segura, manejando problemas de codificación en Windows."""

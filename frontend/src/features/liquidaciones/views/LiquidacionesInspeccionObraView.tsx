@@ -13,6 +13,7 @@ import {
   Scale,
   Search,
   Truck,
+  UserCheck,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -21,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LiquidacionInspeccionObraCard } from "../components/LiquidacionInspeccionObraCard";
+import { ConsultarIngenieroDialog } from "../components/ConsultarIngenieroDialog";
 import { LiquidacionInspeccionObraSingleFormModal } from "../components/LiquidacionInspeccionObraSingleFormModal";
 import { printInspeccionObraDocument, adaptIOToPrintData } from "../components/inspeccion-obra-print";
 import { useLiquidacionesInspeccionObra } from "../hooks/useLiquidacionesInspeccionObra";
@@ -39,6 +41,7 @@ export function LiquidacionesInspeccionObraView({
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
   const [ioModalOpen, setIoModalOpen] = useState(false);
+  const [consultDialogOpen, setConsultDialogOpen] = useState(false);
 
   const {
     items: liquidationItems,
@@ -93,6 +96,14 @@ export function LiquidacionesInspeccionObraView({
           >
             <Plus className="h-4 w-4" />
             Nueva Liquidación
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+            onClick={() => setConsultDialogOpen(true)}
+          >
+            <UserCheck className="h-4 w-4" />
+            Consultar ingeniero
           </Button>
         </div>
 
@@ -218,19 +229,16 @@ export function LiquidacionesInspeccionObraView({
         open={ioModalOpen}
         onOpenChange={setIoModalOpen}
         onSuccess={refetchLiquidaciones}
-        onCreated={(created, cotizacion) => {
-          // Post-create direct print for IO — uses cotizacion data if available
-          // IO create response lacks full tariff breakdown, so cotizacion (from form state)
-          // is passed as second argument to provide cantidad_visitas, categoria, etc.
-          const printData = adaptIOToPrintData({
-            public_id: created.liquidacion.public_id,
-            fecha_registro: created.liquidacion.fecha_creacion,
-            expediente: created.liquidacion.expediente,
-            totales: created.totales,
-            cotizacion: cotizacion ?? null,
-          });
+        onCreated={(created) => {
+          // Post-create direct print — flat list item has everything needed
+          const printData = adaptIOToPrintData(created);
           void printInspeccionObraDocument(printData);
         }}
+      />
+
+      <ConsultarIngenieroDialog
+        open={consultDialogOpen}
+        onOpenChange={setConsultDialogOpen}
       />
     </div>
   );

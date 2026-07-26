@@ -21,12 +21,14 @@ from modules.liquidaciones.models import (
     LiquidacionGeneral,
     LiquidacionImpactoVial,
     LiquidacionPorMetroCuadrado,
+    LiquidacionPorcentajeObra,
     LiquidacionProyectista,
 )
 from modules.liquidaciones.tests.factories.especialidad_factory import EspecialidadFactory
 
 
 @pytest.mark.django_db
+@pytest.mark.skip(reason="IV migró a cálculo porcentual (LiquidacionPorcentajeObra). Tests M2 obsoletos. Ver TestImpactoVialPorcentajeEndpoint.")
 class TestImpactoVialEndpoint:
     """Test POST /api/liquidaciones/impacto-vial/ endpoint."""
 
@@ -256,6 +258,7 @@ class TestImpactoVialEndpoint:
 
 
 @pytest.mark.django_db
+@pytest.mark.skip(reason="IV migró a cálculo porcentual (LiquidacionPorcentajeObra). Tests M2 obsoletos. Ver TestImpactoVialPorcentajeEndpoint.")
 class TestImpactoVialProyectistas:
     """Test proyectistas inline in IV creation via POST /primera-revision."""
 
@@ -374,4 +377,277 @@ class TestImpactoVialProyectistas:
         # CIP no reconocido → HttpError 404 o similar (no 200)
         assert response.status_code != 200, (
             f"Expected non-200 for invalid CIP, got {response.status_code}: {response.json()}"
+        )
+
+
+# =============================================================================
+# OBSOLETE — IV ahora usa LiquidacionPorcentajeObra (Edificaciones-style)
+# =============================================================================
+# Los tests de abajo (TestImpactoVialPorcentajeEndpoint) reemplazan estos.
+# IV ya no usa area_solicitada ni LiquidacionPorMetroCuadrado.
+# Marcados como @pytest.mark.skip — el M2 flow para IV fue deprecated.
+# HU y MS siguen usando M2 — esos tests heredados siguen siendo válidos para ellos.
+
+
+@pytest.mark.django_db
+class TestImpactoVialPorcentajeEndpoint:
+    """Test POST /api/liquidaciones/impacto-vial/primera-revision con cálculo porcentual."""
+
+    def setup_method(self):
+        """Seed IGV, UIT, proyecto, municipalidad y tarifa porcentual."""
+        self.igv = IGVFactory()
+        self.uit = UITFactory()
+        self.proyecto = ProyectoFactory()
+
+        from modules.entidades.tests.factories.ubigeo_factory import UbigeoDistritoFactory
+        from modules.entidades.models import Municipalidad
+        self.distrito = UbigeoDistritoFactory()
+        self.municipalidad = Municipalidad.objects.create(
+            codigo="MUN-IV-PCT-001",
+            nombre="Municipalidad de Prueba IV Porcentaje",
+            distrito=self.distrito,
+        )
+
+        # Crear tarifa porcentual (no M2) para IMPACTO_VIAL
+        # Production code ahora usa ReglaTarifaEdificacion (no ReglaTarifaLiquidacion)
+        # para IV/Taludes con cálculo porcentual.
+        from modules.liquidaciones.tests.factories.tarifa_liquidacion_factory import (
+            TarifaLiquidacionBaseFactory,
+        )
+        from modules.liquidaciones.tests.factories.tarifas_test_factory import (
+            ReglaTarifaEdificacionFactory,
+        )
+        from modules.liquidaciones.domain.constants import (
+            TipoTramiteEdificaciones,
+            TramiteAccion,
+        )
+
+        self.tarifa_base = TarifaLiquidacionBaseFactory(
+            tipo_liquidacion="IMPACTO_VIAL",
+        )
+        # TarifaLiquidacionBaseFactory crea TarifaPorcentajeObra automáticamente via
+        # detalle_porcentual RelatedFactory
+        ReglaTarifaEdificacionFactory(
+            tipo_tramite=TipoTramiteEdificaciones.OBRA_NUEVA,
+            tramite_accion=TramiteAccion.PRIMERA_REVISION,
+            tarifa_base=self.tarifa_base,
+        )
+
+    def test_crear_iv_porcentaje_retorna_200(self, client: Client):
+        """
+        POST /primera-revision con valor_proyecto debe retornar 200.
+        IV ahora usa cálculo porcentual (Edificaciones-style).
+        """
+        response = client.post(
+            "/api/liquidaciones/impacto-vial/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "valor_proyecto": 100000.0,
+                    "expediente": "EXP-IV-PCT-001",
+                    "observacion": "Test IV porcentaje",
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        assert "data" in data
+
+    def test_crear_iv_porcentaje_crea_liquidacion_general(self, client: Client):
+        """
+        POST debe crear LiquidacionGeneral para IV porcentual.
+        """
+        count_before = LiquidacionGeneral.objects.count()
+
+        response = client.post(
+            "/api/liquidaciones/impacto-vial/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "valor_proyecto": 100000.0,
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        count_after = LiquidacionGeneral.objects.count()
+        assert count_after == count_before + 1
+
+    def test_crear_iv_porcentaje_crea_liquidacion_impacto_vial(self, client: Client):
+        """
+        POST debe crear LiquidacionImpactoVial.
+        """
+        count_before = LiquidacionImpactoVial.objects.count()
+
+        response = client.post(
+            "/api/liquidaciones/impacto-vial/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "valor_proyecto": 100000.0,
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        count_after = LiquidacionImpactoVial.objects.count()
+        assert count_after == count_before + 1
+
+    def test_crear_iv_porcentaje_respuesta_flat_list_item(self, client: Client):
+        """
+        La respuesta es un flat list item (LiquidacionIVListItemOut) con los campos
+        necesarios para post-create PDF sin refetch.
+
+        Estructura: id, public_id, tipo_liquidacion, estado, fecha_registro,
+        proyecto{valor_proyecto}, municipalidad, valores{subtotal,igv,total,total_a_pagar},
+        revisiones[0]{tarifa{porcentaje_liquidacion,porcentaje_minimo_uit,derecho_minimo}}.
+        """
+        response = client.post(
+            "/api/liquidaciones/impacto-vial/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "valor_proyecto": 100000.0,
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        data = response.json()
+        snapshot = data["data"]
+
+        # Flat list item structure
+        assert "id" in snapshot
+        assert "public_id" in snapshot
+        assert snapshot["tipo_liquidacion"] == "impacto-vial"
+        assert "estado" in snapshot
+        assert "fecha_registro" in snapshot
+        # valor_proyecto en proyecto anidado
+        assert snapshot["proyecto"]["valor_proyecto"] == 100000.0
+        # municipalidad
+        assert "municipalidad" in snapshot
+        assert "nombre" in snapshot["municipalidad"]
+        # valores financieros (con IGV para porcentaje)
+        valores = snapshot["valores"]
+        assert valores["subtotal"] > 0
+        assert valores["igv"] > 0  # Porcentaje tiene IGV
+        assert valores["total"] > valores["subtotal"]  # total = subtotal + igv
+        assert valores["total_a_pagar"] == valores["total"]
+        # Revision con tarifa porcentual
+        assert "revisiones" in snapshot
+        assert len(snapshot["revisiones"]) > 0
+        tarifa = snapshot["revisiones"][0]["tarifa"]
+        assert tarifa is not None
+        assert "porcentaje_liquidacion" in tarifa
+        assert "porcentaje_minimo_uit" in tarifa
+        assert "derecho_minimo" in tarifa
+
+    def test_impacto_vial_porcentaje_igv_mayor_cero_total_mayor_subtotal(self, client: Client):
+        """
+        IV porcentual debe tener igv > 0 y total > subtotal.
+        (Antes IV era M2 con igv=0; ahora es porcentaje con IGV como Edificaciones.)
+        Estructura: valores{subtotal,igv,total,total_a_pagar} en flat list item.
+        """
+        response = client.post(
+            "/api/liquidaciones/impacto-vial/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "valor_proyecto": 100000.0,
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        data = response.json()
+        snapshot = data["data"]
+
+        valores = snapshot["valores"]
+        # IGV debe ser > 0 (Edificaciones-style con IGV)
+        assert valores["igv"] > 0, (
+            f"IV porcentual debe tener igv > 0, got {valores['igv']}"
+        )
+        # total debe ser mayor que subtotal (porque total = subtotal + igv)
+        assert valores["total"] > valores["subtotal"], (
+            f"total ({valores['total']}) debe ser mayor que subtotal ({valores['subtotal']})"
+        )
+        # total_a_pagar debe incluir igv
+        assert valores["total_a_pagar"] == valores["total"]
+
+    def test_impacto_vial_porcentaje_derecho_minimo_en_tarifa(self, client: Client):
+        """
+        La respuesta flat list item incluye derecho_minimo en revisiones[0].tarifa.
+        El derecho real (>= derecho_minimo) se refleja en valores.subtotal.
+        """
+        # valor_proyecto = 1000.0, porcentaje = 0.05 (5%) → 50
+        # derecho_minimo default de TarifaPorcentajeObraFactory es 500.00
+        # Entonces 1000 * 0.05 = 50 < 500 → derecho debería ser 500 (mínimo)
+        response = client.post(
+            "/api/liquidaciones/impacto-vial/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "valor_proyecto": 1000.0,  # 1000 * 0.05 = 50 < 500 (derecho_minimo)
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        data = response.json()
+        snapshot = data["data"]
+
+        # derecho_minimo debe estar en la tarifa de la revisión
+        tarifa = snapshot["revisiones"][0]["tarifa"]
+        assert tarifa["derecho_minimo"] == Decimal("500.00"), (
+            f"derecho_minimo debe ser 500.00, got {tarifa['derecho_minimo']}"
+        )
+        # valores.subtotal debe ser >= derecho_minimo (el derecho calculado >= mínimo legal)
+        assert Decimal(str(snapshot["valores"]["subtotal"])) >= Decimal("500.00"), (
+            f"subtotal ({snapshot['valores']['subtotal']}) debe ser >= derecho_minimo (500.00)"
+        )
+
+    def test_impacto_vial_porcentaje_derecho_maximo_en_tarifa(self, client: Client):
+        """
+        La respuesta flat list item incluye derecho_maximo en revisiones[0].tarifa.
+        El derecho real (capped a derecho_maximo) se refleja en valores.subtotal.
+        """
+        # Override derecho_maximo a 1000.00
+        from modules.liquidaciones.domain.models.liquidacion.liquidacion import TarifaPorcentajeObra
+        TarifaPorcentajeObra.objects.update(
+            derecho_maximo=Decimal("1000.00"),
+        )
+        # valor_proyecto = 100000.0, porcentaje = 0.05 → 5000 > 1000 (capped)
+        response = client.post(
+            "/api/liquidaciones/impacto-vial/primera-revision",
+            data={
+                "liquidacion": {
+                    "proyecto_public_id": self.proyecto.public_id,
+                    "municipalidad_id": str(self.municipalidad.id),
+                    "valor_proyecto": 100000.0,
+                }
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        data = response.json()
+        snapshot = data["data"]
+
+        # derecho_maximo debe estar en la tarifa de la revisión
+        tarifa = snapshot["revisiones"][0]["tarifa"]
+        assert tarifa["derecho_maximo"] is not None, (
+            "derecho_maximo debe estar presente en tarifa"
+        )
+        assert Decimal(str(tarifa["derecho_maximo"])) == Decimal("1000.00"), (
+            f"derecho_maximo debe ser 1000.00, got {tarifa['derecho_maximo']}"
+        )
+        # valores.subtotal debe ser capped a derecho_maximo = 1000.00
+        assert Decimal(str(snapshot["valores"]["subtotal"])) <= Decimal("1000.00"), (
+            f"subtotal ({snapshot['valores']['subtotal']}) debe estar capped a derecho_maximo (1000.00)"
         )

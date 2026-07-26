@@ -441,6 +441,7 @@ class LiquidacionEdificacionesPresenter:
                     derecho_minimo=float(rev.tarifa.derecho_minimo),
                     derecho_maximo=float(rev.tarifa.derecho_maximo) if rev.tarifa.derecho_maximo else None,
                     porcentaje_minimo_uit=float(rev.tarifa.porcentaje_minimo_uit),
+                    porcentaje_liquidacion=float(rev.tarifa.porcentaje_liquidacion),
                 ),
                 monto_base=float(rev.monto_base),
                 cobra=rev.cobra,

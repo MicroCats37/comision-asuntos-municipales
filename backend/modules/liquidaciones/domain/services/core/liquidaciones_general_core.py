@@ -31,11 +31,10 @@ from modules.liquidaciones.domain.schemas import (
 
 
 # M² liquidacion types — IGV must NOT be added to total_a_pagar
+# NOTA: IMPACTO_VIAL y TALUDES fueron migrados a cálculo porcentual (Edificaciones-style) con IGV
 M2_LIQUIDACION_TYPES = frozenset({
     "HABILITACION_URBANA",
     "MECANICA_SUELOS",
-    "IMPACTO_VIAL",
-    "TALUDES",
 })
 
 
@@ -113,7 +112,6 @@ class LiquidacionesGeneralService:
             subtotal_val = float(liq.sub_total) if liq.sub_total else 0.0
             igv_valor = float(liq.igv.valor) if liq.igv and liq.igv.valor else 0.0
             igv_amount = subtotal_val * igv_valor
-            total_liquidacion = subtotal_val + igv_amount
 
             tipo_liq_slug = (
                 liq.tipo_liquidacion.lower().replace('_', '-')
@@ -125,8 +123,10 @@ class LiquidacionesGeneralService:
             if is_m2:
                 igv_amount = 0.0
                 total_a_pagar = subtotal_val
+                total_liquidacion = subtotal_val  # M2: total does not include IGV
             else:
-                total_a_pagar = total_liquidacion
+                total_a_pagar = subtotal_val + igv_amount
+                total_liquidacion = total_a_pagar
 
             # --- Proyecto ---
             valor_proyecto = 0.0
@@ -251,7 +251,30 @@ class LiquidacionesGeneralService:
                             'porcentaje_liquidacion': float(tarifa.porcentaje_liquidacion) if tarifa and tarifa.porcentaje_liquidacion is not None else None,
                         },
                     })
-            elif tipo_enum in ('HABILITACION_URBANA', 'MECANICA_SUELOS', 'IMPACTO_VIAL', 'TALUDES'):
+            elif tipo_enum in ('IMPACTO_VIAL', 'TALUDES'):
+                # IMPACTO_VIAL y TALUDES ahora usan LiquidacionPorcentajeObra (Edificaciones-style)
+                for lpo in lpo_list:
+                    tarifa = lpo.tarifa_aplicada
+                    especialidades_list = []
+                    if tarifa and tarifa.tarifa_base:
+                        for esp in tarifa.tarifa_base.especialidades.all():
+                            especialidades_list.append({
+                                'id': str(esp.id),
+                                'nombre': esp.nombre,
+                            })
+                    # All tariff fields from TarifaPorcentajeObra
+                    revisiones_list.append({
+                        'id': str(lpo.id),
+                        'especialidades': especialidades_list,
+                        'tarifa': {
+                            'id': str(tarifa.id) if tarifa else '',
+                            'derecho_minimo': float(tarifa.derecho_minimo) if tarifa and tarifa.derecho_minimo is not None else None,
+                            'derecho_maximo': float(tarifa.derecho_maximo) if tarifa and tarifa.derecho_maximo is not None else None,
+                            'porcentaje_minimo_uit': float(tarifa.porcentaje_minimo_uit) if tarifa and tarifa.porcentaje_minimo_uit is not None else None,
+                            'porcentaje_liquidacion': float(tarifa.porcentaje_liquidacion) if tarifa and tarifa.porcentaje_liquidacion is not None else None,
+                        },
+                    })
+            elif tipo_enum in ('HABILITACION_URBANA', 'MECANICA_SUELOS'):
                 # Iterate over ALL liquidacion_m2 records, not just first
                 for m2_data in liq.liquidacion_m2.all():
                     if not m2_data.tarifa_aplicada:
@@ -269,6 +292,7 @@ class LiquidacionesGeneralService:
                     area_m2 = float(t.area_m2) if t.area_m2 is not None else None
                     derecho_minimo = float(t.derecho_minimo) if t.derecho_minimo is not None else None
                     derecho_maximo = float(t.derecho_maximo) if t.derecho_maximo is not None else None
+                    area_solicitada = float(m2_data.area_solicitada) if m2_data.area_solicitada is not None else None
                     revisiones_list.append({
                         'id': str(m2_data.id),
                         'especialidades': especialidades_list,
@@ -276,6 +300,7 @@ class LiquidacionesGeneralService:
                             'id': str(t.id),
                             'costo_por_m2': costo_por_m2,
                             'area_m2': area_m2,
+                            'area_solicitada': area_solicitada,
                             'derecho_minimo': derecho_minimo,
                             'derecho_maximo': derecho_maximo,
                         },
@@ -314,12 +339,22 @@ class LiquidacionesGeneralService:
             if tipo_enum == 'EDIFICACION' and liq.edificaciones:
                 tramite_accion = liq.edificaciones.tramite_accion
                 tipo_tramite = liq.edificaciones.tipo_tramite
-            elif tipo_enum in ('HABILITACION_URBANA', 'MECANICA_SUELOS', 'IMPACTO_VIAL', 'TALUDES'):
+            elif tipo_enum in ('IMPACTO_VIAL', 'TALUDES'):
+                # IMPACTO_VIAL y TALUDES ahora usan LiquidacionPorcentajeObra
+                # pero aún tienen extension models con tramite_accion
+                type_attr_map = {
+                    'IMPACTO_VIAL': 'impacto_vial',
+                    'TALUDES': 'taludes',
+                }
+                attr_name = type_attr_map.get(tipo_enum)
+                if attr_name:
+                    ext_model = getattr(liq, attr_name, None)
+                    if ext_model:
+                        tramite_accion = getattr(ext_model, 'tramite_accion', None)
+            elif tipo_enum in ('HABILITACION_URBANA', 'MECANICA_SUELOS'):
                 type_attr_map = {
                     'HABILITACION_URBANA': 'habilitacion_urbana',
                     'MECANICA_SUELOS': 'mecanica_suelos',
-                    'IMPACTO_VIAL': 'impacto_vial',
-                    'TALUDES': 'taludes',
                 }
                 attr_name = type_attr_map.get(tipo_enum)
                 if attr_name:
@@ -414,15 +449,17 @@ class LiquidacionesGeneralService:
         if liquidacion.igv and liquidacion.igv.valor:
             igv_valor = liquidacion.igv.valor
 
-        total_liquidacion = float(subtotal) if subtotal else 0.0
-        igv_amount = total_liquidacion * float(igv_valor) if igv_valor else 0.0
+        subtotal_val = float(subtotal) if subtotal else 0.0
+        igv_amount = subtotal_val * float(igv_valor) if igv_valor else 0.0
         # M² types must not add IGV to total_a_pagar
         is_m2 = liquidacion.tipo_liquidacion in M2_LIQUIDACION_TYPES
         if is_m2:
             igv_amount = 0.0
-            total_a_pagar = total_liquidacion
+            total_a_pagar = subtotal_val
+            total_liquidacion = subtotal_val  # M2: total does not include IGV
         else:
-            total_a_pagar = total_liquidacion + igv_amount
+            total_a_pagar = subtotal_val + igv_amount
+            total_liquidacion = total_a_pagar
 
         # Obtener nombre de municipalidad
         municipalidad_nombre = None
@@ -452,9 +489,9 @@ class LiquidacionesGeneralService:
             municipalidad_id=liquidacion.municipalidad.id if liquidacion.municipalidad else None,
             municipalidad_nombre=municipalidad_nombre,
             # Campos financieros
-            subtotal=Decimal(str(total_liquidacion)) if total_liquidacion else Decimal('0'),
+            subtotal=Decimal(str(subtotal_val)) if subtotal_val else Decimal('0'),
             igv=Decimal(str(igv_amount)) if igv_amount else Decimal('0'),
-            total=Decimal(str(total_liquidacion + igv_amount)) if total_liquidacion or igv_amount else Decimal('0'),
+            total=Decimal(str(total_liquidacion)) if total_liquidacion else Decimal('0'),
             total_a_pagar=Decimal(str(total_a_pagar)) if total_a_pagar else Decimal('0'),
         )
 

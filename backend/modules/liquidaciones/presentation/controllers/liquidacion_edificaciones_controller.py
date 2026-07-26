@@ -89,6 +89,41 @@ class LiquidacionEdificacionesController:
             total_pages=total_pages,
         ))
 
+    @route.get("/buscar-por-documento", response={200: ApiResponse[PaginatedData[LiquidacionEdificacionOut]]}, auth=None)
+    async def buscar_liquidaciones_por_documento(
+        self,
+        numero_documento: str = Query(..., description="DNI o RUC de la entidad asociada al proyecto"),
+        page: int = Query(1, ge=1, description="Número de página"),
+        page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),
+    ):
+        """
+        Buscar liquidaciones de edificaciones por documento de entidad.
+
+        Retorna la misma estructura completa que la lista de edificaciones, pero
+        filtrada por DNI/RUC y mostrando solo la revisión más alta por proyecto.
+        """
+        result = await self.orchestrator.listar_liquidaciones(
+            page=page,
+            page_size=page_size,
+            numero_documento=numero_documento,
+            latest_per_project=True,
+        )
+
+        items_out = []
+        for item in result.items:
+            detalle = await self.orchestrator.obtener_liquidacion_por_id(str(item.id))
+            items_out.append(LiquidacionEdificacionesPresenter.present(detalle))
+
+        total_pages = (result.total + page_size - 1) // page_size if result.total > 0 else 1
+
+        return success_response(PaginatedData(
+            items=items_out,
+            total=result.total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+        ))
+
     @route.post("/nueva-liquidacion", response={200: ApiResponse[LiquidacionEdificacionOut]}, auth=None)
     async def crear_nueva_liquidacion(self, payload: PrimeraRevisionLiquidacionWrapperIn):
         """
@@ -221,6 +256,7 @@ class LiquidacionEdificacionesController:
         result = await self.orchestrator.cotizar_nueva_revision(
             liquidacion_previa_id=str(payload.liquidacion_previa_id),
             revisiones_ids=payload.revisiones_ids,
+            tipo_tramite=payload.tipo_tramite,
         )
         return success_response(LiquidacionEdificacionesPresenter.present_cotizacion(result))
 
@@ -295,8 +331,10 @@ class LiquidacionEdificacionesController:
             ],
             # Fase 3 refactor: tarifas_ids para selección explícita en nueva revisión
             tarifas_ids=[str(tid) for tid in payload.tarifas_ids] if payload.tarifas_ids else None,
+            tipo_tramite=payload.tipo_tramite,
         )
-        return success_response(LiquidacionEdificacionesPresenter.present(result))
+        detalle = await self.orchestrator.obtener_liquidacion_por_id(str(result.id))
+        return success_response(LiquidacionEdificacionesPresenter.present(detalle))
 
     @route.get("/revisiones-vigentes", response={200: ApiResponse[RevisionesVigentesOut]}, auth=None)
     async def obtener_revisiones_vigentes(

@@ -130,24 +130,9 @@ export interface CotizacionMecanicaSuelosResponse {
 
 /**
  * Respuesta de creación de Mecánica de Suelos.
+ * Now returns the flat list item shape with all related data for immediate post-create PDF.
  */
-export interface CrearMecanicaSuelosResponse {
-  liquidacion: {
-    id: string;
-    public_id: string;
-    estado: string;
-    fecha_creacion: string;
-    expediente: string | null;
-    observacion: string | null;
-  };
-  totales: {
-    subtotal: number;
-    igv: number;
-    total: number;
-    liquidacion_total: number;
-    total_a_pagar: number;
-  };
-}
+export type CrearMecanicaSuelosResponse = LiquidacionMecanicaSuelosListItem;
 
 // ── Nested Types for List Items ──────────────────────────────────────────────
 
@@ -177,6 +162,8 @@ export interface MunicipalidadListItem {
 
 export interface ValoresM2ListItem {
   subtotal: number;
+  igv: number;
+  total: number;
   total_a_pagar: number;
 }
 
@@ -221,6 +208,7 @@ export interface TarifaRevisionListItem {
   // M2 fields
   costo_por_m2?: number | null;
   area_m2?: number | null;
+  area_solicitada?: number | null;  // User-requested area from LiquidacionPorMetroCuadrado
   derecho_minimo?: number | null;
   derecho_maximo?: number | null;
 }

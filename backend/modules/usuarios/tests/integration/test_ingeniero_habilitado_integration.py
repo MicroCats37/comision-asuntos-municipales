@@ -145,3 +145,95 @@ class TestIngenieroHabilitadoSchemaValidation:
 
         extra_keys = actual_keys - expected_keys
         assert not extra_keys, f"Respuesta contiene campos extra no definidos en schema: {extra_keys}"
+
+
+class TestCipServiceUnavailableErrorIsHttpError:
+    """Unit tests verifying CipServiceUnavailableError is a proper HttpError with 503.
+
+    The core fix: CipServiceUnavailableError was a plain Exception (caught by
+    catch-all handler → 500). It is now an HttpError subclass (caught by
+    HttpError handler → 503 with proper envelope). These unit tests prove
+    the exception class itself is correctly defined.
+
+    Bug:
+    - timeout: CipServiceUnavailableError: CIP API timeout for CIP 030000
+    - non-200/400 response: CipServiceUnavailableError: CIP API returned 400 for CIP 999999
+    These external service/search errors were returning plain 500 due to being plain Exception.
+
+    Fix verification:
+    - CipServiceUnavailableError is now an HttpError subclass with status 503
+    - The HttpError exception handler returns 503 with standard error envelope
+    - The catch-all Exception handler no longer catches it (so no 500)
+    """
+
+    def test_cip_service_unavailable_error_is_http_error_subclass(self):
+        """
+        Verify CipServiceUnavailableError is an HttpError subclass, not plain Exception.
+        This is the core of the fix - the exception must be caught by the
+        HttpError handler (returns proper 503) instead of the catch-all Exception
+        handler (returns generic 500).
+        """
+        from ninja.errors import HttpError
+        from core.exceptions import CipServiceUnavailableError
+
+        assert issubclass(CipServiceUnavailableError, HttpError), (
+            "CipServiceUnavailableError must be an HttpError subclass"
+        )
+
+    def test_cip_service_unavailable_error_has_503_status(self):
+        """Verify the exception carries status code 503."""
+        from core.exceptions import CipServiceUnavailableError
+
+        exc = CipServiceUnavailableError("CIP API timeout")
+        assert exc.status_code == 503, (
+            f"Expected status 503, got {exc.status_code}"
+        )
+
+    def test_cip_service_unavailable_error_code(self):
+        """Verify the exception has the correct error code CIP_SERVICE_UNAVAILABLE."""
+        from core.exceptions import CipServiceUnavailableError
+
+        exc = CipServiceUnavailableError("CIP API unavailable")
+        assert exc.code == "CIP_SERVICE_UNAVAILABLE", (
+            f"Expected code CIP_SERVICE_UNAVAILABLE, got {exc.code}"
+        )
+
+    def test_cip_service_unavailable_error_message(self):
+        """Verify the exception carries the detail message."""
+        from core.exceptions import CipServiceUnavailableError
+
+        detail = "CIP API timeout for CIP 030000"
+        exc = CipServiceUnavailableError(detail)
+        # HttpError stores message as .message attribute
+        assert detail in str(exc.message) or detail in str(exc)
+
+    def test_cip_not_found_error_is_still_http_error_with_404(self):
+        """
+        Verify CipNotFoundError is still a separate HttpError with 404.
+        This ensures the fix for service unavailable didn't affect not-found behavior.
+        """
+        from ninja.errors import HttpError
+        from core.exceptions import CipNotFoundError
+
+        assert issubclass(CipNotFoundError, HttpError)
+        exc = CipNotFoundError(cip="999999")
+        assert exc.status_code == 404
+        assert exc.code == "CIP_NOT_FOUND"
+
+    def test_service_unavailable_vs_not_found_are_separate_exceptions(self):
+        """
+        Verify that CipServiceUnavailableError and CipNotFoundError are distinct
+        exception types with different status codes.
+        """
+        from core.exceptions import CipServiceUnavailableError, CipNotFoundError
+
+        unavailable_exc = CipServiceUnavailableError("CIP API unavailable")
+        not_found_exc = CipNotFoundError(cip="123456")
+
+        assert unavailable_exc.status_code == 503
+        assert not_found_exc.status_code == 404
+
+        assert unavailable_exc.status_code != not_found_exc.status_code
+
+        assert not isinstance(unavailable_exc, CipNotFoundError)
+        assert not isinstance(not_found_exc, CipServiceUnavailableError)

@@ -50,8 +50,8 @@ export interface CrearTaludesPrimeraRevisionIn {
   proyecto_inline?: ProyectoInline;
   /** ID de la municipalidad */
   municipalidad_id: string;
-  /** Área solicitada en metros cuadrados */
-  area_solicitada: number;
+  /** Valor del proyecto (S/) — reemplaza area_solicitada */
+  valor_proyecto: number;
   /** Número de expediente (opcional) */
   expediente?: string;
   /** Observación adicional (opcional) */
@@ -69,31 +69,34 @@ export interface CrearTaludesPrimeraRevisionIn {
  * municipalidad_id NO es requerida para cotizar; solo para creación final.
  */
 export interface CotizarTaludesPrimeraRevisionIn {
-  area_solicitada: number;
+  valor_proyecto: number;
   tarifas_ids: string[];
 }
 
-// ── Cotizar Response ───────────────────────────────────────────────────────────
+// ── Cotizar Response (percentage-based — matches Edificaciones CotizacionQuote) ──
 
 /**
- * Tarifa en respuesta de cotización de Taludes.
+ * Tarifa en respuesta de cotización de Taludes (porcentaje).
+ * Note: now matches CotizacionTarifa from liquidacion-edificaciones.types.ts.
  */
 export interface CotizacionTaludesTarifa {
   id: string;
-  costo_por_m2: number;
-  area_m2: number;
   derecho_minimo: number;
   derecho_maximo: number | null;
+  porcentaje_minimo_uit: number;
+  porcentaje_liquidacion: number;
 }
 
 /**
- * Cálculo en respuesta de cotización de Taludes.
+ * Revisión en respuesta de cotización de Taludes (porcentaje).
+ * Matches CotizacionRevision from liquidacion-edificaciones.types.ts.
  */
-export interface CotizacionTaludesCalculo {
-  area_solicitada: number;
-  area_base_calculo: number;
-  derecho: number;
+export interface CotizacionTaludesRevision {
+  id: string;
+  especialidades: Array<{ id: string; nombre: string }>;
   tarifa: CotizacionTaludesTarifa;
+  monto_base: number;
+  cobra: boolean;
 }
 
 /**
@@ -109,19 +112,22 @@ export interface CotizacionTaludesTotales {
 
 /**
  * Metadata en respuesta de cotización.
+ * Matches CotizacionMetadata from liquidacion-edificaciones.types.ts.
  */
 export interface CotizacionTaludesMetadata {
   igv_valor: number;
   uit_valor: number;
-  area_solicitada?: number;
+  cobra: boolean;
+  valor_base_calculo: number;
 }
 
 /**
- * Respuesta de cotización de Taludes.
+ * Respuesta de cotización de Taludes (porcentaje-based — matches CotizacionQuote).
+ * Now uses the same shape as Edificaciones: revisiones[] instead of calculo.
  */
 export interface CotizacionTaludesResponse {
   numero_revision: number;
-  calculo_m2: CotizacionTaludesCalculo;
+  revisiones: CotizacionTaludesRevision[];
   totales: CotizacionTaludesTotales;
   _metadata: CotizacionTaludesMetadata;
 }
@@ -130,24 +136,9 @@ export interface CotizacionTaludesResponse {
 
 /**
  * Respuesta de creación de Taludes.
+ * Now returns the flat list item shape with all related data for immediate post-create PDF.
  */
-export interface CrearTaludesResponse {
-  liquidacion: {
-    id: string;
-    public_id: string;
-    estado: string;
-    fecha_creacion: string;
-    expediente: string | null;
-    observacion: string | null;
-  };
-  totales: {
-    subtotal: number;
-    igv: number;
-    total: number;
-    liquidacion_total: number;
-    total_a_pagar: number;
-  };
-}
+export type CrearTaludesResponse = LiquidacionTaludesListItem;
 
 // ── Nested Types for List Items ──────────────────────────────────────────────
 
@@ -177,6 +168,8 @@ export interface MunicipalidadListItem {
 
 export interface ValoresM2ListItem {
   subtotal: number;
+  igv: number;
+  total: number;
   total_a_pagar: number;
 }
 
@@ -218,11 +211,14 @@ export interface ContactoListItem {
 
 export interface TarifaRevisionListItem {
   id: string;
-  // M2 fields
+  // M2 fields (deprecated — retained for backward compatibility)
   costo_por_m2?: number | null;
   area_m2?: number | null;
   derecho_minimo?: number | null;
   derecho_maximo?: number | null;
+  // Percentage fields (current)
+  porcentaje_liquidacion?: number | null;
+  porcentaje_minimo_uit?: number | null;
 }
 
 export interface EspecialidadRevisionListItem {
@@ -272,13 +268,13 @@ export interface LiquidacionesTaludesPaginated {
 // ── Tarifa Vigente ────────────────────────────────────────────────────────────
 
 /**
- * Tarifa vigente para Taludes.
+ * Tarifa vigente para Taludes (porcentaje-based).
  */
 export interface TarifaVigenteTaludes {
   tarifa_id: string;
-  costo_por_m2: number;
-  area_m2: number;
+  porcentaje_liquidacion: number;
   derecho_minimo: number;
   derecho_maximo: number | null;
+  porcentaje_minimo_uit: number;
   habilitada: boolean;
 }

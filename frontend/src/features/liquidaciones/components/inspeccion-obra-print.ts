@@ -3,7 +3,7 @@
 /**
  * IO-specific print adapter for LiquidacionInspeccionObra.
  *
- * Adapts CrearInspeccionObraResponse + CotizacionIOResponse to a print-friendly structure
+ * Adapts CrearInspeccionObraResponse (flat list item) to a print-friendly structure
  * and renders an IO-specific PDF element (visitas-based, NOT area-based).
  *
  * Key differences from HU/MS/IV/Taludes print:
@@ -11,9 +11,12 @@
  * - Shows costo_por_visita × visitas instead of area × costo_por_m2
  * - Uses visitas units throughout
  * - Does NOT show m² labels (wrong for IO)
+ *
+ * Note: The flat list item has visitas data in revisiones[0].tarifa.
+ * cotizacion is no longer needed at create time — all needed data
+ * is persisted in the LiquidacionInspeccionObra record.
  */
-
-import type { CotizacionIOResponse } from "../types/liquidacion-inspeccion-obra.types";
+import type { CrearInspeccionObraResponse } from "../types/liquidacion-inspeccion-obra.types";
 
 // ── Adapter ───────────────────────────────────────────────────────────────────
 
@@ -36,7 +39,7 @@ export interface IOPPrintData {
   costo_por_visita: number;
   /** Visitas minimas from tariff */
   visitas_minimas: number;
-  /** Derecho (total derecho) from cotizacion */
+  /** Derecho (total derecho) — equals subtotal for IO */
   derecho: number;
   subtotal: number;
   igv: number;
@@ -49,45 +52,33 @@ export interface IOPPrintData {
   proyecto_nombre: string;
 }
 
-export interface IOPPrintAdapterInput {
-  public_id: string;
-  fecha_registro: string;
-  expediente: string | null;
-  municipalidad_codigo?: string | null;
-  municipalidad_nombre?: string;
-  totales: {
-    subtotal: number;
-    igv: number;
-    total: number;
-    liquidacion_total: number;
-    total_a_pagar: number;
-  };
-  /** Optional cotizacion data with full tariff breakdown */
-  cotizacion?: CotizacionIOResponse | null;
-  proyecto_nombre?: string;
-  proponente_nombre?: string;
-}
-
-export function adaptIOToPrintData(input: IOPPrintAdapterInput): IOPPrintData {
-  const calc = input.cotizacion?.calculo_visitas;
+/**
+ * Adapt from flat CrearInspeccionObraResponse (LiquidacionInspeccionObraListItem).
+ * Reads visitas data from revisiones[0].tarifa, valores from flat structure.
+ */
+export function adaptIOToPrintData(
+  created: CrearInspeccionObraResponse,
+): IOPPrintData {
+  const primeraRevision = created.revisiones?.[0];
+  const tarifa = primeraRevision?.tarifa;
   return {
-    public_id: input.public_id,
-    fecha_registro: input.fecha_registro,
-    expediente: input.expediente,
-    municipalidad_codigo: input.municipalidad_codigo ?? null,
-    municipalidad_nombre: input.municipalidad_nombre ?? "—",
-    cantidad_visitas: calc?.cantidad_visitas ?? 0,
-    categoria: calc?.categoria ?? "—",
-    costo_por_visita: calc?.tarifa?.costo_por_visita ?? 0,
-    visitas_minimas: calc?.tarifa?.visitas_minimas ?? 0,
-    derecho: calc?.derecho ?? input.totales.subtotal,
-    subtotal: input.totales.subtotal,
-    igv: input.totales.igv,
-    total: input.totales.total,
-    liquidacion_total: input.totales.liquidacion_total,
-    total_a_pagar: input.totales.total_a_pagar,
-    proyecto_nombre: input.proyecto_nombre ?? "—",
-    proponente_nombre: input.proponente_nombre ?? "—",
+    public_id: created.public_id,
+    fecha_registro: created.fecha_registro,
+    expediente: null, // Not available in IO list item (only Edificaciones)
+    municipalidad_codigo: created.municipalidad.codigo,
+    municipalidad_nombre: created.municipalidad.nombre,
+    cantidad_visitas: tarifa?.cantidad_visitas ?? 0,
+    categoria: tarifa?.categoria ?? "—",
+    costo_por_visita: tarifa?.costo_por_visita ?? 0,
+    visitas_minimas: tarifa?.visitas_minimas ?? 0,
+    derecho: created.valores.subtotal, // derecho = subtotal for IO
+    subtotal: created.valores.subtotal,
+    igv: created.valores.igv,
+    total: created.valores.total,
+    liquidacion_total: created.valores.total,
+    total_a_pagar: created.valores.total_a_pagar,
+    proyecto_nombre: created.proyecto.nombre,
+    proponente_nombre: created.entidad?.nombre ?? "—",
   };
 }
 

@@ -69,7 +69,7 @@ export function useCotizacionPrimeraRevision() {
 export function useCotizacionNuevaRevision() {
   const mutation = useApiCreate<
     z.infer<typeof cotizacionQuoteResponseSchema>,
-    { liquidacion_previa_id: string; revisiones_ids: string[] }
+    { liquidacion_previa_id: string; revisiones_ids: string[]; tipo_tramite?: string }
   >({
     url: `${BASE_URL}/cotizar/nueva-revision`,
     schema: cotizacionQuoteResponseSchema,
@@ -84,6 +84,7 @@ export function useCotizacionNuevaRevision() {
     mutateAsync: async (payload: {
       liquidacion_previa_id: string;
       revisiones_ids: string[];
+      tipo_tramite?: string;
     }): Promise<CotizacionQuote> => {
       const result = await mutation.mutateAsync(payload);
       // Extract inner data from {success, data: CotizacionQuote, error}

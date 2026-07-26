@@ -19,6 +19,7 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { formatDecimalPercent } from "@/utils/number-formatter";
 import type { LiquidacionSnapshotListItem } from "../types/liquidacion-edificaciones";
 import { LiquidacionCardHeader, type LiquidacionCardHeaderData } from "./LiquidacionCardHeader";
 import { formatCurrency, formatDate } from "./LiquidacionGeneralCard";
@@ -407,7 +408,7 @@ export function LiquidacionEdificacionCard({
                         </span>
                         <span className="text-sm font-bold text-foreground">
                           {rev.tarifa?.porcentaje_liquidacion != null
-                            ? `${Number(rev.tarifa.porcentaje_liquidacion).toFixed(4)}%`
+                            ? formatDecimalPercent(Number(rev.tarifa.porcentaje_liquidacion))
                             : "—"}
                         </span>
                       </div>

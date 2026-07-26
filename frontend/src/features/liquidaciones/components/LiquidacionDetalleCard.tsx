@@ -18,6 +18,7 @@ import type { LiquidacionCardBase } from "../types/liquidacion-general";
 import { LiquidacionCardHeader } from "./LiquidacionCardHeader";
 import { GestionarDelegadosModal } from "./GestionarDelegadosModal";
 import { printLiquidacionDocument } from "./LiquidacionPDFModal";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useState } from "react";
 
 export function kindLabel(tipo_liquidacion: string | null | undefined): string {
@@ -97,6 +98,8 @@ export function LiquidacionDetalleCard({ item, typeLabel, typeSpecificSummary }:
 
   const [delegadosModalOpen, setDelegadosModalOpen] = useState(false);
   const tipoLiquidacion = tipo_liquidacion || "edificacion";
+  const currentUser = useAuthStore((state) => state.user);
+  const pdfUser = currentUser ? { nombres: currentUser.nombres, apellidos: currentUser.apellidos } : undefined;
 
   return (
     <div className="space-y-4">
@@ -116,8 +119,8 @@ export function LiquidacionDetalleCard({ item, typeLabel, typeSpecificSummary }:
             <div className="flex items-center gap-2">
               <span
                 role="button" tabIndex={0}
-                onClick={() => { void printLiquidacionDocument(item); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") void printLiquidacionDocument(item); }}
+                onClick={() => { void printLiquidacionDocument(item, pdfUser); }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") void printLiquidacionDocument(item, pdfUser); }}
                 className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer select-none transition-colors"
               >
                 <FileDown className="h-3 w-3" />

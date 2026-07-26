@@ -42,6 +42,7 @@ export function useNuevaRevisionFormulario(
     schema: nuevaRevisionFormularioResponseSchema,
     queryOptions: {
       enabled: enabled && !!liquidacionPreviaId,
+      retry: false,
       staleTime: 1000 * 60 * 5, // 5 minutes
       select: (data) => data.data ?? null,
     },

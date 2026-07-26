@@ -13,6 +13,7 @@ import {
   Scale,
   Search,
   Truck,
+  UserCheck,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -21,9 +22,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LiquidacionMecanicaSuelosCard } from "../components/LiquidacionMecanicaSuelosCard";
+import { ConsultarIngenieroDialog } from "../components/ConsultarIngenieroDialog";
 import { LiquidacionMecanicaSuelosSingleFormModal } from "../components/LiquidacionMecanicaSuelosSingleFormModal";
-import { printMecanicaSuelosDocument, type MSPrintData } from "../components/mecanica-suelos-print";
 import { useLiquidacionesMecanicaSuelos } from "../hooks/useLiquidacionesMecanicaSuelos";
+import { MSToCardBase } from "../components/mecanica-suelos-print";
+import { printLiquidacionDocument } from "../components/LiquidacionPDFModal";
+import { printCreatedLiquidacion } from "@/lib/printCreatedLiquidacion";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
 import type { CrearMecanicaSuelosResponse } from "../types/liquidacion-mecanica-suelos.types";
 
@@ -40,6 +44,7 @@ export function LiquidacionesMecanicaSuelosView({
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
   const [msModalOpen, setMsModalOpen] = useState(false);
+  const [consultDialogOpen, setConsultDialogOpen] = useState(false);
 
   const {
     items: liquidationItems,
@@ -72,27 +77,10 @@ export function LiquidacionesMecanicaSuelosView({
     router.push(`/liquidaciones/mecanica-suelos/${item.id}`);
   };
 
-  const handleLiquidacionCreated = (created: CrearMecanicaSuelosResponse) => {
-    const printData: MSPrintData = {
-      public_id: created.liquidacion.public_id,
-      fecha_registro: created.liquidacion.fecha_creacion,
-      expediente: created.liquidacion.expediente,
-      municipalidad_codigo: null,
-      municipalidad_nombre: "—",
-      area_solicitada: 0,
-      costo_por_m2: 0,
-      derecho_minimo: 0,
-      derecho_maximo: null,
-      subtotal: created.totales.subtotal,
-      igv: created.totales.igv,
-      total: created.totales.total,
-      liquidacion_total: created.totales.liquidacion_total,
-      total_a_pagar: created.totales.total_a_pagar,
-      proyecto_nombre: "—",
-      proponente_nombre: "—",
-    };
-
-    void printMecanicaSuelosDocument(printData);
+  const handleLiquidacionCreated = async (created: CrearMecanicaSuelosResponse) => {
+    setMsModalOpen(false);
+    // Post-create direct print — uses same renderer as card/list PDF button
+    void printCreatedLiquidacion(created, MSToCardBase, printLiquidacionDocument);
   };
 
   return (
@@ -117,6 +105,14 @@ export function LiquidacionesMecanicaSuelosView({
           >
             <Plus className="h-4 w-4" />
             Nueva Liquidación
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+            onClick={() => setConsultDialogOpen(true)}
+          >
+            <UserCheck className="h-4 w-4" />
+            Consultar ingeniero
           </Button>
         </div>
 
@@ -243,6 +239,11 @@ export function LiquidacionesMecanicaSuelosView({
         onOpenChange={setMsModalOpen}
         onSuccess={refetchLiquidaciones}
         onCreated={handleLiquidacionCreated}
+      />
+
+      <ConsultarIngenieroDialog
+        open={consultDialogOpen}
+        onOpenChange={setConsultDialogOpen}
       />
     </div>
   );

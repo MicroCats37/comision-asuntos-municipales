@@ -554,6 +554,8 @@ export const cotizacionNuevaRevisionPayloadSchema = z.object({
   revisiones_ids: z
     .array(z.string().uuid())
     .min(1, "Debe seleccionar al menos una revisión"),
+  /** Tipo de trámite — opcional; si se omite el backend hereda de la liquidación previa */
+  tipo_tramite: z.string().optional(),
 });
 
 /** Wrapper schema for cotizar nueva revision request */

@@ -13,6 +13,7 @@ import {
   Scale,
   Search,
   Truck,
+  UserCheck,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -21,10 +22,13 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LiquidacionHabilitacionUrbanaCard } from "../components/LiquidacionHabilitacionUrbanaCard";
+import { ConsultarIngenieroDialog } from "../components/ConsultarIngenieroDialog";
 import { LiquidacionHabilitacionUrbanaSingleFormModal } from "../components/LiquidacionHabilitacionUrbanaSingleFormModal";
-import { printHabilitacionUrbanaDocument, type HuPrintData } from "../components/habilitacion-urbana-print";
 import { useLiquidacionesHabilitacionUrbana } from "../hooks/useLiquidacionesHabilitacionUrbana";
 import { useMunicipalidades } from "../hooks/useMunicipalidades";
+import { HUToCardBase } from "../components/habilitacion-urbana-print";
+import { printLiquidacionDocument } from "../components/LiquidacionPDFModal";
+import { printCreatedLiquidacion } from "@/lib/printCreatedLiquidacion";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
 import type { CrearHabilitacionUrbanaResponse } from "../types/liquidacion-habilitacion-urbana.types";
 
@@ -41,6 +45,7 @@ export function LiquidacionesHabilitacionUrbanaView({
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
   const [huModalOpen, setHuModalOpen] = useState(false);
+  const [consultDialogOpen, setConsultDialogOpen] = useState(false);
 
   const {
     items: liquidationItems,
@@ -75,31 +80,10 @@ export function LiquidacionesHabilitacionUrbanaView({
     router.push(`/liquidaciones/habilitacion-urbana/${item.id}`);
   };
 
-  const handleLiquidacionCreated = (created: CrearHabilitacionUrbanaResponse) => {
-    // HU create response structure:
-    // { liquidacion: { id, public_id, estado, fecha_creacion, expediente, observacion }, totales: { subtotal, igv, total, liquidacion_total, total_a_pagar } }
-    // Note: municipalidad and proyecto info are NOT in the create response.
-    // The print document will use placeholders for these fields.
-    const printData: HuPrintData = {
-      public_id: created.liquidacion.public_id,
-      fecha_registro: created.liquidacion.fecha_creacion,
-      expediente: created.liquidacion.expediente,
-      municipalidad_codigo: null,
-      municipalidad_nombre: "—",
-      area_solicitada: 0,
-      costo_por_m2: 0,
-      derecho_minimo: 0,
-      derecho_maximo: null,
-      subtotal: created.totales.subtotal,
-      igv: created.totales.igv,
-      total: created.totales.total,
-      liquidacion_total: created.totales.liquidacion_total,
-      total_a_pagar: created.totales.total_a_pagar,
-      proyecto_nombre: "—",
-      proponente_nombre: "—",
-    };
-
-    void printHabilitacionUrbanaDocument(printData);
+  const handleLiquidacionCreated = async (created: CrearHabilitacionUrbanaResponse) => {
+    setHuModalOpen(false);
+    // Post-create direct print — uses same renderer as card/list PDF button
+    void printCreatedLiquidacion(created, HUToCardBase, printLiquidacionDocument);
   };
 
   return (
@@ -124,6 +108,14 @@ export function LiquidacionesHabilitacionUrbanaView({
           >
             <Plus className="h-4 w-4" />
             Nueva Liquidación
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+            onClick={() => setConsultDialogOpen(true)}
+          >
+            <UserCheck className="h-4 w-4" />
+            Consultar ingeniero
           </Button>
         </div>
 
@@ -251,6 +243,11 @@ export function LiquidacionesHabilitacionUrbanaView({
         onOpenChange={setHuModalOpen}
         onSuccess={refetchLiquidaciones}
         onCreated={handleLiquidacionCreated}
+      />
+
+      <ConsultarIngenieroDialog
+        open={consultDialogOpen}
+        onOpenChange={setConsultDialogOpen}
       />
     </div>
   );

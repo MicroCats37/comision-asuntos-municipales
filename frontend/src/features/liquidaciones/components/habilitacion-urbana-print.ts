@@ -13,17 +13,33 @@
  */
 
 import type { CrearHabilitacionUrbanaResponse } from "../types/liquidacion-habilitacion-urbana.types";
+import type { LiquidacionCardBase } from "../types/liquidacion-general";
 
-// ── Adapter ───────────────────────────────────────────────────────────────────
+// ── CardBase Adapter ─────────────────────────────────────────────────────────────
 
 /**
- * Fields that LiquidacionCardBase needs but CrearHabilitacionUrbanaResponse doesn't have:
- * - revisions[] (for tarifa info)
- * - proyecto (for nombre/direccion)
- * - tipo_liquidacion
+ * Adapts CrearHabilitacionUrbanaResponse to LiquidacionCardBase for use with the
+ * generic printLiquidacionDocument() renderer.
  *
- * For HU print, we construct a minimal PDF using only what the API returns.
- * This differs from Edificaciones which has richer response data.
+ * The HU list item is structurally compatible with LiquidacionCardBase:
+ * - tipo_liquidacion: "habilitacion-urbana"
+ * - valores uses ValoresM2ListItem (subtotal, igv, total, total_a_pagar)
+ * - revisions[0].tarifa has area_solicitada/costo_por_m2 for m² display
+ *
+ * This enables the post-create PDF to use the same renderer as the card/list PDF button.
+ */
+export function HUToCardBase(
+  created: CrearHabilitacionUrbanaResponse,
+): LiquidacionCardBase {
+  return created as unknown as LiquidacionCardBase;
+}
+
+// ── Legacy Print Adapter ─────────────────────────────────────────────────────────
+
+/**
+ * HU print data extracted from the flat create response.
+ * All numeric fields default to 0 for graceful fallback when calculation data
+ * (area_solicitada, costo_por_m2) is not persisted in the flat structure.
  */
 export interface HuPrintData {
   public_id: string;
@@ -31,9 +47,9 @@ export interface HuPrintData {
   expediente: string | null;
   municipalidad_codigo: string | null;
   municipalidad_nombre: string;
-  /** Area in m² from the cotizacion */
+  /** Area in m² from the cotizacion — not persisted in flat response, shows 0 */
   area_solicitada: number;
-  /** costo_por_m2 from tariff */
+  /** costo_por_m2 from tariff — not persisted in flat response, shows 0 */
   costo_por_m2: number;
   /** derecho_minimo from tariff */
   derecho_minimo: number;
@@ -52,28 +68,27 @@ export interface HuPrintData {
 
 export function adaptHuToPrintData(
   created: CrearHabilitacionUrbanaResponse,
-  municipalidadNombre: string,
-  municipalidadCodigo: string | null,
-  proyectoNombre: string,
-  proponenteNombre: string,
 ): HuPrintData {
+  const primeraRevision = created.revisiones?.[0];
+  const tarifa = primeraRevision?.tarifa;
   return {
-    public_id: created.liquidacion.public_id,
-    fecha_registro: created.liquidacion.fecha_creacion,
-    expediente: created.liquidacion.expediente,
-    municipalidad_codigo: municipalidadCodigo,
-    municipalidad_nombre: municipalidadNombre,
-    area_solicitada: 0, // Will be filled from quote if available
-    costo_por_m2: 0,
-    derecho_minimo: 0,
-    derecho_maximo: null,
-    subtotal: created.totales.subtotal,
-    igv: created.totales.igv,
-    total: created.totales.total,
-    liquidacion_total: created.totales.liquidacion_total,
-    total_a_pagar: created.totales.total_a_pagar,
-    proyecto_nombre: proyectoNombre,
-    proponente_nombre: proponenteNombre,
+    public_id: created.public_id,
+    fecha_registro: created.fecha_registro,
+    expediente: null, // Not available in HU list item (only Edificaciones)
+    municipalidad_codigo: created.municipalidad.codigo,
+    municipalidad_nombre: created.municipalidad.nombre,
+    // area_solicitada comes from user's input, NOT from tariff metadata
+    area_solicitada: tarifa?.area_solicitada ?? 0,
+    costo_por_m2: tarifa?.costo_por_m2 ?? 0,
+    derecho_minimo: tarifa?.derecho_minimo ?? 0,
+    derecho_maximo: tarifa?.derecho_maximo ?? null,
+    subtotal: created.valores.subtotal,
+    igv: created.valores.igv,
+    total: created.valores.total,
+    liquidacion_total: created.valores.total_a_pagar,
+    total_a_pagar: created.valores.total_a_pagar,
+    proyecto_nombre: created.proyecto.nombre,
+    proponente_nombre: created.entidad?.nombre ?? "—",
   };
 }
 

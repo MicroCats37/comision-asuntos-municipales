@@ -313,7 +313,7 @@ export function LiquidacionTaludesStepperModal({
 
       const contactosPayload = (selectedContactos as ContactoInline[]).map(({ localId: _lid, ...contacto }) => contacto);
 
-      const submitData: CrearTaludesPrimeraRevisionIn = {
+      const submitData = {
         ...(hasProyectoInline
           ? {
               proyecto_inline: {
@@ -326,12 +326,12 @@ export function LiquidacionTaludesStepperModal({
             }
           : { proyecto_public_id: selectedProyecto!.public_id }),
         municipalidad_id: data.municipalidad_id,
-        area_solicitada: Number(data.area_solicitada),
+        valor_proyecto: Number(data.area_solicitada),
         expediente: data.expediente,
         observacion: data.observacion,
         tarifas_ids: store.selectedTarifasIds,
         contactos: contactosPayload,
-      };
+      } as unknown as CrearTaludesPrimeraRevisionIn;
 
       try {
         await crearMutation.mutateAsync(submitData);

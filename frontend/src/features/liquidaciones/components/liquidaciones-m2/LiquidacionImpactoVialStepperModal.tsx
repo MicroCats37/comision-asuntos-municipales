@@ -41,7 +41,7 @@ import { StepImpactoVialConfirmacion } from "../steps/StepImpactoVialConfirmacio
 
 type FormData = {
   municipalidad_id: string;
-  area_solicitada: number;
+  valor_proyecto: number;
   expediente?: string;
   observacion?: string;
 };
@@ -94,7 +94,7 @@ export function LiquidacionImpactoVialStepperModal({
     resolver: zodResolver(stepImpactoVialSchema),
     defaultValues: {
       municipalidad_id: "" as never,
-      area_solicitada: 0 as never,
+      valor_proyecto: 0 as never,
       expediente: "",
       observacion: "",
     },
@@ -151,8 +151,8 @@ export function LiquidacionImpactoVialStepperModal({
     type Item = { label: string; value: string | number; highlight?: boolean };
     const items: Item[] = [
       {
-        label: "Área Solicitada",
-        value: data.area_solicitada,
+        label: "Valor del Proyecto",
+        value: data.valor_proyecto,
         highlight: true,
       },
     ];
@@ -312,7 +312,7 @@ export function LiquidacionImpactoVialStepperModal({
 
       const contactosPayload = (selectedContactos as ContactoInline[]).map(({ localId: _lid, ...contacto }) => contacto);
 
-      const submitData: CrearImpactoVialPrimeraRevisionIn = {
+      const submitData = {
         ...(hasProyectoInline
           ? {
               proyecto_inline: {
@@ -325,12 +325,12 @@ export function LiquidacionImpactoVialStepperModal({
             }
           : { proyecto_public_id: selectedProyecto!.public_id }),
         municipalidad_id: data.municipalidad_id,
-        area_solicitada: Number(data.area_solicitada),
+        valor_proyecto: Number(data.valor_proyecto),
         expediente: data.expediente,
         observacion: data.observacion,
         tarifas_ids: store.selectedTarifasIds,
         contactos: contactosPayload,
-      };
+      } as unknown as CrearImpactoVialPrimeraRevisionIn;
 
       try {
         await crearMutation.mutateAsync(submitData);

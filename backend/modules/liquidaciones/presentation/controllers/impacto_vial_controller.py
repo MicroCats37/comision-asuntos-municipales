@@ -26,14 +26,15 @@ from modules.liquidaciones.domain.schemas_proyecto import (
     ProyectoInlineData as DomainProyectoInlineData,
 )
 from modules.liquidaciones.presentation.schemas_especialidades import (
-    CotizacionM2QuoteOut,
-    TarifasVigentesM2Out,
+    TarifasVigentesPorcentajeOut,
 )
 from modules.liquidaciones.presentation.schemas.impacto_vial_schemas import (
     CrearLiquidacionImpactoVialWrapperIn,
     CotizarLiquidacionIVWrapperIn,
     LiquidacionImpactoVialOut,
     LiquidacionIVListItemOut,
+    CotizacionQuoteOut,
+    RevisionesVigentesOut,
 )
 from modules.liquidaciones.domain.constants import TramiteAccion, TipoLiquidacion
 from modules.liquidaciones.presentation.presenters.impacto_vial_presenter import ImpactoVialPresenter
@@ -50,7 +51,8 @@ class ImpactoVialController:
 
     Endpoints:
     - GET /: Listar liquidaciones de Impacto Vial con paginación
-    - POST /primera-revision: Crear primera revisión de Impacto Vial
+    - POST /nueva-liquidacion: Crear nueva liquidación (primera revisión)
+    - POST /primera-revision: Crear primera revisión (alias de /nueva-liquidacion)
     - POST /cotizar/primera-revision: Cotizar primera revisión sin guardar en BD
     """
 
@@ -93,13 +95,13 @@ class ImpactoVialController:
             total_pages=total_pages,
         ))
 
-    @route.post("/primera-revision", response={200: ApiResponse[LiquidacionImpactoVialOut]}, auth=None)
-    async def crear_impacto_vial(
+    @route.post("/nueva-liquidacion", response={200: ApiResponse[LiquidacionIVListItemOut]}, auth=None)
+    async def crear_nueva_liquidacion(
         self,
         payload: CrearLiquidacionImpactoVialWrapperIn,
     ):
         """
-        Crear primera revisión de Impacto Vial.
+        Crear nueva liquidación de Impacto Vial (primera revisión).
 
         Acepta wrapper { liquidacion: {...} } para alinear con frontend.
 
@@ -140,21 +142,41 @@ class ImpactoVialController:
             for p in data.proyectistas
         ] if data.proyectistas else None
 
-        result, calculo_m2 = await self.orchestrator.crear_primera_revision(
+        result, liquidacion_porcentaje = await self.orchestrator.crear_primera_revision(
             proyecto_public_id=data.proyecto_public_id,
             municipalidad_id=str(data.municipalidad_id),
-            area_solicitada=data.area_solicitada,
+            valor_proyecto=data.valor_proyecto,
             expediente=data.expediente,
             observacion=data.observacion,
             proyecto_inline=proyecto_inline,
             tarifas_ids=tarifas_ids,
             proyectistas_inline=proyectistas_inline,
         )
+        # Fetch complete record with all relations for post-create PDF
+        list_item = await self.general_orchestrator.obtener_liquidacion_list_item_por_id(
+            str(result.liquidacion_id)
+        )
         return success_response(
-            ImpactoVialPresenter.present(result, calculo_m2)
+            ImpactoVialPresenter.present_list_item(list_item)
         )
 
-    @route.post("/cotizar/primera-revision", response={200: ApiResponse[CotizacionM2QuoteOut]}, auth=None)
+    @route.post("/primera-revision", response={200: ApiResponse[LiquidacionIVListItemOut]}, auth=None)
+    async def crear_primera_revision(
+        self,
+        payload: CrearLiquidacionImpactoVialWrapperIn,
+    ):
+        """
+        Crear primera revisión de Impacto Vial (alias de /nueva-liquidacion).
+
+        Acepta wrapper { liquidacion: {...} } para alinear con frontend.
+
+        Validaciones (delegadas al orchestrator):
+        - XOR proyecto: exactamente uno de proyecto_public_id o proyecto_inline debe estar presente.
+        - tarifas_ids: exactamente 1 elemento si se proporciona.
+        """
+        return await self.crear_nueva_liquidacion(payload)
+
+    @route.post("/cotizar/primera-revision", response={200: ApiResponse[CotizacionQuoteOut]}, auth=None)
     async def cotizar_primera_revision(
         self,
         payload: CotizarLiquidacionIVWrapperIn,
@@ -167,7 +189,7 @@ class ImpactoVialController:
 
         Body:
         - liquidacion:
-          - area_solicitada: Área solicitada en metros cuadrados
+          - valor_proyecto: Valor del proyecto en soles para el cálculo porcentual
           - tarifas_ids: IDs de tarifas a usar (exactamente 1 elemento si se proporciona)
 
         Nota: tipo_liquidacion se inyecta internamente como IMPACTO_VIAL.
@@ -175,14 +197,15 @@ class ImpactoVialController:
         liquidacion_data = payload.liquidacion
         result = await self.orchestrator.cotizar_primera_revision(
             tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL.value,
-            area_solicitada=liquidacion_data.area_solicitada,
+            valor_proyecto=liquidacion_data.valor_proyecto,
             tarifas_ids=[str(tid) for tid in liquidacion_data.tarifas_ids] if liquidacion_data.tarifas_ids else None,
         )
-        return success_response(ImpactoVialPresenter.present_cotizacion(result))
+        return success_response(ImpactoVialPresenter.present_cotizacion_porcentaje(result))
 
-    @route.get("/tarifas-vigentes", response={200: ApiResponse[TarifasVigentesM2Out]}, auth=None)
+    @route.get("/tarifas-vigentes", response={200: ApiResponse[TarifasVigentesPorcentajeOut]}, auth=None)
     async def obtener_tarifas_vigentes(
         self,
+        tipo_tramite: str = Query(None, description="Tipo de trámite de edificación (opcional)"),
         tramite_accion: str = Query(
             TramiteAccion.PRIMERA_REVISION,
             description="Acción de trámite: PRIMERA_REVISION o REVISION (opcional, default PRIMERA_REVISION)",
@@ -191,11 +214,38 @@ class ImpactoVialController:
         """
         Obtiene las tarifas vigentes de Impacto Vial para selección en formulario.
 
-        Retorna lista de tarifas M2 con: tarifa_id (para usar en tarifas_ids),
-        detalle_id, costo_por_m2, area_m2, derecho_minimo, derecho_maximo, habilitada.
+        Retorna lista de tarifas porcentuales con: tarifa_id (para usar en tarifas_ids),
+        detalle_id, porcentaje_liquidacion, porcentaje_minimo_uit,
+        derecho_minimo, derecho_maximo, habilitada.
         """
-        result = await self.orchestrator.obtener_tarifas_vigentes(tramite_accion=tramite_accion)
+        result = await self.orchestrator.obtener_tarifas_vigentes(
+            tipo_tramite=tipo_tramite,
+            tramite_accion=tramite_accion,
+        )
         return success_response({'tarifas': result})
+
+    @route.get("/revisiones-vigentes", response={200: ApiResponse[RevisionesVigentesOut]}, auth=None)
+    async def obtener_revisiones_vigentes(
+        self,
+        tipo_tramite: str = Query(None, description="Tipo de trámite de edificación (opcional)"),
+        tramite_accion: str = Query(
+            TramiteAccion.PRIMERA_REVISION,
+            description="Acción de trámite: PRIMERA_REVISION o REVISION (opcional, default PRIMERA_REVISION)",
+        ),
+    ):
+        """
+        Obtiene las revisiones vigentes de Impacto Vial para el formulario.
+
+        Retorna lista de revisiones con especialidades M2M, tarifa (id, porcentaje_liquidacion,
+        derecho_minimo, derecho_maximo, porcentaje_minimo_uit) y si está habilitada.
+
+        Este endpoint replica el contrato de /liquidaciones/edificaciones/revisiones-vigentes.
+        """
+        result = await self.orchestrator.obtener_revisiones_vigentes(
+            tipo_tramite=tipo_tramite,
+            tramite_accion=tramite_accion,
+        )
+        return success_response({'revisiones': result})
 
     @route.get("/{liquidacion_id}", response={200: ApiResponse[LiquidacionIVListItemOut]}, auth=None)
     async def obtener_detalle_liquidacion(

@@ -26,14 +26,15 @@ from modules.liquidaciones.domain.schemas_proyecto import (
     ProyectoInlineData as DomainProyectoInlineData,
 )
 from modules.liquidaciones.presentation.schemas_especialidades import (
-    CotizacionM2QuoteOut,
-    TarifasVigentesM2Out,
+    TarifasVigentesPorcentajeOut,
 )
 from modules.liquidaciones.presentation.schemas.taludes_schemas import (
     CrearLiquidacionTaludesWrapperIn,
     CotizarLiquidacionTaludesWrapperIn,
     LiquidacionTaludesOut,
     LiquidacionTaludesListItemOut,
+    CotizacionQuoteOut,
+    RevisionesVigentesOut,
 )
 from modules.liquidaciones.domain.constants import TramiteAccion, TipoLiquidacion
 from modules.liquidaciones.presentation.presenters.taludes_presenter import TaludesPresenter
@@ -50,7 +51,8 @@ class TaludesController:
 
     Endpoints:
     - GET /: Listar liquidaciones de Taludes con paginación
-    - POST /primera-revision: Crear primera revisión de Taludes
+    - POST /nueva-liquidacion: Crear nueva liquidación (primera revisión)
+    - POST /primera-revision: Crear primera revisión (alias de /nueva-liquidacion)
     - POST /cotizar/primera-revision: Cotizar primera revisión sin guardar en BD
     """
 
@@ -93,13 +95,13 @@ class TaludesController:
             total_pages=total_pages,
         ))
 
-    @route.post("/primera-revision", response={200: ApiResponse[LiquidacionTaludesOut]}, auth=None)
-    async def crear_taludes(
+    @route.post("/nueva-liquidacion", response={200: ApiResponse[LiquidacionTaludesListItemOut]}, auth=None)
+    async def crear_nueva_liquidacion(
         self,
         payload: CrearLiquidacionTaludesWrapperIn,
     ):
         """
-        Crear primera revisión de Taludes.
+        Crear nueva liquidación de Taludes (primera revisión).
 
         Acepta wrapper { liquidacion: {...} } para alinear con frontend.
 
@@ -139,21 +141,41 @@ class TaludesController:
             for p in data.proyectistas
         ] if data.proyectistas else None
 
-        result, calculo_m2 = await self.orchestrator.crear_primera_revision(
+        result, liquidacion_porcentaje = await self.orchestrator.crear_primera_revision(
             proyecto_public_id=data.proyecto_public_id,
             municipalidad_id=str(data.municipalidad_id),
-            area_solicitada=data.area_solicitada,
+            valor_proyecto=data.valor_proyecto,
             expediente=data.expediente,
             observacion=data.observacion,
             proyecto_inline=proyecto_inline,
             tarifas_ids=tarifas_ids,
             proyectistas_inline=proyectistas_inline,
         )
+        # Fetch complete record with all relations for post-create PDF
+        list_item = await self.general_orchestrator.obtener_liquidacion_list_item_por_id(
+            str(result.liquidacion_id)
+        )
         return success_response(
-            TaludesPresenter.present(result, calculo_m2)
+            TaludesPresenter.present_list_item(list_item)
         )
 
-    @route.post("/cotizar/primera-revision", response={200: ApiResponse[CotizacionM2QuoteOut]}, auth=None)
+    @route.post("/primera-revision", response={200: ApiResponse[LiquidacionTaludesListItemOut]}, auth=None)
+    async def crear_primera_revision(
+        self,
+        payload: CrearLiquidacionTaludesWrapperIn,
+    ):
+        """
+        Crear primera revisión de Taludes (alias de /nueva-liquidacion).
+
+        Acepta wrapper { liquidacion: {...} } para alinear con frontend.
+
+        Validaciones (delegadas al orchestrator):
+        - XOR proyecto: exactamente uno de proyecto_public_id o proyecto_inline debe estar presente.
+        - tarifas_ids: exactamente 1 elemento si se proporciona.
+        """
+        return await self.crear_nueva_liquidacion(payload)
+
+    @route.post("/cotizar/primera-revision", response={200: ApiResponse[CotizacionQuoteOut]}, auth=None)
     async def cotizar_primera_revision(
         self,
         payload: CotizarLiquidacionTaludesWrapperIn,
@@ -166,7 +188,7 @@ class TaludesController:
 
         Body:
         - liquidacion:
-          - area_solicitada: Área solicitada en metros cuadrados
+          - valor_proyecto: Valor del proyecto en soles para el cálculo porcentual
           - tarifas_ids: IDs de tarifas a usar (exactamente 1 elemento si se proporciona)
 
         Nota: tipo_liquidacion se inyecta internamente como TALUDES.
@@ -174,14 +196,15 @@ class TaludesController:
         liquidacion_data = payload.liquidacion
         result = await self.orchestrator.cotizar_primera_revision(
             tipo_liquidacion=TipoLiquidacion.TALUDES.value,
-            area_solicitada=liquidacion_data.area_solicitada,
+            valor_proyecto=liquidacion_data.valor_proyecto,
             tarifas_ids=[str(tid) for tid in liquidacion_data.tarifas_ids] if liquidacion_data.tarifas_ids else None,
         )
-        return success_response(TaludesPresenter.present_cotizacion(result))
+        return success_response(TaludesPresenter.present_cotizacion_porcentaje(result))
 
-    @route.get("/tarifas-vigentes", response={200: ApiResponse[TarifasVigentesM2Out]}, auth=None)
+    @route.get("/tarifas-vigentes", response={200: ApiResponse[TarifasVigentesPorcentajeOut]}, auth=None)
     async def obtener_tarifas_vigentes(
         self,
+        tipo_tramite: str = Query(None, description="Tipo de trámite de edificación (opcional)"),
         tramite_accion: str = Query(
             TramiteAccion.PRIMERA_REVISION,
             description="Acción de trámite: PRIMERA_REVISION o REVISION (opcional, default PRIMERA_REVISION)",
@@ -190,11 +213,38 @@ class TaludesController:
         """
         Obtiene las tarifas vigentes de Taludes para selección en formulario.
 
-        Retorna lista de tarifas M2 con: tarifa_id (para usar en tarifas_ids),
-        detalle_id, costo_por_m2, area_m2, derecho_minimo, derecho_maximo, habilitada.
+        Retorna lista de tarifas porcentuales con: tarifa_id (para usar en tarifas_ids),
+        detalle_id, porcentaje_liquidacion, porcentaje_minimo_uit,
+        derecho_minimo, derecho_maximo, habilitada.
         """
-        result = await self.orchestrator.obtener_tarifas_vigentes(tramite_accion=tramite_accion)
+        result = await self.orchestrator.obtener_tarifas_vigentes(
+            tipo_tramite=tipo_tramite,
+            tramite_accion=tramite_accion,
+        )
         return success_response({'tarifas': result})
+
+    @route.get("/revisiones-vigentes", response={200: ApiResponse[RevisionesVigentesOut]}, auth=None)
+    async def obtener_revisiones_vigentes(
+        self,
+        tipo_tramite: str = Query(None, description="Tipo de trámite de edificación (opcional)"),
+        tramite_accion: str = Query(
+            TramiteAccion.PRIMERA_REVISION,
+            description="Acción de trámite: PRIMERA_REVISION o REVISION (opcional, default PRIMERA_REVISION)",
+        ),
+    ):
+        """
+        Obtiene las revisiones vigentes de Taludes para el formulario.
+
+        Retorna lista de revisiones con especialidades M2M, tarifa (id, porcentaje_liquidacion,
+        derecho_minimo, derecho_maximo, porcentaje_minimo_uit) y si está habilitada.
+
+        Este endpoint replica el contrato de /liquidaciones/edificaciones/revisiones-vigentes.
+        """
+        result = await self.orchestrator.obtener_revisiones_vigentes(
+            tipo_tramite=tipo_tramite,
+            tramite_accion=tramite_accion,
+        )
+        return success_response({'revisiones': result})
 
     @route.get("/{liquidacion_id}", response={200: ApiResponse[LiquidacionTaludesListItemOut]}, auth=None)
     async def obtener_detalle_liquidacion(

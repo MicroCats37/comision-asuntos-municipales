@@ -8,19 +8,30 @@ from modules.liquidaciones.models import (
     LiquidacionGeneral,
     LiquidacionImpactoVial,
     LiquidacionPorMetroCuadrado,
+    LiquidacionPorcentajeObra,
     TarifaPorMetroCuadrado,
+    TarifaPorcentajeObra,
     TarifaLiquidacionBase,
-    ReglaTarifaLiquidacion,
+    ReglaTarifaEdificacion,
 )
 from modules.liquidaciones.domain.constants import (
     TipoLiquidacion,
+    TipoTramiteEdificaciones,
     TramiteAccion,
 )
 from modules.liquidaciones.domain.services.core.calculos_helpers import (
     _calcular_monto_m2,
+    _aplicar_derecho_minimo,
+    _aplicar_derecho_maximo,
 )
 from core.utils import esta_vigente
 from modules.finanzas.models import IGV, UIT
+
+# Import domain schemas for RevisionVigenteResult
+from modules.liquidaciones.domain.schemas import (
+    RevisionVigenteResult,
+    EspecialidadBasicaResult,
+)
 
 
 class ImpactoVialCoreService:
@@ -214,6 +225,153 @@ class ImpactoVialCoreService:
 
         return liquidacion_m2
 
+    def _buscar_tarifa_porcentaje(self, tramite_accion: str) -> TarifaPorcentajeObra:
+        """
+        Busca y valida una tarifa porcentual vigente para Impacto Vial.
+
+        Args:
+            tramite_accion: PRIMERA_REVISION o REVISION.
+
+        Returns:
+            TarifaPorcentajeObra vigente.
+
+        Raises:
+            ValueError: Si no existe o no está vigente.
+        """
+        regla = ReglaTarifaEdificacion.objects.filter(
+            tipo_tramite=TipoTramiteEdificaciones.OBRA_NUEVA,
+            tramite_accion=tramite_accion,
+            tarifa_base__tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL,
+        ).select_related("tarifa_base", "tarifa_base__detalle_porcentual").first()
+
+        if regla is None:
+            raise ValueError(
+                f"No existe ReglaTarifaEdificacion para "
+                f"tipo_tramite={TipoTramiteEdificaciones.OBRA_NUEVA} y "
+                f"tipo_liquidacion={TipoLiquidacion.IMPACTO_VIAL} y tramite_accion={tramite_accion}. "
+                f"Verifique que la tarifa esté configurada en el admin."
+            )
+
+        tarifa_base = regla.tarifa_base
+
+        if not esta_vigente(tarifa_base.periodo_inicio, tarifa_base.periodo_fin):
+            raise ValueError(
+                f"La tarifa base {tarifa_base.id} no está vigente "
+                f"(periodo: {tarifa_base.periodo_inicio} - {tarifa_base.periodo_fin}). "
+                f"Verifique que la fecha actual esté dentro del período."
+            )
+
+        try:
+            detalle_porcentual = tarifa_base.detalle_porcentual
+        except TarifaPorcentajeObra.DoesNotExist:
+            raise ValueError(
+                f"La tarifa base {tarifa_base.id} no tiene detalle TarifaPorcentajeObra. "
+                f"Verifique que la tarifa porcentual esté configurada."
+            )
+
+        if detalle_porcentual is None:
+            raise ValueError(
+                f"La tarifa base {tarifa_base.id} no tiene detalle TarifaPorcentajeObra asociado."
+            )
+
+        return detalle_porcentual
+
+    def _validar_tarifa_porcentaje_por_id(
+        self,
+        tarifa_id: str,
+        tipo_liquidacion: str,
+        tramite_accion: str,
+    ) -> TarifaPorcentajeObra:
+        """
+        Valida y retorna una tarifa porcentual por su ID.
+
+        Args:
+            tarifa_id: ID de la TarifaLiquidacionBase seleccionada.
+            tipo_liquidacion: Valor de TipoLiquidacion esperado (ej. IMPACTO_VIAL).
+            tramite_accion: Valor de TramiteAccion esperado (ej. PRIMERA_REVISION).
+
+        Returns:
+            TarifaPorcentajeObra validada.
+
+        Raises:
+            ValueError: Si la tarifa no existe, no está vigente, o no es porcentual.
+        """
+        try:
+            tarifa_base = TarifaLiquidacionBase.objects.select_related(
+                "detalle_porcentual"
+            ).get(id=tarifa_id)
+        except TarifaLiquidacionBase.DoesNotExist:
+            raise ValueError(f"La tarifa con id={tarifa_id} no existe.")
+
+        if not esta_vigente(tarifa_base.periodo_inicio, tarifa_base.periodo_fin):
+            raise ValueError(
+                f"La tarifa {tarifa_id} no está vigente "
+                f"(periodo: {tarifa_base.periodo_inicio} - {tarifa_base.periodo_fin})."
+            )
+
+        try:
+            detalle_porcentual = tarifa_base.detalle_porcentual
+        except TarifaPorcentajeObra.DoesNotExist:
+            raise ValueError(
+                f"La tarifa {tarifa_id} no es una tarifa porcentual "
+                f"(no tiene detalle TarifaPorcentajeObra)."
+            )
+
+        if detalle_porcentual is None:
+            raise ValueError(
+                f"La tarifa {tarifa_id} no tiene detalle TarifaPorcentajeObra asociado."
+            )
+
+        regla = ReglaTarifaEdificacion.objects.filter(
+            tipo_tramite=TipoTramiteEdificaciones.OBRA_NUEVA,
+            tarifa_base=tarifa_base,
+            tramite_accion=tramite_accion,
+        ).select_related("tarifa_base").first()
+
+        if regla is None:
+            raise ValueError(
+                f"La tarifa {tarifa_id} no tiene ReglaTarifaEdificacion para "
+                f"tipo_tramite={TipoTramiteEdificaciones.OBRA_NUEVA} y "
+                f"tramite_accion={tramite_accion}."
+            )
+
+        if tarifa_base.tipo_liquidacion != tipo_liquidacion:
+            raise ValueError(
+                f"La tarifa {tarifa_id} corresponde a tipo_liquidacion="
+                f"{tarifa_base.tipo_liquidacion}, pero se esperaba "
+                f"tipo_liquidacion={tipo_liquidacion}."
+            )
+
+        return detalle_porcentual
+
+    def _crear_calculo_porcentaje(
+        self,
+        liquidacion_general: LiquidacionGeneral,
+        valor_proyecto: Decimal,
+        valor_base_calculo: Decimal,
+        tarifa_porcentaje: TarifaPorcentajeObra,
+    ) -> LiquidacionPorcentajeObra:
+        """
+        Crea registro de cálculo LiquidacionPorcentajeObra.
+
+        Args:
+            liquidacion_general: LiquidacionGeneral asociada.
+            valor_proyecto: Valor total del proyecto.
+            valor_base_calculo: Valor base de cálculo (aplicar %).
+            tarifa_porcentaje: TarifaPorcentajeObra a aplicar.
+
+        Returns:
+            LiquidacionPorcentajeObra creada.
+        """
+        liquidacion_porc = LiquidacionPorcentajeObra.objects.create(
+            liquidacion_general=liquidacion_general,
+            valor_proyecto=valor_proyecto,
+            valor_base_calculo=valor_base_calculo,
+            tarifa_aplicada=tarifa_porcentaje,
+        )
+
+        return liquidacion_porc
+
     def _obtener_igv_vigente(self):
         """Obtiene el IGV vigente. Lanza ValueError si no existe."""
         igv = IGV.objects.vigente()
@@ -307,22 +465,34 @@ class ImpactoVialCoreService:
 
         return liquidacion
 
-    def obtener_tarifas_vigentes(self, tramite_accion: str) -> list[dict]:
+    def obtener_tarifas_vigentes(
+        self,
+        tipo_tramite: str | None = None,
+        tramite_accion: str = TramiteAccion.PRIMERA_REVISION,
+    ) -> list[dict]:
         """
         Obtiene las tarifas vigentes de Impacto Vial para el formulario.
 
+        Si tipo_tramite es provisto, filtra usando ReglaTarifaEdificacion.
+        Si tipo_tramite es None, retorna todas las tarifas IMPACTO_VIAL vigentes.
+
         Args:
+            tipo_tramite: Tipo de trámite de edificación (opcional).
             tramite_accion: Acción de trámite (PRIMERA_REVISION o REVISION).
 
         Returns:
-            Lista de diccionarios con tarifas M2 vigentes.
-            Cada dict contiene: tarifa_id, detalle_id, costo_por_m2, area_m2,
-            derecho_minimo, derecho_maximo, habilitada.
+            Lista de diccionarios con tarifas porcentuales vigentes.
+            Cada dict contiene: tarifa_id, detalle_id, porcentaje_liquidacion,
+            porcentaje_minimo_uit, derecho_minimo, derecho_maximo, habilitada.
         """
-        reglas = ReglaTarifaLiquidacion.objects.filter(
+        reglas_qs = ReglaTarifaEdificacion.objects.filter(
             tramite_accion=tramite_accion,
             tarifa_base__tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL,
-        ).select_related("tarifa_base", "tarifa_base__detalle_m2")
+        )
+        if tipo_tramite is not None:
+            reglas_qs = reglas_qs.filter(tipo_tramite=tipo_tramite)
+
+        reglas = reglas_qs.select_related("tarifa_base", "tarifa_base__detalle_porcentual")
 
         result = []
         for regla in reglas:
@@ -330,19 +500,94 @@ class ImpactoVialCoreService:
             if not esta_vigente(tarifa_base.periodo_inicio, tarifa_base.periodo_fin):
                 continue
             try:
-                detalle_m2 = tarifa_base.detalle_m2
-            except TarifaPorMetroCuadrado.DoesNotExist:
+                detalle_porcentual = tarifa_base.detalle_porcentual
+            except TarifaPorcentajeObra.DoesNotExist:
                 continue
-            if detalle_m2 is None:
+            if detalle_porcentual is None:
                 continue
             result.append({
                 "tarifa_id": str(tarifa_base.id),
-                "detalle_id": str(detalle_m2.id),
-                "costo_por_m2": float(detalle_m2.costo_por_m2),
-                "area_m2": float(detalle_m2.area_m2),
-                "derecho_minimo": float(detalle_m2.derecho_minimo),
-                "derecho_maximo": float(detalle_m2.derecho_maximo) if detalle_m2.derecho_maximo is not None else None,
+                "detalle_id": str(detalle_porcentual.id),
+                "porcentaje_liquidacion": float(detalle_porcentual.porcentaje_liquidacion),
+                "porcentaje_minimo_uit": float(detalle_porcentual.porcentaje_minimo_uit),
+                "derecho_minimo": float(detalle_porcentual.derecho_minimo),
+                "derecho_maximo": float(detalle_porcentual.derecho_maximo) if detalle_porcentual.derecho_maximo is not None else None,
                 "habilitada": esta_vigente(tarifa_base.periodo_inicio, tarifa_base.periodo_fin),
             })
+
+        return result
+
+    def obtener_revisiones_vigentes(
+        self,
+        tipo_tramite: str | None = None,
+        tramite_accion: str = TramiteAccion.PRIMERA_REVISION,
+    ) -> list[RevisionVigenteResult]:
+        """
+        Obtiene las revisiones vigentes de Impacto Vial para el formulario.
+
+        A diferencia de obtener_tarifas_vigentes, este método devuelve
+        objetos RevisionVigenteResult con especialidades M2M incluidas,
+        similar al patrón de Edificaciones.
+
+        Si tipo_tramite es provisto, filtra usando ReglaTarifaEdificacion.
+        Si tipo_tramite es None, retorna todas las tarifas IMPACTO_VIAL vigentes
+        (sin filtro de tipo_tramite), replicando el patrón de Edificaciones.
+
+        Args:
+            tipo_tramite: Tipo de trámite de edificación (opcional).
+            tramite_accion: Acción de trámite (PRIMERA_REVISION o REVISION).
+
+        Returns:
+            Lista de RevisionVigenteResult con especialidades populadas.
+        """
+        reglas_qs = ReglaTarifaEdificacion.objects.filter(
+            tramite_accion=tramite_accion,
+            tarifa_base__tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL,
+        )
+        if tipo_tramite is not None:
+            reglas_qs = reglas_qs.filter(tipo_tramite=tipo_tramite)
+
+        reglas = reglas_qs.select_related(
+            "tarifa_base",
+            "tarifa_base__detalle_porcentual",
+        ).prefetch_related(
+            "tarifa_base__especialidades",
+        )
+
+        result = []
+        for regla in reglas:
+            tarifa_base = regla.tarifa_base
+
+            # Skip if not vigente
+            if not esta_vigente(tarifa_base.periodo_inicio, tarifa_base.periodo_fin):
+                continue
+
+            # Get detalle porcentual
+            try:
+                detalle_porcentual = tarifa_base.detalle_porcentual
+            except TarifaPorcentajeObra.DoesNotExist:
+                continue
+            if detalle_porcentual is None:
+                continue
+
+            # Build especialidades list from M2M
+            especialidades = [
+                EspecialidadBasicaResult(
+                    id=esp.id,
+                    nombre=esp.nombre,
+                )
+                for esp in tarifa_base.especialidades.all()
+            ]
+
+            result.append(RevisionVigenteResult(
+                id=str(tarifa_base.id),
+                especialidades=especialidades,
+                tarifa_id=str(tarifa_base.id),
+                porcentaje_liquidacion=detalle_porcentual.porcentaje_liquidacion,
+                derecho_minimo=detalle_porcentual.derecho_minimo,
+                derecho_maximo=detalle_porcentual.derecho_maximo,
+                porcentaje_minimo_uit=detalle_porcentual.porcentaje_minimo_uit,
+                habilitada=esta_vigente(tarifa_base.periodo_inicio, tarifa_base.periodo_fin),
+            ))
 
         return result

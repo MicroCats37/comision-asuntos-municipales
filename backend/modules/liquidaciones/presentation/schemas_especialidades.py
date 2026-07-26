@@ -280,3 +280,30 @@ class TarifasVigentesVisitasOut(BaseSchema):
     """Respuesta de tarifas de inspección de obra vigentes para formulario."""
 
     tarifas: list[TarifaVigenteVisitaOut]
+
+
+# =============================================================================
+# TarifaPorcentajeObra schemas (Edificaciones-style — usado por IV y Taludes)
+# =============================================================================
+
+
+class TarifaVigentePorcentajeOut(BaseSchema):
+    """
+    Tarifa porcentual vigente para selector en formulario de IV y Taludes.
+
+    Representa una tarifa basada en TarifaPorcentajeObra (no M2).
+    """
+
+    tarifa_id: uuid.UUID = Field(..., description="ID de TarifaLiquidacionBase (úsalo en tarifas_ids del payload)")
+    detalle_id: uuid.UUID = Field(..., description="ID de TarifaPorcentajeObra")
+    porcentaje_liquidacion: float = Field(..., description="Porcentaje de liquidación (fracción decimal, ej. 0.0015 para 0.15%)")
+    porcentaje_minimo_uit: float = Field(..., description="Porcentaje mínimo UIT (fracción decimal)")
+    derecho_minimo: float = Field(..., description="Derecho mínimo absoluto a cobrar (S/)")
+    derecho_maximo: Optional[float] = Field(None, description="Derecho máximo absoluto a cobrar (S/), null = sin límite")
+    habilitada: bool = Field(..., description="Si la tarifa está habilitada para uso")
+
+
+class TarifasVigentesPorcentajeOut(BaseSchema):
+    """Respuesta de tarifas porcentuales vigentes para formulario (IV y Taludes)."""
+
+    tarifas: list[TarifaVigentePorcentajeOut]

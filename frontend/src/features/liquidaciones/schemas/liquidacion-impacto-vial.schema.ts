@@ -52,7 +52,7 @@ export const primeraRevisionImpactoVialSchema = z.object({
   proyecto_public_id: z.string().min(1, "Proyecto es requerido").optional(),
   proyecto_inline: proyectoInlineImpactoVialSchema.optional(),
   municipalidad_id: z.string().uuid("Municipalidad es requerida"),
-  area_solicitada: z.number().positive("El área debe ser positiva"),
+  valor_proyecto: z.number().positive("El valor del proyecto debe ser positivo"),
   expediente: z.string().optional(),
   observacion: z.string().optional(),
   tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
@@ -66,7 +66,7 @@ export type PrimeraRevisionImpactoVialData = z.infer<typeof primeraRevisionImpac
 
 /** Payload para cotizar primera revisión — municipalidad NO requerida para cotizar; solo para creación final */
 export const cotizarImpactoVialPayloadSchema = z.object({
-  area_solicitada: z.number().positive("El área debe ser positiva"),
+  valor_proyecto: z.number().positive("El valor del proyecto debe ser positivo"),
   tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
 });
 
@@ -86,34 +86,41 @@ const cotizacionImpactoVialTotalesSchema = z.object({
   total_a_pagar: z.number(),
 });
 
-/** Metadata en respuesta de cotización */
+/** Metadata en respuesta de cotización (porcentaje-based — Edificaciones style) */
 const cotizacionImpactoVialMetadataSchema = z.object({
   igv_valor: z.number(),
   uit_valor: z.number(),
-  area_solicitada: z.number().optional(),
+  cobra: z.boolean(),
+  valor_base_calculo: z.number(),
 });
 
-/** Tarifa en respuesta de cotización */
+/** Tarifa en respuesta de cotización (porcentaje-based) */
 const cotizacionImpactoVialTarifaSchema = z.object({
   id: z.string(),
-  costo_por_m2: z.number(),
-  area_m2: z.number(),
   derecho_minimo: z.number(),
   derecho_maximo: z.number().nullable(),
+  porcentaje_minimo_uit: z.number(),
+  porcentaje_liquidacion: z.number(),
 });
 
-/** Cálculo en respuesta de cotización */
-const cotizacionImpactoVialCalculoSchema = z.object({
-  area_solicitada: z.number(),
-  area_base_calculo: z.number(),
-  derecho: z.number(),
+/** Revisión en respuesta de cotización (porcentaje-based — matches CotizacionRevision) */
+const cotizacionImpactoVialRevisionSchema = z.object({
+  id: z.string(),
+  especialidades: z.array(
+    z.object({
+      id: z.string(),
+      nombre: z.string(),
+    }),
+  ),
   tarifa: cotizacionImpactoVialTarifaSchema,
+  monto_base: z.number(),
+  cobra: z.boolean(),
 });
 
-/** Payload de respuesta de cotización */
+/** Payload de respuesta de cotización (porcentaje-based — Edificaciones style) */
 const cotizacionImpactoVialPayloadSchema = z.object({
   numero_revision: z.number(),
-  calculo_m2: cotizacionImpactoVialCalculoSchema,
+  revisiones: z.array(cotizacionImpactoVialRevisionSchema),
   totales: cotizacionImpactoVialTotalesSchema,
   _metadata: cotizacionImpactoVialMetadataSchema,
 });
@@ -121,31 +128,6 @@ const cotizacionImpactoVialPayloadSchema = z.object({
 /** Wrapper para respuesta de cotización */
 export const cotizacionImpactoVialResponseSchema =
   apiResponseSchema(cotizacionImpactoVialPayloadSchema);
-
-// ── Crear Liquidación Response Schema ────────────────────────────────────────
-
-/** Payload para respuesta de creación */
-const crearImpactoVialPayloadSchema = z.object({
-  liquidacion: z.object({
-    id: z.string(),
-    public_id: z.string(),
-    estado: z.string(),
-    fecha_creacion: z.string(),
-    expediente: z.string().nullable(),
-    observacion: z.string().nullable(),
-  }),
-  totales: z.object({
-    subtotal: z.number(),
-    igv: z.number(),
-    total: z.number(),
-    liquidacion_total: z.number(),
-    total_a_pagar: z.number(),
-  }),
-});
-
-/** Wrapper para respuesta de creación */
-export const crearImpactoVialResponseSchema =
-  apiResponseSchema(crearImpactoVialPayloadSchema);
 
 // ── List Response Schemas ─────────────────────────────────────────────────────
 
@@ -180,9 +162,11 @@ const municipalidadListItemSchema = z.object({
   distrito: z.null(),
 });
 
-/** Schema for M2 list items — only has subtotal and total_a_pagar (no igv/total) */
+/** Schema for M2 list items — includes igv/total for percentage-based types */
 const valoresM2ListItemSchema = z.object({
   subtotal: z.number(),
+  igv: z.number(),
+  total: z.number(),
   total_a_pagar: z.number(),
 });
 
@@ -283,16 +267,25 @@ export const liquidacionImpactoVialDetailResponseSchema = apiResponseSchema(
   liquidacionImpactoVialListItemSchema,
 );
 
+// ── Crear Liquidación Response Schema ────────────────────────────────────────
+
+/** Payload para respuesta de creación — flat list item structure */
+const crearImpactoVialPayloadSchema = liquidacionImpactoVialListItemSchema;
+
+/** Wrapper para respuesta de creación */
+export const crearImpactoVialResponseSchema =
+  apiResponseSchema(crearImpactoVialPayloadSchema);
+
 // ── Form Step Schemas ──────────────────────────────────────────────────────────
 
 /**
- * Schema para el step de Impacto Vial (área y municipalidad).
+ * Schema para el step de Impacto Vial (valor proyecto y municipalidad).
  */
 export const stepImpactoVialSchema = z.object({
   municipalidad_id: z.string().uuid("Debe seleccionar una municipalidad"),
-  area_solicitada: z
+  valor_proyecto: z
     .number()
-    .positive("El área debe ser positiva"),
+    .positive("El valor del proyecto debe ser positivo"),
   expediente: z.string().optional(),
   observacion: z.string().optional(),
 });
@@ -301,13 +294,13 @@ export type StepImpactoVialData = z.infer<typeof stepImpactoVialSchema>;
 
 // ── Tarifas Vigentes Schemas ──────────────────────────────────────────────────
 
-/** Tarifa vigente en respuesta del endpoint */
+/** Tarifa vigente en respuesta del endpoint (porcentaje-based) */
 const tarifaVigenteImpactoVialSchema = z.object({
   tarifa_id: z.string(),
-  costo_por_m2: z.number(),
-  area_m2: z.number(),
+  porcentaje_liquidacion: z.number(),
   derecho_minimo: z.number(),
   derecho_maximo: z.number().nullable(),
+  porcentaje_minimo_uit: z.number(),
   habilitada: z.boolean(),
 });
 

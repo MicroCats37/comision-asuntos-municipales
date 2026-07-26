@@ -2,6 +2,7 @@
 TaludesPresenter — transforma resultados domain a schemas HTTP para Taludes.
 """
 import uuid as _uuid
+from decimal import Decimal
 from typing import Optional, Union
 
 from modules.liquidaciones.domain.schemas.taludes import (
@@ -14,12 +15,15 @@ from modules.liquidaciones.domain.schemas.shared import (
 from modules.liquidaciones.domain.schemas import (
     LiquidacionGeneralListItem,
     LiquidacionGeneralResult,
+    CotizacionQuoteData,
 )
 from modules.liquidaciones.presentation.schemas.taludes_schemas import (
     LiquidacionTaludesOut,
     LiquidacionTaludesListItemOut,
     TarifaM2Out,
     LiquidacionM2CalculoOut,
+    TarifaOut,
+    ValorBaseCalculoOut,
     TotalesOut,
     EntidadOut,
     ProyectoOut,
@@ -28,18 +32,25 @@ from modules.liquidaciones.presentation.schemas.taludes_schemas import (
     CotizacionM2QuoteOut,
     CotizacionM2RevisionOut,
     CotizacionM2MetadataOut,
+    CotizacionQuoteOut,
+    CotizacionRevisionOut,
+    CotizacionMetadataOut,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
     EntidadListItemOut,
     ProyectoListItemOut,
     MunicipalidadListItemOut,
-    ValoresM2CleanOut,
+    ValoresListItemOut,
     ProyectistaListItemOut,
     DelegadoListItemOut,
     ContactoListItemOut,
     RevisionListItemCleanOut,
     TarifaRevisionOut,
     EspecialidadRevisionOut,
+    EspecialidadBasicaOut,
+)
+from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
+    CotizacionTarifaOut as CotizacionTarifaOutEdif,
 )
 
 
@@ -70,6 +81,7 @@ class TaludesPresenter:
             public_id=result.proyecto_public_id,
             nombre=result.proyecto_nombre,
             direccion=result.proyecto_direccion,
+            valor_proyecto=float(result.proyecto_valor_proyecto) if result.proyecto_valor_proyecto else 0.0,
             entidad=TaludesPresenter._build_entidad(result),
         )
 
@@ -129,12 +141,54 @@ class TaludesPresenter:
         )
 
     @staticmethod
+    def _build_tarifa_out(
+        tarifa_id,
+        derecho_minimo,
+        derecho_maximo,
+        porcentaje_minimo_uit,
+        porcentaje_liquidacion,
+    ) -> TarifaOut:
+        """Construir tarifa porcentual (Edificaciones-style)."""
+        return TarifaOut(
+            id=tarifa_id,
+            derecho_minimo=float(derecho_minimo),
+            derecho_maximo=float(derecho_maximo) if derecho_maximo else None,
+            porcentaje_minimo_uit=float(porcentaje_minimo_uit),
+            porcentaje_liquidacion=float(porcentaje_liquidacion),
+        )
+
+    @staticmethod
+    def _build_valor_base_calculo(
+        valor_proyecto,
+        valor_base_calculo,
+        derecho,
+        tarifa_id,
+        derecho_minimo,
+        derecho_maximo,
+        porcentaje_minimo_uit,
+        porcentaje_liquidacion,
+    ) -> ValorBaseCalculoOut:
+        """Construir salida de cálculo porcentual (Edificaciones-style)."""
+        return ValorBaseCalculoOut(
+            valor_proyecto=float(valor_proyecto),
+            valor_base_calculo=float(valor_base_calculo),
+            derecho=float(derecho),
+            tarifa=TaludesPresenter._build_tarifa_out(
+                tarifa_id,
+                derecho_minimo,
+                derecho_maximo,
+                porcentaje_minimo_uit,
+                porcentaje_liquidacion,
+            ),
+        )
+
+    @staticmethod
     def _get_tramite_accion(result: LiquidacionTaludesResult) -> str:
         """Obtener tramite_accion desde el resultado."""
         return getattr(result, "tramite_accion", "PRIMERA_REVISION")
 
     # =============================================================================
-    # Presenter principal
+    # Presenter principal (M2 legacy)
     # =============================================================================
 
     @staticmethod
@@ -143,13 +197,47 @@ class TaludesPresenter:
         calculo_m2: LiquidacionM2CalculoData,
     ) -> LiquidacionTaludesOut:
         """
-        Transforma un LiquidacionTaludesResult a LiquidacionTaludesOut.
+        Transforma un LiquidacionTaludesResult a LiquidacionTaludesOut (M2 legacy).
         """
         return LiquidacionTaludesOut(
             liquidacion=TaludesPresenter._build_liquidacion(result),
             tipo_liquidacion="TALUDES",
             tramite_accion=TaludesPresenter._get_tramite_accion(result),
             calculo_m2=TaludesPresenter._build_calculo_m2(calculo_m2),
+            totales=TaludesPresenter._build_totales(result),
+        )
+
+    # =============================================================================
+    # Presenter principal (porcentaje — Edificaciones-style)
+    # =============================================================================
+
+    @staticmethod
+    def present_porcentaje(
+        result: LiquidacionTaludesResult,
+        liquidacion_porcentaje,
+    ) -> LiquidacionTaludesOut:
+        """
+        Transforma un LiquidacionTaludesResult (porcentaje) a LiquidacionTaludesOut.
+
+        Args:
+            result: LiquidacionTaludesResult con valores calculados con IGV.
+            liquidacion_porcentaje: LiquidacionPorcentajeObra ORM record.
+        """
+        tarifa = liquidacion_porcentaje.tarifa_aplicada
+        return LiquidacionTaludesOut(
+            liquidacion=TaludesPresenter._build_liquidacion(result),
+            tipo_liquidacion="TALUDES",
+            tramite_accion=TaludesPresenter._get_tramite_accion(result),
+            calculo_porcentaje=TaludesPresenter._build_valor_base_calculo(
+                valor_proyecto=liquidacion_porcentaje.valor_proyecto,
+                valor_base_calculo=liquidacion_porcentaje.valor_base_calculo,
+                derecho=result.totales_subtotal,
+                tarifa_id=tarifa.id,
+                derecho_minimo=tarifa.derecho_minimo,
+                derecho_maximo=tarifa.derecho_maximo,
+                porcentaje_minimo_uit=tarifa.porcentaje_minimo_uit,
+                porcentaje_liquidacion=tarifa.porcentaje_liquidacion,
+            ),
             totales=TaludesPresenter._build_totales(result),
         )
 
@@ -188,6 +276,61 @@ class TaludesPresenter:
                 igv_valor=float(result.metadata.igv_valor),
                 uit_valor=float(result.metadata.uit_valor),
                 area_solicitada=float(result.metadata.area_solicitada) if result.metadata.area_solicitada else None,
+            ),
+        )
+
+    @staticmethod
+    def present_cotizacion_porcentaje(
+        result: CotizacionQuoteData,
+    ) -> CotizacionQuoteOut:
+        """
+        Transforma un CotizacionQuoteData (porcentaje-based) a CotizacionQuoteOut
+        — Edificaciones parity: revisiones[], especialidades[], monto_base, cobra.
+
+        Args:
+            result: CotizacionQuoteData con revision data del cálculo Edificaciones-style.
+        """
+        # IV/Taludes no tienen especialidades M2M — empty list
+        especialidades_out: list[EspecialidadBasicaOut] = []
+        if result.revisiones and result.revisiones[0].especialidades:
+            especialidades_out = [
+                EspecialidadBasicaOut(
+                    id=esp.id,
+                    nombre=esp.nombre,
+                )
+                for esp in result.revisiones[0].especialidades
+            ]
+
+        rev = result.revisiones[0]
+        return CotizacionQuoteOut(
+            numero_revision=result.numero_revision,
+            revisiones=[
+                CotizacionRevisionOut(
+                    id=rev.id,
+                    especialidades=especialidades_out,
+                    tarifa=CotizacionTarifaOutEdif(
+                        id=rev.tarifa.id,
+                        derecho_minimo=float(rev.tarifa.derecho_minimo),
+                        derecho_maximo=float(rev.tarifa.derecho_maximo) if rev.tarifa.derecho_maximo else None,
+                        porcentaje_minimo_uit=float(rev.tarifa.porcentaje_minimo_uit),
+                        porcentaje_liquidacion=float(rev.tarifa.porcentaje_liquidacion),
+                    ),
+                    monto_base=float(rev.monto_base),
+                    cobra=rev.cobra,
+                )
+            ],
+            totales=TotalesOut(
+                subtotal=float(result.totales.subtotal),
+                igv=float(result.totales.igv),
+                total=float(result.totales.total),
+                liquidacion_total=float(result.totales.liquidacion_total),
+                total_a_pagar=float(result.totales.total_a_pagar),
+            ),
+            metadata=CotizacionMetadataOut(
+                igv_valor=float(result.metadata.igv_valor),
+                uit_valor=float(result.metadata.uit_valor),
+                cobra=result.metadata.cobra,
+                valor_base_calculo=float(result.metadata.valor_base_calculo),
             ),
         )
 
@@ -240,8 +383,10 @@ class TaludesPresenter:
                 provincia=result.municipalidad.provincia,
                 distrito=result.municipalidad.distrito,
             ),
-            valores=ValoresM2CleanOut(
+            valores=ValoresListItemOut(
                 subtotal=result.valores.subtotal,
+                igv=result.valores.igv,
+                total=result.valores.total,
                 total_a_pagar=result.valores.total_a_pagar,
             ),
             proyectistas=[
@@ -344,6 +489,8 @@ class TaludesPresenter:
             LiquidacionTaludesListItemOut schema para respuesta HTTP de detalle
         """
         subtotal = float(result.subtotal) if result.subtotal else 0.0
+        igv = float(result.igv) if result.igv else 0.0
+        total = float(result.total) if result.total else 0.0
         total_a_pagar = float(result.total_a_pagar) if result.total_a_pagar else 0.0
 
         return LiquidacionTaludesListItemOut(
@@ -362,8 +509,10 @@ class TaludesPresenter:
                 provincia=None,
                 distrito=None,
             ),
-            valores=ValoresM2CleanOut(
+            valores=ValoresListItemOut(
                 subtotal=subtotal,
+                igv=igv,
+                total=total,
                 total_a_pagar=total_a_pagar,
             ),
             proyectistas=[],

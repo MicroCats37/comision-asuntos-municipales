@@ -361,8 +361,44 @@ function RevisionesSection({ revisiones, tipoLiquidacion }: {
                 </>
               )}
 
-              {/* M2 types (HU, MS, IV, Taludes): costo_por_m2 + derecho min/max */}
-              {!["edificacion", "inspeccion-obra"].includes(tipoLiquidacion) && rev.tarifa && (
+              {/* Impacto Vial & Taludes: Edificaciones-style percentage display */}
+              {["impacto-vial", "taludes"].includes(tipoLiquidacion) && rev.tarifa && (
+                <>
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      % Liquidación
+                    </span>
+                    <span className="text-xs font-medium text-foreground">
+                      {rev.tarifa.porcentaje_liquidacion != null
+                        ? `${(Number(rev.tarifa.porcentaje_liquidacion) * 100).toFixed(2)}%`
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Derecho Mín.
+                    </span>
+                    <span className="text-xs font-medium text-foreground">
+                      {rev.tarifa.derecho_minimo != null
+                        ? formatCurrency(rev.tarifa.derecho_minimo)
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Derecho Máx.
+                    </span>
+                    <span className="text-xs font-medium text-foreground">
+                      {rev.tarifa.derecho_maximo != null
+                        ? formatCurrency(rev.tarifa.derecho_maximo)
+                        : "—"}
+                    </span>
+                  </div>
+                </>
+              )}
+
+              {/* M2 types (HU, MS): costo_por_m2 + derecho min/max */}
+              {!["edificacion", "inspeccion-obra", "impacto-vial", "taludes"].includes(tipoLiquidacion) && rev.tarifa && (
                 <>
                   <div className="flex flex-col">
                     <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">

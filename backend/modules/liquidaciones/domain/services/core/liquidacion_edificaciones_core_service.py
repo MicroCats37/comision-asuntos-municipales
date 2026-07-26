@@ -4,7 +4,7 @@ Liquidaciones Edificaciones Service — operaciones sync.
 from datetime import date
 from decimal import Decimal
 from typing import Optional
-from django.db.models import QuerySet
+from django.db.models import Max, OuterRef, QuerySet, Subquery
 from django.utils import timezone
 
 from ...models import (
@@ -402,6 +402,8 @@ class LiquidacionesEdificacionesService:
         page: int,
         page_size: int,
         proyecto_public_id: str | None = None,
+        numero_documento: str | None = None,
+        latest_per_project: bool = False,
     ) -> tuple[list[dict], int]:
         """
         Lista liquidaciones de edificaciones con paginación.
@@ -412,6 +414,8 @@ class LiquidacionesEdificacionesService:
             page: Número de página (1-indexed)
             page_size: Elementos por página
             proyecto_public_id: Filtro opcional por ID público del proyecto (ej. PROY-2026-00001)
+            numero_documento: Filtro opcional por DNI/RUC de la entidad asociada al proyecto
+            latest_per_project: Si True, retorna solo la liquidación con mayor numero_revision por proyecto
         """
         qs = LiquidacionGeneral.objects.filter(
             edificaciones__isnull=False
@@ -420,6 +424,18 @@ class LiquidacionesEdificacionesService:
         # Filtro opcional por public_id del proyecto
         if proyecto_public_id:
             qs = qs.filter(proyecto__public_id=proyecto_public_id)
+
+        if numero_documento:
+            qs = qs.filter(proyecto__entidad__numero_documento=numero_documento)
+
+        if latest_per_project:
+            latest_revision_subquery = LiquidacionGeneral.objects.filter(
+                edificaciones__isnull=False,
+                proyecto=OuterRef('proyecto'),
+            ).values('proyecto').annotate(
+                max_revision=Max('numero_revision')
+            ).values('max_revision')[:1]
+            qs = qs.filter(numero_revision=Subquery(latest_revision_subquery))
 
         qs = qs.select_related(
             'proyecto', 'proyecto__entidad', 'municipalidad'
@@ -475,9 +491,17 @@ class LiquidacionesEdificacionesService:
         page: int,
         page_size: int,
         proyecto_public_id: str | None = None,
+        numero_documento: str | None = None,
+        latest_per_project: bool = False,
     ) -> LiquidacionEdificacionesPaginatedResult:
         """Lista liquidaciones paginadas con datos para tabla (retorna result object)."""
-        items_data, total = self._listar_liquidaciones_paginado(page, page_size, proyecto_public_id)
+        items_data, total = self._listar_liquidaciones_paginado(
+            page,
+            page_size,
+            proyecto_public_id,
+            numero_documento,
+            latest_per_project,
+        )
 
         items = [
             LiquidacionEdificacionesListItem(**item)

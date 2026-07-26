@@ -100,7 +100,7 @@ class CrearLiquidacionImpactoVialIn(BaseSchema):
     Payload para crear primera revisión de Impacto Vial.
 
     El tipo de liquidación se asigna automáticamente como IMPACTO_VIAL.
-    El cálculo usa LiquidacionPorMetroCuadrado (área por costo_m2 con límites).
+    El cálculo usa LiquidacionPorcentajeObra (porcentaje del valor de obra con límites).
     """
 
     # XOR proyecto: exactamente uno de proyecto_public_id o proyecto_inline debe estar presente.
@@ -114,10 +114,10 @@ class CrearLiquidacionImpactoVialIn(BaseSchema):
         description="Datos del proyecto inline a crear. Mutuamente excluyente con proyecto_public_id.",
     )
     municipalidad_id: uuid.UUID = Field(..., description="ID de la municipalidad (UUID)")
-    area_solicitada: float = Field(
+    valor_proyecto: float = Field(
         ...,
         gt=0,
-        description="Área solicitada en metros cuadrados para el cálculo de derecho.",
+        description="Valor del proyecto en soles para el cálculo porcentual de derecho.",
     )
     expediente: Optional[str] = Field(None, description="Número de expediente (opcional)")
     observacion: Optional[str] = Field(None, description="Observación opcional")
@@ -196,6 +196,7 @@ class ProyectoOut(BaseSchema):
     public_id: str
     nombre: str
     direccion: Optional[str]
+    valor_proyecto: float = 0.0
     entidad: Optional[EntidadOut] = None
 
 
@@ -217,7 +218,31 @@ class LiquidacionOut(BaseSchema):
     proyecto: ProyectoOut
     municipalidad: MunicipalidadesSnapshotOut
     expediente: Optional[str] = None
-    observacion: Optional[str]
+    observacion: Optional[str] = None
+
+
+# =============================================================================
+# Schemas de salida — cálculo porcentual (Edificaciones-style)
+# =============================================================================
+
+
+class TarifaOut(BaseSchema):
+    """Tarifa porcentual en respuesta (Edificaciones-style)."""
+
+    id: uuid.UUID
+    derecho_minimo: float
+    derecho_maximo: Optional[float]
+    porcentaje_minimo_uit: float
+    porcentaje_liquidacion: float
+
+
+class ValorBaseCalculoOut(BaseSchema):
+    """Datos del cálculo porcentual en respuesta."""
+
+    valor_proyecto: float
+    valor_base_calculo: float
+    derecho: float
+    tarifa: TarifaOut
 
 
 # =============================================================================
@@ -231,7 +256,7 @@ class LiquidacionImpactoVialOut(BaseSchema):
     liquidacion: LiquidacionOut
     tipo_liquidacion: str
     tramite_accion: str
-    calculo_m2: Optional[LiquidacionM2CalculoOut] = None
+    calculo_porcentaje: Optional[ValorBaseCalculoOut] = None
     totales: TotalesOut
 
 
@@ -247,10 +272,10 @@ class CotizarLiquidacionIVIn(BaseSchema):
     NO incluye tipo_liquidacion — el controller lo inyecta internamente.
     """
 
-    area_solicitada: float = Field(
+    valor_proyecto: float = Field(
         ...,
         gt=0,
-        description="Área solicitada en metros cuadrados.",
+        description="Valor del proyecto en soles para el cálculo porcentual.",
     )
     tarifas_ids: list[uuid.UUID] = Field(
         default=None,
@@ -309,6 +334,58 @@ class CotizacionM2QuoteOut(BaseSchema):
 
 
 # =============================================================================
+# Cotización schemas de salida (porcentaje — Edificaciones-style)
+# =============================================================================
+
+from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
+    CotizacionTarifaOut,
+)
+from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
+    EspecialidadBasicaOut,
+)
+
+
+class CotizacionRevisionOut(BaseSchema):
+    """Revisión porcentual en respuesta de cotización — Edificaciones parity."""
+
+    id: uuid.UUID
+    especialidades: list[EspecialidadBasicaOut]
+    tarifa: CotizacionTarifaOut
+    monto_base: float
+    cobra: bool
+
+
+class CotizacionMetadataOut(BaseSchema):
+    """Metadata adicional en respuesta de cotización porcentual — Edificaciones parity."""
+
+    igv_valor: float
+    uit_valor: float
+    cobra: bool
+    valor_base_calculo: float
+
+
+class CotizacionQuoteOut(BaseSchema):
+    """Respuesta completa de cotización porcentual sin persistencia — Edificaciones parity."""
+
+    numero_revision: int
+    revisiones: list[CotizacionRevisionOut]
+    totales: TotalesOut
+    metadata: CotizacionMetadataOut
+
+    @model_validator(mode="wrap")
+    def serialize_model(self, handler):
+        """Rename metadata to _metadata in JSON output per API contract."""
+        data = handler(self)
+        if hasattr(data, "model_dump"):
+            data = data.model_dump(mode="python")
+        elif not isinstance(data, dict):
+            data = dict(data)
+        if "metadata" in data:
+            data["_metadata"] = data.pop("metadata")
+        return data
+
+
+# =============================================================================
 # Schema de salida — List Item IV
 # =============================================================================
 
@@ -316,8 +393,34 @@ class CotizacionM2QuoteOut(BaseSchema):
 from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
     LiquidacionSpecificListItemBase,
     RevisionListItemCleanOut,
-    ValoresM2CleanOut,
+    ValoresListItemOut,
 )
+
+
+# =============================================================================
+# Revisiones vigentes schemas (Edificaciones-style)
+# =============================================================================
+
+
+class RevisionVigenteOut(BaseSchema):
+    """
+    Revisión vigente para formulario de primera/new revision.
+
+    NOTE: especialidades es M2M — una revisión puede cubrir múltiples especialidades.
+    """
+    id: uuid.UUID
+    especialidades: list[EspecialidadBasicaOut]
+    tarifa_id: uuid.UUID
+    porcentaje_liquidacion: float
+    derecho_minimo: float
+    derecho_maximo: Optional[float]
+    porcentaje_minimo_uit: float
+    habilitada: bool
+
+
+class RevisionesVigentesOut(BaseSchema):
+    """Lista de revisiones vigentes para formulario."""
+    revisiones: list[RevisionVigenteOut]
 
 
 class LiquidacionIVListItemOut(LiquidacionSpecificListItemBase):
@@ -325,6 +428,6 @@ class LiquidacionIVListItemOut(LiquidacionSpecificListItemBase):
     Schema de respuesta para item de lista de Impacto Vial.
 
     Hereda de LiquidacionSpecificListItemBase (limpio, sin campos de Edificación).
-    Usa ValoresM2CleanOut (sin IGV).
+    Usa ValoresListItemOut (con IGV — igual que Edificaciones).
     """
-    valores: ValoresM2CleanOut
+    valores: ValoresListItemOut

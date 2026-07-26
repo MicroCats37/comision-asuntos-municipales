@@ -4,6 +4,7 @@ import { Grid3X3 } from "lucide-react";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
 import type { LiquidacionTaludesListItem } from "../types/liquidacion-taludes.types";
 import { LiquidacionGeneralCard } from "./LiquidacionGeneralCard";
+import { formatDecimalPercent } from "@/utils/number-formatter";
 
 interface Props {
   item: LiquidacionTaludesListItem;
@@ -11,16 +12,19 @@ interface Props {
 }
 
 /**
- * Detail block for Taludes — area-based calculation.
- * Renders tariff data from revisiones[n].tarifa.
+ * Detail block for Taludes — percentage-of-obra calculation.
+ * Renders tariff data from revisiones[n].tarifa using percentage fields.
  */
-function M2AreaSummary({
+function PercentageSummary({
   item,
 }: {
   item: LiquidacionTaludesListItem;
 }) {
   const formatCurrency = (value: number | null | undefined) =>
     value != null ? `S/ ${value.toFixed(2)}` : "—";
+
+  const formatPercent = (value: number | null | undefined) =>
+    formatDecimalPercent(value);
 
   // Get tariff data from the first revision
   const firstTarifa = item.revisiones[0]?.tarifa;
@@ -33,15 +37,15 @@ function M2AreaSummary({
         </span>
         <span className="text-sm font-medium text-foreground flex items-center gap-1.5">
           <Grid3X3 className="h-3.5 w-3.5 text-primary" />
-          Cálculo por área
+          % de Obra
         </span>
       </div>
       <div className="flex flex-col gap-1">
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-          Costo (S/ m²)
+          % Liquidación
         </span>
         <span className="text-sm font-medium text-foreground">
-          {formatCurrency(firstTarifa?.costo_por_m2 ?? null)}
+          {formatPercent(firstTarifa?.porcentaje_liquidacion ?? null)}
         </span>
       </div>
       <div className="flex flex-col gap-1">
@@ -54,10 +58,10 @@ function M2AreaSummary({
       </div>
       <div className="flex flex-col gap-1">
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-          Derecho Máx.
+          % UIT Mín.
         </span>
         <span className="text-sm font-medium text-foreground">
-          {formatCurrency(firstTarifa?.derecho_maximo ?? null)}
+          {formatPercent(firstTarifa?.porcentaje_minimo_uit ?? null)}
         </span>
       </div>
     </div>
@@ -69,7 +73,7 @@ export function LiquidacionTaludesCard({ item, onVerDetalle }: Props) {
     <LiquidacionGeneralCard
       item={item}
       onVerDetalle={onVerDetalle}
-      typeSpecificSummary={<M2AreaSummary item={item} />}
+      typeSpecificSummary={<PercentageSummary item={item} />}
     />
   );
 }

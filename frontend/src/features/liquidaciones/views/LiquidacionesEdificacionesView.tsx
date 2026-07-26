@@ -1,19 +1,30 @@
 "use client";
 
-import { FileText, Plus, Search, X } from "lucide-react";
+import { FileText, Plus, RefreshCw, Search, UserCheck, X } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   formatCurrency,
   LiquidacionGeneralCard,
 } from "../components/LiquidacionGeneralCard";
+import { ConsultarIngenieroDialog } from "../components/ConsultarIngenieroDialog";
 import { LiquidacionEdificacionesSingleFormModal } from "../components/LiquidacionEdificacionesSingleFormModal";
+import { NuevaRevisionEdificacionesFormModal } from "../components/NuevaRevisionEdificacionesFormModal";
 import { printLiquidacionDocument } from "../components/LiquidacionPDFModal";
 import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificaciones";
 import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificaciones";
 import type { LiquidacionCardBase, LiquidacionGeneralListItem } from "../types/liquidacion-general";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 
 /** Format enum value to title case */
 const formatEnumLabel = (value: string | null | undefined): string => {
@@ -142,7 +153,12 @@ export function LiquidacionesEdificacionesView() {
   const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
+  const [revisionChoiceOpen, setRevisionChoiceOpen] = useState(false);
   const [stepperOpen, setStepperOpen] = useState(false);
+  const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
+  const [consultDialogOpen, setConsultDialogOpen] = useState(false);
+  const currentUser = useAuthStore((state) => state.user);
+  const pdfUser = currentUser ? { nombres: currentUser.nombres, apellidos: currentUser.apellidos } : undefined;
 
   const {
     items: liquidacionItems,
@@ -180,7 +196,17 @@ export function LiquidacionesEdificacionesView() {
   };
 
   const handleLiquidacionCreated = (item: LiquidacionEdificacionOut) => {
-    void printLiquidacionDocument(toPdfItem(item));
+    void printLiquidacionDocument(toPdfItem(item), pdfUser);
+  };
+
+  const openPrimeraRevision = () => {
+    setRevisionChoiceOpen(false);
+    setStepperOpen(true);
+  };
+
+  const openNuevaRevision = () => {
+    setRevisionChoiceOpen(false);
+    setNuevaRevisionOpen(true);
   };
 
   return (
@@ -203,10 +229,18 @@ export function LiquidacionesEdificacionesView() {
           </div>
           <Button
             className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-            onClick={() => setStepperOpen(true)}
+            onClick={() => setRevisionChoiceOpen(true)}
           >
             <Plus className="h-4 w-4" />
             Nueva Liquidación
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+            onClick={() => setConsultDialogOpen(true)}
+          >
+            <UserCheck className="h-4 w-4" />
+            Consultar ingeniero
           </Button>
         </div>
 
@@ -273,7 +307,7 @@ export function LiquidacionesEdificacionesView() {
               <div className="mt-4">
                 <Button
                   className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20"
-                  onClick={() => setStepperOpen(true)}
+                  onClick={() => setRevisionChoiceOpen(true)}
                 >
                   <Plus className="h-4 w-4" />
                   Nueva Liquidación
@@ -339,11 +373,56 @@ export function LiquidacionesEdificacionesView() {
         </div>
       </div>
 
+      <Dialog open={revisionChoiceOpen} onOpenChange={setRevisionChoiceOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Edificación
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona el tipo de revisión que deseas crear
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="default"
+              onClick={openPrimeraRevision}
+              className="flex-1 gap-2 h-11 rounded-xl font-semibold"
+            >
+              <FileText className="h-4 w-4" />
+              Primera Revisión
+            </Button>
+            <Button
+              variant="outline"
+              onClick={openNuevaRevision}
+              className="flex-1 gap-2 h-11 rounded-xl font-semibold"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Revisión
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <LiquidacionEdificacionesSingleFormModal
         open={stepperOpen}
         onOpenChange={setStepperOpen}
         onSuccess={refetchLiquidaciones}
         onCreated={handleLiquidacionCreated}
+      />
+
+      <NuevaRevisionEdificacionesFormModal
+        open={nuevaRevisionOpen}
+        onOpenChange={setNuevaRevisionOpen}
+        onSuccess={() => { setNuevaRevisionOpen(false); refetchLiquidaciones(); }}
+        onCreated={handleLiquidacionCreated}
+        liquidacionPreviaId={null}
+      />
+
+      <ConsultarIngenieroDialog
+        open={consultDialogOpen}
+        onOpenChange={setConsultDialogOpen}
       />
     </div>
   );

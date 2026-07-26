@@ -3,8 +3,10 @@ Management command para poblar TODAS las tarifas de liquidaciones.
 
 Pobla:
     - EDIFICACION: TarifaLiquidacionBase + TarifaPorcentajeObra + ReglaTarifaEdificacion
-    - HABILITACION_URBANA, MECANICA_SUELOS, IMPACTO_VIAL, TALUDES:
-      TarifaLiquidacionBase + TarifaPorMetroCuadrado + ReglaTarifaEdificacion
+    - HABILITACION_URBANA, MECANICA_SUELOS:
+      TarifaLiquidacionBase + TarifaPorMetroCuadrado + ReglaTarifaLiquidacion
+    - IMPACTO_VIAL, TALUDES:
+      TarifaLiquidacionBase + TarifaPorcentajeObra + ReglaTarifaEdificacion (0.15% valor obra + IGV)
     - INSPECCION_OBRA: TarifaLiquidacionBase + TarifaPorCategoriaVisitas + ReglaTarifaInspeccionObra
 
 Uso:
@@ -12,9 +14,9 @@ Uso:
     python manage.py seed_tarifas_all --dry-run --settings=config.settings.development
 
 Notas:
-    - IMPACTO_VIAL y TALUDES: La cartilla indica 0.15% valor obra,
-      pero el modelo actual usa LiquidacionPorMetroCuadrado.
-      Se poblarán como M2 para mantener consistencia.
+    - IMPACTO_VIAL y TALUDES: Cambiados a percentage-of-obra (0.15% valor obra + IGV).
+      Usan TarifaPorcentajeObra + ReglaTarifaEdificacion con OBRA_NUEVA como tipo_tramite
+      placeholder (IV/Taludes no tienen tipo_tramite en su dominio).
     - PLANTAS_TIPICAS: No hay modelo para "monto declarado en presupuesto". No se pobla.
     - INSPECCION_OBRA: Los costos son 0.032/0.037/0.042/0.088 * UIT(2026)=5500.
       Si la UIT cambia, este seed queda obsoleto.
@@ -106,12 +108,17 @@ class Command(BaseCommand):
         parser.add_argument(
             '--skip-m2',
             action='store_true',
-            help='Omitir poblar tarifas M2 (HU, MS, IV, Taludes)',
+            help='Omitir poblar tarifas M2 (HU, MS)',
         )
         parser.add_argument(
             '--skip-inspeccion',
             action='store_true',
             help='Omitir poblar tarifas de Inspeccion',
+        )
+        parser.add_argument(
+            '--skip-iv-taludes',
+            action='store_true',
+            help='Omitir poblar tarifas de Impacto Vial y Taludes (percentage-of-obra)',
         )
 
     def handle(self, *args, **options):
@@ -119,6 +126,7 @@ class Command(BaseCommand):
         self.skip_edificacion = options['skip_edificacion']
         self.skip_m2 = options['skip_m2']
         self.skip_inspeccion = options['skip_inspeccion']
+        self.skip_iv_taludes = options['skip_iv_taludes']
         self.seed_path = (
             Path(options['seed_path'])
             if options['seed_path']
@@ -154,7 +162,7 @@ class Command(BaseCommand):
             self._log("\n[EDIFICACION] SKIPPED (--skip-edificacion)")
 
         if not self.skip_m2:
-            self._log(self.style.SUCCESS("\n=== M2 (HU, MS, IV, TALUDES) ==="))
+            self._log(self.style.SUCCESS("\n=== M2 (HU, MS) ==="))
             c, u = self._process_m2(seed_data.get('tarifas_m2', []))
             totals['created'] += c['tarifas'] + c['reglas']
             totals['updated'] += u['tarifas'] + u['reglas']
@@ -168,6 +176,14 @@ class Command(BaseCommand):
             totals['updated'] += u['tarifas'] + u['reglas']
         else:
             self._log("\n[INSPECCION] SKIPPED (--skip-inspeccion)")
+
+        if not self.skip_iv_taludes:
+            self._log(self.style.SUCCESS("\n=== IV / TALUDES (percentage-of-obra) ==="))
+            c, u = self._process_iv_taludes(seed_data.get('tarifas_iv_taludes', []))
+            totals['created'] += c['tarifas'] + c['reglas']
+            totals['updated'] += u['tarifas'] + u['reglas']
+        else:
+            self._log("\n[IV/TALUDES] SKIPPED (--skip-iv-taludes)")
 
         self._log(self.style.SUCCESS(
             f"\n[seed_tarifas_all] Completed:"
@@ -384,7 +400,7 @@ class Command(BaseCommand):
         return result, update_result
 
     # =========================================================================
-    # M2 (HABILITACION_URBANA, MECANICA_SUELOS, IMPACTO_VIAL, TALUDES)
+    # M2 (HABILITACION_URBANA, MECANICA_SUELOS)
     # =========================================================================
 
     def _process_m2(self, tarifas_data):
@@ -505,6 +521,157 @@ class Command(BaseCommand):
                 result['reglas'] += 1
             else:
                 self._log(f"    Found existing ReglaTarifaLiquidacion: {valid_tramite_accion}")
+                update_result['reglas'] += 1
+
+        return result, update_result
+
+    # =========================================================================
+    # IV / TALUDES (percentage-of-obra, uses ReglaTarifaEdificacion with placeholder tipo_tramite)
+    # =========================================================================
+
+    def _process_iv_taludes(self, tarifas_data):
+        """
+        Process tarifas for IMPACTO_VIAL and TALUDES.
+
+        These use TarifaPorcentajeObra (0.15% valor obra) like Edificaciones,
+        but IV/Taludes don't have tipo_tramite in their domain. We use OBRA_NUEVA
+        as a placeholder tipo_tramite for ReglaTarifaEdificacion rules.
+        """
+        created = {'tarifas': 0, 'reglas': 0}
+        updated = {'tarifas': 0, 'reglas': 0}
+
+        for tarifa_data in tarifas_data:
+            c, u = self._process_tarifa_iv_taludes(tarifa_data)
+            created['tarifas'] += c['tarifa']
+            updated['tarifas'] += u['tarifa']
+            created['reglas'] += c['reglas']
+            updated['reglas'] += u['reglas']
+
+        self._log(f"  IV/Taludes: {created['tarifas']} tarifas created, {updated['tarifas']} updated")
+        self._log(f"  IV/Taludes: {created['reglas']} reglas created, {updated['reglas']} updated")
+        return created, updated
+
+    def _process_tarifa_iv_taludes(self, tarifa_data):
+        """
+        Process a single tarifa entry for IV/Taludes (percentage-of-obra).
+
+        Uses TarifaPorcentajeObra + ReglaTarifaEdificacion.
+        tipo_tramite is set to OBRA_NUEVA as a placeholder since IV/Taludes
+        don't have tipo_tramite in their domain.
+        """
+        result = {'tarifa': 0, 'reglas': 0}
+        update_result = {'tarifa': 0, 'reglas': 0}
+
+        tipo_liquidacion = tarifa_data.get('tipo_liquidacion')
+        periodo_inicio_str = tarifa_data.get('periodo_inicio', '2026-01-01')
+        periodo_fin_str = tarifa_data.get('periodo_fin')
+        especialidad_nombres = tarifa_data.get('especialidades', [])
+        porcentaje_liquidacion = Decimal(str(tarifa_data.get('porcentaje_liquidacion', '0')))
+        derecho_minimo = Decimal(str(tarifa_data.get('derecho_minimo', '0')))
+        derecho_maximo_str = tarifa_data.get('derecho_maximo')
+        porcentaje_minimo_uit = Decimal(str(tarifa_data.get('porcentaje_minimo_uit', '0.02')))
+        reglas = tarifa_data.get('reglas', [])
+
+        periodo_inicio = date.fromisoformat(periodo_inicio_str)
+        periodo_fin = None if periodo_fin_str is None else date.fromisoformat(periodo_fin_str)
+        derecho_maximo = None if derecho_maximo_str is None else Decimal(str(derecho_maximo_str))
+
+        self._log(f"    Processing {tipo_liquidacion}: porcentaje={porcentaje_liquidacion}, min_uit={porcentaje_minimo_uit}")
+
+        if self.dry_run:
+            self._log(f"\n  [DRY-RUN] Would create/update TarifaLiquidacionBase IV/Taludes percentage:")
+            self._log(f"    tipo_liquidacion={tipo_liquidacion}, periodo_inicio={periodo_inicio}")
+            self._log(f"    porcentaje={porcentaje_liquidacion}, derecho_min={derecho_minimo}")
+            self._log(f"    especialidades={especialidad_nombres}")
+            result['tarifa'] = 1
+            result['reglas'] = len(reglas)
+            return result, update_result
+
+        # Ensure especialidades exist and fetch them
+        self._ensure_especialidades(especialidad_nombres)
+        especialidades = self._get_especialidades(especialidad_nombres)
+
+        # Find or create TarifaLiquidacionBase
+        existing_bases = TarifaLiquidacionBase.objects.filter(
+            tipo_liquidacion=tipo_liquidacion,
+            periodo_inicio=periodo_inicio,
+        ).prefetch_related('especialidades', 'detalle_porcentual', 'reglas_tarifa')
+
+        tarifa_base = None
+        tarifa_created = False
+        sorted_specs = sorted(especialidad_nombres)
+        for candidate in existing_bases:
+            candidate_specs = sorted(candidate.especialidades.values_list('nombre', flat=True))
+            candidate_pct = getattr(candidate.detalle_porcentual, 'porcentaje_liquidacion', None)
+            if list(candidate_specs) == sorted_specs and candidate_pct == porcentaje_liquidacion:
+                tarifa_base = candidate
+                tarifa_created = False
+                break
+
+        if tarifa_base is None:
+            tarifa_base = TarifaLiquidacionBase.objects.create(
+                tipo_liquidacion=tipo_liquidacion,
+                periodo_inicio=periodo_inicio,
+                periodo_fin=periodo_fin,
+            )
+            tarifa_created = True
+
+        if tarifa_created:
+            self._log(self.style.SUCCESS(f"    Created TarifaLiquidacionBase: {tarifa_base}"))
+            result['tarifa'] = 1
+        else:
+            self._log(f"    Found existing TarifaLiquidacionBase: {tarifa_base}")
+            update_result['tarifa'] = 1
+
+        # Sync especialidades (same as Edificaciones pattern)
+        tarifa_base.especialidades.set(especialidades)
+
+        # Create/update TarifaPorcentajeObra
+        _, porcentaje_created = TarifaPorcentajeObra.objects.update_or_create(
+            tarifa_base=tarifa_base,
+            defaults={
+                'porcentaje_liquidacion': porcentaje_liquidacion,
+                'derecho_minimo': derecho_minimo,
+                'derecho_maximo': derecho_maximo,
+                'porcentaje_minimo_uit': porcentaje_minimo_uit,
+            },
+        )
+        self._log(f"    TarifaPorcentajeObra: {'created' if porcentaje_created else 'updated'}")
+
+        # Create/update ReglaTarifaEdificacion entries
+        # NOTE: tipo_tramite is OBRA_NUEVA placeholder - IV/Taludes don't have tipo_tramite domain
+        for regla_data in reglas:
+            tipo_tramite = regla_data.get('tipo_tramite', 'OBRA_NUEVA')
+            tramite_accion = regla_data.get('tramite_accion')
+
+            if not tramite_accion:
+                self._log(self.style.WARNING(f"    Skipping rule with missing tramite_accion"))
+                continue
+
+            valid_tipo_tramite = self._validate_choice(
+                tipo_tramite, TipoTramiteEdificaciones, 'TipoTramiteEdificaciones'
+            )
+            valid_tramite_accion = self._validate_choice(
+                tramite_accion, TramiteAccion, 'TramiteAccion'
+            )
+
+            if not valid_tipo_tramite or not valid_tramite_accion:
+                continue
+
+            _, regla_created = ReglaTarifaEdificacion.objects.update_or_create(
+                tipo_tramite=valid_tipo_tramite,
+                tramite_accion=valid_tramite_accion,
+                tarifa_base=tarifa_base,
+                defaults={},
+            )
+
+            if regla_created:
+                self._log(self.style.SUCCESS(
+                    f"    Created ReglaTarifaEdificacion: {valid_tipo_tramite}/{valid_tramite_accion}"
+                ))
+                result['reglas'] += 1
+            else:
+                self._log(f"    Found existing ReglaTarifaEdificacion: {valid_tipo_tramite}/{valid_tramite_accion}")
                 update_result['reglas'] += 1
 
         return result, update_result

@@ -249,6 +249,8 @@ class HabilitacionUrbanaPresenter:
             ),
             valores=ValoresM2CleanOut(
                 subtotal=result.valores.subtotal,
+                igv=result.valores.igv,
+                total=result.valores.total,
                 total_a_pagar=result.valores.total_a_pagar,
             ),
             proyectistas=[
@@ -351,6 +353,8 @@ class HabilitacionUrbanaPresenter:
             LiquidacionHUListItemOut schema para respuesta HTTP de detalle
         """
         subtotal = float(result.subtotal) if result.subtotal else 0.0
+        igv = float(result.igv) if result.igv else 0.0
+        total = float(result.total) if result.total else 0.0
         total_a_pagar = float(result.total_a_pagar) if result.total_a_pagar else 0.0
 
         return LiquidacionHUListItemOut(
@@ -371,6 +375,8 @@ class HabilitacionUrbanaPresenter:
             ),
             valores=ValoresM2CleanOut(
                 subtotal=subtotal,
+                igv=igv,
+                total=total,
                 total_a_pagar=total_a_pagar,
             ),
             proyectistas=[],

@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from modules.liquidaciones.models import (
         LiquidacionGeneral,
         LiquidacionPorMetroCuadrado,
+        LiquidacionPorcentajeObra,
     )
 
 
@@ -97,3 +98,65 @@ class TaludesResultBuilder:
         )
 
         return result, calculo_m2_data
+
+    @staticmethod
+    def build_result_porcentaje(
+        liquidacion: "LiquidacionGeneral",
+        proyecto,
+        liquidacion_porcentaje: "LiquidacionPorcentajeObra",
+        subtotal: Decimal,
+        igv_valor: Decimal,
+        igv_monto: Decimal,
+        total_liquidacion: Decimal,
+    ) -> Tuple:
+        """
+        Construye un resultado tipado para liquidaciones de Taludes
+        usando cálculo porcentual (Edificaciones-style).
+
+        Args:
+            liquidacion: LiquidacionGeneral creada.
+            proyecto: Instancia de Proyecto (ORM).
+            liquidacion_porcentaje: LiquidacionPorcentajeObra creada.
+            subtotal: Subtotal calculado (= derecho).
+            igv_valor: Valor del IGV (ej. 0.18).
+            igv_monto: Monto IGV calculado.
+            total_liquidacion: Total de la liquidación.
+
+        Returns:
+            Tuple of (LiquidacionTaludesResult, LiquidacionPorcentajeObra)
+        """
+        from modules.liquidaciones.domain.schemas.taludes import (
+            LiquidacionTaludesResult,
+        )
+
+        # Proyectar entidad usando helper
+        entidad_id, entidad_tipo, entidad_nombre, entidad_ruc = _proyectar_entidad_desde_proyecto(proyecto)
+
+        result = LiquidacionTaludesResult(
+            liquidacion_id=liquidacion.id,
+            liquidacion_public_id=liquidacion.public_id,
+            numero_revision=liquidacion.numero_revision,
+            estado=liquidacion.estado,
+            fecha_creacion=liquidacion.created_at.isoformat() if liquidacion.created_at else "",
+            proyecto_id=proyecto.id,
+            proyecto_public_id=proyecto.public_id or "",
+            proyecto_nombre=proyecto.denominacion,
+            proyecto_direccion=getattr(proyecto, 'direccion', None),
+            proyecto_entidad_id=entidad_id,
+            proyecto_entidad_tipo=entidad_tipo,
+            proyecto_entidad_nombre=entidad_nombre,
+            proyecto_entidad_ruc=entidad_ruc,
+            proyecto_valor_proyecto=Decimal(str(liquidacion_porcentaje.valor_proyecto)),
+            municipalidad_id=liquidacion.municipalidad_id,
+            municipalidad_nombre=liquidacion.municipalidad.nombre if liquidacion.municipalidad else "",
+            expediente=liquidacion.expediente,
+            observacion=liquidacion.observacion,
+            igv_valor=Decimal(str(igv_valor)),
+            uit_valor=Decimal(str(liquidacion.uit.valor)) if liquidacion.uit else Decimal('0'),
+            totales_subtotal=subtotal,
+            totales_igv=igv_monto,
+            totales_total_liquidacion=total_liquidacion,
+            totales_total_a_pagar=total_liquidacion,
+        )
+
+        return result, liquidacion_porcentaje

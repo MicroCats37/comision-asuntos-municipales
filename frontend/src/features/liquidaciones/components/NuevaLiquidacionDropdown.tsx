@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LiquidacionEdificacionFormModal } from "@/features/liquidaciones/components/deprecadedForm";
-import { NuevaRevisionFormModal } from "@/features/liquidaciones/components/NuevaRevisionFormModal";
+import { NuevaRevisionEdificacionesFormModal } from "@/features/liquidaciones/components/NuevaRevisionEdificacionesFormModal";
 import {
   LiquidacionHabilitacionUrbanaStepperModal,
   LiquidacionMecanicaSuelosStepperModal,
@@ -241,7 +241,7 @@ export function NuevaLiquidacionDropdown({
         onSuccess={handleSuccess}
       />
 
-      <NuevaRevisionFormModal
+      <NuevaRevisionEdificacionesFormModal
         open={nuevaRevisionOpen}
         onOpenChange={setNuevaRevisionOpen}
         onSuccess={handleSuccess}

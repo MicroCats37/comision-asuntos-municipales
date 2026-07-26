@@ -208,8 +208,7 @@ class MecanicaSuelosFlujo:
 
         ALL-OR-NOTHING: Si cualquier CIP falla o no está habilitado, se rechaza toda la operación.
         """
-        from core.exceptions import CipNotFoundError
-        from modules.usuarios.infrastructure.services import CipServiceUnavailableError
+        from core.exceptions import CipNotFoundError, CipServiceUnavailableError
         from modules.usuarios.domain.schemas.ingeniero_habilitado_schemas import CipColegiadoData
 
         for p in proyectistas_inline:

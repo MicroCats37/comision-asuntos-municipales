@@ -3,16 +3,36 @@
 /**
  * IV-specific print adapter for LiquidacionImpactoVial.
  *
- * Adapts CrearImpactoVialResponse to a print-friendly structure
- * and renders an IV-specific PDF element (area-based).
+ * Adapts CrearImpactoVialResponse (flat list item) to a print-friendly structure
+ * and renders an IV-specific PDF element (percentage-based).
  *
- * Key differences from HU print:
- * - Shows area_solicitada, costo_por_m2, derecho_min/max
- * - Uses m² units throughout
+ * Note: valor_proyecto, porcentaje_liquidacion, porcentaje_minimo_uit are not persisted
+ * in the flat response and will show as 0. The percentage fields are user input
+ * parameters, not stored in the liquidation record.
  */
 import type { CrearImpactoVialResponse } from "../types/liquidacion-impacto-vial.types";
+import type { LiquidacionCardBase } from "../types/liquidacion-general";
 
 // ── Adapter ───────────────────────────────────────────────────────────────────
+
+/**
+ * Adapts CrearImpactoVialResponse to LiquidacionCardBase for use with the
+ * generic printLiquidacionDocument() renderer.
+ *
+ * The IV list item already has all required fields compatible with LiquidacionCardBase:
+ * - tipo_liquidacion: "impacto-vial"
+ * - valores uses ValoresM2ListItem (subtotal, igv, total, total_a_pagar)
+ * - revisions[0].tarifa has porcentaje_liquidacion for percentage display
+ *
+ * This enables the post-create PDF to use the same renderer as the card/list PDF button.
+ */
+export function IVToCardBase(
+  created: CrearImpactoVialResponse,
+): LiquidacionCardBase {
+  return created as unknown as LiquidacionCardBase;
+}
+
+// ── Legacy Adapter ─────────────────────────────────────────────────────────────
 
 export interface IVPrintData {
   public_id: string;
@@ -20,10 +40,10 @@ export interface IVPrintData {
   expediente: string | null;
   municipalidad_codigo: string | null;
   municipalidad_nombre: string;
-  area_solicitada: number;
-  costo_por_m2: number;
+  valor_proyecto: number;
+  porcentaje_liquidacion: number;
+  porcentaje_minimo_uit: number;
   derecho_minimo: number;
-  derecho_maximo: number | null;
   subtotal: number;
   igv: number;
   total: number;
@@ -33,37 +53,58 @@ export interface IVPrintData {
   proponente_nombre: string;
 }
 
+/**
+ * Legacy adapter for IV-specific PDF print (buildIVPdfElement with "IMPACTO VIAL" header).
+ * Use IVToCardBase + printLiquidacionDocument() for unified renderer matching card/list.
+ */
 export function adaptIVToPrintData(
   created: CrearImpactoVialResponse,
-  municipalidadNombre: string,
-  municipalidadCodigo: string | null,
-  proyectoNombre: string,
-  proponenteNombre: string,
 ): IVPrintData {
+  const primeraRevision = created.revisiones?.[0];
+  const tarifa = primeraRevision?.tarifa;
   return {
-    public_id: created.liquidacion.public_id,
-    fecha_registro: created.liquidacion.fecha_creacion,
-    expediente: created.liquidacion.expediente,
-    municipalidad_codigo: municipalidadCodigo,
-    municipalidad_nombre: municipalidadNombre,
-    area_solicitada: 0,
-    costo_por_m2: 0,
-    derecho_minimo: 0,
-    derecho_maximo: null,
-    subtotal: created.totales.subtotal,
-    igv: created.totales.igv,
-    total: created.totales.total,
-    liquidacion_total: created.totales.liquidacion_total,
-    total_a_pagar: created.totales.total_a_pagar,
-    proyecto_nombre: proyectoNombre,
-    proponente_nombre: proponenteNombre,
+    public_id: created.public_id,
+    fecha_registro: created.fecha_registro,
+    expediente: null, // Not available in IV list item (only Edificaciones)
+    municipalidad_codigo: created.municipalidad.codigo,
+    municipalidad_nombre: created.municipalidad.nombre,
+    valor_proyecto: created.proyecto.valor_proyecto,
+    porcentaje_liquidacion: tarifa?.porcentaje_liquidacion ?? 0,
+    porcentaje_minimo_uit: tarifa?.porcentaje_minimo_uit ?? 0,
+    derecho_minimo: tarifa?.derecho_minimo ?? 0,
+    subtotal: created.valores.subtotal,
+    igv: created.valores.igv,
+    total: created.valores.total,
+    liquidacion_total: created.valores.total_a_pagar,
+    total_a_pagar: created.valores.total_a_pagar,
+    proyecto_nombre: created.proyecto.nombre,
+    proponente_nombre: created.entidad?.nombre ?? "—",
   };
 }
 
 // ── Print ─────────────────────────────────────────────────────────────────────
 
-function formatCurrency(value: number): string {
+export function formatCurrency(value: number): string {
   return `S/ ${value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`;
+}
+
+/**
+ * Builds the "VALOR OBRA: S/ X x Y.YY% = S/ Z" percentage calculation line.
+ * porcentaje_liquidacion is a decimal fraction (0.05 = 5%) per backend/domain convention.
+ *
+ * @param valorObra - The project value (e.g. 100000)
+ * @param porcentajeLiquidacion - The decimal fraction (e.g. 0.05 for 5%)
+ * @param fmt - Currency formatter (defaults to the module's formatCurrency)
+ * @returns The formatted line string, e.g. "VALOR OBRA: S/ 100,000.00 x 5.00% = S/ 5,000.00"
+ */
+export function formatPorcentajeLine(
+  valorObra: number,
+  porcentajeLiquidacion: number,
+  fmt: (v: number) => string = formatCurrency,
+): string {
+  const calculated = valorObra * porcentajeLiquidacion;
+  const pctDisplay = (porcentajeLiquidacion * 100).toFixed(2);
+  return `VALOR OBRA: ${fmt(valorObra)} x ${pctDisplay}% = ${fmt(calculated)}`;
 }
 
 function formatDate(dateStr: string): string {
@@ -130,10 +171,10 @@ function buildIVPdfElement(data: IVPrintData, ownerDocument: Document) {
     expediente,
     municipalidad_codigo,
     municipalidad_nombre,
-    area_solicitada,
-    costo_por_m2,
+    valor_proyecto,
+    porcentaje_liquidacion,
+    porcentaje_minimo_uit,
     derecho_minimo,
-    derecho_maximo,
     subtotal,
     igv,
     total,
@@ -274,9 +315,9 @@ function buildIVPdfElement(data: IVPrintData, ownerDocument: Document) {
   if (expediente) {
     appendReceiptRow(details, "EXPEDIENTE", expediente);
   }
-  appendReceiptRow(details, "AREA SOLICITADA", `${area_solicitada.toLocaleString("es-PE")} m²`);
-  if (costo_por_m2 > 0) {
-    appendReceiptRow(details, "COSTO POR M2", formatCurrency(costo_por_m2));
+  // Percentage-based: show Valor de la Obra instead of area
+  if (valor_proyecto > 0) {
+    appendReceiptRow(details, "VALOR DE LA OBRA", formatCurrency(valor_proyecto));
   }
 
   // Middle section: calculation breakdown
@@ -293,20 +334,19 @@ function buildIVPdfElement(data: IVPrintData, ownerDocument: Document) {
   );
 
   const calc = append(middle, "div", { fontSize: "12px", lineHeight: "1.5" });
-  if (area_solicitada > 0 && costo_por_m2 > 0) {
+  // Percentage-based calculation line
+  // porcentaje_liquidacion is a decimal fraction (0.05 = 5%), per backend/domain convention
+  if (valor_proyecto > 0 && porcentaje_liquidacion > 0) {
     appendText(
       calc,
       "p",
-      `AREA: ${area_solicitada.toLocaleString("es-PE")} m² x ${formatCurrency(costo_por_m2)}/m²`,
+      formatPorcentajeLine(valor_proyecto, porcentaje_liquidacion),
       { margin: "0", fontWeight: "700", maxWidth: "620px" },
     );
   }
-  appendText(calc, "p", `Derecho mínimo ${formatCurrency(derecho_minimo)} + IGV ***`, {
-    margin: "4px 0 0",
-  });
-  if (derecho_maximo != null) {
-    appendText(calc, "p", `Derecho máximo ${formatCurrency(derecho_maximo)}`, {
-      margin: "2px 0 0",
+  if (derecho_minimo > 0) {
+    appendText(calc, "p", `Derecho mínimo ${formatCurrency(derecho_minimo)} + IGV ***`, {
+      margin: "4px 0 0",
     });
   }
 

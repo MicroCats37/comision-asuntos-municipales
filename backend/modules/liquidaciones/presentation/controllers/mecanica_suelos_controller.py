@@ -93,7 +93,7 @@ class MecanicaSuelosController:
             total_pages=total_pages,
         ))
 
-    @route.post("/primera-revision", response={200: ApiResponse[LiquidacionMecanicaSuelosOut]}, auth=None)
+    @route.post("/primera-revision", response={200: ApiResponse[LiquidacionM2ListItemOut]}, auth=None)
     async def crear_mecanica_suelos(
         self,
         payload: CrearLiquidacionMecanicaSuelosWrapperIn,
@@ -149,8 +149,12 @@ class MecanicaSuelosController:
             tarifas_ids=tarifas_ids,
             proyectistas_inline=proyectistas_inline,
         )
+        # Fetch complete record with all relations for post-create PDF
+        list_item = await self.general_orchestrator.obtener_liquidacion_list_item_por_id(
+            str(result.liquidacion_id)
+        )
         return success_response(
-            MecanicaSuelosPresenter.present(result, calculo_m2)
+            MecanicaSuelosPresenter.present_list_item(list_item)
         )
 
     @route.post("/cotizar/primera-revision", response={200: ApiResponse[CotizacionM2QuoteOut]}, auth=None)

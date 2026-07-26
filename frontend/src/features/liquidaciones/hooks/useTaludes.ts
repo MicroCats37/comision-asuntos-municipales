@@ -55,7 +55,7 @@ export function useCrearTaludesPrimeraRevision() {
 export function useCotizarTaludesPrimeraRevision() {
   const mutation = useApiCreate<
     z.infer<typeof cotizacionTaludesResponseSchema>,
-    { liquidacion: { area_solicitada: number; tarifas_ids: string[] } }
+    { liquidacion: { valor_proyecto: number; tarifas_ids: string[] } }
   >({
     url: "/liquidaciones/taludes/cotizar/primera-revision",
     schema: cotizacionTaludesResponseSchema,
@@ -64,11 +64,11 @@ export function useCotizarTaludesPrimeraRevision() {
 
   const cotizacionMutation = {
     ...mutation,
-    mutate: (payload: { area_solicitada: number; tarifas_ids: string[] }) => {
+    mutate: (payload: { valor_proyecto: number; tarifas_ids: string[] }) => {
       mutation.mutate({ liquidacion: payload });
     },
     mutateAsync: async (
-      payload: { area_solicitada: number; tarifas_ids: string[] },
+      payload: { valor_proyecto: number; tarifas_ids: string[] },
     ): Promise<CotizacionTaludesResponse> => {
       const result = await mutation.mutateAsync({ liquidacion: payload });
       return result.data as CotizacionTaludesResponse;

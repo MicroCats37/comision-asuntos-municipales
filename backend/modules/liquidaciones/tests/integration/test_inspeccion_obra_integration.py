@@ -150,7 +150,10 @@ class TestInspeccionObraEndpoint:
 
     def test_crear_inspeccion_obra_respuesta_tiene_estructura_correcta(self, client: Client):
         """
-        La respuesta debe tener la estructura correcta con liquidacion, totales, calculo_visitas.
+        La respuesta debe tener la estructura correcta con flat list item:
+        id, public_id, tipo_liquidacion, estado, fecha_registro,
+        proyecto, municipalidad, valores{subtotal,igv,total,total_a_pagar},
+        revisiones[0]{tarifa{costo_por_visita,cantidad_visitas,categoria}}.
         """
         response = client.post(
             "/api/liquidaciones/inspeccion-obra/primera-revision",
@@ -168,12 +171,34 @@ class TestInspeccionObraEndpoint:
         data = response.json()
         snapshot = data["data"]
 
-        assert "liquidacion" in snapshot
+        # Flat list item structure
+        assert "id" in snapshot
+        assert "public_id" in snapshot
         assert "tipo_liquidacion" in snapshot
-        assert snapshot["tipo_liquidacion"] == "INSPECCION_OBRA"
-        assert "totales" in snapshot
-        assert "calculo_visitas" in snapshot
-        assert snapshot["calculo_visitas"]["categoria"] == "A"
+        assert snapshot["tipo_liquidacion"] == "inspeccion-obra"
+        assert "estado" in snapshot
+        assert "fecha_registro" in snapshot
+        # proyecto nested
+        assert "proyecto" in snapshot
+        assert "nombre" in snapshot["proyecto"]
+        # municipalidad
+        assert "municipalidad" in snapshot
+        assert "nombre" in snapshot["municipalidad"]
+        # valores financieros
+        valores = snapshot["valores"]
+        assert valores["subtotal"] > 0
+        assert valores["igv"] > 0
+        assert valores["total"] > valores["subtotal"]
+        assert valores["total_a_pagar"] == valores["total"]
+        # Revision con tarifa de visitas
+        assert "revisiones" in snapshot
+        assert len(snapshot["revisiones"]) > 0
+        tarifa = snapshot["revisiones"][0]["tarifa"]
+        assert tarifa is not None
+        assert "costo_por_visita" in tarifa
+        assert "cantidad_visitas" in tarifa
+        assert "categoria" in tarifa
+        assert tarifa["categoria"] == "A"
 
 
 @pytest.mark.django_db
@@ -259,7 +284,8 @@ class TestInspeccionObraProyectistas:
         )
         assert response.status_code == 200, response.json()
         data = response.json()
-        liquidacion_id = data["data"]["liquidacion"]["id"]
+        # Flat list item response: data.data is the LiquidacionIOListItemOut directly
+        liquidacion_id = data["data"]["id"]
 
         # Verify LiquidacionProyectista was created and associated
         lp_count = LiquidacionProyectista.objects.filter(

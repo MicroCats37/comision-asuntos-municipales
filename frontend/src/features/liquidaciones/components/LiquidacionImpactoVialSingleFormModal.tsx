@@ -1,32 +1,30 @@
 "use client";
 
 /**
- * LiquidacionImpactoVialSingleFormModal — Single continuous form for IV.
+ * LiquidacionImpactoVialSingleFormModal — Single continuous form for Impacto Vial.
+ * Clone of LiquidacionEdificacionesSingleFormModal with IV-specific module substitutions.
  *
- * UI/UX Redesign:
- * - Replace 4-step stepper with single-form modal with two sections:
- *   `Datos del Trámite` (cotizacion inside) + `Datos del Proyecto`
- * - Cotizacion fires via Enter key on area input
- * - Out-of-sync indicator when area changes after quoting
- * - Auto-select single enabled tarifa and hide selector
- * - No proyectistas UI; send `proyectistas: []` in payload
- * - Contacts as compact chip section
- * - Post-create direct print via onCreated callback
+ * UI/UX Redesign (this pass):
+ * - Desktop: proportional grid-areas layout
+ *   - Top row: Liquidación (2/3) | Cotización (1/3)
+ *   - Bottom row: Proyecto (left) | Contactos (right)
+ * - Mobile: fully stacked vertical flow
+ * - Proyecto: inline creation only (no search-by-id path)
+ * - Proyectistas: REMOVED from this form
+ * - Cotización: reactive/automatic — fires via useEffect when inputs change (no button)
+ * - Smart MoneyInput for amount fields
+ * - No hardcoded heights — content-driven modal sizing
  *
  * Architecture preserved:
- * - Zustand store (useImpactoVialStepperStore): proyecto, contactos
+ * - Zustand store (useImpactoVialStepperStore): proyecto, contactos, cotización, tarifas
  * - React Hook Form: liquidacion fields
- * - Child modal: ContactoFormModal
- *
- * User confirmed decisions:
- * - IV-specific cotizacion section component (not shared)
- * - IV cotizacion is area-based (m² × costo_por_m2 + derecho min/max)
- * - Proyectistas: removed from UI, `proyectistas: []` in payload
- * - Post-create direct print
+ * - Child modals: ContactoFormModal, InstitucionFormModal, PersonaNaturalFormModal
  */
 
 import {
+  Banknote,
   Building2,
+  Calculator,
   CheckCircle2,
   FileText,
   Loader2,
@@ -43,47 +41,66 @@ import { useForm, useWatch } from "react-hook-form";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { GenericInput } from "@/components/genericForm/GenericInput";
-import { AreaInput } from "@/components/genericForm/inputs/AreaInput";
+import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import { GenericForm } from "@/components/genericForm/GenericForm";
 import { notify } from "@/errors";
 import { useCrearImpactoVialPrimeraRevision } from "../hooks/useImpactoVial";
 import { useCotizarImpactoVialPrimeraRevision } from "../hooks/useImpactoVial";
 import { useMunicipalidades } from "../hooks/useMunicipalidades";
+import { useRevisionesVigentesIV } from "../hooks/useRevisionesVigentesIV";
 import { useVariablesFinancieras } from "../hooks/useVariablesFinancieras";
-import { useTarifasVigentesImpactoVial } from "../hooks/useTarifasVigentes";
 import {
   useImpactoVialStepperStore,
 } from "../store/stepper-ui-store-factory";
 import type { ContactoInline } from "../types/contacto";
-import type {
-  CotizacionImpactoVialResponse,
-  CrearImpactoVialPrimeraRevisionIn,
-  CrearImpactoVialResponse,
-  TarifaVigenteImpactoVial,
-} from "../types/liquidacion-impacto-vial.types";
+import type { CrearImpactoVialPrimeraRevisionIn } from "../types/liquidacion-impacto-vial.types";
+import type { CrearImpactoVialResponse } from "../types/liquidacion-impacto-vial.types";
+import { liquidacionEdificacionFormSchema } from "../schemas/liquidacion-edificaciones-form.schema";
 import { ContactoFormModal } from "./ContactoFormModal";
-import { ContactosSection } from "./ContactosSection";
+import { CotizacionSection } from "./CotizacionSection";
 import { DatosDelProyectoSection } from "./DatosDelProyectoSection";
 import { EntidadLookupField } from "./EntidadLookupField";
-import { ImpactoVialCotizacionSection } from "./ImpactoVialCotizacionSection";
-import { ImpactoVialTarifaSelector } from "./ImpactoVialTarifaSelector";
+import { RevisionesVigentesTable } from "./RevisionesVigentesTable";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Schema & Types ─────────────────────────────────────────────────────────────
 
-function formatMunicipalidadLabel(m: {
+const formSchema = liquidacionEdificacionFormSchema;
+type FormData = z.infer<typeof formSchema>;
+
+// ── Constants ───────────────────────────────────────────────────────────────────
+
+const TIPO_TRAMITE_OPTIONS = [
+  { value: "OBRA_NUEVA", label: "Obra nueva" },
+  { value: "DEMOLICION", label: "Demolición" },
+  { value: "AMPLIACION", label: "Ampliación" },
+  { value: "REMODELACION", label: "Remodelación" },
+  { value: "MODIFICACION_LICENCIA", label: "Modificación de licencia" },
+  { value: "REINTEGRO", label: "Reintegro" },
+   { value: "PROYECTO_CON_PLANTAS_TIPICAS", label: "Proyecto con plantas típicas" }
+] as const;
+
+const PROYECTO_CON_PLANTAS_TIPICAS_TIPO = "PROYECTO_CON_PLANTAS_TIPICAS";
+
+function formatMunicipalidadLabel(municipalidad: {
   codigo?: string | null;
   nombre: string;
   provincia?: { nombre: string } | null;
   distrito?: { nombre: string } | null;
 }) {
-  const args: string[] = [];
-  if (m.codigo) args.push(m.codigo);
-  args.push(m.nombre);
-  const sub: string[] = [];
-  if (m.provincia?.nombre) sub.push(m.provincia.nombre);
-  if (m.distrito?.nombre) sub.push(m.distrito.nombre);
-  return args.join(" - ") + (sub.length ? ` - ${sub.join(" / ")}` : "");
+  const codigo = municipalidad.codigo;
+  const nombre = municipalidad.nombre;
+  const provincia = municipalidad.provincia?.nombre;
+  const distrito = municipalidad.distrito?.nombre;
+  let label = codigo ? `${codigo} - ${nombre}` : nombre;
+  if (provincia && distrito) {
+    label += ` - ${provincia} / ${distrito}`;
+  } else if (provincia) {
+    label += ` - ${provincia}`;
+  } else if (distrito) {
+    label += ` - ${distrito}`;
+  }
+  return label;
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -92,11 +109,10 @@ export interface LiquidacionImpactoVialSingleFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
-  /** Called after successful creation with the API response data */
   onCreated?: (created: CrearImpactoVialResponse) => void;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── Component ──────────────────────────────────────────────────────────────────
 
 export function LiquidacionImpactoVialSingleFormModal({
   open,
@@ -104,61 +120,38 @@ export function LiquidacionImpactoVialSingleFormModal({
   onSuccess,
   onCreated,
 }: LiquidacionImpactoVialSingleFormModalProps) {
-  // ── Store (only proyecto + contactos — cotizacion is local to this modal) ───
+  // ── Store (stepper state — survives form re-renders) ───────────────────────
   const store = useImpactoVialStepperStore();
   const {
     proyectoInline,
     setProyectoInline,
     selectedContactos,
+    cotizacion,
     selectedTarifasIds,
     setSelectedTarifasId,
-    setSelectedTarifasIds,
+    setCotizacionQuote,
+    setCotizacionError,
   } = store;
 
-  // ── Local cotizacion state (IV cotizacion type differs from store CotizacionQuote) ───
-  const [cotizacionQuote, setCotizacionQuote] = useState<CotizacionImpactoVialResponse | null>(null);
-  const [cotizacionError, setCotizacionError] = useState<string | null>(null);
-  const [cotizacionCalculating, setCotizacionCalculating] = useState(false);
-
-  // ── Child modal state ─────────────────────────────────────────────────────
+  // ── Child modal state ────────────────────────────────────────────────────────
   const [showContactoModal, setShowContactoModal] = useState(false);
   const [editingContactoIndex, setEditingContactoIndex] = useState<number | null>(null);
 
-  // ── Form schema (local to avoid type mismatches from extra fields) ───────────
-  const formSchema = z.object({
-    municipalidad_id: z.string().uuid("Debe seleccionar una municipalidad"),
-    area_solicitada: z.number().positive("El área debe ser positiva"),
-    expediente: z.string().optional(),
-    observacion: z.string().optional(),
-    tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
-    // Inline proyecto fields (not in schema but registered with RHF)
-    proy_denominacion: z.string().min(1, "Denominación es requerida"),
-    proy_direccion: z.string().optional(),
-    proy_distrito_id: z.string().optional(),
-    proy_nombre_propietario: z.string().min(1, "Nombre del propietario es requerido"),
-    entidad_tipo_documento: z.enum(["RUC", "DNI"]),
-    entidad_numero_documento: z.string().min(1, "Número de documento es requerido"),
-    entidad_razon_social: z.string().min(1, "Razón social es requerida"),
-  });
-
-  type FormData = z.infer<typeof formSchema>;
-
-  // ── RHF ───────────────────────────────────────────────────────────────────
+  // ── RHF ─────────────────────────────────────────────────────────────────────
   const formMethods = useForm<FormData>({
-    resolver: zodResolver(formSchema) as never,
+    resolver: zodResolver(formSchema),
     defaultValues: {
       municipalidad_id: "" as never,
-      area_solicitada: 0 as never,
+      tipo_tramite: "OBRA_NUEVA" as never,
+      valor_proyecto: 0 as never,
       expediente: "",
+      valor_base_calculo: 0 as never,
       observacion: "",
-      tarifas_ids: [] as never,
-      proy_denominacion: "",
-      proy_direccion: "",
-      proy_distrito_id: "",
-      proy_nombre_propietario: "",
-      entidad_tipo_documento: "RUC" as never,
-      entidad_numero_documento: "",
-      entidad_razon_social: "",
+      revisiones_ids: [] as never,
+      proyectistas: [] as never,
+      contactos: [] as never,
+      delegados_ids: [] as never,
+      proyecto_public_id: "",
     },
     mode: "onBlur",
   });
@@ -172,108 +165,121 @@ export function LiquidacionImpactoVialSingleFormModal({
     reset: liqReset,
   } = formMethods;
 
-  // ── Data hooks ─────────────────────────────────────────────────────────────
+  // This modal intentionally has no Proyectistas UI, but the shared
+  // Edificaciones schema still requires the array during RHF validation.
+  useEffect(() => {
+    if (!open) return;
+    if (!Array.isArray(liqGetValues("proyectistas"))) {
+      liqSetValue("proyectistas", [] as never, { shouldValidate: false });
+    }
+  }, [open, liqGetValues, liqSetValue]);
+
+  // ── Data hooks ───────────────────────────────────────────────────────────────
   const { data: variablesFinancieras, isLoading: isLoadingVariables } =
     useVariablesFinancieras();
   const { data: municipalidades, isLoading: isLoadingMunicipalidades } =
     useMunicipalidades();
 
-  // ── Watched values ──────────────────────────────────────────────────────────
-  const watchedMunicipalidadId = liqWatch("municipalidad_id");
-  const watchedAreaSolicitada = liqWatch("area_solicitada");
+  // ── Watched values (minimal — only what queries need) ──────────────────────
+  const watchedTipoTramite = liqWatch("tipo_tramite");
+  const watchedValorProyecto = liqWatch("valor_proyecto");
+  const watchedValorBaseCalculo = liqWatch("valor_base_calculo");
+  const isPlantasTipicas = watchedTipoTramite === PROYECTO_CON_PLANTAS_TIPICAS_TIPO;
 
-  // ── Proyecto inline sync ───────────────────────────────────────────────────
+  // ── Proyecto inline sync: watch RHF fields → store (stepper pattern) ───────
   const watchedProyDenominacion = useWatch({ control: liqControl as never, name: "proy_denominacion" });
   const watchedProyDireccion = useWatch({ control: liqControl as never, name: "proy_direccion" });
   const watchedProyNombrePropietario = useWatch({ control: liqControl as never, name: "proy_nombre_propietario" });
-  const watchedProyDistritoId = useWatch({ control: liqControl as never, name: "proy_distrito_id" });
-  const watchedEntidadTipoDoc = useWatch({ control: liqControl as never, name: "entidad_tipo_documento" });
-  const watchedEntidadNumDoc = useWatch({ control: liqControl as never, name: "entidad_numero_documento" });
-  const watchedEntidadRazonSocial = useWatch({ control: liqControl as never, name: "entidad_razon_social" });
 
   useEffect(() => {
     const denominacion = (watchedProyDenominacion as string) || "";
     const direccion = (watchedProyDireccion as string) || "";
     const nombrePropietario = (watchedProyNombrePropietario as string) || "";
-    const distritoId = (watchedProyDistritoId as string) || undefined;
-    const tipoDoc = (watchedEntidadTipoDoc as string) || "RUC";
-    const numDoc = (watchedEntidadNumDoc as string) || "";
-    const razonSocial = (watchedEntidadRazonSocial as string) || "";
 
     const current = proyectoInline ?? {
       denominacion: "",
       direccion: "",
       nombre_propietario: "",
-      entidad: { tipo_documento: "RUC" as const, numero_documento: "", razon_social: "" },
+      entidad: { tipo_documento: "RUC", numero_documento: "", razon_social: "" },
     };
 
     if (
       current.denominacion !== denominacion ||
       current.direccion !== direccion ||
-      current.nombre_propietario !== nombrePropietario ||
-      current.distrito_id !== distritoId ||
-      current.entidad.tipo_documento !== tipoDoc ||
-      current.entidad.numero_documento !== numDoc ||
-      current.entidad.razon_social !== razonSocial
+      current.nombre_propietario !== nombrePropietario
     ) {
       setProyectoInline({
+        ...current,
         denominacion,
         direccion,
         nombre_propietario: nombrePropietario,
-        distrito_id: distritoId,
-        entidad: {
-          tipo_documento: tipoDoc as "RUC" | "DNI",
-          numero_documento: numDoc,
-          razon_social: razonSocial,
-        },
       });
     }
-  }, [
-    watchedProyDenominacion,
-    watchedProyDireccion,
-    watchedProyNombrePropietario,
-    watchedProyDistritoId,
-    watchedEntidadTipoDoc,
-    watchedEntidadNumDoc,
-    watchedEntidadRazonSocial,
-    proyectoInline,
-    setProyectoInline,
-  ]);
+  }, [watchedProyDenominacion, watchedProyDireccion, watchedProyNombrePropietario, proyectoInline, setProyectoInline]);
 
-  // ── Tarifas ────────────────────────────────────────────────────────────────
-  const { data: tarifasVigentes, isLoading: isLoadingTarifas } =
-    useTarifasVigentesImpactoVial();
+  // ── Revisiones ───────────────────────────────────────────────────────────────
+  const { data: revisionesVigentes, isLoading: isLoadingRevisiones } =
+    useRevisionesVigentesIV({
+      tipo_tramite: watchedTipoTramite || "OBRA_NUEVA",
+      tramite_accion: "PRIMERA_REVISION",
+    });
 
-  const enabledTarifasCount = useMemo(
-    () => (tarifasVigentes || []).filter((t) => t.habilitada).length,
-    [tarifasVigentes],
+  const revisionesHabilitadasCount = useMemo(
+    () => (revisionesVigentes || []).filter((rev) => rev.habilitada).length,
+    [revisionesVigentes],
   );
-  const shouldShowTarifaSelector = isLoadingTarifas || enabledTarifasCount !== 1;
-  const selectedTarifaId = selectedTarifasIds[0] ?? null;
+  const shouldShowRevisionesSection = isLoadingRevisiones || revisionesHabilitadasCount !== 1;
+  const selectedRevision = useMemo(
+    () => (revisionesVigentes || []).find((rev) => rev.id === selectedTarifasIds[0]) ?? null,
+    [revisionesVigentes, selectedTarifasIds],
+  );
+  const valorBaseActual = useMemo(() => {
+    const valorProyecto = Number(watchedValorProyecto);
+    const valorBaseCalculo = Number(watchedValorBaseCalculo);
+    return isPlantasTipicas && valorBaseCalculo > 0 ? valorBaseCalculo : valorProyecto;
+  }, [isPlantasTipicas, watchedValorBaseCalculo, watchedValorProyecto]);
 
-  // Auto-select single enabled tarifa — also sync to RHF field so validation passes
-  const hasInitializedTarifa = useRef(false);
-  useEffect(() => {
-    if (!open) return;
-    if (!isLoadingTarifas && tarifasVigentes && !hasInitializedTarifa.current) {
-      hasInitializedTarifa.current = true;
-      const habiles = tarifasVigentes.filter((t) => t.habilitada);
-      if (habiles.length === 1) {
-        const tarifaId = habiles[0].tarifa_id;
-        setSelectedTarifasId(tarifaId);
-        liqSetValue("tarifas_ids", [tarifaId]);
-      }
-    }
-  }, [open, isLoadingTarifas, tarifasVigentes, setSelectedTarifasId, liqSetValue]);
-
-  // ── Cotización mutation ────────────────────────────────────────────────────
+  // ── Cotización mutation ──────────────────────────────────────────────────────
   const cotizacionMutation = useCotizarImpactoVialPrimeraRevision();
 
-  // ── Cotizacion handler ─────────────────────────────────────────────────────
+  // ── Pre-select habilitadas revisions (stepper pattern) ───────────────────────
+  const hasInitializedRevisiones = useRef(false);
+  const [lockedTarifaId, setLockedTarifaId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    if (!isLoadingRevisiones && revisionesVigentes && !hasInitializedRevisiones.current) {
+      hasInitializedRevisiones.current = true;
+      const habiles = revisionesVigentes.filter((rev) => rev.habilitada);
+      if (habiles.length === 1) {
+        setSelectedTarifasId(habiles[0].id);
+        setLockedTarifaId(habiles[0].id);
+      } else {
+        setLockedTarifaId(null);
+        // Clear stale selection from previous tipo_tramite
+        useImpactoVialStepperStore.setState({ selectedTarifasIds: [] });
+      }
+    }
+  }, [open, isLoadingRevisiones, revisionesVigentes, setSelectedTarifasId]);
+
+  // Clear selection + lock on tipo_tramite change
+  useEffect(() => {
+    hasInitializedRevisiones.current = false;
+    setLockedTarifaId(null);
+  }, [watchedTipoTramite]);
+
+  // ── Manual cotización handler (on-demand, not reactive) ─────────────────────
   const handleCotizar = useCallback(async () => {
-    const areaSolicitada = Number(liqGetValues("area_solicitada"));
-    if (areaSolicitada <= 0) {
-      notify.error("Ingresa un área válida (mayor a 0)");
+    const values = liqGetValues();
+    const tipoTramite = values.tipo_tramite as string;
+    const isPT = tipoTramite === PROYECTO_CON_PLANTAS_TIPICAS_TIPO;
+    const valorProyecto = Number(values.valor_proyecto);
+    const valorBaseCalc = isPT && Number(values.valor_base_calculo) > 0
+      ? Number(values.valor_base_calculo)
+      : valorProyecto;
+
+    if (valorBaseCalc <= 0) {
+      notify.error("Ingresa un valor de proyecto válido");
       return;
     }
     if (selectedTarifasIds.length !== 1) {
@@ -281,37 +287,30 @@ export function LiquidacionImpactoVialSingleFormModal({
       return;
     }
 
-    setCotizacionError(null);
-    setCotizacionCalculating(true);
+    setCotizacionQuote(null);
     try {
       const result = await cotizacionMutation.mutateAsync({
-        area_solicitada: areaSolicitada,
+        valor_proyecto: valorBaseCalc,
         tarifas_ids: selectedTarifasIds,
       });
       setCotizacionQuote(result);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error al calcular la cotización";
       setCotizacionError(msg);
-      notify.error(msg);
-    } finally {
-      setCotizacionCalculating(false);
     }
-  }, [
-    liqGetValues,
-    selectedTarifasIds,
-    cotizacionMutation,
-  ]);
+  }, [liqGetValues, selectedTarifasIds, cotizacionMutation, setCotizacionQuote, setCotizacionError]);
 
-  // ── Tarifa selection ───────────────────────────────────────────────────────
-  const handleTarifaSelect = useCallback(
-    (tarifaId: string) => {
-      setSelectedTarifasId(tarifaId);
-      liqSetValue("tarifas_ids", [tarifaId]);
+  // ── Handlers ─────────────────────────────────────────────────────────────────
+
+  const handleRevisionToggle = useCallback(
+    (revisionId: string) => {
+      if (store.lockedRevisionIds?.includes(revisionId)) return;
+      setSelectedTarifasId(revisionId);
     },
-    [setSelectedTarifasId, liqSetValue],
+    [setSelectedTarifasId, store.lockedRevisionIds],
   );
 
-  // ── Entidad field sync ─────────────────────────────────────────────────────────
+  // Sync entidad fields from EntidadLookupField → proyectoInline (stepper pattern)
   const handleFieldChange = useCallback(
     (field: string, value: string) => {
       const current = proyectoInline ?? {
@@ -341,7 +340,6 @@ export function LiquidacionImpactoVialSingleFormModal({
     [proyectoInline, setProyectoInline],
   );
 
-  // ── Contact handlers ────────────────────────────────────────────────────────
   const handleContactoSaved = useCallback(
     (contacto: ContactoInline) => {
       if (editingContactoIndex !== null) {
@@ -372,7 +370,7 @@ export function LiquidacionImpactoVialSingleFormModal({
     setShowContactoModal(true);
   }, []);
 
-  // ── Submit ────────────────────────────────────────────────────────────────
+  // ── Submit ───────────────────────────────────────────────────────────────────
   const crearMutation = useCrearImpactoVialPrimeraRevision();
 
   const handleClose = (nextOpen: boolean) => {
@@ -381,9 +379,10 @@ export function LiquidacionImpactoVialSingleFormModal({
 
   const handleSubmit = useCallback(
     async (data: FormData) => {
-      // Inline proyecto is always used (no existing proyecto selection in this flow)
-      if (!proyectoInline || !proyectoInline.denominacion) {
-        notify.error("Completa los datos del proyecto antes de crear la liquidación");
+      const hasProyectoInline = !!proyectoInline;
+
+      if (!hasProyectoInline) {
+        notify.error("Debes crear un proyecto antes de crear la liquidación");
         return;
       }
 
@@ -392,26 +391,33 @@ export function LiquidacionImpactoVialSingleFormModal({
         return;
       }
 
+      const isPlantasTipicasSubmit =
+        data.tipo_tramite === PROYECTO_CON_PLANTAS_TIPICAS_TIPO;
+      const valorBaseCalculoSubmit = isPlantasTipicasSubmit &&
+        data.valor_base_calculo &&
+        data.valor_base_calculo > 0
+        ? data.valor_base_calculo
+        : data.valor_proyecto;
+
       const contactosPayload = selectedContactos.map(
         ({ localId: _localId, ...contacto }) => contacto,
       );
 
       const submitData: CrearImpactoVialPrimeraRevisionIn = {
         proyecto_inline: {
-          denominacion: proyectoInline.denominacion,
-          direccion: proyectoInline.direccion || undefined,
-          distrito_id: proyectoInline.distrito_id,
-          nombre_propietario: proyectoInline.nombre_propietario,
-          entidad: proyectoInline.entidad,
+          denominacion: proyectoInline!.denominacion,
+          direccion: proyectoInline!.direccion || undefined,
+          distrito_id: proyectoInline!.distrito_id,
+          nombre_propietario: proyectoInline!.nombre_propietario,
+          entidad: proyectoInline!.entidad,
         },
         municipalidad_id: data.municipalidad_id,
-        area_solicitada: Number(data.area_solicitada),
-        expediente: data.expediente,
-        observacion: data.observacion,
+        valor_proyecto: data.valor_proyecto,
+        expediente: data.expediente || undefined,
+        observacion: data.observacion || undefined,
         tarifas_ids: selectedTarifasIds,
         contactos: contactosPayload,
-        // Proyectistas: omitted from this form — API accepts empty array via extended type
-      } as unknown as CrearImpactoVialPrimeraRevisionIn;
+      };
 
       try {
         const response = await crearMutation.mutateAsync(submitData);
@@ -419,7 +425,6 @@ export function LiquidacionImpactoVialSingleFormModal({
         store.reset();
         liqReset();
         onSuccess?.();
-        // onCreated receives the API response data (only if present)
         if (response.data) {
           onCreated?.(response.data);
         }
@@ -441,51 +446,45 @@ export function LiquidacionImpactoVialSingleFormModal({
     ],
   );
 
-  // ── Reset on close ─────────────────────────────────────────────────────────
+  // ── Reset on close ───────────────────────────────────────────────────────────
   const resetStepper = useImpactoVialStepperStore((state) => state.reset);
   useEffect(() => {
     if (!open) {
-      hasInitializedTarifa.current = false;
-      setSelectedTarifasIds([]);
-      setCotizacionQuote(null);
-      setCotizacionError(null);
-      setCotizacionCalculating(false);
+      hasInitializedRevisiones.current = false;
+      setLockedTarifaId(null);
       resetStepper();
       liqReset();
     }
-  }, [open, resetStepper, liqReset, setSelectedTarifasIds]);
+  }, [open, resetStepper, liqReset]);
 
-  const hasProject = !!proyectoInline?.denominacion;
+  const hasProject = !!proyectoInline;
 
-  // ── Initial data ──────────────────────────────────────────────────────────
   const initialData = useMemo<DefaultValues<FormData>>(() => ({
     municipalidad_id: "",
-    area_solicitada: 0,
+    tipo_tramite: "OBRA_NUEVA" as never,
+    valor_proyecto: 0,
     expediente: "",
+    valor_base_calculo: 0,
     observacion: "",
-    tarifas_ids: [],
-    proy_denominacion: "",
-    proy_direccion: "",
-    proy_distrito_id: "",
-    proy_nombre_propietario: "",
-    entidad_tipo_documento: "RUC" as never,
-    entidad_numero_documento: "",
-    entidad_razon_social: "",
+    revisiones_ids: [],
+    proyectistas: [],
+    contactos: [],
+    proyecto_public_id: "",
   }), []);
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <>
       <GenericModal
         open={open}
         onOpenChange={handleClose}
-        preventClose={crearMutation.isPending}
+        preventClose={true}
       >
         <GenericModal.Content
           size="xl"
           className="sm:w-[min(1500px,calc(100vw-32px))]"
         >
-          {/* ── Header ────────────────────────────────────────────────────── */}
+          {/* ── Header ──────────────────────────────────────────────────────────── */}
           <GenericModal.Header
             title=""
             className="bg-primary/[0.03] border-b border-border px-6 py-4 sm:px-8"
@@ -509,14 +508,14 @@ export function LiquidacionImpactoVialSingleFormModal({
             </div>
           </GenericModal.Header>
 
-          {/* ── Body ─────────────────────────────────────────────────────── */}
+          {/* ── Body ───────────────────────────────────────────────────────────── */}
           <GenericModal.Body>
             <GenericForm<FormData>
               formId="liquidacion-impacto-vial-form"
-              schema={formSchema as never}
+              schema={formSchema}
               initialData={initialData}
-              formMethods={formMethods as never}
-              onSubmit={handleSubmit as never}
+              formMethods={formMethods}
+              onSubmit={handleSubmit}
               skipFooter
               formClassName="flex flex-col"
             >
@@ -525,11 +524,12 @@ export function LiquidacionImpactoVialSingleFormModal({
                   register: liqReg,
                   control: liqControl,
                   formState: { errors: liqErrors },
+                  setValue: liqSetValue,
+                  watch: liqWatch,
                 } = formMethods;
 
                 return (
                   <div className="grid grid-areas-liquidacion-modal grid-cols-1 gap-4 min-h-0">
-                    {/* ── Datos del Trámite ──────────────────────────────── */}
                     <div className="grid-area-tramite rounded-xl border border-border/50 bg-card p-4 space-y-4">
                       <div className="flex items-center gap-2 border-b border-border/40 pb-2 text-primary">
                         <FileText className="h-4 w-4" />
@@ -539,7 +539,6 @@ export function LiquidacionImpactoVialSingleFormModal({
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Left column */}
                         <div className="space-y-4 min-w-0">
                           <GenericInput
                             field={{
@@ -550,10 +549,14 @@ export function LiquidacionImpactoVialSingleFormModal({
                               placeholder: isLoadingMunicipalidades
                                 ? "Cargando..."
                                 : "Seleccione municipalidad",
-                              options: (municipalidades || []).map((municipalidad) => ({
-                                label: formatMunicipalidadLabel(municipalidad),
-                                value: municipalidad.id,
-                              })),
+                              options: (municipalidades || [])
+                                .filter((municipalidad) =>
+                                  municipalidad.nombre.toUpperCase().includes("SAN MIGUEL")
+                                )
+                                .map((municipalidad) => ({
+                                  label: formatMunicipalidadLabel(municipalidad),
+                                  value: municipalidad.id,
+                                })),
                               icon: Building2,
                               isLoading: isLoadingMunicipalidades,
                               labelClassName: "text-foreground font-medium",
@@ -562,18 +565,6 @@ export function LiquidacionImpactoVialSingleFormModal({
                             register={liqReg as never}
                             control={liqControl as never}
                             errors={liqErrors}
-                          />
-                          <AreaInput
-                            name="area_solicitada"
-                            label="Área Solicitada (m²)"
-                            icon={MapPin}
-                            placeholder="Ej: 500 — presiona Enter para cotizar"
-                            required
-                            min={0}
-                            defaultValue={0}
-                            control={liqControl}
-                            onEnter={handleCotizar}
-                            error={liqErrors.area_solicitada as { message?: string } | undefined}
                           />
                           <GenericInput
                             field={{
@@ -605,37 +596,69 @@ export function LiquidacionImpactoVialSingleFormModal({
                           />
                         </div>
 
-                        {/* Right column — Cotizacion */}
                         <div className="space-y-4 min-w-0">
-                          {/* Tarifa selector — only show when multiple enabled */}
-                          {shouldShowTarifaSelector && (
-                            <ImpactoVialTarifaSelector
-                              tarifas={tarifasVigentes || []}
-                              selectedTarifaId={selectedTarifaId}
-                              onSelectTarifa={handleTarifaSelect}
-                              isLoading={isLoadingTarifas}
+
+                          <MoneyInput
+                            name="valor_proyecto"
+                            label="Valor del Proyecto (S/)"
+                            icon={Banknote}
+                            placeholder="S/ 0.00"
+                            required
+                            min={0}
+                            defaultValue={0}
+                            control={liqControl}
+                            onEnter={handleCotizar}
+                            error={liqErrors.valor_proyecto as { message?: string } | undefined}
+                          />
+                          {isPlantasTipicas && (
+                            <MoneyInput
+                              name="valor_base_calculo"
+                              label="Valor Declarado (S/)"
+                              icon={Calculator}
+                              placeholder="S/ 0.00"
+                              required
+                              min={0}
+                              defaultValue={0}
+                              control={liqControl}
+                              error={liqErrors.valor_base_calculo as { message?: string } | undefined}
                             />
                           )}
-
-                          {/* Cotizacion display — cotizacion fires on Enter in area_solicitada */}
-                          <ImpactoVialCotizacionSection
-                            quote={cotizacionQuote}
-                            isLoading={cotizacionCalculating}
-                            onCotizar={handleCotizar}
-                            hasErrors={!!cotizacionError}
-                            isLoadingData={isLoadingTarifas}
-                            variablesFinancieras={variablesFinancieras}
-                            isLoadingVariables={isLoadingVariables}
-                            areaSolicitadaActual={Number(watchedAreaSolicitada) || 0}
-                            hideButton
-                            compact
-                          />
                         </div>
                       </div>
+
+                      {shouldShowRevisionesSection && (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            <FileText className="h-3.5 w-3.5 text-primary/70" />
+                            Revisión / Tarifa
+                          </div>
+                          <RevisionesVigentesTable
+                            revisiones={revisionesVigentes || []}
+                            selectedId={selectedTarifasIds[0] ?? null}
+                            onSelectRevision={handleRevisionToggle}
+                            isLoading={isLoadingRevisiones}
+                            lockedIds={lockedTarifaId ? [lockedTarifaId] : []}
+                          />
+                        </div>
+                      )}
+
+                      <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4 shadow-sm">
+                        <CotizacionSection
+                          quote={cotizacion.quote}
+                          isLoading={cotizacionMutation.isPending}
+                          onCotizar={handleCotizar}
+                          hasErrors={!!cotizacion.lastError}
+                          isLoadingData={isLoadingRevisiones || isLoadingVariables}
+                          variablesFinancieras={variablesFinancieras}
+                          isLoadingVariables={isLoadingVariables}
+                          valorBaseActual={valorBaseActual}
+                          tarifaSeleccionada={selectedRevision}
+                          hideButton
+                          compact
+                        />
+                      </div>
                     </div>
-
                     <div className="h-4"></div>
-
                     <DatosDelProyectoSection
                       register={liqReg}
                       control={liqControl as never}
@@ -656,7 +679,7 @@ export function LiquidacionImpactoVialSingleFormModal({
                           control={liqControl as never}
                           errors={liqErrors as never}
                           onFieldChange={handleFieldChange}
-                          razonSocialSideSlot={
+                          razonSocialSideSlot={(
                             <GenericInput
                               field={{
                                 name: "proy_nombre_propietario",
@@ -672,7 +695,7 @@ export function LiquidacionImpactoVialSingleFormModal({
                               control={liqControl as never}
                               errors={liqErrors}
                             />
-                          }
+                          )}
                         />
                       }
                       selectedContactos={selectedContactos}
@@ -686,7 +709,7 @@ export function LiquidacionImpactoVialSingleFormModal({
             </GenericForm>
           </GenericModal.Body>
 
-          {/* ── Footer ───────────────────────────────────────────────────── */}
+          {/* ── Footer ──────────────────────────────────────────────────────────── */}
           <GenericModal.Footer className="px-6 py-3.5 sm:px-8 bg-muted/20 border-t border-border">
             <div className="flex flex-row sm:justify-end items-center gap-2 sm:gap-3">
               <Button
@@ -724,7 +747,7 @@ export function LiquidacionImpactoVialSingleFormModal({
         </GenericModal.Content>
       </GenericModal>
 
-      {/* ── Child Modals ────────────────────────────────────────────────────── */}
+      {/* ── Child Modals ─────────────────────────────────────────────────────── */}
       <ContactoFormModal
         open={showContactoModal}
         onOpenChange={setShowContactoModal}

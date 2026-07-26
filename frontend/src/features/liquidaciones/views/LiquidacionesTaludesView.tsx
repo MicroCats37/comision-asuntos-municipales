@@ -8,6 +8,7 @@ import {
   Hash,
   Plus,
   Search,
+  UserCheck,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -16,11 +17,14 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LiquidacionTaludesCard } from "../components/LiquidacionTaludesCard";
+import { ConsultarIngenieroDialog } from "../components/ConsultarIngenieroDialog";
 import { LiquidacionTaludesSingleFormModal } from "../components/LiquidacionTaludesSingleFormModal";
-import { printTaludesDocument, type TaludesPrintData } from "../components/taludes-print";
 import { useLiquidacionesTaludes } from "../hooks/useLiquidacionesTaludes";
+import { TaludesToCardBase } from "../components/taludes-print";
+import { printLiquidacionDocument } from "../components/LiquidacionPDFModal";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
 import type { CrearTaludesResponse } from "../types/liquidacion-taludes.types";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 
 const KIND_ICON: LucideIcon = Hash;
 
@@ -35,6 +39,9 @@ export function LiquidacionesTaludesView({
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
   const [taludesModalOpen, setTaludesModalOpen] = useState(false);
+  const [consultDialogOpen, setConsultDialogOpen] = useState(false);
+  const currentUser = useAuthStore((state) => state.user);
+  const pdfUser = currentUser ? { nombres: currentUser.nombres, apellidos: currentUser.apellidos } : undefined;
 
   const {
     items: liquidationItems,
@@ -68,26 +75,9 @@ export function LiquidacionesTaludesView({
   };
 
   const handleLiquidacionCreated = (created: CrearTaludesResponse) => {
-    const printData: TaludesPrintData = {
-      public_id: created.liquidacion.public_id,
-      fecha_registro: created.liquidacion.fecha_creacion,
-      expediente: created.liquidacion.expediente,
-      municipalidad_codigo: null,
-      municipalidad_nombre: "—",
-      area_solicitada: 0,
-      costo_por_m2: 0,
-      derecho_minimo: 0,
-      derecho_maximo: null,
-      subtotal: created.totales.subtotal,
-      igv: created.totales.igv,
-      total: created.totales.total,
-      liquidacion_total: created.totales.liquidacion_total,
-      total_a_pagar: created.totales.total_a_pagar,
-      proyecto_nombre: "—",
-      proponente_nombre: "—",
-    };
-
-    void printTaludesDocument(printData);
+    setTaludesModalOpen(false);
+    // Post-create direct print using unified renderer (same as card/list PDF button)
+    void printLiquidacionDocument(TaludesToCardBase(created), pdfUser);
   };
 
   return (
@@ -112,6 +102,14 @@ export function LiquidacionesTaludesView({
           >
             <Plus className="h-4 w-4" />
             Nueva Liquidación
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+            onClick={() => setConsultDialogOpen(true)}
+          >
+            <UserCheck className="h-4 w-4" />
+            Consultar ingeniero
           </Button>
         </div>
 
@@ -238,6 +236,11 @@ export function LiquidacionesTaludesView({
         onOpenChange={setTaludesModalOpen}
         onSuccess={refetchLiquidaciones}
         onCreated={handleLiquidacionCreated}
+      />
+
+      <ConsultarIngenieroDialog
+        open={consultDialogOpen}
+        onOpenChange={setConsultDialogOpen}
       />
     </div>
   );

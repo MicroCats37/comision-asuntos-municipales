@@ -16,11 +16,6 @@ class CipDataError(Exception):
     pass
 
 
-class CipServiceUnavailableError(Exception):
-    """Excepción cuando el servicio CIP no está disponible."""
-    pass
-
-
 class ICipClient(ABC):
     """Port/interface for CIP external service."""
 
@@ -79,14 +74,17 @@ class RealCipClient(ICipClient):
                 logger.warning(
                     f"CIP API returned status {response.status_code} for CIP {cip}"
                 )
+                from core.exceptions import CipServiceUnavailableError
                 raise CipServiceUnavailableError(
                     f"CIP API returned {response.status_code} for CIP {cip}"
                 )
         except httpx.TimeoutException:
             logger.warning(f"CIP API timeout for CIP {cip}")
+            from core.exceptions import CipServiceUnavailableError
             raise CipServiceUnavailableError(f"CIP API timeout for CIP {cip}")
         except httpx.RequestError as e:
             logger.warning(f"CIP API request error for CIP {cip}: {e}")
+            from core.exceptions import CipServiceUnavailableError
             raise CipServiceUnavailableError(f"CIP API unavailable: {e}")
 
 

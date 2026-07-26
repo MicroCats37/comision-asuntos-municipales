@@ -11,7 +11,7 @@ from ninja.errors import HttpError
 
 from ..flujos.impacto_vial_flujo import ImpactoVialFlujo
 from ...schemas_proyecto import ProyectoInlineData
-from ...schemas import ProyectistaInlineData
+from ...schemas import ProyectistaInlineData, RevisionVigenteResult
 from ...constants import TramiteAccion
 
 
@@ -37,7 +37,7 @@ class ImpactoVialOrchestrator:
         self,
         proyecto_public_id: str | None,
         municipalidad_id: str,
-        area_solicitada: float,
+        valor_proyecto: float,
         expediente: str | None,
         observacion: str | None,
         proyecto_inline: ProyectoInlineData | None = None,
@@ -52,7 +52,7 @@ class ImpactoVialOrchestrator:
         Args:
             proyecto_public_id: ID público del proyecto existente (mutuamente excluyente con proyecto_inline).
             municipalidad_id: ID de la municipalidad (UUID).
-            area_solicitada: Área solicitada en m2.
+            valor_proyecto: Valor del proyecto en soles para el cálculo porcentual.
             expediente: Número de expediente (opcional).
             observacion: Observación (opcional).
             proyecto_inline: Datos del proyecto inline a crear (mutuamente excluyente con proyecto_public_id).
@@ -60,7 +60,7 @@ class ImpactoVialOrchestrator:
             proyectistas_inline: Lista de proyectistas inline con CIP (opcional).
 
         Returns:
-            LiquidacionImpactoVialResult
+            Tuple of (LiquidacionImpactoVialResult, LiquidacionPorcentajeObra)
 
         Raises:
             HttpError(400): Si ambos proyecto_public_id y proyecto_inline están presentes,
@@ -98,7 +98,7 @@ class ImpactoVialOrchestrator:
         return await self.flujo._proceso_creacion(
             proyecto_public_id=proyecto_public_id if has_public_id else None,
             municipalidad_id=municipalidad_id,
-            area_solicitada=area_solicitada,
+            valor_proyecto=valor_proyecto,
             expediente=expediente,
             observacion=observacion,
             proyecto_inline=proyecto_inline,
@@ -109,7 +109,7 @@ class ImpactoVialOrchestrator:
     async def cotizar_primera_revision(
         self,
         tipo_liquidacion: str,
-        area_solicitada: float,
+        valor_proyecto: float,
         tarifas_ids: list[str] | None = None,
     ):
         """
@@ -117,11 +117,11 @@ class ImpactoVialOrchestrator:
 
         Args:
             tipo_liquidacion: Tipo de liquidación (debe ser IMPACTO_VIAL).
-            area_solicitada: Área solicitada en m2.
+            valor_proyecto: Valor del proyecto en soles para el cálculo porcentual.
             tarifas_ids: IDs de tarifas (exactamente 1 elemento si se proporciona).
 
         Returns:
-            CotizacionM2QuoteData
+            CotizacionQuoteData
 
         Raises:
             HttpError(400): Si tarifas_ids tiene más de 1 elemento.
@@ -140,18 +140,21 @@ class ImpactoVialOrchestrator:
 
         return await self.flujo._proceso_cotizar_primera_revision(
             tipo_liquidacion=tipo_liquidacion,
-            area_solicitada=area_solicitada,
+            valor_proyecto=valor_proyecto,
             tarifa_id=tarifa_id,
         )
 
     async def obtener_tarifas_vigentes(
         self,
+        tipo_tramite: str | None = None,
         tramite_accion: str = TramiteAccion.PRIMERA_REVISION,
     ) -> list[dict]:
         """
         Obtiene las tarifas vigentes de Impacto Vial para el formulario.
 
         Args:
+            tipo_tramite: Tipo de trámite de edificación (opcional).
+                Si se provee, filtra usando ReglaTarifaEdificacion.
             tramite_accion: Acción de trámite (PRIMERA_REVISION o REVISION).
                 Defaults to PRIMERA_REVISION.
 
@@ -163,5 +166,33 @@ class ImpactoVialOrchestrator:
         return await sync_to_async(
             self.flujo.core.obtener_tarifas_vigentes
         )(
+            tipo_tramite=tipo_tramite,
+            tramite_accion=tramite_accion,
+        )
+
+    async def obtener_revisiones_vigentes(
+        self,
+        tipo_tramite: str | None = None,
+        tramite_accion: str = TramiteAccion.PRIMERA_REVISION,
+    ) -> list[RevisionVigenteResult]:
+        """
+        Obtiene las revisiones vigentes de Impacto Vial para el formulario.
+
+        Devuelve objetos RevisionVigenteResult con especialidades M2M incluidas,
+        similar al patrón de Edificaciones.
+
+        Args:
+            tipo_tramite: Tipo de trámite de edificación (opcional).
+                Si se provee, filtra usando ReglaTarifaEdificacion.
+            tramite_accion: Acción de trámite (PRIMERA_REVISION o REVISION).
+                Defaults to PRIMERA_REVISION.
+
+        Returns:
+            Lista de RevisionVigenteResult con especialidades populadas.
+        """
+        return await sync_to_async(
+            self.flujo.core.obtener_revisiones_vigentes
+        )(
+            tipo_tramite=tipo_tramite,
             tramite_accion=tramite_accion,
         )

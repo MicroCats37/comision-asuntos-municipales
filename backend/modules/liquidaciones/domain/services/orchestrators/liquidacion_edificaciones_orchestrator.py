@@ -100,6 +100,7 @@ class LiquidacionesEdificacionesOrchestrator:
         delegados_ids: list[str] | None = None,
         contactos_inline: list[ContactoInlineData] | None = None,
         tarifas_ids: list[str] | None = None,
+        tipo_tramite: str | None = None,
     ) -> LiquidacionEdificacionesResult:
         """Crear nueva revisión — delega a flujo."""
         return await self.flujo._proceso_nueva_revision(
@@ -111,6 +112,7 @@ class LiquidacionesEdificacionesOrchestrator:
             delegados_ids=delegados_ids,
             contactos_inline=contactos_inline,
             tarifas_ids=tarifas_ids,
+            tipo_tramite=tipo_tramite,
         )
 
     async def listar_liquidaciones(
@@ -118,9 +120,17 @@ class LiquidacionesEdificacionesOrchestrator:
         page: int,
         page_size: int,
         proyecto_public_id: str | None = None,
+        numero_documento: str | None = None,
+        latest_per_project: bool = False,
     ) -> LiquidacionEdificacionesPaginatedResult:
         """Lista liquidaciones paginadas — delega a flujo."""
-        return await self.flujo.listar_liquidaciones_paginado(page=page, page_size=page_size, proyecto_public_id=proyecto_public_id)
+        return await self.flujo.listar_liquidaciones_paginado(
+            page=page,
+            page_size=page_size,
+            proyecto_public_id=proyecto_public_id,
+            numero_documento=numero_documento,
+            latest_per_project=latest_per_project,
+        )
 
     async def obtener_liquidacion_por_id(
         self,
@@ -170,11 +180,13 @@ class LiquidacionesEdificacionesOrchestrator:
         self,
         liquidacion_previa_id: str,
         revisiones_ids: list[str],
+        tipo_tramite: str | None = None,
     ) -> CotizacionQuoteData:
         """Cotizar nueva revisión (sin guardar en BD) — delega a flujo."""
         return await self.flujo._proceso_cotizar_nueva_revision(
             liquidacion_previa_id=liquidacion_previa_id,
             revisiones_ids=revisiones_ids,
+            tipo_tramite=tipo_tramite,
         )
 
     async def obtener_delegados_vigentes(

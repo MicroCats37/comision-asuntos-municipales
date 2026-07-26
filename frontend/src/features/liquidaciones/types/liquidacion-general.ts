@@ -41,10 +41,13 @@ export interface RevisionListItemBase {
 }
 
 /**
- * Valores para M2 sin IGV - para uso en cards de MS/HU/IV/Taludes.
+ * Valores para M2 — coincide con ValoresListItemOut del backend.
+ * Incluye igv/total aunque el nombre sugiera M2-only.
  */
 export interface ValoresM2ListItem {
   subtotal: number;
+  igv: number;
+  total: number;
   total_a_pagar: number;
 }
 

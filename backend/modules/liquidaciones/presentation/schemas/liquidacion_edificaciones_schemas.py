@@ -174,6 +174,11 @@ class NuevaRevisionLiquidacionIn(BaseSchema):
         default=[],
         description="IDs de tarifas a aplicar. Para esta fase debe ser exactamente 1 si se proporciona."
     )
+    # NUEVO: Tipo de trámite opcional — si se omite, se hereda de la liquidación previa
+    tipo_tramite: Optional[str] = Field(
+        None,
+        description="Tipo de trámite de la nueva revisión. Si se omite, se hereda de la liquidación previa."
+    )
     contactos: list[ContactoInlineIn] = Field(
         default=[],
         description="Contactos inline a crear y asociar a la nueva liquidacion"
@@ -464,6 +469,11 @@ class CotizacionNuevaRevisionIn(BaseSchema):
     """Payload para cotizar nueva revisión (sin guardar en BD)."""
     liquidacion_previa_id: uuid.UUID = Field(..., description="ID de la liquidación previa (UUID)")
     revisiones_ids: list[uuid.UUID] = Field(..., min_length=1, description="IDs de revisiones de edificación a asociar (UUID), no puede estar vacío")
+    # NUEVO: Tipo de trámite opcional — si se omite, se hereda de la liquidación previa
+    tipo_tramite: Optional[str] = Field(
+        None,
+        description="Tipo de trámite para la cotización. Si se omite, se hereda de la liquidación previa."
+    )
     # No requiere valor_proyecto (se obtiene de la liquidación previa)
 
 
@@ -473,6 +483,7 @@ class CotizacionTarifaOut(BaseSchema):
     derecho_minimo: float
     derecho_maximo: Optional[float]
     porcentaje_minimo_uit: float
+    porcentaje_liquidacion: float
 
 
 class CotizacionRevisionOut(BaseSchema):

@@ -169,6 +169,7 @@ class TarifaRevisionOut(BaseSchema):
     # M2 fields (for HU, MS, IV, Taludes)
     costo_por_m2: Optional[float] = None
     area_m2: Optional[float] = None
+    area_solicitada: Optional[float] = None  # User-requested area (from LiquidacionPorMetroCuadrado)
     # IO fields (for Inspeccion Obra)
     costo_por_visita: Optional[float] = None
     visitas_minimas: Optional[int] = None
@@ -202,11 +203,16 @@ class RevisionListItemCleanOut(BaseSchema):
     id: uuid.UUID
     especialidades: list[EspecialidadRevisionOut] = Field(default_factory=list)
     tarifa: Optional[TarifaRevisionOut] = None
+    # M2 types (HU, MS) expose area_solicitada from LiquidacionPorMetroCuadrado
+    # IO/Taludes/IV leave this None
+    area_solicitada: Optional[float] = None
 
 
 class ValoresM2CleanOut(BaseSchema):
-    """Valores financieros para M2 (HU, MS, IV, Taludes) — sin IGV."""
+    """Valores financieros para M2 (HU, MS, IV, Taludes)."""
     subtotal: float
+    igv: float  # 0 for M2 types
+    total: float  # equals subtotal for M2 types
     total_a_pagar: float
 
 

@@ -9,6 +9,7 @@ import uuid
 from decimal import Decimal
 
 from modules.liquidaciones.presentation.schemas.liquidacion_edificaciones_schemas import (
+    CotizacionNuevaRevisionIn,
     PrimeraRevisionLiquidacionIn,
     NuevaRevisionLiquidacionIn,
 )
@@ -346,3 +347,89 @@ class TestNuevaRevisionLiquidacionIn:
         with pytest.raises(ValidationError) as exc_info:
             NuevaRevisionLiquidacionIn(**data)
         assert "revisiones_ids" in str(exc_info.value)
+
+    def test_tipo_tramite_omitted_defaults_to_none(self):
+        """tipo_tramite omitido es válido y defaults a None (hereda del backend)."""
+        liquidacion_id = uuid.uuid4()
+        rev1 = uuid.uuid4()
+        data = {
+            "liquidacion_previa_id": liquidacion_id,
+            "revisiones_ids": [rev1],
+        }
+        schema = NuevaRevisionLiquidacionIn(**data)
+        assert schema.tipo_tramite is None
+
+    def test_tipo_tramite_explicit_value_accepted(self):
+        """tipo_tramite explícito es aceptado."""
+        liquidacion_id = uuid.uuid4()
+        rev1 = uuid.uuid4()
+        data = {
+            "liquidacion_previa_id": liquidacion_id,
+            "revisiones_ids": [rev1],
+            "tipo_tramite": "AMPLIACION",
+        }
+        schema = NuevaRevisionLiquidacionIn(**data)
+        assert schema.tipo_tramite == "AMPLIACION"
+
+    def test_tipo_tramite_variacion_proyecto_aprobado_accepted(self):
+        """VARIACION_PROYECTO_APROBADO es aceptado como tipo_tramite."""
+        liquidacion_id = uuid.uuid4()
+        rev1 = uuid.uuid4()
+        data = {
+            "liquidacion_previa_id": liquidacion_id,
+            "revisiones_ids": [rev1],
+            "tipo_tramite": "VARIACION_PROYECTO_APROBADO",
+        }
+        schema = NuevaRevisionLiquidacionIn(**data)
+        assert schema.tipo_tramite == "VARIACION_PROYECTO_APROBADO"
+
+
+class TestCotizacionNuevaRevisionIn:
+    """Test CotizacionNuevaRevisionIn schema validation."""
+
+    def test_valid_minimal_input(self):
+        """Input con solo campos requeridos debe ser válido."""
+        liquidacion_id = uuid.uuid4()
+        rev1 = uuid.uuid4()
+        data = {
+            "liquidacion_previa_id": liquidacion_id,
+            "revisiones_ids": [rev1],
+        }
+        schema = CotizacionNuevaRevisionIn(**data)
+        assert schema.liquidacion_previa_id == liquidacion_id
+        assert schema.revisiones_ids == [rev1]
+
+    def test_tipo_tramite_omitted_defaults_to_none(self):
+        """tipo_tramite omitido es válido y defaults a None."""
+        liquidacion_id = uuid.uuid4()
+        rev1 = uuid.uuid4()
+        data = {
+            "liquidacion_previa_id": liquidacion_id,
+            "revisiones_ids": [rev1],
+        }
+        schema = CotizacionNuevaRevisionIn(**data)
+        assert schema.tipo_tramite is None
+
+    def test_tipo_tramite_explicit_value_accepted(self):
+        """tipo_tramite explícito es aceptado."""
+        liquidacion_id = uuid.uuid4()
+        rev1 = uuid.uuid4()
+        data = {
+            "liquidacion_previa_id": liquidacion_id,
+            "revisiones_ids": [rev1],
+            "tipo_tramite": "OBRA_NUEVA",
+        }
+        schema = CotizacionNuevaRevisionIn(**data)
+        assert schema.tipo_tramite == "OBRA_NUEVA"
+
+    def test_tipo_tramite_variacion_proyecto_aprobado_accepted(self):
+        """VARIACION_PROYECTO_APROBADO es aceptado como tipo_tramite."""
+        liquidacion_id = uuid.uuid4()
+        rev1 = uuid.uuid4()
+        data = {
+            "liquidacion_previa_id": liquidacion_id,
+            "revisiones_ids": [rev1],
+            "tipo_tramite": "VARIACION_PROYECTO_APROBADO",
+        }
+        schema = CotizacionNuevaRevisionIn(**data)
+        assert schema.tipo_tramite == "VARIACION_PROYECTO_APROBADO"
