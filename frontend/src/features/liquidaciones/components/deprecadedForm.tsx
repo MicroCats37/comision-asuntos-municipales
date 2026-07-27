@@ -523,7 +523,7 @@ export function LiquidacionEdificacionFormModal({
     <GenericModal
       open={open}
       onOpenChange={handleClose}
-      preventClose={crearMutation.isPending}
+      preventClose={true}
     >
       <GenericModal.Content size="lg">
         {/* ── Header ─────────────────────────────────────────────── */}
@@ -955,21 +955,8 @@ export function LiquidacionEdificacionFormModal({
                             errors={liqErrors}
                           />
 
-                          <GenericInput
-                            field={{
-                              name: "tipo_tramite",
-                              label: "Tipo de Trámite",
-                              type: "select",
-                              required: true,
-                              placeholder: "Seleccione tipo de trámite",
-                              icon: FileText,
-                              labelClassName: "text-primary font-semibold",
-                              options: [...TIPO_TRAMITE_OPTIONS],
-                            }}
-                            register={liqReg as any}
-                            control={liqControl as any}
-                            errors={liqErrors}
-                          />
+                          {/* Hidden tipo_tramite field — always defaults to OBRA_NUEVA */}
+                          <input type="hidden" {...liqReg("tipo_tramite")} value="OBRA_NUEVA" />
 
                           <GenericInput
                             field={{

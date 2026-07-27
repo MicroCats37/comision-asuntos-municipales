@@ -72,6 +72,11 @@ const GenericModalRoot = ({
 
   const handleOpenChange = useCallback(
     async (nextOpen: boolean) => {
+      // Block external close attempts when preventClose is active
+      if (!nextOpen && preventClose) {
+        return;
+      }
+
       // Interceptor logic
       if (isOpen && !nextOpen && onBeforeClose) {
         const canClose = await onBeforeClose();
@@ -81,7 +86,7 @@ const GenericModalRoot = ({
       if (onOpenChange) onOpenChange(nextOpen);
       else setUncontrolledOpen(nextOpen);
     },
-    [isOpen, onOpenChange, onBeforeClose],
+    [isOpen, onOpenChange, onBeforeClose, preventClose],
   );
 
   const registerHeader = useCallback((exists: boolean) => {
@@ -163,7 +168,7 @@ const ModalContent = ({
   className,
 )}
       showCloseButton={false}
-      onPointerDownOutside={(e) => {
+      onInteractOutside={(e) => {
         if (preventClose) e.preventDefault();
       }}
       onEscapeKeyDown={(e) => {

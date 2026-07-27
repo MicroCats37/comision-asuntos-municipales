@@ -513,7 +513,7 @@ export function LiquidacionStepperModal({
         cancelLabel="Cancelar"
         backLabel="Anterior"
         nextLabel="Siguiente"
-        preventClose={crearMutation.isPending}
+        preventClose={true}
       />
 
       {/* ── Modales hijos ─────────────────────────────────────────────────────

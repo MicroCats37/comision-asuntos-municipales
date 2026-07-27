@@ -506,7 +506,7 @@ export function LiquidacionEdificacionesSingleFormModal({
       <GenericModal
         open={open}
         onOpenChange={handleClose}
-        preventClose={crearMutation.isPending}
+        preventClose={true}
       >
         <GenericModal.Content
           size="xl"
@@ -621,22 +621,8 @@ export function LiquidacionEdificacionesSingleFormModal({
                         </div>
 
                         <div className="space-y-4 min-w-0">
-                          <GenericInput
-                            field={{
-                              name: "tipo_tramite",
-                              label: "Tipo de Trámite",
-                              type: "select",
-                              required: true,
-                              placeholder: "Seleccione tipo",
-                              icon: FileText,
-                              labelClassName: "text-foreground font-medium",
-                              options: [...TIPO_TRAMITE_OPTIONS],
-                              containerClassName: "min-w-0 w-full",
-                            }}
-                            register={liqReg as never}
-                            control={liqControl as never}
-                            errors={liqErrors}
-                          />
+                          {/* Hidden tipo_tramite — always OBRA_NUEVA */}
+                          <input type="hidden" value="OBRA_NUEVA" />
                           <MoneyInput
                             name="valor_proyecto"
                             label="Valor del Proyecto (S/)"

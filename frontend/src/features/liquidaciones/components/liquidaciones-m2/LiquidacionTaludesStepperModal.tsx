@@ -366,7 +366,7 @@ export function LiquidacionTaludesStepperModal({
         cancelLabel="Cancelar"
         backLabel="Anterior"
         nextLabel="Siguiente"
-        preventClose={crearMutation.isPending}
+        preventClose={true}
       />
 
       <ProyectistaFormModal

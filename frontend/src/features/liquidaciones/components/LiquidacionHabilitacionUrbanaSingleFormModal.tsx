@@ -481,7 +481,7 @@ export function LiquidacionHabilitacionUrbanaSingleFormModal({
       <GenericModal
         open={open}
         onOpenChange={handleClose}
-        preventClose={crearMutation.isPending}
+        preventClose={true}
       >
         <GenericModal.Content
           size="xl"

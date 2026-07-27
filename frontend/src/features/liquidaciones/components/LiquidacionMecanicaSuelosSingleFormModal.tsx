@@ -476,7 +476,7 @@ export function LiquidacionMecanicaSuelosSingleFormModal({
       <GenericModal
         open={open}
         onOpenChange={handleClose}
-        preventClose={crearMutation.isPending}
+        preventClose={true}
       >
         <GenericModal.Content
           size="xl"

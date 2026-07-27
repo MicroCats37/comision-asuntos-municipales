@@ -101,6 +101,12 @@ interface Props {
    * If not provided, renders standard valores section without valor_proyecto.
    */
   typeSpecificValues?: React.ReactNode;
+  /**
+   * Optional display-only public_id override.
+   * When provided, this is shown in the card header instead of item.public_id.
+   * Use this to strip prefixes (e.g., "LIQ-") from the visual display only.
+   */
+  displayPublicId?: string;
 }
 
 export function LiquidacionGeneralCard({
@@ -108,6 +114,7 @@ export function LiquidacionGeneralCard({
   onVerDetalle,
   typeSpecificSummary,
   typeSpecificValues,
+  displayPublicId,
 }: Props) {
   const {
     public_id,
@@ -144,6 +151,7 @@ export function LiquidacionGeneralCard({
           expediente,
           total: valores.total_a_pagar,
         }}
+        displayPublicId={displayPublicId}
         rightSlotChildren={
           <div className="flex items-center gap-2">
             <span
@@ -155,15 +163,17 @@ export function LiquidacionGeneralCard({
               <FileDown className="h-3 w-3" />
               PDF
             </span>
-            <span
-              role="button" tabIndex={0}
-              onClick={(e) => { e.stopPropagation(); setDelegadosModalOpen(true); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setDelegadosModalOpen(true); } }}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-semibold border-border/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary cursor-pointer select-none transition-colors"
-            >
-              <Pen className="h-3 w-3" />
-              Delegados
-            </span>
+            {!isInspeccionObra && (
+              <span
+                role="button" tabIndex={0}
+                onClick={(e) => { e.stopPropagation(); setDelegadosModalOpen(true); }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setDelegadosModalOpen(true); } }}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-semibold border-border/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary cursor-pointer select-none transition-colors"
+              >
+                <Pen className="h-3 w-3" />
+                Delegados
+              </span>
+            )}
             {onVerDetalle && (
               <span
                 role="button" tabIndex={0}

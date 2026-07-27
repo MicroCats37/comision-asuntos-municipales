@@ -376,7 +376,7 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
   appendText(
     paper,
     "h2",
-    "LIQUIDACION DE DERECHOS POR SUPERVISION DE OBRA DE INGENIERIA",
+    "LIQUIDACION DE DERECHOS POR SUPERVISION DE OBRA",
     {
       margin: "12px 0 8px",
       fontFamily: "Arial, Helvetica, sans-serif",

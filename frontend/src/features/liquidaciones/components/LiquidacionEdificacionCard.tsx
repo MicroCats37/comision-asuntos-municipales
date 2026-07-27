@@ -185,7 +185,7 @@ export function LiquidacionEdificacionCard({
     <Collapsible className="group bg-card rounded-2xl border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden">
       <LiquidacionCardHeader
         data={{
-          public_id: public_id || numero_liquidacion,
+          public_id: (public_id ? public_id.replace(/^LIQ-/, "") : numero_liquidacion),
           estado,
           fecha_registro,
           proyectoNombre: proyecto.nombre,

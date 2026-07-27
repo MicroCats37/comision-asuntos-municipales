@@ -95,7 +95,7 @@ export function NuevaRevisionEdificacionesFormModal({
   }, [cotizacionMutation.mutateAsync]);
 
   const revisionesVigentes = formulario?.revisiones_vigentes ?? [];
-  const effectiveTipoTramite = selectedTipoTramite || formulario?.tipo_tramite || DEFAULT_TIPO_TRAMITE;
+  const effectiveTipoTramite = DEFAULT_TIPO_TRAMITE;
   const selectedRevision = revisionesVigentes.find((revision) => revision.id === selectedRevisionIds[0]) ?? null;
   const selectedTarifa = selectedRevision
     ? {
@@ -295,21 +295,8 @@ export function NuevaRevisionEdificacionesFormModal({
                 <div className="space-y-4 min-w-0">
                   <section className="rounded-xl border bg-card p-4 space-y-4">
                     <SectionTitle>Datos de la nueva revisión</SectionTitle>
-                    <div className="space-y-2 min-w-0">
-                      <label className="text-sm font-medium text-foreground">Tipo de Trámite</label>
-	                      <Select value={selectedTipoTramite} onValueChange={handleTipoTramiteChange}>
-                        <SelectTrigger className="h-10 w-full">
-                          <SelectValue placeholder="Seleccione tipo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TIPO_TRAMITE_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {/* Hidden tipo_tramite — always OBRA_NUEVA */}
+                    <input type="hidden" value={DEFAULT_TIPO_TRAMITE} />
                   </section>
 
                   <section className="rounded-xl border bg-card p-4 space-y-3">

@@ -18,9 +18,17 @@ export interface LiquidacionCardHeaderData {
 interface LiquidacionCardHeaderProps {
   data: LiquidacionCardHeaderData;
   rightSlotChildren?: React.ReactNode;
+  /**
+   * Optional display-only version of public_id.
+   * When provided, this is shown in the UI instead of public_id.
+   * Does not affect rightSlotChildren or other logic — only visual display.
+   * Use this to strip prefixes (e.g., "LIQ-") from the display without
+   * changing backend data.
+   */
+  displayPublicId?: string;
 }
 
-export function LiquidacionCardHeader({ data, rightSlotChildren }: LiquidacionCardHeaderProps) {
+export function LiquidacionCardHeader({ data, rightSlotChildren, displayPublicId }: LiquidacionCardHeaderProps) {
   const { public_id, estado, fecha_registro, proyectoNombre, kindBadge, expediente, total } = data;
 
   return (
@@ -33,7 +41,7 @@ export function LiquidacionCardHeader({ data, rightSlotChildren }: LiquidacionCa
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-lg font-black text-foreground tracking-tight">
-                {public_id}
+                {displayPublicId ?? public_id}
               </h3>
               <span
                 className={cn(

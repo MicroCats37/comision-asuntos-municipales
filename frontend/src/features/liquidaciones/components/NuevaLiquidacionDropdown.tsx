@@ -56,11 +56,18 @@ interface OpcionLiquidacion {
 
 const OPCIONES: OpcionLiquidacion[] = [
   {
-    key: "edificacion",
-    label: "Edificación",
+    key: "edificacion-nueva-liquidacion",
+    label: "Edificación — Nueva Liquidación",
     description: "Proyectos de edificación",
     icon: Building2,
-    kinds: ["primera-revision", "nueva-revision"],
+    kinds: ["primera-revision"],
+  },
+  {
+    key: "edificacion-nueva-revision",
+    label: "Edificación — Nueva Revisión",
+    description: "Crear nueva revisión de edificación existente",
+    icon: RefreshCw,
+    kinds: ["nueva-revision"],
   },
   {
     key: "habilitacion-urbana",
@@ -132,6 +139,12 @@ export function NuevaLiquidacionDropdown({
     if (opcion.kinds.length === 1) {
       // Solo un tipo de revisión → abrir modal directamente según el tipo
       switch (opcion.key) {
+        case "edificacion-nueva-liquidacion":
+          setStepperOpen(true);
+          break;
+        case "edificacion-nueva-revision":
+          setNuevaRevisionOpen(true);
+          break;
         case "habilitacion-urbana":
           setHuModalOpen(true);
           break;

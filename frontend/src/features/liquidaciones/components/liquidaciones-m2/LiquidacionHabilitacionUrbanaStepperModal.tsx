@@ -365,7 +365,7 @@ export function LiquidacionHabilitacionUrbanaStepperModal({
         cancelLabel="Cancelar"
         backLabel="Anterior"
         nextLabel="Siguiente"
-        preventClose={crearMutation.isPending}
+        preventClose={true}
       />
 
       <ProyectistaFormModal

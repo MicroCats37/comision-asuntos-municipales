@@ -6,14 +6,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   formatCurrency,
   LiquidacionGeneralCard,
 } from "../components/LiquidacionGeneralCard";
@@ -153,7 +145,6 @@ export function LiquidacionesEdificacionesView() {
   const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
-  const [revisionChoiceOpen, setRevisionChoiceOpen] = useState(false);
   const [stepperOpen, setStepperOpen] = useState(false);
   const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
   const [consultDialogOpen, setConsultDialogOpen] = useState(false);
@@ -199,15 +190,7 @@ export function LiquidacionesEdificacionesView() {
     void printLiquidacionDocument(toPdfItem(item), pdfUser);
   };
 
-  const openPrimeraRevision = () => {
-    setRevisionChoiceOpen(false);
-    setStepperOpen(true);
-  };
 
-  const openNuevaRevision = () => {
-    setRevisionChoiceOpen(false);
-    setNuevaRevisionOpen(true);
-  };
 
   return (
     <div className="page-section">
@@ -227,21 +210,31 @@ export function LiquidacionesEdificacionesView() {
               </p>
             </div>
           </div>
-          <Button
-            className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-            onClick={() => setRevisionChoiceOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Nueva Liquidación
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2 h-11 rounded-xl font-semibold shrink-0"
-            onClick={() => setConsultDialogOpen(true)}
-          >
-            <UserCheck className="h-4 w-4" />
-            Consultar ingeniero
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+              onClick={() => setStepperOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Nueva Liquidación
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+              onClick={() => setNuevaRevisionOpen(true)}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Nueva Revisión
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+              onClick={() => setConsultDialogOpen(true)}
+            >
+              <UserCheck className="h-4 w-4" />
+              Consultar ingeniero
+            </Button>
+          </div>
         </div>
 
         {/* Filter Bar */}
@@ -307,7 +300,7 @@ export function LiquidacionesEdificacionesView() {
               <div className="mt-4">
                 <Button
                   className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20"
-                  onClick={() => setRevisionChoiceOpen(true)}
+                  onClick={() => setStepperOpen(true)}
                 >
                   <Plus className="h-4 w-4" />
                   Nueva Liquidación
@@ -324,6 +317,7 @@ export function LiquidacionesEdificacionesView() {
                     onVerDetalle={handleVerDetalle}
                     typeSpecificSummary={<EdificacionSummary item={item} />}
                     typeSpecificValues={<EdificacionValues item={item} />}
+                    displayPublicId={item.public_id.startsWith("LIQ-") ? item.public_id.slice(4) : item.public_id}
                   />
                 ))}
               </div>
@@ -372,38 +366,6 @@ export function LiquidacionesEdificacionesView() {
           )}
         </div>
       </div>
-
-      <Dialog open={revisionChoiceOpen} onOpenChange={setRevisionChoiceOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Edificación
-            </DialogTitle>
-            <DialogDescription>
-              Selecciona el tipo de revisión que deseas crear
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button
-              variant="default"
-              onClick={openPrimeraRevision}
-              className="flex-1 gap-2 h-11 rounded-xl font-semibold"
-            >
-              <FileText className="h-4 w-4" />
-              Primera Revisión
-            </Button>
-            <Button
-              variant="outline"
-              onClick={openNuevaRevision}
-              className="flex-1 gap-2 h-11 rounded-xl font-semibold"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Revisión
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <LiquidacionEdificacionesSingleFormModal
         open={stepperOpen}
