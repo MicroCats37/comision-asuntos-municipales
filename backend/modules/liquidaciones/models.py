@@ -4,6 +4,7 @@ from .domain.models import (
     Delegado,
     MunicipalidadDelegado,
     PeriodoDelegado,
+    Inspector,
     Especialidad,
     LiquidacionGeneral,
     LiquidacionContacto,
@@ -22,6 +23,7 @@ from .domain.models import (
     ProyectoPersonaNatural,
     ContactoProyecto,
     LiquidacionDelegado,
+    LiquidacionInspector,
     # Nuevos modelos de formularios
     LiquidacionHabilitacionUrbana,
     LiquidacionMecanicaSuelos,
@@ -40,6 +42,7 @@ __all__ = [
     "Delegado",
     "MunicipalidadDelegado",
     "PeriodoDelegado",
+    "Inspector",
     "Especialidad",
     "LiquidacionGeneral",
     "LiquidacionContacto",
@@ -58,6 +61,7 @@ __all__ = [
     "ProyectoPersonaNatural",
     "ContactoProyecto",
     "LiquidacionDelegado",
+    "LiquidacionInspector",
     # Nuevos modelos de formularios
     "LiquidacionHabilitacionUrbana",
     "LiquidacionMecanicaSuelos",

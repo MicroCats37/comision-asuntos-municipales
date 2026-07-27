@@ -29,14 +29,16 @@ from modules.liquidaciones.presentation.schemas.inspeccion_obra_schemas import (
 from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
     EntidadListItemOut,
     ProyectoListItemOut,
+    LiquidacionGeneralListItemOut,
     MunicipalidadListItemOut,
     ValoresListItemOut,
     ProyectistaListItemOut,
     DelegadoListItemOut,
+    InspectorListItemOut,
     ContactoListItemOut,
     TarifaRevisionOut,
     EspecialidadRevisionOut,
-    RevisionListItemCleanOut,
+    RevisionListItemOut,
 )
 
 
@@ -216,17 +218,27 @@ class InspeccionObraPresenter:
         )
 
     @staticmethod
-    def present_list_item(result: LiquidacionGeneralListItem) -> LiquidacionIOListItemOut:
+    def present_list_item(result: LiquidacionGeneralListItem) -> LiquidacionGeneralListItemOut:
         """
-        Transforma un LiquidacionGeneralListItem a LiquidacionIOListItemOut.
+        Transforma un LiquidacionGeneralListItem a LiquidacionGeneralListItemOut.
+
+        Retorna la estructura general de lista de liquidaciones (Phase 4+) con
+        todos los campos: id, public_id, tipo_liquidacion, estado, numero_revision,
+        fecha_registro, proyecto, entidad, municipalidad, valores, proyectistas,
+        delegados, contactos, revisiones, más campos financieros al raíz
+        (subtotal, igv, total, total_a_pagar).
         """
-        return LiquidacionIOListItemOut(
+        return LiquidacionGeneralListItemOut(
             id=result.id,
             public_id=result.public_id,
             tipo_liquidacion=result.tipo_liquidacion,
             estado=result.estado,
             numero_revision=result.numero_revision,
             fecha_registro=result.fecha_registro,
+            tramite_accion=result.tramite_accion,
+            tipo_tramite=result.tipo_tramite,
+            expediente=result.expediente,
+            observacion=result.observacion,
             proyecto=InspeccionObraPresenter._build_proyecto_list(result),
             entidad=InspeccionObraPresenter._build_entidad_list(result),
             municipalidad=MunicipalidadListItemOut(
@@ -282,7 +294,7 @@ class InspeccionObraPresenter:
                 ) for c in result.contactos
             ],
             revisiones=[
-                RevisionListItemCleanOut(
+                RevisionListItemOut(
                     id=r.id,
                     especialidades=[
                         EspecialidadRevisionOut(id=e.id, nombre=e.nombre)
@@ -291,14 +303,33 @@ class InspeccionObraPresenter:
                     tarifa=TarifaRevisionOut(**r.tarifa.model_dump()) if r.tarifa else None,
                 ) for r in result.revisiones
             ],
+            inspectores=[
+                InspectorListItemOut(
+                    id=p.id,
+                    perfil_ingeniero_id=p.perfil_ingeniero_id,
+                    perfil_ingeniero_nombres=p.perfil_ingeniero_nombres,
+                    perfil_ingeniero_apellidos=p.perfil_ingeniero_apellidos,
+                    perfil_ingeniero_cip=p.perfil_ingeniero_cip,
+                    especialidad_id=p.especialidad_id,
+                    especialidad_nombre=p.especialidad_nombre,
+                    tipo_liquidacion=p.tipo_liquidacion,
+                    categoria=p.categoria,
+                    numero_registro=p.numero_registro,
+                    vigencia=str(p.vigencia) if p.vigencia else None,
+                ) for p in result.inspectores
+            ],
+            subtotal=result.subtotal,
+            igv=result.igv,
+            total=result.total,
+            total_a_pagar=result.total_a_pagar,
         )
 
     @staticmethod
     def present_list(
         results: list[LiquidacionGeneralListItem],
-    ) -> list[LiquidacionIOListItemOut]:
+    ) -> list[LiquidacionGeneralListItemOut]:
         """
-        Transforma una lista de LiquidacionGeneralListItem a lista de LiquidacionIOListItemOut.
+        Transforma una lista de LiquidacionGeneralListItem a lista de LiquidacionGeneralListItemOut.
         """
         return [InspeccionObraPresenter.present_list_item(r) for r in results]
 
@@ -370,6 +401,7 @@ class InspeccionObraPresenter:
             ),
             proyectistas=[],
             delegados=[],
+            inspectores=[],
             contactos=[],
             revisiones=[],
         )

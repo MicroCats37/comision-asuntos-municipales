@@ -7,6 +7,114 @@ import type { ContactoInline } from "./contacto";
 // Re-export ContactoInline for convenience
 export type { ContactoInline } from "./contacto";
 
+// ── Tipos de schemas ────────────────────────────────────────────────────────────
+
+/**
+ * Tipo inferido del schema de lista general de liquidaciones.
+ * Usado para items de buscar-previas que ahora retornan LiquidacionGeneralListItemOut.
+ */
+export type LiquidacionGeneralListItemOut = {
+  id: string;
+  public_id: string;
+  estado: string;
+  tipo_liquidacion: string;
+  numero_revision: number;
+  fecha_registro: string;
+  tramite_accion: string | null;
+  tipo_tramite: string | null;
+  expediente: string | null;
+  observacion: string | null;
+  proyecto: {
+    id: string;
+    public_id: string;
+    nombre: string;
+    direccion: string | null;
+    valor_proyecto: number;
+    entidad: {
+      id: string | null;
+      tipo: string | null;
+      nombre: string | null;
+      ruc: string | null;
+    } | null;
+  };
+  entidad: {
+    id: string | null;
+    tipo: string | null;
+    nombre: string | null;
+    ruc: string | null;
+  } | null;
+  municipalidad: {
+    id: string;
+    nombre: string;
+    codigo: string | null;
+    provincia: null;
+    distrito: null;
+  };
+  valores: {
+    subtotal: number;
+    igv: number;
+    total: number;
+    total_a_pagar: number;
+  };
+  proyectistas: Array<{
+    id: string;
+    perfil_ingeniero_id: string | null;
+    perfil_ingeniero_nombres: string | null;
+    perfil_ingeniero_apellidos: string | null;
+    perfil_ingeniero_cip: string | null;
+    especialidad_id: string | null;
+    especialidad_nombre: string | null;
+    descripcion: string | null;
+  }>;
+  delegados: Array<{
+    id: string;
+    perfil_ingeniero_id: string | null;
+    perfil_ingeniero_nombres: string | null;
+    perfil_ingeniero_apellidos: string | null;
+    perfil_ingeniero_cip: string | null;
+    especialidad_id: string | null;
+    especialidad_nombre: string | null;
+    tipo: string | null;
+  }>;
+  inspectores: Array<{
+    id: string;
+    perfil_ingeniero_id: string | null;
+    perfil_ingeniero_nombres: string | null;
+    perfil_ingeniero_apellidos: string | null;
+    perfil_ingeniero_cip: string | null;
+    especialidad_id: string | null;
+    especialidad_nombre: string | null;
+    tipo_liquidacion: string | null;
+    categoria: number | null;
+    numero_registro: string | null;
+    vigencia: string | null;
+  }>;
+  contactos: Array<{
+    id: string;
+    nombres: string | null;
+    apellidos: string | null;
+    dni: string | null;
+    cargo: string | null;
+    telefono: string | null;
+    celular: string | null;
+    email: string | null;
+    direccion: string | null;
+    principal: boolean;
+    descripcion: string | null;
+  }>;
+  revisiones: Array<{
+    id: string;
+    especialidades: Array<{ id: string; nombre: string }>;
+    tarifa: {
+      id: string;
+    } | null;
+  }>;
+  subtotal: number;
+  igv: number;
+  total: number;
+  total_a_pagar: number;
+};
+
 // ── Entidad Inline (IO-specific) ──────────────────────────────────────────────
 
 /**
@@ -50,15 +158,22 @@ export type CategoriaIO = (typeof CATEGORIAS_IO)[number];
 // ── Input Types ────────────────────────────────────────────────────────────────
 
 /**
- * Input para crear primera revisión de Inspección de Obra.
+ * Input para crear primera revisión de Inspección de Obra basada en liquidación previa.
+ *
+ * Phase 1+: IO siempre se crea basada en una liquidacion_previa_id.
+ * Los campos proyecto_public_id, proyecto_inline y municipalidad_id se ignoran
+ * porque se derivan de la liquidación previa. Se mantienen opcionales por
+ * compatibilidad con código existente (deprecated).
  */
 export interface CrearInspeccionObraPrimeraRevisionIn {
-  /** ID del proyecto existente (XOR con proyecto_inline) */
+  /** ID de la liquidación previa (requerido en Phase 1+, opcional por ahora para compatibilidad) */
+  liquidacion_previa_id?: string;
+  /** DEPRECATED: ID del proyecto existente — se ignora en la creación */
   proyecto_public_id?: string;
-  /** Datos del proyecto a crear inline (XOR con proyecto_public_id) */
+  /** DEPRECATED: Datos del proyecto inline — se ignora en la creación */
   proyecto_inline?: ProyectoInline;
-  /** ID de la municipalidad */
-  municipalidad_id: string;
+  /** DEPRECATED: ID de la municipalidad — se ignora en la creación */
+  municipalidad_id?: string;
   /** Cantidad de visitas requeridas */
   cantidad_visitas: number;
   /** Categoría de la inspección */
@@ -71,6 +186,27 @@ export interface CrearInspeccionObraPrimeraRevisionIn {
   tarifas_ids: string[];
   /** Lista de contactos asociados */
   contactos: ContactoInline[];
+  /** IDs de inspectores a asociar durante la creación */
+  inspectores_ids?: string[];
+}
+
+/**
+ * Item de lista para buscar liquidaciones previas de IO.
+ * Ahora coincide con LiquidacionGeneralListItemOut del backend
+ * (tipos EDIFICACION y HABILITACION_URBANA).
+ */
+export type LiquidacionPreviaIOListItem = LiquidacionGeneralListItemOut;
+
+/**
+ * Respuesta paginada para búsqueda de liquidaciones previas de IO.
+ * Ahora usa LiquidacionGeneralListItemOut como tipo de items.
+ */
+export interface LiquidacionesIOBuscadasPaginated {
+  items: LiquidacionPreviaIOListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 }
 
 // ── Cotizar Types ─────────────────────────────────────────────────────────────
@@ -200,6 +336,20 @@ export interface DelegadoListItem {
   tipo: string | null;
 }
 
+export interface InspectorListItem {
+  id: string;
+  perfil_ingeniero_id: string | null;
+  perfil_ingeniero_nombres: string | null;
+  perfil_ingeniero_apellidos: string | null;
+  perfil_ingeniero_cip: string | null;
+  especialidad_id: string | null;
+  especialidad_nombre: string | null;
+  tipo_liquidacion: string | null;
+  categoria: number | null;
+  numero_registro: string | null;
+  vigencia: string | null;
+}
+
 export interface ContactoListItem {
   id: string;
   nombres: string | null;
@@ -253,6 +403,7 @@ export interface LiquidacionInspeccionObraListItem {
   valores: ValoresListItem;
   proyectistas: ProyectistaListItem[];
   delegados: DelegadoListItem[];
+  inspectores: InspectorListItem[];
   contactos: ContactoListItem[];
   revisiones: RevisionListItem[];
 }

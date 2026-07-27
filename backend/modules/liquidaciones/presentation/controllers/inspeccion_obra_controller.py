@@ -35,6 +35,9 @@ from modules.liquidaciones.presentation.schemas.inspeccion_obra_schemas import (
     LiquidacionInspeccionObraOut,
     LiquidacionIOListItemOut,
 )
+from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
+    LiquidacionGeneralListItemOut,
+)
 from modules.liquidaciones.domain.constants import TramiteAccion
 from modules.liquidaciones.presentation.presenters.inspeccion_obra_presenter import InspeccionObraPresenter
 
@@ -99,14 +102,17 @@ class InspeccionObraController:
         payload: CrearLiquidacionInspeccionObraWrapperIn,
     ):
         """
-        Crear primera revisión de Inspección de Obra.
+        Crear Inspección de Obra basada en una liquidación previa.
 
         Acepta wrapper { liquidacion: {...} } para alinear con frontend.
 
         Validaciones (delegadas al orchestrator):
-        - XOR proyecto: exactamente uno de proyecto_public_id o proyecto_inline debe estar presente.
+        - liquidacion_previa_id: requerido, debe existir.
         - tarifas_ids: exactamente 1 elemento si se proporciona.
         - categoria: no puede estar vacía.
+
+        Phase 1: proyecto_public_id, proyecto_inline y municipalidad_id se ignoran
+        porque se derivan de la liquidación previa (Phase 2+).
         """
         data = payload.liquidacion
 
@@ -141,8 +147,9 @@ class InspeccionObraController:
         ] if data.proyectistas else None
 
         result, calculo_visitas = await self.orchestrator.crear_primera_revision(
+            liquidacion_previa_id=str(data.liquidacion_previa_id),
             proyecto_public_id=data.proyecto_public_id,
-            municipalidad_id=str(data.municipalidad_id),
+            municipalidad_id=str(data.municipalidad_id) if data.municipalidad_id else None,
             cantidad_visitas=data.cantidad_visitas,
             categoria=data.categoria,
             expediente=data.expediente,
@@ -150,6 +157,7 @@ class InspeccionObraController:
             proyecto_inline=proyecto_inline,
             tarifas_ids=tarifas_ids,
             proyectistas_inline=proyectistas_inline,
+            inspectores_ids=[str(iid) for iid in data.inspectores_ids] if data.inspectores_ids else None,
         )
         # Fetch complete record with all relations for post-create PDF
         list_item = await self.general_orchestrator.obtener_liquidacion_list_item_por_id(
@@ -210,7 +218,51 @@ class InspeccionObraController:
         )
         return success_response({'tarifas': result})
 
-    @route.get("/{liquidacion_id}", response={200: ApiResponse[LiquidacionIOListItemOut]}, auth=None)
+    @route.get("/buscar-previas", response={200: ApiResponse[PaginatedData[LiquidacionGeneralListItemOut]]}, auth=None)
+    async def buscar_liquidaciones_previas(
+        self,
+        numero_documento: str = Query(..., description="DNI o RUC de la entidad asociada al proyecto"),
+        page: int = Query(1, ge=1, description="Número de página"),
+        page_size: int = Query(10, ge=1, le=100, description="Elementos por página"),
+    ):
+        """
+        Buscar liquidaciones previas de Inspección de Obra por documento de entidad.
+
+        Retorna liquidaciones generales (EDIFICACION, HABILITACION_URBANA) filtradas por
+        DNI/RUC de la entidad del proyecto, con paginación.
+
+        Estas liquidaciones previas proporcionan datos comunes (proyecto, municipalidad)
+        para crear nuevas Inspecciones de Obra (primera revisión).
+
+        NOTE: Retorna LiquidacionGeneralListItemOut (estructura plana común a todos los tipos).
+        El presenter InspeccionObraPresenter.present_list_item usa esta estructura general.
+        """
+        # Buscar liquidaciones generales de tipos base (EDIFICACION, HABILITACION_URBANA)
+        # que pueden servir como previa para IO
+        result = await self.general_orchestrator.buscar_liquidaciones_por_documento_entidad(
+            numero_documento=numero_documento,
+            tipos_liquidacion=["EDIFICACION", "HABILITACION_URBANA"],
+            page=page,
+            page_size=page_size,
+        )
+
+        # Transformar los LiquidacionGeneralListItem a LiquidacionGeneralListItemOut
+        # usando el presenter de IO (que ahora retorna la estructura general)
+        items_out = []
+        for item in result.items:
+            items_out.append(InspeccionObraPresenter.present_list_item(item))
+
+        total_pages = (result.total + page_size - 1) // page_size if result.total > 0 else 1
+
+        return success_response(PaginatedData(
+            items=items_out,
+            total=result.total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+        ))
+
+    @route.get("/{liquidacion_id}", response={200: ApiResponse[LiquidacionGeneralListItemOut]}, auth=None)
     async def obtener_detalle_liquidacion(
         self,
         liquidacion_id: str,
@@ -218,7 +270,7 @@ class InspeccionObraController:
         """
         Obtener detalle de una liquidación de Inspección de Obra por ID.
 
-        Retorna un objeto LiquidacionIOListItemOut con todos los campos: proyecto,
+        Retorna un objeto LiquidacionGeneralListItemOut con todos los campos: proyecto,
         municipalidad, valores, revisiones, proyectistas, delegados, contactos.
         """
         result = await self.general_orchestrator.obtener_liquidacion_list_item_por_id(liquidacion_id)

@@ -8,6 +8,7 @@ from modules.liquidaciones.domain.schemas import (
     LiquidacionGeneralResult,
     LiquidacionGeneralListItem,
     DelegadosVigentesResult,
+    InspectoresVigentesResult,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
     LiquidacionGeneralOut,
@@ -20,11 +21,13 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas impo
     ValoresListItemOut,
     ProyectistaListItemOut,
     DelegadoListItemOut,
+    InspectorListItemOut,
     ContactoListItemOut,
     TarifaRevisionOut,
     EspecialidadRevisionOut,
     RevisionListItemOut,
     DelegadosVigentesOut,
+    InspectoresVigentesOut,
 )
 
 
@@ -177,6 +180,21 @@ class LiquidacionGeneralPresenter:
                     tipo=d.tipo,
                 ) for d in result.delegados
             ],
+            inspectores=[
+                InspectorListItemOut(
+                    id=i.id,
+                    perfil_ingeniero_id=i.perfil_ingeniero_id,
+                    perfil_ingeniero_nombres=i.perfil_ingeniero_nombres,
+                    perfil_ingeniero_apellidos=i.perfil_ingeniero_apellidos,
+                    perfil_ingeniero_cip=i.perfil_ingeniero_cip,
+                    especialidad_id=i.especialidad_id,
+                    especialidad_nombre=i.especialidad_nombre,
+                    tipo_liquidacion=i.tipo_liquidacion,
+                    categoria=i.categoria,
+                    numero_registro=i.numero_registro,
+                    vigencia=i.vigencia.isoformat() if i.vigencia else None,
+                ) for i in result.inspectores
+            ],
             contactos=[
                 ContactoListItemOut(
                     id=c.id,
@@ -243,5 +261,31 @@ class LiquidacionGeneralPresenter:
                     tipo=d.tipo,
                 )
                 for d in result.delegados
+            ]
+        )
+
+    @staticmethod
+    def present_inspectores_vigentes(result: InspectoresVigentesResult) -> InspectoresVigentesOut:
+        from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas import (
+            InspectorVigenteOut,
+            EspecialidadBasicaDelegadoOut,
+        )
+
+        return InspectoresVigentesOut(
+            inspectores=[
+                InspectorVigenteOut(
+                    id=i.id,
+                    nombre_completo=i.nombre_completo,
+                    cip=i.cip,
+                    especialidad=EspecialidadBasicaDelegadoOut(
+                        id=i.especialidad.id,
+                        nombre=i.especialidad.nombre,
+                    ) if i.especialidad else None,
+                    tipo_liquidacion=i.tipo_liquidacion,
+                    categoria=i.categoria,
+                    numero_registro=i.numero_registro,
+                    vigencia=i.vigencia.isoformat(),
+                )
+                for i in result.inspectores
             ]
         )

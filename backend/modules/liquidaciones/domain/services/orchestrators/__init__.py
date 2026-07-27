@@ -7,6 +7,7 @@ from .impacto_vial_orchestrator import ImpactoVialOrchestrator
 from .taludes_orchestrator import TaludesOrchestrator
 from .inspeccion_obra_orchestrator import InspeccionObraOrchestrator
 from .delegados_batch_orchestrator import DelegadosBatchOrchestrator
+from .inspectores_batch_orchestrator import InspectoresBatchOrchestrator
 
 __all__ = [
     "LiquidacionesEdificacionesOrchestrator",
@@ -17,4 +18,5 @@ __all__ = [
     "TaludesOrchestrator",
     "InspeccionObraOrchestrator",
     "DelegadosBatchOrchestrator",
+    "InspectoresBatchOrchestrator",
 ]

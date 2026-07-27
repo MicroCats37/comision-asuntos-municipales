@@ -23,6 +23,7 @@ export interface LiquidacionCardBase {
   valores: ValoresListItem | ValoresM2ListItem;
   proyectistas: ProyectistaListItem[];
   delegados: DelegadoListItem[];
+  inspectores?: InspectorListItem[];
   contactos: ContactoListItem[];
   revisiones: RevisionListItemBase[];
   /** Expediente - solo presente en Edificacion, opcional para otros tipos */
@@ -106,6 +107,31 @@ export interface DelegadoListItem {
   tipo: string | null;
 }
 
+export interface InspectorListItem {
+  id: string;
+  perfil_ingeniero_id: string | null;
+  perfil_ingeniero_nombres: string | null;
+  perfil_ingeniero_apellidos: string | null;
+  perfil_ingeniero_cip: string | null;
+  especialidad_id: string | null;
+  especialidad_nombre: string | null;
+  tipo_liquidacion: string | null;
+  categoria: number | null;
+  numero_registro: string | null;
+  vigencia: string | null;
+}
+
+export interface InspectorVigente {
+  id: string;
+  nombre_completo: string;
+  cip: string;
+  especialidad: { id: string; nombre: string } | null;
+  tipo_liquidacion: string;
+  categoria: number | null;
+  numero_registro: string;
+  vigencia: string;
+}
+
 export interface ContactoListItem {
   id: string;
   nombres: string | null;
@@ -172,6 +198,7 @@ export interface LiquidacionGeneralListItem {
   valores: ValoresListItem;
   proyectistas: ProyectistaListItem[];
   delegados: DelegadoListItem[];
+  inspectores: InspectorListItem[];
   contactos: ContactoListItem[];
   revisiones: RevisionListItem[];
   subtotal: number;

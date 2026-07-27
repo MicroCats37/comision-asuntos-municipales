@@ -5,6 +5,8 @@ import { FileDown, Loader2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
+import type { LiquidacionInspeccionObraListItem } from "../types/liquidacion-inspeccion-obra.types";
+import { adaptIOToPrintData, printInspeccionObraDocument } from "./inspeccion-obra-print";
 import { formatCurrency, formatDate } from "./LiquidacionGeneralCard";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 
@@ -163,6 +165,17 @@ export function LiquidacionPDFModal({ open, onOpenChange, item }: LiquidacionPDF
 }
 
 export async function printLiquidacionDocument(item: LiquidacionCardBase, currentUser?: PdfCurrentUser) {
+  // Delegate IO to the dedicated IO renderer so the PDF is identical to post-create.
+  if (item.tipo_liquidacion === "inspeccion-obra") {
+    // Cast to IO list item — LiquidacionInspeccionObraCard passes the full IO type.
+    const ioItem = item as LiquidacionInspeccionObraListItem;
+    const ioPdfUser = currentUser
+      ? { nombres: currentUser.nombres, apellidos: currentUser.apellidos }
+      : undefined;
+    const printData = adaptIOToPrintData(ioItem, ioPdfUser);
+    return printInspeccionObraDocument(printData);
+  }
+
   const frame = document.createElement("iframe");
   applyStyles(frame, {
     position: "fixed",

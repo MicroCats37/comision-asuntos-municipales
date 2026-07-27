@@ -137,6 +137,21 @@ class DelegadoListItemOut(BaseSchema):
     tipo: Optional[str] = None
 
 
+class InspectorListItemOut(BaseSchema):
+    """Inspector en item de lista."""
+    id: uuid.UUID
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    tipo_liquidacion: Optional[str] = None
+    categoria: Optional[int] = None
+    numero_registro: Optional[str] = None
+    vigencia: Optional[str] = None
+
+
 class ContactoListItemOut(BaseSchema):
     """Contacto en item de lista."""
     id: uuid.UUID
@@ -235,6 +250,7 @@ class LiquidacionSpecificListItemBase(BaseSchema):
     valores: ValoresListItemOut  # Will be overridden per-type (M2 vs IO)
     proyectistas: list[ProyectistaListItemOut] = Field(default_factory=list)
     delegados: list[DelegadoListItemOut] = Field(default_factory=list)
+    inspectores: list[InspectorListItemOut] = Field(default_factory=list)
     contactos: list[ContactoListItemOut] = Field(default_factory=list)
     revisiones: list[RevisionListItemCleanOut] = Field(default_factory=list)
 
@@ -261,6 +277,7 @@ class LiquidacionGeneralListItemOut(BaseSchema):
     valores: ValoresListItemOut
     proyectistas: list[ProyectistaListItemOut] = Field(default_factory=list)
     delegados: list[DelegadoListItemOut] = Field(default_factory=list)
+    inspectores: list[InspectorListItemOut] = Field(default_factory=list)
     contactos: list[ContactoListItemOut] = Field(default_factory=list)
     revisiones: list[RevisionListItemOut] = Field(default_factory=list)
     subtotal: float
@@ -293,3 +310,20 @@ class DelegadosVigentesOut(BaseSchema):
         default_factory=list,
         description="Lista de delegados vigentes para la municipalidad y tarifa seleccionadas"
     )
+
+
+class InspectorVigenteOut(BaseSchema):
+    """Inspector vigente para selección en IO."""
+    id: uuid.UUID
+    nombre_completo: str
+    cip: str
+    especialidad: Optional[EspecialidadBasicaDelegadoOut] = None
+    tipo_liquidacion: str
+    categoria: Optional[int] = None
+    numero_registro: str
+    vigencia: str
+
+
+class InspectoresVigentesOut(BaseSchema):
+    """Respuesta de inspectores vigentes/elegibles para una IO."""
+    inspectores: list[InspectorVigenteOut] = Field(default_factory=list)

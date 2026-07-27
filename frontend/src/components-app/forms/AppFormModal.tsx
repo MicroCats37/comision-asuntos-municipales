@@ -42,6 +42,7 @@ export interface AppFormModalProps<T extends FieldValues> {
   // GenericForm
   schema: ZodType<T>;
   initialData?: DefaultValues<T>;
+  formMethods?: UseFormReturn<T>;
   fields?: FormField[];
   formSections?: FormSection[];
   customFields?: Record<string, (methods: UseFormReturn<T>) => ReactNode>;
@@ -81,6 +82,7 @@ export function AppFormModal<T extends FieldValues>({
   size,
   schema,
   initialData,
+  formMethods,
   fields,
   formSections,
   customFields,
@@ -160,6 +162,7 @@ export function AppFormModal<T extends FieldValues>({
             formId={formId}
             schema={schema}
             initialData={initialData}
+            formMethods={formMethods}
             fields={fields}
             formSections={formSections}
             customFields={customFields}

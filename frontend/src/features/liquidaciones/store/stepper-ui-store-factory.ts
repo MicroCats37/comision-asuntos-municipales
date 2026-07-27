@@ -89,6 +89,8 @@ export interface LiquidacionStepperUIActions {
   removeContacto: (index: number) => void;
   selectedDelegados: string[];
   toggleDelegado: (id: string) => void;
+  selectedInspectores: string[];
+  toggleInspector: (id: string) => void;
   setSelectedRevisionIds: (ids: string[]) => void;
   setLockedRevisionIds: (ids: string[]) => void;
   toggleRevision: (id: string) => void;
@@ -132,6 +134,7 @@ export function createLiquidacionStepperStore() {
     selectedProyectistas: [],
     selectedContactos: [],
     selectedDelegados: [],
+    selectedInspectores: [],
     lockedRevisionIds: [],
     selectedRevisionIds: [],
     entidad: null,
@@ -176,6 +179,7 @@ export function createLiquidacionStepperStore() {
         selectedProyectistas: [],
         selectedContactos: [],
         selectedDelegados: [],
+        selectedInspectores: [],
         lockedRevisionIds: [],
         selectedRevisionIds: [],
         entidad: null,
@@ -239,6 +243,14 @@ export function createLiquidacionStepperStore() {
         selectedDelegados: s.selectedDelegados.includes(id)
           ? s.selectedDelegados.filter((d) => d !== id)
           : [...s.selectedDelegados, id],
+      })),
+
+    // ── Inspectores ─────────────────────────────────────────────────────────────
+    toggleInspector: (id) =>
+      set((s) => ({
+        selectedInspectores: s.selectedInspectores.includes(id)
+          ? s.selectedInspectores.filter((i) => i !== id)
+          : [...s.selectedInspectores, id],
       })),
 
     // ── Revisiones ─────────────────────────────────────────────────────────────

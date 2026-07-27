@@ -36,8 +36,9 @@ class InspeccionObraOrchestrator:
 
     async def crear_primera_revision(
         self,
+        liquidacion_previa_id: str,
         proyecto_public_id: str | None,
-        municipalidad_id: str,
+        municipalidad_id: str | None,
         cantidad_visitas: int,
         categoria: str,
         expediente: str | None,
@@ -45,49 +46,38 @@ class InspeccionObraOrchestrator:
         proyecto_inline: ProyectoInlineData | None = None,
         tarifas_ids: list[str] | None = None,
         proyectistas_inline: list[ProyectistaInlineData] | None = None,
+        inspectores_ids: list[str] | None = None,
     ):
         """
-        Crear primera revisión de Inspección de Obra.
+        Crear Inspección de Obra basada en una liquidación previa.
 
-        Valida XOR proyecto, longitud de tarifas_ids y categoría, luego delega a flujo.
+        Phase 1: Valida liquidacion_previa_id requerida, longitud de tarifas_ids
+        y categoría. Delega a flujo para el proceso de creación.
+
+        Los campos proyecto_public_id, proyecto_inline y municipalidad_id se ignoran
+        en Phase 1 porque se derivan de la liquidación previa (Phase 2+).
 
         Args:
-            proyecto_public_id: ID público del proyecto existente (mutuamente excluyente con proyecto_inline).
-            municipalidad_id: ID de la municipalidad (UUID).
+            liquidacion_previa_id: ID de la liquidación previa (requerido).
+            proyecto_public_id: [DEPRECATED] Ya no se usa para IO creation.
+            municipalidad_id: [DEPRECATED] Ya no se usa para IO creation.
             cantidad_visitas: Cantidad de visitas de inspección (mínimo 1).
             categoria: Categoría de inspección (A, B, C, etc.). Requerida para resolver la tarifa.
             expediente: Número de expediente (opcional).
             observacion: Observación (opcional).
-            proyecto_inline: Datos del proyecto inline a crear (mutuamente excluyente con proyecto_public_id).
+            proyecto_inline: [DEPRECATED] Ya no se usa para IO creation.
             tarifas_ids: IDs de tarifas (exactamente 1 elemento si se proporciona).
             proyectistas_inline: Lista de proyectistas inline con CIP (opcional).
+            inspectores_ids: Lista de IDs de inspectores a asociar durante la creación (opcional).
 
         Returns:
             LiquidacionInspeccionObraResult
 
         Raises:
-            HttpError(400): Si ambos proyecto_public_id y proyecto_inline están presentes,
-                           o si ninguno está presente, o si tarifas_ids tiene más de 1 elemento,
+            HttpError(400): Si tarifas_ids tiene más de 1 elemento,
                            o si categoria está vacía.
-            HttpError(404): Si no se encuentra la tarifa para la categoría e InspectionObra.
+            HttpError(404): Si no se encuentra la liquidación previa o la tarifa.
         """
-        # XOR validation
-        has_public_id = proyecto_public_id is not None and proyecto_public_id != ""
-        has_inline = proyecto_inline is not None
-
-        if has_public_id and has_inline:
-            raise HttpError(
-                400,
-                "No se puede enviar ambos proyecto_public_id y proyecto_inline. "
-                "Solo uno debe estar presente."
-            )
-        if not has_public_id and not has_inline:
-            raise HttpError(
-                400,
-                "Debe enviarse proyecto_public_id o proyecto_inline. "
-                "Uno de los dos es requerido."
-            )
-
         # Validar exactamente 1 elemento en tarifas_ids si se proporciona
         if tarifas_ids is not None and len(tarifas_ids) != 1:
             raise HttpError(
@@ -107,7 +97,8 @@ class InspeccionObraOrchestrator:
         tarifa_id = tarifas_ids[0] if tarifas_ids else None
 
         return await self.flujo._proceso_creacion(
-            proyecto_public_id=proyecto_public_id if has_public_id else None,
+            liquidacion_previa_id=liquidacion_previa_id,
+            proyecto_public_id=proyecto_public_id,
             municipalidad_id=municipalidad_id,
             cantidad_visitas=cantidad_visitas,
             categoria=categoria.strip(),
@@ -116,6 +107,7 @@ class InspeccionObraOrchestrator:
             proyecto_inline=proyecto_inline,
             tarifa_id=tarifa_id,
             proyectistas_inline=proyectistas_inline,
+            inspectores_ids=inspectores_ids,
         )
 
     async def cotizar_primera_revision(
@@ -187,4 +179,31 @@ class InspeccionObraOrchestrator:
         )(
             tramite_accion=tramite_accion,
             categoria=categoria,
+        )
+
+    async def buscar_liquidaciones_previas_por_documento(
+        self,
+        numero_documento: str,
+        page: int = 1,
+        page_size: int = 10,
+    ) -> tuple[list[dict], int]:
+        """
+        Busca liquidaciones previas de Inspección de Obra por número de documento de entidad.
+
+        Las liquidaciones previas candidatas son aquellas con:
+        - tipo_liquidacion = "INSPECCION_OBRA"
+        - numero_revision = 0 (registros preliminares que sirven de base para nueva IO)
+
+        Args:
+            numero_documento: DNI o RUC de la entidad asociada al proyecto.
+            page: Número de página (1-indexed).
+            page_size: Elementos por página.
+
+        Returns:
+            Tuple de (lista_de_datos_materializados, total)
+        """
+        return await self.flujo._proceso_buscar_previas_por_documento(
+            numero_documento=numero_documento,
+            page=page,
+            page_size=page_size,
         )

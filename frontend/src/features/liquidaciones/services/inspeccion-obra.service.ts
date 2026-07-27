@@ -7,6 +7,7 @@ import type {
   CotizacionIOResponse,
   CrearInspeccionObraPrimeraRevisionIn,
   CrearInspeccionObraResponse,
+  LiquidacionesIOBuscadasPaginated,
   LiquidacionesInspeccionObraPaginated,
   TarifaVigenteInspeccionObra,
 } from "../types/liquidacion-inspeccion-obra.types";
@@ -77,5 +78,26 @@ export const inspeccionObraService = {
     });
     const tarifas = (data as { data: { tarifas: TarifaVigenteInspeccionObra[] } }).data.tarifas;
     return tarifas;
+  },
+
+  /**
+   * Busca liquidaciones previas de Inspección de Obra por número de documento.
+   * Endpoint: GET /liquidaciones/inspeccion-obra/buscar-previas
+   */
+  async buscarLiquidacionesPrevias(
+    params: {
+      numero_documento: string;
+      page?: number;
+      page_size?: number;
+    },
+  ): Promise<LiquidacionesIOBuscadasPaginated> {
+    const { data } = await api.get(`${BASE_URL}/buscar-previas`, {
+      params: {
+        numero_documento: params.numero_documento,
+        page: params.page ?? 1,
+        page_size: params.page_size ?? 10,
+      },
+    });
+    return (data as { data: LiquidacionesIOBuscadasPaginated }).data;
   },
 };

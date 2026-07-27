@@ -93,6 +93,8 @@ CotizacionTotalesData = _schemas_module.CotizacionTotalesData
 CotizacionMetadataData = _schemas_module.CotizacionMetadataData
 DelegadosVigentesResult = _schemas_module.DelegadosVigentesResult
 DelegadoVigenteResult = _schemas_module.DelegadoVigenteResult
+InspectoresVigentesResult = _schemas_module.InspectoresVigentesResult
+InspectorVigenteResult = _schemas_module.InspectorVigenteResult
 LiquidacionGeneralListItem = _schemas_module.LiquidacionGeneralListItem
 LiquidacionGeneralPaginatedResult = _schemas_module.LiquidacionGeneralPaginatedResult
 LiquidacionGeneralResult = _schemas_module.LiquidacionGeneralResult
@@ -103,6 +105,7 @@ MunicipalidadInfo = _schemas_module.MunicipalidadInfo
 ValoresListItemInfo = _schemas_module.ValoresListItemInfo
 ProyectistaListItemData = _schemas_module.ProyectistaListItemData
 DelegadoListItemData = _schemas_module.DelegadoListItemData
+InspectorListItemData = _schemas_module.InspectorListItemData
 ContactoListItemData = _schemas_module.ContactoListItemData
 TarifaRevisionData = _schemas_module.TarifaRevisionData
 EspecialidadRevisionData = _schemas_module.EspecialidadRevisionData
@@ -159,6 +162,8 @@ __all__ = [
     "CotizacionMetadataData",
     "DelegadosVigentesResult",
     "DelegadoVigenteResult",
+    "InspectoresVigentesResult",
+    "InspectorVigenteResult",
     # General liquidation DTOs
     "LiquidacionGeneralListItem",
     "LiquidacionGeneralPaginatedResult",
@@ -170,6 +175,7 @@ __all__ = [
     "ValoresListItemInfo",
     "ProyectistaListItemData",
     "DelegadoListItemData",
+    "InspectorListItemData",
     "ContactoListItemData",
     "TarifaRevisionData",
     "EspecialidadRevisionData",

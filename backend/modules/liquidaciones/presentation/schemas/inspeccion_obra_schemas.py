@@ -97,25 +97,40 @@ class ContactoInlineIn(BaseSchema):
 
 class CrearLiquidacionInspeccionObraIn(BaseSchema):
     """
-    Payload para crear primera revisión de Inspección Municipal de Obra.
+    Payload para crear Inspección Municipal de Obra basada en una liquidación previa.
 
     El tipo de liquidación se asigna automáticamente como INSPECCION_OBRA.
     El cálculo usa LiquidacionPorCategoriaVisitas (visitas por costo con mínimos).
 
     La categoría es requerida para resolver la tarifa correcta vía ReglaTarifaInspeccionObra.
+
+    Phase 1: La creación de IO siempre se basa en una liquidacion_previa_id.
+    Los campos proyecto_public_id, proyecto_inline y municipalidad_id ya no son
+    necesarios porque se derivan de la liquidación previa (Phase 2+).
+    Se mantienen nullable por compatibilidad pero no se usan en la creación.
     """
 
-    # XOR proyecto: exactamente uno de proyecto_public_id o proyecto_inline debe estar presente.
-    # La validación XOR se hace en el orquestador, no aquí.
+    # Phase 1: Requerido - la IO siempre se crea basada en una liquidación previa
+    liquidacion_previa_id: uuid.UUID = Field(
+        ...,
+        description="ID de la liquidación previa en la que se basa esta IO.",
+    )
+
+    # DEPRECATED (Phase 1): Ya no se usan directamente en la creación de IO.
+    # Se mantienen nullable por compatibilidad pero se ignoran en la creación.
+    # En Phase 2+ estos campos se eliminarán del payload.
     proyecto_public_id: Optional[str] = Field(
         None,
-        description="ID público del proyecto existente (ej. PROY-2026-00001). Mutuamente excluyente con proyecto_inline.",
+        description="[DEPRECATED] Ya no se usa para IO creation. Se ignora si se provee.",
     )
     proyecto_inline: Optional[ProyectoInlineIn] = Field(
         None,
-        description="Datos del proyecto inline a crear. Mutuamente excluyente con proyecto_public_id.",
+        description="[DEPRECATED] Ya no se usa para IO creation. Se ignora si se provee.",
     )
-    municipalidad_id: uuid.UUID = Field(..., description="ID de la municipalidad (UUID)")
+    municipalidad_id: Optional[uuid.UUID] = Field(
+        None,
+        description="[DEPRECATED] Ya no se usa para IO creation. Se ignora si se provee.",
+    )
     cantidad_visitas: int = Field(
         ...,
         ge=1,
@@ -143,6 +158,10 @@ class CrearLiquidacionInspeccionObraIn(BaseSchema):
     contactos: list[ContactoInlineIn] = Field(
         default=[],
         description="Contactos inline a crear y asociar a la liquidacion",
+    )
+    inspectores_ids: list[uuid.UUID] = Field(
+        default=[],
+        description="UUIDs de inspectores a asociar durante la creación de la IO. Se validan contra el tipo de la liquidacion previa.",
     )
 
 

@@ -16,7 +16,7 @@ from asgiref.sync import sync_to_async
 
 from ..core.liquidaciones_general_core import LiquidacionesGeneralService
 from ...schemas import LiquidacionGeneralPaginatedResult, LiquidacionGeneralResult
-from ...schemas import EspecialidadBasicaResult, DelegadosVigentesResult
+from ...schemas import EspecialidadBasicaResult, DelegadosVigentesResult, InspectoresVigentesResult
 
 
 class LiquidacionesGeneralFlujo:
@@ -146,3 +146,77 @@ class LiquidacionesGeneralFlujo:
         )
 
         return DelegadosVigentesResult(delegados=delegados)
+
+    async def _proceso_inspectores_vigentes(self, liquidacion_id: str) -> InspectoresVigentesResult:
+        from datetime import date
+        from modules.liquidaciones.domain.services.core.liquidacion_inspector_core import liquidacion_inspector_core
+
+        inspectores = await sync_to_async(liquidacion_inspector_core._obtener_inspectores_vigentes)(
+            liquidacion_id=liquidacion_id,
+            fecha=date.today(),
+        )
+        return InspectoresVigentesResult(inspectores=inspectores)
+
+    async def _proceso_inspectores_vigentes_por_tipo(self, tipo_liquidacion: str) -> InspectoresVigentesResult:
+        """Obtiene inspectores vigentes para un tipo de liquidacion (sin exclusion por liquidacion existente)."""
+        from datetime import date
+        from modules.liquidaciones.domain.services.core.liquidacion_inspector_core import liquidacion_inspector_core
+
+        inspectores = await sync_to_async(liquidacion_inspector_core._obtener_inspectores_vigentes_por_tipo)(
+            tipo_liquidacion=tipo_liquidacion,
+            fecha=date.today(),
+        )
+        return InspectoresVigentesResult(inspectores=inspectores)
+
+    async def _proceso_inspectores_vigentes_por_liquidacion_previa(
+        self, liquidacion_previa_id: str
+    ) -> InspectoresVigentesResult:
+        """
+        Obtiene inspectores vigentes y elegibles para una liquidacion previa de IO.
+
+        Deriva el tipo de liquidacion (EDIFICACION o HABILITACION_URBANA) de la
+        liquidacion previa y retorna solo inspectores con tipo_liquidacion compatible,
+        activos y vigentes. No excluye inspectores ya asociados (para uso en creacion).
+
+        Args:
+            liquidacion_previa_id: UUID de la liquidacion previa.
+
+        Returns:
+            InspectoresVigentesResult con lista de inspectores elegibles.
+        """
+        import uuid as uuid_lib
+        from modules.liquidaciones.domain.services.core.liquidacion_inspector_core import liquidacion_inspector_core
+
+        liquidacion_uuid = uuid_lib.UUID(liquidacion_previa_id)
+        inspectores = await sync_to_async(
+            liquidacion_inspector_core._obtener_inspectores_vigentes_por_liquidacion_previa
+        )(liquidacion_previa_id=liquidacion_uuid)
+        return InspectoresVigentesResult(inspectores=inspectores)
+
+    async def _proceso_buscar_liquidaciones_por_documento_entidad(
+        self,
+        numero_documento: str,
+        tipos_liquidacion: list[str],
+        page: int,
+        page_size: int,
+    ) -> LiquidacionGeneralPaginatedResult:
+        """
+        Proceso para buscar liquidaciones por número de documento de entidad y tipos.
+
+        Args:
+            numero_documento: DNI o RUC de la entidad asociada al proyecto.
+            tipos_liquidacion: Lista de tipos de liquidación a filtrar.
+            page: Número de página (1-indexed).
+            page_size: Elementos por página.
+
+        Returns:
+            LiquidacionGeneralPaginatedResult con items y total.
+        """
+        return await sync_to_async(
+            self.core._buscar_liquidaciones_por_documento_entidad
+        )(
+            numero_documento=numero_documento,
+            tipos_liquidacion=tipos_liquidacion,
+            page=page,
+            page_size=page_size,
+        )

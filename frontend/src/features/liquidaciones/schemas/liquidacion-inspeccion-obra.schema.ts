@@ -5,6 +5,10 @@
 import { z } from "zod";
 import { apiResponseSchema } from "@/types/api.types";
 import { contactoInlineSchema, proyectistaInlineSchema } from "./liquidacion-edificaciones-form.schema";
+import {
+  liquidacionGeneralListItemPayloadSchema,
+  paginatedLiquidacionGeneralListPayloadSchema,
+} from "./liquidacion-general.schema";
 
 // ── Inner Schemas (data fields only) ─────────────────────────────────────────
 
@@ -49,20 +53,36 @@ export const proyectoXorIOSchema = z
  */
 export const categoriaIOSchema = z.enum(["C1", "C2", "C3", "C4"]);
 
+const cantidadVisitasSchema = z
+  .union([z.number(), z.nan()])
+  .refine((value) => Number.isFinite(value), {
+    message: "Cantidad de visitas es requerida",
+  })
+  .pipe(
+    z
+      .number()
+      .int("Cantidad de visitas debe ser un número entero")
+      .min(1, "Cantidad de visitas debe ser al menos 1"),
+  );
+
 // ── Primera Revisión Schema ──────────────────────────────────────────────────
 
 /**
- * Schema para primera revisión de Inspección de Obra.
+ * Schema para primera revisión de Inspección de Obra basada en liquidación previa.
+ *
+ * Phase 1+: liquidacion_previa_id es requerido.
+ * Los campos proyecto_public_id, proyecto_inline y municipalidad_id son opcionales
+ * (deprecated) porque se ignoran en la creación — se derivan de la previa.
  */
 export const primeraRevisionInspeccionObraSchema = z.object({
-  // XOR: uno de los dos es requerido
-  proyecto_public_id: z.string().min(1, "Proyecto es requerido").optional(),
+  // Phase 1+: opcional por ahora para compatibilidad con UI existente
+  // Phase 5+ lo hará requerido cuando la UI envíe este campo
+  liquidacion_previa_id: z.string().uuid("Liquidación previa es requerida").optional(),
+  // DEPRECATED: se ignoran en la creación (se derivan de liquidacion_previa)
+  proyecto_public_id: z.string().optional(),
   proyecto_inline: proyectoInlineIOSchema.optional(),
-  municipalidad_id: z.string().uuid("Municipalidad es requerida"),
-  cantidad_visitas: z
-    .number()
-    .int("Cantidad de visitas debe ser un número entero")
-    .positive("Cantidad de visitas debe ser al menos 1"),
+  municipalidad_id: z.string().uuid().optional(),
+  cantidad_visitas: cantidadVisitasSchema,
   categoria: categoriaIOSchema,
   expediente: z.string().optional(),
   observacion: z.string().optional(),
@@ -71,16 +91,20 @@ export const primeraRevisionInspeccionObraSchema = z.object({
   contactos: z.array(contactoInlineSchema).default([]),
 });
 
+/**
+ * Schema para buscar liquidaciones previas de IO.
+ * Endpoint: GET /liquidaciones/inspeccion-obra/buscar-previas
+ * Usa liquidacionInspeccionObraListItemSchema para los items.
+ */
+export type BuscarLiquidacionesPreviasIOData = z.infer<typeof liquidacionInspeccionObraListItemSchema>;
+
 export type PrimeraRevisionInspeccionObraData = z.infer<typeof primeraRevisionInspeccionObraSchema>;
 
 // ── Cotizar Schemas ────────────────────────────────────────────────────────────
 
 /** Payload para cotizar primera revisión */
 export const cotizarInspeccionObraPayloadSchema = z.object({
-  cantidad_visitas: z
-    .number()
-    .int("Cantidad de visitas debe ser un número entero")
-    .positive("Cantidad de visitas debe ser al menos 1"),
+  cantidad_visitas: cantidadVisitasSchema,
   categoria: categoriaIOSchema,
   // municipalidad_id NO es requerida para cotizar; solo para creación final
   tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
@@ -199,6 +223,20 @@ const delegadoListItemSchema = z.object({
   tipo: z.string().nullable(),
 });
 
+const inspectorListItemSchema = z.object({
+  id: z.string(),
+  perfil_ingeniero_id: z.string().nullable(),
+  perfil_ingeniero_nombres: z.string().nullable(),
+  perfil_ingeniero_apellidos: z.string().nullable(),
+  perfil_ingeniero_cip: z.string().nullable(),
+  especialidad_id: z.string().nullable(),
+  especialidad_nombre: z.string().nullable(),
+  tipo_liquidacion: z.string().nullable(),
+  categoria: z.number().nullable(),
+  numero_registro: z.string().nullable(),
+  vigencia: z.string().nullable(),
+});
+
 const contactoListItemSchema = z.object({
   id: z.string(),
   nombres: z.string().nullable(),
@@ -252,6 +290,7 @@ const liquidacionInspeccionObraListItemSchema = z.object({
   valores: valoresListItemSchema,
   proyectistas: z.array(proyectistaListItemSchema),
   delegados: z.array(delegadoListItemSchema),
+  inspectores: z.array(inspectorListItemSchema).default([]),
   contactos: z.array(contactoListItemSchema),
   revisiones: z.array(revisionListItemSchema),
 });
@@ -291,10 +330,7 @@ export const crearInspeccionObraResponseSchema =
  */
 export const stepInspeccionObraSchema = z.object({
   municipalidad_id: z.string().uuid("Debe seleccionar una municipalidad"),
-  cantidad_visitas: z
-    .number()
-    .int("Cantidad de visitas debe ser un número entero")
-    .positive("Cantidad de visitas debe ser al menos 1"),
+  cantidad_visitas: cantidadVisitasSchema,
   categoria: categoriaIOSchema,
   expediente: z.string().optional(),
   observacion: z.string().optional(),
@@ -318,4 +354,15 @@ export const tarifasVigentesInspeccionObraResponseSchema = apiResponseSchema(
   z.object({
     tarifas: z.array(tarifaVigenteInspeccionObraSchema),
   }),
+);
+
+// ── Buscar Previas Schemas ───────────────────────────────────────────────────
+
+/**
+ * Schema para búsqueda de liquidaciones previas de IO.
+ * Ahora reutiliza el schema de lista general (LiquidacionGeneralListItemOut).
+ * Endpoint: GET /liquidaciones/inspeccion-obra/buscar-previas
+ */
+export const buscarLiquidacionesPreviasIOResponseSchema = apiResponseSchema(
+  paginatedLiquidacionGeneralListPayloadSchema,
 );

@@ -26,6 +26,7 @@ import { ConsultarIngenieroDialog } from "../components/ConsultarIngenieroDialog
 import { LiquidacionInspeccionObraSingleFormModal } from "../components/LiquidacionInspeccionObraSingleFormModal";
 import { printInspeccionObraDocument, adaptIOToPrintData } from "../components/inspeccion-obra-print";
 import { useLiquidacionesInspeccionObra } from "../hooks/useLiquidacionesInspeccionObra";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { LiquidacionCardBase } from "../types/liquidacion-general";
 
 const KIND_ICON: LucideIcon = ClipboardCheck;
@@ -53,6 +54,8 @@ export function LiquidacionesInspeccionObraView({
     refetch: refetchLiquidaciones,
     setPage: setLiquidationPage,
   } = useLiquidacionesInspeccionObra({ page: 1, pageSize: 10 });
+
+  const currentUser = useAuthStore((state) => state.user);
 
   const handleSearch = () => {
     const trimmed = searchInput.trim();
@@ -230,8 +233,9 @@ export function LiquidacionesInspeccionObraView({
         onOpenChange={setIoModalOpen}
         onSuccess={refetchLiquidaciones}
         onCreated={(created) => {
-          // Post-create direct print — flat list item has everything needed
-          const printData = adaptIOToPrintData(created);
+          // Post-create direct print — flat list item has everything needed.
+          // Pass current session user for tramitado_por / hecho_por attribution.
+          const printData = adaptIOToPrintData(created, currentUser ?? undefined);
           void printInspeccionObraDocument(printData);
         }}
       />

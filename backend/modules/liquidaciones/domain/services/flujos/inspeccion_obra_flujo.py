@@ -24,8 +24,12 @@ from modules.liquidaciones.domain.services.builders.inspeccion_obra_result_build
 )
 from modules.liquidaciones.domain.schemas_proyecto import ProyectoInlineData
 from modules.liquidaciones.domain.schemas import ProyectistaInlineData
-from modules.liquidaciones.domain.constants import TramiteAccion
-from modules.liquidaciones.models import LiquidacionProyectista
+from modules.liquidaciones.domain.constants import TramiteAccion, TipoLiquidacion
+from modules.liquidaciones.models import LiquidacionProyectista, LiquidacionInspector
+from modules.liquidaciones.domain.services.core.liquidacion_inspector_core import (
+    LiquidacionInspectorCore,
+    liquidacion_inspector_core,
+)
 from modules.usuarios.infrastructure.services import ICipClient
 from modules.usuarios.domain.services.core.perfil_ingeniero_core_service import PerfilIngenieroCoreService
 
@@ -45,16 +49,19 @@ class InspeccionObraFlujo:
         proyecto_service: ProyectoService,
         cip_client: ICipClient,
         perfil_ingeniero_core: PerfilIngenieroCoreService,
+        inspector_core: LiquidacionInspectorCore = None,
     ):
         self.core = core
         self._proyecto_service = proyecto_service
         self._cip_client = cip_client
         self._perfil_ingeniero_core = perfil_ingeniero_core
+        self._inspector_core = inspector_core or liquidacion_inspector_core
 
     async def _proceso_creacion(
         self,
+        liquidacion_previa_id: str,
         proyecto_public_id: Optional[str],
-        municipalidad_id: str,
+        municipalidad_id: str | None,
         cantidad_visitas: int,
         categoria: str,
         expediente: Optional[str],
@@ -62,47 +69,61 @@ class InspeccionObraFlujo:
         proyecto_inline: Optional[ProyectoInlineData] = None,
         tarifa_id: Optional[str] = None,
         proyectistas_inline: Optional[list[ProyectistaInlineData]] = None,
+        inspectores_ids: Optional[list[str]] = None,
     ):
         """
-        Proceso de creación de primera revisión de Inspección de Obra.
+        Proceso de creación de Inspección de Obra basada en liquidación previa.
 
-        1. Obtener o crear proyecto (inline o por public_id)
-        2. Buscar municipalidad por ID
+        Phase 2: Se implementa la derivación de proyecto y municipalidad
+        desde la liquidación previa. Los campos deprecated del payload
+        (proyecto_inline, proyecto_public_id, municipalidad_id) se ignoran.
+
+        Flujo Phase 2:
+        1. Obtener liquidacion_previa por ID y validar que tiene proyecto y municipalidad
+        2. Derivar proyecto y municipalidad desde la liquidación previa
         3. Buscar/validar tarifa inspección:
            - Si tarifa_id proporcionado: usar ese ID y validar que corresponde a categoria + tramite_accion
            - Si no: auto-seleccionar por reglas (categoria + tramite_accion)
         4. Si hay proyectistas_inline, validar CIPs (ALL-OR-NOTHING)
-        5. En transacción atómica:
-           a. Crear LiquidacionGeneral
+        5. Si hay inspectores_ids, validar que son elegibles:
+           - Activos, vigentes y con tipo_liquidacion compatible con la previa
+        6. En transacción atómica:
+           a. Crear LiquidacionGeneral con proyecto/municipalidad derivados
            b. Crear LiquidacionInspeccionObra
-           c. Upsert proyectistas si hay
-           d. Crear LiquidacionPorCategoriaVisitas
-           e. Guardar sub_total en LiquidacionGeneral
-        6. Construir y retornar resultado tipado
+           c. Vincular nueva liquidación a la previa via liquidaciones_previas M2M
+           d. Upsert proyectistas si hay
+           e. Crear LiquidacionPorCategoriaVisitas
+           f. Guardar sub_total en LiquidacionGeneral
+           g. Asociar inspectores si hay
+        7. Construir y retornar resultado tipado
         """
-        # 1. Obtener o crear proyecto
-        if proyecto_inline:
-            proyecto = await sync_to_async(
-                self._proyecto_service._crear_proyecto_inline
-            )(proyecto_inline)
-        else:
-            proyecto = await sync_to_async(
-                self._proyecto_service._buscar_por_public_id
-            )(proyecto_public_id)
-            if not proyecto:
-                from modules.liquidaciones.domain.exceptions import (
-                    ProyectoNotFoundError,
-                )
-                raise ProyectoNotFoundError(
-                    f"Proyecto con public_id={proyecto_public_id} no encontrado"
-                )
-
-        # 2. Buscar municipalidad
-        municipalidad = await self._get_municipalidad_model(municipalidad_id)
-        if not municipalidad:
+        # Phase 2: Obtener liquidacion_previa y derivar proyecto/municipalidad
+        liquidacion_previa = await self._get_liquidacion_previa_model(liquidacion_previa_id)
+        if not liquidacion_previa:
             from modules.liquidaciones.domain.exceptions import NotFoundError
+            raise NotFoundError(f"Liquidación previa con id={liquidacion_previa_id} no encontrada")
 
-            raise NotFoundError(f"Municipalidad con id={municipalidad_id}")
+        # Validar que la liquidación previa tiene proyecto y municipalidad
+        if not liquidacion_previa.proyecto:
+            from modules.liquidaciones.domain.exceptions import NotFoundError
+            raise NotFoundError(
+                f"La liquidación previa {liquidacion_previa_id} no tiene proyecto asociado. "
+                f"No se puede crear una IO sin proyecto."
+            )
+
+        if not liquidacion_previa.municipalidad:
+            from modules.liquidaciones.domain.exceptions import NotFoundError
+            raise NotFoundError(
+                f"La liquidación previa {liquidacion_previa_id} no tiene municipalidad asociada. "
+                f"No se puede crear una IO sin municipalidad."
+            )
+
+        # Derivar proyecto y municipalidad desde la liquidación previa
+        proyecto = liquidacion_previa.proyecto
+        municipalidad = liquidacion_previa.municipalidad
+
+        # Derivar tipo_liquidacion de la liquidación previa para validar inspectores
+        tipo_liquidacion_previa = liquidacion_previa.tipo_liquidacion
 
         # 3. Buscar/validar tarifa inspección
         try:
@@ -129,6 +150,11 @@ class InspeccionObraFlujo:
         if proyectistas_inline:
             await self._validar_proyectistas_inline_cip(proyectistas_inline)
 
+        # 5. Si hay inspectores_ids, validar que son elegibles antes de la transacción
+        # ALL-OR-NOTHING: si cualquier inspector no es válido, se rechaza toda la operación
+        if inspectores_ids:
+            await self._validar_inspectores_inline(inspectores_ids, tipo_liquidacion_previa)
+
         # Ejecutar bloque transaccional
         def _run_creacion():
             from django.db import transaction
@@ -150,10 +176,14 @@ class InspeccionObraFlujo:
                     tramite_accion=TramiteAccion.PRIMERA_REVISION,
                 )
 
-                # 5c. Upsert proyectistas si hay inline data
+                # 5c. Vincular nueva liquidación a la previa via liquidaciones_previas M2M
+                # Esto es trazabilidad, no nueva revisión (numero_revision sigue = 1)
+                liquidacion.liquidaciones_previas.add(liquidacion_previa)
+
+                # 5d. Upsert proyectistas si hay inline data
                 if proyectistas_inline:
                     proyectistas_ids = self._upsert_proyectistas_inline(
-                        proyectistas_inline, municipalidad_id
+                        proyectistas_inline, municipalidad.id
                     )
                     # Asociar proyectistas a la liquidación vía LiquidacionProyectista
                     for pid in proyectistas_ids:
@@ -162,7 +192,7 @@ class InspeccionObraFlujo:
                             proyectista_id=pid,
                         )
 
-                # 5d. Crear LiquidacionPorCategoriaVisitas
+                # 5e. Crear LiquidacionPorCategoriaVisitas
                 liquidacion_visitas = self.core._crear_calculo_visitas(
                     liquidacion_general=liquidacion,
                     cantidad_visitas=cantidad_visitas,
@@ -170,11 +200,19 @@ class InspeccionObraFlujo:
                     tarifa_visitas=tarifa_visitas,
                 )
 
-                # 5e. Guardar sub_total (= derecho de visitas, ya calculado y almacenado)
+                # 5f. Guardar sub_total (= derecho de visitas, ya calculado y almacenado)
                 derecho = liquidacion_visitas.derecho
 
                 liquidacion.sub_total = derecho
                 liquidacion.save(update_fields=["sub_total"])
+
+                # 5g. Asociar inspectores si hay
+                if inspectores_ids:
+                    for inspector_id in inspectores_ids:
+                        LiquidacionInspector.objects.create(
+                            liquidacion=liquidacion,
+                            inspector_id=inspector_id,
+                        )
 
                 # 6. Construir resultado
                 igv_valor = (
@@ -201,6 +239,28 @@ class InspeccionObraFlujo:
             lambda: (
                 Municipalidad.objects.filter(id=municipalidad_id)
                 .select_related("provincia", "distrito")
+                .first()
+            )
+        )()
+
+    async def _get_liquidacion_previa_model(self, liquidacion_previa_id: str):
+        """
+        Obtiene el modelo LiquidacionGeneral (liquidación previa) por ID.
+
+        Phase 2: Se usa para derivar proyecto y municipalidad de la IO.
+
+        Args:
+            liquidacion_previa_id: UUID de la liquidación previa.
+
+        Returns:
+            LiquidacionGeneral o None si no existe.
+        """
+        from modules.liquidaciones.models import LiquidacionGeneral
+
+        return await sync_to_async(
+            lambda: (
+                LiquidacionGeneral.objects.filter(id=liquidacion_previa_id)
+                .select_related("proyecto", "proyecto__entidad", "municipalidad")
                 .first()
             )
         )()
@@ -298,6 +358,65 @@ class InspeccionObraFlujo:
             proyectista_ids.append(str(proyectista.id))
 
         return proyectista_ids
+
+    async def _validar_inspectores_inline(
+        self,
+        inspectores_ids: list[str],
+        tipo_liquidacion_previa: str,
+    ):
+        """
+        Valida que todos los inspectores_ids sean elegibles para la IO.
+
+        ALL-OR-NOTHING: si cualquier inspector no es válido, se rechaza toda la operación.
+
+        Validaciones por inspector:
+        1. Existe y está activo (status=ACTIVO)
+        2. Está vigente (vigencia >= hoy)
+        3. Su tipo_liquidacion es compatible con la liquidacion previa (EDIFICACION o HABILITACION_URBANA)
+
+        Args:
+            inspectores_ids: Lista de UUIDs de inspectores a validar.
+            tipo_liquidacion_previa: Tipo de la liquidación previa (EDIFICACION o HABILITACION_URBANA).
+
+        Raises:
+            BusinessError: Si algún inspector no es válido.
+        """
+        import uuid
+
+        for inspector_id_str in inspectores_ids:
+            inspector_id = uuid.UUID(inspector_id_str)
+
+            # 1. Verificar que el inspector existe
+            inspector = await sync_to_async(self._inspector_core._obtener_inspector_por_id)(inspector_id)
+            if not inspector:
+                from modules.liquidaciones.domain.exceptions import BusinessError
+                raise BusinessError(
+                    f"El inspector con ID '{inspector_id_str}' no fue encontrado."
+                )
+
+            # 2. Verificar que está activo
+            if not await sync_to_async(self._inspector_core._es_inspector_activo)(inspector_id):
+                from modules.liquidaciones.domain.exceptions import BusinessError
+                raise BusinessError(
+                    f"El inspector '{inspector.perfil_ingeniero.nombre_completo}' no está activo."
+                )
+
+            # 3. Verificar que está vigente
+            if not await sync_to_async(self._inspector_core._inspector_vigente)(inspector_id):
+                from modules.liquidaciones.domain.exceptions import BusinessError
+                raise BusinessError(
+                    f"El inspector '{inspector.perfil_ingeniero.nombre_completo}' no está vigente."
+                )
+
+            # 4. Verificar compatibilidad de tipo
+            if not await sync_to_async(self._inspector_core._tipo_inspector_compatible)(
+                inspector_id, tipo_liquidacion_previa
+            ):
+                from modules.liquidaciones.domain.exceptions import BusinessError
+                raise BusinessError(
+                    f"El inspector '{inspector.perfil_ingeniero.nombre_completo}' "
+                    f"no corresponde al tipo '{tipo_liquidacion_previa}' de la liquidación previa."
+                )
 
     async def _proceso_cotizar_primera_revision(
         self,
@@ -397,4 +516,33 @@ class InspeccionObraFlujo:
                 uit_valor=uit_valor,
                 cantidad_visitas=cantidad_visitas,
             ),
+        )
+
+    async def _proceso_buscar_previas_por_documento(
+        self,
+        numero_documento: str,
+        page: int = 1,
+        page_size: int = 10,
+    ) -> tuple[list[dict], int]:
+        """
+        Busca liquidaciones previas de Inspección de Obra por número de documento de entidad.
+
+        Las liquidaciones previas candidatas son aquellas con:
+        - tipo_liquidacion = "INSPECCION_OBRA"
+        - numero_revision = 0 (registros preliminares)
+
+        Args:
+            numero_documento: DNI o RUC de la entidad asociada al proyecto.
+            page: Número de página (1-indexed).
+            page_size: Elementos por página.
+
+        Returns:
+            (lista_de_datos_materializados, total)
+        """
+        return await sync_to_async(
+            self.core._buscar_liquidaciones_previas_por_documento
+        )(
+            numero_documento=numero_documento,
+            page=page,
+            page_size=page_size,
         )

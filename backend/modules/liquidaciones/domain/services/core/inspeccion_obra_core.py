@@ -353,3 +353,123 @@ class InspeccionObraCoreService:
             })
 
         return result
+
+    def _buscar_liquidaciones_previas_por_documento(
+        self,
+        numero_documento: str,
+        page: int = 1,
+        page_size: int = 10,
+    ) -> tuple[list[dict], int]:
+        """
+        Busca liquidaciones previas de Inspección de Obra por número de documento de entidad.
+
+        Las liquidaciones previas de IO son aquellas con:
+        - tipo_liquidacion = "INSPECCION_OBRA"
+        - numero_revision = 0 (registros preliminares que sirven de base para nueva IO)
+
+        Args:
+            numero_documento: DNI o RUC de la entidad asociada al proyecto.
+            page: Número de página (1-indexed).
+            page_size: Elementos por página.
+
+        Returns:
+            (lista_de_datos_materializados, total)
+        """
+        from django.db.models import Max, OuterRef, Subquery
+
+        qs = LiquidacionGeneral.objects.filter(
+            tipo_liquidacion="INSPECCION_OBRA",
+            numero_revision=0,
+        )
+
+        # Filtro por número de documento de la entidad del proyecto
+        if numero_documento:
+            qs = qs.filter(proyecto__entidad__numero_documento=numero_documento)
+
+        # Latest per project: para cada proyecto, retornar solo la liquidación más reciente
+        # (por id más alto = más reciente en caso de múltiples revision=0)
+        # Usamos un subquery que obtiene el max id por proyecto
+        latest_id_subquery = LiquidacionGeneral.objects.filter(
+            tipo_liquidacion="INSPECCION_OBRA",
+            numero_revision=0,
+            proyecto=OuterRef('proyecto'),
+        ).order_by('-id').values('id')[:1]
+        qs = qs.filter(id=Subquery(latest_id_subquery))
+
+        qs = qs.select_related(
+            'proyecto', 'proyecto__entidad', 'municipalidad', 'igv',
+        ).prefetch_related(
+            'liquidacion_visitas',
+            'edificaciones',
+            'liquidacion_proyectistas__proyectista__perfil_ingeniero',
+            'liquidacion_proyectistas__proyectista__especialidad',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__delegado__especialidad',
+            'contactos__contacto',
+        ).order_by('-created_at')
+
+        total = qs.count()
+        offset = (page - 1) * page_size
+        qs = qs[offset:offset + page_size]
+
+        liquidaciones = list(qs)
+        if not liquidaciones:
+            return [], total
+
+        items = []
+        for liq in liquidaciones:
+            subtotal_val = float(liq.sub_total) if liq.sub_total else 0.0
+            igv_valor = float(liq.igv.valor) if liq.igv and liq.igv.valor else 0.0
+            igv_amount = subtotal_val * igv_valor
+            total_liquidacion = subtotal_val + igv_amount
+            total_a_pagar = total_liquidacion
+
+            # Entidad
+            entidad_dict = None
+            if liq.proyecto and liq.proyecto.entidad:
+                entidad_dict = {
+                    'id': str(liq.proyecto.entidad.id),
+                    'tipo': liq.proyecto.entidad.tipo_documento,
+                    'nombre': liq.proyecto.entidad.razon_social,
+                    'ruc': liq.proyecto.entidad.numero_documento,
+                }
+
+            # Valores
+            valores_dict = {
+                'subtotal': subtotal_val,
+                'igv': igv_amount,
+                'total': total_liquidacion,
+                'total_a_pagar': total_a_pagar,
+            }
+
+            items.append({
+                'id': str(liq.id),
+                'public_id': str(liq.public_id) if liq.public_id else None,
+                'tipo_liquidacion': liq.tipo_liquidacion,
+                'estado': liq.estado,
+                'numero_revision': liq.numero_revision,
+                'fecha_registro': liq.created_at.isoformat() if liq.created_at else '',
+                'proyecto': {
+                    'id': str(liq.proyecto.id) if liq.proyecto else '',
+                    'public_id': str(liq.proyecto.public_id) if liq.proyecto and liq.proyecto.public_id else '',
+                    'nombre': liq.proyecto.denominacion if liq.proyecto else '',
+                    'direccion': liq.proyecto.direccion if liq.proyecto else None,
+                    'valor_proyecto': 0.0,
+                    'entidad': entidad_dict,
+                },
+                'entidad': entidad_dict,
+                'municipalidad': {
+                    'id': str(liq.municipalidad.id) if liq.municipalidad else '',
+                    'nombre': liq.municipalidad.nombre if liq.municipalidad else '',
+                    'codigo': None,
+                    'provincia': None,
+                    'distrito': None,
+                },
+                'valores': valores_dict,
+                'proyectistas': [],
+                'delegados': [],
+                'contactos': [],
+                'revisiones': [],
+            })
+
+        return items, total

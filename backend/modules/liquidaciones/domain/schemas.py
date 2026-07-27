@@ -345,6 +345,23 @@ class DelegadosVigentesResult(BaseModel):
     delegados: list[DelegadoVigenteResult]
 
 
+class InspectorVigenteResult(BaseModel):
+    """Resultado de un inspector vigente para selección en IO."""
+    id: uuid.UUID
+    nombre_completo: str
+    cip: str
+    especialidad: Optional[EspecialidadBasicaResult] = None
+    tipo_liquidacion: str
+    categoria: Optional[int] = None
+    numero_registro: str
+    vigencia: date
+
+
+class InspectoresVigentesResult(BaseModel):
+    """Wrapper para lista de inspectores vigentes."""
+    inspectores: list[InspectorVigenteResult]
+
+
 # =============================================================================
 # General Liquidation DTOs — para LiquidacionGeneralController (Phase 4)
 # =============================================================================
@@ -410,6 +427,21 @@ class DelegadoListItemData(BaseModel):
     especialidad_id: Optional[uuid.UUID] = None
     especialidad_nombre: Optional[str] = None
     tipo: Optional[str] = None
+
+
+class InspectorListItemData(BaseModel):
+    """Inspector en item de lista."""
+    id: uuid.UUID
+    perfil_ingeniero_id: Optional[uuid.UUID] = None
+    perfil_ingeniero_nombres: Optional[str] = None
+    perfil_ingeniero_apellidos: Optional[str] = None
+    perfil_ingeniero_cip: Optional[str] = None
+    especialidad_id: Optional[uuid.UUID] = None
+    especialidad_nombre: Optional[str] = None
+    tipo_liquidacion: Optional[str] = None
+    categoria: Optional[int] = None
+    numero_registro: Optional[str] = None
+    vigencia: Optional[date] = None
 
 
 class ContactoListItemData(BaseModel):
@@ -491,6 +523,7 @@ class LiquidacionGeneralListItem(BaseModel):
     valores: ValoresListItemInfo
     proyectistas: list[ProyectistaListItemData] = Field(default_factory=list)
     delegados: list[DelegadoListItemData] = Field(default_factory=list)
+    inspectores: list[InspectorListItemData] = Field(default_factory=list)
     contactos: list[ContactoListItemData] = Field(default_factory=list)
     revisiones: list[RevisionListItemData] = Field(default_factory=list)
     subtotal: float = 0.0

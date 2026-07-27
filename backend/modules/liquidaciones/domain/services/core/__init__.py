@@ -12,6 +12,10 @@ from .liquidacion_delegado_core import (
     LiquidacionDelegadoCore,
     liquidacion_delegado_core,
 )
+from .liquidacion_inspector_core import (
+    LiquidacionInspectorCore,
+    liquidacion_inspector_core,
+)
 
 __all__ = [
     "LiquidacionesEdificacionesService",
@@ -26,4 +30,6 @@ __all__ = [
     "InspeccionObraCoreService",
     "LiquidacionDelegadoCore",
     "liquidacion_delegado_core",
+    "LiquidacionInspectorCore",
+    "liquidacion_inspector_core",
 ]

@@ -57,6 +57,20 @@ const delegadoSchema = z.object({
   tipo: z.string().nullable(),
 });
 
+const inspectorSchema = z.object({
+  id: z.string(),
+  perfil_ingeniero_id: z.string().nullable(),
+  perfil_ingeniero_nombres: z.string().nullable(),
+  perfil_ingeniero_apellidos: z.string().nullable(),
+  perfil_ingeniero_cip: z.string().nullable(),
+  especialidad_id: z.string().nullable(),
+  especialidad_nombre: z.string().nullable(),
+  tipo_liquidacion: z.string().nullable(),
+  categoria: z.number().nullable(),
+  numero_registro: z.string().nullable(),
+  vigencia: z.string().nullable(),
+});
+
 const contactoSchema = z.object({
   id: z.string(),
   nombres: z.string().nullable(),
@@ -107,6 +121,7 @@ export const liquidacionGeneralListItemPayloadSchema = z.object({
   valores: valoresSchema,
   proyectistas: z.array(proyectistaSchema),
   delegados: z.array(delegadoSchema),
+  inspectores: z.array(inspectorSchema).default([]),
   contactos: z.array(contactoSchema),
   revisiones: z.array(revisionSchema),
   subtotal: z.number(),

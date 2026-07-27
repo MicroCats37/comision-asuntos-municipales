@@ -23,10 +23,15 @@ from ..schemas.liquidacion_general_schemas import (
     LiquidacionGeneralListItemOut,
     EspecialidadesCatalogoOut,
     DelegadosVigentesOut,
+    InspectoresVigentesOut,
 )
 from ..schemas.delegados_batch_schemas import (
     LiquidacionDelegadoBatchIn,
     LiquidacionDelegadoBatchOut,
+)
+from ..schemas.inspectores_batch_schemas import (
+    LiquidacionInspectorBatchIn,
+    LiquidacionInspectorBatchOut,
 )
 from ..presenters.liquidacion_general_presenter import LiquidacionGeneralPresenter
 from ...domain.services.orchestrators.liquidacion_general_orchestrator import (
@@ -34,6 +39,9 @@ from ...domain.services.orchestrators.liquidacion_general_orchestrator import (
 )
 from ...domain.services.orchestrators.delegados_batch_orchestrator import (
     DelegadosBatchOrchestrator,
+)
+from ...domain.services.orchestrators.inspectores_batch_orchestrator import (
+    InspectoresBatchOrchestrator,
 )
 
 
@@ -61,9 +69,11 @@ class LiquidacionesGeneralController:
         self,
         orchestrator: LiquidacionesGeneralOrchestrator,
         batch_orchestrator: DelegadosBatchOrchestrator,
+        inspectores_batch_orchestrator: InspectoresBatchOrchestrator,
     ):
         self.orchestrator = orchestrator
         self.batch_orchestrator = batch_orchestrator
+        self.inspectores_batch_orchestrator = inspectores_batch_orchestrator
 
     @route.get("/", response={200: ApiResponse[PaginatedData[LiquidacionGeneralListItemOut]]}, auth=None)
     async def listar_liquidaciones(
@@ -160,6 +170,36 @@ class LiquidacionesGeneralController:
         )
         return success_response(LiquidacionGeneralPresenter.present_delegados_vigentes(result))
 
+    @route.get("/{liquidacion_id}/inspectores/vigentes", response={200: ApiResponse[InspectoresVigentesOut]}, auth=None)
+    async def obtener_inspectores_vigentes(self, liquidacion_id: str):
+        result = await self.orchestrator.obtener_inspectores_vigentes(liquidacion_id=liquidacion_id)
+        return success_response(LiquidacionGeneralPresenter.present_inspectores_vigentes(result))
+
+    @route.get("/inspectores/vigentes", response={200: ApiResponse[InspectoresVigentesOut]}, auth=None)
+    async def obtener_inspectores_vigentes_por_tipo(
+        self,
+        tipo_liquidacion: str = Query(None, description="Tipo de liquidación (EDIFICACION o HABILITACION_URBANA)"),
+        liquidacion_previa_id: str = Query(None, description="ID de la liquidación previa para derivar el tipo de inspector"),
+    ):
+        """
+        Obtiene inspectores vigentes para un tipo de liquidación.
+
+        Si se provee liquidacion_previa_id, deriva el tipo de la liquidación previa
+        (EDIFICACION o HABILITACION_URBANA) y retorna inspectores compatibles.
+        Si se provee solo tipo_liquidacion, retorna inspectores de ese tipo directamente.
+
+        Usado en el formulario de creación de IO.
+        """
+        if liquidacion_previa_id:
+            result = await self.orchestrator.obtener_inspectores_vigentes_por_liquidacion_previa(
+                liquidacion_previa_id=liquidacion_previa_id
+            )
+        elif tipo_liquidacion:
+            result = await self.orchestrator.obtener_inspectores_vigentes_por_tipo(tipo_liquidacion=tipo_liquidacion)
+        else:
+            result = await self.orchestrator.obtener_inspectores_vigentes_por_tipo(tipo_liquidacion="EDIFICACION")
+        return success_response(LiquidacionGeneralPresenter.present_inspectores_vigentes(result))
+
     @route.patch(
         "/{liquidacion_id}/delegados",
         response={200: ApiResponse[LiquidacionDelegadoBatchOut]},
@@ -185,6 +225,23 @@ class LiquidacionesGeneralController:
         """
         lid = uuid.UUID(liquidacion_id)
         result = await self.batch_orchestrator.procesar_batch_delegados(
+            liquidacion_id=lid,
+            payload=payload,
+        )
+        return success_response(result)
+
+    @route.patch(
+        "/{liquidacion_id}/inspectores",
+        response={200: ApiResponse[LiquidacionInspectorBatchOut]},
+        auth=None,
+    )
+    async def batch_inspectores(
+        self,
+        liquidacion_id: str,
+        payload: LiquidacionInspectorBatchIn,
+    ):
+        lid = uuid.UUID(liquidacion_id)
+        result = await self.inspectores_batch_orchestrator.procesar_batch_inspectores(
             liquidacion_id=lid,
             payload=payload,
         )

@@ -11,7 +11,7 @@ from ninja.errors import HttpError
 
 from ..flujos.liquidacion_general_flujo import LiquidacionesGeneralFlujo
 from ...schemas import LiquidacionGeneralPaginatedResult, LiquidacionGeneralResult, LiquidacionGeneralListItem
-from ...schemas import EspecialidadBasicaResult, DelegadosVigentesResult
+from ...schemas import EspecialidadBasicaResult, DelegadosVigentesResult, InspectoresVigentesResult
 
 
 class LiquidacionesGeneralOrchestrator:
@@ -142,4 +142,43 @@ class LiquidacionesGeneralOrchestrator:
             tipo_liquidacion=tipo_liquidacion,
             revision_id=revision_id,
             categoria=categoria,
+        )
+
+    async def obtener_inspectores_vigentes(self, liquidacion_id: str) -> InspectoresVigentesResult:
+        return await self.flujo._proceso_inspectores_vigentes(liquidacion_id=liquidacion_id)
+
+    async def obtener_inspectores_vigentes_por_tipo(self, tipo_liquidacion: str) -> InspectoresVigentesResult:
+        return await self.flujo._proceso_inspectores_vigentes_por_tipo(tipo_liquidacion=tipo_liquidacion)
+
+    async def obtener_inspectores_vigentes_por_liquidacion_previa(
+        self, liquidacion_previa_id: str
+    ) -> InspectoresVigentesResult:
+        return await self.flujo._proceso_inspectores_vigentes_por_liquidacion_previa(
+            liquidacion_previa_id=liquidacion_previa_id
+        )
+
+    async def buscar_liquidaciones_por_documento_entidad(
+        self,
+        numero_documento: str,
+        tipos_liquidacion: list[str],
+        page: int = 1,
+        page_size: int = 10,
+    ) -> LiquidacionGeneralPaginatedResult:
+        """
+        Busca liquidaciones por número de documento de entidad y tipos de liquidación.
+
+        Args:
+            numero_documento: DNI o RUC de la entidad asociada al proyecto.
+            tipos_liquidacion: Lista de tipos de liquidación a filtrar (ej. ["EDIFICACION", "HABILITACION_URBANA"]).
+            page: Número de página (1-indexed).
+            page_size: Elementos por página.
+
+        Returns:
+            LiquidacionGeneralPaginatedResult con items y total.
+        """
+        return await self.flujo._proceso_buscar_liquidaciones_por_documento_entidad(
+            numero_documento=numero_documento,
+            tipos_liquidacion=tipos_liquidacion,
+            page=page,
+            page_size=page_size,
         )

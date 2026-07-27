@@ -25,16 +25,40 @@ import type { CrearInspeccionObraResponse } from "../types/liquidacion-inspeccio
  * All numeric fields default to 0 for graceful fallback when backend
  * response lacks full breakdown data.
  */
+/** Current user info from session for PDF attribution */
+export interface PdfCurrentUser {
+  nombres: string | null;
+  apellidos: string | null;
+}
+
 export interface IOPPrintData {
   public_id: string;
   fecha_registro: string;
   expediente: string | null;
   municipalidad_codigo: string | null;
   municipalidad_nombre: string;
-  /** Cantidad de visitas from cotizacion */
+  /** RUC from entidad */
+  ruc: string | null;
+  /** Razon social from entidad */
+  razon_social: string | null;
+  /** Nombre del propietario (contacto principal or proyecto nombre) */
+  nombre_propietario: string | null;
+  /** Dpto / Prov / Distrito from municipalidad */
+  departamento: string | null;
+  /** Direccion de la obra from proyecto */
+  direccion: string | null;
+  /** Cantidad de visitas / numero de supervisiones */
   cantidad_visitas: number;
   /** Categoria from cotizacion */
   categoria: string;
+  /** CIP y nombre del delegado supervisor */
+  cip_delegado: string | null;
+  /** Valor vigente de la UIT — not persisted in list item, shown blank */
+  uit_valor: string | null;
+  /** Monto equivalente a 1 supervision — not persisted, shown blank */
+  monto_equivalente: string | null;
+  /** Porcentaje a aplicar sobre la UIT — not persisted, shown blank */
+  porcentaje_aplicar: string | null;
   /** Costo por visita from tariff */
   costo_por_visita: number;
   /** Visitas minimas from tariff */
@@ -46,29 +70,99 @@ export interface IOPPrintData {
   total: number;
   liquidacion_total: number;
   total_a_pagar: number;
-  /** Proponente / entity name */
-  proponente_nombre: string;
-  /** Project name (denominacion) */
-  proyecto_nombre: string;
+  /** Inspector CIP number (kept for calc section fallback) */
+  inspector_cip: string | null;
+  /** Inspector full name (nombres + apellidos) (kept for calc section fallback) */
+  inspector_nombre: string | null;
+  /** Person who processed the liquidation — first contacto full name (not session user) */
+  tramitado_por: string | null;
+  /** Contact phone number */
+  telefono: string | null;
+  /** Person who printed/generated this document — session user */
+  hecho_por: string | null;
 }
 
 /**
  * Adapt from flat CrearInspeccionObraResponse (LiquidacionInspeccionObraListItem).
  * Reads visitas data from revisiones[0].tarifa, valores from flat structure.
+ * Extracts inspector and contact data for post-create PDF.
+ *
+ * @param created - The created IO response from backend
+ * @param currentUser - Optional current session user; if provided, takes priority for
+ *                     tramitado_por and hecho_por fields over contact fallback.
  */
 export function adaptIOToPrintData(
   created: CrearInspeccionObraResponse,
+  currentUser?: PdfCurrentUser,
 ): IOPPrintData {
   const primeraRevision = created.revisiones?.[0];
   const tarifa = primeraRevision?.tarifa;
+
+  // Get first inspector if available
+  const inspector = created.inspectores?.[0];
+  const inspectorCip = inspector?.perfil_ingeniero_cip ?? null;
+  const inspectorNombre = inspector
+    ? `${inspector.perfil_ingeniero_nombres ?? ''} ${inspector.perfil_ingeniero_apellidos ?? ''}`.trim()
+    : null;
+
+  // Session user display name for tramitado_por and hecho_por
+  const sessionUserDisplayName = currentUser
+    ? `${currentUser.nombres ?? ''} ${currentUser.apellidos ?? ''}`.trim()
+    : null;
+
+  // First contacto (principal first, then any available)
+  const contacto = created.contactos?.find(c => c.principal) ?? created.contactos?.[0];
+
+  // telefono: first contacto phone, fallback '—'
+  const telefono = contacto?.telefono ?? contacto?.celular ?? null;
+
+  // tramitado_por: first contacto full name, fallback '—' (NOT session user)
+  const tramitadoPor = contacto
+    ? `${contacto.nombres ?? ''} ${contacto.apellidos ?? ''}`.trim()
+    : null;
+
+  // hecho_por: session user only (document creator per spec)
+  const hechoPor = sessionUserDisplayName;
+
+  // Proponente / razon social from entidad
+  const razonSocial = created.entidad?.nombre ?? null;
+
+  // Owner / propietario: contacto principal first, then proyecto nombre
+  const nombrePropietario = contacto
+    ? `${contacto.nombres ?? ''} ${contacto.apellidos ?? ''}`.trim()
+    : created.proyecto?.nombre ?? null;
+
+  // CIP y nombre del delegado supervisor
+  const cipDelegado = inspectorCip && inspectorNombre
+    ? `${inspectorCip} - ${inspectorNombre}`
+    : inspectorCip
+    ? `${inspectorCip}`
+    : inspectorNombre
+    ? inspectorNombre
+    : null;
+
+  // UIT/monto/% fields are not persisted in LiquidacionInspeccionObraListItem — show blank labels
+  const uitValor = null;
+  const montoEquivalente = null;
+  const porcentajeAplicar = null;
+
   return {
     public_id: created.public_id,
     fecha_registro: created.fecha_registro,
     expediente: null, // Not available in IO list item (only Edificaciones)
     municipalidad_codigo: created.municipalidad.codigo,
     municipalidad_nombre: created.municipalidad.nombre,
+    ruc: created.entidad?.ruc ?? created.proyecto?.entidad?.ruc ?? null,
+    razon_social: razonSocial,
+    nombre_propietario: nombrePropietario,
+    departamento: created.municipalidad?.nombre ?? null,
+    direccion: created.proyecto?.direccion ?? null,
     cantidad_visitas: tarifa?.cantidad_visitas ?? 0,
     categoria: tarifa?.categoria ?? "—",
+    cip_delegado: cipDelegado,
+    uit_valor: uitValor,
+    monto_equivalente: montoEquivalente,
+    porcentaje_aplicar: porcentajeAplicar,
     costo_por_visita: tarifa?.costo_por_visita ?? 0,
     visitas_minimas: tarifa?.visitas_minimas ?? 0,
     derecho: created.valores.subtotal, // derecho = subtotal for IO
@@ -77,8 +171,11 @@ export function adaptIOToPrintData(
     total: created.valores.total,
     liquidacion_total: created.valores.total,
     total_a_pagar: created.valores.total_a_pagar,
-    proyecto_nombre: created.proyecto.nombre,
-    proponente_nombre: created.entidad?.nombre ?? "—",
+    inspector_cip: inspectorCip,
+    inspector_nombre: inspectorNombre,
+    tramitado_por: tramitadoPor,
+    telefono: telefono,
+    hecho_por: hechoPor,
   };
 }
 
@@ -149,21 +246,25 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
   const {
     public_id,
     fecha_registro,
-    expediente,
     municipalidad_codigo,
-    municipalidad_nombre,
+    ruc,
+    razon_social,
+    nombre_propietario,
+    departamento,
+    direccion,
     cantidad_visitas,
-    categoria,
-    costo_por_visita,
-    visitas_minimas,
-    derecho,
+    cip_delegado,
+    uit_valor,
+    monto_equivalente,
+    porcentaje_aplicar,
     subtotal,
     igv,
     total,
     liquidacion_total,
     total_a_pagar,
-    proyecto_nombre,
-    proponente_nombre,
+    tramitado_por,
+    telefono,
+    hecho_por,
   } = data;
 
   const root = ownerDocument.createElement("div");
@@ -190,7 +291,7 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
     boxSizing: "border-box",
   });
 
-  // Header
+  // ── Header ──────────────────────────────────────────────────────────────────
   const header = append(paper, "div", {
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) 330px",
@@ -231,7 +332,7 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
     fontSize: "16px",
     letterSpacing: "0.04em",
   });
-  appendText(brandText, "p", "COMISION DE ASUNTOS MUNICIPALES", {
+  appendText(brandText, "p", "COMISION DE DELEGADOS MUNICIPALES", {
     margin: "2px 0 0",
     fontFamily: "Arial, Helvetica, sans-serif",
     fontSize: "16px",
@@ -243,23 +344,24 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
     fontSize: "12px",
     lineHeight: "1.35",
   });
-  appendText(notice, "p", "IMPORTANTE: ESTA LIQUIDACION DEBERA", {
+  appendText(notice, "p", "IMPORTANTE ESTA LIQUIDACION Y SU", {
     margin: "0",
     fontWeight: "700",
     borderBottom: "1px solid #111827",
   });
-  appendText(notice, "p", "ADJUNTARLA AL COMPROBANTE DE PAGO", {
-    margin: "8px 0 0",
+  appendText(notice, "p", "COMPROBANTE DE PAGO ADJUNTARLA AL EXPEDIENTE", {
+    margin: "4px 0 0",
     fontWeight: "700",
     borderBottom: "1px solid #111827",
+    fontSize: "11px",
   });
-  appendText(notice, "p", "CTA 46201", {
+  appendText(notice, "p", "CTA 462021", {
     margin: "6px 0 0",
     fontSize: "20px",
     fontWeight: "700",
     letterSpacing: "0.12em",
   });
-  appendText(notice, "p", `Codigo de Pago ${municipalidad_codigo || "—"}`, {
+  appendText(notice, "p", `Codigo de Pago ${municipalidad_codigo || "L7"}`, {
     margin: "2px 0 0",
     fontSize: "11px",
   });
@@ -270,10 +372,11 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
     overflowWrap: "anywhere",
   });
 
+  // ── Title ──────────────────────────────────────────────────────────────────
   appendText(
     paper,
     "h2",
-    "LIQUIDACION DE DERECHOS POR INSPECCION DE OBRA",
+    "LIQUIDACION DE DERECHOS POR SUPERVISION DE OBRA DE INGENIERIA",
     {
       margin: "12px 0 8px",
       fontFamily: "Arial, Helvetica, sans-serif",
@@ -283,7 +386,7 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
     },
   );
 
-  // Details
+  // ── Body labels ─────────────────────────────────────────────────────────────
   const details = append(paper, "div", {
     display: "grid",
     gridTemplateColumns: "245px 1fr",
@@ -291,21 +394,19 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
     fontSize: "12px",
     lineHeight: "1.25",
   });
-  appendReceiptRow(details, "PROYECTO", proyecto_nombre || "—");
-  appendReceiptRow(details, "PROPONENTE", proponente_nombre || "—");
-  appendReceiptRow(details, "MUNICIPALIDAD", municipalidad_nombre || "—");
-  if (expediente) {
-    appendReceiptRow(details, "EXPEDIENTE", expediente);
-  }
-  // IO-specific: cantidad de visitas and categoria (NOT area/m²)
+  appendReceiptRow(details, "RUC", ruc || "—");
+  appendReceiptRow(details, "RAZON SOCIAL", razon_social || "—");
+  appendReceiptRow(details, "NOMBRE DEL PROPIETARIO", nombre_propietario || "—");
+  appendReceiptRow(details, "DPTO. / PROV. / DISTRITO", departamento || "—");
+  appendReceiptRow(details, "DIRECCION DE LA OBRA", direccion || "—");
   if (cantidad_visitas > 0) {
-    appendReceiptRow(details, "CANTIDAD DE VISITAS", `${cantidad_visitas}`);
+    appendReceiptRow(details, "NUMERO DE SUPERVISIONES", `${cantidad_visitas}`);
   }
-  if (categoria) {
-    appendReceiptRow(details, "CATEGORIA", categoria);
+  if (cip_delegado) {
+    appendReceiptRow(details, "CIP Y NOMBRE DEL DELEGADO SUPERVISOR", cip_delegado);
   }
 
-  // Middle section: calculation breakdown
+  // ── Middle: UIT info (left) + Right totals (right) ─────────────────────────
   const middle = append(
     paper,
     "div",
@@ -318,30 +419,17 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
     },
   );
 
-  const calc = append(middle, "div", { fontSize: "12px", lineHeight: "1.5" });
-  if (cantidad_visitas > 0 && costo_por_visita > 0) {
-    appendText(
-      calc,
-      "p",
-      `VISITAS: ${cantidad_visitas} x ${formatCurrency(costo_por_visita)}/visita`,
-      { margin: "0", fontWeight: "700", maxWidth: "620px" },
-    );
-  }
-  if (visitas_minimas > 0) {
-    appendText(calc, "p", `Visitas mínimas tariff: ${visitas_minimas}`, {
-      margin: "2px 0 0",
-    });
-  }
-  if (derecho > 0) {
-    appendText(calc, "p", `Derecho ${formatCurrency(derecho)} + IGV ***`, {
-      margin: "4px 0 0",
-    });
-  }
+  // Left: UIT-related fields (labels only when values unavailable)
+  const calc = append(middle, "div", { fontSize: "12px", lineHeight: "1.7" });
+  appendReceiptRow(calc, "VALOR VIGENTE DE LA UIT S/.", uit_valor || "—");
+  appendReceiptRow(calc, "Monto equivalente a 1 supervision S/.", monto_equivalente || "—");
+  appendReceiptRow(calc, "% A APLICAR SOBRE LA UIT", porcentaje_aplicar || "—");
 
+  // Right: Totals block
   const totals = append(middle, "div", { fontSize: "12px", lineHeight: "1.55" });
   appendTotalLine(totals, "SUBTOTAL S/.", formatCurrency(subtotal).replace("S/ ", ""));
   appendTotalLine(totals, "I.G.V. S/.", formatCurrency(igv).replace("S/ ", ""));
-  appendTotalLine(totals, "TOTAL S/.", formatCurrency(total).replace("S/ ", ""));
+  // Bordered box around the grand total line
   const totalBox = append(totals, "div", {
     display: "grid",
     gridTemplateColumns: "1fr auto",
@@ -354,7 +442,7 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
   appendText(totalBox, "span", "TOTAL S/.", { fontWeight: "700" });
   appendText(totalBox, "span", formatCurrency(liquidacion_total).replace("S/ ", ""));
 
-  // Total a pagar
+  // ── Big center TOTAL A PAGAR ────────────────────────────────────────────────
   const pay = append(paper, "div", {
     display: "grid",
     gridTemplateColumns: "1fr auto 1fr",
@@ -376,7 +464,7 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
   );
   append(pay, "div");
 
-  // Footer
+  // ── Footer ──────────────────────────────────────────────────────────────────
   const footer = append(
     paper,
     "div",
@@ -395,9 +483,9 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
     fontSize: "10px",
     fontWeight: "700",
   });
-  appendText(left, "p", "Tel.: 202-5066", { margin: "0", fontSize: "10px" });
-  appendText(left, "p", "Tramitado por —", { margin: "8px 0 0" });
-  appendText(left, "p", "TELEFONO      —", { margin: "10px 0 0" });
+  appendText(left, "p", "Tel: 202-5066", { margin: "0", fontSize: "10px" });
+  appendText(left, "p", `Tramitado por ${tramitado_por || '—'}`, { margin: "8px 0 0" });
+  appendText(left, "p", `TELEFONO      ${telefono || '—'}`, { margin: "10px 0 0" });
   appendText(left, "p", printedDate, { margin: "16px 0 0", letterSpacing: "0.08em" });
 
   appendText(
@@ -415,7 +503,7 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
   );
 
   const right = append(footer, "div", { lineHeight: "1.45" });
-  appendText(right, "p", "Hecho por —", { margin: "0" });
+  appendText(right, "p", `Hecho por ${hecho_por || '—'}`, { margin: "0" });
   appendText(right, "p", new Date().toLocaleTimeString("es-PE", { hour12: false }), {
     margin: "12px 0 0",
   });

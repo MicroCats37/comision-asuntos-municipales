@@ -153,6 +153,7 @@ class TestOrchestratorTarifasIdsFixed:
     async def test_inspeccion_obra_tarifas_ids_passes_tarifa_id(self):
         """
         InspeccionObraOrchestrator also passes tarifas_ids[0] as tarifa_id.
+        Phase 1: liquidacion_previa_id is now required.
         """
         from modules.liquidaciones.domain.services.orchestrators.inspeccion_obra_orchestrator import (
             InspeccionObraOrchestrator,
@@ -167,8 +168,10 @@ class TestOrchestratorTarifasIdsFixed:
         orchestrator = InspeccionObraOrchestrator(flujo=mock_flujo)
 
         specific_tariff_id = str(uuid.uuid4())
+        liquidacion_previa_id = str(uuid.uuid4())
 
         await orchestrator.crear_primera_revision(
+            liquidacion_previa_id=liquidacion_previa_id,
             proyecto_public_id="PROY-EXISTING",
             municipalidad_id=str(uuid.uuid4()),
             cantidad_visitas=3,
@@ -364,6 +367,7 @@ class TestInspeccionObraCategoriaValidation:
     async def test_categoria_empty_string_raises_400(self):
         """
         Empty categoria must raise HttpError 400.
+        Phase 1: liquidacion_previa_id is now required.
         """
         from modules.liquidaciones.domain.services.orchestrators.inspeccion_obra_orchestrator import (
             InspeccionObraOrchestrator,
@@ -379,6 +383,7 @@ class TestInspeccionObraCategoriaValidation:
 
         with pytest.raises(HttpError) as exc_info:
             await orchestrator.crear_primera_revision(
+                liquidacion_previa_id=str(uuid.uuid4()),
                 proyecto_public_id="PROY-EXISTING",
                 municipalidad_id=str(uuid.uuid4()),
                 cantidad_visitas=3,
@@ -394,6 +399,7 @@ class TestInspeccionObraCategoriaValidation:
     async def test_categoria_whitespace_only_raises_400(self):
         """
         Whitespace-only categoria must raise HttpError 400.
+        Phase 1: liquidacion_previa_id is now required.
         """
         from modules.liquidaciones.domain.services.orchestrators.inspeccion_obra_orchestrator import (
             InspeccionObraOrchestrator,
@@ -409,6 +415,7 @@ class TestInspeccionObraCategoriaValidation:
 
         with pytest.raises(HttpError) as exc_info:
             await orchestrator.crear_primera_revision(
+                liquidacion_previa_id=str(uuid.uuid4()),
                 proyecto_public_id="PROY-EXISTING",
                 municipalidad_id=str(uuid.uuid4()),
                 cantidad_visitas=3,
@@ -424,6 +431,7 @@ class TestInspeccionObraCategoriaValidation:
     async def test_categoria_valid_calls_flujo(self):
         """
         Valid categoria (e.g., 'A') passes validation and calls flujo.
+        Phase 1: liquidacion_previa_id is now required.
         """
         from modules.liquidaciones.domain.services.orchestrators.inspeccion_obra_orchestrator import (
             InspeccionObraOrchestrator,
@@ -438,6 +446,7 @@ class TestInspeccionObraCategoriaValidation:
         orchestrator = InspeccionObraOrchestrator(flujo=mock_flujo)
 
         result = await orchestrator.crear_primera_revision(
+            liquidacion_previa_id=str(uuid.uuid4()),
             proyecto_public_id="PROY-EXISTING",
             municipalidad_id=str(uuid.uuid4()),
             cantidad_visitas=3,

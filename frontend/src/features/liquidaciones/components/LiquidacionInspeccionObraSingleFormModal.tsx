@@ -1,42 +1,31 @@
 /**
  * LiquidacionInspeccionObraSingleFormModal — Single continuous form for Inspección de Obra.
  *
- * Refactored to match the canonical 2-section pattern (HU/Edificaciones):
- *   1. Datos del Trámite  — IO-specific fields + cotizacion
- *   2. Datos del Proyecto — inline proyecto via DatosDelProyectoSection
+ * Refactored Phase 5 to AppFormModal pattern with previous-liquidation search:
+ *   1. Previous Liquidation Search — DNI/RUC search + result selection
+ *   2. IO Fields — categoria, cantidad_visitas, tarifa/cotización, expediente, observacion, contactos
  *
- * Changes from original:
- * - Replaced 3-section + right preview panel with canonical 2-section layout
- * - Removed project search XOR — inline-only proyecto
- * - Removed ConfirmationPreview panel
- * - Hidden proyectistas UI; send `proyectistas: []` in payload
- * - Cotizacion triggers on Enter in cantidad_visitas (or button)
- * - Out-of-sync indicator when cantidad_visitas changes after quoting
- * - Post-create direct print via onCreated callback
- *
- * Architecture preserved:
- * - Zustand store (useInspeccionObraStepperStore): proyecto, contactos, tarifas, cotizacion
- * - React Hook Form + Zod
- * - Child modal: ContactoFormModal
- *
- * IO-specific fields preserved:
- * - cantidad_visitas (integer input)
- * - categoria (C1/C2/C3/C4 select)
- * - Tarifa selector filtered by category
- * - Cotizacion: visitas × costo_por_visita + derecho min/max
+ * Changes from previous version:
+ * - Replaced GenericModal/GenericForm with AppFormModal pattern
+ * - Added previous-liquidation search section (DNI/RUC only digits, 8 or 11 chars)
+ * - Removed inline proyecto and municipalidad fields (derived from liquidacion_previa_id)
+ * - Submit payload includes liquidacion_previa_id
+ * - Keeps existing cotizacion, tarifa selector, contactos functionality
  */
 "use client";
 
 import {
-  Banknote,
-  Building2,
   Calculator,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardCheck,
   FileText,
   Loader2,
-  MapPin,
   MessageSquare,
+  Search,
   Tag,
+  UserCheck,
   X,
 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,45 +33,36 @@ import { z } from "zod";
 import type { DefaultValues } from "react-hook-form";
 import { useForm, useWatch } from "react-hook-form";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { FieldValues } from "react-hook-form";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { GenericInput } from "@/components/genericForm/GenericInput";
-import { GenericModal } from "@/components/genericModal/GenericModal";
-import { GenericForm } from "@/components/genericForm/GenericForm";
 import { notify } from "@/errors";
+import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { useCrearInspeccionObraPrimeraRevision } from "../hooks/useInspeccionObra";
 import { useCotizarInspeccionObraPrimeraRevision } from "../hooks/useInspeccionObra";
-import { useMunicipalidades } from "../hooks/useMunicipalidades";
 import { useTarifasVigentesInspeccionObra } from "../hooks/useTarifasVigentes";
 import { useInspeccionObraStepperStore } from "../store";
 import type { ContactoInline } from "../types/contacto";
+import type { InspectorVigente } from "../types/liquidacion-general";
 import type {
   CotizacionIOResponse,
   CrearInspeccionObraPrimeraRevisionIn,
   CrearInspeccionObraResponse,
+  LiquidacionPreviaIOListItem,
   TarifaVigenteInspeccionObra,
 } from "../types/liquidacion-inspeccion-obra.types";
 import { ContactoFormModal } from "./ContactoFormModal";
 import { ContactosSection } from "./ContactosSection";
-import { DatosDelProyectoSection } from "./DatosDelProyectoSection";
-import { EntidadLookupField } from "./EntidadLookupField";
+import { useBuscarLiquidacionesPreviasIO } from "../hooks/useBuscarLiquidacionesPreviasIO";
+import {
+  formatCurrency,
+  formatDate,
+  getEstadoBadgeClass,
+  kindLabel,
+} from "./LiquidacionGeneralCard";
+import { InspectorSelectorModal } from "./InspectorSelectorModal";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatMunicipalidadLabel(m: {
-  codigo?: string | null;
-  nombre: string;
-  provincia?: { nombre: string } | null;
-  distrito?: { nombre: string } | null;
-}) {
-  const args: string[] = [];
-  if (m.codigo) args.push(m.codigo);
-  args.push(m.nombre);
-  const sub: string[] = [];
-  if (m.provincia?.nombre) sub.push(m.provincia.nombre);
-  if (m.distrito?.nombre) sub.push(m.distrito.nombre);
-  return args.join(" - ") + (sub.length ? ` - ${sub.join(" / ")}` : "");
-}
 
 function formatSoles(value: number) {
   return `S/ ${value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`;
@@ -101,25 +81,25 @@ const TIPO_LABEL = "Inspección de Obra";
 
 // ── Form Schema ────────────────────────────────────────────────────────────────
 
+const cantidadVisitasSchema = z
+  .union([z.number(), z.nan()])
+  .refine((value) => Number.isFinite(value), {
+    message: "Cantidad de visitas es requerida",
+  })
+  .pipe(
+    z
+      .number()
+      .int("Cantidad de visitas debe ser un número entero")
+      .min(1, "Cantidad de visitas debe ser al menos 1"),
+  );
+
 const formSchema = z.object({
-  municipalidad_id: z.string().uuid("Debe seleccionar una municipalidad"),
-  cantidad_visitas: z
-    .number()
-    .int("Cantidad de visitas debe ser un número entero")
-    .positive("Cantidad de visitas debe ser al menos 1"),
+  cantidad_visitas: cantidadVisitasSchema,
   categoria: z.enum(["C1", "C2", "C3", "C4"], {
     message: "Categoría es requerida",
   }),
   expediente: z.string().optional(),
   observacion: z.string().optional(),
-  // Inline proyecto fields
-  proy_denominacion: z.string().min(1, "Denominación es requerida"),
-  proy_direccion: z.string().optional(),
-  proy_distrito_id: z.string().optional(),
-  proy_nombre_propietario: z.string().min(1, "Nombre del propietario es requerido"),
-  entidad_tipo_documento: z.enum(["RUC", "DNI"]),
-  entidad_numero_documento: z.string().min(1, "Número de documento es requerido"),
-  entidad_razon_social: z.string().min(1, "Razón social o nombre completo es requerido"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -134,7 +114,6 @@ export interface LiquidacionInspeccionObraSingleFormModalProps {
    * Called after successful creation.
    * - created: full liquidacion data (flat list item) with proyecto, municipalidad,
    *   valores, revisiones[0].tarifa for immediate post-create PDF — no refetch needed.
-   *   cotizacion param removed: tariff data is now in created.revisiones[0].tarifa.
    */
   onCreated?: (created: CrearInspeccionObraResponse) => void;
 }
@@ -150,30 +129,28 @@ export function LiquidacionInspeccionObraSingleFormModal({
   // ── Store ──────────────────────────────────────────────────────────────────
   const store = useInspeccionObraStepperStore();
   const {
-    proyectoInline,
-    setProyectoInline,
     selectedContactos,
     selectedTarifasIds,
     setSelectedTarifasId,
     setSelectedTarifasIds,
   } = store;
 
+  // ── Previous liquidation search state ───────────────────────────────────────
+  const [searchDocNumber, setSearchDocNumber] = useState("");
+  const [selectedLiquidacionPrevia, setSelectedLiquidacionPrevia] =
+    useState<LiquidacionPreviaIOListItem | null>(null);
+  const [liquidacionPreviaId, setLiquidacionPreviaId] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  // ── Inspector selection state ───────────────────────────────────────────────
+  const [selectedInspectorId, setSelectedInspectorId] = useState<string | null>(null);
+  const [selectedInspector, setSelectedInspector] = useState<InspectorVigente | null>(null);
+  const [showInspectorModal, setShowInspectorModal] = useState(false);
+
   // ── Local cotizacion state ─────────────────────────────────────────────────
   const [cotizacionQuote, setCotizacionQuote] = useState<CotizacionIOResponse | null>(null);
   const [cotizacionError, setCotizacionError] = useState<string | null>(null);
   const [cotizacionCalculating, setCotizacionCalculating] = useState(false);
-  // Track cantidad_visitas AND categoria at time of quoting for out-of-sync indicator
-  const quotedCantidadVisitasRef = useRef<number | null>(null);
-  const quotedCategoriaRef = useRef<string | null>(null);
-  // Track last cotized (categoria, cantidad_visitas, tarifaId) to prevent duplicate calls
-  const lastCotizedRef = useRef<{
-    categoria: string | null;
-    cantidad_visitas: number | null;
-    tarifaId: string | null;
-  }>({ categoria: null, cantidad_visitas: null, tarifaId: null });
-  // Track pending categoria to prevent race condition: if older mutation resolves
-  // after newer one, the older's result is discarded (pendingCategoriaRef won't match).
-  const pendingCategoriaRef = useRef<string | null>(null);
 
   // ── Child modal state ──────────────────────────────────────────────────────
   const [showContactoModal, setShowContactoModal] = useState(false);
@@ -183,96 +160,62 @@ export function LiquidacionInspeccionObraSingleFormModal({
   const formMethods = useForm<FormData>({
     resolver: zodResolver(formSchema) as never,
     defaultValues: {
-      municipalidad_id: "" as never,
       cantidad_visitas: 1 as never,
       categoria: undefined as never,
       expediente: "",
       observacion: "",
-      proy_denominacion: "",
-      proy_direccion: "",
-      proy_distrito_id: "",
-      proy_nombre_propietario: "",
-      entidad_tipo_documento: "RUC" as never,
-      entidad_numero_documento: "",
-      entidad_razon_social: "",
     },
     mode: "onBlur",
   });
 
   const {
     control: liqControl,
-    formState: { errors: liqErrors },
     getValues: liqGetValues,
-    setValue: liqSetValue,
-    watch: liqWatch,
     reset: liqReset,
   } = formMethods;
 
-  // ── Data hooks ────────────────────────────────────────────────────────────
-  const { data: municipalidades, isLoading: isLoadingMunicipalidades } =
-    useMunicipalidades();
-
   // ── Watched values ──────────────────────────────────────────────────────────
-  const watchedCategoria = liqWatch("categoria");
-  const watchedCantidadVisitas = liqWatch("cantidad_visitas");
+  const watchedCategoria = useWatch({ control: liqControl, name: "categoria" });
+  const watchedCantidadVisitas = useWatch({ control: liqControl, name: "cantidad_visitas" });
 
-  // ── Proyecto inline sync ────────────────────────────────────────────────────
-  const watchedProyDenominacion = useWatch({ control: liqControl as never, name: "proy_denominacion" });
-  const watchedProyDireccion = useWatch({ control: liqControl as never, name: "proy_direccion" });
-  const watchedProyNombrePropietario = useWatch({ control: liqControl as never, name: "proy_nombre_propietario" });
-  const watchedProyDistritoId = useWatch({ control: liqControl as never, name: "proy_distrito_id" });
-  const watchedEntidadTipoDoc = useWatch({ control: liqControl as never, name: "entidad_tipo_documento" });
-  const watchedEntidadNumDoc = useWatch({ control: liqControl as never, name: "entidad_numero_documento" });
-  const watchedEntidadRazonSocial = useWatch({ control: liqControl as never, name: "entidad_razon_social" });
+  // Keep latest watched values to avoid stale closures (stepper pattern).
+  // Declared after useWatch so the initial assignment captures real values.
+  const latestRef = useRef({ categoria: null as string | null, cantidad_visitas: null as number | null });
+  latestRef.current = { categoria: watchedCategoria, cantidad_visitas: watchedCantidadVisitas };
 
-  useEffect(() => {
-    const denominacion = (watchedProyDenominacion as string) || "";
-    const direccion = (watchedProyDireccion as string) || "";
-    const nombrePropietario = (watchedProyNombrePropietario as string) || "";
-    const distritoId = (watchedProyDistritoId as string) || undefined;
-    const tipoDoc = (watchedEntidadTipoDoc as string) || "RUC";
-    const numDoc = (watchedEntidadNumDoc as string) || "";
-    const razonSocial = (watchedEntidadRazonSocial as string) || "";
+  // ── Previous liquidation search ────────────────────────────────────────────
+  const canSearch = searchDocNumber.length === 8 || searchDocNumber.length === 11;
+  const {
+    items: searchResults,
+    total: searchTotal,
+    isLoading: isSearching,
+    refetch: searchLiquidacionesPrevias,
+    page: currentPage,
+    totalPages: totalPages,
+    setPage,
+  } = useBuscarLiquidacionesPreviasIO({
+    numeroDocumento: canSearch ? searchDocNumber : undefined,
+    enabled: false, // Manual trigger only
+  });
 
-    const current = proyectoInline ?? {
-      denominacion: "",
-      direccion: "",
-      nombre_propietario: "",
-      entidad: { tipo_documento: "RUC" as const, numero_documento: "", razon_social: "" },
-    };
+  const handleSearch = useCallback(() => {
+    if (!canSearch) return;
+    setHasSearched(true);
+    searchLiquidacionesPrevias();
+  }, [canSearch, searchLiquidacionesPrevias]);
 
-    if (
-      current.denominacion !== denominacion ||
-      current.direccion !== direccion ||
-      current.nombre_propietario !== nombrePropietario ||
-      current.distrito_id !== distritoId ||
-      current.entidad.tipo_documento !== tipoDoc ||
-      current.entidad.numero_documento !== numDoc ||
-      current.entidad.razon_social !== razonSocial
-    ) {
-      setProyectoInline({
-        denominacion,
-        direccion,
-        nombre_propietario: nombrePropietario,
-        distrito_id: distritoId,
-        entidad: {
-          tipo_documento: tipoDoc as "RUC" | "DNI",
-          numero_documento: numDoc,
-          razon_social: razonSocial,
-        },
-      });
-    }
-  }, [
-    watchedProyDenominacion,
-    watchedProyDireccion,
-    watchedProyNombrePropietario,
-    watchedProyDistritoId,
-    watchedEntidadTipoDoc,
-    watchedEntidadNumDoc,
-    watchedEntidadRazonSocial,
-    proyectoInline,
-    setProyectoInline,
-  ]);
+  const handleSelectLiquidacionPrevia = useCallback(
+    (item: LiquidacionPreviaIOListItem) => {
+      setSelectedLiquidacionPrevia(item);
+      setLiquidacionPreviaId(item.id);
+      // Reset cotization and inspector selection when switching liquidacion previa
+      setCotizacionQuote(null);
+      setSelectedInspectorId(null);
+      setSelectedInspector(null);
+      notify.success(`Liquidación previa "${item.proyecto?.nombre ?? item.public_id}" seleccionada`);
+    },
+    [],
+  );
 
   // ── Tarifas ────────────────────────────────────────────────────────────────
   const hasValidCategoria = !!watchedCategoria;
@@ -280,58 +223,30 @@ export function LiquidacionInspeccionObraSingleFormModal({
     hasValidCategoria ? { categoria: watchedCategoria } : undefined,
   );
 
-  const enabledTarifasCount = useMemo(
-    () => (tarifasVigentes || []).filter((t) => t.habilitada).length,
-    [tarifasVigentes],
-  );
-  const shouldShowTarifaSelector = isLoadingTarifas || enabledTarifasCount !== 1;
   const selectedTarifaId = selectedTarifasIds[0] ?? null;
 
-  // Auto-select single enabled tariff when category changes or selection becomes invalid.
-  // The guard removed: hasInitializedTarifa — it permanently blocked re-selection after
-  // first init. Now we track validity per-category: if exactly one enabled tariff for the
-  // current category and the current selection is empty or invalid for this category,
-  // auto-select it. This preserves manual selection when multiple tariffs exist.
+  // Auto-select唯一 enabled tariff when list loads, nothing is selected, and a valid category exists
   useEffect(() => {
     if (!open) return;
     if (!watchedCategoria || isLoadingTarifas || !tarifasVigentes) return;
+    if (selectedTarifasIds.length !== 0) return;
 
-    const habiles = tarifasVigentes.filter((t) => t.habilitada);
-    if (habiles.length !== 1) return;
-
-    const habilesForCategory = habiles.filter((t) => t.categoria === watchedCategoria);
-    if (habilesForCategory.length !== 1) return;
-
-    const onlyTarifa = habilesForCategory[0];
-    const currentSelected = selectedTarifasIds[0];
-
-    const isCurrentValid =
-      !!currentSelected &&
-      habiles.some((t) => t.tarifa_id === currentSelected && t.categoria === watchedCategoria);
-
-    if (!isCurrentValid) {
-      setSelectedTarifasIds([]);
-      setSelectedTarifasId(onlyTarifa.tarifa_id);
+    const enabledTarifas = tarifasVigentes.filter((t) => t.habilitada);
+    if (enabledTarifas.length === 1) {
+      setSelectedTarifasId(enabledTarifas[0].tarifa_id);
     }
-  }, [open, watchedCategoria, isLoadingTarifas, tarifasVigentes, selectedTarifasIds, setSelectedTarifasId, setSelectedTarifasIds]);
-
-  // NOTE: Do NOT clear cotizacionQuote when category changes.
-  // The quote stays visible so user can see what was previously quoted.
-  // isOutOfSync (computed below) will mark it as pending if either
-  // cantidad_visitas or categoria differs from the quoted values.
-  // User can press Enter in "Cantidad de Visitas" to recotize MANUALLY,
-  // OR the auto-recotizar effect below will do it automatically when
-  // categoria changes and a valid tariff is auto-selected for the new categoria.
+  }, [open, watchedCategoria, isLoadingTarifas, tarifasVigentes, selectedTarifasIds, setSelectedTarifasId]);
 
   // ── Cotización mutation ────────────────────────────────────────────────────
   const cotizacionMutation = useCotizarInspeccionObraPrimeraRevision();
 
   // ── Cotizacion handler ─────────────────────────────────────────────────────
+  // Uses latestRef pattern (stepper form approach) to avoid stale closures.
   const handleCotizar = useCallback(async () => {
     const cantidadVisitas = Number(liqGetValues("cantidad_visitas"));
-    const categoria = liqGetValues("categoria");
+    const categoria = liqGetValues("categoria") ?? latestRef.current.categoria;
 
-    if (!cantidadVisitas || cantidadVisitas < 1) {
+    if (!Number.isFinite(cantidadVisitas) || cantidadVisitas < 1) {
       notify.error("Ingresa un número de visitas válido (mínimo 1)");
       return;
     }
@@ -339,24 +254,8 @@ export function LiquidacionInspeccionObraSingleFormModal({
       notify.error("Selecciona una categoría");
       return;
     }
-    if (selectedTarifasIds.length !== 1) {
+    if (selectedTarifasIds.length < 1) {
       notify.error("Selecciona una tarifa");
-      return;
-    }
-
-    const tarifaId = selectedTarifasIds[0];
-
-    // Race condition guard: if a newer cotization is in flight, discard this result.
-    // pendingCategoriaRef is set BEFORE the mutation and checked AFTER it resolves.
-    pendingCategoriaRef.current = categoria;
-
-    // Skip if already cotized for this exact combination (dedup).
-    // This prevents duplicate API calls when multiple triggers fire for same inputs.
-    if (
-      lastCotizedRef.current.categoria === categoria &&
-      lastCotizedRef.current.cantidad_visitas === cantidadVisitas &&
-      lastCotizedRef.current.tarifaId === tarifaId
-    ) {
       return;
     }
 
@@ -365,15 +264,10 @@ export function LiquidacionInspeccionObraSingleFormModal({
     try {
       const result = await cotizacionMutation.mutateAsync({
         cantidad_visitas: cantidadVisitas,
-        categoria,
+        categoria: categoria as "C1" | "C2" | "C3" | "C4",
         tarifas_ids: selectedTarifasIds,
       });
-      // Only apply result if this mutation is still the most recent one.
-      if (pendingCategoriaRef.current !== categoria) return;
       setCotizacionQuote(result);
-      quotedCantidadVisitasRef.current = cantidadVisitas;
-      quotedCategoriaRef.current = categoria;
-      lastCotizedRef.current = { categoria, cantidad_visitas: cantidadVisitas, tarifaId };
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error al calcular la cotización";
       setCotizacionError(msg);
@@ -381,37 +275,7 @@ export function LiquidacionInspeccionObraSingleFormModal({
     } finally {
       setCotizacionCalculating(false);
     }
-  }, [liqGetValues, selectedTarifasIds, cotizacionMutation]);
-
-  // ── Entidad field sync ─────────────────────────────────────────────────────
-  const handleFieldChange = useCallback(
-    (field: string, value: string) => {
-      const current = proyectoInline ?? {
-        denominacion: "",
-        direccion: "",
-        nombre_propietario: "",
-        entidad: { tipo_documento: "RUC", numero_documento: "", razon_social: "" },
-      };
-
-      if (field === "entidad_tipo_documento") {
-        setProyectoInline({
-          ...current,
-          entidad: { ...current.entidad, tipo_documento: value as "RUC" | "DNI" },
-        });
-      } else if (field === "entidad_numero_documento") {
-        setProyectoInline({
-          ...current,
-          entidad: { ...current.entidad, numero_documento: value },
-        });
-      } else if (field === "entidad_razon_social") {
-        setProyectoInline({
-          ...current,
-          entidad: { ...current.entidad, razon_social: value },
-        });
-      }
-    },
-    [proyectoInline, setProyectoInline],
-  );
+  }, [cotizacionMutation, liqGetValues, selectedTarifasIds]);
 
   // ── Contact handlers ───────────────────────────────────────────────────────
   const handleContactoSaved = useCallback(
@@ -447,82 +311,10 @@ export function LiquidacionInspeccionObraSingleFormModal({
   // ── Submit ────────────────────────────────────────────────────────────────
   const crearMutation = useCrearInspeccionObraPrimeraRevision();
 
-  const handleClose = (nextOpen: boolean) => {
-    if (!nextOpen) onOpenChange(false);
-  };
-
-  // ── Out-of-sync indicator (computed before handleSubmit so the callback can reference it) ──
-  const isCantidadOutOfSync =
-    cotizacionQuote != null &&
-    quotedCantidadVisitasRef.current != null &&
-    watchedCantidadVisitas !== quotedCantidadVisitasRef.current;
-
-  const isCategoriaOutOfSync =
-    cotizacionQuote != null &&
-    quotedCategoriaRef.current != null &&
-    watchedCategoria !== quotedCategoriaRef.current;
-
-  const isOutOfSync = isCantidadOutOfSync || isCategoriaOutOfSync;
-
-  // ── Auto-cotizar when categoria changes after a quote exists ─────────────────
-  // When categoria changes and a valid tariff is auto-selected for the new categoria,
-  // automatically re-cotize instead of waiting for Enter. This provides instant feedback.
-  // Guards:
-  // - Requires existing quote (cotizacionQuote != null)
-  // - Requires categoria actually changed (isCategoriaOutOfSync)
-  // - Requires cantidad_visitas > 0 (valid input)
-  // - Requires selected tariff valid for current categoria
-  // - Dedup via lastCotizedRef prevents duplicate calls for same (categoria, cantidad, tarifa)
-  // - pendingCategoriaRef prevents older mutation result from overwriting newer
-  useEffect(() => {
-    if (!open) return;
-    if (!cotizacionQuote) return; // No quote yet - wait for manual cotizar via Enter
-    if (!isCategoriaOutOfSync) return; // Categoria hasn't changed - nothing to auto-do
-    if (cotizacionCalculating) return; // Mutation already in flight
-    if (cotizacionMutation.isPending) return; // Another cotization is pending
-
-    const cantidadVisitas = Number(liqGetValues("cantidad_visitas"));
-    if (!cantidadVisitas || cantidadVisitas < 1) return; // Invalid visitas - wait for manual Enter
-
-    if (selectedTarifasIds.length !== 1) return; // No tariff selected yet
-    const tarifaId = selectedTarifasIds[0];
-    if (!tarifaId) return;
-
-    // Verify selected tariff is valid for current categoria
-    const habiles = (tarifasVigentes || []).filter((t) => t.habilitada);
-    const isTarifaValidForCategoria = habiles.some(
-      (t) => t.tarifa_id === tarifaId && t.categoria === watchedCategoria,
-    );
-    if (!isTarifaValidForCategoria) return; // Tariff not valid for this categoria - wait
-
-    // Dedup: skip if already cotized for this exact combination
-    if (
-      lastCotizedRef.current.categoria === watchedCategoria &&
-      lastCotizedRef.current.cantidad_visitas === cantidadVisitas &&
-      lastCotizedRef.current.tarifaId === tarifaId
-    ) {
-      return;
-    }
-
-    // All conditions met - auto cotizar
-    handleCotizar();
-  }, [
-    open,
-    watchedCategoria,
-    isCategoriaOutOfSync,
-    cotizacionQuote,
-    cotizacionCalculating,
-    cotizacionMutation.isPending,
-    selectedTarifasIds,
-    tarifasVigentes,
-    liqGetValues,
-    handleCotizar,
-  ]);
-
   const handleSubmit = useCallback(
     async (data: FormData) => {
-      if (!proyectoInline || !proyectoInline.denominacion) {
-        notify.error("Completa los datos del proyecto antes de crear la liquidación");
+      if (!liquidacionPreviaId) {
+        notify.error("Selecciona una liquidación previa antes de crear la liquidación");
         return;
       }
 
@@ -531,60 +323,48 @@ export function LiquidacionInspeccionObraSingleFormModal({
         return;
       }
 
-      // Block submit when quote is out of sync — force user to recotize
-      if (isOutOfSync) {
-        notify.error("La cotización está desactualizada. Presiona Enter en 'Cantidad de Visitas' para recotizar antes de crear.");
-        return;
-      }
-
       const contactosPayload = selectedContactos.map(
         ({ localId: _localId, ...contacto }) => contacto,
       );
 
       const submitData: CrearInspeccionObraPrimeraRevisionIn = {
-        proyecto_inline: {
-          denominacion: proyectoInline.denominacion,
-          direccion: proyectoInline.direccion || undefined,
-          distrito_id: proyectoInline.distrito_id,
-          nombre_propietario: proyectoInline.nombre_propietario,
-          entidad: proyectoInline.entidad,
-        },
-        municipalidad_id: data.municipalidad_id,
+        liquidacion_previa_id: liquidacionPreviaId,
         cantidad_visitas: Number(data.cantidad_visitas),
         categoria: data.categoria,
         expediente: data.expediente,
         observacion: data.observacion,
         tarifas_ids: selectedTarifasIds,
         contactos: contactosPayload,
-        // Proyectistas: removed from this form — empty array to satisfy type contract
-      } as unknown as CrearInspeccionObraPrimeraRevisionIn;
+        inspectores_ids: selectedInspectorId ? [selectedInspectorId] : [],
+      };
 
       try {
         const response = await crearMutation.mutateAsync(submitData);
         notify.success("Liquidación creada correctamente");
         store.reset();
         liqReset();
+        setSelectedLiquidacionPrevia(null);
+        setLiquidacionPreviaId(null);
+        setSearchDocNumber("");
+        setSelectedInspectorId(null);
         onSuccess?.();
-        // onCreated receives the API response data (flat list item — no refetch needed for print)
         if (response?.data) {
           onCreated?.(response.data);
         }
-        onOpenChange(false);
       } catch {
         // Error handled by mutation
       }
     },
     [
-      isOutOfSync,
-      proyectoInline,
+      liquidacionPreviaId,
       selectedTarifasIds,
       selectedContactos,
+      selectedInspectorId,
       crearMutation,
       store,
       liqReset,
       onSuccess,
       onCreated,
-      onOpenChange,
     ],
   );
 
@@ -596,16 +376,16 @@ export function LiquidacionInspeccionObraSingleFormModal({
       setCotizacionQuote(null);
       setCotizacionError(null);
       setCotizacionCalculating(false);
-      quotedCantidadVisitasRef.current = null;
-      quotedCategoriaRef.current = null;
-      lastCotizedRef.current = { categoria: null, cantidad_visitas: null, tarifaId: null };
-      pendingCategoriaRef.current = null;
+      setSelectedLiquidacionPrevia(null);
+      setLiquidacionPreviaId(null);
+      setSearchDocNumber("");
+      setHasSearched(false);
+      setSelectedInspectorId(null);
+      setSelectedInspector(null);
       resetStepper();
       liqReset();
     }
   }, [open, resetStepper, liqReset, setSelectedTarifasIds]);
-
-  const hasProject = !!proyectoInline?.denominacion;
 
   // ── Tarifa selection ───────────────────────────────────────────────────────
   const handleTarifaSelect = useCallback(
@@ -615,315 +395,439 @@ export function LiquidacionInspeccionObraSingleFormModal({
     [setSelectedTarifasId],
   );
 
+  const handleSelectInspector = useCallback((id: string | null, inspector: InspectorVigente | null) => {
+    setSelectedInspectorId(id);
+    setSelectedInspector(inspector);
+  }, []);
+
   // ── Initial data ───────────────────────────────────────────────────────────
   const initialData = useMemo<DefaultValues<FormData>>(() => ({
-    municipalidad_id: "",
     cantidad_visitas: 1,
     categoria: undefined as never,
     expediente: "",
     observacion: "",
-    proy_denominacion: "",
-    proy_direccion: "",
-    proy_distrito_id: "",
-    proy_nombre_propietario: "",
-    entidad_tipo_documento: "RUC" as never,
-    entidad_numero_documento: "",
-    entidad_razon_social: "",
   }), []);
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <>
-      <GenericModal
+      <AppFormModal<FormData>
         open={open}
-        onOpenChange={handleClose}
-        preventClose={crearMutation.isPending}
+        onOpenChange={onOpenChange}
+        title="Nueva Liquidación"
+        description={`Registra una nueva liquidación de ${TIPO_LABEL.toLowerCase()}`}
+        eyebrow="Inspección de Obra"
+        icon={<ClipboardCheck className="h-5 w-5 text-primary" />}
+        primaryLabel="Crear Liquidación"
+        primaryLoadingLabel="Creando..."
+        primaryLoading={crearMutation.isPending}
+        primaryDisabled={!liquidacionPreviaId || crearMutation.isPending}
+        onPrimary={() => {}}
+        schema={formSchema}
+        initialData={initialData}
+        formMethods={formMethods}
+        onSubmit={handleSubmit}
+        size="xl"
+        bodyClassName="sm:w-[min(1500px,calc(100vw-32px))]"
+        formClassName="flex flex-col"
       >
-        <GenericModal.Content
-          size="xl"
-          className="sm:w-[min(1500px,calc(100vw-32px))]"
-        >
-          {/* ── Header ──────────────────────────────────────────────────────── */}
-          <GenericModal.Header
-            title=""
-            className="bg-primary/[0.03] border-b border-border px-6 py-4 sm:px-8"
-          >
-            <div className="flex items-center gap-3 w-full">
-              <div className="p-2 sm:p-2.5 bg-primary/10 rounded-xl sm:rounded-2xl border border-primary/20 shadow-sm shrink-0">
-                <FileText className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                <span className="hidden sm:block text-[10px] font-bold uppercase tracking-widest text-primary leading-none">
-                  Inspección de Obra
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground leading-tight">
-                  Nueva Liquidación
-                </h2>
-                <p className="hidden sm:block max-w-prose text-pretty line-clamp-3 text-sm text-muted-foreground leading-relaxed">
-                  Registra una nueva liquidación de inspección de obra
-                </p>
-              </div>
-              <div className="w-9 sm:w-11 shrink-0" aria-hidden="true" />
-            </div>
-          </GenericModal.Header>
+        {({ methods, isSubmitting }) => {
+          const {
+            register: liqReg,
+            control: liqControl,
+            formState: { errors: liqErrors },
+          } = methods;
 
-          {/* ── Body ─────────────────────────────────────────────────────── */}
-          <GenericModal.Body>
-            <GenericForm<FormData>
-              formId="liquidacion-inspeccion-obra-form"
-              schema={formSchema as never}
-              initialData={initialData}
-              formMethods={formMethods as never}
-              onSubmit={handleSubmit as never}
-              skipFooter
-              formClassName="flex flex-col"
-            >
-              {() => {
-                const {
-                  register: liqReg,
-                  control: liqControl,
-                  formState: { errors: liqErrors },
-                } = formMethods;
+          return (
+            <div className="flex flex-col gap-4">
+              {/* ── Phase 1: Previous Liquidation Search (always visible) ────────── */}
+              <div className="rounded-xl border border-border/50 bg-card p-4 space-y-4">
+                <div className="flex items-center gap-2 border-b border-border/40 pb-2 text-primary">
+                  <Search className="h-4 w-4" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+                    Liquidación Previa
+                  </h3>
+                </div>
 
-                return (
-                  <div className="grid grid-areas-liquidacion-modal grid-cols-1 gap-4 min-h-0">
-                    {/* ── Datos del Trámite ──────────────────────────────── */}
-                    <div className="grid-area-tramite rounded-xl border border-border/50 bg-card p-4 space-y-4">
-                      <div className="flex items-center gap-2 border-b border-border/40 pb-2 text-primary">
-                        <FileText className="h-4 w-4" />
-                        <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
-                          Datos del Trámite
-                        </h3>
+                <div className="space-y-4">
+                  {/* Search input row */}
+                  <div className="flex gap-3 items-end">
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                        <Search className="h-4 w-4 text-muted-foreground" />
+                        DNI / RUC
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="Ingrese DNI (8 dígitos) o RUC (11 dígitos)"
+                        value={searchDocNumber}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 11);
+                          setSearchDocNumber(val);
+                          setPage(1);
+                          setSelectedLiquidacionPrevia(null);
+                          setLiquidacionPreviaId(null);
+                        }}
+                        className="h-10"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="default"
+                      onClick={handleSearch}
+                      disabled={!canSearch || isSearching}
+                      className="h-10 rounded-xl font-semibold shrink-0 gap-2"
+                    >
+                      {isSearching ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                      Buscar
+                    </Button>
+                  </div>
+
+                  {/* Search results list */}
+                  {searchResults.length > 0 && !selectedLiquidacionPrevia && (
+                    <div className="border border-border/50 rounded-xl overflow-hidden">
+                      <div className="max-h-80 overflow-y-auto divide-y divide-border/30">
+                        {searchResults.map((item) => {
+                          const firstRevision = item.revisiones?.[0];
+                          const especialidades = firstRevision?.especialidades ?? [];
+                          const valores = item.valores;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => handleSelectLiquidacionPrevia(item)}
+                              className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors duration-150"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1 space-y-1.5">
+                                  {/* Header row: kind + estado */}
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                      {kindLabel(item.tipo_liquidacion)}
+                                    </span>
+                                    <span
+                                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${getEstadoBadgeClass(item.estado)}`}
+                                    >
+                                      {item.estado}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      Rev. #{item.numero_revision}
+                                    </span>
+                                  </div>
+                                  {/* Project name */}
+                                  <p className="text-sm font-semibold text-foreground truncate">
+                                    {item.proyecto?.nombre ?? "Sin nombre"}
+                                  </p>
+                                  {/* Project code + dirección */}
+                                  {item.proyecto && (
+                                    <p className="text-[10px] text-muted-foreground font-mono truncate">
+                                      {item.proyecto.public_id}
+                                      {item.proyecto.direccion && ` · ${item.proyecto.direccion}`}
+                                    </p>
+                                  )}
+                                  {/* Entidad */}
+                                  {item.entidad && (
+                                    <p className="text-[10px] text-muted-foreground truncate">
+                                      {item.entidad.tipo} {item.entidad.ruc ?? ""} · {item.entidad.nombre ?? "—"}
+                                    </p>
+                                  )}
+                                  {/* Municipalidad */}
+                                  <p className="text-[10px] text-muted-foreground truncate">
+                                    {item.municipalidad?.nombre ?? "Sin municipalidad"}
+                                  </p>
+                                  {/* Especialidades */}
+                                  {especialidades.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 pt-0.5">
+                                      {especialidades.slice(0, 3).map((esp) => (
+                                        <span
+                                          key={esp.id}
+                                          className="text-[9px] px-1.5 py-0.5 rounded bg-secondary/50 border border-border/60 text-muted-foreground"
+                                        >
+                                          {esp.nombre}
+                                        </span>
+                                      ))}
+                                      {especialidades.length > 3 && (
+                                        <span className="text-[9px] px-1.5 py-0.5 text-muted-foreground">
+                                          +{especialidades.length - 3}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-right shrink-0 space-y-1">
+                                  <p className="text-[10px] font-mono font-semibold text-primary">
+                                    {item.public_id}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {formatDate(item.fecha_registro)}
+                                  </p>
+                                  {valores && (
+                                    <p className="text-[10px] font-semibold text-foreground">
+                                      {formatCurrency(valores.total_a_pagar ?? valores.total ?? 0)}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Left column */}
-                        <div className="space-y-4 min-w-0">
-                          <GenericInput
-                            field={{
-                              name: "municipalidad_id",
-                              label: "Municipalidad",
-                              type: "searchable-select",
-                              required: true,
-                              placeholder: isLoadingMunicipalidades
-                                ? "Cargando..."
-                                : "Seleccione municipalidad",
-                              options: (municipalidades || []).map((municipalidad) => ({
-                                label: formatMunicipalidadLabel(municipalidad),
-                                value: municipalidad.id,
-                              })),
-                              icon: Building2,
-                              isLoading: isLoadingMunicipalidades,
-                              labelClassName: "text-foreground font-medium",
-                              containerClassName: "min-w-0 w-full",
-                            }}
-                            register={liqReg as never}
-                            control={liqControl as never}
-                            errors={liqErrors}
-                          />
-                          <GenericInput
-                            field={{
-                              name: "cantidad_visitas",
-                              label: "Cantidad de Visitas",
-                              type: "number",
-                              required: true,
-                              placeholder: "Ej: 3 — presiona Enter",
-                              icon: Calculator,
-                              min: 1,
-                              step: 1,
-                              labelClassName: "text-foreground font-medium",
-                              containerClassName: "min-w-0 w-full",
-                              onKeyDown: (e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  handleCotizar();
-                                }
-                              },
-                            }}
-                            register={liqReg as never}
-                            control={liqControl as never}
-                            errors={liqErrors}
-                          />
-                          <GenericInput
-                            field={{
-                              name: "categoria",
-                              label: "Categoría",
-                              type: "select",
-                              required: true,
-                              placeholder: "Seleccione categoría",
-                              icon: Tag,
-                              labelClassName: "text-foreground font-medium",
-                              containerClassName: "min-w-0 w-full",
-                              options: CATEGORIA_OPTIONS,
-                            }}
-                            register={liqReg as never}
-                            control={liqControl as never}
-                            errors={liqErrors}
-                          />
-                          <GenericInput
-                            field={{
-                              name: "expediente",
-                              label: "Expediente",
-                              type: "text",
-                              placeholder: "Número de expediente (opcional)",
-                              icon: FileText,
-                              labelClassName: "text-foreground font-medium",
-                              containerClassName: "min-w-0 w-full",
-                            }}
-                            register={liqReg as never}
-                            control={liqControl as never}
-                            errors={liqErrors}
-                          />
-                          <GenericInput
-                            field={{
-                              name: "observacion",
-                              label: "Observación",
-                              type: "textarea",
-                              placeholder: "Observaciones adicionales (opcional)",
-                              icon: MessageSquare,
-                              labelClassName: "text-foreground font-medium",
-                              containerClassName: "min-w-0 w-full",
-                            }}
-                            register={liqReg as never}
-                            control={liqControl as never}
-                            errors={liqErrors}
-                          />
+                      {/* Pagination controls */}
+                      {totalPages > 1 && (
+                        <div className="px-4 py-2.5 bg-muted/30 border-t border-border/30 flex items-center justify-between">
+                          <span className="text-[10px] text-muted-foreground">
+                            Página {currentPage} de {totalPages} · {searchTotal} resultados
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setPage(currentPage - 1)}
+                              disabled={currentPage <= 1 || isSearching}
+                              className="h-7 w-7 p-0 rounded-lg"
+                            >
+                              <ChevronLeft className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setPage(currentPage + 1)}
+                              disabled={currentPage >= totalPages || isSearching}
+                              className="h-7 w-7 p-0 rounded-lg"
+                            >
+                              <ChevronRight className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
+                      )}
+                      {searchTotal > searchResults.length && totalPages <= 1 && (
+                        <div className="px-4 py-2 bg-muted/30 text-xs text-muted-foreground text-center border-t border-border/30">
+                          {searchTotal} resultados — refine tu búsqueda
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                        {/* Right column — Cotizacion + Tarifa */}
-                        <div className="space-y-4 min-w-0">
-                          {/* Tarifa selector — only show when multiple enabled */}
-                          {shouldShowTarifaSelector ? (
-                            <IOCotizacionTarifaSelector
-                              tarifas={tarifasVigentes || []}
-                              selectedTarifaId={selectedTarifaId}
-                              onSelectTarifa={handleTarifaSelect}
-                              isLoading={isLoadingTarifas}
-                              cantidadVisitas={watchedCantidadVisitas}
-                              hasValidCategoria={hasValidCategoria}
-                            />
-                          ) : (
-                            <div className="rounded-xl border border-border/50 bg-card p-4">
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Tag className="h-3.5 w-3.5" />
-                                <span>Tarifa auto-seleccionada</span>
-                              </div>
-                              {selectedTarifaId && (
-                                <p className="text-sm font-medium mt-1">
-                                  {tarifasVigentes?.find((t) => t.tarifa_id === selectedTarifaId)
-                                    ? formatSoles(
-                                        tarifasVigentes.find((t) => t.tarifa_id === selectedTarifaId)!
-                                          .costo_por_visita,
-                                      )
-                                    : ""}{" "}
-                                  por visita
-                                </p>
-                              )}
+                  {/* Selected previous liquidation summary */}
+                  {selectedLiquidacionPrevia && (
+                    <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-semibold text-primary">Liquidación Previa Seleccionada</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedLiquidacionPrevia(null);
+                            setLiquidacionPreviaId(null);
+                            setCotizacionQuote(null);
+                            setHasSearched(false);
+                          }}
+                          className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Cambiar
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Proyecto</p>
+                          <p className="font-medium text-foreground truncate">
+                            {selectedLiquidacionPrevia.proyecto?.nombre ?? "—"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Municipalidad</p>
+                          <p className="font-medium text-foreground truncate">
+                            {selectedLiquidacionPrevia.municipalidad?.nombre ?? "—"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Revisión</p>
+                          <p className="font-medium text-foreground">
+                            #{selectedLiquidacionPrevia.numero_revision}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">ID Público</p>
+                          <p className="font-medium text-foreground font-mono text-xs">
+                            {selectedLiquidacionPrevia.public_id}
+                          </p>
+                        </div>
+                        {selectedLiquidacionPrevia.proyecto?.entidad && (
+                          <>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Entidad</p>
+                              <p className="font-medium text-foreground truncate">
+                                {selectedLiquidacionPrevia.proyecto.entidad.nombre ??
+                                  selectedLiquidacionPrevia.proyecto.entidad.ruc ??
+                                  "—"}
+                              </p>
                             </div>
-                          )}
-
-                          {/* Cotizacion display */}
-                          <IOCotizacionSection
-                            quote={cotizacionQuote}
-                            isLoading={cotizacionCalculating}
-                            onCotizar={handleCotizar}
-                            hasErrors={!!cotizacionError}
-                            isLoadingData={isLoadingTarifas}
-                            isOutOfSync={isOutOfSync}
-                          />
-                        </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">RUC</p>
+                              <p className="font-medium text-foreground font-mono text-xs">
+                                {selectedLiquidacionPrevia.proyecto.entidad.ruc ?? "—"}
+                              </p>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
+                  )}
 
-                    <div className="h-4"></div>
+                  {/* No results message */}
+                  {hasSearched && canSearch && searchResults.length === 0 && !isSearching && (
+                    <p className="text-sm text-muted-foreground italic">
+                      No se encontraron liquidaciones previas para este documento.
+                    </p>
+                  )}
+                </div>
+              </div>
 
-                    <DatosDelProyectoSection
-                      register={liqReg}
-                      control={liqControl as never}
-                      errors={liqErrors as never}
-                      denominacionField={{
-                        name: "proy_denominacion",
-                        label: "Denominación",
-                        placeholder: "Nombre del proyecto",
-                        required: true,
-                      }}
-                      direccionField={{
-                        name: "proy_direccion",
-                        label: "Dirección",
-                        placeholder: "Dirección del proyecto (opcional)",
-                      }}
-                      entidadSlot={
-                        <EntidadLookupField
+              {/* ── Phase 2: IO Fields + Contactos (only when previous liquidation selected) ── */}
+              {liquidacionPreviaId && (
+                <>
+                  {/* IO Fields Section */}
+                  <div className="rounded-xl border border-border/50 bg-card p-4 space-y-4">
+                    <div className="flex items-center gap-2 border-b border-border/40 pb-2 text-primary">
+                      <FileText className="h-4 w-4" />
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+                        Datos del Trámite
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Left column */}
+                      <div className="space-y-4 min-w-0">
+                        <GenericInput
+                          field={{
+                            name: "cantidad_visitas",
+                            label: "Cantidad de Visitas",
+                            type: "number",
+                            required: true,
+                            placeholder: "Ej: 3 — presiona Enter",
+                            icon: Calculator,
+                            min: 1,
+                            step: 1,
+                            labelClassName: "text-foreground font-medium",
+                            containerClassName: "min-w-0 w-full",
+                            onKeyDown: (e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleCotizar();
+                              }
+                            },
+                          }}
+                          register={liqReg as never}
                           control={liqControl as never}
-                          errors={liqErrors as never}
-                          onFieldChange={handleFieldChange}
-                          razonSocialSideSlot={
-                            <GenericInput
-                              field={{
-                                name: "proy_nombre_propietario",
-                                label: "Nombre del Propietario",
-                                type: "text",
-                                required: true,
-                                placeholder: "Nombre del propietario o representante legal",
-                                icon: Building2,
-                                labelClassName: "text-foreground font-medium",
-                                containerClassName: "min-w-0 w-full",
-                              }}
-                              register={liqReg as never}
-                              control={liqControl as never}
-                              errors={liqErrors}
-                            />
-                          }
+                          errors={liqErrors}
                         />
-                      }
-                      selectedContactos={selectedContactos}
-                      onAddContacto={handleAddContacto}
-                      onRemoveContacto={handleRemoveContacto}
-                      onEditContacto={handleEditContacto}
-                    />
+                        <GenericInput
+                          field={{
+                            name: "categoria",
+                            label: "Categoría",
+                            type: "select",
+                            required: true,
+                            placeholder: "Seleccione categoría",
+                            icon: Tag,
+                            labelClassName: "text-foreground font-medium",
+                            containerClassName: "min-w-0 w-full",
+                            options: CATEGORIA_OPTIONS,
+                          }}
+                          register={liqReg as never}
+                          control={liqControl as never}
+                          errors={liqErrors}
+                        />
+                        <GenericInput
+                          field={{
+                            name: "expediente",
+                            label: "Expediente",
+                            type: "text",
+                            placeholder: "Número de expediente (opcional)",
+                            icon: FileText,
+                            labelClassName: "text-foreground font-medium",
+                            containerClassName: "min-w-0 w-full",
+                          }}
+                          register={liqReg as never}
+                          control={liqControl as never}
+                          errors={liqErrors}
+                        />
+                        <GenericInput
+                          field={{
+                            name: "observacion",
+                            label: "Observación",
+                            type: "textarea",
+                            placeholder: "Observaciones adicionales (opcional)",
+                            icon: MessageSquare,
+                            labelClassName: "text-foreground font-medium",
+                            containerClassName: "min-w-0 w-full",
+                          }}
+                          register={liqReg as never}
+                          control={liqControl as never}
+                          errors={liqErrors}
+                        />
+                      </div>
+
+                      {/* Right column — Cotizacion + Tarifa */}
+                      <div className="space-y-4 min-w-0">
+                        {/* Tarifa selector */}
+                        {!hasValidCategoria ? (
+                          <p className="text-xs text-muted-foreground italic">
+                            Selecciona una categoría para ver las tarifas disponibles.
+                          </p>
+                        ) : (
+                          <IOCotizacionTarifaSelector
+                            tarifas={tarifasVigentes || []}
+                            selectedTarifaId={selectedTarifaId}
+                            onSelectTarifa={handleTarifaSelect}
+                            isLoading={isLoadingTarifas}
+                            cantidadVisitas={watchedCantidadVisitas}
+                          />
+                        )}
+
+                        {/* Cotizacion display */}
+                        <IOCotizacionSection
+                          quote={cotizacionQuote}
+                          hasErrors={!!cotizacionError}
+                        />
+                      </div>
+                    </div>
                   </div>
-                );
-              }}
-            </GenericForm>
-          </GenericModal.Body>
 
-          {/* ── Footer ───────────────────────────────────────────────────── */}
-          <GenericModal.Footer className="px-6 py-3.5 sm:px-8 bg-muted/20 border-t border-border">
-            <div className="flex flex-row sm:justify-end items-center gap-2 sm:gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={crearMutation.isPending}
-                className="flex-1 h-10 sm:h-11 rounded-xl font-semibold border border-border/60 hover:border-border hover:bg-background transition-all duration-200 sm:max-w-[120px] text-muted-foreground hover:text-foreground"
-                aria-label="Cancelar"
-              >
-                <X className="h-4 w-4 sm:hidden" />
-                <span className="hidden sm:inline">Cancelar</span>
-              </Button>
-              <Button
-                type="submit"
-                form="liquidacion-inspeccion-obra-form"
-                disabled={crearMutation.isPending || !hasProject}
-                className="flex-1 h-10 sm:h-12 rounded-xl sm:rounded-2xl font-bold shadow-lg shadow-primary/25 gap-2 sm:max-w-[200px] text-base transition-all duration-200 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 disabled:hover:translate-y-0 disabled:hover:shadow-lg"
-                aria-label="Crear Liquidación"
-              >
-                {crearMutation.isPending && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-                {!crearMutation.isPending && (
-                  <CheckCircle2 className="h-4 w-4 sm:hidden" />
-                )}
-                <span className="hidden sm:inline">
-                  {crearMutation.isPending ? "Creando..." : "Crear Liquidación"}
-                </span>
-              </Button>
+                  {/* ── Contactos Section ────────────────────────────── */}
+                  <ContactosSection
+                    selectedContactos={selectedContactos}
+                    onAddContacto={handleAddContacto}
+                    onRemoveContacto={handleRemoveContacto}
+                    onEditContacto={handleEditContacto}
+                  />
+
+                  {/* ── Inspector Selector Button/Summary ─────────────────── */}
+                  <InspectorSelectorRow
+                    selectedInspector={selectedInspector}
+                    onOpenModal={() => setShowInspectorModal(true)}
+                    onClear={() => {
+                      setSelectedInspectorId(null);
+                      setSelectedInspector(null);
+                    }}
+                  />
+                </>
+              )}
             </div>
-          </GenericModal.Footer>
-
-          <GenericModal.CloseX />
-        </GenericModal.Content>
-      </GenericModal>
+          );
+        }}
+      </AppFormModal>
 
       {/* ── Child Modals ────────────────────────────────────────────────────── */}
       <ContactoFormModal
@@ -935,6 +839,14 @@ export function LiquidacionInspeccionObraSingleFormModal({
             ? selectedContactos[editingContactoIndex]
             : undefined
         }
+      />
+      <InspectorSelectorModal
+        open={showInspectorModal}
+        onOpenChange={setShowInspectorModal}
+        liquidacionPreviaId={liquidacionPreviaId ?? ""}
+        selectedInspectorId={selectedInspectorId}
+        selectedInspector={selectedInspector}
+        onSelectInspector={handleSelectInspector}
       />
     </>
   );
@@ -948,25 +860,13 @@ function IOCotizacionTarifaSelector({
   onSelectTarifa,
   isLoading,
   cantidadVisitas,
-  hasValidCategoria,
 }: {
   tarifas: TarifaVigenteInspeccionObra[];
   selectedTarifaId: string | null;
   onSelectTarifa: (tarifaId: string) => void;
   isLoading: boolean;
   cantidadVisitas?: number;
-  hasValidCategoria: boolean;
 }) {
-  if (!hasValidCategoria) {
-    return (
-      <div className="rounded-xl border border-border/50 bg-card p-4">
-        <p className="text-xs text-muted-foreground italic">
-          Selecciona una categoría para ver las tarifas disponibles.
-        </p>
-      </div>
-    );
-  }
-
   if (isLoading) {
     return (
       <div className="rounded-xl border border-border/50 bg-card p-4 animate-pulse space-y-3">
@@ -1051,41 +951,27 @@ function IOCotizacionTarifaSelector({
 
 function IOCotizacionSection({
   quote,
-  isLoading,
-  onCotizar,
   hasErrors,
-  isLoadingData,
-  isOutOfSync,
 }: {
   quote: CotizacionIOResponse | null;
-  isLoading: boolean;
-  onCotizar: () => void;
   hasErrors: boolean;
-  isLoadingData: boolean;
-  isOutOfSync: boolean;
 }) {
-  const canCotizar = !isLoadingData;
-
   return (
     <div className="rounded-xl border border-border/50 bg-card p-4 space-y-4">
       <div className="flex items-center gap-2 border-b border-border/40 pb-2">
         <Calculator className="h-4 w-4 text-primary" />
         <h4 className="text-sm font-semibold text-foreground">Cotización</h4>
-        {isOutOfSync && (
-          <span className="ml-auto text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-            ⚠ Pendiente
-          </span>
-        )}
       </div>
 
       {/* Cotizacion display */}
-      <IOCotizacionDisplay quote={quote} isOutOfSync={isOutOfSync} />
+      <IOCotizacionDisplay quote={quote} />
 
       {hasErrors && (
         <p className="text-xs text-destructive font-medium">
           Error al calcular la cotización
         </p>
       )}
+
     </div>
   );
 }
@@ -1094,26 +980,19 @@ function IOCotizacionSection({
 
 function IOCotizacionDisplay({
   quote,
-  isOutOfSync,
 }: {
   quote: CotizacionIOResponse | null;
-  isOutOfSync: boolean;
 }) {
   if (!quote) {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground italic">
-        Presiona Enter en &quot;Cantidad de Visitas&quot; para cotizar.
+        La cotización se calculará automáticamente al completar los datos.
       </div>
     );
   }
 
   return (
     <div className="space-y-3 border-t pt-3">
-      {isOutOfSync && (
-        <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          ⚠ La cotización está desactualizada. Presiona Enter en &quot;Cantidad de Visitas&quot; para recotizar.
-        </p>
-      )}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <span className="text-sm font-medium">Revisión #{quote.numero_revision}</span>
         <span className="text-xs text-muted-foreground">
@@ -1168,6 +1047,96 @@ function IOCotizacionDisplay({
           <span className="text-primary text-lg">{formatSoles(quote.totales.total_a_pagar)}</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Inspector Selector Row ────────────────────────────────────────────────────
+
+interface InspectorSelectorRowProps {
+  selectedInspector: InspectorVigente | null;
+  onOpenModal: () => void;
+  onClear: () => void;
+}
+
+function InspectorSelectorRow({
+  selectedInspector,
+  onOpenModal,
+  onClear,
+}: InspectorSelectorRowProps) {
+  return (
+    <div className="rounded-xl border border-border/50 bg-card p-4 space-y-2">
+      <div className="flex items-center gap-2 border-b border-border/40 pb-2 text-primary">
+        <UserCheck className="h-4 w-4" />
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+          Inspector
+        </h3>
+      </div>
+
+      {selectedInspector ? (
+        <div className="flex items-center justify-between gap-3 py-1">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <UserCheck className="h-4 w-4" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-semibold text-foreground truncate">
+                {selectedInspector.nombre_completo}
+              </span>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                <span className="inline-flex items-center px-2 py-0.5 rounded bg-muted/70 text-foreground/80 font-medium whitespace-nowrap">
+                  CIP {selectedInspector.cip}
+                </span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded bg-secondary/70 text-muted-foreground/80 whitespace-nowrap">
+                  Reg. {selectedInspector.numero_registro}
+                </span>
+                {selectedInspector.especialidad && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-secondary/70 text-muted-foreground/80 whitespace-nowrap">
+                    {selectedInspector.especialidad.nombre}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onClear}
+              className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Quitar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onOpenModal}
+              className="h-8 px-2 text-xs"
+            >
+              Cambiar
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-3 py-2">
+          <p className="text-sm text-muted-foreground italic">
+            Ningún inspector seleccionado
+          </p>
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            onClick={onOpenModal}
+            className="h-8 px-3 text-xs gap-1.5"
+          >
+            <UserCheck className="h-3.5 w-3.5" />
+            Seleccionar inspector
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

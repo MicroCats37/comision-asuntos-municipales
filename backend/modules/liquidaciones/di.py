@@ -30,6 +30,7 @@ from .domain.services.orchestrators.impacto_vial_orchestrator import ImpactoVial
 from .domain.services.orchestrators.taludes_orchestrator import TaludesOrchestrator
 from .domain.services.orchestrators.inspeccion_obra_orchestrator import InspeccionObraOrchestrator
 from .domain.services.orchestrators.delegados_batch_orchestrator import DelegadosBatchOrchestrator
+from .domain.services.orchestrators.inspectores_batch_orchestrator import InspectoresBatchOrchestrator
 
 
 class LiquidacionesModule(Module):
@@ -83,3 +84,4 @@ class LiquidacionesModule(Module):
         binder.bind(InspeccionObraOrchestrator, to=InspeccionObraOrchestrator, scope=singleton)
         # Orchestrators batch
         binder.bind(DelegadosBatchOrchestrator, to=DelegadosBatchOrchestrator, scope=singleton)
+        binder.bind(InspectoresBatchOrchestrator, to=InspectoresBatchOrchestrator, scope=singleton)
