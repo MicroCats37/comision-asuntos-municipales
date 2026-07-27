@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
-import { LiquidacionesGeneralesView } from "@/features/liquidaciones/views/LiquidacionesGeneralesView";
 import { getUserSession } from "@/lib/auth";
 
 /**
- * Página de Liquidaciones Generales - protegida por auth
+ * Redirect to /liquidaciones/edificaciones (same as login flow).
  * Ruta: /liquidaciones
  */
 export default async function LiquidacionesPage() {
@@ -13,5 +12,5 @@ export default async function LiquidacionesPage() {
     redirect("/login");
   }
 
-  return <LiquidacionesGeneralesView />;
+  redirect("/liquidaciones/edificaciones");
 }
