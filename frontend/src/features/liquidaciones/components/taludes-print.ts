@@ -306,7 +306,7 @@ function buildTaludesPdfElement(data: TaludesPrintData, ownerDocument: Document)
     display: "grid",
     gridTemplateColumns: "245px 1fr",
     gap: "3px 12px",
-    fontSize: "12px",
+    fontSize: "14px",
     lineHeight: "1.25",
   });
   appendReceiptRow(details, "PROYECTO", proyecto_nombre || "—");
@@ -333,7 +333,7 @@ function buildTaludesPdfElement(data: TaludesPrintData, ownerDocument: Document)
     },
   );
 
-  const calc = append(middle, "div", { fontSize: "12px", lineHeight: "1.5" });
+  const calc = append(middle, "div", { fontSize: "14px", lineHeight: "1.5" });
   // Percentage-based calculation line
   // porcentaje_liquidacion is a decimal fraction (0.05 = 5%), per backend/domain convention
   if (valor_proyecto > 0 && porcentaje_liquidacion > 0) {

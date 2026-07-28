@@ -231,6 +231,16 @@ class ValoresM2CleanOut(BaseSchema):
     total_a_pagar: float
 
 
+class VariablesFinancierasUsadasOut(BaseSchema):
+    """Variables financieras (IGV/UIT) usadas al momento de crear la liquidacion."""
+    igv_valor: float = Field(..., description="Tasa IGV como decimal (ej. 0.18)")
+    igv_porcentaje: float = Field(..., description="Tasa IGV como porcentaje (ej. 18.0)")
+    igv_periodo_inicio: Optional[str] = Field(None, description="Fecha inicio período IGV (YYYY-MM-DD)")
+    uit_valor: int = Field(..., description="Valor UIT en soles")
+    uit_anio: Optional[int] = Field(None, description="Año de la UIT (ej. 2026)")
+    uit_periodo_inicio: Optional[str] = Field(None, description="Fecha inicio período UIT (YYYY-MM-DD)")
+
+
 class LiquidacionSpecificListItemBase(BaseSchema):
     """
     Base limpia para items de lista de tipos específicos (HU, MS, IV, IO, Taludes).
@@ -253,6 +263,7 @@ class LiquidacionSpecificListItemBase(BaseSchema):
     inspectores: list[InspectorListItemOut] = Field(default_factory=list)
     contactos: list[ContactoListItemOut] = Field(default_factory=list)
     revisiones: list[RevisionListItemCleanOut] = Field(default_factory=list)
+    variables_financieras_usadas: Optional[VariablesFinancierasUsadasOut] = None
 
 
 class LiquidacionGeneralListItemOut(BaseSchema):
@@ -284,6 +295,7 @@ class LiquidacionGeneralListItemOut(BaseSchema):
     igv: float
     total: float
     total_a_pagar: float
+    variables_financieras_usadas: Optional[VariablesFinancierasUsadasOut] = None
 
 
 # ── Delegados Vigentes ────────────────────────────────────────────────────────

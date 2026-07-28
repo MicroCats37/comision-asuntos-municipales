@@ -280,7 +280,7 @@ function buildMSPdfElement(data: MSPrintData, ownerDocument: Document) {
     display: "grid",
     gridTemplateColumns: "245px 1fr",
     gap: "3px 12px",
-    fontSize: "12px",
+    fontSize: "14px",
     lineHeight: "1.25",
   });
   appendReceiptRow(details, "PROYECTO", proyecto_nombre || "—");
@@ -307,7 +307,7 @@ function buildMSPdfElement(data: MSPrintData, ownerDocument: Document) {
     },
   );
 
-  const calc = append(middle, "div", { fontSize: "12px", lineHeight: "1.5" });
+  const calc = append(middle, "div", { fontSize: "14px", lineHeight: "1.5" });
   if (area_solicitada > 0 && costo_por_m2 > 0) {
     appendText(
       calc,

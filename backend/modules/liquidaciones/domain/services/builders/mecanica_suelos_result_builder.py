@@ -86,6 +86,7 @@ class MecanicaSuelosResultBuilder:
             proyecto_entidad_ruc=entidad_ruc,
             municipalidad_id=liquidacion.municipalidad_id,
             municipalidad_nombre=liquidacion.municipalidad.nombre if liquidacion.municipalidad else "",
+            municipalidad_codigo=liquidacion.municipalidad.codigo if liquidacion.municipalidad else None,
             expediente=liquidacion.expediente,
             observacion=liquidacion.observacion,
             igv_valor=Decimal(str(igv_valor)),

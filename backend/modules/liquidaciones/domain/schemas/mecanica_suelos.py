@@ -35,6 +35,7 @@ class LiquidacionMecanicaSuelosResult(BaseModel):
     proyecto_entidad_ruc: Optional[str]
     municipalidad_id: uuid.UUID
     municipalidad_nombre: str
+    municipalidad_codigo: Optional[str] = None
     expediente: Optional[str] = None
     observacion: Optional[str]
     igv_valor: Decimal

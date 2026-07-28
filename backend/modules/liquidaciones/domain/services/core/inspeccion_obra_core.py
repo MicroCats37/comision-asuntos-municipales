@@ -461,7 +461,7 @@ class InspeccionObraCoreService:
                 'municipalidad': {
                     'id': str(liq.municipalidad.id) if liq.municipalidad else '',
                     'nombre': liq.municipalidad.nombre if liq.municipalidad else '',
-                    'codigo': None,
+                    'codigo': liq.municipalidad.codigo if liq.municipalidad else None,
                     'provincia': None,
                     'distrito': None,
                 },

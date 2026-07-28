@@ -3,6 +3,7 @@
  * Endpoint base: /liquidaciones/inspeccion-obra
  */
 import type { ContactoInline } from "./contacto";
+import type { VariablesFinancierasUsadas } from "./liquidacion-general";
 
 // Re-export ContactoInline for convenience
 export type { ContactoInline } from "./contacto";
@@ -113,6 +114,7 @@ export type LiquidacionGeneralListItemOut = {
   igv: number;
   total: number;
   total_a_pagar: number;
+  variables_financieras_usadas: VariablesFinancierasUsadas | null;
 };
 
 // ── Entidad Inline (IO-specific) ──────────────────────────────────────────────
@@ -406,6 +408,8 @@ export interface LiquidacionInspeccionObraListItem {
   inspectores: InspectorListItem[];
   contactos: ContactoListItem[];
   revisiones: RevisionListItem[];
+  /** Variables financieras (IGV/UIT) usadas al momento de crear la liquidación */
+  variables_financieras_usadas: VariablesFinancierasUsadas | null;
 }
 
 /**

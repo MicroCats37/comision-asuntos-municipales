@@ -501,6 +501,16 @@ class RevisionListItemData(BaseModel):
 # =============================================================================
 
 
+class VariablesFinancierasUsadasData(BaseModel):
+    """Variables financieras (IGV/UIT) usadas en una liquidacion — DTO interno."""
+    igv_valor: float
+    igv_porcentaje: float
+    igv_periodo_inicio: Optional[str] = None
+    uit_valor: int
+    uit_anio: Optional[int] = None
+    uit_periodo_inicio: Optional[str] = None
+
+
 class LiquidacionGeneralListItem(BaseModel):
     """
     Item de lista paginada para liquidaciones generales.
@@ -530,6 +540,7 @@ class LiquidacionGeneralListItem(BaseModel):
     igv: float = 0.0
     total: float = 0.0
     total_a_pagar: float = 0.0
+    variables_financieras_usadas: Optional[VariablesFinancierasUsadasData] = None
 
 
 class LiquidacionGeneralPaginatedResult(BaseModel):
@@ -566,6 +577,7 @@ class LiquidacionGeneralResult(BaseModel):
     # Municipalidad
     municipalidad_id: Optional[uuid.UUID] = None
     municipalidad_nombre: Optional[str] = None
+    municipalidad_codigo: Optional[str] = None
     # Campos financieros
     subtotal: Optional[Decimal] = None
     igv: Optional[Decimal] = None

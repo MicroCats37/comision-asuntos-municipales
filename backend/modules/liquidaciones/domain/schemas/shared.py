@@ -67,8 +67,30 @@ class ProyectoInlineData(BaseModel):
 # =============================================================================
 
 
+class IgvInfo(BaseModel):
+    """Información del IGV vigente para respuestas HTTP."""
+    id: uuid.UUID
+    valor: float  # Fracción decimal (ej. 0.18)
+    porcentaje: float  # Porcentaje (ej. 18.0)
+    periodo_inicio: date
+
+
+class UitInfo(BaseModel):
+    """Información de la UIT vigente para respuestas HTTP."""
+    id: uuid.UUID
+    valor: float  # Valor en soles (ej. 5350)
+    anio: int  # Año de vigencia
+    periodo_inicio: date
+
+
+class VariablesFinancierasInfo(BaseModel):
+    """Variables financieras vigentes (IGV y UIT) para list/detail de liquidaciones."""
+    igv: Optional[IgvInfo]
+    uit: Optional[UitInfo]
+
+
 class VariablesFinancierasResult(BaseModel):
-    """Variables financieras vigentes (IGV y UIT)."""
+    """Variables financieras vigentes (IGV y UIT) — formato interno del dominio."""
 
     igv_valor: Decimal
     igv_periodo_inicio: date

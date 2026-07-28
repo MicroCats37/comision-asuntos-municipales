@@ -424,7 +424,7 @@ function buildLiquidacionPdfElement(
     display: "flex",
     flexDirection: "column",
     gap: "1px",
-    fontSize: "12px",
+    fontSize: "14px",
     lineHeight: "1.35",
   });
   appendCommonFields(details, item);
@@ -441,7 +441,7 @@ function buildLiquidacionPdfElement(
     display: "flex",
     flexDirection: "column",
     gap: "3px",
-    fontSize: "13px",
+    fontSize: "15px",
     lineHeight: "1.4",
   });
   renderSpecificFieldsByTipo(tipo_liquidacion, specificFields, firstRevision, proyecto);
@@ -456,7 +456,7 @@ function buildLiquidacionPdfElement(
     display: "flex",
     flexDirection: "column",
     gap: "2px",
-    fontSize: "13px",
+    fontSize: "15px",
     lineHeight: "1.4",
     paddingTop: "0",
   });

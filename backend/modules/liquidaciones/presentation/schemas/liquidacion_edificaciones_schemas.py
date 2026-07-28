@@ -355,6 +355,9 @@ class LiquidacionEdificacionOut(BaseSchema):
     igv: float
     total: float
     total_a_pagar: float
+    # ── Variables financieras usadas al crear la liquidacion ──────────────────────
+    # Solo tiene igv_valor/uit_valor; periodo_inicio no disponible en LiquidacionEdificacionesResult
+    variables_financieras_usadas: Optional[dict] = None
 
 
 class VariablesFinancierasOut(BaseSchema):

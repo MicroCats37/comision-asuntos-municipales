@@ -8,6 +8,7 @@ import { contactoInlineSchema, proyectistaInlineSchema } from "./liquidacion-edi
 import {
   liquidacionGeneralListItemPayloadSchema,
   paginatedLiquidacionGeneralListPayloadSchema,
+  variablesFinancierasUsadasSchema,
 } from "./liquidacion-general.schema";
 
 // ── Inner Schemas (data fields only) ─────────────────────────────────────────
@@ -293,6 +294,7 @@ const liquidacionInspeccionObraListItemSchema = z.object({
   inspectores: z.array(inspectorListItemSchema).default([]),
   contactos: z.array(contactoListItemSchema),
   revisiones: z.array(revisionListItemSchema),
+  variables_financieras_usadas: variablesFinancierasUsadasSchema.nullable(),
 });
 
 /** Payload para respuesta de lista */

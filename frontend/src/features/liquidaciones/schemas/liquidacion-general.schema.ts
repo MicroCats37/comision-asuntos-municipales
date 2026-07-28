@@ -101,6 +101,18 @@ const revisionSchema = z.object({
 });
 
 /**
+ * Variables financieras (IGV/UIT) usadas al crear la liquidacion.
+ */
+export const variablesFinancierasUsadasSchema = z.object({
+  igv_valor: z.number(),
+  igv_porcentaje: z.number(),
+  igv_periodo_inicio: z.string().nullable(),
+  uit_valor: z.number(),
+  uit_anio: z.number().nullable(),
+  uit_periodo_inicio: z.string().nullable(),
+});
+
+/**
  * Schema para item de lista paginada de liquidaciones GENERALES (Phase 5).
  * Coincide con LiquidacionGeneralListItemOut del backend.
  */
@@ -128,6 +140,7 @@ export const liquidacionGeneralListItemPayloadSchema = z.object({
   igv: z.number(),
   total: z.number(),
   total_a_pagar: z.number(),
+  variables_financieras_usadas: variablesFinancierasUsadasSchema.nullable(),
 });
 
 /** Schema payload para lista paginada general */

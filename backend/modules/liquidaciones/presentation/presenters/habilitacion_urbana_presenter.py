@@ -40,6 +40,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general_schemas impo
     RevisionListItemCleanOut,
     TarifaRevisionOut,
     EspecialidadRevisionOut,
+    VariablesFinancierasUsadasOut,
 )
 
 
@@ -79,7 +80,7 @@ class HabilitacionUrbanaPresenter:
         return MunicipalidadesSnapshotOut(
             id=result.municipalidad_id,
             nombre=result.municipalidad_nombre,
-            codigo=None,
+            codigo=result.municipalidad_codigo,
         )
 
     @staticmethod
@@ -302,6 +303,18 @@ class HabilitacionUrbanaPresenter:
                     tarifa=TarifaRevisionOut(**r.tarifa.model_dump()) if r.tarifa else None,
                 ) for r in result.revisiones
             ],
+            variables_financieras_usadas=(
+                VariablesFinancierasUsadasOut(
+                    igv_valor=result.variables_financieras_usadas.igv_valor,
+                    igv_porcentaje=result.variables_financieras_usadas.igv_porcentaje,
+                    igv_periodo_inicio=result.variables_financieras_usadas.igv_periodo_inicio,
+                    uit_valor=result.variables_financieras_usadas.uit_valor,
+                    uit_anio=result.variables_financieras_usadas.uit_anio,
+                    uit_periodo_inicio=result.variables_financieras_usadas.uit_periodo_inicio,
+                )
+                if result.variables_financieras_usadas
+                else None
+            ),
         )
 
     @staticmethod
@@ -369,7 +382,7 @@ class HabilitacionUrbanaPresenter:
             municipalidad=MunicipalidadListItemOut(
                 id=result.municipalidad_id or _uuid.UUID('00000000-0000-0000-0000-000000000000'),
                 nombre=result.municipalidad_nombre or '',
-                codigo=None,
+                codigo=result.municipalidad_codigo,
                 provincia=None,
                 distrito=None,
             ),

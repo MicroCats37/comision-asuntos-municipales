@@ -141,10 +141,28 @@ export function adaptIOToPrintData(
     ? inspectorNombre
     : null;
 
-  // UIT/monto/% fields are not persisted in LiquidacionInspeccionObraListItem — show blank labels
-  const uitValor = null;
-  const montoEquivalente = null;
-  const porcentajeAplicar = null;
+  // UIT/monto/% — derive from variables_financieras_usadas and tariff data
+  const varsFinancieras = created.variables_financieras_usadas;
+  const uitValor = varsFinancieras?.uit_valor != null ? String(varsFinancieras.uit_valor) : null;
+
+  // monto_equivalente: costo_por_visita from tariff (total unitario por visita)
+  // fallback: subtotal / cantidad_visitas if both available
+  let montoEquivalente: string | null = null;
+  if (tarifa?.costo_por_visita != null) {
+    montoEquivalente = String(tarifa.costo_por_visita);
+  } else if (tarifa?.cantidad_visitas && created.valores.subtotal > 0) {
+    montoEquivalente = String(created.valores.subtotal / tarifa.cantidad_visitas);
+  }
+
+  // porcentaje_aplicar: monto_equivalente / uit_valor (proporción cruda)
+  let porcentajeAplicar: string | null = null;
+  if (montoEquivalente && uitValor) {
+    const montoNum = parseFloat(montoEquivalente);
+    const uitNum = parseFloat(uitValor);
+    if (!isNaN(montoNum) && !isNaN(uitNum) && uitNum > 0) {
+      porcentajeAplicar = String((montoNum / uitNum).toFixed(3));
+    }
+  }
 
   return {
     public_id: created.public_id,
@@ -391,7 +409,7 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
     display: "grid",
     gridTemplateColumns: "245px 1fr",
     gap: "3px 12px",
-    fontSize: "12px",
+    fontSize: "14px",
     lineHeight: "1.25",
   });
   appendReceiptRow(details, "RUC", ruc || "—");
@@ -419,11 +437,17 @@ function buildIOPdfElement(data: IOPPrintData, ownerDocument: Document) {
     },
   );
 
-  // Left: UIT-related fields (labels only when values unavailable)
-  const calc = append(middle, "div", { fontSize: "12px", lineHeight: "1.7" });
-  appendReceiptRow(calc, "VALOR VIGENTE DE LA UIT S/.", uit_valor || "—");
-  appendReceiptRow(calc, "Monto equivalente a 1 supervision S/.", monto_equivalente || "—");
-  appendReceiptRow(calc, "% A APLICAR SOBRE LA UIT", porcentaje_aplicar || "—");
+  // Left: UIT-related fields — each in its own row with spacing
+  const calc = append(middle, "div", { fontSize: "14px" });
+  const uitRow1 = append(calc, "div", { display: "flex", gap: "6px", marginBottom: "6px" });
+  appendText(uitRow1, "span", "VALOR VIGENTE DE LA UIT S/.", { fontWeight: "700" });
+  appendText(uitRow1, "span", `: ${uit_valor || "—"}`);
+  const uitRow2 = append(calc, "div", { display: "flex", gap: "6px", marginBottom: "6px" });
+  appendText(uitRow2, "span", "Monto equivalente a 1 supervision S/.", { fontWeight: "700" });
+  appendText(uitRow2, "span", `: ${monto_equivalente || "—"}`);
+  const uitRow3 = append(calc, "div", { display: "flex", gap: "6px" });
+  appendText(uitRow3, "span", "% A APLICAR SOBRE LA UIT", { fontWeight: "700" });
+  appendText(uitRow3, "span", `: ${porcentaje_aplicar || "—"}`);
 
   // Right: Totals block
   const totals = append(middle, "div", { fontSize: "12px", lineHeight: "1.55" });

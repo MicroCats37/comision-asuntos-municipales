@@ -76,7 +76,7 @@ class LiquidacionesGeneralService:
             qs = qs.filter(id=liquidacion_id)
 
         qs = qs.select_related(
-            'proyecto', 'proyecto__entidad', 'municipalidad', 'igv',
+            'proyecto', 'proyecto__entidad', 'municipalidad', 'igv', 'uit',
         ).prefetch_related(
             'liquidacion_m2',
             'liquidacion_visitas',
@@ -167,7 +167,7 @@ class LiquidacionesGeneralService:
             muni_dict = {
                 'id': str(liq.municipalidad.id) if liq.municipalidad else '',
                 'nombre': liq.municipalidad.nombre if liq.municipalidad else '',
-                'codigo': None,
+                'codigo': liq.municipalidad.codigo if liq.municipalidad else None,
                 'provincia': None,
                 'distrito': None,
             }
@@ -393,6 +393,18 @@ class LiquidacionesGeneralService:
                 if ext_model:
                     tramite_accion = getattr(ext_model, 'tramite_accion', None)
 
+            # --- Variables financieras usadas en esta liquidacion ---
+            variables_financieras_usadas = None
+            if liq.igv and liq.uit:
+                variables_financieras_usadas = {
+                    'igv_valor': float(liq.igv.valor),
+                    'igv_porcentaje': float(liq.igv.valor) * 100,
+                    'igv_periodo_inicio': liq.igv.periodo_inicio.isoformat() if liq.igv.periodo_inicio else None,
+                    'uit_valor': liq.uit.valor,
+                    'uit_anio': liq.uit.periodo_inicio.year if liq.uit.periodo_inicio else None,
+                    'uit_periodo_inicio': liq.uit.periodo_inicio.isoformat() if liq.uit.periodo_inicio else None,
+                }
+
             items.append({
                 'id': str(liq.id),
                 'public_id': liq.public_id or '',
@@ -417,6 +429,7 @@ class LiquidacionesGeneralService:
                 'igv': igv_amount,
                 'total': total_liquidacion,
                 'total_a_pagar': total_a_pagar,
+                'variables_financieras_usadas': variables_financieras_usadas,
             })
         return items, total
 
@@ -491,8 +504,10 @@ class LiquidacionesGeneralService:
 
         # Obtener nombre de municipalidad
         municipalidad_nombre = None
+        municipalidad_codigo = None
         if liquidacion.municipalidad:
             municipalidad_nombre = liquidacion.municipalidad.nombre
+            municipalidad_codigo = liquidacion.municipalidad.codigo
 
         return LiquidacionGeneralResult(
             id=liquidacion.id,
@@ -516,6 +531,7 @@ class LiquidacionesGeneralService:
             # Municipalidad
             municipalidad_id=liquidacion.municipalidad.id if liquidacion.municipalidad else None,
             municipalidad_nombre=municipalidad_nombre,
+            municipalidad_codigo=municipalidad_codigo,
             # Campos financieros
             subtotal=Decimal(str(subtotal_val)) if subtotal_val else Decimal('0'),
             igv=Decimal(str(igv_amount)) if igv_amount else Decimal('0'),
@@ -775,7 +791,7 @@ class LiquidacionesGeneralService:
             muni_dict = {
                 'id': str(liq.municipalidad.id) if liq.municipalidad else '',
                 'nombre': liq.municipalidad.nombre if liq.municipalidad else '',
-                'codigo': None,
+                'codigo': liq.municipalidad.codigo if liq.municipalidad else None,
                 'provincia': None,
                 'distrito': None,
             }

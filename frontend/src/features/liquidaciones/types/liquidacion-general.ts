@@ -175,6 +175,21 @@ export interface RevisionListItem {
   tarifa: TarifaRevisionListItem | null;
 }
 
+// ── Variables financieras usadas ─────────────────────────────────────────────
+
+/**
+ * Variables financieras (IGV/UIT) usadas al momento de crear la liquidación.
+ * Historicas, almacenadas en la liquidacion via FK a IGV/UIT.
+ */
+export interface VariablesFinancierasUsadas {
+  igv_valor: number;       // Tasa IGV como decimal (ej. 0.18)
+  igv_porcentaje: number;  // Tasa IGV como porcentaje (ej. 18.0)
+  igv_periodo_inicio: string | null;  // YYYY-MM-DD
+  uit_valor: number;       // Valor UIT en soles
+  uit_anio: number | null;        // Año de la UIT (ej. 2026)
+  uit_periodo_inicio: string | null;  // YYYY-MM-DD
+}
+
 // ── Main list item type ──────────────────────────────────────────────────────
 
 /**
@@ -205,6 +220,7 @@ export interface LiquidacionGeneralListItem {
   igv: number;
   total: number;
   total_a_pagar: number;
+  variables_financieras_usadas: VariablesFinancierasUsadas | null;
 }
 
 export interface PaginatedLiquidacionesGenerales {
