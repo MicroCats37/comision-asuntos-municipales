@@ -23,26 +23,12 @@ class Proyectista(BaseModel):
 
     history = HistoricalRecords()
 
-    perfil_ingeniero = models.ForeignKey(
+    perfil_ingeniero = models.UniqueConstraint(
         "usuarios.PerfilIngeniero",
         on_delete=models.PROTECT,
         related_name="proyectistas",
         verbose_name="Perfil de Ingeniero",
         help_text="Perfil que contiene los datos de identidad del ingeniero.",
-    )
-
-    especialidad = models.ForeignKey(
-        "Especialidad",
-        on_delete=models.PROTECT,
-        verbose_name="Especialidad",
-        help_text="Especialidad de este proyectista para esta liquidación.",
-    )
-
-    descripcion = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name="Descripción",
-        help_text="Notas u observaciones sobre este proyectista.",
     )
 
     class Meta:
@@ -51,8 +37,8 @@ class Proyectista(BaseModel):
         ordering = ["perfil_ingeniero__apellido_paterno", "perfil_ingeniero__apellido_materno", "perfil_ingeniero__nombres"]
         constraints = [
             models.UniqueConstraint(
-                fields=["perfil_ingeniero", "especialidad"],
-                name="unique_proyectista_perfil_especialidad",
+                fields=["perfil_ingeniero"],
+                name="unique_proyectista_perfil_ingeniero",
             ),
         ]
 

@@ -8,7 +8,12 @@ from django.conf import settings
 from django.db import models
 from simple_history.models import HistoricalRecords
 from core.models import BaseModel
-from ...constants import EstadoLiquidacion, TipoLiquidacion, TipoTramiteEdificaciones, TramiteAccion
+from ...constants import (
+    EstadoLiquidacion,
+    TipoLiquidacion,
+    TipoTramiteEdificaciones,
+    TramiteAccion,
+)
 
 
 class LiquidacionGeneral(BaseModel):
@@ -19,17 +24,8 @@ class LiquidacionGeneral(BaseModel):
 
     history = HistoricalRecords()
 
-    public_id = models.CharField(
-        max_length=50,
-        blank=True,
-        null=True,
-        unique=True,
-        verbose_name="ID Público",
-        help_text="Identificador público de la liquidación (ej. LIQ-2026-00001).",
-    )
-
-    proyecto = models.ForeignKey(
-        "Proyecto",
+    proyecto_propiedad = models.ForeignKey(
+        "ProyectoPropiedad",
         on_delete=models.PROTECT,
         related_name="liquidaciones",
         verbose_name="Proyecto",
@@ -43,12 +39,13 @@ class LiquidacionGeneral(BaseModel):
         null=True,
         blank=True,
     )
-    
-    fecha_registro = models.DateField(
+
+    fecha_registro = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Fecha de Registro",
+        help_text="Fecha y hora en que se registró la liquidación en el sistema.",
     )
-    
+
     usuario_creador = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -57,26 +54,40 @@ class LiquidacionGeneral(BaseModel):
         null=True,
         blank=True,
     )
-    
-    igv = models.ForeignKey(
+
+    igv_id = models.ForeignKey(
         "finanzas.IGV",
         on_delete=models.PROTECT,
         verbose_name="IGV",
     )
 
-    uit = models.ForeignKey(
+    uit_id = models.ForeignKey(
         "finanzas.UIT",
         on_delete=models.PROTECT,
         verbose_name="UIT",
     )
-    
+
+    igv_utilizado = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        verbose_name="IGV Utilizado",
+        help_text="Valor del IGV utilizado en el cálculo de la liquidación.",
+    )
+
+    uit_utilizado = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="UIT Utilizado",
+        help_text="Valor de la UIT utilizado en el cálculo de la liquidación.",
+    )
+
     estado = models.CharField(
         max_length=20,
         choices=EstadoLiquidacion.choices,
         default="PENDIENTE",
         verbose_name="Estado de la Revisión",
     )
-    
+
     sub_total = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -86,11 +97,16 @@ class LiquidacionGeneral(BaseModel):
         help_text="Subtotal calculado de la liquidación . Se llena después del cálculo.",
     )
 
-    observacion = models.CharField(
-        max_length=2000,
+    sub_total = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        blank=True,
         null=True,
-        blank=True
+        verbose_name="Sub Total",
+        help_text="Subtotal calculado de la liquidación . Se llena después del cálculo.",
     )
+
+    observacion = models.CharField(max_length=2000, null=True, blank=True)
 
     expediente = models.CharField(
         max_length=100,
@@ -99,7 +115,7 @@ class LiquidacionGeneral(BaseModel):
         verbose_name="Expediente",
         help_text="Número de expediente associated with the liquidacion.",
     )
-    
+
     liquidaciones_previas = models.ManyToManyField(
         "self",
         symmetrical=False,
@@ -123,6 +139,20 @@ class LiquidacionGeneral(BaseModel):
         help_text="Número secuencial de revisión (1 = primera revisión).",
     )
 
+    periodo_incio = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Periodo de Inicio",
+        help_text="Fecha de inicio del período de vigencia de la liquidación.",
+    )
+
+    periodo_fin = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Periodo de Fin",
+        help_text="Fecha de fin del período de vigencia de la liquidación (opcional).",
+    )
+
     class Meta:
         verbose_name = "Liquidación"
         verbose_name_plural = "Liquidaciones"
@@ -131,6 +161,21 @@ class LiquidacionGeneral(BaseModel):
     def __str__(self):
         return f"Liquidación de {self.proyecto}"
 
+class LiquidacionGeneralCodigo(BaseModel):
+    
+    tipo_liquidacion = models.CharField(
+        max_length=30,
+        choices=TipoLiquidacion.choices,
+        default=TipoLiquidacion.EDIFICACION,
+        verbose_name="Tipo de Liquidación",
+        help_text="Tipo de liquidación/formulario: EDIFICACION, HABILITACION_URBANA, MECANICA_SUELOS, IMPACTO_VIAL, TALUDES, INSPECCION_OBRA.",
+    )
+    
+    codigo_cta = models.CharField(
+        max_length=20,
+        verbose_name="Código de Cuenta",
+        help_text="Código de cuenta asociado a la liquidación.",
+    )    
 
 class LiquidacionContacto(BaseModel):
     """
@@ -152,19 +197,9 @@ class LiquidacionContacto(BaseModel):
         verbose_name="Contacto",
     )
     principal = models.BooleanField(
-        default=False,
+        default=True,
         verbose_name="¿Principal?",
         help_text="Indica si este es el contacto principal de la liquidación.",
-    )
-    descripcion = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name="Descripción",
-        help_text="Notas sobre el rol de este contacto en la liquidación.",
-    )
-    activo = models.BooleanField(
-        default=True,
-        verbose_name="¿Activo?",
     )
 
     class Meta:
@@ -189,7 +224,7 @@ class LiquidacionDocumentos(BaseModel):
     """
 
     history = HistoricalRecords()
-    
+
     liquidacion_maestra = models.ForeignKey(
         LiquidacionGeneral,
         on_delete=models.CASCADE,
@@ -204,6 +239,7 @@ class LiquidacionDocumentos(BaseModel):
         upload_to="liquidaciones/documentos/",
         verbose_name="Archivo del Documento",
     )
+
 
 # =============================================================================
 # Nuevos modelos del refactor — ver contract/PLAN_REFACTORIZACION.md
@@ -304,7 +340,9 @@ class TarifaPorcentajeObra(BaseModel):
         verbose_name_plural = "Tarifas Porcentuales de Obra"
 
     def __str__(self):
-        return f"Tarifa {self.porcentaje_liquidacion * 100}% (min: {self.derecho_minimo})"
+        return (
+            f"Tarifa {self.porcentaje_liquidacion * 100}% (min: {self.derecho_minimo})"
+        )
 
 
 class TarifaLiquidacionBase(BaseModel):
@@ -354,50 +392,6 @@ class TarifaLiquidacionBase(BaseModel):
 
     def __str__(self):
         return f"Tarifa Base {self.tipo_liquidacion} desde {self.periodo_inicio}"
-
-
-class LiquidacionPorcentajeObra(BaseModel):
-    """
-    Cálculo porcentual de una liquidación de obra.
-
-    Separa los datos de cálculo de la liquidación: relación con LiquidacionGeneral,
-    valores del proyecto, y referencia a la tarifa porcentual aplicada.
-    """
-
-    history = HistoricalRecords()
-
-    liquidacion_general = models.ForeignKey(
-        "LiquidacionGeneral",
-        on_delete=models.CASCADE,
-        related_name="liquidacion_porcentaje_obra",
-        verbose_name="Liquidación General",
-    )
-    valor_proyecto = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        verbose_name="Valor del Proyecto",
-        help_text="Valor total del proyecto de edificación.",
-    )
-    valor_base_calculo = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        verbose_name="Valor Base de Cálculo",
-        help_text="Valor sobre el cual se aplica el porcentaje (base imponible).",
-    )
-    tarifa_aplicada = models.ForeignKey(
-        TarifaPorcentajeObra,
-        on_delete=models.PROTECT,
-        related_name="liquidaciones_porcentaje",
-        verbose_name="Tarifa Aplicada",
-        help_text="Tarifa porcentual que se usó en este cálculo.",
-    )
-
-    class Meta:
-        verbose_name = "Liquidación Porcentual de Obra"
-        verbose_name_plural = "Liquidaciones Porcentuales de Obra"
-
-    def __str__(self):
-        return f"Liquidación Porcentual {self.liquidacion_general}"
 
 
 class EspecialidadesLiquidacion(BaseModel):

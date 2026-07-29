@@ -59,15 +59,6 @@ class Proyecto(BaseModel):
         help_text="Copia de entidad.numero_documento al momento de crear el proyecto.",
     )
 
-    public_id = models.CharField(
-        max_length=50,
-        blank=True,
-        null=True,
-        unique=True,
-        verbose_name="ID Público",
-        help_text="Identificador público del proyecto (ej. PROY-2026-00001).",
-    )
-
     nombre_propietario = models.CharField(
         max_length=255, verbose_name="Nombre del Propietario"
     )
@@ -96,11 +87,6 @@ class Proyecto(BaseModel):
         blank=True, null=True, verbose_name="Descripción del Proyecto"
     )
     
-    observaciones = models.TextField(
-        max_length=2000,
-        blank=True, null=True, verbose_name="Observaciones"
-    )
-
     class Meta:
         verbose_name = "Proyecto"
         verbose_name_plural = "Proyectos"
@@ -138,6 +124,33 @@ class Proyecto(BaseModel):
     def __str__(self):
         return self.denominacion
 
+class ProyectoPropietario(BaseModel):
+    """
+    Modelo para representar un propietario de un proyecto.
+    Un propietario puede tener múltiples proyectos.
+    """
+
+    history = HistoricalRecords()
+
+    nombre_propietario = models.CharField(
+        max_length=255, verbose_name="Nombre del Propietario"
+    )
+    
+    proyectos = models.ForeignKey(
+        "Proyecto",
+        related_name="propietarios",
+        verbose_name="Proyectos del Propietario",
+        blank=True,
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        verbose_name = "Propietario de Proyecto"
+        verbose_name_plural = "Propietarios de Proyectos"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
 
 class ProyectoEmpresarialManager(models.Manager):
     def get_queryset(self):
@@ -184,52 +197,3 @@ class ProyectoPersonaNatural(Proyecto):
         verbose_name = "Proyecto Persona Natural"
         verbose_name_plural = "Proyectos Persona Natural"
 
-
-class ContactoProyecto(BaseModel):
-    """
-    Tabla puente que asocia un Contacto a un Proyecto.
-    Permite marcar un contacto como principal y agregar notas específicas
-    de la relación proyecto-contacto.
-    """
-
-    proyecto = models.ForeignKey(
-        Proyecto,
-        on_delete=models.CASCADE,
-        related_name="contactos",
-        verbose_name="Proyecto",
-    )
-    contacto = models.ForeignKey(
-        "entidades.Contacto",
-        on_delete=models.PROTECT,
-        related_name="proyectos",
-        verbose_name="Contacto",
-    )
-    principal = models.BooleanField(
-        default=False,
-        verbose_name="¿Principal?",
-        help_text="Indica si este es el contacto principal del proyecto.",
-    )
-    descripcion = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name="Descripción",
-        help_text="Notas sobre el rol de este contacto en el proyecto.",
-    )
-    activo = models.BooleanField(
-        default=True,
-        verbose_name="¿Activo?",
-    )
-
-    class Meta:
-        verbose_name = "Proyecto - Contacto"
-        verbose_name_plural = "Proyectos - Contactos"
-        ordering = ["-principal", "proyecto__denominacion"]
-        constraints = [
-            models.UniqueConstraint(
-                fields=["proyecto", "contacto"],
-                name="unique_proyecto_contacto",
-            ),
-        ]
-
-    def __str__(self):
-        return f"{self.contacto} @ {self.proyecto}"

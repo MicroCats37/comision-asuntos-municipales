@@ -1,1 +1,0 @@
-"""Admin — registrar clases Django admin aquí cuando sea necesario."""

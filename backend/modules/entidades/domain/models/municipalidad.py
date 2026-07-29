@@ -36,17 +36,6 @@ class Municipalidad(BaseModel):
         verbose_name="Nombre",
     )
 
-    direccion = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        verbose_name="Dirección",
-    )
-    observaciones = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name="Observaciones",
-    )
     provincia = models.ForeignKey(
         "UbigeoProvincia",
         on_delete=models.SET_NULL,
@@ -57,6 +46,7 @@ class Municipalidad(BaseModel):
         verbose_name="Provincia",
         help_text="Provincia asociada a la municipalidad. Solo si es municipalidad provincial.",
     )
+    
     distrito = models.ForeignKey(
         "UbigeoDistrito",
         on_delete=models.SET_NULL,
@@ -66,10 +56,6 @@ class Municipalidad(BaseModel):
         db_index=True,        choices=get_distrito_flat_choices_callable,
         verbose_name="Distrito",
         help_text="Distrito asociado a la municipalidad. Solo si es municipalidad distrital.",  
-    )
-    activo = models.BooleanField(
-        default=True,
-        verbose_name="¿Activo?",
     )
 
     class Meta:

@@ -125,12 +125,6 @@ class ReglaTarifaLiquidacion(BaseModel):
 
     history = HistoricalRecords()
 
-    tramite_accion = models.CharField(
-        max_length=20,
-        choices=TramiteAccion.choices,
-        verbose_name="Acción de Trámite",
-        help_text="Acción de trámite: PRIMERA_REVISION o REVISION.",
-    )
     tarifa_base = models.ForeignKey(
         TarifaLiquidacionBase,
         on_delete=models.CASCADE,
@@ -176,12 +170,7 @@ class ReglaTarifaInspeccionObra(BaseModel):
         verbose_name="Categoría de Inspección",
         help_text="Categoría de inspección de obra: A, B, C, etc.",
     )
-    tramite_accion = models.CharField(
-        max_length=20,
-        choices=TramiteAccion.choices,
-        verbose_name="Acción de Trámite",
-        help_text="Acción de trámite: PRIMERA_REVISION o REVISION.",
-    )
+    
     tarifa_base = models.ForeignKey(
         TarifaLiquidacionBase,
         on_delete=models.CASCADE,

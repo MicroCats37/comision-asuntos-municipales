@@ -42,15 +42,6 @@ class EntidadManager(models.Manager):
 
 class Entidad(BaseModel):
     """
-    Entidad maestra unificada.
-    Representa tanto instituciones (empresas) como personas naturales.
-    El tipo de documento determina la semántica:
-    - RUC => institución (empresa, constructora, etc.)
-    - DNI => persona natural (proyectista, contacto, etc.)
-
-    Uso de proxy models para acceso semántico:
-    - Institucion: entidades con RUC
-    - PersonaNatural: entidades con DNI
     """
 
     history = HistoricalRecords()

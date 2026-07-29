@@ -22,11 +22,11 @@ class LiquidacionDelegado(BaseModel):
         related_name="liquidacion_delegados",
         verbose_name="Liquidacion",
     )
-    delegado = models.ForeignKey(
-        "Delegado",
+    perfil_ingeniero = models.ForeignKey(
+        "usuarios.PerfilIngeniero",
         on_delete=models.PROTECT,
-        related_name="liquidacion_delegados",
-        verbose_name="Delegado",
+        related_name="delegado_liquidacion",
+        verbose_name="Perfil de Ingeniero",
     )
     periodo = models.CharField(
         max_length=100,
@@ -62,6 +62,6 @@ class LiquidacionDelegado(BaseModel):
                 name="unique_liquidacion_delegado",
             ),
         ]
-
+    
     def __str__(self):
         return f"{self.delegado} @ Liquidacion {self.liquidacion.public_id or self.liquidacion_id}"

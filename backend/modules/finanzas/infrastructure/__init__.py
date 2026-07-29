@@ -1,1 +1,0 @@
-"""Capa de infraestructura — adaptadores de framework (pendiente)."""

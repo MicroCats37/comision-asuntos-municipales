@@ -9,19 +9,32 @@ from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
 
+
 class Capitulo(BaseModel):
     history = HistoricalRecords()
     """
     Capítulo profesional al que puede pertenecer un ingeniero.
     Un ingeniero puede pertenecer a múltiples capítulos (ManyToMany).
     """
-    registro_id= models.CharField(max_length=4, unique=True, verbose_name="ID de Registro del Capítulo")
-    
-    abreviacion = models.CharField(max_length=100, unique=True, verbose_name="Abreviación del Capítulo")
-    
-    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del Capítulo")
-    
-    grupo_envio_intitucional = models.EmailField(max_length=255, blank=True, null=True, verbose_name="Grupo de Envío Institucional")
+    registro_id = models.CharField(
+        max_length=4, unique=True, verbose_name="ID de Registro del Capítulo"
+    )
+
+    abreviacion = models.CharField(
+        max_length=100, unique=True, verbose_name="Abreviación del Capítulo"
+    )
+
+    nombre = models.CharField(
+        max_length=100, unique=True, verbose_name="Nombre del Capítulo"
+    )
+
+    grupo_envio_intitucional = models.EmailField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Grupo de Envío Institucional",
+    )
+
     class Meta:
         verbose_name = "Capítulo"
         verbose_name_plural = "Capítulos"
@@ -29,21 +42,47 @@ class Capitulo(BaseModel):
 
     def __str__(self):
         return self.nombre
-    
+
+
+class Especialidad(BaseModel):
+    history = HistoricalRecords()
+    """
+    Especialidad profesional del ingeniero.
+    Un ingeniero puede tener múltiples especialidades (ManyToMany).
+    """
+    codigo = models.CharField(
+        max_length=4, unique=True, verbose_name="Código de Especialidad"
+    )
+
+    nombre = models.CharField(
+        max_length=100, unique=True, verbose_name="Nombre de Especialidad"
+    )
+
+    class Meta:
+        verbose_name = "Especialidad"
+        verbose_name_plural = "Especialidades"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+
 class PerfilIngeniero(BaseModel):
     history = HistoricalRecords()
     """
     Perfil profesional del ingeniero.
     Un usuario tiene exactamente un PerfilIngeniero (OneToOne).
     """
-    """
+
     usuario = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="perfil_ingeniero",
         verbose_name="Usuario",
+        null=True,
+        blank=True,
     )
-    """
+    
     nombres = models.CharField(
         max_length=200,
         verbose_name="Nombres",
@@ -79,14 +118,18 @@ class PerfilIngeniero(BaseModel):
         verbose_name="DNI",
         help_text="DNI del ingeniero (8 dígitos).",
     )
-    correo_personal = models.EmailField(max_length=255, blank=True, null=True, verbose_name="Correo Personal")
-    
-    correo_institucional = models.EmailField(max_length=255, blank=True, null=True, verbose_name="Correo Institucional")
-    
-    
-    
-    direccion = models.CharField(max_length=512, blank=True, null=True, verbose_name="Dirección")
-    
+    correo_personal = models.EmailField(
+        max_length=255, blank=True, null=True, verbose_name="Correo Personal"
+    )
+
+    correo_institucional = models.EmailField(
+        max_length=255, blank=True, null=True, verbose_name="Correo Institucional"
+    )
+
+    direccion = models.CharField(
+        max_length=512, blank=True, null=True, verbose_name="Dirección"
+    )
+
     ubigeo = models.CharField(
         max_length=6,
         blank=True,
@@ -94,58 +137,29 @@ class PerfilIngeniero(BaseModel):
         verbose_name="Ubigeo",
         help_text="Código de ubigeo del lugar de residencia.",
     )
-    
-    codigo_especialidad = models.CharField(
-        max_length=4,
-        blank=True,
-        null=True,
-        verbose_name="Código de Especialidad",
-        help_text="Código de especialidad del ingeniero",
-    )
-    
-    capitulo= models.ForeignKey(
-            "Capitulo",
-            on_delete=models.SET_NULL,
-            blank=True,
-            null=True,
-            related_name="ingenieros",
-            verbose_name="Capítulo Profesional",
-        )
 
-    # ── CIP Habilitación Status (last-known external state) ─────────────────────
-    # Estos campos reflejan el estado más reciente obtenido del servicio CIP externo.
-    # NO son la fuente de verdad para validación operacional — siempre se valida
-    # en vivo durante la creación de liquidaciones.
-    habilitado_cip = models.BooleanField(
-        default=False,
-        verbose_name="Habilitado CIP",
-        help_text="Indica si el ingeniero está habilitado según CIP (último estado conocido).",
-    )
-    condicion_cip = models.CharField(
-        max_length=10,
+    especialidad= models.ForeignKey(
+        "Especialidad",
+        on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        verbose_name="Condición CIP",
-        help_text="Condición del ingeniero según CIP (ej. '1' = habilitado).",
+        related_name="ingenieros",
+        verbose_name="Especialidad Profesional",
     )
-    fecha_validacion_cip = models.DateTimeField(
+
+    capitulo = models.ForeignKey(
+        "Capitulo",
+        on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        verbose_name="Fecha Validación CIP",
-        help_text="Fecha/hora de la última validación con el servicio CIP.",
-    )
-    ultimo_periodo_pagado_cip = models.CharField(
-        max_length=20,
-        blank=True,
-        null=True,
-        verbose_name="Último Período Pagado CIP",
-        help_text="Último período pagado según CIP.",
+        related_name="ingenieros",
+        verbose_name="Capítulo Profesional",
     )
 
     @property
     def nombre_completo(self):
         return f"{self.nombres} {self.apellido_paterno} {self.apellido_materno}"
-    
+
     class Meta:
         verbose_name = "Perfil Ingeniero"
         verbose_name_plural = "Perfiles Ingenieros"
@@ -155,3 +169,31 @@ class PerfilIngeniero(BaseModel):
         return f"{self.nombres} {self.apellido_paterno} {self.apellido_materno} (CIP: {self.cip})"
 
 
+class IngenieroHabilitacion(BaseModel):
+    history = HistoricalRecords()
+    """
+    Modelo para almacenar información de habilitacion historica
+    """
+    perfil_ingeniero = models.ForeignKey(
+        "PerfilIngeniero",
+        on_delete=models.CASCADE,
+        related_name="habilitacion",
+        verbose_name="Perfil de Ingeniero",
+    )
+
+    ultimo_periodo_pagado_cip = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name="Último Período Pagado CIP",
+        help_text="Último período pagado según CIP.",
+    )
+    
+    condicion_cip = models.CharField(
+        max_length=10,
+        blank=True,
+        null=True,
+        verbose_name="Condición CIP",
+        help_text="Condición del ingeniero según CIP (ej. '1' = habilitado).",
+    )
+    

@@ -31,31 +31,35 @@ class LiquidacionPorMetroCuadrado(BaseModel):
         related_name="liquidacion_m2",
         verbose_name="Liquidación General",
     )
-    area_solicitada = models.DecimalField(
+
+    area_m2 = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         verbose_name="Área Solicitada",
         help_text="Área total solicitada en metros cuadrados.",
     )
-    area_base_calculo = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        verbose_name="Área Base de Cálculo",
-        help_text="Área real aplicada tras evaluar area_minima (max(area_solicitada, area_minima)).",
+
+    costo_por_m2 = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        verbose_name="Costo por M2",
+        help_text="Costo por metro cuadrado en soles.",
     )
-    derecho = models.DecimalField(
+
+    derecho_minimo = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         default=Decimal("0"),
-        verbose_name="Derecho",
-        help_text="Monto del derecho calculado con clamps de derecho_minimo y derecho_maximo aplicados.",
+        verbose_name="Derecho Mínimo",
+        help_text="Monto mínimo del derecho calculado según la tarifa.",
     )
-    tarifa_aplicada = models.ForeignKey(
-        "TarifaPorMetroCuadrado",
-        on_delete=models.RESTRICT,
-        related_name="liquidaciones_m2",
-        verbose_name="Tarifa Aplicada",
-        help_text="Tarifa por metro cuadrado que se usó en este cálculo.",
+
+    derecho_maximo = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0"),
+        verbose_name="Derecho Máximo",
+        help_text="Monto máximo del derecho calculado según la tarifa.",
     )
 
     class Meta:
@@ -83,33 +87,26 @@ class LiquidacionPorCategoriaVisitas(BaseModel):
         related_name="liquidacion_visitas",
         verbose_name="Liquidación General",
     )
+
     cantidad_visitas = models.PositiveIntegerField(
+        default=1,
+        min_value=1,
         verbose_name="Cantidad de Visitas",
         help_text="Número de visitas de inspección solicitadas.",
     )
-    visitas_base_calculo = models.PositiveIntegerField(
-        default=0,
-        verbose_name="Visitas Base de Cálculo",
-        help_text="Cantidad de visitas usadas para el cálculo (max(cantidad_visitas, visitas_minimas)).",
-    )
-    derecho = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
+
+    porcentaje_uit = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
         default=Decimal("0"),
-        verbose_name="Derecho",
-        help_text="Monto del derecho calculado (= visitas_base_calculo * costo_por_visita).",
+        verbose_name="Porcentaje UIT",
+        help_text="Porcentaje de la UIT que se aplica para calcular el derecho.",
     )
+
     categoria = models.CharField(
         max_length=20,
         verbose_name="Categoría de Inspección",
         help_text="Categoría de inspección: A, B, C, etc.",
-    )
-    tarifa_aplicada = models.ForeignKey(
-        "TarifaPorCategoriaVisitas",
-        on_delete=models.RESTRICT,
-        related_name="liquidaciones_visitas",
-        verbose_name="Tarifa Aplicada",
-        help_text="Tarifa por categoría de visitas que se usó en este cálculo.",
     )
 
     class Meta:
@@ -118,3 +115,56 @@ class LiquidacionPorCategoriaVisitas(BaseModel):
 
     def __str__(self):
         return f"Liquidación Visitas {self.liquidacion_general}"
+
+
+class LiquidacionPorcentajeObra(BaseModel):
+    """
+    Cálculo porcentual de una liquidación de obra.
+
+    Separa los datos de cálculo de la liquidación: relación con LiquidacionGeneral,
+    valores del proyecto, y referencia a la tarifa porcentual aplicada.
+    """
+
+    history = HistoricalRecords()
+
+    liquidacion_general = models.ForeignKey(
+        "LiquidacionGeneral",
+        on_delete=models.CASCADE,
+        related_name="liquidacion_porcentaje_obra",
+        verbose_name="Liquidación General",
+    )
+
+    valor_declarado = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name="Valor del Proyecto",
+        help_text="Valor total del proyecto de edificación.",
+    )
+
+    derecho_minimo = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        verbose_name="Derecho Mínimo",
+        help_text="Monto mínimo absoluto del derecho en soles.",
+    )
+    derecho_maximo = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        verbose_name="Derecho Máximo",
+        help_text="Monto máximo absoluto del derecho en soles (nulo = sin tope).",
+    )
+    porcentaje_minimo_uit = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        verbose_name="Porcentaje Mínimo UIT",
+        help_text="Mínimo como porcentaje de la UIT (protección para montos bajos).",
+    )
+
+    class Meta:
+        verbose_name = "Liquidación Porcentual de Obra"
+        verbose_name_plural = "Liquidaciones Porcentuales de Obra"
+
+    def __str__(self):
+        return f"Liquidación Porcentual {self.liquidacion_general}"

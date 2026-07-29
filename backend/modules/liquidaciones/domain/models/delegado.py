@@ -10,52 +10,33 @@ from ..constants import DelegadoStatus, TipoDelegado, CategoriaDelegado
 from ..validators import validate_distrito
 from utils.ubigeo_schema import get_district_choices
 
+
 class Delegado(BaseModel):
     """
-    Ingeniero con perfil profesional que actúa como delegado
-    para la creación y revisión de liquidaciones.
+    Ingeniero delegado que puede crear y revisar liquidaciones.
     """
 
     history = HistoricalRecords()
 
-    perfil_ingeniero = models.OneToOneField(
+    perfil_ingeniero = models.UniqueConstraint(
         "usuarios.PerfilIngeniero",
         on_delete=models.PROTECT,
-        related_name="delegado_liquidacion",
+        related_name="proyectistas",
         verbose_name="Perfil de Ingeniero",
-    )
-    
-    especialidad = models.ForeignKey(
-        "Especialidad",
-        on_delete=models.PROTECT,
-        related_name="delegados",
-        verbose_name="Especialidad",
-    )
-    
-    banco = models.ForeignKey(
-        "entidades.Banco",
-        null=True,
-        on_delete=models.PROTECT,
-        related_name="delegados",
-        verbose_name="Banco",
-    )
-    status = models.CharField(
-        max_length=20,
-        choices=DelegadoStatus.choices,
-        default=DelegadoStatus.ACTIVO,
-        verbose_name="Estado",
+        help_text="Perfil que contiene los datos de identidad del ingeniero.",
     )
 
     class Meta:
         verbose_name = "Delegado"
         verbose_name_plural = "Delegados"
-        ordering = ["perfil_ingeniero__apellido_paterno", "perfil_ingeniero__apellido_materno"]
+        ordering = [
+            "perfil_ingeniero__apellido_paterno",
+            "perfil_ingeniero__apellido_materno",
+            "perfil_ingeniero__nombres",
+        ]
 
-    def __str__(self):
-        return f"{self.perfil_ingeniero.nombre_completo} - {self.especialidad}"
-    
 
-class MunicipalidadDelegado(BaseModel):
+class DelegadoMunicipalidad(BaseModel):
     """
     Modelo para asignar distritos específicos a un delegado.
     Un delegado puede tener múltiples distritos asignados.
@@ -64,63 +45,64 @@ class MunicipalidadDelegado(BaseModel):
     history = HistoricalRecords()
 
     delegado = models.ForeignKey(
-        Delegado,
-        on_delete=models.CASCADE,
-        related_name="distritos_asignados",
+        "usuarios.Delegado",
+        on_delete=models.PROTECT,
+        related_name="delegado_liquidacion",
         verbose_name="Delegado",
     )
+
     municipalidad = models.ForeignKey(
         "entidades.Municipalidad",
         on_delete=models.PROTECT,
         related_name="delegados",
         verbose_name="Municipalidad",
     )
-    tipo=models.CharField(
+
+    tipo = models.CharField(
         max_length=20,
         choices=TipoDelegado.choices,
         default=TipoDelegado.TITULAR,
         verbose_name="Tipo de Delegado",
     )
-    categoria=models.CharField(
+    categoria = models.CharField(
         max_length=50,
         choices=CategoriaDelegado.choices,
         null=True,
         blank=True,
-        verbose_name="Categoría del Delegado",
+        verbose_name="Categoría del Delegado en Distintas Liquidaciones",
     )
-    activo = models.BooleanField(default=True, verbose_name="Activo")
 
     class Meta:
         verbose_name = "Municipalidad del Delegado"
         verbose_name_plural = "Municipalidades de los Delegados"
         unique_together = ("delegado", "municipalidad")
-        ordering = ["delegado__perfil_ingeniero__apellido_paterno", "delegado__perfil_ingeniero__apellido_materno", "municipalidad__nombre"]
+        ordering = [
+            "delegado__perfil_ingeniero__apellido_paterno",
+            "delegado__perfil_ingeniero__apellido_materno",
+            "municipalidad__nombre",
+        ]
 
     def __str__(self):
         return f"{self.delegado.perfil_ingeniero.nombre_completo} - {self.municipalidad.nombre}"
+
+
+class DelegadoMunicipalidadPeriodo(BaseModel):
     
-
-class PeriodoDelegado(BaseModel):
-    """
-    Modelo para asignar periodos específicos a un delegado.
-    Un delegado puede tener múltiples periodos asignados.
-    """
-
     history = HistoricalRecords()
-
-    delegado = models.ForeignKey(
-        Delegado,
+    
+    delegado_municipalidad = models.ForeignKey(
+        "DelegadoMunicipalidad",
         on_delete=models.CASCADE,
-        related_name="periodos_asignados",
-        verbose_name="Delegado",
+        related_name="periodos",
+        verbose_name="Delegado Municipalidad",
     )
-    periodo_inicio = models.DateField(verbose_name="Inicio del Periodo")
-    periodo_fin = models.DateField(null=True, blank=True, verbose_name="Fin del Periodo")
+    
+    periodo_inicio = models.DateField(
+        verbose_name="Periodo de Inicio",
+    )   
 
-    class Meta:
-        verbose_name = "Periodo del Delegado"
-        verbose_name_plural = "Periodos de los Delegados"
-        ordering = ["delegado__perfil_ingeniero__apellido_paterno", "periodo_inicio"]
-
-    def __str__(self):
-        return f"{self.delegado.perfil_ingeniero.nombre_completo} - {self.periodo_inicio} a {self.periodo_fin}"
+    periodo_fin = models.DateField(
+        verbose_name="Periodo de Fin",
+    )
+    
+    

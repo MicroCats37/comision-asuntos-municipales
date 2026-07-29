@@ -31,13 +31,9 @@ class LiquidacionEdificacion(BaseModel):
         verbose_name="Liquidación",
     )
 
-    public_id = models.CharField(
-        max_length=50,
-        blank=True,
-        null=True,
-        unique=True,
-        verbose_name="ID Público",
-        help_text="Identificador público de la liquidación de edificaciones (ej. E-2026-00001).",
+    numero=models.PositiveIntegerField(
+        verbose_name="Número de Liquidación",
+        help_text="Número de liquidación asignado por el sistema.",
     )
 
     tipo_tramite = models.CharField(
@@ -45,13 +41,9 @@ class LiquidacionEdificacion(BaseModel):
         choices=TipoTramiteEdificaciones.choices,
         default=TipoTramiteEdificaciones.OBRA_NUEVA,
         verbose_name="Tipo de Trámite",
-    )
-
-    tramite_accion = models.CharField(
-        max_length=20,
-        choices=TramiteAccion.choices,
-        default=TramiteAccion.PRIMERA_REVISION,
-        verbose_name="Acción de Trámite",
+        nullable=True,
+        blank=True,
+        help_text="Tipo de trámite de edificación: obra nueva, ampliación, remodelación, demolición, etc.",
     )
 
     class Meta:

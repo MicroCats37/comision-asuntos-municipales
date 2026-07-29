@@ -1,1 +1,0 @@
-"""Admin de infraestructura — configuración de Django admin (pendiente)."""

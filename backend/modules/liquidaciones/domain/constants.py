@@ -33,7 +33,6 @@ class EstadoLiquidacion(models.TextChoices):
     REINGRESADA = "REINGRESADA", "Reingresada"
     RECHAZADA = "RECHAZADA", "Rechazada"
 
-
 class DictamenRevision(models.TextChoices):
     """Dictamen de revision asociado a un delegado de liquidacion."""
 
