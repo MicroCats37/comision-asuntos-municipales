@@ -4,9 +4,6 @@ from .banco import Banco, ContactoBanco
 from .contacto import Contacto
 from .entidad import (
     Entidad,
-    Institucion,
-    PersonaNatural,
-    ContactoEntidad,
     TIPO_DOCUMENTO_CHOICES,
     ruc_validator,
     dni_validator,
@@ -27,8 +24,6 @@ __all__ = [
     "ContactoBanco",
     "Contacto",
     "Entidad",
-    "Institucion",
-    "PersonaNatural",
     "ContactoEntidad",
     "GerenteUrbano",
     "Municipalidad",

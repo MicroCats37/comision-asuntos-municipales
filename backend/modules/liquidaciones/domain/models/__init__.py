@@ -1,58 +1,54 @@
 """Domain models — re-exported from domain/models/."""
 
-from .delegado import Delegado, MunicipalidadDelegado, PeriodoDelegado
-from .especialidades import Especialidad
-from .liquidacion import (
+from .delegado import Delegado, DelegadoMunicipalidad, DelegadoMunicipalidadPeriodo
+from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
+from .liquidacion.liquidacion_general.liquidacion import (
     LiquidacionGeneral,
     LiquidacionContacto,
     LiquidacionDocumentos,
     LiquidacionProyectista,
-    TarifaPorcentajeObra,
-    TarifaLiquidacionBase,
     LiquidacionPorcentajeObra,
-    EspecialidadesLiquidacion,
-    ReglaTarifaEdificacion,
+    LiquidacionPorcentajeObraDetalle,
 )
-from .liquidacion.liquidacion_edificaciones import (
+from .liquidacion.liquidacion_especifico.liquidacion_edificaciones import (
     # Modelo de detalle para edificaciones (singular)
     LiquidacionEdificacion,
-    LiquidacionEdificacionProxy,
 )
-from .liquidacion.liquidacion_habilitacion_urbana import LiquidacionHabilitacionUrbana
-from .liquidacion.liquidacion_mecanica_suelos import LiquidacionMecanicaSuelos
-from .liquidacion.liquidacion_impacto_vial import LiquidacionImpactoVial
-from .liquidacion.liquidacion_taludes import LiquidacionTaludes
-from .liquidacion.liquidacion_inspeccion_obra import LiquidacionInspeccionObra
-from .liquidacion.calculos_tarifas import (
+from .liquidacion.liquidacion_especifico.liquidacion_habilitacion_urbana import LiquidacionHabilitacionUrbana
+from .liquidacion.liquidacion_especifico.liquidacion_mecanica_suelos import LiquidacionMecanicaSuelos
+from .liquidacion.liquidacion_especifico.liquidacion_impacto_vial import LiquidacionImpactoVial
+from .liquidacion.liquidacion_especifico.liquidacion_taludes import LiquidacionTaludes
+from .liquidacion.liquidacion_especifico.liquidacion_inspeccion_obra import LiquidacionInspeccionObra
+from .liquidacion.liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorMetroCuadrado,
     LiquidacionPorCategoriaVisitas,
 )
-from .liquidacion.tarifas_reglas import (
+from .liquidacion.liquidacion_tipo.tarifas_reglas import (
+    TarifaLiquidacionBase,
+    TarifaPorcentajeObra,
     TarifaPorMetroCuadrado,
     TarifaPorCategoriaVisitas,
-    ReglaTarifaLiquidacion,
-    ReglaTarifaInspeccionObra,
+    Derecho,
 )
 from .proyectista import Proyectista
 from .proyecto import (
     Proyecto,
     ProyectoEmpresarial,
     ProyectoPersonaNatural,
-    ContactoProyecto,
 )
-from .liquidacion_delegado import LiquidacionDelegado
+from .delegado import LiquidacionDelegado
+from .inspector import Inspector, LiquidacionInspector
 
 __all__ = [
     "Delegado",
-    "MunicipalidadDelegado",
-    "PeriodoDelegado",
+    "DelegadoMunicipalidad",
+    "DelegadoMunicipalidadPeriodo",
     "Especialidad",
     "LiquidacionGeneral",
     "LiquidacionContacto",
     "LiquidacionDocumentos",
     # Modelo de detalle para edificaciones
     "LiquidacionEdificacion",
-    "LiquidacionEdificacionProxy",
     # Modelos de especialidades M2 y visitas
     "LiquidacionHabilitacionUrbana",
     "LiquidacionMecanicaSuelos",
@@ -67,16 +63,16 @@ __all__ = [
     "TarifaPorcentajeObra",
     "TarifaLiquidacionBase",
     "LiquidacionPorcentajeObra",
-    "EspecialidadesLiquidacion",
+    "LiquidacionPorcentajeObraDetalle",
     # Tarifas y reglas nuevas
     "TarifaPorMetroCuadrado",
     "TarifaPorCategoriaVisitas",
-    "ReglaTarifaLiquidacion",
-    "ReglaTarifaInspeccionObra",
     "Proyectista",
     "Proyecto",
     "ProyectoEmpresarial",
     "ProyectoPersonaNatural",
-    "ContactoProyecto",
     "LiquidacionDelegado",
+    "Inspector",
+    "LiquidacionInspector",
+    "Derecho",
 ]

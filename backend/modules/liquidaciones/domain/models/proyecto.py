@@ -76,6 +76,13 @@ class Proyecto(BaseModel):
         verbose_name="Distrito del Proyecto",
     )
     
+    urbanizacion = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Urbanización del Proyecto",
+    )
+
     direccion = models.CharField(
         max_length=512,
         blank=True,
@@ -96,61 +103,8 @@ class Proyecto(BaseModel):
         if self.entidad and self.entidad.tipo_documento not in ["RUC", "DNI"]:
             raise ValidationError("La entidad debe tener tipo de documento RUC o DNI.")
 
-    @property
-    def es_empresarial(self):
-        """Verdadero si el proyecto pertenece a una institución (RUC)."""
-        return bool(self.entidad and self.entidad.tipo_documento == "RUC")
-
-    @property
-    def es_persona_natural(self):
-        """Verdadero si el proyecto pertenece a una persona natural (DNI)."""
-        return bool(self.entidad and self.entidad.tipo_documento == "DNI")
-
-    # Propiedades de compatibilidad hacia atrás
-    @property
-    def empresa(self):
-        """Compatibilidad hacia atrás: retorna self.entidad si es una institución, sino None."""
-        if self.entidad and self.entidad.es_institucion:
-            return self.entidad
-        return None
-
-    @property
-    def persona_natural(self):
-        """Compatibilidad hacia atrás: retorna self.entidad si es persona natural, sino None."""
-        if self.entidad and self.entidad.es_persona_natural:
-            return self.entidad
-        return None
-
     def __str__(self):
         return self.denominacion
-
-class ProyectoPropietario(BaseModel):
-    """
-    Modelo para representar un propietario de un proyecto.
-    Un propietario puede tener múltiples proyectos.
-    """
-
-    history = HistoricalRecords()
-
-    nombre_propietario = models.CharField(
-        max_length=255, verbose_name="Nombre del Propietario"
-    )
-    
-    proyectos = models.ForeignKey(
-        "Proyecto",
-        related_name="propietarios",
-        verbose_name="Proyectos del Propietario",
-        blank=True,
-        on_delete=models.CASCADE,
-    )
-
-    class Meta:
-        verbose_name = "Propietario de Proyecto"
-        verbose_name_plural = "Propietarios de Proyectos"
-        ordering = ["nombre"]
-
-    def __str__(self):
-        return self.nombre
 
 class ProyectoEmpresarialManager(models.Manager):
     def get_queryset(self):

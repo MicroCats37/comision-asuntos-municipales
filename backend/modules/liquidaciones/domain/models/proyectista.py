@@ -23,7 +23,7 @@ class Proyectista(BaseModel):
 
     history = HistoricalRecords()
 
-    perfil_ingeniero = models.UniqueConstraint(
+    perfil_ingeniero = models.ForeignKey(
         "usuarios.PerfilIngeniero",
         on_delete=models.PROTECT,
         related_name="proyectistas",

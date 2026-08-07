@@ -7,6 +7,7 @@ from django.db import models
 from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
+from core_application.models import VigenciaModel
 from utils.ubigeo_schema import (
     get_provincia_choices_callable,
     get_distrito_flat_choices_callable,
@@ -176,12 +177,12 @@ class ContactoMunicipalidad(BaseModel):
         return f"{self.contacto} @ {self.municipalidad}"
 
 
-class Alcalde(BaseModel):
+class Alcalde(BaseModel, VigenciaModel):
     history = HistoricalRecords()
 
     """
     Alcalde de una municipalidad.
-    Permite almacenar información histórica de alcaldes anteriores.
+    Permite almacenar información histórica de alcaleless anteriores.
     """
     municipalidad = models.ForeignKey(
         Municipalidad,
@@ -194,17 +195,6 @@ class Alcalde(BaseModel):
         max_length=200,
         verbose_name="Nombre del Alcalde",
     )
-    
-    periodo_inicio = models.DateField(
-        blank=True,
-        null=True,
-        verbose_name="Inicio del Período",
-    )
-    periodo_fin = models.DateField(
-        blank=True,
-        null=True,
-        verbose_name="Fin del Período",
-    )
 
     class Meta:
         verbose_name = "Alcalde"
@@ -214,7 +204,7 @@ class Alcalde(BaseModel):
     def __str__(self):
         return f"{self.nombre} ({self.municipalidad})"
     
-class GerenteUrbano(BaseModel):
+class GerenteUrbano(BaseModel, VigenciaModel):
     history = HistoricalRecords()
 
     """
@@ -231,17 +221,6 @@ class GerenteUrbano(BaseModel):
     nombre = models.CharField(
         max_length=200,
         verbose_name="Nombre del Gerente Urbano",
-    )
-    
-    periodo_inicio = models.DateField(
-        blank=True,
-        null=True,
-        verbose_name="Inicio del Período",
-    )
-    periodo_fin = models.DateField(
-        blank=True,
-        null=True,
-        verbose_name="Fin del Período",
     )
 
     class Meta:

@@ -72,6 +72,12 @@ def test_sync_client(db):
 
 
 @pytest.fixture
+def api():
+    """NinjaExtraAPI instance from config/api.py."""
+    return _get_ninja_api()
+
+
+@pytest.fixture
 def test_async_client(db):
     """Ninja TestAsyncClient sin autenticación.
 

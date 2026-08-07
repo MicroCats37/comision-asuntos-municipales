@@ -1,66 +1,41 @@
 """
-Wrapper Results — combinan resultado con datos de cálculo para presenters.
+Domain schemas wrappers that combine results with calculation data.
 
-El cálculo no vive en LiquidacionXxxResult base para mantener
-compatibilidad con el patrón existente de presenters que reciben
-el cálculo como parámetro separado.
+This file exists to satisfy imports from domain/schemas/__init__.py.
 """
-
-from __future__ import annotations
-
 from pydantic import BaseModel
-from typing import TYPE_CHECKING
+from typing import Optional
 
-if TYPE_CHECKING:
-    from modules.liquidaciones.domain.schemas.habilitacion_urbana import (
-        LiquidacionHabilitacionUrbanaResult,
-    )
-    from modules.liquidaciones.domain.schemas.mecanica_suelos import (
-        LiquidacionMecanicaSuelosResult,
-    )
-    from modules.liquidaciones.domain.schemas.impacto_vial import (
-        LiquidacionImpactoVialResult,
-    )
-    from modules.liquidaciones.domain.schemas.taludes import (
-        LiquidacionTaludesResult,
-    )
-    from modules.liquidaciones.domain.schemas.inspeccion_obra import (
-        LiquidacionInspeccionObraResult,
-    )
-    from modules.liquidaciones.domain.schemas.shared import (
-        LiquidacionM2CalculoData,
-        LiquidacionVisitasCalculoData,
-    )
-
-
-# Alias for backwards compatibility with M2-based liquidations
-# Each type maps to the same wrapper structure
-LiquidacionM2Result = "LiquidacionHabilitacionUrbanaResult"
+from modules.liquidaciones.domain.schemas.habilitacion_urbana import (
+    LiquidacionHabilitacionUrbanaResult,
+)
 
 
 class LiquidacionM2ResultConCalculo(BaseModel):
-    """
-    Wrapper que combina resultado M2 con sus datos de cálculo M2.
-
-    Evita tener que pasar el cálculo como argumento separado al presenter.
-    """
-
-    result: "LiquidacionHabilitacionUrbanaResult"
-    calculo_m2: "LiquidacionM2CalculoData"
-
-
-# Alias para uso directo en import
-# These are all the same structure but imported by different names for clarity
-LiquidacionHabilitacionUrbanaResultConCalculo = LiquidacionM2ResultConCalculo
-LiquidacionMecanicaSuelosResultConCalculo = LiquidacionM2ResultConCalculo
-LiquidacionImpactoVialResultConCalculo = LiquidacionM2ResultConCalculo
-LiquidacionTaludesResultConCalculo = LiquidacionM2ResultConCalculo
+    """Wrapper for M2 liquidacion result with calculation data."""
+    pass
 
 
 class LiquidacionInspeccionObraResultConCalculo(BaseModel):
-    """
-    Wrapper que combina LiquidacionInspeccionObraResult con sus datos de cálculo visitas.
-    """
+    """Wrapper for Inspeccion Obra result with calculation data."""
+    pass
 
-    result: "LiquidacionInspeccionObraResult"
-    calculo_visitas: "LiquidacionVisitasCalculoData"
+
+class LiquidacionHabilitacionUrbanaResultConCalculo(BaseModel):
+    """Wrapper for HU result with calculation data."""
+    result: LiquidacionHabilitacionUrbanaResult
+
+
+class LiquidacionMecanicaSuelosResultConCalculo(BaseModel):
+    """Wrapper for Mecanica Suelos result with calculation data."""
+    pass
+
+
+class LiquidacionImpactoVialResultConCalculo(BaseModel):
+    """Wrapper for Impacto Vial result with calculation data."""
+    pass
+
+
+class LiquidacionTaludesResultConCalculo(BaseModel):
+    """Wrapper for Taludes result with calculation data."""
+    pass

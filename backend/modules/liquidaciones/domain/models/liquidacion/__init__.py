@@ -2,24 +2,27 @@
 Liquidacion package — re-exports for liquidacion domain models.
 """
 
-from .liquidacion import (
+from .liquidacion_general.liquidacion import (
     EstadoLiquidacion,
     TipoLiquidacion,
     LiquidacionGeneral,
     LiquidacionContacto,
     LiquidacionDocumentos,
     LiquidacionProyectista,
-    TarifaPorcentajeObra,
-    TarifaLiquidacionBase,
-    LiquidacionPorcentajeObra,
-    EspecialidadesLiquidacion,
-    ReglaTarifaEdificacion,
 )
-from .liquidacion_edificaciones import (
+from .liquidacion_tipo.liquidacion_tipo import (
+    LiquidacionPorcentajeObra,
+    LiquidacionPorcentajeObraDetalle,
+)
+from .liquidacion_tipo.tarifas_reglas import (
+    TarifaLiquidacionBase,
+    TarifaPorcentajeObra,
+    Derecho,
+)
+from .liquidacion_especifico.liquidacion_edificaciones import (
     TipoTramiteEdificaciones,
     TramiteAccion,
     LiquidacionEdificacion,
-    LiquidacionEdificacionProxy,
 )
 
 __all__ = [
@@ -32,10 +35,9 @@ __all__ = [
     "TarifaPorcentajeObra",
     "TarifaLiquidacionBase",
     "LiquidacionPorcentajeObra",
-    "EspecialidadesLiquidacion",
-    "ReglaTarifaEdificacion",
+    "LiquidacionPorcentajeObraDetalle",
     "TipoTramiteEdificaciones",
     "TramiteAccion",
     "LiquidacionEdificacion",
-    "LiquidacionEdificacionProxy",
+    "Derecho",
 ]

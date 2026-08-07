@@ -1,45 +1,68 @@
 """
-Domain schemas — Habilitación Urbana.
-
-Resultado de una liquidación de habilitación urbana.
-No hereda de base class compartida.
+Domain schemas — DTOs internos para servicios de Habilitacion Urbana.
 """
-
-from __future__ import annotations
-
 import uuid
-from decimal import Decimal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional
 
 
-class LiquidacionHabilitacionUrbanaResult(BaseModel):
-    """
-    Resultado completo de una liquidación de habilitación urbana.
+class ProyectoResultData(BaseModel):
+    """Datos del proyecto en el resultado."""
+    id: uuid.UUID
+    denominacion: str
+    entidad_razon_social: Optional[str] = None
+    entidad_tipo_documento: Optional[str] = None
+    entidad_numero_documento: Optional[str] = None
+    nombre_propietario: str
+    direccion: Optional[str] = None
+    urbanizacion: Optional[str] = None
 
-    Campos explícitos sin herencia de base class.
-    """
 
-    liquidacion_id: uuid.UUID
-    liquidacion_public_id: str
-    numero_revision: int
-    estado: str
-    fecha_creacion: str
-    proyecto_id: uuid.UUID
-    proyecto_public_id: str
-    proyecto_nombre: str
-    proyecto_direccion: Optional[str]
-    proyecto_entidad_id: Optional[uuid.UUID]
-    proyecto_entidad_tipo: Optional[str]
-    proyecto_entidad_nombre: Optional[str]
-    proyecto_entidad_ruc: Optional[str]
+class LiquidacionGeneralResultData(BaseModel):
+    """Datos de la liquidacion general en el resultado."""
+    id: uuid.UUID
     municipalidad_id: uuid.UUID
-    municipalidad_nombre: str
-    expediente: Optional[str] = None
-    observacion: Optional[str]
-    igv_valor: Decimal
-    uit_valor: Decimal
-    totales_subtotal: Decimal
-    totales_igv: Decimal
-    totales_total_liquidacion: Decimal
-    totales_total_a_pagar: Decimal
+    usuario_creador_id: uuid.UUID
+    fecha_registro: str
+    estado: str
+    expediente: str
+    observacion: Optional[str] = None
+    retencion: bool
+    numero_revision: int
+    sub_total: float
+    total: float
+    igv_id: Optional[uuid.UUID] = None
+    uit_id: Optional[uuid.UUID] = None
+    proyecto: ProyectoResultData
+
+
+class LiquidacionTipoResultData(BaseModel):
+    """Datos del tipo de liquidacion en el resultado."""
+    id: uuid.UUID
+    numero: int
+
+
+class LiquidacionEspecificaDatosResultData(BaseModel):
+    """Datos especificos de calculo M2 en el resultado."""
+    area_m2: float
+    costo_por_m2: float
+    minimo: float
+    maximo: Optional[float] = None
+
+
+class LiquidacionEspecificaTarifaResultData(BaseModel):
+    """Datos de tarifa M2 en el resultado."""
+    tarifa_m2_id: uuid.UUID
+
+
+class LiquidacionEspecificaResultData(BaseModel):
+    """Datos especificos de habilitacion urbana en el resultado."""
+    datos: LiquidacionEspecificaDatosResultData
+    tarifa: LiquidacionEspecificaTarifaResultData
+
+
+class LiquidacionHabilitacionUrbanaResult(BaseModel):
+    """Resultado completo de una liquidacion de habilitacion urbana."""
+    liquidacion_general: LiquidacionGeneralResultData
+    liquidacion_tipo: LiquidacionTipoResultData
+    liquidacion_especifica: LiquidacionEspecificaResultData

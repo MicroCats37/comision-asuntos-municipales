@@ -8,6 +8,7 @@ from simple_history.models import HistoricalRecords
 from typing import Optional
 
 from core.models import BaseModel
+from core_application.models import VigenciaModel
 
 
 class IGVQuerySet(models.QuerySet):
@@ -26,7 +27,7 @@ class UITQuerySet(models.QuerySet):
         return self.filter(periodo_fin__isnull=True).order_by("-periodo_inicio").first()
 
 
-class IGV(BaseModel):
+class IGV(BaseModel, VigenciaModel):
     """
     Tasa de IGV (Impuesto General a las Ventas) aplicable a liquidaciones.
     Almacenada como fracción decimal (ej. 0.18 = 18%).
@@ -47,14 +48,6 @@ class IGV(BaseModel):
         verbose_name="Tasa IGV",
         help_text="Tasa de IGV como fracción decimal (ej. 0.18 para 18%)",
     )
-    periodo_inicio = models.DateField(
-        verbose_name="Período de inicio",
-    )
-    periodo_fin = models.DateField(
-        blank=True,
-        null=True,
-        verbose_name="Período de fin",
-    )
 
     class Meta:
         verbose_name = "IGV"
@@ -71,7 +64,7 @@ class IGV(BaseModel):
         return self.periodo_fin is None
 
 
-class UIT(BaseModel):
+class UIT(BaseModel, VigenciaModel):
     """
     Valor de UIT (Unidad Impositiva Tributaria) en soles.
     Es un valor monetario entero, no un porcentaje.
@@ -85,14 +78,6 @@ class UIT(BaseModel):
     valor = models.IntegerField(
         verbose_name="Valor UIT (S/)",
         help_text="Valor de la UIT en soles",
-    )
-    periodo_inicio = models.DateField(
-        verbose_name="Período de inicio",
-    )
-    periodo_fin = models.DateField(
-        blank=True,
-        null=True,
-        verbose_name="Período de fin",
     )
 
     class Meta:

@@ -5,21 +5,20 @@ Usa el patrón Module de injector para vincular servicios.
 """
 from injector import Module, singleton, Binder
 
-from .domain.services.finanzas_core_service import FinanzasCoreService
-from .domain.services.finanzas_orchestrator import FinanzasOrchestrator
-
 
 class FinanzasModule(Module):
     """
     Módulo DI para el paquete finanzas.
 
     Vincula:
-    - FinanzasCoreService (operaciones síncronas)
-    - FinanzasOrchestrator (fachada ligera, depende de CoreService)
+    - (暂时禁用) FinanzasCoreService — 等待重建
+    - (暂时禁用) FinanzasOrchestrator — 等待重建
 
     Todos los servicios son de ámbito singleton.
     """
 
     def configure(self, binder: Binder) -> None:
-        binder.bind(FinanzasCoreService, to=FinanzasCoreService, scope=singleton)
-        binder.bind(FinanzasOrchestrator, to=FinanzasOrchestrator, scope=singleton)
+        # TODO: 重建 IGV/UIT 服务后重新启用
+        # binder.bind(FinanzasCoreService, to=FinanzasCoreService, scope=singleton)
+        # binder.bind(FinanzasOrchestrator, to=FinanzasOrchestrator, scope=singleton)
+        pass

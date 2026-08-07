@@ -9,7 +9,9 @@ from injector import inject
 
 from core.responses import ApiResponse, success_response
 from ..schemas.finanzas_schemas import VariablesFinancierasOut
-from ...domain.services.finanzas_orchestrator import FinanzasOrchestrator
+
+# TODO: 重建 FinanzasOrchestrator 后重新启用
+# from ...domain.services.finanzas_orchestrator import FinanzasOrchestrator
 
 
 @api_controller("/finanzas", tags=["Finanzas"], permissions=[AllowAny])
@@ -21,9 +23,10 @@ class FinanzasController:
     - GET /variables/vigentes: Obtiene IGV y UIT vigentes para mostrar en formulario
     """
 
-    @inject
-    def __init__(self, orchestrator: FinanzasOrchestrator):
-        self.orchestrator = orchestrator
+    # TODO: 重建 FinanzasOrchestrator 后重新启用
+    # @inject
+    # def __init__(self, orchestrator: FinanzasOrchestrator):
+    #     self.orchestrator = orchestrator
 
     @route.get("/variables/vigentes", response={200: ApiResponse[VariablesFinancierasOut]}, auth=None)
     async def obtener_variables_vigentes(self):
@@ -33,5 +36,9 @@ class FinanzasController:
         Nota: Estos valores son SOLO para mostrar. El cálculo real de liquidaciones
         obtiene internamente los valores vigentes desde el servicio.
         """
-        result = await self.orchestrator.obtener_variables_vigentes()
-        return success_response(result)
+        # TODO: 重建后实现
+        return success_response({
+            "igv": None,
+            "uit": None,
+            "message": "FinanzasOrchestrator pendiente de reconstruir"
+        })

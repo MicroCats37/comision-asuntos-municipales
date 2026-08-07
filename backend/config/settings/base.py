@@ -46,6 +46,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "core",
+    "core_application",
     "modules.entidades",
     "modules.usuarios",
     "modules.finanzas",

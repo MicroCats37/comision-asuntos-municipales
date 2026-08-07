@@ -1,45 +1,8 @@
 """
-Domain schemas — Impacto Vial.
-
-Resultado de una liquidación de impacto vial.
-No hereda de base class compartida.
+Domain schemas stub for Impacto Vial.
 """
-
-from __future__ import annotations
-
-import uuid
-from decimal import Decimal
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel
 
 
 class LiquidacionImpactoVialResult(BaseModel):
-    """
-    Resultado completo de una liquidación de impacto vial.
-
-    Campos explícitos sin herencia de base class.
-    """
-
-    liquidacion_id: uuid.UUID
-    liquidacion_public_id: str
-    numero_revision: int
-    estado: str
-    fecha_creacion: str
-    proyecto_id: uuid.UUID
-    proyecto_public_id: str
-    proyecto_nombre: str
-    proyecto_direccion: Optional[str]
-    proyecto_entidad_id: Optional[uuid.UUID]
-    proyecto_entidad_tipo: Optional[str]
-    proyecto_entidad_nombre: Optional[str]
-    proyecto_entidad_ruc: Optional[str]
-    municipalidad_id: uuid.UUID
-    municipalidad_nombre: str
-    expediente: Optional[str] = None
-    observacion: Optional[str]
-    igv_valor: Decimal
-    uit_valor: Decimal
-    totales_subtotal: Decimal
-    totales_igv: Decimal
-    totales_total_liquidacion: Decimal
-    totales_total_a_pagar: Decimal
+    pass

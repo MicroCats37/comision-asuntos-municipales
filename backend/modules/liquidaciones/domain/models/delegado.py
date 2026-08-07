@@ -6,10 +6,9 @@ from django.db import models
 from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
-from ..constants import DelegadoStatus, TipoDelegado, CategoriaDelegado
-from ..validators import validate_distrito
-from utils.ubigeo_schema import get_district_choices
-
+from core_application.models import VigenciaModel
+from ..constants import TipoDelegado, CategoriaDelegado
+from modules.liquidaciones.domain.constants import DictamenRevision
 
 class Delegado(BaseModel):
     """
@@ -18,13 +17,14 @@ class Delegado(BaseModel):
 
     history = HistoricalRecords()
 
-    perfil_ingeniero = models.UniqueConstraint(
+    perfil_ingeniero = models.OneToOneField(
         "usuarios.PerfilIngeniero",
         on_delete=models.PROTECT,
-        related_name="proyectistas",
+        related_name="delegados",
         verbose_name="Perfil de Ingeniero",
         help_text="Perfil que contiene los datos de identidad del ingeniero.",
     )
+    
 
     class Meta:
         verbose_name = "Delegado"
@@ -45,9 +45,9 @@ class DelegadoMunicipalidad(BaseModel):
     history = HistoricalRecords()
 
     delegado = models.ForeignKey(
-        "usuarios.Delegado",
+        "Delegado",
         on_delete=models.PROTECT,
-        related_name="delegado_liquidacion",
+        related_name="municipalidades_asignadas",
         verbose_name="Delegado",
     )
 
@@ -64,6 +64,7 @@ class DelegadoMunicipalidad(BaseModel):
         default=TipoDelegado.TITULAR,
         verbose_name="Tipo de Delegado",
     )
+    
     categoria = models.CharField(
         max_length=50,
         choices=CategoriaDelegado.choices,
@@ -86,7 +87,7 @@ class DelegadoMunicipalidad(BaseModel):
         return f"{self.delegado.perfil_ingeniero.nombre_completo} - {self.municipalidad.nombre}"
 
 
-class DelegadoMunicipalidadPeriodo(BaseModel):
+class DelegadoMunicipalidadPeriodo(BaseModel, VigenciaModel):
     
     history = HistoricalRecords()
     
@@ -96,13 +97,56 @@ class DelegadoMunicipalidadPeriodo(BaseModel):
         related_name="periodos",
         verbose_name="Delegado Municipalidad",
     )
-    
-    periodo_inicio = models.DateField(
-        verbose_name="Periodo de Inicio",
-    )   
 
-    periodo_fin = models.DateField(
-        verbose_name="Periodo de Fin",
+    class Meta:
+        verbose_name = "Periodo de Municipalidad del Delegado"
+        verbose_name_plural = "Periodos de Municipalidades de Delegados"
+        ordering = ["delegado_municipalidad", "-periodo_inicio"]
+
+    def __str__(self):
+        return (
+            f"{self.delegado_municipalidad} "
+            f"({self.periodo_inicio} - {self.periodo_fin or 'vigente'})"
+        )
+
+
+
+
+class LiquidacionDelegado(BaseModel):
+    """
+    Tabla explicita entre LiquidacionGeneral y Delegado.
+    """
+    history = HistoricalRecords()
+    liquidacion = models.ForeignKey(
+        "LiquidacionGeneral",
+        on_delete=models.CASCADE,
+        related_name="liquidacion_delegados",
+        verbose_name="Liquidacion",
     )
+    delegado = models.ForeignKey(
+        "Delegado",
+        on_delete=models.PROTECT,
+        related_name="delegado_liquidacion",
+        verbose_name="Delegado",
+    )
+    periodo = models.CharField(max_length=100, blank=True, null=True, verbose_name="Periodo")
+    dictamen_revision = models.CharField(
+        max_length=20,
+        choices=DictamenRevision.choices,
+        blank=True,
+        null=True,
+        verbose_name="Dictamen de Revision",
+    )
+    fecha_presentacion = models.DateField(blank=True, null=True, verbose_name="Fecha de Presentacion")
+    fecha_revision = models.DateField(blank=True, null=True, verbose_name="Fecha de Revision")
+
+    class Meta:
+        verbose_name = "Delegado de Liquidacion"
+        verbose_name_plural = "Delegados de liquidaciones"
+        ordering = ["liquidacion", "delegado"]
+        constraints = [
+            models.UniqueConstraint(fields=["liquidacion", "delegado"], name="unique_liquidacion_delegado"),
+        ]
     
-    
+    def __str__(self):
+        return f"{self.delegado} @ {self.liquidacion}"
