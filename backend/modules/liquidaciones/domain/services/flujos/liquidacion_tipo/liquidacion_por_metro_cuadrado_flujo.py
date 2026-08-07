@@ -8,8 +8,8 @@ from decimal import Decimal
 from django.db import transaction
 from injector import inject
 
-from modules.liquidaciones.domain.models.liquidacion.liquidacion import LiquidacionGeneral
-from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo import (
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorMetroCuadrado,
 )
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (

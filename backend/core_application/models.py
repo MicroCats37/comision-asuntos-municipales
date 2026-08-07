@@ -79,7 +79,7 @@ class AutoNumeroModel(models.Model):
 
     def save(self, *args, **kwargs):
         """Auto-increment `numero` to the next sequential value on first save."""
-        if not self.pk:
+        if self._state.adding and getattr(self, "numero", None) is None:
             last = (
                 self.__class__.objects.all()
                 .order_by("numero")

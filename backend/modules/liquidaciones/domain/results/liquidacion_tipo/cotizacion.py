@@ -14,3 +14,16 @@ class CotizacionM2Result(BaseModel):
     monto_bruto: float
     subtotal: float
     total: float
+
+
+class CotizacionVisitasResult(BaseModel):
+    """DTO de dominio interno que transporta el cálculo y metadata de cotización de Visitas."""
+    cantidad_visitas: int
+    categoria: str
+    costo_por_visita: float
+    tarifa_id: str
+    monto_bruto: float
+    subtotal: float
+    total: float
+    uit: dict
+    igv: dict

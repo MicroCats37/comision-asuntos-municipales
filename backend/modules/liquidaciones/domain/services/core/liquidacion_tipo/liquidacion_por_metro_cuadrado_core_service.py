@@ -9,11 +9,11 @@ from typing import Optional
 
 from ninja.errors import HttpError
 
-from modules.liquidaciones.domain.models.liquidacion.liquidacion import LiquidacionGeneral
-from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo import (
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorMetroCuadrado,
 )
-from modules.liquidaciones.domain.models.liquidacion.tarifas_reglas import (
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorMetroCuadrado as TarifaPorMetroCuadradoModel,
     DerechoPorMetroCuadrado,

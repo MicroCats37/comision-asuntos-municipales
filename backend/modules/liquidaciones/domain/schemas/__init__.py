@@ -40,9 +40,8 @@ from modules.liquidaciones.domain.schemas.shared import (
     CotizacionVisitasQuoteData,
 )
 
-from modules.liquidaciones.domain.schemas.habilitacion_urbana import (
-    LiquidacionHabilitacionUrbanaResult,
-)
+# `habilitacion_urbana.py` is intentionally empty (the concrete result class lives elsewhere).
+# Re-exporting from here would crash Django on import.
 
 from modules.liquidaciones.domain.schemas.mecanica_suelos import (
     LiquidacionMecanicaSuelosResult,

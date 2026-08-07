@@ -32,6 +32,10 @@ class VariablesFinancierasNulasOut(BaseSchema):
     igv: Optional[dict] = Field(None, description="IGV nulo")
     uit: Optional[dict] = Field(None, description="UIT nulo")
 
+class VariablesFinancierasBasicasOut(BaseSchema):
+    igv: dict = Field(..., description="Objeto con valor y metadata del IGV vigente aplicado")
+    uit: dict = Field(..., description="Objeto con valor y metadata de la UIT vigente aplicada")
+
 # --- Liquidacion General (Cabecera base) ---
 class LiquidacionGeneralRevisionIn(BaseSchema):
     municipalidad_id: uuid.UUID = Field(..., description="ID de la municipalidad")

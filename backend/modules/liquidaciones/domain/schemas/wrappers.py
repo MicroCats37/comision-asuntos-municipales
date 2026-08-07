@@ -6,9 +6,13 @@ This file exists to satisfy imports from domain/schemas/__init__.py.
 from pydantic import BaseModel
 from typing import Optional
 
-from modules.liquidaciones.domain.schemas.habilitacion_urbana import (
-    LiquidacionHabilitacionUrbanaResult,
-)
+# `habilitacion_urbana.py` is empty. Import the concrete result from its actual location.
+try:
+    from modules.liquidaciones.domain.results.liquidacion_especifico.habilitacion_urbana_primera_revision_result import (
+        HabilitacionUrbanaPrimeraRevisionResult as LiquidacionHabilitacionUrbanaResult,
+    )
+except ImportError:
+    LiquidacionHabilitacionUrbanaResult = None
 
 
 class LiquidacionM2ResultConCalculo(BaseModel):

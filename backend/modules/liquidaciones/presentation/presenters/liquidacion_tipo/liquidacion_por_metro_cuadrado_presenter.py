@@ -6,7 +6,7 @@ Consumido por cualquier controller de especialidad que use M2 (HU, Mecánica de 
 NO business logic.
 """
 import uuid
-from modules.liquidaciones.domain.models.liquidacion.tarifas_reglas import (
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaPorMetroCuadrado,
     DerechoPorMetroCuadrado,
 )

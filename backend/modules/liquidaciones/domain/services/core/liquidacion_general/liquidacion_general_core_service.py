@@ -6,9 +6,11 @@ Handles: Entidad, Proyecto, LiquidacionGeneral.
 """
 from decimal import Decimal
 from typing import Optional
+from datetime import date
 
-from modules.liquidaciones.domain.models.liquidacion.liquidacion import LiquidacionGeneral
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
 from modules.liquidaciones.domain.models.proyecto import Proyecto
+from modules.finanzas.domain.models.impuestos import UIT, IGV
 from modules.entidades.domain.models import Entidad
 from modules.liquidaciones.domain.constants import EstadoLiquidacion
 
@@ -19,15 +21,20 @@ class LiquidacionGeneralCoreService:
     Pure ORM — no business logic.
     """
 
+    def get_uit_vigente(self) -> Optional[UIT]:
+        return UIT.objects.vigente()
+
+    def get_igv_vigente(self) -> Optional[IGV]:
+        return IGV.objects.vigente()
+
     def create_entidad(
         self,
         tipo_documento: str,
         numero_documento: str,
-        razon_social: Optional[str] = None,
-        direccion: Optional[str] = None,
     ) -> Entidad:
         """
         Creates or returns existing Entidad by numero_documento.
+        Note: razon_social and direccion belong to Proyecto, not Entidad.
         """
         existente = Entidad.objects.filter(numero_documento=numero_documento).first()
         if existente:
@@ -35,8 +42,6 @@ class LiquidacionGeneralCoreService:
         return Entidad.objects.create(
             tipo_documento=tipo_documento,
             numero_documento=numero_documento,
-            razon_social=razon_social,
-            direccion=direccion,
         )
 
     def create_proyecto(
@@ -56,6 +61,7 @@ class LiquidacionGeneralCoreService:
             entidad_numero_documento=proyecto_data.get("entidad_numero_documento"),
             direccion=proyecto_data.get("direccion"),
             urbanizacion=proyecto_data.get("urbanizacion"),
+            distrito_id=proyecto_data.get("distrito_id"),
         )
 
     def create_liquidacion_general(

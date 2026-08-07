@@ -2402,3 +2402,38 @@
 [CodeGraph MCP] Auto-synced 1 file(s) in 301ms
 [CodeGraph MCP] Auto-synced 1 file(s) in 465ms
 [CodeGraph daemon] Shutting down (idle timeout; clients=0).
+[CodeGraph daemon] Listening on \\.\pipe\codegraph-5a8a0a3b1c2e0616 (pid 17652, v1.3.1). Idle timeout 300000ms.
+[CodeGraph MCP] File watcher active — graph will auto-sync on changes
+[CodeGraph MCP] Query pool: up to 7 worker thread(s) for concurrent reads.
+[CodeGraph MCP] Auto-synced 1 file(s) in 710ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 371ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 498ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 372ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 379ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 509ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 444ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 625ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 340ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 319ms
+[CodeGraph MCP] Auto-synced 2 file(s) in 277ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 322ms
+[CodeGraph MCP] Auto-synced 2 file(s) in 274ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 318ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 341ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 384ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 286ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 384ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 431ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 459ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 367ms
+[CodeGraph MCP] Auto-synced 2 file(s) in 309ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 354ms
+[CodeGraph MCP] Auto-synced 4 file(s) in 286ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 320ms
+[CodeGraph MCP] Auto-synced 4 file(s) in 287ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 306ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 313ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 363ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 296ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 389ms
+[CodeGraph MCP] Auto-synced 1 file(s) in 325ms

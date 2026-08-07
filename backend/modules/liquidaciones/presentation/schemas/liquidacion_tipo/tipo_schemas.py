@@ -97,3 +97,4 @@ class CotizarPorMetroCuadradoCalculoOutputSchema(BaseSchema):
 class CotizarPorMetroCuadradoOutputSchema(BaseSchema):
     datos: CotizarPorMetroCuadradoDatosOutputSchema
     calculo: CotizarPorMetroCuadradoCalculoOutputSchema
+

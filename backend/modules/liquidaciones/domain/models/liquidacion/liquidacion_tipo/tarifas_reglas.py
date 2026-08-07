@@ -11,11 +11,11 @@ Este archivo contiene:
 from django.db import models
 from simple_history.models import HistoricalRecords
 from core.models import BaseModel
+from decimal import Decimal
 from core_application.models import VigenciaModel
 
 
-from ...constants import TramiteAccion
-from ...constants import TipoLiquidacion
+from modules.liquidaciones.domain.constants import TramiteAccion, TipoLiquidacion
 
 
 class TarifaLiquidacionBase(BaseModel, VigenciaModel):
@@ -80,7 +80,7 @@ class TarifaPorCategoriaVisitas(BaseModel):
     """
     Tarifa por categoría de visitas para liquidaciones de inspección de obra.
 
-    Contiene el costo por visita y el número mínimo de visitas.
+    Contiene el porcentaje de UIT aplicable y la categoría.
 
     Relación: Tiene OneToOneField hacia TarifaLiquidacionBase.
     Una TarifaPorCategoriaVisitas pertenece a exactamente una TarifaLiquidacionBase.
@@ -96,11 +96,12 @@ class TarifaPorCategoriaVisitas(BaseModel):
         help_text="Tarifa base asociada a esta tarifa por categoría de visitas.",
     )
 
-    costo_por_visita = models.DecimalField(
+    porcentaje_uit = models.DecimalField(
         max_digits=10,
-        decimal_places=2,
-        verbose_name="Costo por Visita",
-        help_text="Costo por cada visita de inspección en soles.",
+        decimal_places=4,
+        verbose_name="% de UIT",
+        help_text="Porcentaje de la UIT aplicable para esta categoría.",
+        default=Decimal("0.0"),
     )
 
     categoria_visitas = models.CharField(
@@ -113,10 +114,10 @@ class TarifaPorCategoriaVisitas(BaseModel):
     class Meta:
         verbose_name = "Tarifa por Categoría de Visitas"
         verbose_name_plural = "Tarifas por Categoría de Visitas"
-        ordering = ["tarifa_base__tipo_liquidacion", "costo_por_visita"]
+        ordering = ["tarifa_base__tipo_liquidacion", "porcentaje_uit"]
 
     def __str__(self):
-        return f"Tarifa Visitas {self.costo_por_visita}/visita (mín: {self.visitas_minimas})"
+        return f"Tarifa Visitas {self.porcentaje_uit * 100}% UIT/visita"
 
 
 class TarifaPorcentajeObra(BaseModel):

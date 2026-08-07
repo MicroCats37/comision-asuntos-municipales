@@ -9,13 +9,13 @@ from django.db import models
 from simple_history.models import HistoricalRecords
 from core.models import BaseModel
 from core_application.models import VigenciaModel
-from ...constants import (
+from modules.liquidaciones.domain.constants import (
     EstadoLiquidacion,
     TipoLiquidacion,
 )
 
 
-class LiquidacionGeneral(BaseModel, VigenciaModel):
+class LiquidacionGeneral(BaseModel):
     """
     Liquidación de pago a proyectistas para un proyecto.
     Representa la instancia operacional de liquidación/revisión de un proyecto.

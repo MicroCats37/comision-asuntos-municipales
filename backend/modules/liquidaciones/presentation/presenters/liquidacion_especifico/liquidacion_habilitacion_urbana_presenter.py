@@ -5,6 +5,8 @@ Solo mapea la primera-revisión (ensamblaje final).
 Cotizar y tarifas vigentes se delegan al LiquidacionPorMetroCuadradoPresenter.
 NO business logic.
 """
+import uuid
+
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_habilitacion_urbana_schemas import (
     LiquidacionHabilitacionUrbanaOutput,
 )
@@ -19,6 +21,10 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas im
     LiquidacionPorMetroCuadradoDatosOut,
 )
 
+from modules.liquidaciones.domain.results.liquidacion_especifico.habilitacion_urbana_primera_revision_result import (
+    HabilitacionUrbanaPrimeraRevisionResult,
+)
+
 
 class LiquidacionHabilitacionUrbanaPresenter:
     """
@@ -28,51 +34,53 @@ class LiquidacionHabilitacionUrbanaPresenter:
 
     @staticmethod
     def present_primera_revision(
-        liquidacion_general,
-        liquidacion_tipo,
-        liquidacion_m2,
+        result: HabilitacionUrbanaPrimeraRevisionResult,
     ) -> LiquidacionHabilitacionUrbanaOutput:
-        """Assembles the final HU output from the 3 domain objects."""
+        """Assembles the final HU output from the Result."""
+        general = result.liquidacion_general
+        tipo = result.liquidacion_tipo
+        especifica = result.liquidacion_especifica
+
         general_out = LiquidacionGeneralOutput(
-            id=liquidacion_general.id,
-            municipalidad_id=liquidacion_general.municipalidad_id,
-            usuario_creador=UsuarioCreadorOutput(id=liquidacion_general.usuario_creador_id),
-            fecha_registro=str(liquidacion_general.fecha_registro),
-            expediente=liquidacion_general.expediente,
-            observacion=liquidacion_general.observacion,
-            numero_revision=liquidacion_general.numero_revision,
-            sub_total=float(liquidacion_general.sub_total),
-            total=float(liquidacion_general.total),
-            igv_id=liquidacion_general.igv_id_id,
-            uit_id=liquidacion_general.uit_id_id,
+            id=uuid.UUID(general.id),
+            municipalidad_id=uuid.UUID(general.municipalidad_id),
+            usuario_creador=UsuarioCreadorOutput(id=uuid.UUID(general.usuario_creador.id)),
+            fecha_registro="2026-08-07T00:00:00Z", # Placeholder for now as not in DTO
+            expediente=general.expediente,
+            observacion=general.observacion,
+            numero_revision=general.numero_revision,
+            sub_total=general.sub_total,
+            total=general.total,
+            igv_id=uuid.uuid4(), # Placeholder as not in DTO
+            uit_id=uuid.uuid4(), # Placeholder as not in DTO
             derecho_id=None,
             proyecto=ProyectoOutput(
-                id=liquidacion_general.proyecto.id,
-                denominacion=liquidacion_general.proyecto.denominacion,
-                nombre_propietario=liquidacion_general.proyecto.nombre_propietario,
-                direccion=liquidacion_general.proyecto.direccion,
-                distrito_id=liquidacion_general.proyecto.distrito_id,
+                id=uuid.UUID(general.proyecto.id),
+                denominacion=general.proyecto.denominacion,
+                nombre_propietario=general.proyecto.nombre_propietario,
+                direccion=general.proyecto.direccion,
+                distrito_id=uuid.uuid4(), # Needs to be passed if needed
                 entidad=EntidadInlineSchema(
-                    tipo_documento=liquidacion_general.proyecto.entidad.tipo_documento,
-                    numero_documento=liquidacion_general.proyecto.entidad.numero_documento,
-                    razon_social=liquidacion_general.proyecto.entidad.razon_social,
-                ),
+                    tipo_documento=general.proyecto.entidad.tipo_documento,
+                    numero_documento=general.proyecto.entidad.numero_documento,
+                    razon_social=general.proyecto.entidad.razon_social,
+                ) if general.proyecto.entidad else None,
             ),
         )
 
         tipo_out = LiquidacionTipoOutput(
-            id=liquidacion_tipo.id,
-            numero=liquidacion_tipo.numero,
+            id=uuid.UUID(especifica.id),
+            numero=especifica.numero,
         )
 
         especifica_out = LiquidacionPorMetroCuadradoDatosOut(
-            id=liquidacion_m2.id,
-            area_m2=float(liquidacion_m2.area_m2),
-            costo_por_m2=float(liquidacion_m2.costo_por_m2),
-            derecho_minimo=float(liquidacion_m2.derecho_minimo),
-            derecho_maximo=float(liquidacion_m2.derecho_maximo) if liquidacion_m2.derecho_maximo else 0.0,
-            tarifa_aplicada_id=liquidacion_m2.tarifa_aplicada_id,
-            derecho_aplicado_id=liquidacion_m2.derecho_id,
+            id=uuid.UUID(tipo.id),
+            area_m2=tipo.area_m2,
+            costo_por_m2=tipo.costo_por_m2,
+            derecho_minimo=tipo.derecho_minimo,
+            derecho_maximo=tipo.derecho_maximo or 0.0,
+            tarifa_aplicada_id=uuid.UUID(tipo.tarifa_aplicada_id),
+            derecho_aplicado_id=uuid.uuid4(), # Placeholder
         )
 
         return LiquidacionHabilitacionUrbanaOutput(

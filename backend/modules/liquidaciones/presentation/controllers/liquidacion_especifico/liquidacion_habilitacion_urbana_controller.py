@@ -12,6 +12,10 @@ from modules.liquidaciones.domain.constants import TipoLiquidacion
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_metro_cuadrado_core_service import (
     LiquidacionPorMetroCuadradoCoreService,
 )
+from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_habilitacion_urbana_schemas import (
+    LiquidacionHabilitacionUrbanaInput,
+    LiquidacionHabilitacionUrbanaOutput,
+)
 from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.liquidacion_habilitacion_urbana_orchestrator import (
     LiquidacionHabilitacionUrbanaOrchestrator,
 )
@@ -65,11 +69,30 @@ class LiquidacionHabilitacionUrbanaController:
         return success_response(result)
 
     @route.post(
+        "/nueva-liquidacion/primera-revision",
+        response={200: ApiResponse[LiquidacionHabilitacionUrbanaOutput]},
+    )
+    def crear_primera_revision(self, request, payload: LiquidacionHabilitacionUrbanaInput):
+        """
+        Crea la Habilitacion Urbana integrando General y M2.
+        """
+        # Extract user id from JWT (ninja_jwt sets request.user on success).
+        usuario_id = request.user.id if request.user and request.user.is_authenticated else None
+
+        domain_result = self.cotizar_orchestrator.crear_primera_revision_proceso(
+            usuario_id=usuario_id,
+            payload_in=payload,
+        )
+
+        result = self.presenter.present_primera_revision(domain_result)
+        return success_response(result)
+
+    @route.post(
         "/cotizar",
         response={200: ApiResponse[CotizarPorMetroCuadradoOutputSchema]},
         auth=None,
     )
-    async def cotizar(self, payload: CotizarPorMetroCuadradoInputSchema):
+    def cotizar(self, payload: CotizarPorMetroCuadradoInputSchema):
         """
         Calculates a quote for Habilitacion Urbana liquidacion.
         """
@@ -77,7 +100,7 @@ class LiquidacionHabilitacionUrbanaController:
         area_solicitada = le.datos.area_solicitada
         tarifa_m2_id = le.tarifa.tarifa_m2_id
 
-        result = await self.cotizar_orchestrator.cotizar_proceso(
+        result = self.cotizar_orchestrator.cotizar_proceso(
             area_solicitada=area_solicitada,
             tarifa_m2_id=str(tarifa_m2_id),
         )

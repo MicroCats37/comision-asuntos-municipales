@@ -15,6 +15,9 @@ from modules.entidades.presentation.controllers.consulta_controller import Consu
 from modules.liquidaciones.presentation.controllers.liquidacion_especifico.liquidacion_habilitacion_urbana_controller import (
     LiquidacionHabilitacionUrbanaController,
 )
+from modules.liquidaciones.presentation.controllers.liquidacion_especifico.liquidacion_inspeccion_obra_controller import (
+    LiquidacionInspeccionObraController,
+)
 
 import os
 
@@ -73,6 +76,7 @@ api.register_controllers(ConsultaController)
 
 # ── Liquidaciones Controllers ─
 api.register_controllers(LiquidacionHabilitacionUrbanaController)
+api.register_controllers(LiquidacionInspeccionObraController)
 
 # ── Exception handlers globales ────────────────────────────────
 register_exception_handlers(api)

@@ -10,8 +10,8 @@ from simple_history.models import HistoricalRecords
 from core.models import BaseModel
 from core_application.models import AutoNumeroModel
 
-from .liquidacion import LiquidacionGeneral
-from ...constants import TipoTramiteEdificaciones, TramiteAccion
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
+from modules.liquidaciones.domain.constants import TipoTramiteEdificaciones, TramiteAccion
 
 
 class LiquidacionEdificacion(BaseModel, AutoNumeroModel):
@@ -32,15 +32,7 @@ class LiquidacionEdificacion(BaseModel, AutoNumeroModel):
         verbose_name="Liquidación",
     )
 
-    tipo_tramite = models.CharField(
-        max_length=30,
-        choices=TipoTramiteEdificaciones.choices,
-        default=TipoTramiteEdificaciones.OBRA_NUEVA,
-        verbose_name="Tipo de Trámite",
-        null=True,
-        blank=True,
-        help_text="Tipo de trámite de edificación: obra nueva, ampliación, remodelación, demolición, etc.",
-    )
+
 
     class Meta:
         verbose_name = "Liquidación de Edificación"

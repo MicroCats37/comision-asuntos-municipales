@@ -10,8 +10,8 @@ from simple_history.models import HistoricalRecords
 from core.models import BaseModel
 from core_application.models import AutoNumeroModel
 
-from .liquidacion import LiquidacionGeneral
-from ...constants import TramiteAccion
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
+from modules.liquidaciones.domain.constants import TramiteAccion
 
 
 class LiquidacionHabilitacionUrbana(BaseModel, AutoNumeroModel):

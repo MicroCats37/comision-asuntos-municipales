@@ -6,7 +6,7 @@ They are NOT exposed directly via HTTP — presenters transform them to Out sche
 
 Results inherit from Pydantic BaseModel (not BaseSchema).
 """
-from .cotizacion import CotizacionM2Result
+from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import CotizacionM2Result
 
 __all__ = [
     "CotizacionM2Result",

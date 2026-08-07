@@ -172,6 +172,9 @@ def register_exception_handlers(api):
     @api.exception_handler(IntegrityError)
     def on_integrity_error(request: HttpRequest, exc: IntegrityError):
         """Maneja conflictos de base de datos (Unique constraints, etc.)."""
+        import traceback
+        print("==== INTEGRITY ERROR ====")
+        traceback.print_exc()
         body, status = error_response(
             code="CONFLICT",
             message="Conflicto de integridad en la base de datos.",

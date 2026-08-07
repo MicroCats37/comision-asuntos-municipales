@@ -11,7 +11,11 @@ from django.db import models
 from simple_history.models import HistoricalRecords
 from core.models import BaseModel
 
-from .liquidacion import LiquidacionGeneral
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
+from modules.liquidaciones.domain.constants import (
+    TipoTramiteEdificaciones,
+    TramiteAccion,
+)
 
 
 class LiquidacionPorMetroCuadrado(BaseModel):
@@ -25,7 +29,7 @@ class LiquidacionPorMetroCuadrado(BaseModel):
 
     history = HistoricalRecords()
 
-    liquidacion_general = models.OneToOneField(
+    liquidacion_general = models.ForeignKey(
         LiquidacionGeneral,
         on_delete=models.CASCADE,
         related_name="liquidacion_m2",
@@ -73,7 +77,7 @@ class LiquidacionPorMetroCuadrado(BaseModel):
     )
     
     derecho= models.ForeignKey(
-        "Derecho",
+        "DerechoPorMetroCuadrado",
         on_delete=models.PROTECT,
         related_name="liquidaciones_m2",
         verbose_name="Derecho Aplicado",
@@ -100,10 +104,10 @@ class LiquidacionPorCategoriaVisitas(BaseModel):
 
     history = HistoricalRecords()
 
-    liquidacion_general = models.OneToOneField(
+    liquidacion_general = models.ForeignKey(
         LiquidacionGeneral,
         on_delete=models.CASCADE,
-        related_name="liquidacion_m2",
+        related_name="liquidacion_visitas",
         verbose_name="Liquidación General",
     )
 
@@ -157,8 +161,17 @@ class LiquidacionPorcentajeObra(BaseModel):
     liquidacion_general = models.OneToOneField(
         LiquidacionGeneral,
         on_delete=models.CASCADE,
-        related_name="liquidacion_m2",
+        related_name="liquidacion_porcentaje_obra",
         verbose_name="Liquidación General",
+    )
+
+    tipo_tramite = models.CharField(
+        max_length=30,
+        choices=TipoTramiteEdificaciones.choices,
+        verbose_name="Tipo de Trámite",
+        null=True,
+        blank=True,
+        help_text="Tipo de trámite de edificación: obra nueva, ampliación, remodelación, demolición, etc.",
     )
 
     valor_declarado = models.DecimalField(

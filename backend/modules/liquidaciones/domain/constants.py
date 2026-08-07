@@ -75,8 +75,10 @@ class TipoLiquidacion(models.TextChoices):
 class TramiteAccion(models.TextChoices):
     """Acción de trámite asignada según el endpoint usado."""
 
-    PRIMERA_REVISION = "PRIMERA_REVISION", "Primera Revisión"
-    REVISION = "REVISION", "Revisión"
+    A="A"
+    B="B"
+    C="C"
+    D="D"
 
 
 # ── Slug → TipoLiquidacion mapping ─────────────────────────────────────────────

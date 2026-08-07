@@ -73,18 +73,9 @@ class Entidad(BaseModel):
         ordering = ["numero_documento"]
 
     def clean(self):
-        if self.tipo_documento == "RUC" and not self.razon_social:
-            raise ValidationError(
-                {
-                    "razon_social": "La razón social es requerida para instituciones (RUC)."
-                }
-            )
-        if self.tipo_documento == "DNI" and not self.razon_social:
-            raise ValidationError(
-                {
-                    "razon_social": "El nombre completo es requerido para personas naturales (DNI)."
-                }
-            )
+        # razon_social and direccion live on Proyecto, not Entidad.
+        # No field-level validation here for those attributes.
+        pass
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -102,9 +93,9 @@ class Entidad(BaseModel):
 
     @property
     def nombre_completo(self):
-        """Full name: razon_social for both institutions and natural persons."""
-        return self.razon_social or ""
+        """Identifier only; full name lives on Proyecto.entidad_razon_social."""
+        return self.numero_documento
 
     def __str__(self):
-        return f"{self.razon_social} ({self.numero_documento})"
+        return f"({self.numero_documento})"
 

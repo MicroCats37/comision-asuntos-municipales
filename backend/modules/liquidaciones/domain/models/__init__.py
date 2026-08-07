@@ -7,8 +7,6 @@ from .liquidacion.liquidacion_general.liquidacion import (
     LiquidacionContacto,
     LiquidacionDocumentos,
     LiquidacionProyectista,
-    LiquidacionPorcentajeObra,
-    LiquidacionPorcentajeObraDetalle,
 )
 from .liquidacion.liquidacion_especifico.liquidacion_edificaciones import (
     # Modelo de detalle para edificaciones (singular)
@@ -20,6 +18,8 @@ from .liquidacion.liquidacion_especifico.liquidacion_impacto_vial import Liquida
 from .liquidacion.liquidacion_especifico.liquidacion_taludes import LiquidacionTaludes
 from .liquidacion.liquidacion_especifico.liquidacion_inspeccion_obra import LiquidacionInspeccionObra
 from .liquidacion.liquidacion_tipo.liquidacion_tipo import (
+    LiquidacionPorcentajeObra,
+    LiquidacionPorcentajeObraDetalle,
     LiquidacionPorMetroCuadrado,
     LiquidacionPorCategoriaVisitas,
 )
@@ -28,7 +28,6 @@ from .liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaPorcentajeObra,
     TarifaPorMetroCuadrado,
     TarifaPorCategoriaVisitas,
-    Derecho,
 )
 from .proyectista import Proyectista
 from .proyecto import (
@@ -37,7 +36,7 @@ from .proyecto import (
     ProyectoPersonaNatural,
 )
 from .delegado import LiquidacionDelegado
-from .inspector import Inspector, LiquidacionInspector
+from .inspector import Inspector, InspectorPeriodo, LiquidacionInspector
 
 __all__ = [
     "Delegado",
@@ -73,6 +72,6 @@ __all__ = [
     "ProyectoPersonaNatural",
     "LiquidacionDelegado",
     "Inspector",
+    "InspectorPeriodo",
     "LiquidacionInspector",
-    "Derecho",
 ]
