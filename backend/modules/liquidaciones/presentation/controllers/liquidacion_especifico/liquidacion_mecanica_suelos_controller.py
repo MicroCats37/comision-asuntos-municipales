@@ -1,5 +1,5 @@
 """
-LiquidacionHabilitacionUrbanaController — Single unified HTTP controller for Habilitacion Urbana.
+LiquidacionMecanicaSuelosController — Single unified HTTP controller for Mecánica de Suelos.
 
 NO business logic. Only parses input, calls orchestrator, maps via presenter.
 """
@@ -11,18 +11,18 @@ from core.responses import ApiResponse, success_response
 from modules.liquidaciones.domain.services.core.auth.auth_core_service import (
     AuthCoreService,
 )
-from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_habilitacion_urbana_schemas import (
-    LiquidacionHabilitacionUrbanaInput,
-    LiquidacionHabilitacionUrbanaOutput,
+from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_mecanica_suelos_schemas import (
+    LiquidacionMecanicaSuelosInput,
+    LiquidacionMecanicaSuelosOutput,
 )
-from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.liquidacion_habilitacion_urbana_orchestrator import (
-    LiquidacionHabilitacionUrbanaOrchestrator,
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.liquidacion_mecanica_suelos_orchestrator import (
+    LiquidacionMecanicaSuelosOrchestrator,
 )
 from modules.liquidaciones.presentation.presenters.liquidacion_tipo.liquidacion_por_metro_cuadrado_presenter import (
     LiquidacionPorMetroCuadradoPresenter,
 )
-from modules.liquidaciones.presentation.presenters.liquidacion_especifico.liquidacion_habilitacion_urbana_presenter import (
-    LiquidacionHabilitacionUrbanaPresenter,
+from modules.liquidaciones.presentation.presenters.liquidacion_especifico.liquidacion_mecanica_suelos_presenter import (
+    LiquidacionMecanicaSuelosPresenter,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas import (
     TarifasVigentesPorMetroCuadradoOutputSchema,
@@ -31,18 +31,18 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas im
 )
 
 
-@api_controller("/liquidaciones/habilitacion-urbana", tags=["Habilitación Urbana"], permissions=[AllowAny])
-class LiquidacionHabilitacionUrbanaController:
+@api_controller("/liquidaciones/mecanica-suelos", tags=["Mecánica de Suelos"], permissions=[AllowAny])
+class LiquidacionMecanicaSuelosController:
     """
-    Unified controller for Habilitacion Urbana endpoints.
+    Unified controller for Mecánica de Suelos endpoints.
     """
 
     @inject
     def __init__(
         self,
-        cotizar_orchestrator: LiquidacionHabilitacionUrbanaOrchestrator,
+        cotizar_orchestrator: LiquidacionMecanicaSuelosOrchestrator,
         m2_presenter: LiquidacionPorMetroCuadradoPresenter,
-        presenter: LiquidacionHabilitacionUrbanaPresenter,
+        presenter: LiquidacionMecanicaSuelosPresenter,
         auth_core_service: AuthCoreService,
     ):
         self.cotizar_orchestrator = cotizar_orchestrator
@@ -57,7 +57,7 @@ class LiquidacionHabilitacionUrbanaController:
     )
     def get_tarifas_vigentes(self):
         """
-        Get the currently active tariff and derecho for Habilitacion Urbana.
+        Get the currently active tariff and derecho for Mecánica de Suelos.
         """
         tarifa, derecho = self.cotizar_orchestrator.obtener_tarifas_vigentes_proceso()
 
@@ -66,11 +66,11 @@ class LiquidacionHabilitacionUrbanaController:
 
     @route.post(
         "/nueva-liquidacion/primera-revision",
-        response={200: ApiResponse[LiquidacionHabilitacionUrbanaOutput]},
+        response={200: ApiResponse[LiquidacionMecanicaSuelosOutput]},
     )
-    def crear_primera_revision(self, request, payload: LiquidacionHabilitacionUrbanaInput):
+    def crear_primera_revision(self, request, payload: LiquidacionMecanicaSuelosInput):
         """
-        Crea la Habilitacion Urbana integrando General y M2.
+        Crea la Mecánica de Suelos integrando General y M2.
         """
         usuario_id = self.auth_core_service.get_authenticated_user_id(request)
 
@@ -89,7 +89,7 @@ class LiquidacionHabilitacionUrbanaController:
     )
     def cotizar(self, payload: CotizarPorMetroCuadradoInputSchema):
         """
-        Calculates a quote for Habilitacion Urbana liquidacion.
+        Calculates a quote for Mecánica de Suelos liquidacion.
         """
         le = payload.liquidacion_especifica
         area_solicitada = le.datos.area_solicitada

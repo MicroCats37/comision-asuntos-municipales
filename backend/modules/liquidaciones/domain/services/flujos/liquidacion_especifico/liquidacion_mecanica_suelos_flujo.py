@@ -1,13 +1,13 @@
 """
-LiquidacionHabilitacionUrbanaFlujo — Flujo específico transaccional para Habilitación Urbana.
+LiquidacionMecanicaSuelosFlujo — Flujo específico transaccional para Mecánica de Suelos.
 """
 from datetime import date
 from django.db import transaction
 from injector import inject
 from decimal import Decimal
 
-from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_habilitacion_urbana import (
-    LiquidacionHabilitacionUrbana,
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_mecanica_suelos import (
+    LiquidacionMecanicaSuelos,
 )
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
@@ -15,12 +15,12 @@ from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_metro_cuadrado_core_service import (
     LiquidacionPorMetroCuadradoCoreService,
 )
-from modules.liquidaciones.domain.schemas.liquidacion_especifico.habilitacion_urbana_primera_revision_data import (
-    HabilitacionUrbanaPrimeraRevisionData,
+from modules.liquidaciones.domain.schemas.liquidacion_especifico.mecanica_suelos_primera_revision_data import (
+    MecanicaSuelosPrimeraRevisionData,
 )
-from modules.liquidaciones.domain.results.liquidacion_especifico.habilitacion_urbana_primera_revision_result import (
-    HabilitacionUrbanaPrimeraRevisionResult,
-    LiquidacionEspecificaHabilitacionUrbanaResult,
+from modules.liquidaciones.domain.results.liquidacion_especifico.mecanica_suelos_primera_revision_result import (
+    MecanicaSuelosPrimeraRevisionResult,
+    LiquidacionEspecificaMecanicaSuelosResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
     LiquidacionGeneralResult,
@@ -34,9 +34,9 @@ from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_m2_result
 from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
-class LiquidacionHabilitacionUrbanaFlujo:
+class LiquidacionMecanicaSuelosFlujo:
     """
-    Transactional flow for creating Habilitacion Urbana (Primera Revisión).
+    Transactional flow for creating Mecanica de Suelos (Primera Revisión).
     """
 
     @inject
@@ -51,16 +51,16 @@ class LiquidacionHabilitacionUrbanaFlujo:
     def ejecutar_primera_revision(
         self,
         usuario_id: int,
-        data: HabilitacionUrbanaPrimeraRevisionData,
-    ) -> HabilitacionUrbanaPrimeraRevisionResult:
+        data: MecanicaSuelosPrimeraRevisionData,
+    ) -> MecanicaSuelosPrimeraRevisionResult:
         return self._ejecutar_primera_revision_sync(usuario_id, data)
 
     @transaction.atomic()
     def _ejecutar_primera_revision_sync(
         self,
         usuario_id: int,
-        data: HabilitacionUrbanaPrimeraRevisionData,
-    ) -> HabilitacionUrbanaPrimeraRevisionResult:
+        data: MecanicaSuelosPrimeraRevisionData,
+    ) -> MecanicaSuelosPrimeraRevisionResult:
         import traceback
         try:
             gen_data = data.liquidacion_general
@@ -97,7 +97,7 @@ class LiquidacionHabilitacionUrbanaFlujo:
                 expediente=gen_data.expediente,
                 observacion=gen_data.observacion,
                 proyecto=proyecto,
-                tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+                tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
                 numero_revision=1,
             )
             liquidacion_general.sub_total = Decimal(str(cotizacion.subtotal))
@@ -109,7 +109,7 @@ class LiquidacionHabilitacionUrbanaFlujo:
 
             # Paso 4: Crear LiquidacionPorMetroCuadrado (M2 Core)
             derecho = self.m2_core.get_derecho_minimo_m2_vigente()
-            tarifa = self.m2_core.get_tarifa_m2_vigente(TipoLiquidacion.HABILITACION_URBANA)
+            tarifa = self.m2_core.get_tarifa_m2_vigente(TipoLiquidacion.MECANICA_SUELOS)
             liquidacion_m2 = self.m2_core.create_liquidacion_por_metro_cuadrado(
                 liquidacion_general=liquidacion_general,
                 area_solicitada=float(esp_data.datos.area_solicitada),
@@ -119,8 +119,8 @@ class LiquidacionHabilitacionUrbanaFlujo:
                 total=liquidacion_general.total,
             )
 
-            # Paso 5: Crear el Wrapper Específico de Habilitación Urbana (ORM Directo)
-            liquidacion_especifica = LiquidacionHabilitacionUrbana.objects.create(
+            # Paso 5: Crear el Wrapper Específico de Mecánica de Suelos (ORM Directo)
+            liquidacion_especifica = LiquidacionMecanicaSuelos.objects.create(
                 liquidacion=liquidacion_general
             )
 
@@ -152,9 +152,9 @@ class LiquidacionHabilitacionUrbanaFlujo:
                 numero_revision=liquidacion_general.numero_revision,
                 sub_total=float(liquidacion_general.sub_total),
                 total=float(liquidacion_general.total),
-            igv_id=str(liquidacion_general.igv_id.id) if liquidacion_general.igv_id else None,
-            uit_id=str(liquidacion_general.uit_id.id) if liquidacion_general.uit_id else None,
-            proyecto=proyecto_result,
+                igv_id=str(liquidacion_general.igv_id.id) if liquidacion_general.igv_id else None,
+                uit_id=str(liquidacion_general.uit_id.id) if liquidacion_general.uit_id else None,
+                proyecto=proyecto_result,
             )
 
             tipo_result = LiquidacionM2Result(
@@ -167,12 +167,12 @@ class LiquidacionHabilitacionUrbanaFlujo:
                 tarifa_aplicada_id=str(liquidacion_m2.tarifa_aplicada_id),
             )
 
-            especifica_result = LiquidacionEspecificaHabilitacionUrbanaResult(
+            especifica_result = LiquidacionEspecificaMecanicaSuelosResult(
                 id=str(liquidacion_especifica.id),
                 numero=liquidacion_especifica.numero,
             )
 
-            return HabilitacionUrbanaPrimeraRevisionResult(
+            return MecanicaSuelosPrimeraRevisionResult(
                 liquidacion_general=general_result,
                 liquidacion_tipo=tipo_result,
                 liquidacion_especifica=especifica_result,

@@ -3,6 +3,9 @@ Modulo Liquidaciones — Dependency Injection wiring.
 """
 from injector import Module, Binder
 
+from modules.liquidaciones.domain.services.core.auth.auth_core_service import (
+    AuthCoreService,
+)
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
 )
@@ -21,12 +24,21 @@ from modules.liquidaciones.presentation.presenters.liquidacion_tipo.liquidacion_
 from modules.liquidaciones.presentation.presenters.liquidacion_especifico.liquidacion_habilitacion_urbana_presenter import (
     LiquidacionHabilitacionUrbanaPresenter,
 )
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.liquidacion_mecanica_suelos_orchestrator import (
+    LiquidacionMecanicaSuelosOrchestrator,
+)
+from modules.liquidaciones.presentation.presenters.liquidacion_especifico.liquidacion_mecanica_suelos_presenter import (
+    LiquidacionMecanicaSuelosPresenter,
+)
 
 
 class LiquidacionesModule(Module):
     """DI module for liquidaciones package."""
 
     def configure(self, binder: Binder) -> None:
+        # Core services — Auth
+        binder.bind(AuthCoreService, to=AuthCoreService)
+
         # Core services — General
         binder.bind(LiquidacionGeneralCoreService, to=LiquidacionGeneralCoreService)
 
@@ -44,3 +56,9 @@ class LiquidacionesModule(Module):
 
         # Presenters — Específico
         binder.bind(LiquidacionHabilitacionUrbanaPresenter, to=LiquidacionHabilitacionUrbanaPresenter)
+
+        # Orchestrators — Mecánica de Suelos
+        binder.bind(LiquidacionMecanicaSuelosOrchestrator, to=LiquidacionMecanicaSuelosOrchestrator)
+
+        # Presenters — Mecánica de Suelos
+        binder.bind(LiquidacionMecanicaSuelosPresenter, to=LiquidacionMecanicaSuelosPresenter)

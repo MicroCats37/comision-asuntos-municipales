@@ -6,11 +6,8 @@ from ninja_extra.permissions import AllowAny
 from injector import inject
 
 from core.responses import ApiResponse, success_response
-from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
-    LiquidacionGeneralCoreService,
-)
-from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_categoria_visitas_core_service import (
-    LiquidacionPorCategoriaVisitasCoreService,
+from modules.liquidaciones.domain.services.core.auth.auth_core_service import (
+    AuthCoreService,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_inspeccion_obra_schemas import (
     LiquidacionInspeccionObraInput,
@@ -40,17 +37,15 @@ class LiquidacionInspeccionObraController:
     @inject
     def __init__(
         self,
-        general_core_service: LiquidacionGeneralCoreService,
-        visitas_core_service: LiquidacionPorCategoriaVisitasCoreService,
         orchestrator: LiquidacionInspeccionObraOrchestrator,
         visitas_presenter: LiquidacionPorCategoriaVisitasPresenter,
         presenter: LiquidacionInspeccionObraPresenter,
+        auth_core_service: AuthCoreService,
     ):
-        self.general_core_service = general_core_service
-        self.visitas_core_service = visitas_core_service
         self.orchestrator = orchestrator
         self.visitas_presenter = visitas_presenter
         self.presenter = presenter
+        self.auth_core_service = auth_core_service
 
     @route.get(
         "/tarifas/vigentes",
@@ -60,12 +55,9 @@ class LiquidacionInspeccionObraController:
     def get_tarifas_vigentes(self):
         """
         Get the currently active tariffs for Inspeccion Obra (Visitas).
+        Delegates fetching and validation to the Orchestrator.
         """
-        uit_vigente = self.general_core_service.get_uit_vigente()
-        if not uit_vigente:
-            return ApiResponse(success=False, error="No hay UIT vigente configurada.")
-
-        tarifas = self.visitas_core_service.get_tarifas_vigentes()
+        tarifas, uit_vigente = self.orchestrator.obtener_tarifas_vigentes_proceso()
         result = self.visitas_presenter.present_tarifas_vigentes(tarifas=tarifas, uit_vigente=uit_vigente)
         return success_response(result)
 
@@ -99,8 +91,8 @@ class LiquidacionInspeccionObraController:
         """
         Crea la Inspeccion de Obra integrando General y Visitas.
         """
-        usuario_id = request.user.id if request.user and request.user.is_authenticated else None
-        
+        usuario_id = self.auth_core_service.get_authenticated_user_id(request)
+
         domain_result = self.orchestrator.crear_primera_revision_proceso(
             usuario_id=usuario_id,
             payload_in=payload,
