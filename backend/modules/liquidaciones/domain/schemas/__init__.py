@@ -43,19 +43,19 @@ from modules.liquidaciones.domain.schemas.shared import (
 # `habilitacion_urbana.py` is intentionally empty (the concrete result class lives elsewhere).
 # Re-exporting from here would crash Django on import.
 
-from modules.liquidaciones.domain.schemas.mecanica_suelos import (
+from modules.liquidaciones.domain.results.liquidacion_especifico.mecanica_suelos_result import (
     LiquidacionMecanicaSuelosResult,
 )
 
-from modules.liquidaciones.domain.schemas.impacto_vial import (
+from modules.liquidaciones.domain.results.liquidacion_especifico.impacto_vial_result import (
     LiquidacionImpactoVialResult,
 )
 
-from modules.liquidaciones.domain.schemas.taludes import (
+from modules.liquidaciones.domain.results.liquidacion_especifico.taludes_result import (
     LiquidacionTaludesResult,
 )
 
-from modules.liquidaciones.domain.schemas.inspeccion_obra import (
+from modules.liquidaciones.domain.results.liquidacion_especifico.inspeccion_obra_result import (
     LiquidacionInspeccionObraResult,
 )
 

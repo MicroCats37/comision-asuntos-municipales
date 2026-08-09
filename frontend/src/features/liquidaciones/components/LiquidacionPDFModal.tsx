@@ -1,12 +1,16 @@
 "use client";
 
-import { useRef, useCallback, useState } from "react";
-import Image from "next/image";
 import { FileDown, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import { useCallback, useRef, useState } from "react";
 import { GenericModal } from "@/components/genericModal/GenericModal";
+import { Button } from "@/components/ui/button";
 import type { LiquidacionGeneralListItem } from "../types/liquidacion-general";
-import { kindLabel, formatCurrency, formatDate } from "./LiquidacionGeneralCard";
+import {
+  formatCurrency,
+  formatDate,
+  kindLabel,
+} from "./LiquidacionGeneralCard";
 
 const PDF_CSS = `
   .pdf-primary { color: #6B1D2F !important; }
@@ -27,8 +31,23 @@ interface LiquidacionPDFModalProps {
   item: LiquidacionGeneralListItem;
 }
 
-export function LiquidacionPDFModal({ open, onOpenChange, item }: LiquidacionPDFModalProps) {
-  const { public_id, estado, fecha_registro, proyecto, municipalidad, valores, delegados, revisiones, tipo_liquidacion, expediente } = item;
+export function LiquidacionPDFModal({
+  open,
+  onOpenChange,
+  item,
+}: LiquidacionPDFModalProps) {
+  const {
+    public_id,
+    estado,
+    fecha_registro,
+    proyecto,
+    municipalidad,
+    valores,
+    delegados,
+    revisiones,
+    tipo_liquidacion,
+    expediente,
+  } = item;
   const primeraRevision = revisiones[0];
   const previewRef = useRef<HTMLDivElement>(null);
   const [generando, setGenerando] = useState(false);
@@ -61,7 +80,9 @@ export function LiquidacionPDFModal({ open, onOpenChange, item }: LiquidacionPDF
       }
 
       frameDocument.open();
-      frameDocument.write('<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#FFFFFF;"></body></html>');
+      frameDocument.write(
+        '<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#FFFFFF;"></body></html>',
+      );
       frameDocument.close();
 
       const pdfElement = buildLiquidacionPdfElement(item, frameDocument);
@@ -92,7 +113,10 @@ export function LiquidacionPDFModal({ open, onOpenChange, item }: LiquidacionPDF
       heightLeft -= pdf.internal.pageSize.getHeight();
 
       while (heightLeft > 0) {
-        position = -(pdf.internal.pageSize.getHeight() * (pdf.internal.pages.length - 1));
+        position = -(
+          pdf.internal.pageSize.getHeight() *
+          (pdf.internal.pages.length - 1)
+        );
         pdf.addPage();
         pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight);
         heightLeft -= pdf.internal.pageSize.getHeight();
@@ -117,32 +141,111 @@ export function LiquidacionPDFModal({ open, onOpenChange, item }: LiquidacionPDF
           <div
             ref={previewRef}
             className="max-w-3xl mx-auto space-y-6 bg-white p-8 rounded-xl shadow-sm"
-            style={{ fontFamily: "Plus Jakarta Sans, sans-serif", width: "100%" }}
+            style={{
+              fontFamily: "Plus Jakarta Sans, sans-serif",
+              width: "100%",
+            }}
           >
             <style>{PDF_CSS}</style>
 
             {/* HEADER */}
-            <div className="flex items-center justify-between pb-5 pdf-primary-border-20" style={{ borderBottomWidth: 2, borderBottomStyle: "solid" }}>
+            <div
+              className="flex items-center justify-between pb-5 pdf-primary-border-20"
+              style={{ borderBottomWidth: 2, borderBottomStyle: "solid" }}
+            >
               <div className="flex items-center gap-4">
-                <Image src="/images/logo.png" alt="Logo CIP" width={56} height={56} className="h-14 w-14 object-contain" />
+                <Image
+                  src="/images/logo.png"
+                  alt="Logo CIP"
+                  width={56}
+                  height={56}
+                  className="h-14 w-14 object-contain"
+                />
                 <div>
-                  <h1 className="text-lg pdf-primary" style={{ fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1 }}>Sistema CAM</h1>
-                  <p className="pdf-muted" style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.15em" }}>Comisión de Asuntos Municipales</p>
+                  <h1
+                    className="text-lg pdf-primary"
+                    style={{
+                      fontWeight: 800,
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1,
+                    }}
+                  >
+                    Sistema CAM
+                  </h1>
+                  <p
+                    className="pdf-muted"
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.15em",
+                    }}
+                  >
+                    Comisión de Asuntos Municipales
+                  </p>
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <h2 className="pdf-primary" style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.02em", textTransform: "uppercase" }}>Liquidación</h2>
-                <p className="pdf-muted" style={{ fontSize: 10, lineHeight: 1.3 }}>Derechos por supervisión de obra</p>
+                <h2
+                  className="pdf-primary"
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 800,
+                    letterSpacing: "-0.02em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Liquidación
+                </h2>
+                <p
+                  className="pdf-muted"
+                  style={{ fontSize: 10, lineHeight: 1.3 }}
+                >
+                  Derechos por supervisión de obra
+                </p>
               </div>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="pdf-primary" style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.2em" }}>N° {public_id}</span>
-              <span className="pdf-primary-bg-10 pdf-primary-border-20 pdf-primary" style={{ display: "inline-flex", alignItems: "center", borderRadius: 9999, border: "1px solid", padding: "1px 10px", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>{estado}</span>
+              <span
+                className="pdf-primary"
+                style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.2em",
+                }}
+              >
+                N° {public_id}
+              </span>
+              <span
+                className="pdf-primary-bg-10 pdf-primary-border-20 pdf-primary"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  borderRadius: 9999,
+                  border: "1px solid",
+                  padding: "1px 10px",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                }}
+              >
+                {estado}
+              </span>
             </div>
 
-            <div className="rounded-xl pdf-border" style={{ border: "1px solid", padding: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 32px" }}>
+            <div
+              className="rounded-xl pdf-border"
+              style={{ border: "1px solid", padding: 16 }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "8px 32px",
+                }}
+              >
                 <Row label="Tipo" value={kindLabel(tipo_liquidacion)} />
                 <Row label="Fecha" value={formatDate(fecha_registro)} />
                 <Row label="Expediente" value={expediente || "—"} />
@@ -151,32 +254,82 @@ export function LiquidacionPDFModal({ open, onOpenChange, item }: LiquidacionPDF
             </div>
 
             <Section title="Datos del Contribuyente / Propietario">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 32px" }}>
-                <Row label="RUC" value={proyecto?.entidad?.ruc || proyecto?.entidad?.nombre || "—"} />
-                <Row label="Razón social" value={proyecto?.entidad?.nombre || "—"} />
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "8px 32px",
+                }}
+              >
+                <Row
+                  label="RUC"
+                  value={
+                    proyecto?.entidad?.ruc || proyecto?.entidad?.nombre || "—"
+                  }
+                />
+                <Row
+                  label="Razón social"
+                  value={proyecto?.entidad?.nombre || "—"}
+                />
                 <Row label="Propietario" value={proyecto?.nombre || "—"} />
                 <Row label="Dirección" value={proyecto?.direccion || "—"} />
               </div>
             </Section>
 
             <Section title="Datos de la Supervisión">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 32px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "8px 32px",
+                }}
+              >
                 <Row label="N.° supervisiones" value={revisiones.length} />
                 {delegados.length > 0 && (
                   <div style={{ gridColumn: "span 2" }}>
-                    <span className="pdf-muted" style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4, display: "block" }}>Delegados supervisores</span>
+                    <span
+                      className="pdf-muted"
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.1em",
+                        marginBottom: 4,
+                        display: "block",
+                      }}
+                    >
+                      Delegados supervisores
+                    </span>
                     {delegados.map((d, i) => (
-                      <p key={d.id || i} className="pdf-foreground" style={{ fontSize: 13 }}>
-                        CIP {d.perfil_ingeniero_cip || "—"} – {[d.perfil_ingeniero_nombres, d.perfil_ingeniero_apellidos].filter(Boolean).join(" ") || "—"}
+                      <p
+                        key={d.id || i}
+                        className="pdf-foreground"
+                        style={{ fontSize: 13 }}
+                      >
+                        CIP {d.perfil_ingeniero_cip || "—"} –{" "}
+                        {[
+                          d.perfil_ingeniero_nombres,
+                          d.perfil_ingeniero_apellidos,
+                        ]
+                          .filter(Boolean)
+                          .join(" ") || "—"}
                       </p>
                     ))}
                   </div>
                 )}
                 {primeraRevision?.tarifa && (
                   <>
-                    <Row label="Derecho mínimo" value={formatCurrency(primeraRevision.tarifa.derecho_minimo ?? 0)} />
+                    <Row
+                      label="Derecho mínimo"
+                      value={formatCurrency(
+                        primeraRevision.tarifa.derecho_minimo ?? 0,
+                      )}
+                    />
                     {primeraRevision.tarifa.porcentaje_minimo_uit != null && (
-                      <Row label="% UIT" value={`${(Number(primeraRevision.tarifa.porcentaje_minimo_uit) * 100).toFixed(2)} %`} />
+                      <Row
+                        label="% UIT"
+                        value={`${(Number(primeraRevision.tarifa.porcentaje_minimo_uit) * 100).toFixed(2)} %`}
+                      />
                     )}
                   </>
                 )}
@@ -186,35 +339,113 @@ export function LiquidacionPDFModal({ open, onOpenChange, item }: LiquidacionPDF
 
             <Section title="Resumen de Liquidación">
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: 13,
+                  }}
+                >
                   <span className="pdf-muted">Subtotal</span>
-                  <span className="pdf-foreground" style={{ fontWeight: 700 }}>{formatCurrency(valores.subtotal)}</span>
+                  <span className="pdf-foreground" style={{ fontWeight: 700 }}>
+                    {formatCurrency(valores.subtotal)}
+                  </span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: 13,
+                  }}
+                >
                   <span className="pdf-muted">IGV</span>
-                  <span className="pdf-foreground" style={{ fontWeight: 700 }}>{formatCurrency(valores.igv)}</span>
+                  <span className="pdf-foreground" style={{ fontWeight: 700 }}>
+                    {formatCurrency(valores.igv)}
+                  </span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "2px solid rgba(107, 29, 47, 0.2)" }}>
-                  <span className="pdf-primary" style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase" }}>Total a Pagar</span>
-                  <span className="pdf-primary" style={{ fontSize: 20, fontWeight: 800 }}>{formatCurrency(valores.total_a_pagar)}</span>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    paddingTop: 12,
+                    borderTop: "2px solid rgba(107, 29, 47, 0.2)",
+                  }}
+                >
+                  <span
+                    className="pdf-primary"
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Total a Pagar
+                  </span>
+                  <span
+                    className="pdf-primary"
+                    style={{ fontSize: 20, fontWeight: 800 }}
+                  >
+                    {formatCurrency(valores.total_a_pagar)}
+                  </span>
                 </div>
               </div>
             </Section>
 
-            <div style={{ textAlign: "center", paddingTop: 16, borderTop: "2px solid rgba(107, 29, 47, 0.1)" }}>
-              <p className="pdf-foreground" style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>Municipalidad: {municipalidad?.nombre || "—"}</p>
-              <p className="pdf-primary" style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.2em" }}>CAM — Comisión de Asuntos Municipales</p>
-              <p className="pdf-destructive" style={{ fontSize: 9, fontWeight: 500, marginTop: 8 }}>Este documento no es comprobante de pago</p>
+            <div
+              style={{
+                textAlign: "center",
+                paddingTop: 16,
+                borderTop: "2px solid rgba(107, 29, 47, 0.1)",
+              }}
+            >
+              <p
+                className="pdf-foreground"
+                style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}
+              >
+                Municipalidad: {municipalidad?.nombre || "—"}
+              </p>
+              <p
+                className="pdf-primary"
+                style={{
+                  fontSize: 9,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.2em",
+                }}
+              >
+                CAM — Comisión de Asuntos Municipales
+              </p>
+              <p
+                className="pdf-destructive"
+                style={{ fontSize: 9, fontWeight: 500, marginTop: 8 }}
+              >
+                Este documento no es comprobante de pago
+              </p>
             </div>
           </div>
         </GenericModal.Body>
         <GenericModal.Footer className="px-6 py-4 sm:px-8 bg-muted/30 border-t border-border">
           <div className="flex flex-row justify-end items-center gap-2 sm:gap-3">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="h-10 sm:h-11 rounded-xl font-semibold border-border/60 text-muted-foreground">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="h-10 sm:h-11 rounded-xl font-semibold border-border/60 text-muted-foreground"
+            >
               Cerrar
             </Button>
-            <Button type="button" disabled={generando} onClick={handleDescargarPDF} className="h-10 sm:h-12 rounded-xl sm:rounded-2xl font-bold shadow-lg shadow-primary/25 gap-2">
-              {generando ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+            <Button
+              type="button"
+              disabled={generando}
+              onClick={handleDescargarPDF}
+              className="h-10 sm:h-12 rounded-xl sm:rounded-2xl font-bold shadow-lg shadow-primary/25 gap-2"
+            >
+              {generando ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4" />
+              )}
               {generando ? "Generando..." : "Descargar PDF"}
             </Button>
           </div>
@@ -224,11 +455,33 @@ export function LiquidacionPDFModal({ open, onOpenChange, item }: LiquidacionPDF
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-xl pdf-border overflow-hidden" style={{ border: "1px solid" }}>
-      <div className="flex items-center gap-2 px-4 py-2.5 pdf-border pdf-primary-bg-04" style={{ borderBottom: "1px solid" }}>
-        <h4 className="pdf-primary" style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.15em" }}>{title}</h4>
+    <div
+      className="rounded-xl pdf-border overflow-hidden"
+      style={{ border: "1px solid" }}
+    >
+      <div
+        className="flex items-center gap-2 px-4 py-2.5 pdf-border pdf-primary-bg-04"
+        style={{ borderBottom: "1px solid" }}
+      >
+        <h4
+          className="pdf-primary"
+          style={{
+            fontSize: 10,
+            fontWeight: 800,
+            textTransform: "uppercase",
+            letterSpacing: "0.15em",
+          }}
+        >
+          {title}
+        </h4>
       </div>
       <div style={{ padding: 16 }}>{children}</div>
     </div>
@@ -238,14 +491,43 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <span className="pdf-muted" style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</span>
-      <span className="pdf-foreground" style={{ fontSize: 13, fontWeight: 500 }}>{value}</span>
+      <span
+        className="pdf-muted"
+        style={{
+          fontSize: 10,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+        }}
+      >
+        {label}
+      </span>
+      <span
+        className="pdf-foreground"
+        style={{ fontSize: 13, fontWeight: 500 }}
+      >
+        {value}
+      </span>
     </div>
   );
 }
 
-function buildLiquidacionPdfElement(item: LiquidacionGeneralListItem, ownerDocument: Document) {
-  const { public_id, estado, fecha_registro, proyecto, municipalidad, valores, delegados, revisiones, tipo_liquidacion, expediente } = item;
+function buildLiquidacionPdfElement(
+  item: LiquidacionGeneralListItem,
+  ownerDocument: Document,
+) {
+  const {
+    public_id,
+    estado,
+    fecha_registro,
+    proyecto,
+    municipalidad,
+    valores,
+    delegados,
+    revisiones,
+    tipo_liquidacion,
+    expediente,
+  } = item;
   const primeraRevision = revisiones[0];
   const root = ownerDocument.createElement("div");
 
@@ -270,11 +552,20 @@ function buildLiquidacionPdfElement(item: LiquidacionGeneralListItem, ownerDocum
     borderBottom: "2px solid rgba(107, 29, 47, 0.2)",
   });
 
-  const brand = append(header, "div", { display: "flex", alignItems: "center", gap: "16px" });
+  const brand = append(header, "div", {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+  });
   const logo = ownerDocument.createElement("img");
   logo.src = new URL("/images/logo.png", window.location.origin).toString();
   logo.alt = "Logo CIP";
-  applyStyles(logo, { width: "56px", height: "56px", objectFit: "contain", display: "block" });
+  applyStyles(logo, {
+    width: "56px",
+    height: "56px",
+    objectFit: "contain",
+    display: "block",
+  });
   brand.appendChild(logo);
   const brandText = append(brand, "div");
   appendText(brandText, "h1", "Sistema CAM", {
@@ -285,7 +576,12 @@ function buildLiquidacionPdfElement(item: LiquidacionGeneralListItem, ownerDocum
     letterSpacing: "-0.02em",
     lineHeight: "1",
   });
-  appendText(brandText, "p", "Comisión de Asuntos Municipales", mutedLabelStyle({ margin: "6px 0 0" }));
+  appendText(
+    brandText,
+    "p",
+    "Comisión de Asuntos Municipales",
+    mutedLabelStyle({ margin: "6px 0 0" }),
+  );
 
   const title = append(header, "div", { textAlign: "right" });
   appendText(title, "h2", "Liquidación", {
@@ -296,7 +592,12 @@ function buildLiquidacionPdfElement(item: LiquidacionGeneralListItem, ownerDocum
     letterSpacing: "-0.02em",
     textTransform: "uppercase",
   });
-  appendText(title, "p", "Derechos por supervisión de obra", { margin: "4px 0 0", color: "#6B7280", fontSize: "10px", lineHeight: "1.3" });
+  appendText(title, "p", "Derechos por supervisión de obra", {
+    margin: "4px 0 0",
+    color: "#6B7280",
+    fontSize: "10px",
+    lineHeight: "1.3",
+  });
 
   const codeRow = append(root, "div", {
     display: "flex",
@@ -333,7 +634,11 @@ function buildLiquidacionPdfElement(item: LiquidacionGeneralListItem, ownerDocum
 
   appendPdfSection(root, "Datos del Contribuyente / Propietario", (content) => {
     const grid = append(content, "div", gridStyle());
-    appendPdfRow(grid, "RUC", proyecto?.entidad?.ruc || proyecto?.entidad?.nombre || "—");
+    appendPdfRow(
+      grid,
+      "RUC",
+      proyecto?.entidad?.ruc || proyecto?.entidad?.nombre || "—",
+    );
     appendPdfRow(grid, "Razón social", proyecto?.entidad?.nombre || "—");
     appendPdfRow(grid, "Propietario", proyecto?.nombre || "—");
     appendPdfRow(grid, "Dirección", proyecto?.direccion || "—");
@@ -344,27 +649,49 @@ function buildLiquidacionPdfElement(item: LiquidacionGeneralListItem, ownerDocum
     appendPdfRow(grid, "N.° supervisiones", revisiones.length);
     if (delegados.length > 0) {
       const delegateBlock = append(grid, "div", { gridColumn: "span 2" });
-      appendText(delegateBlock, "span", "Delegados supervisores", mutedLabelStyle({ display: "block", marginBottom: "4px" }));
+      appendText(
+        delegateBlock,
+        "span",
+        "Delegados supervisores",
+        mutedLabelStyle({ display: "block", marginBottom: "4px" }),
+      );
       delegados.forEach((d, i) => {
-        appendText(delegateBlock, "p", `CIP ${d.perfil_ingeniero_cip || "—"} - ${[d.perfil_ingeniero_nombres, d.perfil_ingeniero_apellidos].filter(Boolean).join(" ") || "—"}`, {
-          margin: i === 0 ? "0" : "4px 0 0",
-          color: "#1F2937",
-          fontSize: "13px",
-          lineHeight: "1.35",
-        });
+        appendText(
+          delegateBlock,
+          "p",
+          `CIP ${d.perfil_ingeniero_cip || "—"} - ${[d.perfil_ingeniero_nombres, d.perfil_ingeniero_apellidos].filter(Boolean).join(" ") || "—"}`,
+          {
+            margin: i === 0 ? "0" : "4px 0 0",
+            color: "#1F2937",
+            fontSize: "13px",
+            lineHeight: "1.35",
+          },
+        );
       });
     }
     if (primeraRevision?.tarifa) {
-      appendPdfRow(grid, "Derecho mínimo", formatCurrency(primeraRevision.tarifa.derecho_minimo ?? 0));
+      appendPdfRow(
+        grid,
+        "Derecho mínimo",
+        formatCurrency(primeraRevision.tarifa.derecho_minimo ?? 0),
+      );
       if (primeraRevision.tarifa.porcentaje_minimo_uit != null) {
-        appendPdfRow(grid, "% UIT", `${(Number(primeraRevision.tarifa.porcentaje_minimo_uit) * 100).toFixed(2)} %`);
+        appendPdfRow(
+          grid,
+          "% UIT",
+          `${(Number(primeraRevision.tarifa.porcentaje_minimo_uit) * 100).toFixed(2)} %`,
+        );
       }
     }
     appendPdfRow(grid, "Monto", formatCurrency(valores.subtotal));
   });
 
   appendPdfSection(root, "Resumen de Liquidación", (content) => {
-    const stack = append(content, "div", { display: "flex", flexDirection: "column", gap: "8px" });
+    const stack = append(content, "div", {
+      display: "flex",
+      flexDirection: "column",
+      gap: "8px",
+    });
     appendAmountRow(stack, "Subtotal", formatCurrency(valores.subtotal));
     appendAmountRow(stack, "IGV", formatCurrency(valores.igv));
     const total = append(stack, "div", {
@@ -374,8 +701,17 @@ function buildLiquidacionPdfElement(item: LiquidacionGeneralListItem, ownerDocum
       paddingTop: "12px",
       borderTop: "2px solid rgba(107, 29, 47, 0.2)",
     });
-    appendText(total, "span", "Total a Pagar", { color: "#6B1D2F", fontSize: "13px", fontWeight: "800", textTransform: "uppercase" });
-    appendText(total, "span", formatCurrency(valores.total_a_pagar), { color: "#6B1D2F", fontSize: "20px", fontWeight: "800" });
+    appendText(total, "span", "Total a Pagar", {
+      color: "#6B1D2F",
+      fontSize: "13px",
+      fontWeight: "800",
+      textTransform: "uppercase",
+    });
+    appendText(total, "span", formatCurrency(valores.total_a_pagar), {
+      color: "#6B1D2F",
+      fontSize: "20px",
+      fontWeight: "800",
+    });
   });
 
   const footer = append(root, "div", {
@@ -384,15 +720,40 @@ function buildLiquidacionPdfElement(item: LiquidacionGeneralListItem, ownerDocum
     paddingTop: "16px",
     borderTop: "2px solid rgba(107, 29, 47, 0.1)",
   });
-  appendText(footer, "p", `Municipalidad: ${municipalidad?.nombre || "—"}`, { margin: "0 0 4px", color: "#1F2937", fontSize: "11px", fontWeight: "600" });
-  appendText(footer, "p", "CAM - Comisión de Asuntos Municipales", { margin: "0", color: "#6B1D2F", fontSize: "9px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.2em" });
-  appendText(footer, "p", "Este documento no es comprobante de pago", { margin: "8px 0 0", color: "rgba(185, 28, 28, 0.7)", fontSize: "9px", fontWeight: "500" });
+  appendText(footer, "p", `Municipalidad: ${municipalidad?.nombre || "—"}`, {
+    margin: "0 0 4px",
+    color: "#1F2937",
+    fontSize: "11px",
+    fontWeight: "600",
+  });
+  appendText(footer, "p", "CAM - Comisión de Asuntos Municipales", {
+    margin: "0",
+    color: "#6B1D2F",
+    fontSize: "9px",
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: "0.2em",
+  });
+  appendText(footer, "p", "Este documento no es comprobante de pago", {
+    margin: "8px 0 0",
+    color: "rgba(185, 28, 28, 0.7)",
+    fontSize: "9px",
+    fontWeight: "500",
+  });
 
   return root;
 }
 
-function appendPdfSection(parent: HTMLElement, title: string, fill: (content: HTMLElement) => void) {
-  const section = append(parent, "div", sectionBoxStyle({ marginTop: "24px", overflow: "hidden" }));
+function appendPdfSection(
+  parent: HTMLElement,
+  title: string,
+  fill: (content: HTMLElement) => void,
+) {
+  const section = append(
+    parent,
+    "div",
+    sectionBoxStyle({ marginTop: "24px", overflow: "hidden" }),
+  );
   const heading = append(section, "div", {
     display: "flex",
     alignItems: "center",
@@ -413,32 +774,60 @@ function appendPdfSection(parent: HTMLElement, title: string, fill: (content: HT
   fill(content);
 }
 
-function appendPdfRow(parent: HTMLElement, label: string, value: React.ReactNode) {
-  const row = append(parent, "div", { display: "flex", flexDirection: "column" });
+function appendPdfRow(
+  parent: HTMLElement,
+  label: string,
+  value: React.ReactNode,
+) {
+  const row = append(parent, "div", {
+    display: "flex",
+    flexDirection: "column",
+  });
   appendText(row, "span", label, mutedLabelStyle());
-  appendText(row, "span", String(value), { color: "#1F2937", fontSize: "13px", fontWeight: "500", lineHeight: "1.35" });
+  appendText(row, "span", String(value), {
+    color: "#1F2937",
+    fontSize: "13px",
+    fontWeight: "500",
+    lineHeight: "1.35",
+  });
 }
 
 function appendAmountRow(parent: HTMLElement, label: string, value: string) {
-  const row = append(parent, "div", { display: "flex", justifyContent: "space-between", fontSize: "13px" });
+  const row = append(parent, "div", {
+    display: "flex",
+    justifyContent: "space-between",
+    fontSize: "13px",
+  });
   appendText(row, "span", label, { color: "#6B7280" });
   appendText(row, "span", value, { color: "#1F2937", fontWeight: "700" });
 }
 
-function append<T extends keyof HTMLElementTagNameMap>(parent: HTMLElement, tagName: T, styles?: Partial<CSSStyleDeclaration>) {
+function append<T extends keyof HTMLElementTagNameMap>(
+  parent: HTMLElement,
+  tagName: T,
+  styles?: Partial<CSSStyleDeclaration>,
+) {
   const element = parent.ownerDocument.createElement(tagName);
   if (styles) applyStyles(element, styles);
   parent.appendChild(element);
   return element;
 }
 
-function appendText<T extends keyof HTMLElementTagNameMap>(parent: HTMLElement, tagName: T, text: string, styles?: Partial<CSSStyleDeclaration>) {
+function appendText<T extends keyof HTMLElementTagNameMap>(
+  parent: HTMLElement,
+  tagName: T,
+  text: string,
+  styles?: Partial<CSSStyleDeclaration>,
+) {
   const element = append(parent, tagName, styles);
   element.textContent = text;
   return element;
 }
 
-function applyStyles(element: HTMLElement, styles: Partial<CSSStyleDeclaration>) {
+function applyStyles(
+  element: HTMLElement,
+  styles: Partial<CSSStyleDeclaration>,
+) {
   Object.assign(element.style, styles);
 }
 
@@ -446,11 +835,15 @@ function gridStyle(): Partial<CSSStyleDeclaration> {
   return { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 32px" };
 }
 
-function sectionBoxStyle(extra?: Partial<CSSStyleDeclaration>): Partial<CSSStyleDeclaration> {
+function sectionBoxStyle(
+  extra?: Partial<CSSStyleDeclaration>,
+): Partial<CSSStyleDeclaration> {
   return { border: "1px solid #E5E7EB", borderRadius: "12px", ...extra };
 }
 
-function mutedLabelStyle(extra?: Partial<CSSStyleDeclaration>): Partial<CSSStyleDeclaration> {
+function mutedLabelStyle(
+  extra?: Partial<CSSStyleDeclaration>,
+): Partial<CSSStyleDeclaration> {
   return {
     color: "#6B7280",
     fontSize: "10px",

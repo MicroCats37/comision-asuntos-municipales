@@ -1,13 +1,12 @@
 "use client";
 
-import { FileText, Search, X } from "lucide-react";
+import { FileText } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { LiquidacionGeneralCard } from "../components/LiquidacionGeneralCard";
-import type { LiquidacionGeneralListItem } from "../types/liquidacion-general";
 import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificaciones";
+import type { LiquidacionGeneralListItem } from "../types/liquidacion-general";
 
 /**
  * Vista de Liquidaciones de Edificaciones (list).
@@ -20,9 +19,6 @@ import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificac
  *   detail endpoint separately.
  */
 export function LiquidacionesEdificacionesView() {
-  const [searchInput, setSearchInput] = useState("");
-  const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
-
   const {
     items: liquidacionItems,
     total: liquidacionTotal,
@@ -32,23 +28,7 @@ export function LiquidacionesEdificacionesView() {
     isError: isLiquidacionError,
     refetch: refetchLiquidaciones,
     setPage: setLiquidacionPage,
-  } = useLiquidacionesEdificaciones({ page: 1, pageSize: 10, proyectoPublicId });
-
-  const handleSearch = () => {
-    const trimmed = searchInput.trim();
-    setProyectoPublicId(trimmed ? trimmed : null);
-  };
-
-  const handleClearFilter = () => {
-    setSearchInput("");
-    setProyectoPublicId(null);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
+  } = useLiquidacionesEdificaciones({ page: 1, pageSize: 10 });
 
   return (
     <div className="page-section">
@@ -69,43 +49,6 @@ export function LiquidacionesEdificacionesView() {
             </div>
           </div>
           <NuevaLiquidacionDropdown onSuccess={refetchLiquidaciones} />
-        </div>
-
-        {/* Filter Bar */}
-        <div className="flex items-center gap-4 p-4 bg-muted/20 rounded-xl border border-border/60">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-muted-foreground">Filtrar liquidaciones por ID de Proyecto:</span>
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Ej. PROY-2026-00001"
-                aria-label="ID de proyecto público"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="w-[220px] h-9"
-              />
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleSearch}
-                className="h-9 px-3 gap-1"
-              >
-                <Search className="h-4 w-4" />
-                Buscar
-              </Button>
-            </div>
-          </div>
-          {proyectoPublicId && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearFilter}
-              className="h-8 px-2 gap-1 text-xs"
-            >
-              <X className="h-3 w-3" />
-              Limpiar filtro
-            </Button>
-          )}
         </div>
 
         {/* Cards View */}
@@ -137,7 +80,10 @@ export function LiquidacionesEdificacionesView() {
             <>
               <div className="flex flex-col gap-4">
                 {liquidacionItems.map((item) => (
-                  <LiquidacionGeneralCard key={item.id} item={item as unknown as LiquidacionGeneralListItem} />
+                  <LiquidacionGeneralCard
+                    key={item.id}
+                    item={item as unknown as LiquidacionGeneralListItem}
+                  />
                 ))}
               </div>
               {/* Pagination for cards */}

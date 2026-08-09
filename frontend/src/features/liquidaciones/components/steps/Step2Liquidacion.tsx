@@ -26,7 +26,10 @@ const TIPO_TRAMITE_OPTIONS = [
   { value: "REMODELACION", label: "Remodelación" },
   { value: "MODIFICACION_LICENCIA", label: "Modificación de licencia" },
   { value: "REINTEGRO", label: "Reintegro" },
-  { value: "PROYECTO_CON_PLANTAS_TIPICAS", label: "Proyecto con plantas típicas" },
+  {
+    value: "PROYECTO_CON_PLANTAS_TIPICAS",
+    label: "Proyecto con plantas típicas",
+  },
 ] as const;
 
 const PROYECTO_CON_PLANTAS_TIPICAS_TIPO = "PROYECTO_CON_PLANTAS_TIPICAS";
@@ -87,7 +90,8 @@ export function Step2Liquidacion({
   const watchedValorProyecto = watch("valor_proyecto");
   const watchedValorBaseCalculo = watch("valor_base_calculo");
 
-  const isPlantasTipicas = watchedTipoTramite === PROYECTO_CON_PLANTAS_TIPICAS_TIPO;
+  const isPlantasTipicas =
+    watchedTipoTramite === PROYECTO_CON_PLANTAS_TIPICAS_TIPO;
 
   // ── Sincronizar valor_base_calculo con valor_proyecto ────────────────────
   useEffect(() => {
@@ -95,10 +99,18 @@ export function Step2Liquidacion({
     const vb = Number(watchedValorBaseCalculo);
     if (vp > 0 && !isPlantasTipicas) {
       if (vb !== vp) {
-        setValue("valor_base_calculo", vp as never, { shouldValidate: false, shouldDirty: false });
+        setValue("valor_base_calculo", vp as never, {
+          shouldValidate: false,
+          shouldDirty: false,
+        });
       }
     }
-  }, [watchedValorProyecto, isPlantasTipicas, setValue, watchedValorBaseCalculo]);
+  }, [
+    watchedValorProyecto,
+    isPlantasTipicas,
+    setValue,
+    watchedValorBaseCalculo,
+  ]);
 
   // ── Selección única de tarifa (radio) ─────────────────────────────────────
   const selectedId = selectedTarifasIds[0] ?? null;
@@ -108,14 +120,22 @@ export function Step2Liquidacion({
   const hasAutoSelected = useRef(false);
   useEffect(() => {
     if (!revisionesVigentes || isLoadingRevisiones) return;
-    if (selectedTarifasIds.length > 0) { hasAutoSelected.current = true; return; }
+    if (selectedTarifasIds.length > 0) {
+      hasAutoSelected.current = true;
+      return;
+    }
     if (hasAutoSelected.current) return;
     const enabled = revisionesVigentes.filter((r) => r.habilitada);
     if (enabled.length === 1) {
       setSelectedTarifasId(enabled[0].id);
       hasAutoSelected.current = true;
     }
-  }, [revisionesVigentes, isLoadingRevisiones, selectedTarifasIds.length, setSelectedTarifasId]);
+  }, [
+    revisionesVigentes,
+    isLoadingRevisiones,
+    selectedTarifasIds.length,
+    setSelectedTarifasId,
+  ]);
 
   // Resetear auto-select cuando cambia el tipo de trámite (nuevo filtro)
   useEffect(() => {
@@ -135,7 +155,9 @@ export function Step2Liquidacion({
   const hasTarifa = selectedTarifasIds.length === 1;
 
   const valorBase =
-    isPlantasTipicas && watchedValorBaseCalculo && Number(watchedValorBaseCalculo) > 0
+    isPlantasTipicas &&
+    watchedValorBaseCalculo &&
+    Number(watchedValorBaseCalculo) > 0
       ? Number(watchedValorBaseCalculo)
       : Number(watchedValorProyecto);
 
@@ -176,7 +198,8 @@ export function Step2Liquidacion({
       });
       setCotizacionQuote(result);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Error al calcular la cotización";
+      const msg =
+        e instanceof Error ? e.message : "Error al calcular la cotización";
       setCotizacionError(msg);
       notify.error(msg);
     }
@@ -189,10 +212,13 @@ export function Step2Liquidacion({
       {/* ── Layout responsive: mobile = stacked, md+ = 3 columnas paralelas ──
           Mobile-first: flex-col → md:flex-row. Cada columna flex-1 para anchos iguales. */}
       <div className="flex flex-col md:flex-row gap-4 min-w-0">
-
         {/* ── Columna 1: Datos de Liquidación ──────────────────────────────── */}
         <div className="flex-1 min-w-0 rounded-xl border border-primary/20 bg-card p-4 space-y-4 min-w-0 overflow-hidden">
-          <FormSectionHeader title="Datos de Liquidación" icon={Banknote} variant="soft" />
+          <FormSectionHeader
+            title="Datos de Liquidación"
+            icon={Banknote}
+            variant="soft"
+          />
 
           <div className="flex flex-col gap-4 min-w-0">
             <GenericInput
@@ -201,8 +227,13 @@ export function Step2Liquidacion({
                 label: "Municipalidad",
                 type: "searchable-select",
                 required: true,
-                placeholder: isLoadingMunicipalidades ? "Cargando..." : "Seleccione municipalidad",
-                options: (municipalidades || []).map((m) => ({ label: formatMunicipalidadLabel(m), value: m.id })),
+                placeholder: isLoadingMunicipalidades
+                  ? "Cargando..."
+                  : "Seleccione municipalidad",
+                options: (municipalidades || []).map((m) => ({
+                  label: formatMunicipalidadLabel(m),
+                  value: m.id,
+                })),
                 icon: Building2,
                 isLoading: isLoadingMunicipalidades,
                 labelClassName: "text-primary font-semibold",

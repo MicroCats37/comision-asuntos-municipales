@@ -10,6 +10,6 @@ class TarifaVisitas(BaseModel):
     tarifa_visitas_id: str
 
 
-class LiquidacionTipoVisitasData(BaseModel):
+class LiquidacionCategoriaVisitasData(BaseModel):
     datos: DatosVisitas
     tarifa: TarifaVisitas

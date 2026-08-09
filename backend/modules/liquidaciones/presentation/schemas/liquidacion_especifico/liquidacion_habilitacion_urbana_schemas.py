@@ -28,5 +28,5 @@ class LiquidacionHabilitacionUrbanaInput(BaseSchema):
 class LiquidacionHabilitacionUrbanaOutput(BaseSchema):
     """Payload de salida: Cabecera + Tipo Identidad + cálculo M2."""
     liquidacion_general: LiquidacionGeneralOutput
-    liquidacion_tipo: LiquidacionTipoOutput
-    liquidacion_especifica: LiquidacionPorMetroCuadradoDatosOut
+    liquidacion_especifica: LiquidacionTipoOutput
+    liquidacion_tipo: LiquidacionPorMetroCuadradoDatosOut

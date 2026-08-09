@@ -48,7 +48,7 @@ class CotizacionPorcentajeObraData(BaseModel):
     valor_declarado: Decimal
     porcentaje_liquidacion: Decimal  # SUM de tarifas
     tipo_tramite: Optional[str] = None
-    derecho_minimo: Decimal
+    derecho_minimo: Optional[Decimal] = None
     derecho_maximo: Optional[Decimal]
     porcentaje_minimo_uit: Decimal
     derecho_aplicado_id: str

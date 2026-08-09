@@ -58,5 +58,4 @@ class LiquidacionGeneralOutput(BaseSchema):
     total: float = Field(..., description="Total")
     igv_id: Optional[uuid.UUID] = Field(None, description="ID del IGV")
     uit_id: Optional[uuid.UUID] = Field(None, description="ID del UIT")
-    derecho_id: Optional[uuid.UUID] = Field(None, description="ID del derecho aplicado")
     proyecto: ProyectoOutput = Field(..., description="Datos del proyecto")

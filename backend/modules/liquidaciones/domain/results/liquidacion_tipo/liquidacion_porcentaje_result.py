@@ -25,7 +25,7 @@ class LiquidacionPorcentajeObraResult(BaseModel):
     tipo_tramite: Optional[str] = None
     valor_declarado: Decimal
     porcentaje_liquidacion: Decimal
-    derecho_minimo: Decimal
+    derecho_minimo: Optional[Decimal] = None
     derecho_maximo: Optional[Decimal] = None
     porcentaje_minimo_uit: Decimal
     derecho_aplicado_id: str

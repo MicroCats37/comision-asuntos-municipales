@@ -50,11 +50,10 @@ class LiquidacionInspeccionObraFlujo:
         usuario_id: int,
         data: InspeccionObraPrimeraRevisionData,
     ) -> InspeccionObraPrimeraRevisionResult:
-        # 1. Traer tarifa, UIT y calcular
+        # 1. Traer tarifa, UIT y calcular (validation moved to Orchestrator)
         tarifa = self.visitas_core.get_tarifa_por_id(data.liquidacion_especifica.tarifa.tarifa_visitas_id)
+
         uit_vigente = self.general_core.get_uit_vigente()
-        if not uit_vigente:
-            raise ValueError("No hay UIT vigente configurada.")
 
         subtotal = self.visitas_core.calcular_subtotal_visitas(
             cantidad_visitas=data.liquidacion_especifica.datos.cantidad_visitas,
@@ -63,8 +62,6 @@ class LiquidacionInspeccionObraFlujo:
         )
 
         igv_vigente = self.general_core.get_igv_vigente()
-        if not igv_vigente:
-            raise ValueError("No hay IGV vigente configurado.")
 
         # 2. Crear Entidad y Proyecto
         gen_data = data.liquidacion_general
@@ -134,23 +131,23 @@ class LiquidacionInspeccionObraFlujo:
             denominacion=proyecto.denominacion,
             nombre_propietario=proyecto.nombre_propietario,
             direccion=proyecto.direccion,
+            distrito_id=str(proyecto.distrito_id),
             entidad=entidad_result,
         )
 
         general_result = LiquidacionGeneralResult(
             id=str(liquidacion_general.id),
             municipalidad_id=str(liquidacion_general.municipalidad_id),
-            usuario_creador_id=liquidacion_general.usuario_creador_id,
+            usuario_creador=UsuarioCreadorResult(id=str(usuario_id)),
             fecha_registro=str(liquidacion_general.fecha_registro) if liquidacion_general.fecha_registro else "",
             expediente=liquidacion_general.expediente,
             observacion=liquidacion_general.observacion,
             numero_revision=liquidacion_general.numero_revision,
             sub_total=float(liquidacion_general.sub_total),
             total=float(liquidacion_general.total),
-            igv_id_id=str(liquidacion_general.igv_id_id) if liquidacion_general.igv_id_id else None,
-            uit_id_id=str(liquidacion_general.uit_id_id) if liquidacion_general.uit_id_id else None,
+            igv_id=str(liquidacion_general.igv_id.id) if liquidacion_general.igv_id else None,
+            uit_id=str(liquidacion_general.uit_id.id) if liquidacion_general.uit_id else None,
             proyecto=proyecto_result,
-            usuario_creador=UsuarioCreadorResult(id=str(usuario_id)),
         )
 
         tipo_result = LiquidacionVisitasResult(

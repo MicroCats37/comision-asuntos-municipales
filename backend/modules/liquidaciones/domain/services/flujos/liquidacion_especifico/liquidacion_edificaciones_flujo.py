@@ -65,8 +65,9 @@ class LiquidacionEdificacionesFlujo:
         data: EdificacionesPrimeraRevisionData,
         igv_porcentaje: Decimal,
         derecho,
+        uit_valor: Decimal,
     ) -> EdificacionesPrimeraRevisionResult:
-        return self._ejecutar_primera_revision_sync(usuario_id, data, igv_porcentaje, derecho)
+        return self._ejecutar_primera_revision_sync(usuario_id, data, igv_porcentaje, derecho, uit_valor)
     
     @transaction.atomic()
     def _ejecutar_primera_revision_sync(
@@ -75,6 +76,7 @@ class LiquidacionEdificacionesFlujo:
         data: EdificacionesPrimeraRevisionData,
         igv_porcentaje: Decimal,
         derecho,
+        uit_valor: Decimal,
     ) -> EdificacionesPrimeraRevisionResult:
         gen_data = data.liquidacion_general
         po_data = data.liquidacion_especifica
@@ -91,7 +93,7 @@ class LiquidacionEdificacionesFlujo:
             "nombre_propietario": gen_data.proyecto.nombre_propietario,
             "direccion": gen_data.proyecto.direccion,
             "distrito_id": gen_data.proyecto.distrito_id,
-            "entidad_razon_social": gen_data.proyecto.entidad.razon_social,
+            "entidad_razon_social": gen_data.proyecto.entidad_razon_social,
             "entidad_tipo_documento": gen_data.proyecto.entidad.tipo_documento,
             "entidad_numero_documento": gen_data.proyecto.entidad.numero_documento,
         }
@@ -128,6 +130,7 @@ class LiquidacionEdificacionesFlujo:
             tarifas=tarifas_orm,
             igv_porcentaje=igv_porcentaje,
             derecho=derecho,
+            uit_valor=uit_valor,
         )
         
         # Step 5: Set LiquidacionGeneral totals from cotizacion

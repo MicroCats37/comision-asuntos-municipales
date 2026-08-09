@@ -45,21 +45,20 @@ class LiquidacionHabilitacionUrbanaPresenter:
             id=uuid.UUID(general.id),
             municipalidad_id=uuid.UUID(general.municipalidad_id),
             usuario_creador=UsuarioCreadorOutput(id=uuid.UUID(general.usuario_creador.id)),
-            fecha_registro="2026-08-07T00:00:00Z", # Placeholder for now as not in DTO
+            fecha_registro=general.fecha_registro,
             expediente=general.expediente,
             observacion=general.observacion,
             numero_revision=general.numero_revision,
             sub_total=general.sub_total,
             total=general.total,
-            igv_id=uuid.uuid4(), # Placeholder as not in DTO
-            uit_id=uuid.uuid4(), # Placeholder as not in DTO
-            derecho_id=None,
+            igv_id=uuid.UUID(general.igv_id) if general.igv_id else None,
+            uit_id=uuid.UUID(general.uit_id) if general.uit_id else None,
             proyecto=ProyectoOutput(
                 id=uuid.UUID(general.proyecto.id),
                 denominacion=general.proyecto.denominacion,
                 nombre_propietario=general.proyecto.nombre_propietario,
                 direccion=general.proyecto.direccion,
-                distrito_id=uuid.uuid4(), # Needs to be passed if needed
+                distrito_id=uuid.UUID(general.proyecto.distrito_id),
                 entidad=EntidadInlineSchema(
                     tipo_documento=general.proyecto.entidad.tipo_documento,
                     numero_documento=general.proyecto.entidad.numero_documento,
@@ -80,11 +79,11 @@ class LiquidacionHabilitacionUrbanaPresenter:
             derecho_minimo=tipo.derecho_minimo,
             derecho_maximo=tipo.derecho_maximo or 0.0,
             tarifa_aplicada_id=uuid.UUID(tipo.tarifa_aplicada_id),
-            derecho_aplicado_id=uuid.uuid4(), # Placeholder
+            derecho_aplicado_id=uuid.UUID(tipo.derecho_aplicado_id),
         )
 
         return LiquidacionHabilitacionUrbanaOutput(
             liquidacion_general=general_out,
-            liquidacion_tipo=tipo_out,
-            liquidacion_especifica=especifica_out,
+            liquidacion_especifica=tipo_out,
+            liquidacion_tipo=especifica_out,
         )

@@ -120,7 +120,9 @@ export function RevisionesVigentesTable({
                       </Badge>
                     ))
                   ) : (
-                    <span className="text-xs text-muted-foreground">Sin especialidades</span>
+                    <span className="text-xs text-muted-foreground">
+                      Sin especialidades
+                    </span>
                   )}
                 </div>
                 {/* Estado */}
@@ -148,31 +150,47 @@ export function RevisionesVigentesTable({
               <div className="flex items-start gap-1.5">
                 <Percent className="h-3.5 w-3.5 text-primary/60 shrink-0 mt-0.5" />
                 <div className="space-y-0.5 min-w-0">
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Liq.</span>
-                  <p className="font-medium text-foreground truncate">{formatPercent(rev.porcentaje_liquidacion)}</p>
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                    Liq.
+                  </span>
+                  <p className="font-medium text-foreground truncate">
+                    {formatPercent(rev.porcentaje_liquidacion)}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-1.5">
                 <Banknote className="h-3.5 w-3.5 text-primary/60 shrink-0 mt-0.5" />
                 <div className="space-y-0.5 min-w-0">
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Der. Mín.</span>
-                  <p className="font-medium text-foreground truncate">{formatSoles(rev.derecho_minimo)}</p>
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                    Der. Mín.
+                  </span>
+                  <p className="font-medium text-foreground truncate">
+                    {formatSoles(rev.derecho_minimo)}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-1.5">
                 <Coins className="h-3.5 w-3.5 text-primary/60 shrink-0 mt-0.5" />
                 <div className="space-y-0.5 min-w-0">
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Der. Máx.</span>
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                    Der. Máx.
+                  </span>
                   <p className="font-medium text-foreground truncate">
-                    {rev.derecho_maximo != null ? formatSoles(rev.derecho_maximo) : "—"}
+                    {rev.derecho_maximo != null
+                      ? formatSoles(rev.derecho_maximo)
+                      : "—"}
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-1.5">
                 <FileText className="h-3.5 w-3.5 text-primary/60 shrink-0 mt-0.5" />
                 <div className="space-y-0.5 min-w-0">
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">% Mín. UIT</span>
-                  <p className="font-medium text-foreground truncate">{formatPercent(rev.porcentaje_minimo_uit)}</p>
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                    % Mín. UIT
+                  </span>
+                  <p className="font-medium text-foreground truncate">
+                    {formatPercent(rev.porcentaje_minimo_uit)}
+                  </p>
                 </div>
               </div>
             </div>

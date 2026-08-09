@@ -18,8 +18,8 @@ import { useCallback, useEffect, useRef } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
 import { Badge } from "@/components/ui/badge";
 import { useCotizacionPrimeraRevision } from "../../hooks/useCotizacion";
-import type { VariablesFinancieras } from "../../types/liquidacion-edificaciones";
 import type { LiquidacionStepperStore } from "../../store";
+import type { VariablesFinancieras } from "../../types/liquidacion-edificaciones";
 
 const TIPO_TRAMITE_LABELS: Record<string, string> = {
   OBRA_NUEVA: "Obra nueva",

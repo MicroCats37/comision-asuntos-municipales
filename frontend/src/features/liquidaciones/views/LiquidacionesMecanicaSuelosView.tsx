@@ -4,22 +4,19 @@
  */
 "use client";
 
+import type { LucideIcon } from "lucide-react";
 import {
   ClipboardCheck,
   FileText,
   Hash,
   Home,
   Scale,
-  Search,
   Truck,
-  X,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { LiquidacionMecanicaSuelosCard } from "../components/LiquidacionMecanicaSuelosCard";
+import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
 import { useLiquidacionesMecanicaSuelos } from "../hooks/useLiquidacionesMecanicaSuelos";
 import type { LiquidacionMecanicaSuelosListItem } from "../types/liquidacion-mecanica-suelos.types";
 
@@ -32,9 +29,6 @@ interface LiquidacionesMecanicaSuelosViewProps {
 export function LiquidacionesMecanicaSuelosView({
   onSuccess,
 }: LiquidacionesMecanicaSuelosViewProps) {
-  const [searchInput, setSearchInput] = useState("");
-  const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
-
   const {
     items: liquidationItems,
     total: liquidationTotal,
@@ -45,22 +39,6 @@ export function LiquidacionesMecanicaSuelosView({
     refetch: refetchLiquidations,
     setPage: setLiquidationPage,
   } = useLiquidacionesMecanicaSuelos({ page: 1, pageSize: 10 });
-
-  const handleSearch = () => {
-    const trimmed = searchInput.trim();
-    setProyectoPublicId(trimmed ? trimmed : null);
-  };
-
-  const handleClearFilter = () => {
-    setSearchInput("");
-    setProyectoPublicId(null);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
 
   const handleVerDetalle = (item: LiquidacionMecanicaSuelosListItem) => {
     console.log("Ver detalle:", item.public_id);
@@ -76,52 +54,15 @@ export function LiquidacionesMecanicaSuelosView({
               <KIND_ICON className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-black tracking-tight">Mecánica de Suelos</h1>
+              <h1 className="text-3xl font-black tracking-tight">
+                Mecánica de Suelos
+              </h1>
               <p className="text-sm text-muted-foreground">
                 Liquidaciones de mecánica de suelos
               </p>
             </div>
           </div>
           <NuevaLiquidacionDropdown onSuccess={refetchLiquidations} />
-        </div>
-
-        {/* Filter Bar */}
-        <div className="flex items-center gap-4 p-4 bg-muted/20 rounded-xl border border-border/60">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-muted-foreground">
-              Filtrar liquidaciones por ID de Proyecto:
-            </span>
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Ej. PROY-2026-00001"
-                aria-label="ID de proyecto público"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="w-[220px] h-9"
-              />
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleSearch}
-                className="h-9 px-3 gap-1"
-              >
-                <Search className="h-4 w-4" />
-                Buscar
-              </Button>
-            </div>
-          </div>
-          {proyectoPublicId && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearFilter}
-              className="h-8 px-2 gap-1 text-xs"
-            >
-              <X className="h-3 w-3" />
-              Limpiar filtro
-            </Button>
-          )}
         </div>
 
         {/* Cards View */}
@@ -142,7 +83,9 @@ export function LiquidacionesMecanicaSuelosView({
           ) : liquidationItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-xl">
               <KIND_ICON className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No hay liquidaciones registradas</p>
+              <p className="text-muted-foreground">
+                No hay liquidaciones registradas
+              </p>
               <div className="mt-4">
                 <NuevaLiquidacionDropdown onSuccess={refetchLiquidations} />
               </div>
@@ -161,7 +104,8 @@ export function LiquidacionesMecanicaSuelosView({
               {liquidationTotal > liquidationPageSize && (
                 <div className="flex items-center justify-between gap-4 pt-6 border-t border-border/50">
                   <span className="text-xs text-muted-foreground font-medium">
-                    Mostrando {liquidationItems.length} de {liquidationTotal} liquidaciones
+                    Mostrando {liquidationItems.length} de {liquidationTotal}{" "}
+                    liquidaciones
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
@@ -174,7 +118,9 @@ export function LiquidacionesMecanicaSuelosView({
                       Anterior
                     </Button>
                     <div className="flex items-center gap-1 px-3 h-9 rounded-md bg-muted border border-border">
-                      <span className="text-xs font-bold text-foreground">{liquidationPage}</span>
+                      <span className="text-xs font-bold text-foreground">
+                        {liquidationPage}
+                      </span>
                       <span className="text-xs text-muted-foreground">de</span>
                       <span className="text-xs font-bold text-foreground">
                         {Math.ceil(liquidationTotal / liquidationPageSize)}
@@ -184,7 +130,10 @@ export function LiquidacionesMecanicaSuelosView({
                       variant="outline"
                       size="sm"
                       onClick={() => setLiquidationPage(liquidationPage + 1)}
-                      disabled={liquidationPage >= Math.ceil(liquidationTotal / liquidationPageSize)}
+                      disabled={
+                        liquidationPage >=
+                        Math.ceil(liquidationTotal / liquidationPageSize)
+                      }
                       className="h-9 px-4 text-xs font-semibold"
                     >
                       Siguiente

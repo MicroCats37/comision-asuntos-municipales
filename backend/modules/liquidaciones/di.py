@@ -42,6 +42,24 @@ from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.
 from modules.liquidaciones.presentation.presenters.liquidacion_especifico.liquidacion_edificaciones_presenter import (
     LiquidacionEdificacionesPresenter,
 )
+from modules.liquidaciones.domain.services.flujos.liquidacion_especifico.liquidacion_impacto_vial_flujo import (
+    LiquidacionImpactoVialFlujo,
+)
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.liquidacion_impacto_vial_orchestrator import (
+    LiquidacionImpactoVialOrchestrator,
+)
+from modules.liquidaciones.presentation.presenters.liquidacion_especifico.liquidacion_impacto_vial_presenter import (
+    LiquidacionImpactoVialPresenter,
+)
+from modules.liquidaciones.domain.services.flujos.liquidacion_especifico.liquidacion_taludes_flujo import (
+    LiquidacionTaludesFlujo,
+)
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.liquidacion_taludes_orchestrator import (
+    LiquidacionTaludesOrchestrator,
+)
+from modules.liquidaciones.presentation.presenters.liquidacion_especifico.liquidacion_taludes_presenter import (
+    LiquidacionTaludesPresenter,
+)
 
 
 class LiquidacionesModule(Module):
@@ -86,3 +104,21 @@ class LiquidacionesModule(Module):
 
         # Presenters — Edificaciones
         binder.bind(LiquidacionEdificacionesPresenter, to=LiquidacionEdificacionesPresenter)
+
+        # Flujos — Impacto Vial
+        binder.bind(LiquidacionImpactoVialFlujo, to=LiquidacionImpactoVialFlujo)
+
+        # Orchestrators — Impacto Vial
+        binder.bind(LiquidacionImpactoVialOrchestrator, to=LiquidacionImpactoVialOrchestrator)
+
+        # Presenters — Impacto Vial
+        binder.bind(LiquidacionImpactoVialPresenter, to=LiquidacionImpactoVialPresenter)
+
+        # Flujos — Taludes
+        binder.bind(LiquidacionTaludesFlujo, to=LiquidacionTaludesFlujo)
+
+        # Orchestrators — Taludes
+        binder.bind(LiquidacionTaludesOrchestrator, to=LiquidacionTaludesOrchestrator)
+
+        # Presenters — Taludes
+        binder.bind(LiquidacionTaludesPresenter, to=LiquidacionTaludesPresenter)

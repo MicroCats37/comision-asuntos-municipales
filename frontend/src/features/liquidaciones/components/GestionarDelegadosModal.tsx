@@ -1,17 +1,17 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
-import { useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { Users } from "lucide-react";
-import { z } from "zod";
+import { useCallback, useMemo } from "react";
 import type { UseFormReturn } from "react-hook-form";
+import { z } from "zod";
 
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { DelegadosSection } from "./DelegadosSection";
-import api from "@/lib/api";
 import { handleApiError, notify } from "@/errors";
-import type { DelegadoVigente } from "../types/liquidacion-edificaciones";
+import api from "@/lib/api";
 import { delegadosVigentesResponseSchema } from "../hooks/useDelegadosVigentes";
+import type { DelegadoVigente } from "../types/liquidacion-edificaciones";
+import { DelegadosSection } from "./DelegadosSection";
 
 interface HasId {
   id: string;
@@ -51,7 +51,12 @@ export function GestionarDelegadosModal({
 
   const delegadosQueries = useQueries({
     queries: revisionIds.map((revisionId) => ({
-      queryKey: ["delegados-vigentes", municipalidadId, tipoLiquidacion, revisionId],
+      queryKey: [
+        "delegados-vigentes",
+        municipalidadId,
+        tipoLiquidacion,
+        revisionId,
+      ],
       queryFn: async () => {
         const { data } = await api.get("/liquidaciones/delegados/vigentes", {
           params: {

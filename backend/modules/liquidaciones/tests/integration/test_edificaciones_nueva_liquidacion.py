@@ -1,5 +1,5 @@
 """
-Integration tests for the Edificaciones (PorcentajeObra) /nueva-liquidacion/primera-revision endpoint.
+Integration tests for Edificaciones /nueva-liquidacion/primera-revision endpoint.
 
 Tests use Ninja's TestClient (not Django's Client) for proper async handling.
 All tests use @pytest.mark.django_db for database access.

@@ -4,6 +4,7 @@ Mapea los Schemas de Presentacion (Input) hacia los DTOs de Dominio (Data).
 Ejecuta el Flujo de forma sincrona.
 """
 from injector import inject
+from ninja.errors import HttpError
 
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_inspeccion_obra_schemas import (
     LiquidacionInspeccionObraInput,
@@ -12,7 +13,7 @@ from modules.liquidaciones.domain.schemas.liquidacion_especifico.inspeccion_obra
     InspeccionObraPrimeraRevisionData,
 )
 from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_visitas_data import (
-    LiquidacionTipoVisitasData,
+    LiquidacionCategoriaVisitasData,
     DatosVisitas,
     TarifaVisitas,
 )
@@ -55,6 +56,21 @@ class LiquidacionInspeccionObraOrchestrator:
         """
         Mapea el schema de Presentacion a DTOs de Dominio puros.
         """
+        # Pre-validation: ensure UIT and IGV are configured (moved from Flujo)
+        uit_vigente = self.general_core.get_uit_vigente()
+        if not uit_vigente:
+            raise HttpError(404, "No hay UIT vigente configurada.")
+
+        igv_vigente = self.general_core.get_igv_vigente()
+        if not igv_vigente:
+            raise HttpError(404, "No hay IGV vigente configurado.")
+
+        # Pre-validation: ensure tariff exists
+        tarifa_visitas_id = str(payload_in.liquidacion_especifica.tarifa.tarifa_visitas_id)
+        tarifa = self.visitas_core.get_tarifa_por_id(tarifa_visitas_id)
+        if not tarifa:
+            raise HttpError(404, f"No se encontró tarifa válida para ID {tarifa_visitas_id}")
+
         # Mapeo General
         gen_in = payload_in.liquidacion_general
         proy_in = gen_in.proyecto
@@ -82,7 +98,7 @@ class LiquidacionInspeccionObraOrchestrator:
 
         # Mapeo Especifico (Visitas)
         visitas_in = payload_in.liquidacion_especifica
-        visitas_data = LiquidacionTipoVisitasData(
+        visitas_data = LiquidacionCategoriaVisitasData(
             datos=DatosVisitas(
                 cantidad_visitas=visitas_in.datos.cantidad_visitas,
                 categoria=visitas_in.datos.categoria,
@@ -108,36 +124,63 @@ class LiquidacionInspeccionObraOrchestrator:
         tarifa_id: str,
     ) -> CotizacionVisitasResult:
         """
-        Orquesta el calculo de cotizacion para Inspeccion de Obra delegando en el Core de Visitas.
+        Orchestrates the quote calculation for Inspeccion de Obra.
+        Applies clamping via UIT-based bounds since Visitas has no derecho model.
         """
-        tarifa = self.visitas_core.get_tarifa_por_id(tarifa_id)
-        
         uit_vigente = self.general_core.get_uit_vigente()
         if not uit_vigente:
-            raise ValueError("No hay UIT vigente configurada.")
+            raise HttpError(404, "No hay UIT vigente configurada.")
 
         igv_vigente = self.general_core.get_igv_vigente()
         if not igv_vigente:
-            raise ValueError("No hay IGV vigente configurado.")
+            raise HttpError(404, "No hay IGV vigente configurado.")
 
-        subtotal = self.visitas_core.calcular_subtotal_visitas(
-            cantidad_visitas=cantidad_visitas,
-            tarifa=tarifa,
-            uit_vigente=uit_vigente,
-        )
-
-        igv_valor = float(igv_vigente.valor)
-        costo_por_visita = float(tarifa.porcentaje_uit) * float(uit_vigente.valor)
-        total = float(subtotal) * (1 + igv_valor)
-
-        return CotizacionVisitasResult(
+        result = self.visitas_core.calcular_cotizacion_visitas(
             cantidad_visitas=cantidad_visitas,
             categoria=categoria,
-            costo_por_visita=costo_por_visita,
-            tarifa_id=str(tarifa.id),
-            monto_bruto=float(subtotal),
-            subtotal=float(subtotal),
-            total=total,
-            uit={"id": str(uit_vigente.id), "valor": float(uit_vigente.valor)},
-            igv={"id": str(igv_vigente.id), "valor": float(igv_vigente.valor)},
+            tarifa_visitas_id=tarifa_id,
+            uit_vigente=uit_vigente,
+            igv_vigente=igv_vigente,
         )
+
+        if result is None:
+            raise HttpError(404, f"No se encontró una tarifa válida para ID {tarifa_id}")
+
+        # Apply min/max clamping using UIT-based bounds (Visitas has no derecho model)
+        uit_valor = float(uit_vigente.valor)
+        minimo_uit = uit_valor * 1  # Minimum 1 UIT
+        maximo_uit = uit_valor * 100  # Maximum 100 UIT
+
+        clamped_subtotal = result.subtotal
+        if clamped_subtotal < minimo_uit:
+            clamped_subtotal = minimo_uit
+        elif clamped_subtotal > maximo_uit:
+            clamped_subtotal = maximo_uit
+
+        # Recalculate total with clamped subtotal
+        clamped_total = clamped_subtotal * (1 + float(igv_vigente.valor))
+
+        # Return a new result with clamped values (Pydantic models are immutable)
+        return CotizacionVisitasResult(
+            cantidad_visitas=result.cantidad_visitas,
+            categoria=result.categoria,
+            costo_por_visita=result.costo_por_visita,
+            tarifa_id=result.tarifa_id,
+            monto_bruto=result.monto_bruto,
+            subtotal=clamped_subtotal,
+            total=clamped_total,
+            uit=result.uit,
+            igv=result.igv,
+        )
+
+    def obtener_tarifas_vigentes_proceso(self) -> tuple:
+        """
+        Orchestrates fetching vigente tarifas and UIT.
+        Returns (tarifas, uit_vigente) tuple.
+        """
+        uit_vigente = self.general_core.get_uit_vigente()
+        if not uit_vigente:
+            raise HttpError(404, "No hay UIT vigente configurada.")
+
+        tarifas = self.visitas_core.get_tarifas_vigentes()
+        return (tarifas, uit_vigente)

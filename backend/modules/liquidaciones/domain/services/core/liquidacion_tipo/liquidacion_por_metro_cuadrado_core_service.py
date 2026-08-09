@@ -7,8 +7,6 @@ Handles: TarifaPorMetroCuadrado, DerechoPorMetroCuadrado, LiquidacionPorMetroCua
 from decimal import Decimal
 from typing import Optional
 
-from ninja.errors import HttpError
-
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorMetroCuadrado,
@@ -75,41 +73,29 @@ class LiquidacionPorMetroCuadradoCoreService:
         tarifa_m2_id: str,
     ) -> CotizacionM2Result:
         """
-        Calcula la cotización por metro cuadrado utilizando las vigencias de BD.
+        Calculates M2 quotation using BD vigencias.
+        PURE computation - only arithmetic, no business logic validation.
         """
         try:
             tarifa = TarifaPorMetroCuadradoModel.objects.select_related("tarifa_base").get(id=tarifa_m2_id)
         except TarifaPorMetroCuadradoModel.DoesNotExist:
             tarifa = self.get_tarifa_m2_vigente(tipo_liquidacion)
 
-        if not tarifa:
-            raise HttpError(400, f"No se encontró una tarifa vigente para {tipo_liquidacion}")
-
         derecho = self.get_derecho_minimo_m2_vigente()
-        if not derecho:
-            raise HttpError(400, "No se encontró configurado un Derecho mínimo vigente")
 
         monto_bruto = Decimal(str(area_solicitada)) * tarifa.costo_por_m2
-
         subtotal = monto_bruto
-        if subtotal < derecho.derecho_minimo:
-            subtotal = derecho.derecho_minimo
-
-        if derecho.derecho_maximo is not None and subtotal > derecho.derecho_maximo:
-            subtotal = derecho.derecho_maximo
-
-        total = subtotal
 
         return CotizacionM2Result(
             area_m2=float(area_solicitada),
             costo_por_m2=float(tarifa.costo_por_m2),
             tarifa_id=str(tarifa.id),
-            derecho_id=str(derecho.id),
-            minimo=float(derecho.derecho_minimo),
-            maximo=float(derecho.derecho_maximo) if derecho.derecho_maximo is not None else None,
+            derecho_id=str(derecho.id) if derecho else None,
+            minimo=float(derecho.derecho_minimo) if derecho else None,
+            maximo=float(derecho.derecho_maximo) if derecho and derecho.derecho_maximo is not None else None,
             monto_bruto=float(monto_bruto),
             subtotal=float(subtotal),
-            total=float(total),
+            total=float(subtotal),
         )
 
     def create_liquidacion_por_metro_cuadrado(

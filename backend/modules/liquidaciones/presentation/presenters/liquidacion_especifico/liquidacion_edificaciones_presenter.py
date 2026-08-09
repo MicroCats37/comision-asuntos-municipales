@@ -7,8 +7,13 @@ import uuid
 from modules.liquidaciones.domain.results.liquidacion_especifico.edificaciones_primera_revision_result import (
     EdificacionesPrimeraRevisionResult,
 )
+from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import (
+    CotizacionPorcentajeObraResult,
+)
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_edificaciones_schemas import (
     LiquidacionEdificacionesOutput,
+    LiquidacionEdificacionesCotizarOutput,
+    LiquidacionEdificacionesCotizarDetalleOut,
     LiquidacionTipoOutput,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
@@ -89,4 +94,31 @@ class LiquidacionEdificacionesPresenter:
             liquidacion_general=general_out,
             liquidacion_especifica=tipo_out,
             liquidacion_tipo=tipo_datos_out,
+        )
+
+    @staticmethod
+    def present_cotizacion(domain_result: CotizacionPorcentajeObraResult) -> LiquidacionEdificacionesCotizarOutput:
+        """
+        Maps CotizacionPorcentajeObraResult to LiquidacionEdificacionesCotizarOutput.
+        """
+        return LiquidacionEdificacionesCotizarOutput(
+            valor_declarado=domain_result.valor_declarado,
+            porcentaje_liquidacion=domain_result.porcentaje_liquidacion,
+            derecho_minimo=domain_result.derecho_minimo,
+            derecho_maximo=domain_result.derecho_maximo,
+            porcentaje_minimo_uit=domain_result.porcentaje_minimo_uit,
+            derecho_aplicado_id=uuid.UUID(domain_result.derecho_aplicado_id),
+            detalles=[
+                LiquidacionEdificacionesCotizarDetalleOut(
+                    tarifa_id=uuid.UUID(d.tarifa_id),
+                    porcentaje_aplicado=d.porcentaje_aplicado,
+                    subtotal=d.subtotal,
+                    igv=d.igv,
+                    uit=d.uit,
+                    total=d.total,
+                )
+                for d in domain_result.detalles
+            ],
+            total_subtotal=domain_result.total_subtotal,
+            total=domain_result.total,
         )

@@ -9,6 +9,10 @@ from ninja.errors import HttpError
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_metro_cuadrado_core_service import (
     LiquidacionPorMetroCuadradoCoreService,
 )
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
+    TarifaPorMetroCuadrado,
+    DerechoPorMetroCuadrado,
+)
 from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import CotizacionM2Result
 from modules.liquidaciones.domain.constants import TipoLiquidacion
 from modules.liquidaciones.domain.services.flujos.liquidacion_especifico.liquidacion_habilitacion_urbana_flujo import (
@@ -65,7 +69,22 @@ class LiquidacionHabilitacionUrbanaOrchestrator:
         if area <= 0:
             raise HttpError(400, "area_solicitada debe ser mayor a 0")
 
-        # Mapear Presentation Schema -> Domain DTO
+        # Calculate and clamp M2 cotizacion (same pattern as cotizar_proceso)
+        cotizacion = self.m2_core_service.calcular_cotizacion_m2(
+            tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+            area_solicitada=area,
+            tarifa_m2_id=str(payload_in.liquidacion_especifica.tarifa.tarifa_m2_id),
+        )
+
+        # Apply min/max clamping (Orchestrator is the ONLY place this logic lives)
+        if cotizacion.subtotal < cotizacion.minimo:
+            cotizacion.subtotal = cotizacion.minimo
+            cotizacion.total = cotizacion.minimo
+        elif cotizacion.maximo is not None and cotizacion.subtotal > cotizacion.maximo:
+            cotizacion.subtotal = cotizacion.maximo
+            cotizacion.total = cotizacion.maximo
+
+        # Mapear Presentation Schema -> Domain DTO (with pre-clamped cotizacion)
         domain_data = HabilitacionUrbanaPrimeraRevisionData(
             liquidacion_general=LiquidacionGeneralData(
                 municipalidad_id=str(payload_in.liquidacion_general.municipalidad_id),
@@ -86,7 +105,8 @@ class LiquidacionHabilitacionUrbanaOrchestrator:
             liquidacion_especifica=LiquidacionEspecificaHabilitacionUrbanaData(
                 datos=DatosM2(area_solicitada=area),
                 tarifa=TarifaM2(tarifa_m2_id=str(payload_in.liquidacion_especifica.tarifa.tarifa_m2_id)),
-            )
+            ),
+            cotizacion=cotizacion,
         )
 
         response = self.flujo.ejecutar_primera_revision(usuario_id=usuario_id, data=domain_data)
@@ -99,7 +119,7 @@ class LiquidacionHabilitacionUrbanaOrchestrator:
         tarifa_m2_id: str,
     ) -> CotizacionM2Result:
         """
-        Validates area and executes quote calculation.
+        Validates area and executes quote calculation with min/max clamping.
         """
         if area_solicitada <= 0:
             raise HttpError(400, "area_solicitada must be greater than 0")
@@ -110,4 +130,25 @@ class LiquidacionHabilitacionUrbanaOrchestrator:
             tarifa_m2_id=tarifa_m2_id,
         )
 
+        # Apply min/max clamping after getting raw data from Core
+        if response.subtotal < response.minimo:
+            response.subtotal = response.minimo
+            response.total = response.minimo
+        elif response.maximo is not None and response.subtotal > response.maximo:
+            response.subtotal = response.maximo
+            response.total = response.maximo
+
         return response
+
+    def obtener_tarifas_vigentes_proceso(
+        self,
+    ) -> tuple[TarifaPorMetroCuadrado, DerechoPorMetroCuadrado]:
+        """
+        Fetches currently active M2 tariff and derecho for Habilitacion Urbana.
+        Returns (tarifa, derecho) tuple.
+        """
+        tarifa = self.m2_core_service.get_tarifa_m2_vigente(
+            tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        )
+        derecho = self.m2_core_service.get_derecho_minimo_m2_vigente()
+        return (tarifa, derecho)

@@ -15,13 +15,13 @@ import {
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import type { LiquidacionSnapshotListItem } from "../types/liquidacion-edificaciones";
-import { LiquidacionCardHeader, type LiquidacionCardHeaderData } from "./LiquidacionCardHeader";
+import {
+  LiquidacionCardHeader,
+  type LiquidacionCardHeaderData,
+} from "./LiquidacionCardHeader";
 import { formatCurrency, formatDate } from "./LiquidacionGeneralCard";
 
 interface LiquidacionEdificacionCardProps {
@@ -33,10 +33,14 @@ interface LiquidacionEdificacionCardProps {
 /** Estado badge classes */
 const getEstadoBadgeClass = (estado: string): string => {
   switch (estado) {
-    case "PAGADO": return "bg-emerald-500/10 text-secondary-foreground border-emerald-500/20";
-    case "PENDIENTE": return "bg-amber-500/10 text-amber-600 border-amber-500/20";
-    case "ANULADO": return "bg-destructive/10 text-destructive border-destructive/20";
-    default: return "bg-muted text-muted-foreground border-border";
+    case "PAGADO":
+      return "bg-emerald-500/10 text-secondary-foreground border-emerald-500/20";
+    case "PENDIENTE":
+      return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+    case "ANULADO":
+      return "bg-destructive/10 text-destructive border-destructive/20";
+    default:
+      return "bg-muted text-muted-foreground border-border";
   }
 };
 
@@ -200,7 +204,10 @@ export function LiquidacionEdificacionCard({
               type="button"
               variant="outline"
               size="sm"
-              onClick={(e) => { e.stopPropagation(); onNuevaRevision(item); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onNuevaRevision(item);
+              }}
               className="h-8 rounded-lg gap-1.5 text-xs font-semibold border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 w-full lg:w-auto"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -221,10 +228,23 @@ export function LiquidacionEdificacionCard({
           className="border-border/60"
         >
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <LabelValue label="Tipo de Trámite" value={getTipoTramiteLabel(edificaciones.tipo_tramite)} />
-            <LabelValue label="Acción" value={getTramiteAccionLabel(edificaciones.tramite_accion)} />
-            <LabelValue label="Revisión" value={`N° ${edificaciones.numero_revision}`} />
-            <LabelValue label="Total a Pagar" value={formatCurrency(Number(totales.total_a_pagar))} valueClassName="text-primary font-bold" />
+            <LabelValue
+              label="Tipo de Trámite"
+              value={getTipoTramiteLabel(edificaciones.tipo_tramite)}
+            />
+            <LabelValue
+              label="Acción"
+              value={getTramiteAccionLabel(edificaciones.tramite_accion)}
+            />
+            <LabelValue
+              label="Revisión"
+              value={`N° ${edificaciones.numero_revision}`}
+            />
+            <LabelValue
+              label="Total a Pagar"
+              value={formatCurrency(Number(totales.total_a_pagar))}
+              valueClassName="text-primary font-bold"
+            />
           </div>
         </SectionCard>
 
@@ -237,14 +257,6 @@ export function LiquidacionEdificacionCard({
             className="border-border/60"
           >
             <div className="space-y-2.5">
-              <LabelValue
-                label="Código"
-                value={
-                  <span className="font-mono text-primary font-semibold">
-                    {proyecto.public_id}
-                  </span>
-                }
-              />
               <LabelValue label="Nombre" value={proyecto.nombre} />
               {proyecto.entidad && (
                 <>
@@ -294,14 +306,6 @@ export function LiquidacionEdificacionCard({
             className="border-border/60"
           >
             <div className="space-y-2.5">
-              <LabelValue
-                label="Código"
-                value={
-                  <span className="font-mono text-primary font-semibold">
-                    {edificaciones.public_id}
-                  </span>
-                }
-              />
               <LabelValue
                 label="Valor del Proyecto"
                 value={formatCurrency(Number(proyecto.valor_proyecto))}
@@ -392,12 +396,11 @@ export function LiquidacionEdificacionCard({
                       <span className="text-xs font-black text-primary">
                         {formatCurrency(Number(edif.monto_base))}
                       </span>
-                      
-                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-secondary-foreground">
-                          <span className="inline-flex h-1 w-1 rounded-full bg-emerald-500" />
-                          Cobra
-                        </span>
-                      
+
+                      <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-secondary-foreground">
+                        <span className="inline-flex h-1 w-1 rounded-full bg-emerald-500" />
+                        Cobra
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -430,14 +433,20 @@ export function LiquidacionEdificacionCard({
                     <span className="text-xs font-bold text-foreground">
                       {[
                         (d as Record<string, unknown>).perfil_ingeniero_nombres,
-                        (d as Record<string, unknown>).perfil_ingeniero_apellidos,
+                        (d as Record<string, unknown>)
+                          .perfil_ingeniero_apellidos,
                       ]
                         .filter(Boolean)
                         .join(" ") || "—"}
                     </span>
-                    {(d as Record<string, unknown>).perfil_ingeniero_cip as boolean && (
+                    {((d as Record<string, unknown>)
+                      .perfil_ingeniero_cip as boolean) && (
                       <span className="text-[10px] text-muted-foreground">
-                        CIP: {(d as Record<string, unknown>).perfil_ingeniero_cip as string}
+                        CIP:{" "}
+                        {
+                          (d as Record<string, unknown>)
+                            .perfil_ingeniero_cip as string
+                        }
                       </span>
                     )}
                   </div>

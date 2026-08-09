@@ -1,8 +1,8 @@
 "use client";
 
+import type { LiquidacionGeneralListItem } from "../types/liquidacion-general";
 import type { LiquidacionMecanicaSuelosListItem } from "../types/liquidacion-mecanica-suelos.types";
 import { LiquidacionGeneralCard } from "./LiquidacionGeneralCard";
-import type { LiquidacionGeneralListItem } from "../types/liquidacion-general";
 
 interface Props {
   item: LiquidacionMecanicaSuelosListItem;
@@ -13,7 +13,11 @@ export function LiquidacionMecanicaSuelosCard({ item, onVerDetalle }: Props) {
   return (
     <LiquidacionGeneralCard
       item={item as unknown as LiquidacionGeneralListItem}
-      onVerDetalle={onVerDetalle as unknown as ((i: LiquidacionGeneralListItem) => void) | undefined}
+      onVerDetalle={
+        onVerDetalle as unknown as
+          | ((i: LiquidacionGeneralListItem) => void)
+          | undefined
+      }
     />
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Calculator, Receipt, BadgeCheck } from "lucide-react";
+import { AlertCircle, BadgeCheck, Calculator, Receipt } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormSectionHeader } from "@/components-app/forms/FormSectionHeader";
@@ -36,7 +36,12 @@ export function CotizacionSection({
   const hasVariablesFinancieras = !!variablesFinancieras;
 
   const isDisabled =
-    isLoading || isLoadingData || hasErrors || !hasValidValorBase || !hasTarifa || !hasVariablesFinancieras;
+    isLoading ||
+    isLoadingData ||
+    hasErrors ||
+    !hasValidValorBase ||
+    !hasTarifa ||
+    !hasVariablesFinancieras;
 
   return (
     <div className="space-y-4">
@@ -73,9 +78,7 @@ export function CotizacionSection({
       {/* Disabled reason hint */}
       {isDisabled && !isLoading && (
         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          {isLoadingData && (
-            <span>• Cargando datos...</span>
-          )}
+          {isLoadingData && <span>• Cargando datos...</span>}
           {!hasValidValorBase && (
             <span>• Ingresa un valor de proyecto válido</span>
           )}
@@ -106,9 +109,7 @@ export function CotizacionSection({
                     ? "bg-primary/10 text-primary"
                     : "bg-muted text-muted-foreground"
                 }`}
-              >
-                
-              </span>
+              ></span>
             </div>
           </div>
 
@@ -140,7 +141,9 @@ export function CotizacionSection({
 
                     {/* Monto base destacado */}
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Monto base</span>
+                      <span className="text-xs text-muted-foreground">
+                        Monto base
+                      </span>
                       <span className="font-semibold text-foreground">
                         S/ {rev.monto_base.toFixed(2)}
                       </span>
@@ -178,17 +181,23 @@ export function CotizacionSection({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-border pt-4">
             <div className="flex flex-col gap-1 text-sm p-3 rounded-lg border border-border bg-card">
               <span className="text-muted-foreground text-xs">Subtotal</span>
-              <span className="font-medium">S/ {quote.totales.subtotal.toFixed(2)}</span>
+              <span className="font-medium">
+                S/ {quote.totales.subtotal.toFixed(2)}
+              </span>
             </div>
             <div className="flex flex-col gap-1 text-sm p-3 rounded-lg border border-border bg-card">
               <span className="text-muted-foreground text-xs">
                 IGV ({quote._metadata.igv_valor * 100}%)
               </span>
-              <span className="font-medium">S/ {quote.totales.igv.toFixed(2)}</span>
+              <span className="font-medium">
+                S/ {quote.totales.igv.toFixed(2)}
+              </span>
             </div>
             <div className="flex flex-col gap-1 text-sm p-3 rounded-lg border border-border bg-card">
               <span className="text-muted-foreground text-xs">Total</span>
-              <span className="font-medium">S/ {quote.totales.total.toFixed(2)}</span>
+              <span className="font-medium">
+                S/ {quote.totales.total.toFixed(2)}
+              </span>
             </div>
             <div className="flex flex-col gap-1.5 text-base font-bold p-4 rounded-lg border border-primary bg-primary/5">
               <span className="flex items-center gap-1.5 text-primary">
@@ -200,8 +209,6 @@ export function CotizacionSection({
               </span>
             </div>
           </div>
-
-          
         </div>
       )}
 

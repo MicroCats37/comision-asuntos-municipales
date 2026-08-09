@@ -37,16 +37,15 @@ class LiquidacionInspeccionObraPresenter:
         general_out = LiquidacionGeneralOutput(
             id=uuid.UUID(general.id),
             municipalidad_id=uuid.UUID(general.municipalidad_id),
-            usuario_creador=UsuarioCreadorOutput(id=uuid.UUID(general.usuario_creador_id)),
+            usuario_creador=UsuarioCreadorOutput(id=uuid.UUID(general.usuario_creador.id)),
             fecha_registro=general.fecha_registro,
             expediente=general.expediente,
             observacion=general.observacion,
             numero_revision=general.numero_revision,
             sub_total=general.sub_total,
             total=general.total,
-            igv_id=uuid.UUID(general.igv_id_id) if general.igv_id_id else uuid.uuid4(),
-            uit_id=uuid.UUID(general.uit_id_id) if general.uit_id_id else uuid.uuid4(),
-            derecho_id=None,
+            igv_id=uuid.UUID(general.igv_id) if general.igv_id else uuid.uuid4(),
+            uit_id=uuid.UUID(general.uit_id) if general.uit_id else uuid.uuid4(),
             proyecto=ProyectoOutput(
                 id=uuid.UUID(general.proyecto.id),
                 denominacion=general.proyecto.denominacion,
@@ -76,6 +75,6 @@ class LiquidacionInspeccionObraPresenter:
 
         return LiquidacionInspeccionObraOutput(
             liquidacion_general=general_out,
-            liquidacion_tipo=tipo_out,
-            liquidacion_especifica=especifica_out,
+            liquidacion_especifica=tipo_out,
+            liquidacion_tipo=especifica_out,
         )

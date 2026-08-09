@@ -10,8 +10,7 @@ import { FormSectionHeader } from "@/components-app/forms/FormSectionHeader";
 import { notify } from "@/errors";
 import { useProyectoBuscar } from "../../hooks/useProyecto";
 import { normalizeProyectoResponse } from "../../services/proyecto.service";
-import type { CachedProyecto } from "../../store";
-import type { LiquidacionStepperStore } from "../../store";
+import type { CachedProyecto, LiquidacionStepperStore } from "../../store";
 import { EntidadLookupField } from "../EntidadLookupField";
 
 interface Step1ProyectoProps {
@@ -20,7 +19,11 @@ interface Step1ProyectoProps {
   store: LiquidacionStepperStore;
 }
 
-export function Step1Proyecto({ methods, isActive, store }: Step1ProyectoProps) {
+export function Step1Proyecto({
+  methods,
+  isActive,
+  store,
+}: Step1ProyectoProps) {
   const {
     selectedProyecto,
     setSelectedProyecto,

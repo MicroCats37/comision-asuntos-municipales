@@ -1,18 +1,18 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
 import {
   Building2,
+  Car,
   ChevronDown,
+  ClipboardCheck,
   FileText,
-  Plus,
-  RefreshCw,
   Home,
   Layers,
-  Car,
   Mountain,
-  ClipboardCheck,
+  Plus,
+  RefreshCw,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,15 +29,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LiquidacionStepperModal } from "@/features/liquidaciones/components/LiquidacionStepperModal";
-import { NuevaRevisionFormModal } from "@/features/liquidaciones/components/NuevaRevisionFormModal";
 import {
   LiquidacionHabilitacionUrbanaStepperModal,
-  LiquidacionMecanicaSuelosStepperModal,
   LiquidacionImpactoVialStepperModal,
-  LiquidacionTaludesStepperModal,
   LiquidacionInspeccionObraStepperModal,
+  LiquidacionMecanicaSuelosStepperModal,
+  LiquidacionTaludesStepperModal,
 } from "@/features/liquidaciones/components";
+import { LiquidacionStepperModal } from "@/features/liquidaciones/components/LiquidacionStepperModal";
+import { NuevaRevisionFormModal } from "@/features/liquidaciones/components/NuevaRevisionFormModal";
 
 // ── Tipos de revisión ──────────────────────────────────────────────────────────
 
@@ -111,7 +111,8 @@ export function NuevaLiquidacionDropdown({
   onSuccess,
 }: NuevaLiquidacionDropdownProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<OpcionLiquidacion | null>(null);
+  const [selectedOption, setSelectedOption] =
+    useState<OpcionLiquidacion | null>(null);
 
   // Modal states — Edificación
   const [stepperOpen, setStepperOpen] = useState(false);
@@ -201,7 +202,9 @@ export function NuevaLiquidacionDropdown({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {selectedOption?.icon && <selectedOption.icon className="h-5 w-5" />}
+              {selectedOption?.icon && (
+                <selectedOption.icon className="h-5 w-5" />
+              )}
               {selectedOption?.label}
             </DialogTitle>
             <DialogDescription>

@@ -191,6 +191,8 @@ class LiquidacionPorcentajeObra(BaseModel):
     derecho_minimo = models.DecimalField(
         max_digits=10,
         decimal_places=4,
+        null=True,
+        blank=True,
         verbose_name="Derecho Mínimo",
         help_text="Monto mínimo absoluto del derecho en soles.",
     )
@@ -288,6 +290,15 @@ class LiquidacionPorcentajeObraDetalle(BaseModel):
         blank=True,
         verbose_name="IGV",
         help_text="Monto del Impuesto General a las Ventas.",
+    )
+    
+    uit = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="UIT",
+        help_text="Monto de la Unidad Impositiva Tributaria (UIT) correspondiente.",
     )
 
     total = models.DecimalField(

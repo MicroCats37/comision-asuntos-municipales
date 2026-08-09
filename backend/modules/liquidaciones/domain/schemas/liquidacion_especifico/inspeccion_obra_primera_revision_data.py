@@ -3,7 +3,7 @@ from modules.liquidaciones.domain.schemas.liquidacion_general.liquidacion_genera
     LiquidacionGeneralData,
 )
 from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_visitas_data import (
-    LiquidacionTipoVisitasData,
+    LiquidacionCategoriaVisitasData,
 )
 
 
@@ -13,4 +13,4 @@ class InspeccionObraPrimeraRevisionData(BaseModel):
     Importa limpiamente desde las capas General y Tipo.
     """
     liquidacion_general: LiquidacionGeneralData
-    liquidacion_especifica: LiquidacionTipoVisitasData
+    liquidacion_especifica: LiquidacionCategoriaVisitasData

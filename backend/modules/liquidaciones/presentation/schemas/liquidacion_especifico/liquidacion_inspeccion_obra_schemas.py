@@ -28,5 +28,5 @@ class LiquidacionInspeccionObraInput(BaseSchema):
 class LiquidacionInspeccionObraOutput(BaseSchema):
     """Payload de salida: Cabecera + Tipo Identidad + cálculo de Visitas."""
     liquidacion_general: LiquidacionGeneralOutput
-    liquidacion_tipo: LiquidacionTipoOutput
-    liquidacion_especifica: LiquidacionPorCategoriaVisitasDatosOut
+    liquidacion_especifica: LiquidacionTipoOutput
+    liquidacion_tipo: LiquidacionPorCategoriaVisitasDatosOut

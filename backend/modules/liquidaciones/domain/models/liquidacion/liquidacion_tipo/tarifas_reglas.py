@@ -4,7 +4,6 @@ Tarifas y Reglas — tarifas y reglas de resolución por especialidad.
 Este archivo contiene:
 - TarifaPorMetroCuadrado: tarifa por metro cuadrado con límites
 - TarifaPorCategoriaVisitas: tarifa por categoría de visitas
-- ReglaTarifaLiquidacion: regla genérica para resolver tarifa por tramite_accion
 - ReglaTarifaInspeccionObra: regla específica para inspección de obra por categoria
 """
 
@@ -189,6 +188,8 @@ class DerechoPorcentajeObra(BaseModel, VigenciaModel):
     derecho_minimo = models.DecimalField(
         max_digits=10,
         decimal_places=4,
+        null=True,
+        blank=True,
         verbose_name="Derecho Mínimo",
         help_text="Monto mínimo absoluto del derecho en soles.",
     )

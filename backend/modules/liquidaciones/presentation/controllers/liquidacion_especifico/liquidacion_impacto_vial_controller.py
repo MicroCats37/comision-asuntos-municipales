@@ -1,0 +1,107 @@
+"""
+HTTP Controller for Impacto Vial (PorcentajeObra).
+
+Endpoints:
+- GET  /api/liquidaciones/impacto-vial/tarifas/vigentes
+- POST /api/liquidaciones/impacto-vial/cotizar
+- POST /api/liquidaciones/impacto-vial/nueva-liquidacion/primera-revision
+
+Thin controller — only delegates, no logic.
+"""
+from ninja_extra import api_controller, route
+from ninja_extra.permissions import AllowAny
+from injector import inject
+
+from core.responses import ApiResponse, success_response
+from modules.liquidaciones.domain.services.core.auth.auth_core_service import (
+    AuthCoreService,
+)
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.liquidacion_impacto_vial_orchestrator import (
+    LiquidacionImpactoVialOrchestrator,
+)
+from modules.liquidaciones.presentation.presenters.liquidacion_especifico.liquidacion_impacto_vial_presenter import (
+    LiquidacionImpactoVialPresenter,
+)
+from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_impacto_vial_schemas import (
+    LiquidacionImpactoVialInput,
+    LiquidacionImpactoVialOutput,
+    LiquidacionImpactoVialCotizarInput,
+    LiquidacionImpactoVialCotizarOutput,
+)
+
+
+@api_controller("/liquidaciones/impacto-vial", tags=["Impacto Vial"], permissions=[AllowAny])
+class LiquidacionImpactoVialController:
+    """
+    Unified controller for Impacto Vial (PorcentajeObra) endpoints.
+    """
+
+    @inject
+    def __init__(
+        self,
+        impacto_vial_orchestrator: LiquidacionImpactoVialOrchestrator,
+        presenter: LiquidacionImpactoVialPresenter,
+        auth_core_service: AuthCoreService,
+    ):
+        self.orchestrator = impacto_vial_orchestrator
+        self.presenter = presenter
+        self.auth_core_service = auth_core_service
+
+    @route.get(
+        "/tarifas/vigentes",
+        response={200: ApiResponse[dict]},
+        auth=None,
+    )
+    def get_tarifas_vigentes(self):
+        """
+        Get the currently active tarifas and derecho for Impacto Vial.
+        """
+        tarifas = self.orchestrator.obtener_tarifas_vigentes_proceso()
+        return success_response({
+            "tarifas": [
+                {
+                    "id": str(t.id),
+                    "especialidad": t.especialidad.nombre,
+                    "porcentaje_liquidacion": float(t.porcentaje_liquidacion),
+                }
+                for t in tarifas
+            ],
+        })
+
+    @route.post(
+        "/nueva-liquidacion/primera-revision",
+        response={200: ApiResponse[LiquidacionImpactoVialOutput]},
+    )
+    def crear_primera_revision(self, request, payload: LiquidacionImpactoVialInput):
+        """
+        Crea la Liquidación de Impacto Vial integrando General y PorcentajeObra.
+        """
+        usuario_id = self.auth_core_service.get_authenticated_user_id(request)
+
+        domain_result = self.orchestrator.crear_primera_revision_proceso(
+            usuario_id=usuario_id,
+            payload_in=payload,
+        )
+
+        result = self.presenter.present_primera_revision(domain_result)
+        return success_response(result)
+
+    @route.post(
+        "/cotizar",
+        response={200: ApiResponse[LiquidacionImpactoVialCotizarOutput]},
+        auth=None,
+    )
+    def cotizar(self, payload: LiquidacionImpactoVialCotizarInput):
+        """
+        Calculates a quote for Impacto Vial liquidacion WITHOUT persisting.
+        """
+        le = payload.liquidacion_especifica
+        valor_declarado = le.datos.valor_declarado
+
+        domain_result = self.orchestrator.cotizar_proceso(
+            valor_declarado=valor_declarado,
+            tarifas_input=le.tarifas,
+        )
+
+        presented = self.presenter.present_cotizacion(domain_result)
+        return success_response(presented)

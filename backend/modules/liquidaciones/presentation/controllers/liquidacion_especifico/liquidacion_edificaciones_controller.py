@@ -97,14 +97,11 @@ class LiquidacionEdificacionesController:
         """
         le = payload.liquidacion_especifica
         valor_declarado = le.datos.valor_declarado
-        payload_tarifas_ids = [
-            str(t.tarifa_porcentaje_obra_id)
-            for t in le.tarifas
-        ]
 
         domain_result = self.orchestrator.cotizar_proceso(
             valor_declarado=valor_declarado,
-            payload_tarifas_ids=payload_tarifas_ids,
+            tarifas_input=le.tarifas,
         )
 
-        return success_response(domain_result)
+        presented = self.presenter.present_cotizacion(domain_result)
+        return success_response(presented)

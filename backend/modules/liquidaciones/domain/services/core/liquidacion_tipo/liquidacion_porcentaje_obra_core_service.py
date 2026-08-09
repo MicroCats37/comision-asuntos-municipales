@@ -1,11 +1,12 @@
 """
-Core service for PorcentajeObra (Edificaciones) calculations.
+Core service for PorcentajeObra (PorcentajeObra) calculations.
 
 Pure ORM + arithmetic. No HttpError, no @transaction.atomic, no business rules.
 """
 from decimal import Decimal
 from typing import List, Optional
 from modules.liquidaciones.domain.constants import TipoLiquidacion
+
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorcentajeObra,
     LiquidacionPorcentajeObraDetalle,
@@ -30,17 +31,22 @@ class LiquidacionPorcentajeObraCoreService:
     def resolver_tarifas(
         self,
         payload_tarifas_ids: List[str],
+        tipo_liquidacion: str,
     ) -> List[TarifaPorcentajeObra]:
         """
         Hybrid resolution: empty list → auto-fill, non-empty → validate each.
         
         Returns the list of TarifaPorcentajeObra to apply.
         Caller (Orchestrator) is responsible for raising HttpError on invalid tarifas.
+        
+        Args:
+            payload_tarifas_ids: List of tariff IDs to validate, or empty for auto-fill.
+            tipo_liquidacion: The liquidacion type (e.g., TipoLiquidacion.EDIFICACION).
         """
         if not payload_tarifas_ids:
-            # Auto-fill mode: get all vigentes for EDIFICACION
+            # Auto-fill mode: get all vigentes for the specified tipo_liquidacion
             bases = TarifaLiquidacionBase.objects.vigentes().filter(
-                tipo_liquidacion=TipoLiquidacion.EDIFICACION
+                tipo_liquidacion=tipo_liquidacion
             )
             return list(
                 TarifaPorcentajeObra.objects.filter(
@@ -59,10 +65,15 @@ class LiquidacionPorcentajeObraCoreService:
         """Returns the current vigente DerechoPorcentajeObra."""
         return DerechoPorcentajeObra.objects.vigentes().first()
     
-    def get_tarifas_porcentaje_vigentes(self) -> List[TarifaPorcentajeObra]:
-        """Returns all vigentes TarifaPorcentajeObra for EDIFICACION."""
+    def get_tarifas_porcentaje_vigentes(self, tipo_liquidacion: str) -> List[TarifaPorcentajeObra]:
+        """
+        Returns all vigentes TarifaPorcentajeObra for the specified tipo_liquidacion.
+        
+        Args:
+            tipo_liquidacion: The liquidacion type (e.g., TipoLiquidacion.EDIFICACION).
+        """
         bases = TarifaLiquidacionBase.objects.vigentes().filter(
-            tipo_liquidacion=TipoLiquidacion.EDIFICACION
+            tipo_liquidacion=tipo_liquidacion
         )
         return list(
             TarifaPorcentajeObra.objects.filter(
@@ -76,25 +87,36 @@ class LiquidacionPorcentajeObraCoreService:
         tarifas: List[TarifaPorcentajeObra],
         igv_porcentaje: Decimal,
         derecho: DerechoPorcentajeObra,
+        uit_valor: Decimal,
     ) -> CotizacionPorcentajeObraData:
         """
         Pure arithmetic for the PorcentajeObra motor.
-        
+
         Steps:
-        1. Per-detalle: subtotal = valor × tarifa.porcentaje
-        2. Sum all subtotals
-        3. Apply clamping at TOTAL (distributed proportionally)
-        4. Calculate IGV per detalle
-        5. Calculate UIT per detalle (informational)
+        1. Per-detalle: subtotal_raw = valor × tarifa.porcentaje
+        2. Per-detalle: minimo_subtotal = uit_valor × derecho.porcentaje_minimo_uit
+        3. Per-detalle: subtotal = max(subtotal_raw, minimo_subtotal)
+        4. Per-detalle: clamp to derecho_maximo if set
+        5. Per-detalle: igv = subtotal × igv_porcentaje
+        6. Per-detalle: total = subtotal + igv
+        7. Aggregate totals from details
         """
         if not tarifas:
             raise ValueError("At least one tarifa is required")
-        
-        # Step 1: per-detalle calculation (RAW, no clamping yet)
-        detalles_raw: List[DetallePorcentajeObraData] = []
+
+        minimo_por_tarifa = uit_valor * derecho.porcentaje_minimo_uit
+
+        # Step 1-6: per-detalle calculation with per-tariff clamping
+        detalles: List[DetallePorcentajeObraData] = []
         for tarifa in tarifas:
-            subtotal = valor_declarado * tarifa.porcentaje_liquidacion
-            detalles_raw.append(
+            subtotal_raw = valor_declarado * tarifa.porcentaje_liquidacion
+            # Apply per-tariff minimum
+            subtotal = max(subtotal_raw, minimo_por_tarifa)
+            # Apply per-tariff maximum if set
+            if derecho.derecho_maximo is not None and subtotal > derecho.derecho_maximo:
+                subtotal = derecho.derecho_maximo
+            igv = subtotal * igv_porcentaje
+            detalles.append(
                 DetallePorcentajeObraData(
                     tarifa_aplicada=TarifaPorcentajeObraAplicada(
                         tarifa_id=str(tarifa.id),
@@ -104,34 +126,19 @@ class LiquidacionPorcentajeObraCoreService:
                     ),
                     porcentaje_aplicado=tarifa.porcentaje_liquidacion,
                     subtotal=subtotal,
-                    igv=subtotal * igv_porcentaje,
-                    uit=valor_declarado * derecho.porcentaje_minimo_uit,
-                    total=subtotal + (subtotal * igv_porcentaje),
+                    igv=igv,
+                    uit=minimo_por_tarifa,
+                    total=subtotal + igv,
                 )
             )
-        
-        # Step 2: aggregate
+
+        # Step 7: aggregate
         porcentaje_liquidacion = sum(
             (t.porcentaje_liquidacion for t in tarifas), Decimal("0")
         )
-        total_calculado = sum((d.subtotal for d in detalles_raw), Decimal("0"))
-        
-        # Step 3: clamping at TOTAL
-        detalles_finales = detalles_raw
-        if total_calculado < derecho.derecho_minimo:
-            factor = derecho.derecho_minimo / total_calculado
-            detalles_finales = self._distribute_clamp(
-                detalles_raw, factor, igv_porcentaje, valor_declarado, derecho
-            )
-        elif derecho.derecho_maximo is not None and total_calculado > derecho.derecho_maximo:
-            factor = derecho.derecho_maximo / total_calculado
-            detalles_finales = self._distribute_clamp(
-                detalles_raw, factor, igv_porcentaje, valor_declarado, derecho
-            )
-        
-        total_subtotal = sum((d.subtotal for d in detalles_finales), Decimal("0"))
-        total = sum((d.total for d in detalles_finales), Decimal("0"))
-        
+        total_subtotal = sum((d.subtotal for d in detalles), Decimal("0"))
+        total = sum((d.total for d in detalles), Decimal("0"))
+
         return CotizacionPorcentajeObraData(
             valor_declarado=valor_declarado,
             porcentaje_liquidacion=porcentaje_liquidacion,
@@ -140,35 +147,11 @@ class LiquidacionPorcentajeObraCoreService:
             derecho_maximo=derecho.derecho_maximo,
             porcentaje_minimo_uit=derecho.porcentaje_minimo_uit,
             derecho_aplicado_id=str(derecho.id),
-            detalles=detalles_finales,
+            detalles=detalles,
             total_subtotal=total_subtotal,
             total=total,
         )
     
-    def _distribute_clamp(
-        self,
-        detalles_raw: List[DetallePorcentajeObraData],
-        factor: Decimal,
-        igv_porcentaje: Decimal,
-        valor_declarado: Decimal,
-        derecho: DerechoPorcentajeObra,
-    ) -> List[DetallePorcentajeObraData]:
-        """Distribute clamped total proportionally across detalles."""
-        result = []
-        for d in detalles_raw:
-            new_subtotal = d.subtotal * factor
-            new_igv = new_subtotal * igv_porcentaje
-            result.append(
-                DetallePorcentajeObraData(
-                    tarifa_aplicada=d.tarifa_aplicada,
-                    porcentaje_aplicado=d.porcentaje_aplicado,
-                    subtotal=new_subtotal,
-                    igv=new_igv,
-                    uit=valor_declarado * derecho.porcentaje_minimo_uit,
-                    total=new_subtotal + new_igv,
-                )
-            )
-        return result
     
     def create_liquidacion_porcentaje_obra(
         self,

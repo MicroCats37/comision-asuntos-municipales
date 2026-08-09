@@ -53,7 +53,7 @@ class LiquidacionPorcentajeObraDatosOut(BaseSchema):
     valor_declarado: Decimal
     porcentaje_liquidacion: Decimal  # SUM de tarifas aplicadas
     tipo_tramite: Optional[str] = None  # NULL por ahora
-    derecho_minimo: Decimal
+    derecho_minimo: Optional[Decimal] = None
     derecho_maximo: Optional[Decimal] = None
     porcentaje_minimo_uit: Decimal
     derecho_aplicado_id: uuid.UUID

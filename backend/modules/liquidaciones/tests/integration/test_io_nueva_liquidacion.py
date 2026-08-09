@@ -183,10 +183,15 @@ def test_io_crear_primera_revision_success(auth_client, valid_payload):
     assert general["observacion"] == valid_payload["liquidacion_general"]["observacion"]
     assert general["proyecto"]["denominacion"] == valid_payload["liquidacion_general"]["proyecto"]["denominacion"]
 
-    # Verify Specific Structure (Visitas)
+    # Verify Specific Structure (identity wrapper after semantic fix)
     especifica = result["liquidacion_especifica"]
-    assert especifica["cantidad_visitas"] == valid_payload["liquidacion_especifica"]["datos"]["cantidad_visitas"]
-    assert especifica["categoria"] == valid_payload["liquidacion_especifica"]["datos"]["categoria"]
+    assert "id" in especifica
+    assert "numero" in especifica
+
+    # Verify liquidacion_tipo has Visitas calculation data
+    tipo = result["liquidacion_tipo"]
+    assert tipo["cantidad_visitas"] == valid_payload["liquidacion_especifica"]["datos"]["cantidad_visitas"]
+    assert tipo["categoria"] == valid_payload["liquidacion_especifica"]["datos"]["categoria"]
 
     # Verify Calculation
     # UIT = 5150.00

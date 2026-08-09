@@ -1,7 +1,7 @@
 """
 Orchestrator for Edificaciones (PorcentajeObra) first revision.
 
-Validates input, applies clamping at TOTAL with proportional distribution,
+Validates input, applies per-detail clamping,
 maps Presentation Schema -> Domain DTO.
 
 Architecture: Orchestrator owns business rules (clamping). No @transaction.atomic.
@@ -22,7 +22,9 @@ from modules.liquidaciones.domain.services.flujos.liquidacion_especifico.liquida
     LiquidacionEdificacionesFlujo,
 )
 from modules.liquidaciones.domain.schemas.liquidacion_general.liquidacion_general_data import (
+    EntidadData,
     LiquidacionGeneralData,
+    ProyectoData,
 )
 from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_porcentaje_data import (
     DatosPorcentajeObra,
@@ -38,6 +40,9 @@ from modules.liquidaciones.domain.results.liquidacion_especifico.edificaciones_p
 from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import (
     CotizacionPorcentajeObraResult,
     CotizacionPorcentajeObraDetalleResult,
+)
+from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
+    LiquidacionPorcentajeObraTarifaIn,
 )
 
 
@@ -105,7 +110,7 @@ class LiquidacionEdificacionesOrchestrator:
             str(t.tarifa_porcentaje_obra_id)
             for t in payload_in.liquidacion_especifica.tarifas
         ]
-        tarifas = self.porcentaje_core.resolver_tarifas(payload_tarifas_ids)
+        tarifas = self.porcentaje_core.resolver_tarifas(payload_tarifas_ids, TipoLiquidacion.EDIFICACION)
         
         # Validate each tarifa (only in explicit mode)
         if payload_tarifas_ids:
@@ -141,7 +146,17 @@ class LiquidacionEdificacionesOrchestrator:
                 municipalidad_id=str(payload_in.liquidacion_general.municipalidad_id),
                 expediente=payload_in.liquidacion_general.expediente,
                 observacion=payload_in.liquidacion_general.observacion,
-                proyecto=payload_in.liquidacion_general.proyecto,
+                proyecto=ProyectoData(
+                    denominacion=payload_in.liquidacion_general.proyecto.denominacion,
+                    nombre_propietario=payload_in.liquidacion_general.proyecto.nombre_propietario,
+                    direccion=payload_in.liquidacion_general.proyecto.direccion,
+                    distrito_id=str(payload_in.liquidacion_general.proyecto.distrito_id),
+                    entidad_razon_social=payload_in.liquidacion_general.proyecto.entidad.razon_social,
+                    entidad=EntidadData(
+                        tipo_documento=payload_in.liquidacion_general.proyecto.entidad.tipo_documento,
+                        numero_documento=payload_in.liquidacion_general.proyecto.entidad.numero_documento,
+                    ),
+                ),
                 # FUTURE: when tipo_tramite is added, pass payload_in.tipo_tramite here
             ),
             liquidacion_especifica=LiquidacionPorcentajeObraData(
@@ -157,6 +172,7 @@ class LiquidacionEdificacionesOrchestrator:
             data=domain_data,
             igv_porcentaje=Decimal(str(igv_vigente.valor)),
             derecho=derecho,
+            uit_valor=Decimal(str(uit_vigente.valor)),
         )
 
     def obtener_tarifas_vigentes_proceso(self):
@@ -164,26 +180,27 @@ class LiquidacionEdificacionesOrchestrator:
         Fetches currently active TarifaPorcentajeObra list for Edificaciones.
         Returns List[TarifaPorcentajeObra].
         """
-        return self.porcentaje_core.get_tarifas_porcentaje_vigentes()
+        return self.porcentaje_core.get_tarifas_porcentaje_vigentes(TipoLiquidacion.EDIFICACION)
 
     def cotizar_proceso(
         self,
         valor_declarado: Decimal,
-        payload_tarifas_ids: List[str],
+        tarifas_input: List[LiquidacionPorcentajeObraTarifaIn],
     ) -> CotizacionPorcentajeObraResult:
         """
         Quote-only calculation. Does NOT persist.
-        
+
         Same hybrid resolution as crear_primera_revision_proceso.
         Returns CotizacionPorcentajeObraResult with totals and per-detalle breakdown.
         """
         # Step 1: Validation
         if valor_declarado <= 0:
             raise HttpError(400, "valor_declarado debe ser mayor a 0")
-        
+
         # Step 2: Hybrid resolution
-        tarifas = self.porcentaje_core.resolver_tarifas(payload_tarifas_ids)
-        
+        payload_tarifas_ids = [str(t.tarifa_porcentaje_obra_id) for t in tarifas_input]
+        tarifas = self.porcentaje_core.resolver_tarifas(payload_tarifas_ids, TipoLiquidacion.EDIFICACION)
+
         # Validate explicit mode
         if payload_tarifas_ids:
             for tarifa in tarifas:
@@ -192,10 +209,13 @@ class LiquidacionEdificacionesOrchestrator:
         if not tarifas:
             raise HttpError(400, "No hay tarifas vigentes para edificaciones")
         
-        # Step 3: Get vigente IGV and derecho
+        # Step 3: Get vigente IGV, UIT and derecho
         igv_vigente = self.general_core.get_igv_vigente()
+        uit_vigente = self.general_core.get_uit_vigente()
         if not igv_vigente:
             raise HttpError(400, "No hay IGV vigente")
+        if not uit_vigente:
+            raise HttpError(400, "No hay UIT vigente configurado")
         
         derecho = self.porcentaje_core.get_derecho_porcentaje_vigente()
         if not derecho:
@@ -207,6 +227,7 @@ class LiquidacionEdificacionesOrchestrator:
             tarifas=tarifas,
             igv_porcentaje=Decimal(str(igv_vigente.valor)),
             derecho=derecho,
+            uit_valor=Decimal(str(uit_vigente.valor)),
         )
         
         # Step 5: Build result

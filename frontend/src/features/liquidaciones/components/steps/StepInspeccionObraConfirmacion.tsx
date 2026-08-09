@@ -10,16 +10,19 @@
 
 import {
   BadgeCheck,
-  Building2,
   Banknote,
-  Users,
-  Phone,
+  Building2,
   Calculator,
+  Phone,
+  Users,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useInspeccionObraStepperStore, type CachedProyecto } from "../../store";
+import {
+  type CachedProyecto,
+  useInspeccionObraStepperStore,
+} from "../../store";
 import type { CotizacionIOResponse } from "../../types/liquidacion-inspeccion-obra.types";
 
 // ── Sub-componentes IO-específicos ──────────────────────────────────────────
@@ -40,7 +43,9 @@ function InspeccionObraConfirmacionCard({
   actions,
 }: InspeccionObraConfirmacionCardProps) {
   return (
-    <div className={`rounded-xl border border-border bg-card overflow-hidden ${className ?? ""}`}>
+    <div
+      className={`rounded-xl border border-border bg-card overflow-hidden ${className ?? ""}`}
+    >
       <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b border-border">
         <div className="flex items-center gap-2">
           {Icon && (
@@ -78,13 +83,19 @@ interface InspeccionObraDataRowProps {
   className?: string;
 }
 
-function InspeccionObraDataRow({ label, children, className = "" }: InspeccionObraDataRowProps) {
+function InspeccionObraDataRow({
+  label,
+  children,
+  className = "",
+}: InspeccionObraDataRowProps) {
   return (
     <div className={`space-y-0.5 min-w-0 ${className}`}>
       <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </span>
-      <div className="text-sm font-medium text-foreground truncate">{children}</div>
+      <div className="text-sm font-medium text-foreground truncate">
+        {children}
+      </div>
     </div>
   );
 }
@@ -130,7 +141,9 @@ export function StepInspeccionObraConfirmacion({
 
   const { watch } = methods;
   const watchedMunicipalidadId = watch("municipalidad_id");
-  const municipalidad = municipalidades.find((m) => m.id === watchedMunicipalidadId);
+  const municipalidad = municipalidades.find(
+    (m) => m.id === watchedMunicipalidadId,
+  );
 
   const formatSoles = (value: number) =>
     `S/ ${value.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`;
@@ -141,8 +154,6 @@ export function StepInspeccionObraConfirmacion({
 
   return (
     <div className="space-y-6 min-w-0 max-w-full">
-      
-
       <div className="flex flex-col lg:flex-row gap-4 min-w-0">
         {/* Left column: Proyecto + Liquidación */}
         <div className="flex-1 min-w-0 space-y-4">
@@ -167,8 +178,12 @@ export function StepInspeccionObraConfirmacion({
           >
             <div className="space-y-3 min-w-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <InspeccionObraDataRow label="Tipo">{tipoLabel}</InspeccionObraDataRow>
-                <InspeccionObraDataRow label="Municipalidad">{municipalidad?.nombre ?? "—"}</InspeccionObraDataRow>
+                <InspeccionObraDataRow label="Tipo">
+                  {tipoLabel}
+                </InspeccionObraDataRow>
+                <InspeccionObraDataRow label="Municipalidad">
+                  {municipalidad?.nombre ?? "—"}
+                </InspeccionObraDataRow>
                 {liquidacionItems.map((item) => (
                   <InspeccionObraDataRow
                     key={item.label}
@@ -177,21 +192,30 @@ export function StepInspeccionObraConfirmacion({
                   >
                     {item.highlight && typeof item.value === "number"
                       ? `${item.value.toLocaleString("es-PE")} visita(s)`
-                      : item.value ?? "—"}
+                      : (item.value ?? "—")}
                   </InspeccionObraDataRow>
                 ))}
                 {/* Tarifas seleccionadas */}
-                <InspeccionObraDataRow label="Tarifas" className="sm:col-span-2">
+                <InspeccionObraDataRow
+                  label="Tarifas"
+                  className="sm:col-span-2"
+                >
                   {selectedTarifasIds.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
                       {selectedTarifasIds.map((id) => (
-                        <Badge key={id} variant="outline" className="text-xs font-mono">
+                        <Badge
+                          key={id}
+                          variant="outline"
+                          className="text-xs font-mono"
+                        >
                           {id.slice(0, 8)}...
                         </Badge>
                       ))}
                     </div>
                   ) : (
-                    <span className="text-muted-foreground italic">Sin tarifas</span>
+                    <span className="text-muted-foreground italic">
+                      Sin tarifas
+                    </span>
                   )}
                 </InspeccionObraDataRow>
               </div>
@@ -209,7 +233,10 @@ export function StepInspeccionObraConfirmacion({
             <InspeccionObraPersonasDisplay
               personas={selectedProyectistas.map((p) => ({
                 cip: p.cip,
-                label: p.nombres && p.apellidos ? `${p.nombres} ${p.apellidos}` : `CIP ${p.cip}`,
+                label:
+                  p.nombres && p.apellidos
+                    ? `${p.nombres} ${p.apellidos}`
+                    : `CIP ${p.cip}`,
                 especialidad: p.especialidad_id,
                 descripcion: p.descripcion,
               }))}
@@ -244,9 +271,16 @@ export function StepInspeccionObraConfirmacion({
           <InspeccionObraConfirmacionCard
             title="Cotización"
             icon={Calculator}
-            actions={quote ? [{ label: "Recalcular", onClick: () => goToStep(0) }] : undefined}
+            actions={
+              quote
+                ? [{ label: "Recalcular", onClick: () => goToStep(0) }]
+                : undefined
+            }
           >
-            <InspeccionObraCotizacionDisplay quote={quote} formatSoles={formatSoles} />
+            <InspeccionObraCotizacionDisplay
+              quote={quote}
+              formatSoles={formatSoles}
+            />
           </InspeccionObraConfirmacionCard>
         </div>
       </div>
@@ -283,7 +317,9 @@ function InspeccionObraPersonasDisplay({
   showEmail,
 }: InspeccionObraPersonasDisplayProps) {
   if (personas.length === 0) {
-    return <p className="text-sm text-muted-foreground italic">{emptyMessage}</p>;
+    return (
+      <p className="text-sm text-muted-foreground italic">{emptyMessage}</p>
+    );
   }
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -301,7 +337,9 @@ function InspeccionObraPersonasDisplay({
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-sm font-medium truncate">{p.label}</p>
               {p.principal && (
-                <Badge className="text-[10px] bg-primary/10 text-primary">Principal</Badge>
+                <Badge className="text-[10px] bg-primary/10 text-primary">
+                  Principal
+                </Badge>
               )}
             </div>
             <div className="flex flex-wrap gap-1">
@@ -309,7 +347,9 @@ function InspeccionObraPersonasDisplay({
                 {p.especialidad ?? p.cip}
               </Badge>
             </div>
-            {showCargo && p.cargo && <p className="text-xs text-muted-foreground">{p.cargo}</p>}
+            {showCargo && p.cargo && (
+              <p className="text-xs text-muted-foreground">{p.cargo}</p>
+            )}
             {showTelefono && p.telefono && (
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Phone className="h-3 w-3" />
@@ -317,10 +357,14 @@ function InspeccionObraPersonasDisplay({
               </p>
             )}
             {showEmail && p.email && (
-              <p className="text-xs text-muted-foreground truncate">{p.email}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {p.email}
+              </p>
             )}
             {p.descripcion && (
-              <p className="text-xs text-muted-foreground line-clamp-2">{p.descripcion}</p>
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {p.descripcion}
+              </p>
             )}
           </div>
         </div>
@@ -337,17 +381,25 @@ function InspeccionObraCotizacionDisplay({
   formatSoles: (v: number) => string;
 }) {
   if (!quote) {
-    return <p className="text-sm text-muted-foreground italic">Sin cotización calculada</p>;
+    return (
+      <p className="text-sm text-muted-foreground italic">
+        Sin cotización calculada
+      </p>
+    );
   }
   return (
     <div className="space-y-4 min-w-0">
       <div className="space-y-2 text-sm">
         <div className="flex justify-between gap-2">
           <span className="text-muted-foreground">Subtotal</span>
-          <span className="font-medium">{formatSoles(quote.totales.subtotal)}</span>
+          <span className="font-medium">
+            {formatSoles(quote.totales.subtotal)}
+          </span>
         </div>
         <div className="flex justify-between gap-2">
-          <span className="text-muted-foreground">IGV ({quote._metadata.igv_valor * 100}%)</span>
+          <span className="text-muted-foreground">
+            IGV ({quote._metadata.igv_valor * 100}%)
+          </span>
           <span className="font-medium">{formatSoles(quote.totales.igv)}</span>
         </div>
       </div>
@@ -356,10 +408,13 @@ function InspeccionObraCotizacionDisplay({
           <BadgeCheck className="h-4 w-4" />
           Total a Pagar
         </span>
-        <span className="text-2xl font-bold text-primary">{formatSoles(quote.totales.total_a_pagar)}</span>
+        <span className="text-2xl font-bold text-primary">
+          {formatSoles(quote.totales.total_a_pagar)}
+        </span>
       </div>
       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-        Revisión #{quote.numero_revision} · UIT {formatSoles(quote._metadata.uit_valor)}
+        Revisión #{quote.numero_revision} · UIT{" "}
+        {formatSoles(quote._metadata.uit_valor)}
       </div>
     </div>
   );
@@ -371,7 +426,11 @@ interface InspeccionObraProyectoDisplayProps {
     denominacion: string;
     direccion?: string;
     nombre_propietario?: string;
-    entidad?: { razon_social: string; tipo_documento: string; numero_documento: string };
+    entidad?: {
+      razon_social: string;
+      tipo_documento: string;
+      numero_documento: string;
+    };
   } | null;
   hasProyecto: boolean;
 }
@@ -382,35 +441,62 @@ function InspeccionObraProyectoDisplay({
   hasProyecto,
 }: InspeccionObraProyectoDisplayProps) {
   if (!hasProyecto) {
-    return <p className="text-sm text-muted-foreground italic">Sin proyecto seleccionado</p>;
+    return (
+      <p className="text-sm text-muted-foreground italic">
+        Sin proyecto seleccionado
+      </p>
+    );
   }
   if (selectedProyecto) {
     return (
       <div className="space-y-3 min-w-0">
-        <InspeccionObraDataRow label="Denominación">{selectedProyecto.denominacion}</InspeccionObraDataRow>
+        <InspeccionObraDataRow label="Denominación">
+          {selectedProyecto.denominacion}
+        </InspeccionObraDataRow>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <InspeccionObraDataRow label="Código">{selectedProyecto.public_id}</InspeccionObraDataRow>
-          {selectedProyecto.direccion && <InspeccionObraDataRow label="Dirección">{selectedProyecto.direccion}</InspeccionObraDataRow>}
-          {selectedProyecto.distrito && <InspeccionObraDataRow label="Distrito">{selectedProyecto.distrito}</InspeccionObraDataRow>}
+          <InspeccionObraDataRow label="Código">
+            {selectedProyecto.public_id}
+          </InspeccionObraDataRow>
+          {selectedProyecto.direccion && (
+            <InspeccionObraDataRow label="Dirección">
+              {selectedProyecto.direccion}
+            </InspeccionObraDataRow>
+          )}
+          {selectedProyecto.distrito && (
+            <InspeccionObraDataRow label="Distrito">
+              {selectedProyecto.distrito}
+            </InspeccionObraDataRow>
+          )}
         </div>
         {selectedProyecto.entidad?.nombre && (
-          <InspeccionObraDataRow label="Entidad">{selectedProyecto.entidad.nombre}</InspeccionObraDataRow>
+          <InspeccionObraDataRow label="Entidad">
+            {selectedProyecto.entidad.nombre}
+          </InspeccionObraDataRow>
         )}
       </div>
     );
   }
   return (
     <div className="space-y-3 min-w-0">
-      <InspeccionObraDataRow label="Denominación">{proyectoInline?.denominacion}</InspeccionObraDataRow>
+      <InspeccionObraDataRow label="Denominación">
+        {proyectoInline?.denominacion}
+      </InspeccionObraDataRow>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {proyectoInline?.direccion && <InspeccionObraDataRow label="Dirección">{proyectoInline.direccion}</InspeccionObraDataRow>}
+        {proyectoInline?.direccion && (
+          <InspeccionObraDataRow label="Dirección">
+            {proyectoInline.direccion}
+          </InspeccionObraDataRow>
+        )}
         {proyectoInline?.nombre_propietario && (
-          <InspeccionObraDataRow label="Propietario">{proyectoInline.nombre_propietario}</InspeccionObraDataRow>
+          <InspeccionObraDataRow label="Propietario">
+            {proyectoInline.nombre_propietario}
+          </InspeccionObraDataRow>
         )}
       </div>
       {proyectoInline?.entidad && (
         <InspeccionObraDataRow label="Entidad">
-          {proyectoInline.entidad.razon_social} ({proyectoInline.entidad.tipo_documento}:{" "}
+          {proyectoInline.entidad.razon_social} (
+          {proyectoInline.entidad.tipo_documento}:{" "}
           {proyectoInline.entidad.numero_documento})
         </InspeccionObraDataRow>
       )}

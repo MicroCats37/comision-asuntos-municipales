@@ -202,16 +202,16 @@ def test_hu_nueva_liquidacion_happy_path(
     assert lg["expediente"] == "EXP-2024-001"
     assert lg["numero_revision"] == 1
 
-    # Verify liquidacion_tipo has identity fields
+    # Verify liquidacion_tipo has M2 calculation fields (semantically: tipo = calculation)
     lt = result["liquidacion_tipo"]
     assert "id" in lt
-    assert "numero" in lt
+    assert "area_m2" in lt
+    assert "costo_por_m2" in lt
 
-    # Verify liquidacion_especifica has M2 fields
+    # Verify liquidacion_especifica has identity fields (semantically: especifica = identity)
     le = result["liquidacion_especifica"]
     assert "id" in le
-    assert "area_m2" in le
-    assert "costo_por_m2" in le
+    assert "numero" in le
 
 
 @pytest.mark.django_db
@@ -328,20 +328,20 @@ def test_hu_nueva_liquidacion_response_has_three_wrappers(
     assert "liquidacion_tipo" in result, "Response should have 'liquidacion_tipo' wrapper"
     assert "liquidacion_especifica" in result, "Response should have 'liquidacion_especifica' wrapper"
 
-    # Validate liquidacion_tipo structure (identity wrapper)
+    # Validate liquidacion_tipo structure (M2 calculation wrapper after semantic fix)
     lt = result["liquidacion_tipo"]
     assert "id" in lt, "liquidacion_tipo should have 'id'"
-    assert "numero" in lt, "liquidacion_tipo should have 'numero'"
+    assert "area_m2" in lt, "liquidacion_tipo should have 'area_m2'"
+    assert "costo_por_m2" in lt, "liquidacion_tipo should have 'costo_por_m2'"
+    assert "derecho_minimo" in lt, "liquidacion_tipo should have 'derecho_minimo'"
+    assert "derecho_maximo" in lt, "liquidacion_tipo should have 'derecho_maximo'"
+    assert "tarifa_aplicada_id" in lt, "liquidacion_tipo should have 'tarifa_aplicada_id'"
+    assert "derecho_aplicado_id" in lt, "liquidacion_tipo should have 'derecho_aplicado_id'"
 
-    # Validate liquidacion_especifica structure (M2 output)
+    # Validate liquidacion_especifica structure (identity wrapper after semantic fix)
     le = result["liquidacion_especifica"]
     assert "id" in le, "liquidacion_especifica should have 'id'"
-    assert "area_m2" in le, "liquidacion_especifica should have 'area_m2'"
-    assert "costo_por_m2" in le, "liquidacion_especifica should have 'costo_por_m2'"
-    assert "derecho_minimo" in le, "liquidacion_especifica should have 'derecho_minimo'"
-    assert "derecho_maximo" in le, "liquidacion_especifica should have 'derecho_maximo'"
-    assert "tarifa_aplicada_id" in le, "liquidacion_especifica should have 'tarifa_aplicada_id'"
-    assert "derecho_aplicado_id" in le, "liquidacion_especifica should have 'derecho_aplicado_id'"
+    assert "numero" in le, "liquidacion_especifica should have 'numero'"
 
 
 @pytest.mark.django_db
