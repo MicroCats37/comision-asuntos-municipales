@@ -173,7 +173,7 @@ export function AppStepperFormModal<T extends FieldValues>({
   cancelLabel = "Cancelar",
   backLabel = "Anterior",
   nextLabel = "Siguiente",
-  preventClose = false,
+  preventClose = true,
   size = "lg",
 }: AppStepperFormModalProps<T>) {
   const formId = useId();

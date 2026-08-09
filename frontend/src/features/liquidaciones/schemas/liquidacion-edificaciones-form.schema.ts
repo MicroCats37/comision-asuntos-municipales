@@ -15,7 +15,7 @@ const especialidadIdSchema = z
   .uuid("Debe seleccionar una especialidad");
 
 // Proyectista inline for submit
-const proyectistaInlineSchema = z.object({
+export const proyectistaInlineSchema = z.object({
   cip: cipSchema,
   especialidad_id: especialidadIdSchema,
   descripcion: z.string().optional(),

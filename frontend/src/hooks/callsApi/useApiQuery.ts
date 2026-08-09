@@ -15,9 +15,24 @@ interface UseApiQueryProps<T, TData = T> {
   params?: Record<string, unknown>;
   showToast?: boolean;
   queryOptions?: Omit<
-    UseQueryOptions<T, AxiosError, TData>,
+    UseQueryOptions<T, ApiQueryError, TData>,
     "queryKey" | "queryFn"
   >;
+}
+
+/**
+ * Error class that preserves axios response status for status-aware error handling.
+ * Thrown instead of plain Error so callers can distinguish 404 (not found) from
+ * 503/timeout (service unavailable).
+ */
+export class ApiQueryError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number | undefined,
+  ) {
+    super(message);
+    this.name = "ApiQueryError";
+  }
 }
 
 export function useApiQuery<T, TData = T>({
@@ -34,7 +49,7 @@ export function useApiQuery<T, TData = T>({
     ? [...(Array.isArray(queryKey) ? queryKey : [queryKey]), params]
     : queryKey;
 
-  return useQuery<T, AxiosError, TData>({
+  return useQuery<T, ApiQueryError, TData>({
     queryKey: finalQueryKey,
     queryFn: async () => {
       if (!url) throw new Error("URL is required");
@@ -43,12 +58,16 @@ export function useApiQuery<T, TData = T>({
         const { data } = await api.get(url, { params });
         return schema.parse(data);
       } catch (error) {
+        const axiosError = error as AxiosError;
         const msg = getErrorMessage(error);
         if (showToast) notify.error(msg);
-        throw new Error(msg);
+        // Preserve status code so callers can distinguish error types
+        throw new ApiQueryError(msg, axiosError.response?.status);
       }
     },
     enabled: isEnabled,
-    ...queryOptions,
+    // Type assertion needed: queryOptions uses Error type for compatibility,
+    // but runtime behavior is correct since ApiQueryError extends Error
+    ...(queryOptions as Omit<UseQueryOptions<T, ApiQueryError, TData>, "queryKey" | "queryFn">),
   });
 }

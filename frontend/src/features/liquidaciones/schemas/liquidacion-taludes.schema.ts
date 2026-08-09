@@ -4,7 +4,7 @@
  */
 import { z } from "zod";
 import { apiResponseSchema } from "@/types/api.types";
-import { contactoInlineSchema } from "./liquidacion-edificaciones-form.schema";
+import { contactoInlineSchema, proyectistaInlineSchema } from "./liquidacion-edificaciones-form.schema";
 
 // ── Inner Schemas (data fields only) ──────────────────────────────────────────
 
@@ -52,10 +52,11 @@ export const primeraRevisionTaludesSchema = z.object({
   proyecto_public_id: z.string().min(1, "Proyecto es requerido").optional(),
   proyecto_inline: proyectoInlineTaludesSchema.optional(),
   municipalidad_id: z.string().uuid("Municipalidad es requerida"),
-  area_solicitada: z.number().positive("El área debe ser positiva"),
+  valor_proyecto: z.number().positive("El valor del proyecto debe ser positivo"),
   expediente: z.string().optional(),
   observacion: z.string().optional(),
   tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
+  proyectistas: z.array(proyectistaInlineSchema).default([]),
   contactos: z.array(contactoInlineSchema).default([]),
 });
 
@@ -63,10 +64,9 @@ export type PrimeraRevisionTaludesData = z.infer<typeof primeraRevisionTaludesSc
 
 // ── Cotizar Schemas ────────────────────────────────────────────────────────────
 
-/** Payload para cotizar primera revisión */
+/** Payload para cotizar primera revisión — municipalidad NO requerida para cotizar; solo para creación final */
 export const cotizarTaludesPayloadSchema = z.object({
-  area_solicitada: z.number().positive("El área debe ser positiva"),
-  municipalidad_id: z.string().uuid("Municipalidad es requerida"),
+  valor_proyecto: z.number().positive("El valor del proyecto debe ser positivo"),
   tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
 });
 
@@ -86,34 +86,41 @@ const cotizacionTaludesTotalesSchema = z.object({
   total_a_pagar: z.number(),
 });
 
-/** Metadata en respuesta de cotización */
+/** Metadata en respuesta de cotización (porcentaje-based — Edificaciones style) */
 const cotizacionTaludesMetadataSchema = z.object({
   igv_valor: z.number(),
   uit_valor: z.number(),
-  area_solicitada: z.number().optional(),
+  cobra: z.boolean(),
+  valor_base_calculo: z.number(),
 });
 
-/** Tarifa en respuesta de cotización */
+/** Tarifa en respuesta de cotización (porcentaje) */
 const cotizacionTaludesTarifaSchema = z.object({
   id: z.string(),
-  costo_por_m2: z.number(),
-  area_minima: z.number(),
   derecho_minimo: z.number(),
   derecho_maximo: z.number().nullable(),
+  porcentaje_minimo_uit: z.number(),
+  porcentaje_liquidacion: z.number(),
 });
 
-/** Cálculo en respuesta de cotización */
-const cotizacionTaludesCalculoSchema = z.object({
-  area_solicitada: z.number(),
-  area_base_calculo: z.number(),
-  derecho: z.number(),
+/** Revisión en respuesta de cotización (porcentaje-based — matches CotizacionRevision) */
+const cotizacionTaludesRevisionSchema = z.object({
+  id: z.string(),
+  especialidades: z.array(
+    z.object({
+      id: z.string(),
+      nombre: z.string(),
+    }),
+  ),
   tarifa: cotizacionTaludesTarifaSchema,
+  monto_base: z.number(),
+  cobra: z.boolean(),
 });
 
-/** Payload de respuesta de cotización */
+/** Payload de respuesta de cotización (porcentaje-based — Edificaciones style) */
 const cotizacionTaludesPayloadSchema = z.object({
   numero_revision: z.number(),
-  calculo_m2: cotizacionTaludesCalculoSchema,
+  revisiones: z.array(cotizacionTaludesRevisionSchema),
   totales: cotizacionTaludesTotalesSchema,
   _metadata: cotizacionTaludesMetadataSchema,
 });
@@ -121,31 +128,6 @@ const cotizacionTaludesPayloadSchema = z.object({
 /** Wrapper para respuesta de cotización */
 export const cotizacionTaludesResponseSchema =
   apiResponseSchema(cotizacionTaludesPayloadSchema);
-
-// ── Crear Liquidación Response Schema ────────────────────────────────────────
-
-/** Payload para respuesta de creación */
-const crearTaludesPayloadSchema = z.object({
-  liquidacion: z.object({
-    id: z.string(),
-    public_id: z.string(),
-    estado: z.string(),
-    fecha_creacion: z.string(),
-    expediente: z.string().nullable(),
-    observacion: z.string().nullable(),
-  }),
-  totales: z.object({
-    subtotal: z.number(),
-    igv: z.number(),
-    total: z.number(),
-    liquidacion_total: z.number(),
-    total_a_pagar: z.number(),
-  }),
-});
-
-/** Wrapper para respuesta de creación */
-export const crearTaludesResponseSchema =
-  apiResponseSchema(crearTaludesPayloadSchema);
 
 // ── List Response Schemas ─────────────────────────────────────────────────────
 
@@ -180,7 +162,8 @@ const municipalidadListItemSchema = z.object({
   distrito: z.null(),
 });
 
-const valoresListItemSchema = z.object({
+/** Schema for M2 list items — includes igv/total for percentage-based types */
+const valoresM2ListItemSchema = z.object({
   subtotal: z.number(),
   igv: z.number(),
   total: z.number(),
@@ -225,9 +208,15 @@ const contactoListItemSchema = z.object({
 
 const tarifaRevisionListItemSchema = z.object({
   id: z.string(),
+  costo_por_m2: z.number().nullable(),
+  area_m2: z.number().nullable(),
   derecho_minimo: z.number().nullable(),
   derecho_maximo: z.number().nullable(),
   porcentaje_minimo_uit: z.number().nullable(),
+  porcentaje_liquidacion: z.number().nullable(),
+  costo_por_visita: z.number().nullable(),
+  visitas_minimas: z.number().nullable(),
+  categoria: z.string().nullable(),
 });
 
 const especialidadRevisionListItemSchema = z.object({
@@ -239,8 +228,6 @@ const revisionListItemSchema = z.object({
   id: z.string(),
   especialidades: z.array(especialidadRevisionListItemSchema),
   tarifa: tarifaRevisionListItemSchema,
-  monto_base: z.number(),
-  cobra: z.boolean(),
 });
 
 /** Item de lista */
@@ -251,22 +238,14 @@ const liquidacionTaludesListItemSchema = z.object({
   tipo_liquidacion: z.string(),
   numero_revision: z.number(),
   fecha_registro: z.string(),
-  tramite_accion: z.string().nullable(),
-  tipo_tramite: z.string().nullable(),
-  expediente: z.string().nullable(),
-  observacion: z.string().nullable(),
   proyecto: proyectoListItemSchema,
   entidad: entidadListItemSchema,
   municipalidad: municipalidadListItemSchema,
-  valores: valoresListItemSchema,
+  valores: valoresM2ListItemSchema,
   proyectistas: z.array(proyectistaListItemSchema),
   delegados: z.array(delegadoListItemSchema),
   contactos: z.array(contactoListItemSchema),
   revisiones: z.array(revisionListItemSchema),
-  subtotal: z.number(),
-  igv: z.number(),
-  total: z.number(),
-  total_a_pagar: z.number(),
 });
 
 /** Payload para respuesta de lista */
@@ -282,6 +261,20 @@ const liquidacionesTaludesPayloadSchema = z.object({
 export const liquidacionesTaludesResponseSchema = apiResponseSchema(
   liquidacionesTaludesPayloadSchema,
 );
+
+/** Wrapper para respuesta de detalle (single item) */
+export const liquidacionTaludesDetailResponseSchema = apiResponseSchema(
+  liquidacionTaludesListItemSchema,
+);
+
+// ── Crear Liquidación Response Schema ────────────────────────────────────────
+
+/** Payload para respuesta de creación — flat list item structure */
+const crearTaludesPayloadSchema = liquidacionTaludesListItemSchema;
+
+/** Wrapper para respuesta de creación */
+export const crearTaludesResponseSchema =
+  apiResponseSchema(crearTaludesPayloadSchema);
 
 // ── Form Step Schemas ──────────────────────────────────────────────────────────
 
@@ -301,14 +294,13 @@ export type StepTaludesData = z.infer<typeof stepTaludesSchema>;
 
 // ── Tarifas Vigentes Schemas ──────────────────────────────────────────────────
 
-/** Tarifa vigente en respuesta del endpoint */
+/** Tarifa vigente en respuesta del endpoint (porcentaje) */
 const tarifaVigenteTaludesSchema = z.object({
   tarifa_id: z.string(),
-  detalle_id: z.string(),
-  costo_por_m2: z.number(),
-  area_minima: z.number(),
+  porcentaje_liquidacion: z.number(),
   derecho_minimo: z.number(),
   derecho_maximo: z.number().nullable(),
+  porcentaje_minimo_uit: z.number(),
   habilitada: z.boolean(),
 });
 

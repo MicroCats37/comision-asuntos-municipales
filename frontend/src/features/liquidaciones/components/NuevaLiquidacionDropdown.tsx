@@ -1,18 +1,18 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
 import {
   Building2,
-  Car,
   ChevronDown,
-  ClipboardCheck,
   FileText,
-  Home,
-  Layers,
-  Mountain,
   Plus,
   RefreshCw,
+  Home,
+  Layers,
+  Car,
+  Mountain,
+  ClipboardCheck,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,15 +29,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LiquidacionEdificacionFormModal } from "@/features/liquidaciones/components/deprecadedForm";
+import { NuevaRevisionEdificacionesFormModal } from "@/features/liquidaciones/components/NuevaRevisionEdificacionesFormModal";
 import {
   LiquidacionHabilitacionUrbanaStepperModal,
-  LiquidacionImpactoVialStepperModal,
-  LiquidacionInspeccionObraStepperModal,
   LiquidacionMecanicaSuelosStepperModal,
+  LiquidacionImpactoVialStepperModal,
   LiquidacionTaludesStepperModal,
+  LiquidacionInspeccionObraSingleFormModal,
 } from "@/features/liquidaciones/components";
-import { LiquidacionStepperModal } from "@/features/liquidaciones/components/LiquidacionStepperModal";
-import { NuevaRevisionFormModal } from "@/features/liquidaciones/components/NuevaRevisionFormModal";
 
 // ── Tipos de revisión ──────────────────────────────────────────────────────────
 
@@ -56,11 +56,18 @@ interface OpcionLiquidacion {
 
 const OPCIONES: OpcionLiquidacion[] = [
   {
-    key: "edificacion",
-    label: "Edificación",
+    key: "edificacion-nueva-liquidacion",
+    label: "Edificación — Nueva Liquidación",
     description: "Proyectos de edificación",
     icon: Building2,
-    kinds: ["primera-revision", "nueva-revision"],
+    kinds: ["primera-revision"],
+  },
+  {
+    key: "edificacion-nueva-revision",
+    label: "Edificación — Nueva Revisión",
+    description: "Crear nueva revisión de edificación existente",
+    icon: RefreshCw,
+    kinds: ["nueva-revision"],
   },
   {
     key: "habilitacion-urbana",
@@ -111,8 +118,7 @@ export function NuevaLiquidacionDropdown({
   onSuccess,
 }: NuevaLiquidacionDropdownProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedOption, setSelectedOption] =
-    useState<OpcionLiquidacion | null>(null);
+  const [selectedOption, setSelectedOption] = useState<OpcionLiquidacion | null>(null);
 
   // Modal states — Edificación
   const [stepperOpen, setStepperOpen] = useState(false);
@@ -133,6 +139,12 @@ export function NuevaLiquidacionDropdown({
     if (opcion.kinds.length === 1) {
       // Solo un tipo de revisión → abrir modal directamente según el tipo
       switch (opcion.key) {
+        case "edificacion-nueva-liquidacion":
+          setStepperOpen(true);
+          break;
+        case "edificacion-nueva-revision":
+          setNuevaRevisionOpen(true);
+          break;
         case "habilitacion-urbana":
           setHuModalOpen(true);
           break;
@@ -202,9 +214,7 @@ export function NuevaLiquidacionDropdown({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {selectedOption?.icon && (
-                <selectedOption.icon className="h-5 w-5" />
-              )}
+              {selectedOption?.icon && <selectedOption.icon className="h-5 w-5" />}
               {selectedOption?.label}
             </DialogTitle>
             <DialogDescription>
@@ -237,13 +247,13 @@ export function NuevaLiquidacionDropdown({
       </Dialog>
 
       {/* ── Modales finales ────────────────────────────────────────────────── */}
-      <LiquidacionStepperModal
+      <LiquidacionEdificacionFormModal
         open={stepperOpen}
         onOpenChange={setStepperOpen}
         onSuccess={handleSuccess}
       />
 
-      <NuevaRevisionFormModal
+      <NuevaRevisionEdificacionesFormModal
         open={nuevaRevisionOpen}
         onOpenChange={setNuevaRevisionOpen}
         onSuccess={handleSuccess}
@@ -279,7 +289,7 @@ export function NuevaLiquidacionDropdown({
       />
 
       {/* ── No Edificación: Inspección de Obra ────────────────────────────── */}
-      <LiquidacionInspeccionObraStepperModal
+      <LiquidacionInspeccionObraSingleFormModal
         open={ioModalOpen}
         onOpenChange={setIoModalOpen}
         onSuccess={handleSuccess}

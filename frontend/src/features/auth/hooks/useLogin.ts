@@ -99,7 +99,7 @@ function persistAuthAndReturnUser(loginData: LoginResponse): MeResponse {
   // Set cookies client-side using cookies-next
   const cookieOptions = {
     path: "/",
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NEXT_PUBLIC_COOKIE_SECURE === "true",
     sameSite: "lax" as const,
     maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
     httpOnly: false, // client-side cookies — httpOnly no funciona desde cliente

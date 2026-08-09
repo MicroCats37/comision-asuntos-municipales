@@ -3,6 +3,7 @@
  * Usa useApiCreate genérico del proyecto.
  */
 import { useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import type { z } from "zod";
 import { useApiCreate } from "@/hooks";
 import { liquidacionEdificacionOutResponseSchema } from "../schemas/liquidacion.schema";
@@ -31,7 +32,7 @@ export function useCrearPrimeraRevision() {
 
   // Wrapper that formats payload as { liquidacion: ... } for the API
   // and extracts the flat LiquidacionEdificacionOut from the response
-  const crearMutation = {
+  const crearMutation = useMemo(() => ({
     ...mutation,
     mutate: (payload: PrimeraRevisionFormData) => {
       mutation.mutate({ liquidacion: payload });
@@ -40,9 +41,9 @@ export function useCrearPrimeraRevision() {
       payload: PrimeraRevisionFormData,
     ): Promise<LiquidacionEdificacionOut> => {
       const result = await mutation.mutateAsync({ liquidacion: payload });
-      return (result as { data: LiquidacionEdificacionOut }).data;
+      return (result as unknown as { data: LiquidacionEdificacionOut }).data;
     },
-  };
+  }), [mutation]);
 
   return crearMutation;
 }

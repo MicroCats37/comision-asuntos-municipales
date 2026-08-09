@@ -17,6 +17,12 @@ interface UseLiquidacionesEdificacionesProps {
   proyectoPublicId?: string | null;
 }
 
+interface UseLiquidacionesEdificacionesPorDocumentoProps {
+  numeroDocumento?: string | null;
+  page?: number;
+  pageSize?: number;
+}
+
 const BASE_URL = "/liquidaciones/edificaciones";
 
 export function useLiquidacionesEdificaciones({
@@ -64,5 +70,51 @@ export function useLiquidacionesEdificaciones({
     totalPages: query.data?.total_pages ?? 1,
     setPage: setCurrentPage,
     setPageSize: setCurrentPageSize,
+  };
+}
+
+export function useLiquidacionesEdificacionesPorDocumento({
+  numeroDocumento = null,
+  page = 1,
+  pageSize = 10,
+}: UseLiquidacionesEdificacionesPorDocumentoProps = {}) {
+  const documento = numeroDocumento?.trim() ?? "";
+  const params: Record<string, string | number> = {
+    numero_documento: documento,
+    page,
+    page_size: pageSize,
+  };
+
+  const query = useApiQuery({
+    queryKey: ["liquidaciones", "edificaciones", "buscar-por-documento", documento, page, pageSize],
+    url: `${BASE_URL}/buscar-por-documento`,
+    schema: liquidacionesEdificacionPaginatedResponseSchema,
+    params,
+    queryOptions: {
+      enabled: documento.length === 8 || documento.length === 11,
+      retry: false,
+      select: (data) => {
+        if (!data.data) {
+          return {
+            items: [] as LiquidacionEdificacionOut[],
+            total: 0,
+            page,
+            page_size: pageSize,
+            total_pages: 1,
+          };
+        }
+        return data.data;
+      },
+    },
+  });
+
+  return {
+    ...query,
+    data: query.data,
+    items: query.data?.items ?? ([] as LiquidacionEdificacionOut[]),
+    total: query.data?.total ?? 0,
+    page: query.data?.page ?? page,
+    pageSize: query.data?.page_size ?? pageSize,
+    totalPages: query.data?.total_pages ?? 1,
   };
 }

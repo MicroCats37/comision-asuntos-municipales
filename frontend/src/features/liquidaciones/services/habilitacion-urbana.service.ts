@@ -15,6 +15,8 @@ import { cotizacionHabilitacionUrbanaResponseSchema } from "../schemas/liquidaci
 import { crearHabilitacionUrbanaResponseSchema } from "../schemas/liquidacion-habilitacion-urbana.schema";
 import { liquidacionesHabilitacionUrbanaResponseSchema } from "../schemas/liquidacion-habilitacion-urbana.schema";
 import { tarifasVigentesHabilitacionUrbanaResponseSchema } from "../schemas/liquidacion-habilitacion-urbana.schema";
+import { liquidacionGeneralDetailResponseSchema } from "../schemas/liquidacion-general.schema";
+import type { LiquidacionGeneralOut } from "../types/liquidacion-general";
 
 const BASE_URL = "/liquidaciones/habilitacion-urbana";
 
@@ -63,9 +65,9 @@ export const habilitacionUrbanaService = {
    */
   async obtenerLiquidacion(
     liquidacionId: string,
-  ): Promise<CrearHabilitacionUrbanaResponse> {
+  ): Promise<LiquidacionGeneralOut> {
     const { data } = await api.get(`${BASE_URL}/${liquidacionId}`);
-    return (data as { data: CrearHabilitacionUrbanaResponse }).data;
+    return (data as { data: LiquidacionGeneralOut }).data;
   },
 
   /**

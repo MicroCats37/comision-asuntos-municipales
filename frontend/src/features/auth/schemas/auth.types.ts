@@ -21,8 +21,8 @@ export interface LoginTokens {
  */
 export interface MeResponse {
   id: number;
-  nombre: string;
-  apellido: string;
+  nombres: string;
+  apellidos: string;
 }
 
 /**

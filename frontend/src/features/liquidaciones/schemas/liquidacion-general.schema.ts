@@ -57,6 +57,20 @@ const delegadoSchema = z.object({
   tipo: z.string().nullable(),
 });
 
+const inspectorSchema = z.object({
+  id: z.string(),
+  perfil_ingeniero_id: z.string().nullable(),
+  perfil_ingeniero_nombres: z.string().nullable(),
+  perfil_ingeniero_apellidos: z.string().nullable(),
+  perfil_ingeniero_cip: z.string().nullable(),
+  especialidad_id: z.string().nullable(),
+  especialidad_nombre: z.string().nullable(),
+  tipo_liquidacion: z.string().nullable(),
+  categoria: z.number().nullable(),
+  numero_registro: z.string().nullable(),
+  vigencia: z.string().nullable(),
+});
+
 const contactoSchema = z.object({
   id: z.string(),
   nombres: z.string().nullable(),
@@ -73,9 +87,6 @@ const contactoSchema = z.object({
 
 const tarifaRevisionSchema = z.object({
   id: z.string(),
-  derecho_minimo: z.number().nullable(),
-  derecho_maximo: z.number().nullable(),
-  porcentaje_minimo_uit: z.number().nullable(),
 });
 
 const especialidadRevisionSchema = z.object({
@@ -87,8 +98,18 @@ const revisionSchema = z.object({
   id: z.string(),
   especialidades: z.array(especialidadRevisionSchema),
   tarifa: tarifaRevisionSchema.nullable(),
-  monto_base: z.number(),
-  cobra: z.boolean(),
+});
+
+/**
+ * Variables financieras (IGV/UIT) usadas al crear la liquidacion.
+ */
+export const variablesFinancierasUsadasSchema = z.object({
+  igv_valor: z.number(),
+  igv_porcentaje: z.number(),
+  igv_periodo_inicio: z.string().nullable(),
+  uit_valor: z.number(),
+  uit_anio: z.number().nullable(),
+  uit_periodo_inicio: z.string().nullable(),
 });
 
 /**
@@ -112,12 +133,14 @@ export const liquidacionGeneralListItemPayloadSchema = z.object({
   valores: valoresSchema,
   proyectistas: z.array(proyectistaSchema),
   delegados: z.array(delegadoSchema),
+  inspectores: z.array(inspectorSchema).default([]),
   contactos: z.array(contactoSchema),
   revisiones: z.array(revisionSchema),
   subtotal: z.number(),
   igv: z.number(),
   total: z.number(),
   total_a_pagar: z.number(),
+  variables_financieras_usadas: variablesFinancierasUsadasSchema.nullable(),
 });
 
 /** Schema payload para lista paginada general */
@@ -132,4 +155,42 @@ export const paginatedLiquidacionGeneralListPayloadSchema = z.object({
 /** Wrapper schema para lista paginada general (ApiResponse[PaginatedData[LiquidacionGeneralListItemOut]]) */
 export const liquidacionGeneralListResponseSchema = apiResponseSchema(
   paginatedLiquidacionGeneralListPayloadSchema,
+);
+
+// ── Schemas para detalle general (LiquidacionGeneralOut) ──────────────────────
+
+const proyectoGeneralSchema = z.object({
+  id: z.string(),
+  public_id: z.string(),
+  nombre: z.string(),
+  direccion: z.string().nullable(),
+});
+
+const entidadGeneralSchema = z.object({
+  id: z.string().nullable(),
+  tipo: z.string().nullable(),
+  nombre: z.string().nullable(),
+  ruc: z.string().nullable(),
+});
+
+export const liquidacionGeneralOutSchema = z.object({
+  id: z.string(),
+  public_id: z.string(),
+  estado: z.string(),
+  tipo_liquidacion: z.string(),
+  numero_revision: z.number(),
+  fecha_registro: z.string(),
+  expediente: z.string().nullable(),
+  observacion: z.string().nullable(),
+  municipalidad_nombre: z.string().nullable(),
+  proyecto: proyectoGeneralSchema.nullable(),
+  entidad: entidadGeneralSchema.nullable(),
+  subtotal: z.number(),
+  igv: z.number(),
+  total: z.number(),
+  total_a_pagar: z.number(),
+});
+
+export const liquidacionGeneralDetailResponseSchema = apiResponseSchema(
+  liquidacionGeneralOutSchema,
 );

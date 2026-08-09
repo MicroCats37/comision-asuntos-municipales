@@ -66,10 +66,10 @@ export interface CrearHabilitacionUrbanaPrimeraRevisionIn {
 
 /**
  * Payload para cotizar primera revisión de Habilitación Urbana.
+ * municipalidad_id NO es requerida para cotizar; solo para creación final.
  */
 export interface CotizarHabilitacionUrbanaPrimeraRevisionIn {
   area_solicitada: number;
-  municipalidad_id: string;
   tarifas_ids: string[];
 }
 
@@ -81,7 +81,7 @@ export interface CotizarHabilitacionUrbanaPrimeraRevisionIn {
 export interface CotizacionHabilitacionUrbanaTarifa {
   id: string;
   costo_por_m2: number;
-  area_minima: number;
+  area_m2: number;
   derecho_minimo: number;
   derecho_maximo: number | null;
 }
@@ -130,24 +130,9 @@ export interface CotizacionHabilitacionUrbanaResponse {
 
 /**
  * Respuesta de creación de Habilitación Urbana.
+ * Now returns the flat list item shape with all related data for immediate post-create PDF.
  */
-export interface CrearHabilitacionUrbanaResponse {
-  liquidacion: {
-    id: string;
-    public_id: string;
-    estado: string;
-    fecha_creacion: string;
-    expediente: string | null;
-    observacion: string | null;
-  };
-  totales: {
-    subtotal: number;
-    igv: number;
-    total: number;
-    liquidacion_total: number;
-    total_a_pagar: number;
-  };
-}
+export type CrearHabilitacionUrbanaResponse = LiquidacionHabilitacionUrbanaListItem;
 
 // ── Nested Types for List Items ──────────────────────────────────────────────
 
@@ -175,7 +160,7 @@ export interface MunicipalidadListItem {
   distrito: null;
 }
 
-export interface ValoresListItem {
+export interface ValoresM2ListItem {
   subtotal: number;
   igv: number;
   total: number;
@@ -220,9 +205,12 @@ export interface ContactoListItem {
 
 export interface TarifaRevisionListItem {
   id: string;
-  derecho_minimo: number | null;
-  derecho_maximo: number | null;
-  porcentaje_minimo_uit: number | null;
+  // M2 fields
+  costo_por_m2?: number | null;
+  area_m2?: number | null;
+  area_solicitada?: number | null;  // User-requested area from LiquidacionPorMetroCuadrado
+  derecho_minimo?: number | null;
+  derecho_maximo?: number | null;
 }
 
 export interface EspecialidadRevisionListItem {
@@ -234,8 +222,6 @@ export interface RevisionListItem {
   id: string;
   especialidades: EspecialidadRevisionListItem[];
   tarifa: TarifaRevisionListItem;
-  monto_base: number;
-  cobra: boolean;
 }
 
 // ── List Types ────────────────────────────────────────────────────────────────
@@ -250,22 +236,14 @@ export interface LiquidacionHabilitacionUrbanaListItem {
   tipo_liquidacion: string;
   numero_revision: number;
   fecha_registro: string;
-  tramite_accion: string | null;
-  tipo_tramite: string | null;
-  expediente: string | null;
-  observacion: string | null;
   proyecto: ProyectoListItem;
   entidad: EntidadListItem;
   municipalidad: MunicipalidadListItem;
-  valores: ValoresListItem;
+  valores: ValoresM2ListItem;
   proyectistas: ProyectistaListItem[];
   delegados: DelegadoListItem[];
   contactos: ContactoListItem[];
   revisiones: RevisionListItem[];
-  subtotal: number;
-  igv: number;
-  total: number;
-  total_a_pagar: number;
 }
 
 /**
@@ -286,9 +264,8 @@ export interface LiquidacionesHabilitacionUrbanaPaginated {
  */
 export interface TarifaVigenteHabilitacionUrbana {
   tarifa_id: string;
-  detalle_id: string;
   costo_por_m2: number;
-  area_minima: number;
+  area_m2: number;
   derecho_minimo: number;
   derecho_maximo: number | null;
   habilitada: boolean;

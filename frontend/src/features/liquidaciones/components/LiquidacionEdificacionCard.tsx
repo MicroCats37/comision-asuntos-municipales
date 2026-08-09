@@ -7,7 +7,6 @@ import {
   Calendar,
   ChevronDown,
   FileText,
-  HardHat,
   Hash,
   MapPin,
   Plus,
@@ -15,13 +14,14 @@ import {
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { cn } from "@/lib/utils";
-import type { LiquidacionSnapshotListItem } from "../types/liquidacion-edificaciones";
 import {
-  LiquidacionCardHeader,
-  type LiquidacionCardHeaderData,
-} from "./LiquidacionCardHeader";
+  Collapsible,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
+import { formatDecimalPercent } from "@/utils/number-formatter";
+import type { LiquidacionSnapshotListItem } from "../types/liquidacion-edificaciones";
+import { LiquidacionCardHeader, type LiquidacionCardHeaderData } from "./LiquidacionCardHeader";
 import { formatCurrency, formatDate } from "./LiquidacionGeneralCard";
 
 interface LiquidacionEdificacionCardProps {
@@ -33,14 +33,10 @@ interface LiquidacionEdificacionCardProps {
 /** Estado badge classes */
 const getEstadoBadgeClass = (estado: string): string => {
   switch (estado) {
-    case "PAGADO":
-      return "bg-emerald-500/10 text-secondary-foreground border-emerald-500/20";
-    case "PENDIENTE":
-      return "bg-amber-500/10 text-amber-600 border-amber-500/20";
-    case "ANULADO":
-      return "bg-destructive/10 text-destructive border-destructive/20";
-    default:
-      return "bg-muted text-muted-foreground border-border";
+    case "PAGADO": return "bg-emerald-500/10 text-secondary-foreground border-emerald-500/20";
+    case "PENDIENTE": return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+    case "ANULADO": return "bg-destructive/10 text-destructive border-destructive/20";
+    default: return "bg-muted text-muted-foreground border-border";
   }
 };
 
@@ -149,7 +145,7 @@ function LabelValue({
  * LiquidacionEdificacionCard — renders an Edificaciones liquidacion
  * for Edificaciones details.
  *
- * The accordion shows the full Edificaciones breakdown (proyectistas,
+ * The accordion shows the full Edificaciones breakdown (delegados,
  * especialidades/revisiones, and totales) that was previously shown flat.
  */
 export function LiquidacionEdificacionCard({
@@ -185,13 +181,11 @@ export function LiquidacionEdificacionCard({
     .filter(Boolean)
     .join(", ");
 
-  const hasMultipleProyectistas = edificaciones.proyectistas.length > 1;
-
   return (
     <Collapsible className="group bg-card rounded-2xl border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden">
       <LiquidacionCardHeader
         data={{
-          public_id: public_id || numero_liquidacion,
+          public_id: (public_id ? public_id.replace(/^LIQ-/, "") : numero_liquidacion),
           estado,
           fecha_registro,
           proyectoNombre: proyecto.nombre,
@@ -204,10 +198,7 @@ export function LiquidacionEdificacionCard({
               type="button"
               variant="outline"
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onNuevaRevision(item);
-              }}
+              onClick={(e) => { e.stopPropagation(); onNuevaRevision(item); }}
               className="h-8 rounded-lg gap-1.5 text-xs font-semibold border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 w-full lg:w-auto"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -228,23 +219,10 @@ export function LiquidacionEdificacionCard({
           className="border-border/60"
         >
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <LabelValue
-              label="Tipo de Trámite"
-              value={getTipoTramiteLabel(edificaciones.tipo_tramite)}
-            />
-            <LabelValue
-              label="Acción"
-              value={getTramiteAccionLabel(edificaciones.tramite_accion)}
-            />
-            <LabelValue
-              label="Revisión"
-              value={`N° ${edificaciones.numero_revision}`}
-            />
-            <LabelValue
-              label="Total a Pagar"
-              value={formatCurrency(Number(totales.total_a_pagar))}
-              valueClassName="text-primary font-bold"
-            />
+            <LabelValue label="Tipo de Trámite" value={getTipoTramiteLabel(edificaciones.tipo_tramite)} />
+            <LabelValue label="Acción" value={getTramiteAccionLabel(edificaciones.tramite_accion)} />
+            <LabelValue label="Revisión" value={`N° ${edificaciones.numero_revision}`} />
+            <LabelValue label="Total a Pagar" value={formatCurrency(Number(totales.total_a_pagar))} valueClassName="text-primary font-bold" />
           </div>
         </SectionCard>
 
@@ -257,6 +235,14 @@ export function LiquidacionEdificacionCard({
             className="border-border/60"
           >
             <div className="space-y-2.5">
+              <LabelValue
+                label="Código"
+                value={
+                  <span className="font-mono text-primary font-semibold">
+                    {proyecto.public_id}
+                  </span>
+                }
+              />
               <LabelValue label="Nombre" value={proyecto.nombre} />
               {proyecto.entidad && (
                 <>
@@ -307,6 +293,14 @@ export function LiquidacionEdificacionCard({
           >
             <div className="space-y-2.5">
               <LabelValue
+                label="Código"
+                value={
+                  <span className="font-mono text-primary font-semibold">
+                    {edificaciones.public_id}
+                  </span>
+                }
+              />
+              <LabelValue
                 label="Valor del Proyecto"
                 value={formatCurrency(Number(proyecto.valor_proyecto))}
               />
@@ -314,56 +308,73 @@ export function LiquidacionEdificacionCard({
           </SectionCard>
         </div>
 
-        {/* ─── Two-column grid: Proyectistas + Especialidades ─── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Proyectistas Card */}
-          <SectionCard
-            icon={<User className="h-3.5 w-3.5" />}
-            title={hasMultipleProyectistas ? "Proyectistas" : "Proyectista"}
-            className="border-border/60"
-          >
-            {edificaciones.proyectistas &&
-            edificaciones.proyectistas.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {edificaciones.proyectistas.map((proj) => (
-                  <div
-                    key={proj.id}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60 hover:bg-secondary/60 hover:border-primary/20 transition-all"
-                  >
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <HardHat className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-foreground">
-                        {[
-                          proj.perfil_ingeniero_nombres,
-                          proj.perfil_ingeniero_apellidos,
-                        ]
-                          .filter(Boolean)
-                          .join(" ") || "Sin nombre"}
-                      </span>
-                      {proj.perfil_ingeniero_cip && (
-                        <span className="text-[10px] text-muted-foreground">
-                          CIP: {proj.perfil_ingeniero_cip}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground/60 italic">
-                Sin proyectistas registrados
-              </p>
-            )}
-          </SectionCard>
-
-          {/* Especialidades Card */}
+        {/* ─── Especialidades ─── */}
+        <div className="grid grid-cols-1 gap-4">
+          {/* Especialidades Card — deduplicate by specialty id, show one chip per specialty */}
           <SectionCard
             icon={<Building2 className="h-3.5 w-3.5" />}
             title={
               <span className="flex items-center gap-1.5">
                 Especialidades
+                <span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-[9px] font-bold text-muted-foreground">
+                  {(() => {
+                    const seen = new Set<string>();
+                    edificaciones.revisiones.forEach((rev) =>
+                      rev.especialidades.forEach((esp) => seen.add(esp.id))
+                    );
+                    return seen.size;
+                  })()}
+                </span>
+              </span>
+            }
+            className="border-border/60"
+          >
+            {edificaciones.revisiones.length > 0 ? (
+              (() => {
+                const seen = new Set<string>();
+                const uniqueEspecialidades = edificaciones.revisiones.flatMap((rev) =>
+                  rev.especialidades.filter((esp) => {
+                    if (seen.has(esp.id)) return false;
+                    seen.add(esp.id);
+                    return true;
+                  })
+                );
+                return (
+                  <div className="flex flex-wrap gap-2">
+                    {uniqueEspecialidades.map((esp) => (
+                      <div
+                        key={esp.id}
+                        className="group/chip inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60 hover:bg-secondary/60 hover:border-primary/20 transition-all"
+                      >
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover/chip:bg-primary/15 transition-colors">
+                          <Building2 className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span
+                            className="text-xs font-bold text-foreground leading-tight truncate max-w-[160px]"
+                            title={esp.nombre}
+                          >
+                            {esp.nombre}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()
+            ) : (
+              <p className="text-xs text-muted-foreground/60 italic">
+                Sin especialidades registradas
+              </p>
+            )}
+          </SectionCard>
+
+          {/* Tarifas Card — shows each revision's tariff data */}
+          <SectionCard
+            icon={<Scale className="h-3.5 w-3.5" />}
+            title={
+              <span className="flex items-center gap-1.5">
+                Tarifas
                 <span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-[9px] font-bold text-muted-foreground">
                   {edificaciones.revisiones.length}
                 </span>
@@ -372,42 +383,62 @@ export function LiquidacionEdificacionCard({
             className="border-border/60"
           >
             {edificaciones.revisiones.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {edificaciones.revisiones.map((edif) => (
-                  <div
-                    key={edif.id}
-                    className="group/chip inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60 hover:bg-secondary/60 hover:border-primary/20 transition-all"
-                  >
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover/chip:bg-primary/15 transition-colors">
-                      <Building2 className="h-3.5 w-3.5 text-primary" />
+              <div className="space-y-3">
+                {edificaciones.revisiones.map((rev, idx) => (
+                  <div key={rev.id} className="rounded-lg border border-border/40 bg-muted/20 p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                        Revisión {idx + 1}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {rev.especialidades.map((esp) => (
+                          <span
+                            key={esp.id}
+                            className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/10 text-[10px] font-semibold text-primary"
+                          >
+                            {esp.nombre}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-bold text-foreground leading-tight truncate max-w-[120px]">
-                        {edif.especialidades
-                          .map((e: { nombre: string }) => e.nombre)
-                          .join(", ")}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {Number(edif.tarifa.porcentaje_minimo_uit).toFixed(4)}{" "}
-                        UIT
-                      </span>
-                    </div>
-                    <div className="ml-1 flex flex-col items-end gap-0.5">
-                      <span className="text-xs font-black text-primary">
-                        {formatCurrency(Number(edif.monto_base))}
-                      </span>
-
-                      <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-secondary-foreground">
-                        <span className="inline-flex h-1 w-1 rounded-full bg-emerald-500" />
-                        Cobra
-                      </span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          % Liquidación
+                        </span>
+                        <span className="text-sm font-bold text-foreground">
+                          {rev.tarifa?.porcentaje_liquidacion != null
+                            ? formatDecimalPercent(Number(rev.tarifa.porcentaje_liquidacion))
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Derecho Mín.
+                        </span>
+                        <span className="text-sm font-medium text-foreground">
+                          {rev.tarifa?.derecho_minimo != null
+                            ? formatCurrency(Number(rev.tarifa.derecho_minimo))
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Derecho Máx.
+                        </span>
+                        <span className="text-sm font-medium text-foreground">
+                          {rev.tarifa?.derecho_maximo != null
+                            ? formatCurrency(Number(rev.tarifa.derecho_maximo))
+                            : "—"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground/60 italic">
-                Sin especialidades registradas
+                Sin tarifas registradas
               </p>
             )}
           </SectionCard>
@@ -433,20 +464,14 @@ export function LiquidacionEdificacionCard({
                     <span className="text-xs font-bold text-foreground">
                       {[
                         (d as Record<string, unknown>).perfil_ingeniero_nombres,
-                        (d as Record<string, unknown>)
-                          .perfil_ingeniero_apellidos,
+                        (d as Record<string, unknown>).perfil_ingeniero_apellidos,
                       ]
                         .filter(Boolean)
                         .join(" ") || "—"}
                     </span>
-                    {((d as Record<string, unknown>)
-                      .perfil_ingeniero_cip as boolean) && (
+                    {(d as Record<string, unknown>).perfil_ingeniero_cip as boolean && (
                       <span className="text-[10px] text-muted-foreground">
-                        CIP:{" "}
-                        {
-                          (d as Record<string, unknown>)
-                            .perfil_ingeniero_cip as string
-                        }
+                        CIP: {(d as Record<string, unknown>).perfil_ingeniero_cip as string}
                       </span>
                     )}
                   </div>

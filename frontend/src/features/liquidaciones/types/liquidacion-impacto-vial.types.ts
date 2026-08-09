@@ -50,8 +50,8 @@ export interface CrearImpactoVialPrimeraRevisionIn {
   proyecto_inline?: ProyectoInline;
   /** ID de la municipalidad */
   municipalidad_id: string;
-  /** Área solicitada en metros cuadrados */
-  area_solicitada: number;
+  /** Valor del proyecto (S/) — reemplaza area_solicitada */
+  valor_proyecto: number;
   /** Número de expediente (opcional) */
   expediente?: string;
   /** Observación adicional (opcional) */
@@ -66,34 +66,37 @@ export interface CrearImpactoVialPrimeraRevisionIn {
 
 /**
  * Payload para cotizar primera revisión de Impacto Vial.
+ * municipalidad_id NO es requerida para cotizar; solo para creación final.
  */
 export interface CotizarImpactoVialPrimeraRevisionIn {
-  area_solicitada: number;
-  municipalidad_id: string;
+  valor_proyecto: number;
   tarifas_ids: string[];
 }
 
-// ── Cotizar Response ───────────────────────────────────────────────────────────
+// ── Cotizar Response (percentage-based — matches Edificaciones CotizacionQuote) ──
 
 /**
- * Tarifa en respuesta de cotización de Impacto Vial.
+ * Tarifa en respuesta de cotización de Impacto Vial (porcentaje).
+ * Note: now matches CotizacionTarifa from liquidacion-edificaciones.types.ts.
  */
 export interface CotizacionImpactoVialTarifa {
   id: string;
-  costo_por_m2: number;
-  area_minima: number;
   derecho_minimo: number;
   derecho_maximo: number | null;
+  porcentaje_minimo_uit: number;
+  porcentaje_liquidacion: number;
 }
 
 /**
- * Cálculo en respuesta de cotización de Impacto Vial.
+ * Revisión en respuesta de cotización de Impacto Vial (porcentaje).
+ * Matches CotizacionRevision from liquidacion-edificaciones.types.ts.
  */
-export interface CotizacionImpactoVialCalculo {
-  area_solicitada: number;
-  area_base_calculo: number;
-  derecho: number;
+export interface CotizacionImpactoVialRevision {
+  id: string;
+  especialidades: Array<{ id: string; nombre: string }>;
   tarifa: CotizacionImpactoVialTarifa;
+  monto_base: number;
+  cobra: boolean;
 }
 
 /**
@@ -109,19 +112,22 @@ export interface CotizacionImpactoVialTotales {
 
 /**
  * Metadata en respuesta de cotización.
+ * Matches CotizacionMetadata from liquidacion-edificaciones.types.ts.
  */
 export interface CotizacionImpactoVialMetadata {
   igv_valor: number;
   uit_valor: number;
-  area_solicitada?: number;
+  cobra: boolean;
+  valor_base_calculo: number;
 }
 
 /**
- * Respuesta de cotización de Impacto Vial.
+ * Respuesta de cotización de Impacto Vial (porcentaje-based — matches CotizacionQuote).
+ * Now uses the same shape as Edificaciones: revisiones[] instead of calculo.
  */
 export interface CotizacionImpactoVialResponse {
   numero_revision: number;
-  calculo_m2: CotizacionImpactoVialCalculo;
+  revisiones: CotizacionImpactoVialRevision[];
   totales: CotizacionImpactoVialTotales;
   _metadata: CotizacionImpactoVialMetadata;
 }
@@ -130,24 +136,9 @@ export interface CotizacionImpactoVialResponse {
 
 /**
  * Respuesta de creación de Impacto Vial.
+ * Now returns the flat list item shape with all related data for immediate post-create PDF.
  */
-export interface CrearImpactoVialResponse {
-  liquidacion: {
-    id: string;
-    public_id: string;
-    estado: string;
-    fecha_creacion: string;
-    expediente: string | null;
-    observacion: string | null;
-  };
-  totales: {
-    subtotal: number;
-    igv: number;
-    total: number;
-    liquidacion_total: number;
-    total_a_pagar: number;
-  };
-}
+export type CrearImpactoVialResponse = LiquidacionImpactoVialListItem;
 
 // ── Nested Types for List Items ──────────────────────────────────────────────
 
@@ -175,7 +166,7 @@ export interface MunicipalidadListItem {
   distrito: null;
 }
 
-export interface ValoresListItem {
+export interface ValoresM2ListItem {
   subtotal: number;
   igv: number;
   total: number;
@@ -220,9 +211,14 @@ export interface ContactoListItem {
 
 export interface TarifaRevisionListItem {
   id: string;
-  derecho_minimo: number | null;
-  derecho_maximo: number | null;
-  porcentaje_minimo_uit: number | null;
+  // M2 fields (for HU, MS — not IV/Taludes which now use percentage)
+  costo_por_m2?: number | null;
+  area_m2?: number | null;
+  derecho_minimo?: number | null;
+  derecho_maximo?: number | null;
+  // Percentage fields (for IV, Taludes — Edificaciones-style)
+  porcentaje_liquidacion?: number | null;
+  porcentaje_minimo_uit?: number | null;
 }
 
 export interface EspecialidadRevisionListItem {
@@ -234,8 +230,6 @@ export interface RevisionListItem {
   id: string;
   especialidades: EspecialidadRevisionListItem[];
   tarifa: TarifaRevisionListItem;
-  monto_base: number;
-  cobra: boolean;
 }
 
 // ── List Types ────────────────────────────────────────────────────────────────
@@ -250,22 +244,14 @@ export interface LiquidacionImpactoVialListItem {
   tipo_liquidacion: string;
   numero_revision: number;
   fecha_registro: string;
-  tramite_accion: string | null;
-  tipo_tramite: string | null;
-  expediente: string | null;
-  observacion: string | null;
   proyecto: ProyectoListItem;
   entidad: EntidadListItem;
   municipalidad: MunicipalidadListItem;
-  valores: ValoresListItem;
+  valores: ValoresM2ListItem;
   proyectistas: ProyectistaListItem[];
   delegados: DelegadoListItem[];
   contactos: ContactoListItem[];
   revisiones: RevisionListItem[];
-  subtotal: number;
-  igv: number;
-  total: number;
-  total_a_pagar: number;
 }
 
 /**
@@ -282,14 +268,13 @@ export interface LiquidacionesImpactoVialPaginated {
 // ── Tarifa Vigente ────────────────────────────────────────────────────────────
 
 /**
- * Tarifa vigente para Impacto Vial.
+ * Tarifa vigente para Impacto Vial (porcentaje-based).
  */
 export interface TarifaVigenteImpactoVial {
   tarifa_id: string;
-  detalle_id: string;
-  costo_por_m2: number;
-  area_minima: number;
+  porcentaje_liquidacion: number;
   derecho_minimo: number;
   derecho_maximo: number | null;
+  porcentaje_minimo_uit: number;
   habilitada: boolean;
 }

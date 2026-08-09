@@ -809,3 +809,35 @@ button {
     opacity: 0.15;
   }
 }
+
+/* === LIQUIDACIÓN SINGLE FORM MODAL — Grid Areas Layout === */
+.grid-areas-liquidacion-modal {
+  display: grid;
+  grid-template-areas:
+    "tramite"
+    "proyecto";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+}
+
+.grid-area-tramite {
+  grid-area: tramite;
+}
+
+.grid-area-proyecto {
+  grid-area: proyecto;
+}
+
+.grid-area-cotizacion {
+  grid-area: cotizacion;
+}
+
+@media (max-width: 767px) {
+  .grid-areas-liquidacion-modal {
+    grid-template-areas:
+      "tramite"
+      "proyecto";
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+}

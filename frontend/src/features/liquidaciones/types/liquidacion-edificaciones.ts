@@ -107,6 +107,7 @@ export interface SnapshotTarifa {
   derecho_minimo: string;
   derecho_maximo: string | null;
   porcentaje_minimo_uit: string;
+  porcentaje_liquidacion: string | number;
 }
 
 export interface SnapshotRevision {
@@ -115,9 +116,7 @@ export interface SnapshotRevision {
   // NOTE: especialidades es M2M — lista de objetos {id, nombre}
   especialidades: EspecialidadBasica[];
   tarifa: SnapshotTarifa;
-  monto_base: number;
-  cobra: boolean;
-  // NOTE: derecho not present in backend RevisionOut for crearNuevaRevision
+  // NOTE: monto_base/cobra fueron removidos de revision — van en detalle
 }
 
 export interface SnapshotTotales {
@@ -235,9 +234,10 @@ export interface EspecialidadOut {
  */
 export interface TarifaOut {
   id: string;
-  derecho_minimo: string | number;
-  derecho_maximo: string | number | null;
-  porcentaje_minimo_uit: string | number;
+  derecho_minimo: number | null;
+  derecho_maximo: number | null;
+  porcentaje_minimo_uit: number | null;
+  porcentaje_liquidacion: number;
 }
 
 /**
@@ -247,8 +247,6 @@ export interface RevisionOut {
   id: string;
   especialidades: EspecialidadOut[];
   tarifa: TarifaOut;
-  monto_base: string | number;
-  cobra: boolean;
 }
 
 /**
@@ -366,6 +364,7 @@ export interface LiquidacionEdificacionOut {
   id: string;
   public_id: string;
   estado: string;
+  tipo_liquidacion: string;
   fecha_registro: string;
   expediente: string | null;
   observacion: string | null;
@@ -410,6 +409,7 @@ export interface SnapshotTarifaCard {
   derecho_minimo: string | number;
   derecho_maximo: string | number | null;
   porcentaje_minimo_uit: string | number;
+  porcentaje_liquidacion: string | number;
 }
 
 export interface SnapshotRevisionCard {
@@ -418,9 +418,7 @@ export interface SnapshotRevisionCard {
   // NOTE: especialidades es M2M — lista de objetos {id, nombre}
   especialidades: EspecialidadBasica[];
   tarifa: SnapshotTarifaCard;
-  monto_base: string | number;
-  cobra: boolean;
-  derecho?: string | number | null | undefined;
+  // NOTE: monto_base/cobra fueron removidos de revision — van en detalle
 }
 
 export interface SnapshotTotalesCard {
@@ -516,6 +514,7 @@ export interface CotizacionTarifa {
   derecho_minimo: number;
   derecho_maximo: number | null;
   porcentaje_minimo_uit: number;
+  porcentaje_liquidacion: number;
 }
 
 export interface CotizacionRevision {
@@ -618,7 +617,10 @@ export interface NuevaRevisionFormData {
   liquidacion_previa_id: string;
   revisiones_ids: string[];
   proyectistas_ids: string[];
+  contactos?: import("./contacto").ContactoInline[];
   observacion?: string;
+  /** Tipo de trámite — si se omite, el backend hereda de la liquidación previa */
+  tipo_tramite?: string;
 }
 
 // ── Delegados Vigentes ────────────────────────────────────────────────────────

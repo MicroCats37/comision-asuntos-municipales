@@ -56,7 +56,7 @@ export function useCrearHabilitacionUrbanaPrimeraRevision() {
 export function useCotizarHabilitacionUrbanaPrimeraRevision() {
   const mutation = useApiCreate<
     z.infer<typeof cotizacionHabilitacionUrbanaResponseSchema>,
-    { liquidacion: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] } }
+    { liquidacion: { area_solicitada: number; tarifas_ids: string[] } }
   >({
     url: "/liquidaciones/habilitacion-urbana/cotizar/primera-revision",
     schema: cotizacionHabilitacionUrbanaResponseSchema,
@@ -65,11 +65,11 @@ export function useCotizarHabilitacionUrbanaPrimeraRevision() {
 
   const cotizacionMutation = {
     ...mutation,
-    mutate: (payload: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] }) => {
+    mutate: (payload: { area_solicitada: number; tarifas_ids: string[] }) => {
       mutation.mutate({ liquidacion: payload });
     },
     mutateAsync: async (
-      payload: { area_solicitada: number; municipalidad_id: string; tarifas_ids: string[] },
+      payload: { area_solicitada: number; tarifas_ids: string[] },
     ): Promise<CotizacionHabilitacionUrbanaResponse> => {
       const result = await mutation.mutateAsync({ liquidacion: payload });
       return result.data as CotizacionHabilitacionUrbanaResponse;

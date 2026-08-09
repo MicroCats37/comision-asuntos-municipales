@@ -23,26 +23,22 @@ import type { FieldValues, UseFormReturn } from "react-hook-form";
 import { useForm } from "react-hook-form";
 import { AppStepperFormModal } from "@/components-app/forms/AppStepperFormModal";
 import { notify } from "@/errors";
-import { useEspecialidadesVigentesLiquidacion } from "../../hooks/useEspecialidadesVigentesLiquidacion";
+import { useCrearTaludesPrimeraRevision } from "../../hooks/useTaludes";
+import { useCotizarTaludesPrimeraRevision } from "../../hooks/useTaludes";
 import { useMunicipalidades } from "../../hooks/useMunicipalidades";
-import {
-  useCotizarTaludesPrimeraRevision,
-  useCrearTaludesPrimeraRevision,
-} from "../../hooks/useTaludes";
+import { useEspecialidadesVigentesLiquidacion } from "../../hooks/useEspecialidadesVigentesLiquidacion";
 import { stepTaludesSchema } from "../../schemas/liquidacion-taludes.schema";
-import { type CotizacionState, useTaludesStepperStore } from "../../store";
+import { useTaludesStepperStore, type CotizacionState } from "../../store";
 import type { ContactoInline } from "../../types/contacto";
-import type {
-  CotizacionTaludesResponse,
-  CrearTaludesPrimeraRevisionIn,
-} from "../../types/liquidacion-taludes.types";
 import type { ProyectistaInline } from "../../types/proyectista";
+import type { CotizacionTaludesResponse } from "../../types/liquidacion-taludes.types";
+import type { CrearTaludesPrimeraRevisionIn } from "../../types/liquidacion-taludes.types";
 import { ContactoFormModal } from "../ContactoFormModal";
 import { ProyectistaFormModal } from "../ProyectistaFormModal";
 import { Step1Proyecto } from "../steps/Step1Proyecto";
 import { Step3Personas } from "../steps/Step3Personas";
-import { StepTaludesConfirmacion } from "../steps/StepTaludesConfirmacion";
 import { StepTaludesLiquidacion } from "../steps/StepTaludesLiquidacion";
+import { StepTaludesConfirmacion } from "../steps/StepTaludesConfirmacion";
 
 type FormData = {
   municipalidad_id: string;
@@ -51,12 +47,7 @@ type FormData = {
   observacion?: string;
 };
 
-const STEP_IDS = [
-  "liquidacion",
-  "proyecto",
-  "personas",
-  "confirmacion",
-] as const;
+const STEP_IDS = ["liquidacion", "proyecto", "personas", "confirmacion"] as const;
 
 const KIND_LABEL = "Taludes";
 
@@ -81,18 +72,15 @@ export function LiquidacionTaludesStepperModal({
     useMunicipalidades();
 
   // ── Especialidades vigentes para el tipo de liquidación ───────────────────
-  const { data: especialidadesData } =
-    useEspecialidadesVigentesLiquidacion("taludes");
+  const { data: especialidadesData } = useEspecialidadesVigentesLiquidacion("taludes");
   const especialidadOptions: Array<{ label: string; value: string }> =
     especialidadesData?.items
       ? [
           ...new Map(
-            especialidadesData.items
-              .map((esp) => ({
-                label: esp.nombre,
-                value: esp.id,
-              }))
-              .map((opt) => [opt.value, opt]),
+            especialidadesData.items.map((esp) => ({
+              label: esp.nombre,
+              value: esp.id,
+            })).map((opt) => [opt.value, opt]),
           ).values(),
         ]
       : [];
@@ -132,9 +120,7 @@ export function LiquidacionTaludesStepperModal({
   // ── Modales hijos ────────────────────────────────────────────────────────────
   const [showProyectistaModal, setShowProyectistaModal] = useState(false);
   const [showContactoModal, setShowContactoModal] = useState(false);
-  const [editingContactoIndex, setEditingContactoIndex] = useState<
-    number | null
-  >(null);
+  const [editingContactoIndex, setEditingContactoIndex] = useState<number | null>(null);
 
   const handleProyectistaSaved = useCallback(
     (proyectista: ProyectistaInline) => {
@@ -181,162 +167,136 @@ export function LiquidacionTaludesStepperModal({
   };
 
   // ── Step configuration ───────────────────────────────────────────────────────
-  const steps: import("@/components-app/forms/AppStepperFormModal").StepConfig[] =
-    [
-      // Step 1: Liquidación
-      {
-        id: STEP_IDS[0],
-        title: "Liquidación",
-        icon: FileText,
-        description: "Datos de la liquidación y cotización",
-        validate: async ({
-          methods,
-        }: {
-          methods: UseFormReturn<FieldValues>;
-        }) => {
-          const valid = await methods.trigger([
-            "municipalidad_id",
-            "area_solicitada",
-          ]);
-          return valid;
-        },
-        render: ({
-          methods,
-          isActive,
-        }: {
-          methods: UseFormReturn<FieldValues>;
-          currentStep: number;
-          isActive: boolean;
-        }) => (
-          <StepTaludesLiquidacion
+  const steps: import("@/components-app/forms/AppStepperFormModal").StepConfig[] = [
+    // Step 1: Liquidación
+    {
+      id: STEP_IDS[0],
+      title: "Liquidación",
+      icon: FileText,
+      description: "Datos de la liquidación y cotización",
+      validate: async ({ methods }: { methods: UseFormReturn<FieldValues> }) => {
+        const valid = await methods.trigger(["municipalidad_id", "area_solicitada"]);
+        return valid;
+      },
+      render: ({
+        methods,
+        isActive,
+      }: {
+        methods: UseFormReturn<FieldValues>;
+        currentStep: number;
+        isActive: boolean;
+      }) => (
+        <StepTaludesLiquidacion
+          methods={methods}
+          isActive={isActive}
+          municipalidades={municipalidades || []}
+          isLoadingMunicipalidades={isLoadingMunicipalidades}
+          cotizarMutation={cotizarMutation}
+          quote={cotizacionQuote}
+          setCotizacionQuote={(q) => store.setCotizacionQuote(q as CotizacionState["quote"])}
+          setCotizacionError={store.setCotizacionError}
+          setCotizacionCalculating={store.setCotizacionCalculating}
+        />
+      ),
+    },
+
+    // Step 2: Proyecto
+    {
+      id: STEP_IDS[1],
+      title: "Proyecto",
+      icon: Building2,
+      description: "Selecciona o crea el proyecto para esta liquidación",
+      validate: ({ methods: _methods }: { methods: UseFormReturn<FieldValues> }) => {
+        const hasProyectoExistente = !!store.selectedProyecto;
+        const hasProyectoInline = !!store.proyectoInline;
+        if (!hasProyectoExistente && !hasProyectoInline) {
+          notify.error("Selecciona o crea un proyecto antes de continuar");
+          return false;
+        }
+        if (hasProyectoExistente && hasProyectoInline) {
+          notify.error("No puede seleccionar y crear un proyecto al mismo tiempo");
+          return false;
+        }
+        return true;
+      },
+      render: ({
+        methods,
+        isActive,
+      }: {
+        methods: UseFormReturn<FieldValues>;
+        currentStep: number;
+        isActive: boolean;
+      }) => <Step1Proyecto methods={methods} isActive={isActive} store={store} />,
+    },
+
+    // Step 3: Personas
+    {
+      id: STEP_IDS[2],
+      title: "Personas",
+      icon: Users,
+      description: "Agrega proyectistas y contactos de referencia",
+      render: ({
+        methods,
+        isActive,
+      }: {
+        methods: UseFormReturn<FieldValues>;
+        currentStep: number;
+        isActive: boolean;
+      }) => (
+        <Step3Personas
+          methods={methods}
+          isActive={isActive}
+          store={store}
+          especialidadOptions={especialidadOptions}
+          especialidadLabels={especialidadLabels}
+          onOpenProyectistaModal={() => setShowProyectistaModal(true)}
+          onRemoveProyectista={(cip) => store.removeProyectista(cip)}
+          onOpenContactoModal={() => {
+            setEditingContactoIndex(null);
+            setShowContactoModal(true);
+          }}
+          onEditContacto={(index) => {
+            setEditingContactoIndex(index);
+            setShowContactoModal(true);
+          }}
+          onRemoveContacto={(index) => store.removeContacto(index)}
+        />
+      ),
+    },
+
+    // Step 4: Confirmación
+    {
+      id: STEP_IDS[3],
+      title: "Confirmación",
+      icon: CheckCircle,
+      description: "Revisa toda la información antes de crear la liquidación",
+      render: ({
+        methods,
+        isActive,
+      }: {
+        methods: UseFormReturn<FieldValues>;
+        currentStep: number;
+        isActive: boolean;
+      }) => {
+        const data = methods.getValues();
+        return (
+          <StepTaludesConfirmacion
             methods={methods}
             isActive={isActive}
-            municipalidades={municipalidades || []}
-            isLoadingMunicipalidades={isLoadingMunicipalidades}
-            cotizarMutation={cotizarMutation}
+            tipoLabel={KIND_LABEL}
+            liquidacionItems={getLiquidacionItems(data as FormData)}
+            municipalidades={municipalidades?.map((m) => ({ id: m.id, nombre: m.nombre }))}
             quote={cotizacionQuote}
-            setCotizacionQuote={(q) =>
-              store.setCotizacionQuote(q as CotizacionState["quote"])
-            }
-            setCotizacionError={store.setCotizacionError}
-            setCotizacionCalculating={store.setCotizacionCalculating}
           />
-        ),
+        );
       },
-
-      // Step 2: Proyecto
-      {
-        id: STEP_IDS[1],
-        title: "Proyecto",
-        icon: Building2,
-        description: "Selecciona o crea el proyecto para esta liquidación",
-        validate: ({
-          methods: _methods,
-        }: {
-          methods: UseFormReturn<FieldValues>;
-        }) => {
-          const hasProyectoExistente = !!store.selectedProyecto;
-          const hasProyectoInline = !!store.proyectoInline;
-          if (!hasProyectoExistente && !hasProyectoInline) {
-            notify.error("Selecciona o crea un proyecto antes de continuar");
-            return false;
-          }
-          if (hasProyectoExistente && hasProyectoInline) {
-            notify.error(
-              "No puede seleccionar y crear un proyecto al mismo tiempo",
-            );
-            return false;
-          }
-          return true;
-        },
-        render: ({
-          methods,
-          isActive,
-        }: {
-          methods: UseFormReturn<FieldValues>;
-          currentStep: number;
-          isActive: boolean;
-        }) => (
-          <Step1Proyecto methods={methods} isActive={isActive} store={store} />
-        ),
-      },
-
-      // Step 3: Personas
-      {
-        id: STEP_IDS[2],
-        title: "Personas",
-        icon: Users,
-        description: "Agrega proyectistas y contactos de referencia",
-        render: ({
-          methods,
-          isActive,
-        }: {
-          methods: UseFormReturn<FieldValues>;
-          currentStep: number;
-          isActive: boolean;
-        }) => (
-          <Step3Personas
-            methods={methods}
-            isActive={isActive}
-            store={store}
-            especialidadOptions={especialidadOptions}
-            especialidadLabels={especialidadLabels}
-            onOpenProyectistaModal={() => setShowProyectistaModal(true)}
-            onRemoveProyectista={(cip) => store.removeProyectista(cip)}
-            onOpenContactoModal={() => {
-              setEditingContactoIndex(null);
-              setShowContactoModal(true);
-            }}
-            onEditContacto={(index) => {
-              setEditingContactoIndex(index);
-              setShowContactoModal(true);
-            }}
-            onRemoveContacto={(index) => store.removeContacto(index)}
-          />
-        ),
-      },
-
-      // Step 4: Confirmación
-      {
-        id: STEP_IDS[3],
-        title: "Confirmación",
-        icon: CheckCircle,
-        description: "Revisa toda la información antes de crear la liquidación",
-        render: ({
-          methods,
-          isActive,
-        }: {
-          methods: UseFormReturn<FieldValues>;
-          currentStep: number;
-          isActive: boolean;
-        }) => {
-          const data = methods.getValues();
-          return (
-            <StepTaludesConfirmacion
-              methods={methods}
-              isActive={isActive}
-              tipoLabel={KIND_LABEL}
-              liquidacionItems={getLiquidacionItems(data as FormData)}
-              municipalidades={municipalidades?.map((m) => ({
-                id: m.id,
-                nombre: m.nombre,
-              }))}
-              quote={cotizacionQuote}
-            />
-          );
-        },
-      },
-    ];
+    },
+  ];
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = useCallback(
     async (data: FormData) => {
-      const {
-        selectedProyecto,
-        proyectoInline,
-        selectedProyectistas: _sp,
-        selectedContactos,
-      } = store;
+      const { selectedProyecto, proyectoInline, selectedProyectistas: _sp, selectedContactos } = store;
 
       const hasProyectoExistente = !!selectedProyecto;
       const hasProyectoInline = !!proyectoInline;
@@ -347,17 +307,13 @@ export function LiquidacionTaludesStepperModal({
       }
 
       if (hasProyectoExistente && hasProyectoInline) {
-        notify.error(
-          "No puede seleccionar y crear un proyecto al mismo tiempo",
-        );
+        notify.error("No puede seleccionar y crear un proyecto al mismo tiempo");
         return;
       }
 
-      const contactosPayload = (selectedContactos as ContactoInline[]).map(
-        ({ localId: _lid, ...contacto }) => contacto,
-      );
+      const contactosPayload = (selectedContactos as ContactoInline[]).map(({ localId: _lid, ...contacto }) => contacto);
 
-      const submitData: CrearTaludesPrimeraRevisionIn = {
+      const submitData = {
         ...(hasProyectoInline
           ? {
               proyecto_inline: {
@@ -370,12 +326,12 @@ export function LiquidacionTaludesStepperModal({
             }
           : { proyecto_public_id: selectedProyecto!.public_id }),
         municipalidad_id: data.municipalidad_id,
-        area_solicitada: Number(data.area_solicitada),
+        valor_proyecto: Number(data.area_solicitada),
         expediente: data.expediente,
         observacion: data.observacion,
         tarifas_ids: store.selectedTarifasIds,
         contactos: contactosPayload,
-      };
+      } as unknown as CrearTaludesPrimeraRevisionIn;
 
       try {
         await crearMutation.mutateAsync(submitData);
@@ -410,7 +366,7 @@ export function LiquidacionTaludesStepperModal({
         cancelLabel="Cancelar"
         backLabel="Anterior"
         nextLabel="Siguiente"
-        preventClose={crearMutation.isPending}
+        preventClose={true}
       />
 
       <ProyectistaFormModal

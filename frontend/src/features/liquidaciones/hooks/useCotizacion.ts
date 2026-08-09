@@ -3,6 +3,7 @@
  * Usa useApiCreate genérico del proyecto.
  */
 import { useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import type { z } from "zod";
 import { useApiCreate } from "@/hooks";
 import {
@@ -37,7 +38,7 @@ export function useCotizacionPrimeraRevision() {
     options: {},
   });
 
-  const cotizacionMutation = {
+  const cotizacionMutation = useMemo(() => ({
     ...mutation,
     mutate: (payload: {
       tipo_tramite?: string;
@@ -56,7 +57,7 @@ export function useCotizacionPrimeraRevision() {
       const result = await mutation.mutateAsync({ liquidacion: payload });
       return result.data as CotizacionQuote;
     },
-  };
+  }), [mutation]);
 
   return cotizacionMutation;
 }
@@ -68,7 +69,7 @@ export function useCotizacionPrimeraRevision() {
 export function useCotizacionNuevaRevision() {
   const mutation = useApiCreate<
     z.infer<typeof cotizacionQuoteResponseSchema>,
-    { liquidacion_previa_id: string; revisiones_ids: string[] }
+    { liquidacion_previa_id: string; revisiones_ids: string[]; tipo_tramite?: string }
   >({
     url: `${BASE_URL}/cotizar/nueva-revision`,
     schema: cotizacionQuoteResponseSchema,
@@ -83,6 +84,7 @@ export function useCotizacionNuevaRevision() {
     mutateAsync: async (payload: {
       liquidacion_previa_id: string;
       revisiones_ids: string[];
+      tipo_tramite?: string;
     }): Promise<CotizacionQuote> => {
       const result = await mutation.mutateAsync(payload);
       // Extract inner data from {success, data: CotizacionQuote, error}

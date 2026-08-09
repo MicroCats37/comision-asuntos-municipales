@@ -22,29 +22,25 @@ import type { FieldValues, UseFormReturn } from "react-hook-form";
 import { useForm } from "react-hook-form";
 import { AppStepperFormModal } from "@/components-app/forms/AppStepperFormModal";
 import { notify } from "@/errors";
-import { useEspecialidadesVigentesLiquidacion } from "../hooks/useEspecialidadesVigentesLiquidacion";
-import {
-  useCotizarInspeccionObraPrimeraRevision,
-  useCrearInspeccionObraPrimeraRevision,
-} from "../hooks/useInspeccionObra";
+import { useCrearInspeccionObraPrimeraRevision } from "../hooks/useInspeccionObra";
+import { useCotizarInspeccionObraPrimeraRevision } from "../hooks/useInspeccionObra";
 import { useMunicipalidades } from "../hooks/useMunicipalidades";
+import { useEspecialidadesVigentesLiquidacion } from "../hooks/useEspecialidadesVigentesLiquidacion";
 import { stepInspeccionObraSchema } from "../schemas/liquidacion-inspeccion-obra.schema";
-import { type CotizacionState, useInspeccionObraStepperStore } from "../store";
+import { useInspeccionObraStepperStore, type CotizacionState } from "../store";
 import type { ContactoInline } from "../types/contacto";
-import type {
-  CotizacionIOResponse,
-  CrearInspeccionObraPrimeraRevisionIn,
-} from "../types/liquidacion-inspeccion-obra.types";
+import type { CotizacionIOResponse } from "../types/liquidacion-inspeccion-obra.types";
+import type { CrearInspeccionObraPrimeraRevisionIn } from "../types/liquidacion-inspeccion-obra.types";
 import type { ProyectistaInline } from "../types/proyectista";
 import { ContactoFormModal } from "./ContactoFormModal";
 import { ProyectistaFormModal } from "./ProyectistaFormModal";
 import { Step1Proyecto } from "./steps/Step1Proyecto";
 import { Step3Personas } from "./steps/Step3Personas";
-import {
-  type LiquidacionDisplayItem,
-  StepInspeccionObraConfirmacion,
-} from "./steps/StepInspeccionObraConfirmacion";
 import { StepInspeccionObraLiquidacion } from "./steps/StepInspeccionObraLiquidacion";
+import {
+  StepInspeccionObraConfirmacion,
+  type LiquidacionDisplayItem,
+} from "./steps/StepInspeccionObraConfirmacion";
 
 /** Labels para categorías IO */
 const CATEGORIA_LABELS: Record<string, string> = {
@@ -62,12 +58,7 @@ type FormData = {
   observacion?: string;
 };
 
-const STEP_IDS = [
-  "liquidacion",
-  "proyecto",
-  "personas",
-  "confirmacion",
-] as const;
+const STEP_IDS = ["liquidacion", "proyecto", "personas", "confirmacion"] as const;
 
 const TIPO_LABEL = "Inspección de Obra";
 
@@ -92,18 +83,15 @@ export function LiquidacionInspeccionObraStepperModal({
     useMunicipalidades();
 
   // ── Especialidades vigentes para el tipo de liquidación ───────────────────
-  const { data: especialidadesData } =
-    useEspecialidadesVigentesLiquidacion("inspeccion-obra");
+  const { data: especialidadesData } = useEspecialidadesVigentesLiquidacion("inspeccion-obra");
   const especialidadOptions: Array<{ label: string; value: string }> =
     especialidadesData?.items
       ? [
           ...new Map(
-            especialidadesData.items
-              .map((esp) => ({
-                label: esp.nombre,
-                value: esp.id,
-              }))
-              .map((opt) => [opt.value, opt]),
+            especialidadesData.items.map((esp) => ({
+              label: esp.nombre,
+              value: esp.id,
+            })).map((opt) => [opt.value, opt]),
           ).values(),
         ]
       : [];
@@ -144,9 +132,7 @@ export function LiquidacionInspeccionObraStepperModal({
   // ── Modales hijos ────────────────────────────────────────────────────────────
   const [showProyectistaModal, setShowProyectistaModal] = useState(false);
   const [showContactoModal, setShowContactoModal] = useState(false);
-  const [editingContactoIndex, setEditingContactoIndex] = useState<
-    number | null
-  >(null);
+  const [editingContactoIndex, setEditingContactoIndex] = useState<number | null>(null);
 
   const handleProyectistaSaved = useCallback(
     (proyectista: ProyectistaInline) => {
@@ -192,163 +178,141 @@ export function LiquidacionInspeccionObraStepperModal({
   };
 
   // ── Step configuration ───────────────────────────────────────────────────────
-  const steps: import("@/components-app/forms/AppStepperFormModal").StepConfig[] =
-    [
-      // Step 1: Liquidación
-      {
-        id: STEP_IDS[0],
-        title: "Liquidación",
-        icon: FileText,
-        description: "Datos de la liquidación y cotización",
-        validate: async ({
-          methods,
-        }: {
-          methods: UseFormReturn<FieldValues>;
-        }) => {
-          const valid = await methods.trigger([
-            "municipalidad_id",
-            "cantidad_visitas",
-            "categoria",
-          ]);
-          return valid;
-        },
-        render: ({
-          methods,
-          isActive,
-        }: {
-          methods: UseFormReturn<FieldValues>;
-          currentStep: number;
-          isActive: boolean;
-        }) => (
-          <StepInspeccionObraLiquidacion
+  const steps: import("@/components-app/forms/AppStepperFormModal").StepConfig[] = [
+    // Step 1: Liquidación
+    {
+      id: STEP_IDS[0],
+      title: "Liquidación",
+      icon: FileText,
+      description: "Datos de la liquidación y cotización",
+      validate: async ({ methods }: { methods: UseFormReturn<FieldValues> }) => {
+        const valid = await methods.trigger(["municipalidad_id", "cantidad_visitas", "categoria"]);
+        return valid;
+      },
+      render: ({
+        methods,
+        isActive,
+      }: {
+        methods: UseFormReturn<FieldValues>;
+        currentStep: number;
+        isActive: boolean;
+      }) => (
+        <StepInspeccionObraLiquidacion
+          methods={methods}
+          isActive={isActive}
+          municipalidades={municipalidades || []}
+          isLoadingMunicipalidades={isLoadingMunicipalidades}
+          cotizarMutation={cotizarMutation}
+          quote={cotizacionQuote}
+          setCotizacionQuote={(q) =>
+            store.setCotizacionQuote(
+              q as CotizacionState["quote"],
+            )
+          }
+          setCotizacionError={store.setCotizacionError}
+          setCotizacionCalculating={store.setCotizacionCalculating}
+        />
+      ),
+    },
+
+    // Step 2: Proyecto
+    {
+      id: STEP_IDS[1],
+      title: "Proyecto",
+      icon: Building2,
+      description: "Selecciona o crea el proyecto para esta liquidación",
+      validate: ({ methods: _methods }: { methods: UseFormReturn<FieldValues> }) => {
+        const hasProyectoExistente = !!store.selectedProyecto;
+        const hasProyectoInline = !!store.proyectoInline;
+        if (!hasProyectoExistente && !hasProyectoInline) {
+          notify.error("Selecciona o crea un proyecto antes de continuar");
+          return false;
+        }
+        if (hasProyectoExistente && hasProyectoInline) {
+          notify.error("No puede seleccionar y crear un proyecto al mismo tiempo");
+          return false;
+        }
+        return true;
+      },
+      render: ({
+        methods,
+        isActive,
+      }: {
+        methods: UseFormReturn<FieldValues>;
+        currentStep: number;
+        isActive: boolean;
+      }) => <Step1Proyecto methods={methods} isActive={isActive} store={store} />,
+    },
+
+    // Step 3: Personas
+    {
+      id: STEP_IDS[2],
+      title: "Personas",
+      icon: Users,
+      description: "Agrega proyectistas y contactos de referencia",
+      render: ({
+        methods,
+        isActive,
+      }: {
+        methods: UseFormReturn<FieldValues>;
+        currentStep: number;
+        isActive: boolean;
+      }) => (
+        <Step3Personas
+          methods={methods}
+          isActive={isActive}
+          store={store}
+          especialidadOptions={especialidadOptions}
+          especialidadLabels={especialidadLabels}
+          onOpenProyectistaModal={() => setShowProyectistaModal(true)}
+          onRemoveProyectista={(cip) => store.removeProyectista(cip)}
+          onOpenContactoModal={() => {
+            setEditingContactoIndex(null);
+            setShowContactoModal(true);
+          }}
+          onEditContacto={(index) => {
+            setEditingContactoIndex(index);
+            setShowContactoModal(true);
+          }}
+          onRemoveContacto={(index) => store.removeContacto(index)}
+        />
+      ),
+    },
+
+    // Step 4: Confirmación
+    {
+      id: STEP_IDS[3],
+      title: "Confirmación",
+      icon: CheckCircle,
+      description: "Revisa toda la información antes de crear la liquidación",
+      render: ({
+        methods,
+        isActive,
+      }: {
+        methods: UseFormReturn<FieldValues>;
+        currentStep: number;
+        isActive: boolean;
+      }) => {
+        const data = methods.getValues();
+        return (
+          <StepInspeccionObraConfirmacion
             methods={methods}
             isActive={isActive}
-            municipalidades={municipalidades || []}
-            isLoadingMunicipalidades={isLoadingMunicipalidades}
-            cotizarMutation={cotizarMutation}
+            tipoLabel={TIPO_LABEL}
+            liquidacionItems={getLiquidacionItems(data as FormData)}
+            municipalidades={municipalidades?.map((m) => ({ id: m.id, nombre: m.nombre }))}
             quote={cotizacionQuote}
-            setCotizacionQuote={(q) =>
-              store.setCotizacionQuote(q as CotizacionState["quote"])
-            }
-            setCotizacionError={store.setCotizacionError}
-            setCotizacionCalculating={store.setCotizacionCalculating}
           />
-        ),
+        );
       },
-
-      // Step 2: Proyecto
-      {
-        id: STEP_IDS[1],
-        title: "Proyecto",
-        icon: Building2,
-        description: "Selecciona o crea el proyecto para esta liquidación",
-        validate: ({
-          methods: _methods,
-        }: {
-          methods: UseFormReturn<FieldValues>;
-        }) => {
-          const hasProyectoExistente = !!store.selectedProyecto;
-          const hasProyectoInline = !!store.proyectoInline;
-          if (!hasProyectoExistente && !hasProyectoInline) {
-            notify.error("Selecciona o crea un proyecto antes de continuar");
-            return false;
-          }
-          if (hasProyectoExistente && hasProyectoInline) {
-            notify.error(
-              "No puede seleccionar y crear un proyecto al mismo tiempo",
-            );
-            return false;
-          }
-          return true;
-        },
-        render: ({
-          methods,
-          isActive,
-        }: {
-          methods: UseFormReturn<FieldValues>;
-          currentStep: number;
-          isActive: boolean;
-        }) => (
-          <Step1Proyecto methods={methods} isActive={isActive} store={store} />
-        ),
-      },
-
-      // Step 3: Personas
-      {
-        id: STEP_IDS[2],
-        title: "Personas",
-        icon: Users,
-        description: "Agrega proyectistas y contactos de referencia",
-        render: ({
-          methods,
-          isActive,
-        }: {
-          methods: UseFormReturn<FieldValues>;
-          currentStep: number;
-          isActive: boolean;
-        }) => (
-          <Step3Personas
-            methods={methods}
-            isActive={isActive}
-            store={store}
-            especialidadOptions={especialidadOptions}
-            especialidadLabels={especialidadLabels}
-            onOpenProyectistaModal={() => setShowProyectistaModal(true)}
-            onRemoveProyectista={(cip) => store.removeProyectista(cip)}
-            onOpenContactoModal={() => {
-              setEditingContactoIndex(null);
-              setShowContactoModal(true);
-            }}
-            onEditContacto={(index) => {
-              setEditingContactoIndex(index);
-              setShowContactoModal(true);
-            }}
-            onRemoveContacto={(index) => store.removeContacto(index)}
-          />
-        ),
-      },
-
-      // Step 4: Confirmación
-      {
-        id: STEP_IDS[3],
-        title: "Confirmación",
-        icon: CheckCircle,
-        description: "Revisa toda la información antes de crear la liquidación",
-        render: ({
-          methods,
-          isActive,
-        }: {
-          methods: UseFormReturn<FieldValues>;
-          currentStep: number;
-          isActive: boolean;
-        }) => {
-          const data = methods.getValues();
-          return (
-            <StepInspeccionObraConfirmacion
-              methods={methods}
-              isActive={isActive}
-              tipoLabel={TIPO_LABEL}
-              liquidacionItems={getLiquidacionItems(data as FormData)}
-              municipalidades={municipalidades?.map((m) => ({
-                id: m.id,
-                nombre: m.nombre,
-              }))}
-              quote={cotizacionQuote}
-            />
-          );
-        },
-      },
-    ];
+    },
+  ];
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = useCallback(
     async (data: FormData) => {
-      const {
-        selectedProyecto,
-        proyectoInline,
-        selectedProyectistas: _sp,
-        selectedContactos,
-      } = store;
+      const { selectedProyecto, proyectoInline, selectedProyectistas: _sp, selectedContactos } =
+        store;
 
       const hasProyectoExistente = !!selectedProyecto;
       const hasProyectoInline = !!proyectoInline;
@@ -359,9 +323,7 @@ export function LiquidacionInspeccionObraStepperModal({
       }
 
       if (hasProyectoExistente && hasProyectoInline) {
-        notify.error(
-          "No puede seleccionar y crear un proyecto al mismo tiempo",
-        );
+        notify.error("No puede seleccionar y crear un proyecto al mismo tiempo");
         return;
       }
 
@@ -423,7 +385,7 @@ export function LiquidacionInspeccionObraStepperModal({
         cancelLabel="Cancelar"
         backLabel="Anterior"
         nextLabel="Siguiente"
-        preventClose={crearMutation.isPending}
+        preventClose={true}
       />
 
       <ProyectistaFormModal

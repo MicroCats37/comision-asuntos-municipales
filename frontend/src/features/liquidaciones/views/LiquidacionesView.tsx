@@ -1,11 +1,13 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import { FileText, Plus, Search, UserCheck, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ConsultarIngenieroDialog } from "../components/ConsultarIngenieroDialog";
 import { LiquidacionListCard } from "../components/LiquidacionListCard";
-import { NuevaLiquidacionDropdown } from "../components/NuevaLiquidacionDropdown";
-import { NuevaRevisionFormModal } from "../components/NuevaRevisionFormModal";
+import { NuevaRevisionEdificacionesFormModal } from "../components/NuevaRevisionEdificacionesFormModal";
+import { LiquidacionStepperModal } from "../components/LiquidacionStepperModal";
 import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificaciones";
 import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificaciones";
 
@@ -17,9 +19,11 @@ import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificacion
  *   that was refactored to use non-snapshot list endpoint.
  */
 export function LiquidacionesView() {
-  const [nuevaRevisionLiquidacionId, setNuevaRevisionLiquidacionId] = useState<
-    string | null
-  >(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
+  const [nuevaRevisionLiquidacionId, setNuevaRevisionLiquidacionId] = useState<string | null>(null);
+  const [stepperOpen, setStepperOpen] = useState(false);
+  const [consultDialogOpen, setConsultDialogOpen] = useState(false);
 
   const {
     items: liquidacionItems,
@@ -30,13 +34,44 @@ export function LiquidacionesView() {
     isError: isLiquidacionError,
     refetch: refetchLiquidaciones,
     setPage: setLiquidacionPage,
-  } = useLiquidacionesEdificaciones({ page: 1, pageSize: 10 });
+  } = useLiquidacionesEdificaciones({ page: 1, pageSize: 10, proyectoPublicId });
+
+  const handleSearch = () => {
+    const trimmed = searchInput.trim();
+    setProyectoPublicId(trimmed ? trimmed : null);
+  };
+
+  const handleClearFilter = () => {
+    setSearchInput("");
+    setProyectoPublicId(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   return (
     <div className="page-section">
       <div className="space-y-6">
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+            onClick={() => setStepperOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Nueva Liquidación
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+            onClick={() => setConsultDialogOpen(true)}
+          >
+            <UserCheck className="h-4 w-4" />
+            Consultar ingeniero
+          </Button>
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
               <FileText className="h-6 w-6 text-primary" />
@@ -50,7 +85,43 @@ export function LiquidacionesView() {
               </p>
             </div>
           </div>
-          <NuevaLiquidacionDropdown onSuccess={refetchLiquidaciones} />
+        </div>
+
+        {/* Filter Bar */}
+        <div className="flex items-center gap-4 p-4 bg-muted/20 rounded-xl border border-border/60">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-muted-foreground">Filtrar liquidaciones por ID de Proyecto:</span>
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Ej. PROY-2026-00001"
+                aria-label="ID de proyecto público"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-[220px] h-9"
+              />
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleSearch}
+                className="h-9 px-3 gap-1"
+              >
+                <Search className="h-4 w-4" />
+                Buscar
+              </Button>
+            </div>
+          </div>
+          {proyectoPublicId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearFilter}
+              className="h-8 px-2 gap-1 text-xs"
+            >
+              <X className="h-3 w-3" />
+              Limpiar filtro
+            </Button>
+          )}
         </div>
 
         {/* Cards View */}
@@ -75,20 +146,20 @@ export function LiquidacionesView() {
                 No hay liquidaciones registradas
               </p>
               <div className="mt-4">
-                <NuevaLiquidacionDropdown onSuccess={refetchLiquidaciones} />
+                <Button
+                  className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20"
+                  onClick={() => setStepperOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Nueva Liquidación
+                </Button>
               </div>
             </div>
           ) : (
             <>
               <div className="flex flex-col gap-4">
                 {liquidacionItems.map((item) => (
-                  <LiquidacionListCard
-                    key={item.id}
-                    item={item}
-                    onNuevaRevision={(it) =>
-                      setNuevaRevisionLiquidacionId(it.id)
-                    }
-                  />
+                  <LiquidacionListCard key={item.id} item={item} onNuevaRevision={(it) => setNuevaRevisionLiquidacionId(it.id)} />
                 ))}
               </div>
               {/* Pagination for cards */}
@@ -137,16 +208,22 @@ export function LiquidacionesView() {
         </div>
       </div>
 
-      <NuevaRevisionFormModal
+      <NuevaRevisionEdificacionesFormModal
         open={!!nuevaRevisionLiquidacionId}
-        onOpenChange={(open) => {
-          if (!open) setNuevaRevisionLiquidacionId(null);
-        }}
+        onOpenChange={(open) => { if (!open) setNuevaRevisionLiquidacionId(null); }}
         liquidacionPreviaId={nuevaRevisionLiquidacionId}
-        onSuccess={() => {
-          setNuevaRevisionLiquidacionId(null);
-          refetchLiquidaciones();
-        }}
+        onSuccess={() => { setNuevaRevisionLiquidacionId(null); refetchLiquidaciones(); }}
+      />
+
+      <LiquidacionStepperModal
+        open={stepperOpen}
+        onOpenChange={setStepperOpen}
+        onSuccess={refetchLiquidaciones}
+      />
+
+      <ConsultarIngenieroDialog
+        open={consultDialogOpen}
+        onOpenChange={setConsultDialogOpen}
       />
     </div>
   );

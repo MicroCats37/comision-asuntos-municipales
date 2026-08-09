@@ -4,23 +4,15 @@
  */
 "use client";
 
-import {
-  Banknote,
-  Building2,
-  Calculator,
-  FileText,
-  MapPin,
-  MessageSquare,
-  Tag,
-} from "lucide-react";
+import { Banknote, Building2, Calculator, FileText, MapPin, MessageSquare, Tag } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
 import { GenericInput } from "@/components/genericForm/GenericInput";
 import { FormSectionHeader } from "@/components-app/forms/FormSectionHeader";
 import { notify } from "@/errors";
-import { useTarifasVigentesMecanicaSuelos } from "../../hooks/useTarifasVigentes";
 import { useMecanicaSuelosStepperStore } from "../../store";
 import type { CotizacionMecanicaSuelosResponse } from "../../types/liquidacion-mecanica-suelos.types";
+import { useTarifasVigentesMecanicaSuelos } from "../../hooks/useTarifasVigentes";
 
 interface StepMecanicaSuelosLiquidacionProps {
   methods: UseFormReturn<FieldValues>;
@@ -35,11 +27,9 @@ interface StepMecanicaSuelosLiquidacionProps {
   isLoadingMunicipalidades: boolean;
   /** Cotizar mutation */
   cotizarMutation: {
-    mutateAsync: (payload: {
-      area_solicitada: number;
-      municipalidad_id: string;
-      tarifas_ids: string[];
-    }) => Promise<CotizacionMecanicaSuelosResponse>;
+    mutateAsync: (
+      payload: { area_solicitada: number; tarifas_ids: string[] },
+    ) => Promise<CotizacionMecanicaSuelosResponse>;
     isPending: boolean;
   };
   quote: CotizacionMecanicaSuelosResponse | null;
@@ -80,24 +70,21 @@ export function StepMecanicaSuelosLiquidacion({
   const watchedAreaSolicitada = watch("area_solicitada");
 
   // Fetch tarifas vigentes específicas para MS
-  const { data: tarifasVigentes, isLoading: isLoadingTarifas } =
-    useTarifasVigentesMecanicaSuelos();
+  const { data: tarifasVigentes, isLoading: isLoadingTarifas } = useTarifasVigentesMecanicaSuelos();
 
   const latestRef = useRef({ watchedMunicipalidadId, watchedAreaSolicitada });
   latestRef.current = { watchedMunicipalidadId, watchedAreaSolicitada };
 
-  const hasValidMunicipalidad =
-    !!watchedMunicipalidadId && watchedMunicipalidadId.length > 0;
+  const hasValidMunicipalidad = !!watchedMunicipalidadId && watchedMunicipalidadId.length > 0;
   const hasValidArea = Number(watchedAreaSolicitada) > 0;
   const hasValidTarifas = store.selectedTarifasIds.length >= 1;
-  const canCotizar = hasValidMunicipalidad && hasValidArea && hasValidTarifas;
+  // Cotizar solo requiere área + tarifas; municipalidad es para creación final
+  const canCotizar = hasValidArea && hasValidTarifas;
 
   const runCotizacion = useCallback(async () => {
     const l = latestRef.current;
     if (!canCotizar) {
-      notify.error(
-        "Completa los campos requeridos y selecciona al menos una tarifa antes de cotizar",
-      );
+      notify.error("Completa los campos requeridos y selecciona al menos una tarifa antes de cotizar");
       return;
     }
     setCotizacionError(null);
@@ -105,26 +92,17 @@ export function StepMecanicaSuelosLiquidacion({
     try {
       const result = await cotizarMutation.mutateAsync({
         area_solicitada: Number(l.watchedAreaSolicitada),
-        municipalidad_id: l.watchedMunicipalidadId as string,
         tarifas_ids: store.selectedTarifasIds,
       });
       setCotizacionQuote(result);
     } catch (e: unknown) {
-      const msg =
-        e instanceof Error ? e.message : "Error al calcular la cotización";
+      const msg = e instanceof Error ? e.message : "Error al calcular la cotización";
       setCotizacionError(msg);
       notify.error(msg);
     } finally {
       setCotizacionCalculating(false);
     }
-  }, [
-    canCotizar,
-    cotizarMutation,
-    setCotizacionCalculating,
-    setCotizacionError,
-    setCotizacionQuote,
-    store.selectedTarifasIds,
-  ]);
+  }, [canCotizar, cotizarMutation, setCotizacionCalculating, setCotizacionError, setCotizacionQuote, store.selectedTarifasIds]);
 
   // Auto-select only enabled tariff when list loads and nothing is selected yet
   useEffect(() => {
@@ -138,12 +116,7 @@ export function StepMecanicaSuelosLiquidacion({
         store.setSelectedTarifasId(enabledTarifas[0].tarifa_id);
       }
     }
-  }, [
-    tarifasVigentes,
-    store.selectedTarifasIds.length,
-    store,
-    store.selectedTarifasIds,
-  ]);
+  }, [tarifasVigentes, store.selectedTarifasIds.length, store, store.selectedTarifasIds]);
 
   const handleSelectTarifa = useCallback(
     (tarifaId: string) => {
@@ -159,11 +132,7 @@ export function StepMecanicaSuelosLiquidacion({
       <div className="flex flex-col md:flex-row gap-4 min-w-0">
         {/* Columna 1: Datos de Liquidación */}
         <div className="flex-1 min-w-0 rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-hidden">
-          <FormSectionHeader
-            title="Datos de Liquidación"
-            icon={Banknote}
-            variant="soft"
-          />
+          <FormSectionHeader title="Datos de Liquidación" icon={Banknote} variant="soft" />
 
           <div className="flex flex-col gap-4 min-w-0">
             <GenericInput
@@ -172,9 +141,7 @@ export function StepMecanicaSuelosLiquidacion({
                 label: "Municipalidad",
                 type: "searchable-select",
                 required: true,
-                placeholder: isLoadingMunicipalidades
-                  ? "Cargando..."
-                  : "Seleccione municipalidad",
+                placeholder: isLoadingMunicipalidades ? "Cargando..." : "Seleccione municipalidad",
                 options: (municipalidades || []).map((m) => ({
                   label: formatMunicipalidadLabel(m),
                   value: m.id,
@@ -251,11 +218,7 @@ export function StepMecanicaSuelosLiquidacion({
 
         {/* Columna 2: Cotización */}
         <div className="flex-1 min-w-0 rounded-xl border border-primary/20 bg-card p-4 space-y-4 overflow-hidden">
-          <FormSectionHeader
-            title="Cotización"
-            icon={Calculator}
-            variant="soft"
-          />
+          <FormSectionHeader title="Cotización" icon={Calculator} variant="soft" />
           <MecanicaSuelosCotizacionDisplay quote={quote} />
           <button
             type="button"
@@ -264,18 +227,11 @@ export function StepMecanicaSuelosLiquidacion({
             className="w-full h-10 rounded-xl font-semibold border border-border/60 hover:border-border hover:bg-background transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Calculator className="h-4 w-4" />
-            {cotizarMutation.isPending
-              ? "Calculando..."
-              : "Calcular cotización"}
+            {cotizarMutation.isPending ? "Calculando..." : "Calcular cotización"}
           </button>
           {!canCotizar && !cotizarMutation.isPending && (
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              {!hasValidMunicipalidad && (
-                <span>• Selecciona una municipalidad</span>
-              )}
-              {!hasValidArea && (
-                <span>• Ingresa un área válida (mayor a 0)</span>
-              )}
+              {!hasValidArea && <span>• Ingresa un área válida (mayor a 0)</span>}
               {!hasValidTarifas && <span>• Agrega al menos una tarifa</span>}
             </div>
           )}
@@ -298,8 +254,7 @@ function MecanicaSuelosCotizacionDisplay({
   if (!quote) {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground italic">
-        Presiona &quot;Calcular cotización&quot; para ver el resumen del
-        cálculo.
+        Presiona &quot;Calcular cotización&quot; para ver el resumen del cálculo.
       </div>
     );
   }
@@ -307,11 +262,9 @@ function MecanicaSuelosCotizacionDisplay({
   return (
     <div className="space-y-3 border-t pt-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <span className="text-sm font-medium">
-          Revisión #{quote.numero_revision}
-        </span>
+        <span className="text-sm font-medium">Revisión #{quote.numero_revision}</span>
         <span className="text-xs text-muted-foreground">
-          UIT: S/ {quote._metadata.uit_valor.toFixed(2)}
+          UIT: S/ {quote._metadata?.uit_valor?.toFixed(2) ?? "—"}
         </span>
       </div>
 
@@ -321,12 +274,6 @@ function MecanicaSuelosCotizacionDisplay({
             <span>Área solicitada</span>
             <span className="font-semibold text-foreground">
               {quote.calculo_m2.area_solicitada.toLocaleString("es-PE")} m²
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Área base cálculo</span>
-            <span className="font-semibold text-foreground">
-              {quote.calculo_m2.area_base_calculo.toLocaleString("es-PE")} m²
             </span>
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -341,27 +288,15 @@ function MecanicaSuelosCotizacionDisplay({
       <div className="grid grid-cols-2 gap-3 border-t border-border pt-3">
         <div className="flex flex-col gap-1 text-sm">
           <span className="text-muted-foreground text-xs">Subtotal</span>
-          <span className="font-medium">
-            {formatSoles(quote.totales.subtotal)}
-          </span>
-        </div>
-        <div className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground text-xs">
-            IGV ({quote._metadata.igv_valor * 100}%)
-          </span>
-          <span className="font-medium">{formatSoles(quote.totales.igv)}</span>
+          <span className="font-medium">{formatSoles(quote.totales.subtotal)}</span>
         </div>
         <div className="flex flex-col gap-1 text-sm">
           <span className="text-muted-foreground text-xs">Total</span>
-          <span className="font-medium">
-            {formatSoles(quote.totales.total)}
-          </span>
+          <span className="font-medium">{formatSoles(quote.totales.total)}</span>
         </div>
         <div className="flex flex-col gap-1.5 text-base font-bold p-3 rounded-lg border border-primary bg-primary/5">
           <span className="text-primary text-xs">Total a Pagar</span>
-          <span className="text-primary text-lg">
-            {formatSoles(quote.totales.total_a_pagar)}
-          </span>
+          <span className="text-primary text-lg">{formatSoles(quote.totales.total_a_pagar)}</span>
         </div>
       </div>
     </div>
@@ -378,9 +313,8 @@ function TarifasSelectorMecanicaSuelos({
 }: {
   tarifas: Array<{
     tarifa_id: string;
-    detalle_id: string;
     costo_por_m2: number;
-    area_minima: number;
+    area_m2: number;
     derecho_minimo: number;
     derecho_maximo: number | null;
     habilitada: boolean;
@@ -447,10 +381,7 @@ function TarifasSelectorMecanicaSuelos({
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex flex-col gap-0.5 min-w-0">
                     <span className="text-xs font-semibold text-foreground truncate">
-                      S/ {tarifa.costo_por_m2.toFixed(2)}/m²
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      Área mín: {tarifa.area_minima.toLocaleString("es-PE")} m²
+                      {tarifa.costo_por_m2 != null ? `S/ ${tarifa.costo_por_m2.toFixed(2)}/m²` : "—"}
                     </span>
                   </div>
                   <div className="flex flex-col gap-0.5 items-end shrink-0">

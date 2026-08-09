@@ -33,6 +33,7 @@ export function useIngenieroHabilitado(cip: string | null) {
     queryOptions: {
       enabled: !!cip && cip.length >= 3 && cip.length <= 6,
       staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: false, // Disable retries — service errors should not retry
       select: (data) => {
         if (!data.data) {
           return null;

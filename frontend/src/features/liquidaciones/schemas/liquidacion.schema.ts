@@ -101,9 +101,10 @@ const especialidadOutSchema = z.object({
 /** Tarifa anidada en revisión */
 const tarifaOutSchema = z.object({
   id: z.string(),
-  derecho_minimo: z.union([z.string(), z.number()]),
-  derecho_maximo: z.union([z.string(), z.number(), z.null()]),
-  porcentaje_minimo_uit: z.union([z.string(), z.number()]),
+  derecho_minimo: z.number().nullable(),
+  derecho_maximo: z.number().nullable(),
+  porcentaje_minimo_uit: z.number().nullable(),
+  porcentaje_liquidacion: z.number(),
 });
 
 /** Revisión anidada en edificaciones */
@@ -111,8 +112,6 @@ const revisionOutSchema = z.object({
   id: z.string(),
   especialidades: z.array(especialidadOutSchema),
   tarifa: tarifaOutSchema,
-  monto_base: z.union([z.number(), z.string()]),
-  cobra: z.boolean(),
 });
 
 /** Entidad anidada en proyecto */
@@ -211,6 +210,7 @@ export const liquidacionEdificacionOutPayloadSchema = z.object({
   id: z.string(),
   public_id: z.string(),
   estado: z.string(),
+  tipo_liquidacion: z.string(),
   fecha_registro: z.string(),
   expediente: z.string().nullable(),
   observacion: z.string().nullable(),
@@ -329,12 +329,7 @@ const liquidacionSnapshotPayloadSchema = z.object({
         ),
         tarifa: z.object({
           id: z.string(),
-          derecho_minimo: z.union([z.string(), z.number()]),
-          derecho_maximo: z.union([z.string(), z.number(), z.null()]),
-          porcentaje_minimo_uit: z.union([z.string(), z.number()]),
         }),
-        monto_base: z.union([z.number(), z.string()]),
-        cobra: z.boolean(),
       }),
     ),
   }),
@@ -470,13 +465,7 @@ const liquidacionSnapshotListPayloadSchema = z.object({
             ),
             tarifa: z.object({
               id: z.string(),
-              derecho_minimo: z.union([z.string(), z.number()]),
-              derecho_maximo: z.union([z.string(), z.number(), z.null()]),
-              porcentaje_minimo_uit: z.union([z.string(), z.number()]),
             }),
-            monto_base: z.union([z.number(), z.string()]),
-            cobra: z.boolean(),
-            derecho: z.union([z.number(), z.string()]).nullish(),
           }),
         ),
       }),
@@ -519,9 +508,6 @@ const cotizacionQuotePayloadSchema = z.object({
       ),
       tarifa: z.object({
         id: z.string(),
-        derecho_minimo: z.number(),
-        derecho_maximo: z.number().nullable(),
-        porcentaje_minimo_uit: z.number(),
       }),
       monto_base: z.number(),
       cobra: z.boolean(),
@@ -568,6 +554,8 @@ export const cotizacionNuevaRevisionPayloadSchema = z.object({
   revisiones_ids: z
     .array(z.string().uuid())
     .min(1, "Debe seleccionar al menos una revisión"),
+  /** Tipo de trámite — opcional; si se omite el backend hereda de la liquidación previa */
+  tipo_tramite: z.string().optional(),
 });
 
 /** Wrapper schema for cotizar nueva revision request */

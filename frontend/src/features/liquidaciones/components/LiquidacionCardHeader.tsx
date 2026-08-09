@@ -1,13 +1,9 @@
 "use client";
 
 import { Calendar, ChevronDown, FileText } from "lucide-react";
-import { CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import {
-  formatCurrency,
-  formatDate,
-  getEstadoBadgeClass,
-} from "./LiquidacionGeneralCard";
+import { CollapsibleTrigger } from "@/components/ui/collapsible";
+import { getEstadoBadgeClass, formatDate, formatCurrency } from "./LiquidacionGeneralCard";
 
 export interface LiquidacionCardHeaderData {
   public_id: string;
@@ -22,21 +18,18 @@ export interface LiquidacionCardHeaderData {
 interface LiquidacionCardHeaderProps {
   data: LiquidacionCardHeaderData;
   rightSlotChildren?: React.ReactNode;
+  /**
+   * Optional display-only version of public_id.
+   * When provided, this is shown in the UI instead of public_id.
+   * Does not affect rightSlotChildren or other logic — only visual display.
+   * Use this to strip prefixes (e.g., "LIQ-") from the display without
+   * changing backend data.
+   */
+  displayPublicId?: string;
 }
 
-export function LiquidacionCardHeader({
-  data,
-  rightSlotChildren,
-}: LiquidacionCardHeaderProps) {
-  const {
-    public_id,
-    estado,
-    fecha_registro,
-    proyectoNombre,
-    kindBadge,
-    expediente,
-    total,
-  } = data;
+export function LiquidacionCardHeader({ data, rightSlotChildren, displayPublicId }: LiquidacionCardHeaderProps) {
+  const { public_id, estado, fecha_registro, proyectoNombre, kindBadge, expediente, total } = data;
 
   return (
     <CollapsibleTrigger className="w-full px-5 py-4 bg-gradient-to-r from-muted/40 via-muted/20 to-transparent border-b border-border/60 text-left hover:bg-muted/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
@@ -48,7 +41,7 @@ export function LiquidacionCardHeader({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-lg font-black text-foreground tracking-tight">
-                {public_id}
+                {displayPublicId ?? public_id}
               </h3>
               <span
                 className={cn(
@@ -66,9 +59,7 @@ export function LiquidacionCardHeader({
                   <span className="text-xs text-muted-foreground truncate max-w-[280px]">
                     {proyectoNombre}
                   </span>
-                  <span className="text-xs text-muted-foreground/60 hidden sm:inline">
-                    •
-                  </span>
+                  <span className="text-xs text-muted-foreground/60 hidden sm:inline">•</span>
                 </>
               )}
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/60 border border-border/80 text-xs font-semibold text-secondary-foreground-foreground">

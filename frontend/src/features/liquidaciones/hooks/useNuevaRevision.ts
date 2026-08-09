@@ -42,6 +42,7 @@ export function useNuevaRevisionFormulario(
     schema: nuevaRevisionFormularioResponseSchema,
     queryOptions: {
       enabled: enabled && !!liquidacionPreviaId,
+      retry: false,
       staleTime: 1000 * 60 * 5, // 5 minutes
       select: (data) => data.data ?? null,
     },
@@ -83,7 +84,7 @@ export function useCrearNuevaRevision() {
       payload: NuevaRevisionFormData,
     ): Promise<LiquidacionEdificacionOut> => {
       const result = await mutation.mutateAsync(payload);
-      return (result as { data: LiquidacionEdificacionOut }).data;
+      return (result as unknown as { data: LiquidacionEdificacionOut }).data;
     },
   };
 

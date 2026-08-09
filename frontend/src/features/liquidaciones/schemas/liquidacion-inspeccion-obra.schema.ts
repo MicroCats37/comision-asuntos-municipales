@@ -4,7 +4,12 @@
  */
 import { z } from "zod";
 import { apiResponseSchema } from "@/types/api.types";
-import { contactoInlineSchema } from "./liquidacion-edificaciones-form.schema";
+import { contactoInlineSchema, proyectistaInlineSchema } from "./liquidacion-edificaciones-form.schema";
+import {
+  liquidacionGeneralListItemPayloadSchema,
+  paginatedLiquidacionGeneralListPayloadSchema,
+  variablesFinancierasUsadasSchema,
+} from "./liquidacion-general.schema";
 
 // ── Inner Schemas (data fields only) ─────────────────────────────────────────
 
@@ -49,26 +54,50 @@ export const proyectoXorIOSchema = z
  */
 export const categoriaIOSchema = z.enum(["C1", "C2", "C3", "C4"]);
 
+const cantidadVisitasSchema = z
+  .union([z.number(), z.nan()])
+  .refine((value) => Number.isFinite(value), {
+    message: "Cantidad de visitas es requerida",
+  })
+  .pipe(
+    z
+      .number()
+      .int("Cantidad de visitas debe ser un número entero")
+      .min(1, "Cantidad de visitas debe ser al menos 1"),
+  );
+
 // ── Primera Revisión Schema ──────────────────────────────────────────────────
 
 /**
- * Schema para primera revisión de Inspección de Obra.
+ * Schema para primera revisión de Inspección de Obra basada en liquidación previa.
+ *
+ * Phase 1+: liquidacion_previa_id es requerido.
+ * Los campos proyecto_public_id, proyecto_inline y municipalidad_id son opcionales
+ * (deprecated) porque se ignoran en la creación — se derivan de la previa.
  */
 export const primeraRevisionInspeccionObraSchema = z.object({
-  // XOR: uno de los dos es requerido
-  proyecto_public_id: z.string().min(1, "Proyecto es requerido").optional(),
+  // Phase 1+: opcional por ahora para compatibilidad con UI existente
+  // Phase 5+ lo hará requerido cuando la UI envíe este campo
+  liquidacion_previa_id: z.string().uuid("Liquidación previa es requerida").optional(),
+  // DEPRECATED: se ignoran en la creación (se derivan de liquidacion_previa)
+  proyecto_public_id: z.string().optional(),
   proyecto_inline: proyectoInlineIOSchema.optional(),
-  municipalidad_id: z.string().uuid("Municipalidad es requerida"),
-  cantidad_visitas: z
-    .number()
-    .int("Cantidad de visitas debe ser un número entero")
-    .positive("Cantidad de visitas debe ser al menos 1"),
+  municipalidad_id: z.string().uuid().optional(),
+  cantidad_visitas: cantidadVisitasSchema,
   categoria: categoriaIOSchema,
   expediente: z.string().optional(),
   observacion: z.string().optional(),
   tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
+  proyectistas: z.array(proyectistaInlineSchema).default([]),
   contactos: z.array(contactoInlineSchema).default([]),
 });
+
+/**
+ * Schema para buscar liquidaciones previas de IO.
+ * Endpoint: GET /liquidaciones/inspeccion-obra/buscar-previas
+ * Usa liquidacionInspeccionObraListItemSchema para los items.
+ */
+export type BuscarLiquidacionesPreviasIOData = z.infer<typeof liquidacionInspeccionObraListItemSchema>;
 
 export type PrimeraRevisionInspeccionObraData = z.infer<typeof primeraRevisionInspeccionObraSchema>;
 
@@ -76,12 +105,9 @@ export type PrimeraRevisionInspeccionObraData = z.infer<typeof primeraRevisionIn
 
 /** Payload para cotizar primera revisión */
 export const cotizarInspeccionObraPayloadSchema = z.object({
-  cantidad_visitas: z
-    .number()
-    .int("Cantidad de visitas debe ser un número entero")
-    .positive("Cantidad de visitas debe ser al menos 1"),
+  cantidad_visitas: cantidadVisitasSchema,
   categoria: categoriaIOSchema,
-  municipalidad_id: z.string().uuid("Municipalidad es requerida"),
+  // municipalidad_id NO es requerida para cotizar; solo para creación final
   tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
 });
 
@@ -135,31 +161,6 @@ const cotizacionIOPayloadSchema = z.object({
 /** Wrapper para respuesta de cotización */
 export const cotizacionIOResponseSchema =
   apiResponseSchema(cotizacionIOPayloadSchema);
-
-// ── Crear Liquidación Response Schema ────────────────────────────────────────
-
-/** Payload para respuesta de creación */
-const crearInspeccionObraPayloadSchema = z.object({
-  liquidacion: z.object({
-    id: z.string(),
-    public_id: z.string(),
-    estado: z.string(),
-    fecha_creacion: z.string(),
-    expediente: z.string().nullable(),
-    observacion: z.string().nullable(),
-  }),
-  totales: z.object({
-    subtotal: z.number(),
-    igv: z.number(),
-    total: z.number(),
-    liquidacion_total: z.number(),
-    total_a_pagar: z.number(),
-  }),
-});
-
-/** Wrapper para respuesta de creación */
-export const crearInspeccionObraResponseSchema =
-  apiResponseSchema(crearInspeccionObraPayloadSchema);
 
 // ── List Response Schemas ─────────────────────────────────────────────────────
 
@@ -223,6 +224,20 @@ const delegadoListItemSchema = z.object({
   tipo: z.string().nullable(),
 });
 
+const inspectorListItemSchema = z.object({
+  id: z.string(),
+  perfil_ingeniero_id: z.string().nullable(),
+  perfil_ingeniero_nombres: z.string().nullable(),
+  perfil_ingeniero_apellidos: z.string().nullable(),
+  perfil_ingeniero_cip: z.string().nullable(),
+  especialidad_id: z.string().nullable(),
+  especialidad_nombre: z.string().nullable(),
+  tipo_liquidacion: z.string().nullable(),
+  categoria: z.number().nullable(),
+  numero_registro: z.string().nullable(),
+  vigencia: z.string().nullable(),
+});
+
 const contactoListItemSchema = z.object({
   id: z.string(),
   nombres: z.string().nullable(),
@@ -239,9 +254,16 @@ const contactoListItemSchema = z.object({
 
 const tarifaRevisionListItemSchema = z.object({
   id: z.string(),
+  costo_por_m2: z.number().nullable(),
+  area_m2: z.number().nullable(),
   derecho_minimo: z.number().nullable(),
   derecho_maximo: z.number().nullable(),
   porcentaje_minimo_uit: z.number().nullable(),
+  porcentaje_liquidacion: z.number().nullable(),
+  costo_por_visita: z.number().nullable(),
+  visitas_minimas: z.number().nullable(),
+  cantidad_visitas: z.number().nullable(),
+  categoria: z.string().nullable(),
 });
 
 const especialidadRevisionListItemSchema = z.object({
@@ -253,8 +275,6 @@ const revisionListItemSchema = z.object({
   id: z.string(),
   especialidades: z.array(especialidadRevisionListItemSchema),
   tarifa: tarifaRevisionListItemSchema,
-  monto_base: z.number(),
-  cobra: z.boolean(),
 });
 
 /** Item de lista */
@@ -265,22 +285,16 @@ const liquidacionInspeccionObraListItemSchema = z.object({
   tipo_liquidacion: z.string(),
   numero_revision: z.number(),
   fecha_registro: z.string(),
-  tramite_accion: z.string().nullable(),
-  tipo_tramite: z.string().nullable(),
-  expediente: z.string().nullable(),
-  observacion: z.string().nullable(),
   proyecto: proyectoListItemSchema,
   entidad: entidadListItemSchema,
   municipalidad: municipalidadListItemSchema,
   valores: valoresListItemSchema,
   proyectistas: z.array(proyectistaListItemSchema),
   delegados: z.array(delegadoListItemSchema),
+  inspectores: z.array(inspectorListItemSchema).default([]),
   contactos: z.array(contactoListItemSchema),
   revisiones: z.array(revisionListItemSchema),
-  subtotal: z.number(),
-  igv: z.number(),
-  total: z.number(),
-  total_a_pagar: z.number(),
+  variables_financieras_usadas: variablesFinancierasUsadasSchema.nullable(),
 });
 
 /** Payload para respuesta de lista */
@@ -297,6 +311,20 @@ export const liquidacionesInspeccionObraResponseSchema = apiResponseSchema(
   liquidacionesInspeccionObraPayloadSchema,
 );
 
+/** Wrapper para respuesta de detalle (single item) */
+export const liquidacionInspeccionObraDetailResponseSchema = apiResponseSchema(
+  liquidacionInspeccionObraListItemSchema,
+);
+
+// ── Crear Liquidación Response Schema ────────────────────────────────────────
+
+/** Payload para respuesta de creación — flat list item structure */
+const crearInspeccionObraPayloadSchema = liquidacionInspeccionObraListItemSchema;
+
+/** Wrapper para respuesta de creación */
+export const crearInspeccionObraResponseSchema =
+  apiResponseSchema(crearInspeccionObraPayloadSchema);
+
 // ── Form Step Schemas ──────────────────────────────────────────────────────────
 
 /**
@@ -304,10 +332,7 @@ export const liquidacionesInspeccionObraResponseSchema = apiResponseSchema(
  */
 export const stepInspeccionObraSchema = z.object({
   municipalidad_id: z.string().uuid("Debe seleccionar una municipalidad"),
-  cantidad_visitas: z
-    .number()
-    .int("Cantidad de visitas debe ser un número entero")
-    .positive("Cantidad de visitas debe ser al menos 1"),
+  cantidad_visitas: cantidadVisitasSchema,
   categoria: categoriaIOSchema,
   expediente: z.string().optional(),
   observacion: z.string().optional(),
@@ -320,7 +345,6 @@ export type StepInspeccionObraData = z.infer<typeof stepInspeccionObraSchema>;
 /** Tarifa vigente en respuesta del endpoint */
 const tarifaVigenteInspeccionObraSchema = z.object({
   tarifa_id: z.string(),
-  detalle_id: z.string(),
   costo_por_visita: z.number(),
   visitas_minimas: z.number(),
   categoria: z.string(),
@@ -332,4 +356,15 @@ export const tarifasVigentesInspeccionObraResponseSchema = apiResponseSchema(
   z.object({
     tarifas: z.array(tarifaVigenteInspeccionObraSchema),
   }),
+);
+
+// ── Buscar Previas Schemas ───────────────────────────────────────────────────
+
+/**
+ * Schema para búsqueda de liquidaciones previas de IO.
+ * Ahora reutiliza el schema de lista general (LiquidacionGeneralListItemOut).
+ * Endpoint: GET /liquidaciones/inspeccion-obra/buscar-previas
+ */
+export const buscarLiquidacionesPreviasIOResponseSchema = apiResponseSchema(
+  paginatedLiquidacionGeneralListPayloadSchema,
 );

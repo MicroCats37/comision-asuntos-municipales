@@ -15,6 +15,7 @@ import { cotizacionImpactoVialResponseSchema } from "../schemas/liquidacion-impa
 import { crearImpactoVialResponseSchema } from "../schemas/liquidacion-impacto-vial.schema";
 import { liquidacionesImpactoVialResponseSchema } from "../schemas/liquidacion-impacto-vial.schema";
 import { tarifasVigentesImpactoVialResponseSchema } from "../schemas/liquidacion-impacto-vial.schema";
+import type { LiquidacionGeneralOut } from "../types/liquidacion-general";
 
 const BASE_URL = "/liquidaciones/impacto-vial";
 
@@ -63,9 +64,9 @@ export const impactoVialService = {
    */
   async obtenerLiquidacion(
     liquidacionId: string,
-  ): Promise<CrearImpactoVialResponse> {
+  ): Promise<LiquidacionGeneralOut> {
     const { data } = await api.get(`${BASE_URL}/${liquidacionId}`);
-    return (data as { data: CrearImpactoVialResponse }).data;
+    return (data as { data: LiquidacionGeneralOut }).data;
   },
 
   /**

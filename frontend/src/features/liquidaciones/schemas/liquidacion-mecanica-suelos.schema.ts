@@ -4,7 +4,7 @@
  */
 import { z } from "zod";
 import { apiResponseSchema } from "@/types/api.types";
-import { contactoInlineSchema } from "./liquidacion-edificaciones-form.schema";
+import { contactoInlineSchema, proyectistaInlineSchema } from "./liquidacion-edificaciones-form.schema";
 
 // ── Inner Schemas (data fields only) ──────────────────────────────────────────
 
@@ -56,6 +56,7 @@ export const primeraRevisionMecanicaSuelosSchema = z.object({
   expediente: z.string().optional(),
   observacion: z.string().optional(),
   tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
+  proyectistas: z.array(proyectistaInlineSchema).default([]),
   contactos: z.array(contactoInlineSchema).default([]),
 });
 
@@ -63,10 +64,9 @@ export type PrimeraRevisionMecanicaSuelosData = z.infer<typeof primeraRevisionMe
 
 // ── Cotizar Schemas ────────────────────────────────────────────────────────────
 
-/** Payload para cotizar primera revisión */
+/** Payload para cotizar primera revisión — municipalidad NO requerida para cotizar; solo para creación final */
 export const cotizarMecanicaSuelosPayloadSchema = z.object({
   area_solicitada: z.number().positive("El área debe ser positiva"),
-  municipalidad_id: z.string().uuid("Municipalidad es requerida"),
   tarifas_ids: z.array(z.string().uuid()).min(1, "Debe seleccionar al menos una tarifa"),
 });
 
@@ -97,7 +97,7 @@ const cotizacionMecanicaSuelosMetadataSchema = z.object({
 const cotizacionMecanicaSuelosTarifaSchema = z.object({
   id: z.string(),
   costo_por_m2: z.number(),
-  area_minima: z.number(),
+  area_m2: z.number(),
   derecho_minimo: z.number(),
   derecho_maximo: z.number().nullable(),
 });
@@ -121,31 +121,6 @@ const cotizacionMecanicaSuelosPayloadSchema = z.object({
 /** Wrapper para respuesta de cotización */
 export const cotizacionMecanicaSuelosResponseSchema =
   apiResponseSchema(cotizacionMecanicaSuelosPayloadSchema);
-
-// ── Crear Liquidación Response Schema ────────────────────────────────────────
-
-/** Payload para respuesta de creación */
-const crearMecanicaSuelosPayloadSchema = z.object({
-  liquidacion: z.object({
-    id: z.string(),
-    public_id: z.string(),
-    estado: z.string(),
-    fecha_creacion: z.string(),
-    expediente: z.string().nullable(),
-    observacion: z.string().nullable(),
-  }),
-  totales: z.object({
-    subtotal: z.number(),
-    igv: z.number(),
-    total: z.number(),
-    liquidacion_total: z.number(),
-    total_a_pagar: z.number(),
-  }),
-});
-
-/** Wrapper para respuesta de creación */
-export const crearMecanicaSuelosResponseSchema =
-  apiResponseSchema(crearMecanicaSuelosPayloadSchema);
 
 // ── List Response Schemas ─────────────────────────────────────────────────────
 
@@ -180,7 +155,8 @@ const municipalidadListItemSchema = z.object({
   distrito: z.null(),
 });
 
-const valoresListItemSchema = z.object({
+/** Schema for M2 list items — includes igv/total for percentage-based types */
+const valoresM2ListItemSchema = z.object({
   subtotal: z.number(),
   igv: z.number(),
   total: z.number(),
@@ -225,9 +201,15 @@ const contactoListItemSchema = z.object({
 
 const tarifaRevisionListItemSchema = z.object({
   id: z.string(),
+  costo_por_m2: z.number().nullable(),
+  area_m2: z.number().nullable(),
   derecho_minimo: z.number().nullable(),
   derecho_maximo: z.number().nullable(),
   porcentaje_minimo_uit: z.number().nullable(),
+  porcentaje_liquidacion: z.number().nullable(),
+  costo_por_visita: z.number().nullable(),
+  visitas_minimas: z.number().nullable(),
+  categoria: z.string().nullable(),
 });
 
 const especialidadRevisionListItemSchema = z.object({
@@ -239,8 +221,6 @@ const revisionListItemSchema = z.object({
   id: z.string(),
   especialidades: z.array(especialidadRevisionListItemSchema),
   tarifa: tarifaRevisionListItemSchema,
-  monto_base: z.number(),
-  cobra: z.boolean(),
 });
 
 /** Item de lista */
@@ -251,22 +231,14 @@ const liquidacionMecanicaSuelosListItemSchema = z.object({
   tipo_liquidacion: z.string(),
   numero_revision: z.number(),
   fecha_registro: z.string(),
-  tramite_accion: z.string().nullable(),
-  tipo_tramite: z.string().nullable(),
-  expediente: z.string().nullable(),
-  observacion: z.string().nullable(),
   proyecto: proyectoListItemSchema,
   entidad: entidadListItemSchema,
   municipalidad: municipalidadListItemSchema,
-  valores: valoresListItemSchema,
+  valores: valoresM2ListItemSchema,
   proyectistas: z.array(proyectistaListItemSchema),
   delegados: z.array(delegadoListItemSchema),
   contactos: z.array(contactoListItemSchema),
   revisiones: z.array(revisionListItemSchema),
-  subtotal: z.number(),
-  igv: z.number(),
-  total: z.number(),
-  total_a_pagar: z.number(),
 });
 
 /** Payload para respuesta de lista */
@@ -282,6 +254,20 @@ const liquidacionesMecanicaSuelosPayloadSchema = z.object({
 export const liquidacionesMecanicaSuelosResponseSchema = apiResponseSchema(
   liquidacionesMecanicaSuelosPayloadSchema,
 );
+
+/** Wrapper para respuesta de detalle (single item) */
+export const liquidacionMecanicaSuelosDetailResponseSchema = apiResponseSchema(
+  liquidacionMecanicaSuelosListItemSchema,
+);
+
+// ── Crear Liquidación Response Schema ────────────────────────────────────────
+
+/** Payload para respuesta de creación — flat list item structure */
+const crearMecanicaSuelosPayloadSchema = liquidacionMecanicaSuelosListItemSchema;
+
+/** Wrapper para respuesta de creación */
+export const crearMecanicaSuelosResponseSchema =
+  apiResponseSchema(crearMecanicaSuelosPayloadSchema);
 
 // ── Form Step Schemas ──────────────────────────────────────────────────────────
 
@@ -304,9 +290,8 @@ export type StepMecanicaSuelosData = z.infer<typeof stepMecanicaSuelosSchema>;
 /** Tarifa vigente en respuesta del endpoint */
 const tarifaVigenteMecanicaSuelosSchema = z.object({
   tarifa_id: z.string(),
-  detalle_id: z.string(),
   costo_por_m2: z.number(),
-  area_minima: z.number(),
+  area_m2: z.number(),
   derecho_minimo: z.number(),
   derecho_maximo: z.number().nullable(),
   habilitada: z.boolean(),

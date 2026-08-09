@@ -15,6 +15,7 @@ import { cotizacionTaludesResponseSchema } from "../schemas/liquidacion-taludes.
 import { crearTaludesResponseSchema } from "../schemas/liquidacion-taludes.schema";
 import { liquidacionesTaludesResponseSchema } from "../schemas/liquidacion-taludes.schema";
 import { tarifasVigentesTaludesResponseSchema } from "../schemas/liquidacion-taludes.schema";
+import type { LiquidacionGeneralOut } from "../types/liquidacion-general";
 
 const BASE_URL = "/liquidaciones/taludes";
 
@@ -63,9 +64,9 @@ export const taludesService = {
    */
   async obtenerLiquidacion(
     liquidacionId: string,
-  ): Promise<CrearTaludesResponse> {
+  ): Promise<LiquidacionGeneralOut> {
     const { data } = await api.get(`${BASE_URL}/${liquidacionId}`);
-    return (data as { data: CrearTaludesResponse }).data;
+    return (data as { data: LiquidacionGeneralOut }).data;
   },
 
   /**

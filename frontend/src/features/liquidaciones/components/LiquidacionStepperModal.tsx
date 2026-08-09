@@ -14,8 +14,8 @@ import { useRevisionesVigentes } from "../hooks/useRevisionesVigentes";
 import { useVariablesFinancieras } from "../hooks/useVariablesFinancieras";
 import { liquidacionEdificacionFormSchema } from "../schemas/liquidacion-edificaciones-form.schema";
 import {
-  type LiquidacionStepperStore,
   useEdificacionStepperStore,
+  type LiquidacionStepperStore,
 } from "../store";
 import type { ContactoInline } from "../types/contacto";
 import type { LiquidacionEdificacionSubmitData } from "../types/liquidacion-edificaciones-form.types";
@@ -150,12 +150,10 @@ export function LiquidacionStepperModal({
     especialidadesData?.items
       ? [
           ...new Map(
-            especialidadesData.items
-              .map((esp) => ({
-                label: esp.nombre,
-                value: esp.id,
-              }))
-              .map((opt) => [opt.value, opt]),
+            especialidadesData.items.map((esp) => ({
+              label: esp.nombre,
+              value: esp.id,
+            })).map((opt) => [opt.value, opt]),
           ).values(),
         ]
       : [];
@@ -311,9 +309,7 @@ export function LiquidacionStepperModal({
           methods: UseFormReturn<FieldValues>;
           currentStep: number;
           isActive: boolean;
-        }) => (
-          <Step1Proyecto methods={methods} isActive={isActive} store={store} />
-        ),
+        }) => <Step1Proyecto methods={methods} isActive={isActive} store={store} />,
       },
 
       // ── Step 3: Personas ──────────────────────────────────────────────────────
@@ -517,7 +513,7 @@ export function LiquidacionStepperModal({
         cancelLabel="Cancelar"
         backLabel="Anterior"
         nextLabel="Siguiente"
-        preventClose={crearMutation.isPending}
+        preventClose={true}
       />
 
       {/* ── Modales hijos ─────────────────────────────────────────────────────

@@ -3,6 +3,55 @@
  * Estos tipos son compartidos por todos los tipos de liquidación.
  */
 
+// ── Base interface for Card components ─────────────────────────────────────────
+
+/**
+ * Base mínima que LiquidacionGeneralCard necesita para renderizar.
+ * Remove campos de Edificación (tipo_tramite, tramite_accion, expediente)
+ * y campos financieros duplicados al root.
+ */
+export interface LiquidacionCardBase {
+  id: string;
+  public_id: string;
+  estado: string;
+  tipo_liquidacion: string;
+  numero_revision: number;
+  fecha_registro: string;
+  proyecto: ProyectoListItem;
+  entidad: EntidadListItem | null;
+  municipalidad: MunicipalldadListItem;
+  valores: ValoresListItem | ValoresM2ListItem;
+  proyectistas: ProyectistaListItem[];
+  delegados: DelegadoListItem[];
+  inspectores?: InspectorListItem[];
+  contactos: ContactoListItem[];
+  revisiones: RevisionListItemBase[];
+  /** Expediente - solo presente en Edificacion, opcional para otros tipos */
+  expediente?: string | null;
+  /** Observacion - solo presente en Edificacion, opcional para otros tipos */
+  observacion?: string | null;
+}
+
+/**
+ * RevisionListItem sin monto_base/cobra - para uso en cards.
+ */
+export interface RevisionListItemBase {
+  id: string;
+  especialidades: EspecialidadRevisionListItem[];
+  tarifa: TarifaRevisionListItem | null;
+}
+
+/**
+ * Valores para M2 — coincide con ValoresListItemOut del backend.
+ * Incluye igv/total aunque el nombre sugiera M2-only.
+ */
+export interface ValoresM2ListItem {
+  subtotal: number;
+  igv: number;
+  total: number;
+  total_a_pagar: number;
+}
+
 // ── Nested sub-types ──────────────────────────────────────────────────────────
 
 export interface EntidadListItem {
@@ -21,7 +70,7 @@ export interface ProyectoListItem {
   entidad: EntidadListItem | null;
 }
 
-export interface MunicipalidadListItem {
+export interface MunicipalldadListItem {
   id: string;
   nombre: string;
   codigo: string | null;
@@ -58,6 +107,31 @@ export interface DelegadoListItem {
   tipo: string | null;
 }
 
+export interface InspectorListItem {
+  id: string;
+  perfil_ingeniero_id: string | null;
+  perfil_ingeniero_nombres: string | null;
+  perfil_ingeniero_apellidos: string | null;
+  perfil_ingeniero_cip: string | null;
+  especialidad_id: string | null;
+  especialidad_nombre: string | null;
+  tipo_liquidacion: string | null;
+  categoria: number | null;
+  numero_registro: string | null;
+  vigencia: string | null;
+}
+
+export interface InspectorVigente {
+  id: string;
+  nombre_completo: string;
+  cip: string;
+  especialidad: { id: string; nombre: string } | null;
+  tipo_liquidacion: string;
+  categoria: number | null;
+  numero_registro: string;
+  vigencia: string;
+}
+
 export interface ContactoListItem {
   id: string;
   nombres: string | null;
@@ -74,9 +148,20 @@ export interface ContactoListItem {
 
 export interface TarifaRevisionListItem {
   id: string;
-  derecho_minimo: number | null;
-  derecho_maximo: number | null;
-  porcentaje_minimo_uit: number | null;
+  // M2 fields (for HU, MS, IV, Taludes)
+  costo_por_m2?: number | null;
+  area_m2?: number | null;
+  derecho_minimo?: number | null;
+  derecho_maximo?: number | null;
+  // IO fields (for Inspeccion Obra)
+  costo_por_visita?: number | null;
+  visitas_minimas?: number | null;
+  categoria?: string | null;
+  // Edificacion fields (for porcentaje-based calculation)
+  porcentaje_liquidacion?: number | null;
+  porcentaje_minimo_uit?: number | null;
+  // IO: cantidad de visitas solicitada (populated by backend)
+  cantidad_visitas?: number | null;
 }
 
 export interface EspecialidadRevisionListItem {
@@ -88,8 +173,21 @@ export interface RevisionListItem {
   id: string;
   especialidades: EspecialidadRevisionListItem[];
   tarifa: TarifaRevisionListItem | null;
-  monto_base: number;
-  cobra: boolean;
+}
+
+// ── Variables financieras usadas ─────────────────────────────────────────────
+
+/**
+ * Variables financieras (IGV/UIT) usadas al momento de crear la liquidación.
+ * Historicas, almacenadas en la liquidacion via FK a IGV/UIT.
+ */
+export interface VariablesFinancierasUsadas {
+  igv_valor: number;       // Tasa IGV como decimal (ej. 0.18)
+  igv_porcentaje: number;  // Tasa IGV como porcentaje (ej. 18.0)
+  igv_periodo_inicio: string | null;  // YYYY-MM-DD
+  uit_valor: number;       // Valor UIT en soles
+  uit_anio: number | null;        // Año de la UIT (ej. 2026)
+  uit_periodo_inicio: string | null;  // YYYY-MM-DD
 }
 
 // ── Main list item type ──────────────────────────────────────────────────────
@@ -111,16 +209,18 @@ export interface LiquidacionGeneralListItem {
   observacion: string | null;
   proyecto: ProyectoListItem;
   entidad: EntidadListItem | null;
-  municipalidad: MunicipalidadListItem;
+  municipalidad: MunicipalldadListItem;
   valores: ValoresListItem;
   proyectistas: ProyectistaListItem[];
   delegados: DelegadoListItem[];
+  inspectores: InspectorListItem[];
   contactos: ContactoListItem[];
   revisiones: RevisionListItem[];
   subtotal: number;
   igv: number;
   total: number;
   total_a_pagar: number;
+  variables_financieras_usadas: VariablesFinancierasUsadas | null;
 }
 
 export interface PaginatedLiquidacionesGenerales {
@@ -129,4 +229,42 @@ export interface PaginatedLiquidacionesGenerales {
   page: number;
   page_size: number;
   total_pages: number;
+}
+
+// ── Detail types (LiquidacionGeneralOut) ──────────────────────────────────────
+
+export interface ProyectoGeneral {
+  id: string;
+  public_id: string;
+  nombre: string;
+  direccion: string | null;
+}
+
+export interface EntidadGeneral {
+  id: string | null;
+  tipo: string | null;
+  nombre: string | null;
+  ruc: string | null;
+}
+
+/**
+ * Detail response type for M2/IO liquidations.
+ * Matches LiquidacionGeneralOut from backend.
+ */
+export interface LiquidacionGeneralOut {
+  id: string;
+  public_id: string;
+  estado: string;
+  tipo_liquidacion: string;
+  numero_revision: number;
+  fecha_registro: string;
+  expediente: string | null;
+  observacion: string | null;
+  municipalidad_nombre: string | null;
+  proyecto: ProyectoGeneral | null;
+  entidad: EntidadGeneral | null;
+  subtotal: number;
+  igv: number;
+  total: number;
+  total_a_pagar: number;
 }
