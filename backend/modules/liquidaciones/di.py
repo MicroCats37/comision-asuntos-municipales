@@ -30,6 +30,18 @@ from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.
 from modules.liquidaciones.presentation.presenters.liquidacion_especifico.liquidacion_mecanica_suelos_presenter import (
     LiquidacionMecanicaSuelosPresenter,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_porcentaje_obra_core_service import (
+    LiquidacionPorcentajeObraCoreService,
+)
+from modules.liquidaciones.domain.services.flujos.liquidacion_especifico.liquidacion_edificaciones_flujo import (
+    LiquidacionEdificacionesFlujo,
+)
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.liquidacion_edificaciones_orchestrator import (
+    LiquidacionEdificacionesOrchestrator,
+)
+from modules.liquidaciones.presentation.presenters.liquidacion_especifico.liquidacion_edificaciones_presenter import (
+    LiquidacionEdificacionesPresenter,
+)
 
 
 class LiquidacionesModule(Module):
@@ -62,3 +74,15 @@ class LiquidacionesModule(Module):
 
         # Presenters — Mecánica de Suelos
         binder.bind(LiquidacionMecanicaSuelosPresenter, to=LiquidacionMecanicaSuelosPresenter)
+
+        # Core services — Tipo PorcentajeObra
+        binder.bind(LiquidacionPorcentajeObraCoreService, to=LiquidacionPorcentajeObraCoreService)
+
+        # Flujos — Edificaciones
+        binder.bind(LiquidacionEdificacionesFlujo, to=LiquidacionEdificacionesFlujo)
+
+        # Orchestrators — Edificaciones
+        binder.bind(LiquidacionEdificacionesOrchestrator, to=LiquidacionEdificacionesOrchestrator)
+
+        # Presenters — Edificaciones
+        binder.bind(LiquidacionEdificacionesPresenter, to=LiquidacionEdificacionesPresenter)

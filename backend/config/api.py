@@ -18,6 +18,12 @@ from modules.liquidaciones.presentation.controllers.liquidacion_especifico.liqui
 from modules.liquidaciones.presentation.controllers.liquidacion_especifico.liquidacion_inspeccion_obra_controller import (
     LiquidacionInspeccionObraController,
 )
+from modules.liquidaciones.presentation.controllers.liquidacion_especifico.liquidacion_mecanica_suelos_controller import (
+    LiquidacionMecanicaSuelosController,
+)
+from modules.liquidaciones.presentation.controllers.liquidacion_especifico.liquidacion_edificaciones_controller import (
+    LiquidacionEdificacionesController,
+)
 
 import os
 
@@ -77,6 +83,8 @@ api.register_controllers(ConsultaController)
 # ── Liquidaciones Controllers ─
 api.register_controllers(LiquidacionHabilitacionUrbanaController)
 api.register_controllers(LiquidacionInspeccionObraController)
+api.register_controllers(LiquidacionMecanicaSuelosController)
+api.register_controllers(LiquidacionEdificacionesController)
 
 # ── Exception handlers globales ────────────────────────────────
 register_exception_handlers(api)
