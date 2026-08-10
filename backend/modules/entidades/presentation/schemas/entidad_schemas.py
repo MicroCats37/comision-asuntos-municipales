@@ -4,11 +4,12 @@ Presentation schemas — Esquemas HTTP para Entidades.
 Usa Ninja Schema para request/response.
 """
 import uuid
-from ninja import Schema, Field, Query
+from ninja import Field, Query
 from typing import Optional
+from core.types import BaseSchema
 
 
-class EntidadInstitucionIn(Schema):
+class EntidadInstitucionIn(BaseSchema):
     """Payload para crear/upsert entidad tipo institución (RUC)."""
     tipo_documento: str = Field("RUC", description="Tipo de documento: RUC para instituciones")
     numero_documento: str = Field(..., min_length=11, max_length=11, description="RUC (11 dígitos)")
@@ -17,7 +18,7 @@ class EntidadInstitucionIn(Schema):
     direccion: Optional[str] = Field(None, max_length=255, description="Dirección")
 
 
-class EntidadPersonaNaturalIn(Schema):
+class EntidadPersonaNaturalIn(BaseSchema):
     """Payload para crear/upsert entidad tipo persona natural (DNI)."""
     tipo_documento: str = Field("DNI", description="Tipo de documento: DNI para personas naturales")
     numero_documento: str = Field(..., min_length=8, max_length=8, description="DNI (8 dígitos)")
@@ -25,7 +26,7 @@ class EntidadPersonaNaturalIn(Schema):
     direccion: Optional[str] = Field(None, max_length=255, description="Dirección")
 
 
-class EntidadOut(Schema):
+class EntidadOut(BaseSchema):
     """Entidad en respuesta."""
     id: uuid.UUID
     tipo_documento: str
@@ -35,7 +36,7 @@ class EntidadOut(Schema):
     direccion: Optional[str]
 
 
-class EntidadUpsertResponseOut(Schema):
+class EntidadUpsertResponseOut(BaseSchema):
     """Respuesta de crear/upsert entidad."""
     id: uuid.UUID
     tipo_documento: str
@@ -48,20 +49,20 @@ class EntidadUpsertResponseOut(Schema):
 
 # ── Ubigeo Schemas ──────────────────────────────────────────────────────────────
 
-class UbigeoDepartamentoOut(Schema):
+class UbigeoDepartamentoOut(BaseSchema):
     """Departamento en respuesta de ubigeo."""
     id: uuid.UUID
     nombre: str
 
 
-class UbigeoProvinciaOut(Schema):
+class UbigeoProvinciaOut(BaseSchema):
     """Provincia en respuesta de ubigeo."""
     id: uuid.UUID
     nombre: str
     departamento: UbigeoDepartamentoOut
 
 
-class UbigeoDistritoOut(Schema):
+class UbigeoDistritoOut(BaseSchema):
     """Distrito en respuesta de ubigeo."""
     id: uuid.UUID
     nombre: str
@@ -70,25 +71,25 @@ class UbigeoDistritoOut(Schema):
     departamento: UbigeoDepartamentoOut
 
 
-class DistritosResponseOut(Schema):
+class DistritosResponseOut(BaseSchema):
     """Respuesta de lista de distritos."""
     items: list[UbigeoDistritoOut]
     total: int
 
 
-class ProvinciaBasicOut(Schema):
+class ProvinciaBasicOut(BaseSchema):
     """Provincia básica para anidamiento en respuestas."""
     id: uuid.UUID
     nombre: str
 
 
-class DistritoBasicOut(Schema):
+class DistritoBasicOut(BaseSchema):
     """Distrito básico para anidamiento en respuestas."""
     id: uuid.UUID
     nombre: str
 
 
-class MunicipalidadesResponseOut(Schema):
+class MunicipalidadesResponseOut(BaseSchema):
     """Municipalidad en respuesta para selector."""
     id: uuid.UUID
     nombre: str

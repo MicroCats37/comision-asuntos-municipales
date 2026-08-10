@@ -1,11 +1,12 @@
 """
 Presentation schemas — Esquemas HTTP para Ingeniero/Habilitación CIP.
 """
-from ninja import Schema, Field
+from ninja import Field
 from typing import Optional
+from core.types import BaseSchema
 
 
-class IngenieroHabilitadoOut(Schema):
+class IngenieroHabilitadoOut(BaseSchema):
     """
     Schema de respuesta SIMPLIFICADO para GET /ingenieros/habilitados/{cip}.
 

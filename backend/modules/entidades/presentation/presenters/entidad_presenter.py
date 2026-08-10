@@ -85,27 +85,42 @@ class EntidadPresenter:
         """
         items = []
         for d in distritos:
-            # Construir departamento anidado
-            departamento = UbigeoDepartamentoOut(
-                id=d.provincia.departamento.id,
-                nombre=d.provincia.departamento.nombre,
-            )
-
-            # Construir provincia anidada con departamento
-            provincia = UbigeoProvinciaOut(
-                id=d.provincia.id,
-                nombre=d.provincia.nombre,
-                departamento=departamento,
-            )
-
-            # Construir distrito con provincia y departamento aplanado
-            items.append(UbigeoDistritoOut(
-                id=d.id,
-                nombre=d.nombre,
-                ubigeo=d.ubigeo,
-                provincia=provincia,
-                departamento=departamento,
-            ))
+            # Build from dict with pre-computed values (from orchestrator)
+            if isinstance(d, dict):
+                departamento = UbigeoDepartamentoOut(
+                    id=d["departamento_id"],
+                    nombre=d["departamento_nombre"],
+                )
+                provincia = UbigeoProvinciaOut(
+                    id=d["provincia_id"],
+                    nombre=d["provincia_nombre"],
+                    departamento=departamento,
+                )
+                items.append(UbigeoDistritoOut(
+                    id=d["distrito_id"],
+                    nombre=d["distrito_nombre"],
+                    ubigeo=d["ubigeo"],
+                    provincia=provincia,
+                    departamento=departamento,
+                ))
+            else:
+                # Legacy ORM path — kept for callers not yet updated
+                departamento = UbigeoDepartamentoOut(
+                    id=d.provincia.departamento.id,
+                    nombre=d.provincia.departamento.nombre,
+                )
+                provincia = UbigeoProvinciaOut(
+                    id=d.provincia.id,
+                    nombre=d.provincia.nombre,
+                    departamento=departamento,
+                )
+                items.append(UbigeoDistritoOut(
+                    id=d.id,
+                    nombre=d.nombre,
+                    ubigeo=d.ubigeo,
+                    provincia=provincia,
+                    departamento=departamento,
+                ))
 
         return DistritosResponseOut(
             items=items,
@@ -117,28 +132,47 @@ class EntidadPresenter:
         """Transforma municipalidades del dominio a esquema HTTP para selector."""
         items = []
         for municipalidad in municipalidades:
-            # Build provincia if available (only for provincial municipalidades)
-            provincia_out = None
-            if hasattr(municipalidad, 'provincia') and municipalidad.provincia:
-                provincia_out = ProvinciaBasicOut(
-                    id=municipalidad.provincia.id,
-                    nombre=municipalidad.provincia.nombre,
-                )
-
-            # Build distrito if available (only for distrital municipalidades)
-            distrito_out = None
-            if hasattr(municipalidad, 'distrito') and municipalidad.distrito:
-                distrito_out = DistritoBasicOut(
-                    id=municipalidad.distrito.id,
-                    nombre=municipalidad.distrito.nombre,
-                )
-
-            items.append(MunicipalidadesResponseOut(
-                id=municipalidad.id,
-                nombre=municipalidad.nombre,
-                codigo=municipalidad.codigo,
-                provincia=provincia_out,
-                distrito=distrito_out,
-            ))
+            # Build from dict with pre-computed values (from orchestrator)
+            if isinstance(municipalidad, dict):
+                provincia_out = None
+                if municipalidad.get("provincia_id"):
+                    provincia_out = ProvinciaBasicOut(
+                        id=municipalidad["provincia_id"],
+                        nombre=municipalidad["provincia_nombre"],
+                    )
+                distrito_out = None
+                if municipalidad.get("distrito_id"):
+                    distrito_out = DistritoBasicOut(
+                        id=municipalidad["distrito_id"],
+                        nombre=municipalidad["distrito_nombre"],
+                    )
+                items.append(MunicipalidadesResponseOut(
+                    id=municipalidad["id"],
+                    nombre=municipalidad["nombre"],
+                    codigo=municipalidad.get("codigo"),
+                    provincia=provincia_out,
+                    distrito=distrito_out,
+                ))
+            else:
+                # Legacy ORM path — kept for callers not yet updated
+                provincia_out = None
+                if hasattr(municipalidad, 'provincia') and municipalidad.provincia:
+                    provincia_out = ProvinciaBasicOut(
+                        id=municipalidad.provincia.id,
+                        nombre=municipalidad.provincia.nombre,
+                    )
+                distrito_out = None
+                if hasattr(municipalidad, 'distrito') and municipalidad.distrito:
+                    distrito_out = DistritoBasicOut(
+                        id=municipalidad.distrito.id,
+                        nombre=municipalidad.distrito.nombre,
+                    )
+                items.append(MunicipalidadesResponseOut(
+                    id=municipalidad.id,
+                    nombre=municipalidad.nombre,
+                    codigo=municipalidad.codigo,
+                    provincia=provincia_out,
+                    distrito=distrito_out,
+                ))
 
         return items

@@ -1,10 +1,11 @@
 """
 Presentation schemas — Esquemas HTTP para Finanzas.
 """
-from ninja import Schema, Field
+from ninja import Field
+from core.types import BaseSchema
 
 
-class VariablesFinancierasOut(Schema):
+class VariablesFinancierasOut(BaseSchema):
     """Variables financieras vigentes para mostrar en formulario."""
     igv_valor: float = Field(..., description="Tasa IGV (ej. 0.18)")
     igv_periodo_inicio: str = Field(..., description="Fecha inicio período IGV (ISO)")

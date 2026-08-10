@@ -45,7 +45,8 @@ class IngenieroHabilitadoPresenter:
         parts = [p.strip() for p in [paterno, materno] if p and p.strip()]
         return " ".join(parts) if parts else ""
 
-    def present(self, result: IngenieroHabilitadoResult) -> IngenieroHabilitadoOut:
+    @staticmethod
+    def present(result: IngenieroHabilitadoResult) -> IngenieroHabilitadoOut:
         """
         Transforma IngenieroHabilitadoResult (dominio) a IngenieroHabilitadoOut (HTTP simplificado).
 

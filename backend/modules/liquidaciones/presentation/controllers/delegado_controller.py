@@ -89,14 +89,10 @@ class DelegadoController:
         with optional vigencia filter (periodo_inicio <= today AND
         (periodo_fin IS NULL OR periodo_fin >= today)).
         """
-        # Parse vigentes string to bool - Ninja's bool parser doesn't handle "false" properly
-        vigente_bool: Optional[bool] = None
-        if vigente is not None:
-            vigente_bool = vigente.lower() == "true"
-
+        # Pass raw params to orchestrator — no parsing in controller
         domain_result = self.orchestrator.list_delegados_por_municipalidad_proceso(
             municipalidad_id=municipalidad_id,
-            vigente=vigente_bool,
+            vigente=vigente,
             page=page,
             page_size=page_size,
         )

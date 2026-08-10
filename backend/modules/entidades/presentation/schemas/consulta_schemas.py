@@ -4,12 +4,13 @@ Presentation Schemas — Esquemas HTTP para consulta externa.
 Schemas para consulta de datos de instituciones (SUNAT) y personas (RENIEC).
 """
 
-from ninja import Schema, Field
+from ninja import Field
 from typing import Optional
 from datetime import date
+from core.types import BaseSchema
 
 
-class InstitucionSunatOut(Schema):
+class InstitucionSunatOut(BaseSchema):
     """Respuesta de consulta SUNAT para institución."""
     ruc: str = Field(..., description="Número de RUC")
     razon_social: str = Field(..., description="Razón social")
@@ -22,7 +23,7 @@ class InstitucionSunatOut(Schema):
     distrito: Optional[str] = Field(None, description="Distrito")
 
 
-class PersonaReniecOut(Schema):
+class PersonaReniecOut(BaseSchema):
     """Respuesta de consulta RENIEC para persona."""
     dni: str = Field(..., description="Número de DNI")
     nombres: str = Field(..., description="Nombres")
