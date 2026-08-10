@@ -3,7 +3,9 @@ Presenter for Edificaciones (PorcentajeObra).
 
 @staticmethod only. Maps Domain Result -> Presentation Schema.
 """
+import math
 import uuid
+from typing import List
 from modules.liquidaciones.domain.results.liquidacion_especifico.edificaciones_primera_revision_result import (
     EdificacionesPrimeraRevisionResult,
 )
@@ -26,6 +28,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_sche
     LiquidacionPorcentajeObraDatosOut,
     LiquidacionPorcentajeObraDetalleOut,
 )
+from core.pagination import PaginatedData
 
 
 class LiquidacionEdificacionesPresenter:
@@ -122,3 +125,37 @@ class LiquidacionEdificacionesPresenter:
             total_subtotal=domain_result.total_subtotal,
             total=domain_result.total,
         )
+
+    @staticmethod
+    def present_list(
+        liquidaciones: List[EdificacionesPrimeraRevisionResult],
+        total: int,
+        page: int,
+        page_size: int,
+    ) -> PaginatedData[LiquidacionEdificacionesOutput]:
+        """
+        Maps a list of EdificacionesPrimeraRevisionResult domain DTOs to PaginatedData[LiquidacionEdificacionesOutput].
+
+        Each item is presented by calling present_primera_revision.
+        Presenter only knows about Domain Results and Schemas — no ORM access.
+        """
+        items: List[LiquidacionEdificacionesOutput] = []
+        for domain_result in liquidaciones:
+            items.append(LiquidacionEdificacionesPresenter.present_primera_revision(domain_result))
+
+        total_pages = math.ceil(total / page_size) if page_size > 0 else 0
+        return PaginatedData(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+        )
+
+    @staticmethod
+    def present_detalle(domain_result: EdificacionesPrimeraRevisionResult) -> LiquidacionEdificacionesOutput:
+        """
+        Maps a single EdificacionesPrimeraRevisionResult domain DTO to LiquidacionEdificacionesOutput.
+        Delegates to present_primera_revision.
+        """
+        return LiquidacionEdificacionesPresenter.present_primera_revision(domain_result)

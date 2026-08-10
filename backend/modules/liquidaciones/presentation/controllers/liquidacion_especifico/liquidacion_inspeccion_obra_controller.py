@@ -1,11 +1,13 @@
 """
 LiquidacionInspeccionObraController — Single unified HTTP controller for Inspeccion Obra.
 """
+import uuid
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
 
 from core.responses import ApiResponse, success_response
+from core.pagination import PaginatedData
 from modules.liquidaciones.domain.services.core.auth.auth_core_service import (
     AuthCoreService,
 )
@@ -59,6 +61,47 @@ class LiquidacionInspeccionObraController:
         """
         tarifas, uit_vigente = self.orchestrator.obtener_tarifas_vigentes_proceso()
         result = self.visitas_presenter.present_tarifas_vigentes(tarifas=tarifas, uit_vigente=uit_vigente)
+        return success_response(result)
+
+    @route.get(
+        "/",
+        response={200: ApiResponse[PaginatedData[LiquidacionInspeccionObraOutput]]},
+        auth=None,
+    )
+    def list_liquidaciones(self, page: int = 1, page_size: int = 10):
+        """
+        Returns a paginated list of Inspección de Obra liquidaciones.
+        """
+        if page < 1:
+            page = 1
+        if page_size < 1:
+            page_size = 10
+        if page_size > 100:
+            page_size = 100
+
+        liquidaciones, total = self.orchestrator.listar_liquidaciones(
+            page=page,
+            page_size=page_size,
+        )
+        result = self.presenter.present_list(
+            liquidaciones=liquidaciones,
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+        return success_response(result)
+
+    @route.get(
+        "/{liquidacion_id}",
+        response={200: ApiResponse[LiquidacionInspeccionObraOutput]},
+        auth=None,
+    )
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
+        """
+        Returns a single Inspección de Obra liquidacion by UUID.
+        """
+        lg = self.orchestrator.obtener_liquidacion(liquidacion_id)
+        result = self.presenter.present_detalle(lg)
         return success_response(result)
 
     @route.post(

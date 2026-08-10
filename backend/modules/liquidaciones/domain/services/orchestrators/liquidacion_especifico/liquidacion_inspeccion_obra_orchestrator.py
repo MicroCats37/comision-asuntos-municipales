@@ -3,8 +3,12 @@ Orquestador de Inspeccion de Obra.
 Mapea los Schemas de Presentacion (Input) hacia los DTOs de Dominio (Data).
 Ejecuta el Flujo de forma sincrona.
 """
+import uuid
+from django.core.exceptions import ObjectDoesNotExist
 from injector import inject
 from ninja.errors import HttpError
+
+from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_inspeccion_obra_schemas import (
     LiquidacionInspeccionObraInput,
@@ -184,3 +188,24 @@ class LiquidacionInspeccionObraOrchestrator:
 
         tarifas = self.visitas_core.get_tarifas_vigentes()
         return (tarifas, uit_vigente)
+
+    def listar_liquidaciones(self, page: int, page_size: int) -> tuple:
+        """
+        Returns paginated liquidaciones for Inspección de Obra type.
+        Delegates to general_core_service with INSPECCION_OBRA type.
+        Returns (queryset, total_count).
+        """
+        return self.general_core.list_liquidaciones_io_paginated(
+            page=page,
+            page_size=page_size,
+        )
+
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
+        """
+        Returns a single LiquidacionGeneral for Inspección de Obra by UUID.
+        Raises LiquidacionNotFoundError if not found.
+        """
+        try:
+            return self.general_core.get_liquidacion_io_by_id(liquidacion_id)
+        except ObjectDoesNotExist:
+            raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")

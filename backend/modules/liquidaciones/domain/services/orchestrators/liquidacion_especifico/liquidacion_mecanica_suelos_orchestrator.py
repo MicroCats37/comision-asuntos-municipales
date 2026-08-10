@@ -3,11 +3,16 @@ LiquidacionMecanicaSuelosOrchestrator — sync facade for Mecanica de Suelos.
 
 Thin sync facade. Validates input and delegates to Core/Flujo for calculation.
 """
+import uuid
 from injector import inject
 from ninja.errors import HttpError
+from django.core.exceptions import ObjectDoesNotExist
 
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_metro_cuadrado_core_service import (
     LiquidacionPorMetroCuadradoCoreService,
+)
+from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
+    LiquidacionGeneralCoreService,
 )
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaPorMetroCuadrado,
@@ -37,6 +42,7 @@ from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_m2_data i
     DatosM2,
     TarifaM2,
 )
+from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 
 
 class LiquidacionMecanicaSuelosOrchestrator:
@@ -52,9 +58,11 @@ class LiquidacionMecanicaSuelosOrchestrator:
     def __init__(
         self,
         m2_core_service: LiquidacionPorMetroCuadradoCoreService,
+        general_core_service: LiquidacionGeneralCoreService,
         flujo: LiquidacionMecanicaSuelosFlujo,
     ):
         self.m2_core_service = m2_core_service
+        self.general_core_service = general_core_service
         self.flujo = flujo
 
     def crear_primera_revision_proceso(
@@ -152,3 +160,24 @@ class LiquidacionMecanicaSuelosOrchestrator:
         )
         derecho = self.m2_core_service.get_derecho_minimo_m2_vigente()
         return (tarifa, derecho)
+
+    def listar_liquidaciones(self, page: int, page_size: int) -> tuple:
+        """
+        Returns paginated liquidaciones for Mecanica de Suelos type.
+        Delegates to general_core_service with MS-specific prefetch chain.
+        Returns (queryset, total_count).
+        """
+        return self.general_core_service.list_liquidaciones_ms_paginated(
+            page=page,
+            page_size=page_size,
+        )
+
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
+        """
+        Returns a single LiquidacionGeneral for Mecánica de Suelos by UUID.
+        Raises LiquidacionNotFoundError if not found.
+        """
+        try:
+            return self.general_core_service.get_liquidacion_ms_by_id(liquidacion_id)
+        except ObjectDoesNotExist:
+            raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")

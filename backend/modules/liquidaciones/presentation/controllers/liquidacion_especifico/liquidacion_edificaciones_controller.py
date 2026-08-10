@@ -5,14 +5,17 @@ Endpoints:
 - GET  /api/liquidaciones/edificaciones/tarifas/vigentes
 - POST /api/liquidaciones/edificaciones/cotizar
 - POST /api/liquidaciones/edificaciones/nueva-liquidacion/primera-revision
+- GET  /api/liquidaciones/edificaciones/{liquidacion_id}
 
 Thin controller — only delegates, no logic.
 """
+import uuid
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
 
 from core.responses import ApiResponse, success_response
+from core.pagination import PaginatedData
 from modules.liquidaciones.domain.services.core.auth.auth_core_service import (
     AuthCoreService,
 )
@@ -67,6 +70,40 @@ class LiquidacionEdificacionesController:
                 for t in tarifas
             ],
         })
+
+    @route.get(
+        "/",
+        response={200: ApiResponse[PaginatedData[LiquidacionEdificacionesOutput]]},
+        auth=None,
+    )
+    def list_liquidaciones(self, page: int = 1, page_size: int = 10):
+        """
+        Returns a paginated list of Edificaciones liquidaciones.
+        """
+        liquidaciones, total = self.orchestrator.listar_liquidaciones(
+            page=page,
+            page_size=page_size,
+        )
+        result = self.presenter.present_list(
+            liquidaciones=liquidaciones,
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+        return success_response(result)
+
+    @route.get(
+        "/{liquidacion_id}",
+        response={200: ApiResponse[LiquidacionEdificacionesOutput]},
+        auth=None,
+    )
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
+        """
+        Returns a single Edificacion liquidacion by ID.
+        """
+        liquidacion = self.orchestrator.obtener_liquidacion(liquidacion_id)
+        result = self.presenter.present_detalle(liquidacion)
+        return success_response(result)
 
     @route.post(
         "/nueva-liquidacion/primera-revision",

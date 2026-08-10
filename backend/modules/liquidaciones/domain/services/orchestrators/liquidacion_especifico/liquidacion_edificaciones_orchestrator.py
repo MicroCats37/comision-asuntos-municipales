@@ -8,6 +8,7 @@ Architecture: Orchestrator owns business rules (clamping). No @transaction.atomi
 """
 from decimal import Decimal
 from typing import List
+import uuid
 from django.utils import timezone
 from injector import inject
 from ninja.errors import HttpError
@@ -44,7 +45,10 @@ from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import (
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraTarifaIn,
 )
+from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 
+
+from django.core.exceptions import ObjectDoesNotExist
 
 class LiquidacionEdificacionesOrchestrator:
     """
@@ -252,3 +256,139 @@ class LiquidacionEdificacionesOrchestrator:
             total_subtotal=cotizacion.total_subtotal,
             total=cotizacion.total,
         )
+
+    def listar_liquidaciones(
+        self, page: int, page_size: int
+    ) -> tuple[List[EdificacionesPrimeraRevisionResult], int]:
+        """
+        Returns paginated EdificacionesPrimeraRevisionResult list.
+        Applies pagination defaults/boundaries, iterates ORM objects to build domain DTOs.
+        Returns (List[EdificacionesPrimeraRevisionResult], total_count).
+        """
+        # Pagination boundary defaults
+        if page < 1:
+            page = 1
+        if page_size < 1:
+            page_size = 10
+        if page_size > 100:
+            page_size = 100
+
+        orm_objects, total = self.general_core.list_liquidaciones_by_type_paginated(
+            tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+            page=page,
+            page_size=page_size,
+        )
+
+        # Build EdificacionesPrimeraRevisionResult domain DTOs from ORM objects
+        domain_results: List[EdificacionesPrimeraRevisionResult] = []
+        for lg in orm_objects:
+            domain_results.append(self._build_edificaciones_result(lg))
+
+        return domain_results, total
+
+    def _build_edificaciones_result(self, lg) -> EdificacionesPrimeraRevisionResult:
+        """
+        Maps a LiquidacionGeneral ORM object to EdificacionesPrimeraRevisionResult domain DTO.
+        """
+        from modules.liquidaciones.domain.results.liquidacion_especifico.edificaciones_primera_revision_result import (
+            LiquidacionEspecificaEdificacionesResult,
+        )
+        from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
+            LiquidacionGeneralResult,
+            EntidadResult,
+            ProyectoResult,
+            UsuarioCreadorResult,
+        )
+        from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
+            LiquidacionPorcentajeObraResult,
+            DetallePorcentajeObraResult,
+        )
+
+        proyecto = lg.proyecto
+        entidad = proyecto.entidad if hasattr(proyecto, 'entidad') and proyecto.entidad else None
+
+        if entidad is None:
+            ent_tipo = proyecto.entidad_tipo_documento if hasattr(proyecto, 'entidad_tipo_documento') else None
+            ent_numero = proyecto.entidad_numero_documento if hasattr(proyecto, 'entidad_numero_documento') else None
+            ent_razon = proyecto.entidad_razon_social if hasattr(proyecto, 'entidad_razon_social') else None
+        else:
+            ent_tipo = entidad.tipo_documento
+            ent_numero = entidad.numero_documento
+            ent_razon = entidad.razon_social
+
+        general_result = LiquidacionGeneralResult(
+            id=str(lg.id),
+            municipalidad_id=str(lg.municipalidad_id),
+            usuario_creador=UsuarioCreadorResult(
+                id=str(lg.usuario_creador.id) if lg.usuario_creador else "00000000-0000-0000-0000-000000000000",
+            ),
+            fecha_registro=lg.fecha_registro.isoformat() if lg.fecha_registro else "",
+            expediente=lg.expediente or "",
+            observacion=lg.observacion,
+            numero_revision=lg.numero_revision,
+            sub_total=float(lg.sub_total) if lg.sub_total else 0.0,
+            total=float(lg.total) if lg.total else 0.0,
+            igv_id=str(lg.igv_id.id) if lg.igv_id else None,
+            uit_id=str(lg.uit_id.id) if lg.uit_id else None,
+            proyecto=ProyectoResult(
+                id=str(proyecto.id),
+                denominacion=proyecto.denominacion,
+                nombre_propietario=proyecto.nombre_propietario or "",
+                direccion=proyecto.direccion or "",
+                distrito_id=str(proyecto.distrito_id),
+                entidad=EntidadResult(
+                    tipo_documento=ent_tipo or "",
+                    numero_documento=ent_numero or "",
+                    razon_social=ent_razon or "",
+                ) if (ent_tipo or ent_numero or ent_razon) else None,
+            ),
+        )
+
+        edificacion = lg.edificaciones
+        especifica_result = LiquidacionEspecificaEdificacionesResult(
+            id=str(edificacion.id),
+            numero=edificacion.numero,
+        )
+
+        lpo = lg.liquidacion_porcentaje_obra
+        tipo_result = LiquidacionPorcentajeObraResult(
+            id=str(lpo.id),
+            liquidacion_general_id=str(lpo.liquidacion_general_id),
+            tipo_tramite=lpo.tipo_tramite,
+            valor_declarado=lpo.valor_declarado,
+            porcentaje_liquidacion=lpo.porcentaje_liquidacion,
+            derecho_minimo=lpo.derecho_minimo,
+            derecho_maximo=lpo.derecho_maximo,
+            porcentaje_minimo_uit=lpo.porcentaje_minimo_uit,
+            derecho_aplicado_id=str(lpo.derecho_aplicado_id),
+            detalles=[
+                DetallePorcentajeObraResult(
+                    id=str(d.id),
+                    tarifa_aplicada_id=str(d.tarifa_aplicada_id),
+                    especialidad_id=str(d.especialidad_id),
+                    porcentaje_aplicado=d.porcentaje_aplicado,
+                    subtotal=d.subtotal,
+                    igv=d.igv or Decimal("0"),
+                    uit=d.uit or Decimal("0"),
+                    total=d.total or Decimal("0"),
+                )
+                for d in lpo.detalles.all()
+            ],
+        )
+
+        return EdificacionesPrimeraRevisionResult(
+            liquidacion_general=general_result,
+            liquidacion_especifica=especifica_result,
+            liquidacion_tipo=tipo_result,
+        )
+
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID) -> EdificacionesPrimeraRevisionResult:
+        """
+        Returns a single EdificacionesPrimeraRevisionResult for Edificaciones by UUID.
+        Raises LiquidacionNotFoundError if not found.
+        """
+        try:
+            lg = self.general_core.get_liquidacion_edificaciones_by_id(liquidacion_id)
+            return self._build_edificaciones_result(lg)
+        except ObjectDoesNotExist:
+            raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")

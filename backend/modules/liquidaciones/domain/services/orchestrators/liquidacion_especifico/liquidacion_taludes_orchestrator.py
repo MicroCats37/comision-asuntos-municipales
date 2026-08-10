@@ -6,6 +6,7 @@ maps Presentation Schema -> Domain DTO.
 
 Architecture: Orchestrator owns business rules (clamping). No @transaction.atomic.
 """
+import uuid
 from decimal import Decimal
 from typing import List
 from django.utils import timezone
@@ -44,6 +45,8 @@ from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import (
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraTarifaIn,
 )
+from django.core.exceptions import ObjectDoesNotExist
+from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 
 
 class LiquidacionTaludesOrchestrator:
@@ -248,3 +251,24 @@ class LiquidacionTaludesOrchestrator:
             total_subtotal=cotizacion.total_subtotal,
             total=cotizacion.total,
         )
+
+    def listar_liquidaciones(self, page: int, page_size: int) -> tuple:
+        """
+        Returns paginated liquidaciones for Taludes type.
+        Delegates to general_core_service with TALUDES type.
+        Returns (queryset, total_count).
+        """
+        return self.general_core.list_liquidaciones_taludes_paginated(
+            page=page,
+            page_size=page_size,
+        )
+
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
+        """
+        Returns a single LiquidacionGeneral for Taludes by UUID.
+        Raises LiquidacionNotFoundError if not found.
+        """
+        try:
+            return self.general_core.get_liquidacion_taludes_by_id(liquidacion_id)
+        except ObjectDoesNotExist:
+            raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")

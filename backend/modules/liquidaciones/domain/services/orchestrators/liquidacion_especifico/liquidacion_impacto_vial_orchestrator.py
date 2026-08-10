@@ -6,9 +6,11 @@ maps Presentation Schema -> Domain DTO.
 
 Architecture: Orchestrator owns business rules (clamping). No @transaction.atomic.
 """
+import uuid
 from decimal import Decimal
 from typing import List
 from django.utils import timezone
+from django.core.exceptions import ObjectDoesNotExist
 from injector import inject
 from ninja.errors import HttpError
 from modules.liquidaciones.domain.constants import TipoLiquidacion
@@ -44,6 +46,7 @@ from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import (
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraTarifaIn,
 )
+from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 
 
 class LiquidacionImpactoVialOrchestrator:
@@ -248,3 +251,24 @@ class LiquidacionImpactoVialOrchestrator:
             total_subtotal=cotizacion.total_subtotal,
             total=cotizacion.total,
         )
+
+    def listar_liquidaciones(self, page: int, page_size: int) -> tuple:
+        """
+        Returns paginated liquidaciones for Impacto Vial type.
+        Delegates to general_core_service with IMPACTO_VIAL type.
+        Returns (queryset, total_count).
+        """
+        return self.general_core.list_liquidaciones_iv_paginated(
+            page=page,
+            page_size=page_size,
+        )
+
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
+        """
+        Returns a single LiquidacionGeneral for Impacto Vial by UUID.
+        Raises LiquidacionNotFoundError if not found.
+        """
+        try:
+            return self.general_core.get_liquidacion_iv_by_id(liquidacion_id)
+        except ObjectDoesNotExist:
+            raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")

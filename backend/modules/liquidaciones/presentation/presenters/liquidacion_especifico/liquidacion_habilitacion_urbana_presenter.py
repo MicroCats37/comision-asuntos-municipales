@@ -3,9 +3,11 @@ LiquidacionHabilitacionUrbanaPresenter — Presenter específico para Habilitaci
 
 Solo mapea la primera-revisión (ensamblaje final).
 Cotizar y tarifas vigentes se delegan al LiquidacionPorMetroCuadradoPresenter.
-NO business logic.
+NO business logic. Solo acepta Domain Results — sin ORM.
 """
 import uuid
+import math
+from typing import List
 
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_habilitacion_urbana_schemas import (
     LiquidacionHabilitacionUrbanaOutput,
@@ -20,9 +22,16 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas im
     LiquidacionTipoOutput,
     LiquidacionPorMetroCuadradoDatosOut,
 )
+from core.pagination import PaginatedData
 
 from modules.liquidaciones.domain.results.liquidacion_especifico.habilitacion_urbana_primera_revision_result import (
     HabilitacionUrbanaPrimeraRevisionResult,
+)
+from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
+    LiquidacionGeneralResult,
+)
+from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_m2_result import (
+    LiquidacionM2Result,
 )
 
 
@@ -87,3 +96,39 @@ class LiquidacionHabilitacionUrbanaPresenter:
             liquidacion_especifica=tipo_out,
             liquidacion_tipo=especifica_out,
         )
+
+    @staticmethod
+    def present_list(
+        liquidaciones: List[HabilitacionUrbanaPrimeraRevisionResult],
+        total: int,
+        page: int,
+        page_size: int,
+    ) -> PaginatedData[LiquidacionHabilitacionUrbanaOutput]:
+        """
+        Maps a list of HabilitacionUrbanaPrimeraRevisionResult domain DTOs to PaginatedData[LiquidacionHabilitacionUrbanaOutput].
+
+        Each item is presented by calling present_primera_revision.
+        Presenter only knows about Domain Results and Schemas — no ORM access.
+        """
+        items: List[LiquidacionHabilitacionUrbanaOutput] = []
+        for domain_result in liquidaciones:
+            items.append(LiquidacionHabilitacionUrbanaPresenter.present_primera_revision(domain_result))
+
+        total_pages = math.ceil(total / page_size) if page_size > 0 else 0
+        return PaginatedData(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+        )
+
+    @staticmethod
+    def present_detalle(
+        domain_result: HabilitacionUrbanaPrimeraRevisionResult,
+    ) -> LiquidacionHabilitacionUrbanaOutput:
+        """
+        Maps a single HabilitacionUrbanaPrimeraRevisionResult domain DTO to LiquidacionHabilitacionUrbanaOutput.
+        Delegates to present_primera_revision.
+        """
+        return LiquidacionHabilitacionUrbanaPresenter.present_primera_revision(domain_result)

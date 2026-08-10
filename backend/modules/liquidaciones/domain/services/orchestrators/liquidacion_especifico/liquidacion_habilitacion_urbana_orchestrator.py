@@ -3,9 +3,15 @@ LiquidacionHabilitacionUrbanaOrchestrator — sync facade for Habilitacion Urban
 
 Thin sync facade. Validates input and delegates to Core/Flujo for calculation.
 """
+import uuid
+from typing import List
 from injector import inject
 from ninja.errors import HttpError
+from django.core.exceptions import ObjectDoesNotExist
 
+from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
+    LiquidacionGeneralCoreService,
+)
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_metro_cuadrado_core_service import (
     LiquidacionPorMetroCuadradoCoreService,
 )
@@ -37,6 +43,7 @@ from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_m2_data i
     DatosM2,
     TarifaM2,
 )
+from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 
 
 class LiquidacionHabilitacionUrbanaOrchestrator:
@@ -52,9 +59,11 @@ class LiquidacionHabilitacionUrbanaOrchestrator:
     def __init__(
         self,
         m2_core_service: LiquidacionPorMetroCuadradoCoreService,
+        general_core_service: LiquidacionGeneralCoreService,
         flujo: LiquidacionHabilitacionUrbanaFlujo,
     ):
         self.m2_core_service = m2_core_service
+        self.general_core_service = general_core_service
         self.flujo = flujo
 
     def crear_primera_revision_proceso(
@@ -152,3 +161,124 @@ class LiquidacionHabilitacionUrbanaOrchestrator:
         )
         derecho = self.m2_core_service.get_derecho_minimo_m2_vigente()
         return (tarifa, derecho)
+
+    def listar_liquidaciones(
+        self, page: int, page_size: int
+    ) -> tuple[List[HabilitacionUrbanaPrimeraRevisionResult], int]:
+        """
+        Returns paginated HabilitacionUrbanaPrimeraRevisionResult list.
+        Applies pagination defaults/boundaries, iterates ORM objects to build domain DTOs.
+        Returns (List[HabilitacionUrbanaPrimeraRevisionResult], total_count).
+        """
+        # Pagination boundary defaults
+        if page < 1:
+            page = 1
+        if page_size < 1:
+            page_size = 10
+        if page_size > 100:
+            page_size = 100
+
+        orm_objects, total = self.general_core_service.list_liquidaciones_hu_paginated(
+            page=page,
+            page_size=page_size,
+        )
+
+        # Build HabilitacionUrbanaPrimeraRevisionResult domain DTOs from ORM objects
+        domain_results: List[HabilitacionUrbanaPrimeraRevisionResult] = []
+        for lg in orm_objects:
+            domain_results.append(self._build_hu_result(lg))
+
+        return domain_results, total
+
+    def _build_hu_result(self, lg) -> HabilitacionUrbanaPrimeraRevisionResult:
+        """
+        Maps a LiquidacionGeneral ORM object to HabilitacionUrbanaPrimeraRevisionResult domain DTO.
+        """
+        from modules.liquidaciones.domain.results.liquidacion_especifico.habilitacion_urbana_primera_revision_result import (
+            LiquidacionEspecificaHabilitacionUrbanaResult,
+        )
+        from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
+            LiquidacionGeneralResult,
+            EntidadResult,
+            ProyectoResult,
+            UsuarioCreadorResult,
+        )
+        from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_m2_result import (
+            LiquidacionM2Result,
+        )
+
+        proyecto = lg.proyecto
+        entidad = proyecto.entidad if hasattr(proyecto, 'entidad') and proyecto.entidad else None
+
+        if entidad is None:
+            ent_tipo = proyecto.entidad_tipo_documento if hasattr(proyecto, 'entidad_tipo_documento') else None
+            ent_numero = proyecto.entidad_numero_documento if hasattr(proyecto, 'entidad_numero_documento') else None
+            ent_razon = proyecto.entidad_razon_social if hasattr(proyecto, 'entidad_razon_social') else None
+        else:
+            ent_tipo = entidad.tipo_documento
+            ent_numero = entidad.numero_documento
+            ent_razon = entidad.razon_social
+
+        general_result = LiquidacionGeneralResult(
+            id=str(lg.id),
+            municipalidad_id=str(lg.municipalidad_id),
+            usuario_creador=UsuarioCreadorResult(
+                id=str(lg.usuario_creador.id) if lg.usuario_creador else "00000000-0000-0000-0000-000000000000",
+            ),
+            fecha_registro=lg.fecha_registro.isoformat() if lg.fecha_registro else "",
+            expediente=lg.expediente or "",
+            observacion=lg.observacion,
+            numero_revision=lg.numero_revision,
+            sub_total=float(lg.sub_total) if lg.sub_total else 0.0,
+            total=float(lg.total) if lg.total else 0.0,
+            igv_id=str(lg.igv_id.id) if lg.igv_id else None,
+            uit_id=str(lg.uit_id.id) if lg.uit_id else None,
+            proyecto=ProyectoResult(
+                id=str(proyecto.id),
+                denominacion=proyecto.denominacion,
+                nombre_propietario=proyecto.nombre_propietario or "",
+                direccion=proyecto.direccion or "",
+                distrito_id=str(proyecto.distrito_id),
+                entidad=EntidadResult(
+                    tipo_documento=ent_tipo or "",
+                    numero_documento=ent_numero or "",
+                    razon_social=ent_razon or "",
+                ) if (ent_tipo or ent_numero or ent_razon) else None,
+            ),
+        )
+
+        habilitacion_urbana = lg.habilitacion_urbana
+        especifica_result = LiquidacionEspecificaHabilitacionUrbanaResult(
+            id=str(habilitacion_urbana.id),
+            numero=habilitacion_urbana.numero,
+        )
+
+        # Get the single M2 record via OneToOne relationship
+        m2 = lg.liquidacion_m2.all()[0] if lg.liquidacion_m2.exists() else None
+
+        tipo_result = LiquidacionM2Result(
+            id=str(m2.id),
+            area_m2=float(m2.area_m2) if m2 and m2.area_m2 else 0.0,
+            costo_por_m2=float(m2.costo_por_m2) if m2 and m2.costo_por_m2 else 0.0,
+            derecho_minimo=float(m2.derecho_minimo) if m2 and m2.derecho_minimo else 0.0,
+            derecho_maximo=float(m2.derecho_maximo) if m2 and m2.derecho_maximo else None,
+            derecho_aplicado_id=str(m2.derecho.id) if m2 and m2.derecho else "",
+            tarifa_aplicada_id=str(m2.tarifa_aplicada.id) if m2 and m2.tarifa_aplicada else "",
+        )
+
+        return HabilitacionUrbanaPrimeraRevisionResult(
+            liquidacion_general=general_result,
+            liquidacion_especifica=especifica_result,
+            liquidacion_tipo=tipo_result,
+        )
+
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID) -> HabilitacionUrbanaPrimeraRevisionResult:
+        """
+        Returns a single HabilitacionUrbanaPrimeraRevisionResult for HU by UUID.
+        Raises LiquidacionNotFoundError if not found.
+        """
+        try:
+            lg = self.general_core_service.get_liquidacion_hu_by_id(liquidacion_id)
+            return self._build_hu_result(lg)
+        except ObjectDoesNotExist:
+            raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")

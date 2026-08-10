@@ -3,11 +3,13 @@ LiquidacionHabilitacionUrbanaController — Single unified HTTP controller for H
 
 NO business logic. Only parses input, calls orchestrator, maps via presenter.
 """
+import uuid
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
 
 from core.responses import ApiResponse, success_response
+from core.pagination import PaginatedData
 from modules.liquidaciones.domain.services.core.auth.auth_core_service import (
     AuthCoreService,
 )
@@ -62,6 +64,40 @@ class LiquidacionHabilitacionUrbanaController:
         tarifa, derecho = self.cotizar_orchestrator.obtener_tarifas_vigentes_proceso()
 
         result = self.m2_presenter.present_tarifas_vigentes(tarifa=tarifa, derecho=derecho)
+        return success_response(result)
+
+    @route.get(
+        "/",
+        response={200: ApiResponse[PaginatedData[LiquidacionHabilitacionUrbanaOutput]]},
+        auth=None,
+    )
+    def list_liquidaciones(self, page: int = 1, page_size: int = 10):
+        """
+        Returns a paginated list of Habilitacion Urbana liquidaciones.
+        """
+        liquidaciones, total = self.cotizar_orchestrator.listar_liquidaciones(
+            page=page,
+            page_size=page_size,
+        )
+        result = self.presenter.present_list(
+            liquidaciones=liquidaciones,
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+        return success_response(result)
+
+    @route.get(
+        "/{liquidacion_id}",
+        response={200: ApiResponse[LiquidacionHabilitacionUrbanaOutput]},
+        auth=None,
+    )
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
+        """
+        Returns a single Habilitación Urbana liquidacion by UUID.
+        """
+        liquidacion = self.cotizar_orchestrator.obtener_liquidacion(liquidacion_id)
+        result = self.presenter.present_detalle(liquidacion)
         return success_response(result)
 
     @route.post(

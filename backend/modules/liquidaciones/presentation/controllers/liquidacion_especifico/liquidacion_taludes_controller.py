@@ -2,17 +2,20 @@
 HTTP Controller for Taludes (PorcentajeObra).
 
 Endpoints:
+- GET  /api/liquidaciones/taludes/
 - GET  /api/liquidaciones/taludes/tarifas/vigentes
 - POST /api/liquidaciones/taludes/cotizar
 - POST /api/liquidaciones/taludes/nueva-liquidacion/primera-revision
 
 Thin controller — only delegates, no logic.
 """
+import uuid
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
 
 from core.responses import ApiResponse, success_response
+from core.pagination import PaginatedData
 from modules.liquidaciones.domain.services.core.auth.auth_core_service import (
     AuthCoreService,
 )
@@ -46,6 +49,39 @@ class LiquidacionTaludesController:
         self.orchestrator = taludes_orchestrator
         self.presenter = presenter
         self.auth_core_service = auth_core_service
+
+    @route.get(
+        "/",
+        response={200: ApiResponse[PaginatedData[LiquidacionTaludesOutput]]},
+    )
+    def listar_liquidaciones(self, request, page: int = 1, page_size: int = 10):
+        """
+        Returns paginated list of Taludes liquidaciones.
+        """
+        liquidaciones, total = self.orchestrator.listar_liquidaciones(
+            page=page,
+            page_size=page_size,
+        )
+        result = self.presenter.present_list(
+            liquidaciones=liquidaciones,
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+        return success_response(result)
+
+    @route.get(
+        "/{liquidacion_id}",
+        response={200: ApiResponse[LiquidacionTaludesOutput]},
+        auth=None,
+    )
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
+        """
+        Returns a single Taludes liquidacion by UUID.
+        """
+        liquidacion = self.orchestrator.obtener_liquidacion(liquidacion_id)
+        result = self.presenter.present_detalle(liquidacion)
+        return success_response(result)
 
     @route.get(
         "/tarifas/vigentes",
