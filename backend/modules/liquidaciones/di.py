@@ -60,6 +60,15 @@ from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.
 from modules.liquidaciones.presentation.presenters.liquidacion_especifico.liquidacion_taludes_presenter import (
     LiquidacionTaludesPresenter,
 )
+from modules.liquidaciones.domain.services.core.delegado.delegado_core_service import (
+    DelegadoCoreService,
+)
+from modules.liquidaciones.domain.services.orchestrators.delegado_orchestrator import (
+    DelegadoOrchestrator,
+)
+from modules.liquidaciones.presentation.presenters.delegado_presenter import (
+    DelegadoPresenter,
+)
 
 
 class LiquidacionesModule(Module):
@@ -122,3 +131,12 @@ class LiquidacionesModule(Module):
 
         # Presenters — Taludes
         binder.bind(LiquidacionTaludesPresenter, to=LiquidacionTaludesPresenter)
+
+        # Core — Delegado
+        binder.bind(DelegadoCoreService, to=DelegadoCoreService)
+
+        # Orchestrators — Delegado
+        binder.bind(DelegadoOrchestrator, to=DelegadoOrchestrator)
+
+        # Presenters — Delegado
+        binder.bind(DelegadoPresenter, to=DelegadoPresenter)

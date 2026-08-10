@@ -167,7 +167,7 @@ def test_io_crear_primera_revision_success(auth_client, valid_payload):
     Test successful creation of a LiquidacionInspeccionObra (primera-revision).
     """
     response = auth_client.post(
-        "/liquidaciones/inspeccion-obra/crear-primera-revision",
+        "/liquidaciones/inspeccion-obra/nueva-liquidacion/primera-revision",
         json=valid_payload
     )
 
@@ -215,7 +215,7 @@ def test_io_crear_primera_revision_invalid_tarifa(auth_client, valid_payload):
     valid_payload["liquidacion_especifica"]["tarifa"]["tarifa_visitas_id"] = str(uuid.uuid4())
 
     response = auth_client.post(
-        "/liquidaciones/inspeccion-obra/crear-primera-revision",
+        "/liquidaciones/inspeccion-obra/nueva-liquidacion/primera-revision",
         json=valid_payload
     )
 

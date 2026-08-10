@@ -93,7 +93,7 @@ class LiquidacionEdificacionesController:
         return success_response(result)
 
     @route.get(
-        "/{liquidacion_id}",
+        "/{uuid:liquidacion_id}",
         response={200: ApiResponse[LiquidacionEdificacionesOutput]},
         auth=None,
     )

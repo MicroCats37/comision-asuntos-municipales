@@ -86,7 +86,7 @@ class LiquidacionInspeccionObraController:
         return success_response(result)
 
     @route.get(
-        "/{liquidacion_id}",
+        "/{uuid:liquidacion_id}",
         response={200: ApiResponse[LiquidacionInspeccionObraOutput]},
         auth=None,
     )
@@ -121,7 +121,7 @@ class LiquidacionInspeccionObraController:
         return success_response(self.visitas_presenter.present_cotizacion(result))
 
     @route.post(
-        "/crear-primera-revision",
+        "/nueva-liquidacion/primera-revision",
         response={200: ApiResponse[LiquidacionInspeccionObraOutput]},
     )
     def crear_primera_revision(self, request, payload: LiquidacionInspeccionObraInput):
