@@ -74,7 +74,7 @@ class Inspector(BaseModel):
 
 
 class InspectorPeriodo(BaseModel, VigenciaModel):
-    """Relacion muchos-a-muchos entre Inspector y Municipalidad."""
+    """Vigencia periods for an Inspector assignment."""
 
     history = HistoricalRecords()
 

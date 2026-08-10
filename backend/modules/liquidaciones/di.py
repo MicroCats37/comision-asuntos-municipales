@@ -69,6 +69,15 @@ from modules.liquidaciones.domain.services.orchestrators.delegado_orchestrator i
 from modules.liquidaciones.presentation.presenters.delegado_presenter import (
     DelegadoPresenter,
 )
+from modules.liquidaciones.domain.services.core.inspector.inspector_core_service import (
+    InspectorCoreService,
+)
+from modules.liquidaciones.domain.services.orchestrators.inspector_orchestrator import (
+    InspectorOrchestrator,
+)
+from modules.liquidaciones.presentation.presenters.inspector_presenter import (
+    InspectorPresenter,
+)
 
 
 class LiquidacionesModule(Module):
@@ -140,3 +149,12 @@ class LiquidacionesModule(Module):
 
         # Presenters — Delegado
         binder.bind(DelegadoPresenter, to=DelegadoPresenter)
+
+        # Core — Inspector
+        binder.bind(InspectorCoreService, to=InspectorCoreService)
+
+        # Orchestrators — Inspector
+        binder.bind(InspectorOrchestrator, to=InspectorOrchestrator)
+
+        # Presenters — Inspector
+        binder.bind(InspectorPresenter, to=InspectorPresenter)
