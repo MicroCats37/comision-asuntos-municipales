@@ -60,16 +60,8 @@ class LiquidacionEdificacionesController:
         Get the currently active tarifas and derecho for Edificaciones.
         """
         tarifas = self.orchestrator.obtener_tarifas_vigentes_proceso()
-        return success_response({
-            "tarifas": [
-                {
-                    "id": str(t.id),
-                    "especialidad": t.especialidad.nombre,
-                    "porcentaje_liquidacion": float(t.porcentaje_liquidacion),
-                }
-                for t in tarifas
-            ],
-        })
+        presented = self.presenter.present_tarifas_vigentes(tarifas)
+        return success_response(presented)
 
     @route.get(
         "/",

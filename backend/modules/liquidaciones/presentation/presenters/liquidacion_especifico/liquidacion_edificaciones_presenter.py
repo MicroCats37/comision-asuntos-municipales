@@ -159,3 +159,21 @@ class LiquidacionEdificacionesPresenter:
         Delegates to present_primera_revision.
         """
         return LiquidacionEdificacionesPresenter.present_primera_revision(domain_result)
+
+    @staticmethod
+    def present_tarifas_vigentes(tarifas) -> dict:
+        """
+        Maps a list of TarifaPorcentajeObra domain objects to a dict response.
+
+        Presenter only knows about Domain objects and plain dicts — no ORM access.
+        """
+        return {
+            "tarifas": [
+                {
+                    "id": str(t.id),
+                    "especialidad": t.especialidad.nombre,
+                    "porcentaje_liquidacion": float(t.porcentaje_liquidacion),
+                }
+                for t in tarifas
+            ],
+        }
