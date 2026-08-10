@@ -161,23 +161,126 @@ class LiquidacionMecanicaSuelosOrchestrator:
         derecho = self.m2_core_service.get_derecho_minimo_m2_vigente()
         return (tarifa, derecho)
 
-    def listar_liquidaciones(self, page: int, page_size: int) -> tuple:
+    def listar_liquidaciones(
+        self, page: int, page_size: int
+    ) -> tuple:
         """
-        Returns paginated liquidaciones for Mecanica de Suelos type.
-        Delegates to general_core_service with MS-specific prefetch chain.
-        Returns (queryset, total_count).
+        Returns paginated MecanicaSuelosPrimeraRevisionResult list.
+        Applies pagination defaults/boundaries, iterates ORM objects to build domain DTOs.
+        Returns (List[MecanicaSuelosPrimeraRevisionResult], total_count).
         """
-        return self.general_core_service.list_liquidaciones_ms_paginated(
+        # Pagination boundary defaults
+        if page < 1:
+            page = 1
+        if page_size < 1:
+            page_size = 10
+        if page_size > 100:
+            page_size = 100
+
+        orm_objects, total = self.general_core_service.list_liquidaciones_ms_paginated(
             page=page,
             page_size=page_size,
         )
 
-    def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
+        # Build MecanicaSuelosPrimeraRevisionResult domain DTOs from ORM objects
+        domain_results = []
+        for lg in orm_objects:
+            domain_results.append(self._build_ms_result(lg))
+
+        return domain_results, total
+
+    def _build_ms_result(self, lg) -> MecanicaSuelosPrimeraRevisionResult:
         """
-        Returns a single LiquidacionGeneral for Mecánica de Suelos by UUID.
+        Maps a LiquidacionGeneral ORM object to MecanicaSuelosPrimeraRevisionResult domain DTO.
+        """
+        from modules.liquidaciones.domain.results.liquidacion_especifico.mecanica_suelos_primera_revision_result import (
+            LiquidacionEspecificaMecanicaSuelosResult,
+        )
+        from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
+            LiquidacionGeneralResult,
+            EntidadResult,
+            ProyectoResult,
+            UsuarioCreadorResult,
+        )
+        from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_m2_result import (
+            LiquidacionM2Result,
+        )
+
+        proyecto = lg.proyecto
+        entidad = proyecto.entidad if hasattr(proyecto, 'entidad') and proyecto.entidad else None
+
+        # When entidad FK is None, use denormalized fields from proyecto
+        if entidad is None:
+            ent_tipo = proyecto.entidad_tipo_documento if hasattr(proyecto, 'entidad_tipo_documento') else None
+            ent_numero = proyecto.entidad_numero_documento if hasattr(proyecto, 'entidad_numero_documento') else None
+            ent_razon = proyecto.entidad_razon_social if hasattr(proyecto, 'entidad_razon_social') else None
+        else:
+            ent_tipo = entidad.tipo_documento
+            ent_numero = entidad.numero_documento
+            ent_razon = entidad.razon_social
+
+        general_result = LiquidacionGeneralResult(
+            id=str(lg.id),
+            municipalidad_id=str(lg.municipalidad_id),
+            usuario_creador=UsuarioCreadorResult(
+                id=str(lg.usuario_creador.id) if lg.usuario_creador else "00000000-0000-0000-0000-000000000000",
+            ),
+            fecha_registro=lg.fecha_registro.isoformat() if lg.fecha_registro else "",
+            expediente=lg.expediente or "",
+            observacion=lg.observacion,
+            numero_revision=lg.numero_revision,
+            sub_total=float(lg.sub_total) if lg.sub_total else 0.0,
+            total=float(lg.total) if lg.total else 0.0,
+            igv_id=str(lg.igv_id.id) if lg.igv_id else None,
+            uit_id=str(lg.uit_id.id) if lg.uit_id else None,
+            proyecto=ProyectoResult(
+                id=str(proyecto.id),
+                denominacion=proyecto.denominacion,
+                nombre_propietario=proyecto.nombre_propietario or "",
+                direccion=proyecto.direccion or "",
+                distrito_id=str(proyecto.distrito_id),
+                entidad=EntidadResult(
+                    tipo_documento=ent_tipo or "",
+                    numero_documento=ent_numero or "",
+                    razon_social=ent_razon or "",
+                ) if (ent_tipo or ent_numero or ent_razon) else None,
+            ),
+        )
+
+        # Get MS specific data (OneToOne from LiquidacionGeneral)
+        mecanica_suelos = lg.mecanica_suelos
+        m2 = lg.liquidacion_m2.all()[0] if lg.liquidacion_m2.exists() else None
+
+        # Build LiquidacionEspecificaMecanicaSuelosResult
+        especifica_result = LiquidacionEspecificaMecanicaSuelosResult(
+            id=str(mecanica_suelos.id),
+            numero=mecanica_suelos.numero,
+        )
+
+        # Build LiquidacionM2Result from prefetched liquidacion_m2
+        tipo_result = LiquidacionM2Result(
+            id=str(m2.id),
+            area_m2=float(m2.area_m2) if m2.area_m2 else 0.0,
+            costo_por_m2=float(m2.costo_por_m2) if m2.costo_por_m2 else 0.0,
+            derecho_minimo=float(m2.derecho_minimo) if m2.derecho_minimo else 0.0,
+            derecho_maximo=float(m2.derecho_maximo) if m2.derecho_maximo else None,
+            derecho_aplicado_id=str(m2.derecho.id) if m2.derecho else "",
+            tarifa_aplicada_id=str(m2.tarifa_aplicada.id) if m2.tarifa_aplicada else "",
+        )
+
+        return MecanicaSuelosPrimeraRevisionResult(
+            liquidacion_general=general_result,
+            liquidacion_especifica=especifica_result,
+            liquidacion_tipo=tipo_result,
+        )
+
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID) -> MecanicaSuelosPrimeraRevisionResult:
+        """
+        Returns a single MecanicaSuelosPrimeraRevisionResult for Mecánica de Suelos by UUID.
         Raises LiquidacionNotFoundError if not found.
         """
         try:
-            return self.general_core_service.get_liquidacion_ms_by_id(liquidacion_id)
+            lg = self.general_core_service.get_liquidacion_ms_by_id(liquidacion_id)
+            return self._build_ms_result(lg)
         except ObjectDoesNotExist:
             raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")

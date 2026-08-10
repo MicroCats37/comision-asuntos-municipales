@@ -75,13 +75,6 @@ class LiquidacionMecanicaSuelosController:
         """
         Returns a paginated list of Mecánica de Suelos liquidaciones.
         """
-        if page < 1:
-            page = 1
-        if page_size < 1:
-            page_size = 10
-        if page_size > 100:
-            page_size = 100
-
         liquidaciones, total = self.cotizar_orchestrator.listar_liquidaciones(
             page=page,
             page_size=page_size,
