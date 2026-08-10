@@ -71,14 +71,8 @@ class LiquidacionInspeccionObraController:
     def list_liquidaciones(self, page: int = 1, page_size: int = 10):
         """
         Returns a paginated list of Inspección de Obra liquidaciones.
+        Delegates pagination boundary handling to the Orchestrator.
         """
-        if page < 1:
-            page = 1
-        if page_size < 1:
-            page_size = 10
-        if page_size > 100:
-            page_size = 100
-
         liquidaciones, total = self.orchestrator.listar_liquidaciones(
             page=page,
             page_size=page_size,

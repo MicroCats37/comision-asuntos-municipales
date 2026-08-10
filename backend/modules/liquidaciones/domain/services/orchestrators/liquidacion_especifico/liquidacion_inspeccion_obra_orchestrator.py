@@ -4,6 +4,7 @@ Mapea los Schemas de Presentacion (Input) hacia los DTOs de Dominio (Data).
 Ejecuta el Flujo de forma sincrona.
 """
 import uuid
+from typing import List
 from django.core.exceptions import ObjectDoesNotExist
 from injector import inject
 from ninja.errors import HttpError
@@ -189,23 +190,121 @@ class LiquidacionInspeccionObraOrchestrator:
         tarifas = self.visitas_core.get_tarifas_vigentes()
         return (tarifas, uit_vigente)
 
-    def listar_liquidaciones(self, page: int, page_size: int) -> tuple:
+    def listar_liquidaciones(
+        self, page: int, page_size: int
+    ) -> tuple:
         """
-        Returns paginated liquidaciones for Inspección de Obra type.
-        Delegates to general_core_service with INSPECCION_OBRA type.
-        Returns (queryset, total_count).
+        Returns paginated InspeccionObraPrimeraRevisionResult list.
+        Applies pagination defaults/boundaries, iterates ORM objects to build domain DTOs.
+        Returns (List[InspeccionObraPrimeraRevisionResult], total_count).
         """
-        return self.general_core.list_liquidaciones_io_paginated(
+        # Pagination boundary defaults
+        if page < 1:
+            page = 1
+        if page_size < 1:
+            page_size = 10
+        if page_size > 100:
+            page_size = 100
+
+        orm_objects, total = self.general_core.list_liquidaciones_io_paginated(
             page=page,
             page_size=page_size,
         )
 
-    def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
+        # Build InspeccionObraPrimeraRevisionResult domain DTOs from ORM objects
+        domain_results: List[InspeccionObraPrimeraRevisionResult] = []
+        for lg in orm_objects:
+            domain_results.append(self._build_io_result(lg))
+
+        return domain_results, total
+
+    def _build_io_result(self, lg) -> InspeccionObraPrimeraRevisionResult:
         """
-        Returns a single LiquidacionGeneral for Inspección de Obra by UUID.
+        Maps a LiquidacionGeneral ORM object to InspeccionObraPrimeraRevisionResult domain DTO.
+        """
+        from modules.liquidaciones.domain.results.liquidacion_especifico.inspeccion_obra_primera_revision_result import (
+            LiquidacionEspecificaInspeccionObraResult,
+        )
+        from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
+            LiquidacionGeneralResult,
+            EntidadResult,
+            ProyectoResult,
+            UsuarioCreadorResult,
+        )
+        from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_visitas_result import (
+            LiquidacionVisitasResult,
+        )
+
+        proyecto = lg.proyecto
+        entidad = proyecto.entidad if hasattr(proyecto, 'entidad') and proyecto.entidad else None
+
+        if entidad is None:
+            ent_tipo = proyecto.entidad_tipo_documento if hasattr(proyecto, 'entidad_tipo_documento') else None
+            ent_numero = proyecto.entidad_numero_documento if hasattr(proyecto, 'entidad_numero_documento') else None
+            ent_razon = proyecto.entidad_razon_social if hasattr(proyecto, 'entidad_razon_social') else None
+        else:
+            ent_tipo = entidad.tipo_documento
+            ent_numero = entidad.numero_documento
+            ent_razon = entidad.razon_social
+
+        general_result = LiquidacionGeneralResult(
+            id=str(lg.id),
+            municipalidad_id=str(lg.municipalidad_id),
+            usuario_creador=UsuarioCreadorResult(
+                id=str(lg.usuario_creador.id) if lg.usuario_creador else "00000000-0000-0000-0000-000000000000",
+            ),
+            fecha_registro=lg.fecha_registro.isoformat() if lg.fecha_registro else "",
+            expediente=lg.expediente or "",
+            observacion=lg.observacion,
+            numero_revision=lg.numero_revision,
+            sub_total=float(lg.sub_total) if lg.sub_total else 0.0,
+            total=float(lg.total) if lg.total else 0.0,
+            igv_id=str(lg.igv_id.id) if lg.igv_id else None,
+            uit_id=str(lg.uit_id.id) if lg.uit_id else None,
+            proyecto=ProyectoResult(
+                id=str(proyecto.id),
+                denominacion=proyecto.denominacion,
+                nombre_propietario=proyecto.nombre_propietario or "",
+                direccion=proyecto.direccion or "",
+                distrito_id=str(proyecto.distrito_id),
+                entidad=EntidadResult(
+                    tipo_documento=ent_tipo or "",
+                    numero_documento=ent_numero or "",
+                    razon_social=ent_razon or "",
+                ) if (ent_tipo or ent_numero or ent_razon) else None,
+            ),
+        )
+
+        io = lg.inspeccion_obra
+        especifica_result = LiquidacionEspecificaInspeccionObraResult(
+            id=str(io.id),
+            numero=io.numero,
+        )
+
+        lv = lg.liquidacion_visitas.first()
+        tipo_result = LiquidacionVisitasResult(
+            id=str(lv.id),
+            cantidad_visitas=lv.cantidad_visitas,
+            porcentaje_uit=float(lv.porcentaje_uit) if lv.porcentaje_uit else 0.0,
+            categoria=lv.categoria or "",
+            tarifa_aplicada_id=str(lv.tarifa_aplicada_id),
+        )
+
+        return InspeccionObraPrimeraRevisionResult(
+            liquidacion_general=general_result,
+            liquidacion_especifica=especifica_result,
+            liquidacion_tipo=tipo_result,
+        )
+
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID) -> InspeccionObraPrimeraRevisionResult:
+        """
+        Returns a single InspeccionObraPrimeraRevisionResult for Inspección de Obra by UUID.
         Raises LiquidacionNotFoundError if not found.
         """
         try:
-            return self.general_core.get_liquidacion_io_by_id(liquidacion_id)
+            lg = self.general_core.get_liquidacion_io_by_id(liquidacion_id)
+            return self._build_io_result(lg)
         except ObjectDoesNotExist:
             raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")
+
+
