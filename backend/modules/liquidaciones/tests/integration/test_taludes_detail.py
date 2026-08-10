@@ -244,7 +244,7 @@ def test_detail_liquidacion_tipo_has_calculation_fields(
     assert "valor_declarado" in lt
     assert "porcentaje_liquidacion" in lt
     assert "detalles" in lt
-    assert "valor_declarado" == 100000.00
+    assert lt["valor_declarado"] == 100000.00
 
 
 @pytest.mark.django_db

@@ -5,25 +5,13 @@ Presenter for Taludes (PorcentajeObra).
 """
 import math
 import uuid
-from decimal import Decimal
 from typing import List
 
 from modules.liquidaciones.domain.results.liquidacion_especifico.taludes_primera_revision_result import (
     TaludesPrimeraRevisionResult,
-    LiquidacionEspecificaTaludesResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import (
     CotizacionPorcentajeObraResult,
-)
-from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
-    LiquidacionGeneralResult,
-    ProyectoResult,
-    EntidadResult,
-    UsuarioCreadorResult,
-)
-from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
-    LiquidacionPorcentajeObraResult,
-    DetallePorcentajeObraResult,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_taludes_schemas import (
     LiquidacionTaludesOutput,
@@ -141,20 +129,20 @@ class LiquidacionTaludesPresenter:
 
     @staticmethod
     def present_list(
-        liquidaciones: List,
+        liquidaciones: List[TaludesPrimeraRevisionResult],
         total: int,
         page: int,
         page_size: int,
     ) -> PaginatedData[LiquidacionTaludesOutput]:
         """
-        Maps a list of LiquidacionGeneral ORM objects to PaginatedData[LiquidacionTaludesOutput].
+        Maps a list of TaludesPrimeraRevisionResult domain DTOs to PaginatedData[LiquidacionTaludesOutput].
 
-        Each item is presented by calling present_primera_revision internally,
-        building a TaludesPrimeraRevisionResult from the ORM object.
+        Each item is presented by calling present_primera_revision.
+        Presenter only knows about Domain Results and Schemas — no ORM access.
         """
         items: List[LiquidacionTaludesOutput] = []
-        for lg in liquidaciones:
-            items.append(LiquidacionTaludesPresenter.present_detalle(lg))
+        for domain_result in liquidaciones:
+            items.append(LiquidacionTaludesPresenter.present_primera_revision(domain_result))
 
         total_pages = math.ceil(total / page_size) if page_size > 0 else 0
         return PaginatedData(
@@ -166,95 +154,9 @@ class LiquidacionTaludesPresenter:
         )
 
     @staticmethod
-    def present_detalle(lg) -> LiquidacionTaludesOutput:
+    def present_detalle(domain_result: TaludesPrimeraRevisionResult) -> LiquidacionTaludesOutput:
         """
-        Maps a single LiquidacionGeneral ORM object to LiquidacionTaludesOutput.
-
-        Uses the same mapping logic as present_list's internal loop.
+        Maps a single TaludesPrimeraRevisionResult domain DTO to LiquidacionTaludesOutput.
+        Delegates to present_primera_revision.
         """
-        # Build LiquidacionGeneralResult from ORM
-        proyecto = lg.proyecto
-        entidad = proyecto.entidad if hasattr(proyecto, 'entidad') and proyecto.entidad else None
-
-        # When entidad FK is None, use denormalized fields from proyecto
-        # (these are populated when entity is created inline)
-        if entidad is None:
-            ent_tipo = proyecto.entidad_tipo_documento if hasattr(proyecto, 'entidad_tipo_documento') else None
-            ent_numero = proyecto.entidad_numero_documento if hasattr(proyecto, 'entidad_numero_documento') else None
-            ent_razon = proyecto.entidad_razon_social if hasattr(proyecto, 'entidad_razon_social') else None
-        else:
-            ent_tipo = entidad.tipo_documento
-            ent_numero = entidad.numero_documento
-            ent_razon = entidad.razon_social
-
-        general_result = LiquidacionGeneralResult(
-            id=str(lg.id),
-            municipalidad_id=str(lg.municipalidad_id),
-            usuario_creador=UsuarioCreadorResult(
-                id=str(lg.usuario_creador.id) if lg.usuario_creador else "00000000-0000-0000-0000-000000000000",
-            ),
-            fecha_registro=lg.fecha_registro.isoformat() if lg.fecha_registro else "",
-            expediente=lg.expediente or "",
-            observacion=lg.observacion,
-            numero_revision=lg.numero_revision,
-            sub_total=float(lg.sub_total) if lg.sub_total else 0.0,
-            total=float(lg.total) if lg.total else 0.0,
-            igv_id=str(lg.igv_id.id) if lg.igv_id else None,
-            uit_id=str(lg.uit_id.id) if lg.uit_id else None,
-            proyecto=ProyectoResult(
-                id=str(proyecto.id),
-                denominacion=proyecto.denominacion,
-                nombre_propietario=proyecto.nombre_propietario or "",
-                direccion=proyecto.direccion or "",
-                distrito_id=str(proyecto.distrito_id),
-                entidad=EntidadResult(
-                    tipo_documento=ent_tipo or "",
-                    numero_documento=ent_numero or "",
-                    razon_social=ent_razon or "",
-                ) if (ent_tipo or ent_numero or ent_razon) else None,
-            ),
-        )
-
-        # Get taludes (OneToOne from LiquidacionGeneral)
-        taludes = lg.taludes
-
-        # Build LiquidacionEspecificaTaludesResult
-        especifica_result = LiquidacionEspecificaTaludesResult(
-            id=str(taludes.id),
-            numero=taludes.numero,
-        )
-
-        # Build LiquidacionPorcentajeObraResult from prefetched liquidacion_porcentaje_obra
-        lpo = lg.liquidacion_porcentaje_obra
-        tipo_result = LiquidacionPorcentajeObraResult(
-            id=str(lpo.id),
-            liquidacion_general_id=str(lpo.liquidacion_general_id),
-            tipo_tramite=lpo.tipo_tramite,
-            valor_declarado=lpo.valor_declarado,
-            porcentaje_liquidacion=lpo.porcentaje_liquidacion,
-            derecho_minimo=lpo.derecho_minimo,
-            derecho_maximo=lpo.derecho_maximo,
-            porcentaje_minimo_uit=lpo.porcentaje_minimo_uit,
-            derecho_aplicado_id=str(lpo.derecho_aplicado_id),
-            detalles=[
-                DetallePorcentajeObraResult(
-                    id=str(d.id),
-                    tarifa_aplicada_id=str(d.tarifa_aplicada_id),
-                    especialidad_id=str(d.especialidad_id),
-                    porcentaje_aplicado=d.porcentaje_aplicado,
-                    subtotal=d.subtotal,
-                    igv=d.igv or Decimal("0"),
-                    uit=d.uit or Decimal("0"),
-                    total=d.total or Decimal("0"),
-                )
-                for d in lpo.detalles.all()
-            ],
-        )
-
-        domain_result = TaludesPrimeraRevisionResult(
-            liquidacion_general=general_result,
-            liquidacion_especifica=especifica_result,
-            liquidacion_tipo=tipo_result,
-        )
-
         return LiquidacionTaludesPresenter.present_primera_revision(domain_result)
