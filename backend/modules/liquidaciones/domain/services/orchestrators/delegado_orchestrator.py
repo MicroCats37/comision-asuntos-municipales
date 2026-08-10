@@ -157,6 +157,10 @@ class DelegadoOrchestrator:
         Returns all delegados for a municipalidad with optional vigencia filter.
         vigencia filter: periodo_inicio <= today AND (periodo_fin IS NULL OR periodo_fin >= today)
         """
+        # Normalize vigente string→bool (controller passes raw query param)
+        if isinstance(vigente, str):
+            vigente = vigente.lower() == "true"
+
         if page < 1:
             page = 1
         if page_size < 1:
@@ -200,6 +204,10 @@ class DelegadoOrchestrator:
             )
 
         total_pages = math.ceil(total / page_size) if page_size > 0 else 0
+
+        # Post-filter: when vigente=False, exclude vigentes (computed in loop above)
+        if vigente is False:
+            items = [i for i in items if not i.es_vigente]
 
         return DelegadosPorMunicipalidadResult(
             items=items,

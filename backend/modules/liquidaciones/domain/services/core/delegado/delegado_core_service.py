@@ -110,24 +110,15 @@ class DelegadoCoreService:
         )
 
         if vigente is not None:
-            today = date.today()
+            # Normalize string→bool from query params
+            if isinstance(vigente, str):
+                vigente = vigente.lower() == "true"
             if vigente:
+                today = date.today()
                 qs = qs.filter(
                     Q(periodos__periodo_inicio__lte=today, periodos__periodo_fin__isnull=True)
                     | Q(periodos__periodo_inicio__lte=today, periodos__periodo_fin__gte=today)
                 )
-            else:
-                # Get all vigente IDs and exclude them
-                vigentes_ids = list(
-                    DelegadoMunicipalidad.objects.filter(
-                        municipalidad_id=municipalidad_id
-                    ).filter(
-                        Q(periodos__periodo_inicio__lte=today, periodos__periodo_fin__isnull=True)
-                        | Q(periodos__periodo_inicio__lte=today, periodos__periodo_fin__gte=today)
-                    ).values_list('id', flat=True)
-                )
-
-                qs = qs.exclude(id__in=vigentes_ids)
 
         total = qs.count()
         offset = (page - 1) * page_size
