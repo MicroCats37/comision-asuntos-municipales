@@ -81,13 +81,13 @@ class TarifaPorCategoriaVisitas(BaseModel):
 
     Contiene el porcentaje de UIT aplicable y la categoría.
 
-    Relación: Tiene OneToOneField hacia TarifaLiquidacionBase.
-    Una TarifaPorCategoriaVisitas pertenece a exactamente una TarifaLiquidacionBase.
+    Relación: Tiene ForeignKey hacia TarifaLiquidacionBase.
+    Una TarifaLiquidacionBase puede tener múltiples TarifaPorCategoriaVisitas.
     """
 
     history = HistoricalRecords()
 
-    tarifa_base = models.OneToOneField(
+    tarifa_base = models.ForeignKey(
         TarifaLiquidacionBase,
         on_delete=models.CASCADE,
         related_name="detalle_visitas",
