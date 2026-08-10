@@ -78,6 +78,19 @@ from modules.liquidaciones.domain.services.orchestrators.inspector_orchestrator 
 from modules.liquidaciones.presentation.presenters.inspector_presenter import (
     InspectorPresenter,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_tipo.tarifas_historicas_core_service import (
+    TarifasHistoricasCoreService,
+)
+from modules.liquidaciones.domain.services.orchestrators.tarifas_historicas_orchestrator import (
+    TarifasHistoricasOrchestrator,
+)
+from modules.liquidaciones.domain.services.orchestrators.derechos_historicos_orchestrator import (
+    DerechosHistoricosOrchestrator,
+)
+from modules.liquidaciones.presentation.presenters.tarifas_historicas_presenter import (
+    TarifasHistoricasPresenter,
+    DerechosHistoricosPresenter,
+)
 
 
 class LiquidacionesModule(Module):
@@ -158,3 +171,14 @@ class LiquidacionesModule(Module):
 
         # Presenters — Inspector
         binder.bind(InspectorPresenter, to=InspectorPresenter)
+
+        # Core — Tarifas Historicas
+        binder.bind(TarifasHistoricasCoreService, to=TarifasHistoricasCoreService)
+
+        # Orchestrators — Tarifas Historicas
+        binder.bind(TarifasHistoricasOrchestrator, to=TarifasHistoricasOrchestrator)
+        binder.bind(DerechosHistoricosOrchestrator, to=DerechosHistoricosOrchestrator)
+
+        # Presenters — Tarifas Historicas
+        binder.bind(TarifasHistoricasPresenter, to=TarifasHistoricasPresenter)
+        binder.bind(DerechosHistoricosPresenter, to=DerechosHistoricosPresenter)

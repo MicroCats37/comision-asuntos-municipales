@@ -36,6 +36,9 @@ from modules.liquidaciones.presentation.controllers.delegado_controller import (
 from modules.liquidaciones.presentation.controllers.inspector_controller import (
     InspectorController,
 )
+from modules.liquidaciones.presentation.controllers.tarifas_historicas_controller import (
+    TarifasHistoricasController,
+)
 from modules.finanzas.presentation.controllers.finanzas_controller import FinanzasController
 
 import os
@@ -106,6 +109,9 @@ api.register_controllers(DelegadoController)
 
 # ── Inspectores Controllers ─
 api.register_controllers(InspectorController)
+
+# ── Tarifas y Derechos Históricos ─
+api.register_controllers(TarifasHistoricasController)
 
 # ── Finanzas Controllers ─
 api.register_controllers(FinanzasController)
