@@ -1,6 +1,4 @@
-"""Domain services — re-export."""
+"""Domain services — finanzas domain services."""
+from .finanzas_orchestrator import FinanzasOrchestrator
 
-# TODO: 重建 FinanzasCoreService 后重新启用
-# from .finanzas_core_service import FinanzasCoreService
-# __all__ = ["FinanzasCoreService"]
-__all__ = []
+__all__ = ["FinanzasOrchestrator"]

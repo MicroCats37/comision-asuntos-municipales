@@ -30,6 +30,7 @@ from modules.liquidaciones.presentation.controllers.liquidacion_especifico.liqui
 from modules.liquidaciones.presentation.controllers.liquidacion_especifico.liquidacion_taludes_controller import (
     LiquidacionTaludesController,
 )
+from modules.finanzas.presentation.controllers.finanzas_controller import FinanzasController
 
 import os
 
@@ -93,6 +94,9 @@ api.register_controllers(LiquidacionMecanicaSuelosController)
 api.register_controllers(LiquidacionEdificacionesController)
 api.register_controllers(LiquidacionImpactoVialController)
 api.register_controllers(LiquidacionTaludesController)
+
+# ── Finanzas Controllers ─
+api.register_controllers(FinanzasController)
 
 # ── Exception handlers globales ────────────────────────────────
 register_exception_handlers(api)
