@@ -92,7 +92,7 @@ function ExpedienteField({ control }: { control: Control<EdificacionesFormData> 
       </Label>
       <div className="relative">
         <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input id="expediente" placeholder="Número de expediente" className="pl-10" {...field} />
+        <Input id="expediente" placeholder="Número de expediente" className="pl-10 w-full" {...field} />
       </div>
       {fieldState.error && <p className="text-xs text-destructive">{fieldState.error.message}</p>}
     </div>
@@ -127,7 +127,7 @@ function MunicipalidadField({ register, control, errors }: { register: UseFormRe
 function ObservacionField({ control }: { control: Control<EdificacionesFormData> }) {
   const { field } = useController({ name: "observacion", control });
   return (
-    <div className="space-y-2 md:col-span-2">
+    <div className="space-y-2">
       <Label htmlFor="observacion">Observación</Label>
       <Textarea id="observacion" placeholder="Observaciones adicionales (opcional)" rows={2} {...field} />
     </div>
@@ -141,7 +141,7 @@ function DenominacionField({ control }: { control: Control<EdificacionesFormData
       <Label htmlFor="denominacion">Denominación <span className="text-destructive">*</span></Label>
       <div className="relative">
         <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input id="denominacion" placeholder="Nombre del proyecto" className="pl-10" {...field} />
+        <Input id="denominacion" placeholder="Nombre del proyecto" className="pl-10 w-full" {...field} />
       </div>
       {fieldState.error && <p className="text-xs text-destructive">{fieldState.error.message}</p>}
     </div>
@@ -155,9 +155,20 @@ function NombrePropietarioField({ control }: { control: Control<EdificacionesFor
       <Label htmlFor="nombre_propietario">Propietario <span className="text-destructive">*</span></Label>
       <div className="relative">
         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input id="nombre_propietario" placeholder="Nombre del propietario" className="pl-10" {...field} />
+        <Input id="nombre_propietario" placeholder="Nombre del propietario" className="pl-10 w-full" {...field} />
       </div>
       {fieldState.error && <p className="text-xs text-destructive">{fieldState.error.message}</p>}
+    </div>
+  );
+}
+
+/** Versión compacta para usar como razonSocialSideSlot dentro de EntidadLookupField */
+function NombrePropietarioInline({ control }: { control: Control<EdificacionesFormData> }) {
+  const { field } = useController({ name: "nombre_propietario", control });
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="nombre_propietario">Propietario <span className="text-destructive">*</span></Label>
+      <Input id="nombre_propietario" placeholder="Nombre del propietario" className="w-full" {...field} />
     </div>
   );
 }
@@ -165,11 +176,11 @@ function NombrePropietarioField({ control }: { control: Control<EdificacionesFor
 function DireccionField({ control }: { control: Control<EdificacionesFormData> }) {
   const { field, fieldState } = useController({ name: "direccion", control });
   return (
-    <div className="space-y-2 md:col-span-2">
+    <div className="space-y-2">
       <Label htmlFor="direccion">Dirección <span className="text-destructive">*</span></Label>
       <div className="relative">
         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input id="direccion" placeholder="Dirección del proyecto" className="pl-10" {...field} />
+        <Input id="direccion" placeholder="Dirección del proyecto" className="pl-10 w-full" {...field} />
       </div>
       {fieldState.error && <p className="text-xs text-destructive">{fieldState.error.message}</p>}
     </div>
@@ -223,10 +234,10 @@ function EdificacionesFormBody({ control, isSubmitting, methods }: Edificaciones
             <h3 className="text-sm font-semibold uppercase tracking-wide">Datos del Trámite</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             <MunicipalidadField register={register} control={control} errors={errors} />
-            <ExpedienteField control={control} />
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ExpedienteField control={control} />
               <MoneyInput
                 name="valor_declarado"
                 label="Valor Declarado (S/)"
@@ -255,20 +266,22 @@ function EdificacionesFormBody({ control, isSubmitting, methods }: Edificaciones
             <h3 className="text-sm font-semibold uppercase tracking-wide">Datos del Proyecto</h3>
           </div>
 
-          {/* Entidad primero (RENIEC/SUNAT) + Nombre Propietario al lado */}
+          {/* Entidad + Propietario */}
           <EntidadLookupField
             control={control as never}
             errors={errors}
             razonSocialSideSlot={
-              <NombrePropietarioField control={control} />
+              <NombrePropietarioInline control={control} />
             }
           />
 
-          {/* Denominación + Dirección + Distrito */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Denominación + Distrito + Dirección */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <DenominacionField control={control} />
             <DistritoField register={register} control={control} errors={errors} />
-            <DireccionField control={control} />
+            <div className="sm:col-span-2">
+              <DireccionField control={control} />
+            </div>
           </div>
         </div>
       </div>

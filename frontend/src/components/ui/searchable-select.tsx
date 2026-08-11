@@ -173,7 +173,7 @@ export function SearchableSelect({
             disabled={disabled}
             onClick={() => setOpen(true)}
             className={cn(
-              "relative flex w-full min-w-0 shrink-0 items-center gap-2 rounded-lg border bg-background py-2 pr-3 pl-10 text-sm transition-all duration-200 overflow-hidden",
+              "relative flex w-fit min-w-0 shrink-0 items-center gap-2 rounded-lg border bg-background py-2 pr-3 pl-10 text-sm transition-all duration-200 overflow-hidden",
               "hover:shadow-sm",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
               "disabled:cursor-not-allowed disabled:opacity-50",

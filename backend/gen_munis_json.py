@@ -1,0 +1,119 @@
+# Genera municipalidades.json con TODAS las municipalidades unicas de la lista legacy
+
+import json
+
+raw = """L1	CERCADO DE LIMA
+L4	BARRANCO
+L5	BREÑA
+L6	CARABAYLLO
+L7	COMAS
+L8	CHACLACAYO
+L9	CHORRILLOS
+L10	EL AGUSTINO
+L11	JESUS MARIA
+L12	LA MOLINA
+L13	LA VICTORIA
+L14	LINCE
+L15	LURIGANCHO - CHOSICA
+L15-1	SANTA MARIA DE HUACHIPA
+L16	LURIN
+L17	MAGDALENA DEL MAR
+L18	MIRAFLORES
+L20	PUCUSANA
+L21	PUEBLO LIBRE
+L22	PUENTE PIEDRA
+L23	PUNTA NEGRA
+L24	PUNTA HERMOSA
+L25	RIMAC
+L26	SAN BARTOLO
+L27	SAN ISIDRO
+L28	INDEPENDENCIA
+L29	SAN JUAN DE MIRAFLORES
+L30	SAN LUIS
+L31	SAN MARTIN DE PORRES
+L32	SAN MIGUEL
+L33	SANTIAGO DE SURCO
+L34	SURQUILLO
+L35	VILLA MARIA DEL TRIUNFO
+L36	SAN JUAN DE LURIGANCHO
+L37	SANTA MARIA DEL MAR
+L38	SANTA ROSA
+L39	LOS OLIVOS
+L40	CIENEGUILLA
+L41	SAN BORJA
+L42	VILLA EL SALVADOR
+L43	SANTA ANITA
+L44	SAN VICENTE DE CAÑETE
+L44-1	SAN ANTONIO - CAÑETE
+L44-2	SAN VICENTE DE CAÑETE/ASIA
+L44-3	CERRO AZUL
+L44-4	LUNAHUANA
+L44-5	MALA
+L44-6	CHILCA
+L44-7	IMPERIAL
+L44-8	NUEVO IMPERIAL
+L44-9	SAN LUIS - CAÑETE
+L44-10	CALANGO
+L44-11	COAYLLO
+L44-12	PACARAN
+L44-13	QUILMANA
+L44-14	SANTA CRUZ DE FLORES
+L44-15	ZUÑIGA
+L50	HUARAL
+L50-1	CHANCAY
+L80-1	SAN ANTONIO DE HUAROCHIRI
+L50-3	IHUARI
+L50-4	SUMBILCA
+L50-5	PACARAOS
+L50-6	LAMPIAN
+L50-10	SAN MIGUEL DE ACOS
+L50-11	SANTA CRUZ DE ANDAMARCA
+L60	HUAURA
+L60-1	CALETA DE CARQUIN
+L60-2	HUACHO
+L60-3	SAYAN
+L60-4	VEGUETA
+L60-6	CHECRAS
+L60-7	LEONCIO PRADO
+L60-8	SANTA LEONOR
+L60-9	PACCHO
+L70	BARRANCA - NORTE
+L70-1	SUPE
+L70-2	SUPE - PUERTO
+L70-3	PARAMONGA
+L70-4	PATIVILCA
+L1-1	COMISION AD HOC SEGUNDA INSTANCIA ADMINISTRATIVA
+L1-2	CENTRO HISTÓRICO DE LIMA
+L60-10	HUALMAY
+L-80	HUAROCHIRI
+L60-11	SANTA MARIA
+L3	ATE VITARTE
+L50-12	AUCALLAMA
+L2	ANCON
+L19	PACHACAMAC"""
+
+unicos = {}
+for line in raw.strip().split("\n"):
+    parts = line.split("\t")
+    if len(parts) >= 2:
+        codigo = parts[0].strip()
+        nombre = parts[1].strip()
+        if codigo and codigo not in unicos:
+            unicos[codigo] = nombre
+
+municipalidades = [
+    {"codigo": codigo, "nombre": nombre}
+    for codigo, nombre in sorted(unicos.items(), key=lambda x: (len(x[0]), x[0]))
+]
+
+payload = {
+    "version": "1.0",
+    "source": "Legacy DEVCOMU - tabla Municipios (todas, incluyendo codigos con guion; sin ubigeo/distrito)",
+    "municipalidades": municipalidades,
+}
+
+out = "modules/entidades/seeds/municipalidades.json"
+with open(out, "w", encoding="utf-8") as f:
+    json.dump(payload, f, ensure_ascii=False, indent=2)
+
+print(f"Generadas {len(municipalidades)} municipalidades en {out}")

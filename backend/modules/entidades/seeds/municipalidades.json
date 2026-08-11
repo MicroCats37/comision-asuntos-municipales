@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "source": "Legacy DEVCOMU - tabla Municipios (codigos principales, sin ubigeo/distrito)",
+  "source": "Legacy DEVCOMU - tabla Municipios (todas, incluyendo codigos con guion; sin ubigeo/distrito)",
   "municipalidades": [
     {
       "codigo": "L1",
@@ -193,6 +193,170 @@
     {
       "codigo": "L-80",
       "nombre": "HUAROCHIRI"
+    },
+    {
+      "codigo": "L1-1",
+      "nombre": "COMISION AD HOC SEGUNDA INSTANCIA ADMINISTRATIVA"
+    },
+    {
+      "codigo": "L1-2",
+      "nombre": "CENTRO HISTÓRICO DE LIMA"
+    },
+    {
+      "codigo": "L15-1",
+      "nombre": "SANTA MARIA DE HUACHIPA"
+    },
+    {
+      "codigo": "L44-1",
+      "nombre": "SAN ANTONIO - CAÑETE"
+    },
+    {
+      "codigo": "L44-2",
+      "nombre": "SAN VICENTE DE CAÑETE/ASIA"
+    },
+    {
+      "codigo": "L44-3",
+      "nombre": "CERRO AZUL"
+    },
+    {
+      "codigo": "L44-4",
+      "nombre": "LUNAHUANA"
+    },
+    {
+      "codigo": "L44-5",
+      "nombre": "MALA"
+    },
+    {
+      "codigo": "L44-6",
+      "nombre": "CHILCA"
+    },
+    {
+      "codigo": "L44-7",
+      "nombre": "IMPERIAL"
+    },
+    {
+      "codigo": "L44-8",
+      "nombre": "NUEVO IMPERIAL"
+    },
+    {
+      "codigo": "L44-9",
+      "nombre": "SAN LUIS - CAÑETE"
+    },
+    {
+      "codigo": "L50-1",
+      "nombre": "CHANCAY"
+    },
+    {
+      "codigo": "L50-3",
+      "nombre": "IHUARI"
+    },
+    {
+      "codigo": "L50-4",
+      "nombre": "SUMBILCA"
+    },
+    {
+      "codigo": "L50-5",
+      "nombre": "PACARAOS"
+    },
+    {
+      "codigo": "L50-6",
+      "nombre": "LAMPIAN"
+    },
+    {
+      "codigo": "L60-1",
+      "nombre": "CALETA DE CARQUIN"
+    },
+    {
+      "codigo": "L60-2",
+      "nombre": "HUACHO"
+    },
+    {
+      "codigo": "L60-3",
+      "nombre": "SAYAN"
+    },
+    {
+      "codigo": "L60-4",
+      "nombre": "VEGUETA"
+    },
+    {
+      "codigo": "L60-6",
+      "nombre": "CHECRAS"
+    },
+    {
+      "codigo": "L60-7",
+      "nombre": "LEONCIO PRADO"
+    },
+    {
+      "codigo": "L60-8",
+      "nombre": "SANTA LEONOR"
+    },
+    {
+      "codigo": "L60-9",
+      "nombre": "PACCHO"
+    },
+    {
+      "codigo": "L70-1",
+      "nombre": "SUPE"
+    },
+    {
+      "codigo": "L70-2",
+      "nombre": "SUPE - PUERTO"
+    },
+    {
+      "codigo": "L70-3",
+      "nombre": "PARAMONGA"
+    },
+    {
+      "codigo": "L70-4",
+      "nombre": "PATIVILCA"
+    },
+    {
+      "codigo": "L80-1",
+      "nombre": "SAN ANTONIO DE HUAROCHIRI"
+    },
+    {
+      "codigo": "L44-10",
+      "nombre": "CALANGO"
+    },
+    {
+      "codigo": "L44-11",
+      "nombre": "COAYLLO"
+    },
+    {
+      "codigo": "L44-12",
+      "nombre": "PACARAN"
+    },
+    {
+      "codigo": "L44-13",
+      "nombre": "QUILMANA"
+    },
+    {
+      "codigo": "L44-14",
+      "nombre": "SANTA CRUZ DE FLORES"
+    },
+    {
+      "codigo": "L44-15",
+      "nombre": "ZUÑIGA"
+    },
+    {
+      "codigo": "L50-10",
+      "nombre": "SAN MIGUEL DE ACOS"
+    },
+    {
+      "codigo": "L50-11",
+      "nombre": "SANTA CRUZ DE ANDAMARCA"
+    },
+    {
+      "codigo": "L50-12",
+      "nombre": "AUCALLAMA"
+    },
+    {
+      "codigo": "L60-10",
+      "nombre": "HUALMAY"
+    },
+    {
+      "codigo": "L60-11",
+      "nombre": "SANTA MARIA"
     }
   ]
 }
