@@ -693,6 +693,6 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__detalles__especialidad',
             'liquidacion_porcentaje_obra__derecho_aplicado',
         )
-        if tipo_liquidacion:
-            qs = qs.filter(tipo_liquidacion__codigo=tipo_liquidacion)
+        # El tipo_liquidacion siempre viene validado por el orquestador.
+        qs = qs.filter(tipo_liquidacion__codigo=tipo_liquidacion)
         return qs.order_by('-numero_revision').first()

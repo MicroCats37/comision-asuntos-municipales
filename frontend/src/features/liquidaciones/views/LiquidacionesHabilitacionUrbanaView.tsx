@@ -6,11 +6,10 @@
  */
 "use client";
 
-import { Map, Plus, Search, X, Filter } from "lucide-react";
+import { Map, Plus, X, Filter } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { LiquidacionHabilitacionUrbanaCard } from "../components/cards/LiquidacionHabilitacionUrbanaCard";
@@ -22,7 +21,6 @@ import type { LiquidacionHabilitacionUrbanaListItem } from "../schemas/liquidaci
 const KIND_ICON: LucideIcon = Map;
 
 export function LiquidacionesHabilitacionUrbanaView() {
-  const [searchInput, setSearchInput] = useState("");
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [filtros, setFiltros] = useState<LiquidacionFiltros>({});
   const [filtroModalOpen, setFiltroModalOpen] = useState(false);
@@ -40,19 +38,8 @@ export function LiquidacionesHabilitacionUrbanaView() {
     refetch,
   } = useLiquidacionesHabilitacionUrbana(filtros);
 
-  const filteredItems = items.filter((item) =>
-    item.liquidacion_general.proyecto.denominacion
-      .toLowerCase()
-      .includes(searchInput.toLowerCase())
-  );
-
-  const handleSearch = () => {};
-  const handleClearFilter = () => setSearchInput("");
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSearch();
-  };
-
   const activeFilterCount = Object.values(filtros).filter(Boolean).length;
+
 
   return (
     <div className="page-section">
@@ -86,34 +73,6 @@ export function LiquidacionesHabilitacionUrbanaView() {
             </>
           }
         />
-
-        <div className="flex items-center gap-4 p-4 bg-muted/20 rounded-xl border border-border/60">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-muted-foreground">
-              Filtrar liquidaciones por nombre de proyecto:
-            </span>
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Ej. Proyecto Ejemplo"
-                aria-label="Nombre del proyecto"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="w-[220px] h-9"
-              />
-              <Button variant="default" size="sm" onClick={handleSearch} className="h-9 px-3 gap-1">
-                <Search className="h-4 w-4" />
-                Buscar
-              </Button>
-            </div>
-          </div>
-          {searchInput && (
-            <Button variant="ghost" size="sm" onClick={handleClearFilter} className="h-8 px-2 gap-1 text-xs">
-              <X className="h-3 w-3" />
-              Limpiar filtro
-            </Button>
-          )}
-        </div>
 
         {/* Filtros activos */}
         {activeFilterCount > 0 && (
@@ -185,7 +144,7 @@ export function LiquidacionesHabilitacionUrbanaView() {
             <div className="flex items-center justify-center p-8 text-destructive">
               Error al cargar las liquidaciones
             </div>
-          ) : filteredItems.length === 0 ? (
+          ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-xl">
               <KIND_ICON className="h-10 w-10 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No hay liquidaciones registradas</p>
@@ -193,7 +152,7 @@ export function LiquidacionesHabilitacionUrbanaView() {
           ) : (
             <>
               <div className="flex flex-col gap-4">
-                {filteredItems.map((item) => (
+                {items.map((item) => (
                   <LiquidacionHabilitacionUrbanaCard key={item.liquidacion_general.id} item={item as unknown as LiquidacionHabilitacionUrbanaListItem} />
                 ))}
               </div>
