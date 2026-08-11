@@ -139,11 +139,17 @@ class LiquidacionPorcentajeObraCoreService:
         total_subtotal = sum((d.subtotal for d in detalles), Decimal("0"))
         total = sum((d.total for d in detalles), Decimal("0"))
 
+        # Derecho mínimo: si la tarifa no trae valor absoluto, se calcula
+        # como (UIT * porcentaje_minimo_uit) + IGV vigente, sin hardcodear.
+        derecho_minimo_calculado = (
+            uit_valor * derecho.porcentaje_minimo_uit * (Decimal("1") + igv_porcentaje)
+        )
+
         return CotizacionPorcentajeObraData(
             valor_declarado=valor_declarado,
             porcentaje_liquidacion=porcentaje_liquidacion,
             tipo_tramite=None,  # FUTURE: activate
-            derecho_minimo=derecho.derecho_minimo,
+            derecho_minimo=derecho.derecho_minimo or derecho_minimo_calculado,
             derecho_maximo=derecho.derecho_maximo,
             porcentaje_minimo_uit=derecho.porcentaje_minimo_uit,
             derecho_aplicado_id=str(derecho.id),
@@ -166,9 +172,9 @@ class LiquidacionPorcentajeObraCoreService:
             tipo_tramite=None,  # FUTURE: activate when frontend sends it
             valor_declarado=cotizacion.valor_declarado,
             porcentaje_liquidacion=cotizacion.porcentaje_liquidacion,
-            derecho_minimo=derecho.derecho_minimo,
-            derecho_maximo=derecho.derecho_maximo,
-            porcentaje_minimo_uit=derecho.porcentaje_minimo_uit,
+            derecho_minimo=cotizacion.derecho_minimo,
+            derecho_maximo=cotizacion.derecho_maximo,
+            porcentaje_minimo_uit=cotizacion.porcentaje_minimo_uit,
             derecho_aplicado=derecho,
         )
         # Create detalles
