@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "source": "Endpoint CIP materializado desde build_colegiados_reales_json",
+  "source": "Endpoint CIP materializado desde scripts/seed_fetch",
   "count": 95,
   "colegiados": [
     {
@@ -11,11 +11,16 @@
       "apellido_materno": "JARAMILLO",
       "fecha_nacimiento": "1944-07-24",
       "genero": "M",
+      "celular": "998333184",
       "correo_personal": "jajconstruccionesysalud@gmail.com",
       "correo_institucional": "jalbinagorta@ciplima.org.pe",
       "direccion": "EDIF.LAS BEGONIAS DPTO.504   RESD.SAN FELIPE",
       "ubigeo": "150113",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-02"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -31,11 +36,16 @@
       "apellido_materno": "SOTELO",
       "fecha_nacimiento": "1944-11-10",
       "genero": "M",
+      "celular": "999759261",
       "correo_personal": "jars1011@hotmail.com",
       "correo_institucional": "jorge.romeros@ciplima.org.pe",
       "direccion": "AV.LA ENCALADA 1615-OF.406;MONTERR.SUR",
       "ubigeo": "150140",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -51,11 +61,16 @@
       "apellido_materno": "SAAVEDRA",
       "fecha_nacimiento": "1942-11-27",
       "genero": "M",
+      "celular": "999099348",
       "correo_personal": "jubaldoramos@yahoo.es",
       "correo_institucional": "jose.ramossa@ciplima.org.pe",
       "direccion": "CALLE  5 MZ    E LOTE  11",
       "ubigeo": "150140",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-12"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -71,11 +86,16 @@
       "apellido_materno": "GARCIA",
       "fecha_nacimiento": "1947-01-02",
       "genero": "M",
+      "celular": null,
       "correo_personal": "irgespinoza@yahoo.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "JR.PERCY GIBSON 243",
       "ubigeo": "150116",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-10"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -91,11 +111,16 @@
       "apellido_materno": "ANDRADE",
       "fecha_nacimiento": "1947-11-02",
       "genero": "M",
+      "celular": "994737583",
       "correo_personal": "ricardo.icaza@gmail.com",
       "correo_institucional": "ricardo.icazaa@ciplima.org.pe",
       "direccion": "CAMINOS DEL INCA 1821-102",
       "ubigeo": "150140",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-05"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -111,11 +136,16 @@
       "apellido_materno": "MELENDEZ",
       "fecha_nacimiento": "1947-08-25",
       "genero": "M",
+      "celular": "998275038",
       "correo_personal": "aaquinomel@yahoo.es",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "M.ARRISUENO 669;STA.CATALINA",
       "ubigeo": "150115",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -131,11 +161,16 @@
       "apellido_materno": "ASPAJO",
       "fecha_nacimiento": "1944-07-11",
       "genero": "M",
+      "celular": "999081123",
       "correo_personal": "ingmanuelcardenasaspajo@yahoo.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "PSJE. LOS PINOS 190 OF. 805",
       "ubigeo": "150109",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-02"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -151,11 +186,16 @@
       "apellido_materno": "JERI",
       "fecha_nacimiento": "1947-03-06",
       "genero": "M",
+      "celular": "998535393",
       "correo_personal": "victorleonj@hotmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "PSJE. PEDRO PAULET 279 - II ETAPA TORRES DE SAN BO",
       "ubigeo": "150130",
       "codigo_especialidad": "10",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -171,11 +211,16 @@
       "apellido_materno": "MEZA",
       "fecha_nacimiento": "1951-06-16",
       "genero": "M",
+      "celular": "998708175",
       "correo_personal": "ing.mprado@gmail.com",
       "correo_institucional": "jesus.pradom@ciplima.org.pe",
       "direccion": "CALLE 27 NO. 157 URB. CORPAC",
       "ubigeo": "150131",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2028-01"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -191,11 +236,16 @@
       "apellido_materno": "PALOMINO",
       "fecha_nacimiento": "1950-04-13",
       "genero": "M",
+      "celular": "928957274",
       "correo_personal": "yonelesteban@yahoo.com",
       "correo_institucional": "yonel.estebanp@ciplima.org.pe",
       "direccion": "MARCONA 140-A;TAMBO DE MONTERR.",
       "ubigeo": "150140",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -211,11 +261,16 @@
       "apellido_materno": "DILLON",
       "fecha_nacimiento": "1952-01-22",
       "genero": "M",
+      "celular": "971884547",
       "correo_personal": "kuoweng22@gmail.com",
       "correo_institucional": "kuoweng.ruizd@ciplima.org.pe",
       "direccion": "PASEO LOS EUCALIPTOS 968",
       "ubigeo": "150114",
       "codigo_especialidad": "04",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -231,11 +286,16 @@
       "apellido_materno": "MAYORCA",
       "fecha_nacimiento": "1943-01-07",
       "genero": "M",
+      "celular": "952251825",
       "correo_personal": "afrikakorpus@gmail.com",
       "correo_institucional": "luis.lazoma@ciplima.org.pe",
       "direccion": "JAVIER HERAUD 285",
       "ubigeo": "150106",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-02"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -251,11 +311,16 @@
       "apellido_materno": "MERINO",
       "fecha_nacimiento": "1949-07-25",
       "genero": "M",
+      "celular": "992792105",
       "correo_personal": "calegrem1@yahoo.com",
       "correo_institucional": "cesar.alegrem@ciplima.org.pe",
       "direccion": "GRAL.GARZON 1932.",
       "ubigeo": "150113",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -271,11 +336,16 @@
       "apellido_materno": "FELIPE",
       "fecha_nacimiento": "1948-05-14",
       "genero": "M",
+      "celular": "991047922",
       "correo_personal": "waltererichcepero@gmail.com",
       "correo_institucional": "walter.ceperof@ciplima.org.pe",
       "direccion": "AV.BRASIL 401",
       "ubigeo": "150113",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -291,11 +361,16 @@
       "apellido_materno": "MONTANI",
       "fecha_nacimiento": "1957-03-07",
       "genero": "F",
+      "celular": "997912867",
       "correo_personal": "mrodriguezm@ciplima.org.pe",
       "correo_institucional": "mrodriguezm@ciplima.org.pe",
       "direccion": "AV. VELASCO ASTETE 362",
       "ubigeo": "150130",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -311,11 +386,16 @@
       "apellido_materno": "ALVARADO",
       "fecha_nacimiento": "1942-11-01",
       "genero": "M",
+      "celular": "997258627",
       "correo_personal": "jfcornejoa@yahoo.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "JR. LIBERTAD  1127-1129",
       "ubigeo": "150120",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-08"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -331,11 +411,16 @@
       "apellido_materno": "LLERENA",
       "fecha_nacimiento": "1950-06-08",
       "genero": "M",
+      "celular": "999343539",
       "correo_personal": "beder_ulloa@hotmail.com",
       "correo_institucional": "beder.ulloal@ciplima.org.pe",
       "direccion": "JR.LAS BELLOTITAS 1228;LAS VIOLETAS",
       "ubigeo": "150132",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-06"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -351,11 +436,16 @@
       "apellido_materno": "AGUIRRE",
       "fecha_nacimiento": "1951-05-07",
       "genero": "M",
+      "celular": "999188649",
       "correo_personal": "urosado@yahoo.es",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "JR.MARTIR OLAYA 1053",
       "ubigeo": "150135",
       "codigo_especialidad": "04",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -371,11 +461,16 @@
       "apellido_materno": "TANG",
       "fecha_nacimiento": "1949-06-08",
       "genero": "M",
+      "celular": "999007504",
       "correo_personal": "juliotaywo@yahoo.es",
       "correo_institucional": "julio.taywochongt@ciplima.org.pe",
       "direccion": "HUASCAR 1371 - 302",
       "ubigeo": "150113",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -391,11 +486,16 @@
       "apellido_materno": "ORTIZ",
       "fecha_nacimiento": "1956-02-28",
       "genero": "M",
+      "celular": "990618525",
       "correo_personal": "ariasortizr@gmail.com",
       "correo_institucional": "roberto.ariaso@ciplima.org.pe",
       "direccion": "MZ.Q, LT.24;SOL DE STA.ANITA",
       "ubigeo": "150137",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -411,11 +511,16 @@
       "apellido_materno": "MARTINEZ",
       "fecha_nacimiento": "1962-05-19",
       "genero": "M",
+      "celular": "980592134",
       "correo_personal": "luisloveram@gmail.com",
       "correo_institucional": "luis.loveram@ciplima.org.pe",
       "direccion": "PSJE.E.SIMONETTI MZ.U, LT.7,SECT.II;A.M.D",
       "ubigeo": "150114",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -431,11 +536,16 @@
       "apellido_materno": "LI",
       "fecha_nacimiento": "1959-02-07",
       "genero": "M",
+      "celular": "995086630",
       "correo_personal": "ing_jramirez@yahoo.com",
       "correo_institucional": "jose.ramirezli@ciplima.org.pe",
       "direccion": "UNIDAD VECINAL G 110",
       "ubigeo": "150130",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-04"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -451,11 +561,16 @@
       "apellido_materno": "PEÑA",
       "fecha_nacimiento": "1957-10-24",
       "genero": "M",
+      "celular": "990317778",
       "correo_personal": "gustavogabriel_jimenezpena@yahoo.es",
       "correo_institucional": "gustavo.jimenezp@ciplima.org.pe",
       "direccion": "AV.MONTE DE OLIVOS MZ.H4 LT.8;PROL.BENAVIDES",
       "ubigeo": "150136",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -471,11 +586,16 @@
       "apellido_materno": "GUTIERREZ",
       "fecha_nacimiento": "1954-12-30",
       "genero": "M",
+      "celular": "994048945",
       "correo_personal": "mac2smg@yahoo.es",
       "correo_institucional": "segundo.morenog@ciplima.org.pe",
       "direccion": "URB.LA CAPILLA U2-N15;LA MOLINA VIEJA",
       "ubigeo": "150114",
       "codigo_especialidad": "04",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2030-09"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -491,11 +611,16 @@
       "apellido_materno": "VERGARA",
       "fecha_nacimiento": "1961-10-16",
       "genero": "M",
+      "celular": "996050518",
       "correo_personal": "ronaldcorpus@msn.com",
       "correo_institucional": "ronald.corpusv@ciplima.org.pe",
       "direccion": "AV. DE LOS PRECURSORES 280 DPTO. 402 - URB. LAS LE",
       "ubigeo": "150131",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -511,11 +636,16 @@
       "apellido_materno": "VEGA",
       "fecha_nacimiento": "1952-03-29",
       "genero": "M",
+      "celular": "999031111",
       "correo_personal": "josemirandavega@hotmail.com",
       "correo_institucional": "jose.mirandav@ciplima.org.pe",
       "direccion": "JR. CASTILLA NRO 956 DPTO 5",
       "ubigeo": "150120",
       "codigo_especialidad": "04",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -531,11 +661,16 @@
       "apellido_materno": "CAYO",
       "fecha_nacimiento": "1951-06-02",
       "genero": "M",
+      "celular": "987185792",
       "correo_personal": "i_ferreyra2003@yahoo.es",
       "correo_institucional": "isaac.ferreyrac@ciplima.org.pe",
       "direccion": "... MZ K2 LT 29 URB. ALAMO VIPOL",
       "ubigeo": "150110",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -551,11 +686,16 @@
       "apellido_materno": "CUCHO",
       "fecha_nacimiento": "1950-09-19",
       "genero": "M",
+      "celular": "944850302",
       "correo_personal": "carsan.ing@gmail.com",
       "correo_institucional": "carlos.sandovalc@ciplima.org.pe",
       "direccion": "GRAL.GARZON # 1054",
       "ubigeo": "150117",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-02"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -571,11 +711,16 @@
       "apellido_materno": "VALENZUELA",
       "fecha_nacimiento": "1960-07-13",
       "genero": "M",
+      "celular": "986604636",
       "correo_personal": "clbcvidal@gmail.com",
       "correo_institucional": "ernesto.vidalv@ciplima.org.pe",
       "direccion": "FCO.MASIAS 2529 DPTO.3A",
       "ubigeo": "150116",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -591,11 +736,16 @@
       "apellido_materno": "PANUERA",
       "fecha_nacimiento": "1958-06-17",
       "genero": "F",
+      "celular": "997471650",
       "correo_personal": "anahurtado192006@gmail.com",
       "correo_institucional": "ana.hurtadop@ciplima.org.pe",
       "direccion": "MZ.E-6, LT.26;URB.PROLG.BENAVIDES",
       "ubigeo": "150140",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -611,11 +761,16 @@
       "apellido_materno": "SERRANO",
       "fecha_nacimiento": "1955-03-24",
       "genero": "M",
+      "celular": "931057591",
       "correo_personal": "alejantimo@gmail.com",
       "correo_institucional": "timoteo.sierras@ciplima.org.pe",
       "direccion": "CALLE ZARAGOZA MZ.R, LT.5;LA CAPILLA",
       "ubigeo": "150114",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-02"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -631,11 +786,16 @@
       "apellido_materno": "SANTUR",
       "fecha_nacimiento": "1956-09-11",
       "genero": "M",
+      "celular": "971440626",
       "correo_personal": "luisantur@yahoo.es",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "JR. IGNACIO SEMINARIO # 1098.",
       "ubigeo": "150117",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2028-08"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -651,11 +811,16 @@
       "apellido_materno": "HUAMANI",
       "fecha_nacimiento": "1955-12-12",
       "genero": "M",
+      "celular": "996408070",
       "correo_personal": "orcahuamani@gmail.com",
       "correo_institucional": "orlando.cacchah@ciplima.org.pe",
       "direccion": "CALLE LA COLONIA 375;MANZANO",
       "ubigeo": "150135",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -671,11 +836,16 @@
       "apellido_materno": "VALDERRAMA",
       "fecha_nacimiento": "1954-12-26",
       "genero": "M",
+      "celular": "997908548",
       "correo_personal": "gfernandezval@gmail.com",
       "correo_institucional": "gonzalo.fernandezv@ciplima.org.pe",
       "direccion": "AV.COLECTORA MZ.X, LT.49;STA.PATRICIA",
       "ubigeo": "150114",
       "codigo_especialidad": "10",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-12"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -691,11 +861,16 @@
       "apellido_materno": "GARAYAR",
       "fecha_nacimiento": "1961-12-20",
       "genero": "M",
+      "celular": "945083377",
       "correo_personal": "jmansillag@hotmail.com",
       "correo_institucional": "javier.mansillag@ciplima.org.pe",
       "direccion": "AV.PARRAL F-4;URB.SAN EULOGIO",
       "ubigeo": "150135",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-10"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -711,11 +886,16 @@
       "apellido_materno": "CARRASCO",
       "fecha_nacimiento": "1964-10-05",
       "genero": "M",
+      "celular": "999305021",
       "correo_personal": "jaimemartinezcarrasco@yahoo.es",
       "correo_institucional": "jaime.martinezc@ciplima.org.pe",
       "direccion": "JOSE MARIA SEGUIN 224;ELIO",
       "ubigeo": "150101",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -731,11 +911,16 @@
       "apellido_materno": "ARELLANO",
       "fecha_nacimiento": "1962-05-18",
       "genero": "M",
+      "celular": "996337800",
       "correo_personal": "dantealvarado@hotmail.com",
       "correo_institucional": "alberto.alvaradoa@ciplima.org.pe",
       "direccion": "JR.CHINCHA 379;URB.MESA REDONDA",
       "ubigeo": "150135",
       "codigo_especialidad": "04",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -751,11 +936,16 @@
       "apellido_materno": "HUERTAS",
       "fecha_nacimiento": "1966-10-03",
       "genero": "M",
+      "celular": "997472207",
       "correo_personal": "g17hidalgo@hotmail.com",
       "correo_institucional": "ghidalgo@ciplima.org.pe",
       "direccion": "LOS DIAMANTES 122-A BALCONCILLO",
       "ubigeo": "150115",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-02"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -771,11 +961,16 @@
       "apellido_materno": "ANASTACIO",
       "fecha_nacimiento": "1967-04-26",
       "genero": "M",
+      "celular": "998041188",
       "correo_personal": "goviedo33@gmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "JR.LOS ANDES L-6 MCAL.CASTILLA",
       "ubigeo": "150132",
       "codigo_especialidad": "04",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-09"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -791,11 +986,16 @@
       "apellido_materno": "MARCOS-IBAÑEZ",
       "fecha_nacimiento": "1961-05-13",
       "genero": "M",
+      "celular": "987540743",
       "correo_personal": "proyectos_ardiles@outlook.com",
       "correo_institucional": "jose.ardilesm@ciplima.org.pe",
       "direccion": "PROLO.LA MAR  338 DPTO.103",
       "ubigeo": "150115",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-04"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -811,11 +1011,16 @@
       "apellido_materno": "GUIDO",
       "fecha_nacimiento": "1968-10-07",
       "genero": "M",
+      "celular": "949799468",
       "correo_personal": "josermg1968@gmail.com",
       "correo_institucional": "jose.mendozagu@ciplima.org.pe",
       "direccion": "GRAL. VIDAL  610",
       "ubigeo": "150140",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -831,11 +1036,16 @@
       "apellido_materno": "GABRIEL",
       "fecha_nacimiento": "1965-06-25",
       "genero": "F",
+      "celular": "993616739",
       "correo_personal": "rosaalcantarag2@gmail.com",
       "correo_institucional": "rosa.alcantarag@ciplima.org.pe",
       "direccion": "JR.PAMPACANCHA 113  TUPAC AMARU",
       "ubigeo": "150112",
       "codigo_especialidad": "10",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-02"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -851,11 +1061,16 @@
       "apellido_materno": "ALVAREZ",
       "fecha_nacimiento": "1962-09-19",
       "genero": "M",
+      "celular": "956920133",
       "correo_personal": "rmontes_19@yahoo.es",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "HUSARES DE JUNIN",
       "ubigeo": "150122",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-02"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -871,11 +1086,16 @@
       "apellido_materno": "SANCHEZ",
       "fecha_nacimiento": "1962-05-07",
       "genero": "M",
+      "celular": "999729923",
       "correo_personal": "vkningenieros@gmail.com",
       "correo_institucional": "nestor.cardenass@ciplima.org.pe",
       "direccion": "JR.CARLOS ARRIETA #1484-206",
       "ubigeo": "150187",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-05"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -891,11 +1111,16 @@
       "apellido_materno": "AREVALO",
       "fecha_nacimiento": "1961-11-21",
       "genero": "M",
+      "celular": "952031352",
       "correo_personal": "otbabi@hotmail.com",
       "correo_institucional": "otto.babiloniaa@ciplima.org.pe",
       "direccion": "LOS CIBELES  110 INT.45",
       "ubigeo": "150128",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-03"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -911,11 +1136,16 @@
       "apellido_materno": "ESCUDERO",
       "fecha_nacimiento": "1965-03-07",
       "genero": "M",
+      "celular": "946031522",
       "correo_personal": "salbujar@hotmail.com",
       "correo_institucional": "socimo.albujare@ciplima.org.pe",
       "direccion": "MZ.K LOTE 10 URB. TAURIJA",
       "ubigeo": "000000",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -931,11 +1161,16 @@
       "apellido_materno": "GUZMAN",
       "fecha_nacimiento": "1977-11-20",
       "genero": "F",
+      "celular": "993080399",
       "correo_personal": "galcayhuaman@gmail.com",
       "correo_institucional": "giovanna.alcayhuamang@ciplima.org.pe",
       "direccion": "JR.CURAZAO 220.URB.STA.PATRICIA",
       "ubigeo": "150114",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-07"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -951,11 +1186,16 @@
       "apellido_materno": "MUÑOZ",
       "fecha_nacimiento": "1974-08-16",
       "genero": "F",
+      "celular": "922487311",
       "correo_personal": "elizabeth_lazo@hotmail.com",
       "correo_institucional": "elizabeth.lazom@ciplima.org.pe",
       "direccion": "CALE JAVIER HERAUD  285 URB.LUCYANA",
       "ubigeo": "150106",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -971,11 +1211,16 @@
       "apellido_materno": "ZEVALLOS",
       "fecha_nacimiento": "1973-03-27",
       "genero": "M",
+      "celular": "994170256",
       "correo_personal": "marcoriscope@yahoo.es",
       "correo_institucional": "marz@ciplima.org.pe",
       "direccion": "CALLE DIEGO DE AGUERO #390;VALLE HERMOSO",
       "ubigeo": "150130",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -991,11 +1236,16 @@
       "apellido_materno": "ROSAS",
       "fecha_nacimiento": "1958-08-23",
       "genero": "M",
+      "celular": "997298567",
       "correo_personal": "raulvalega2@yahoo.com.ar",
       "correo_institucional": "raul.valegar@ciplima.org.pe",
       "direccion": "CALLE LA REPUBLICA  155",
       "ubigeo": "150131",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1011,11 +1261,16 @@
       "apellido_materno": "EVANGELISTA",
       "fecha_nacimiento": "1970-08-24",
       "genero": "M",
+      "celular": "944948375",
       "correo_personal": "hmselectrica@gmail.com",
       "correo_institucional": "rsoto@ciplima.org.pe",
       "direccion": "AV.CESAR VALLEJO 418.",
       "ubigeo": "150106",
       "codigo_especialidad": "07",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-06"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -1031,11 +1286,16 @@
       "apellido_materno": "AZAÑERO",
       "fecha_nacimiento": "1977-02-21",
       "genero": "F",
+      "celular": "987702068",
       "correo_personal": "jessicalmejia@yahoo.es",
       "correo_institucional": "mejia.jl@ciplima.org.pe",
       "direccion": "CALLE 34 MZ.T1 LT.11;URB.EL PINAR",
       "ubigeo": "150116",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-02"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1051,11 +1311,16 @@
       "apellido_materno": "VIZCARRA",
       "fecha_nacimiento": "1970-11-18",
       "genero": "M",
+      "celular": "993487920",
       "correo_personal": "yubal.moreyra@gmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "JR. LOS JAZMINES 223",
       "ubigeo": "150140",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-09"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1071,11 +1336,16 @@
       "apellido_materno": "LAYSECA",
       "fecha_nacimiento": "1968-12-13",
       "genero": "M",
+      "celular": "994084458",
       "correo_personal": "curibe_l@yahoo.es",
       "correo_institucional": "carlos.uribel@ciplima.org.pe",
       "direccion": "AV.DONA ROSA #160-02;URB.ROSALES",
       "ubigeo": "150140",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-04"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1091,11 +1361,16 @@
       "apellido_materno": "ESCALANTE",
       "fecha_nacimiento": "1952-01-19",
       "genero": "M",
+      "celular": "994091187",
       "correo_personal": "he_palomino@hotmail.com",
       "correo_institucional": "hugo.palominoe@ciplima.org.pe",
       "direccion": "LOS NISPEROS MZ. O LOTE 5",
       "ubigeo": "150135",
       "codigo_especialidad": "10",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-02"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -1111,11 +1386,16 @@
       "apellido_materno": "QUINECHE",
       "fecha_nacimiento": "1959-09-17",
       "genero": "M",
+      "celular": "957351035",
       "correo_personal": "maaq_3@yahoo.es",
       "correo_institucional": "miguel.acostaq@ciplima.org.pe",
       "direccion": "JR MARGINAL DE LA SELVA 324-328 URB. IGUERETA",
       "ubigeo": "150140",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-09"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1131,11 +1411,16 @@
       "apellido_materno": "MACEDO",
       "fecha_nacimiento": "1965-06-06",
       "genero": "M",
+      "celular": "955843169",
       "correo_personal": "luisparedesmacedo@yahoo.com",
       "correo_institucional": "luis.paredesm@ciplima.org.pe",
       "direccion": "JR. LA VERONICA NO   482  URB. SANTA ISABEL",
       "ubigeo": "150136",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-06"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -1151,11 +1436,16 @@
       "apellido_materno": "CHAVEZ",
       "fecha_nacimiento": "1970-07-11",
       "genero": "M",
+      "celular": "994065983",
       "correo_personal": "jlcastillo_eia@yahoo.es",
       "correo_institucional": "jorge.castilloc@ciplima.org.pe",
       "direccion": "AV. OLAYA 128",
       "ubigeo": "150122",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-12"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -1171,11 +1461,16 @@
       "apellido_materno": "AMES",
       "fecha_nacimiento": "1972-12-22",
       "genero": "F",
+      "celular": "983978129",
       "correo_personal": "vp_castaneda@cip.org.pe",
       "correo_institucional": "viviana.castanedaa@ciplima.org.pe",
       "direccion": "JR. PALLARDELI 210",
       "ubigeo": "150141",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1191,11 +1486,16 @@
       "apellido_materno": "MEGO",
       "fecha_nacimiento": "1974-01-26",
       "genero": "M",
+      "celular": "999283219",
       "correo_personal": "jorgeromero@jrmingenieros.com",
       "correo_institucional": "jorge.romerome@ciplima.org.pe",
       "direccion": "AV. LA JOYA NR.381-383  URB HIGUERETA",
       "ubigeo": "150130",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1211,11 +1511,16 @@
       "apellido_materno": "CONDEZO",
       "fecha_nacimiento": "1971-05-27",
       "genero": "M",
+      "celular": "996759283",
       "correo_personal": "rtallac@gmail.com",
       "correo_institucional": "roberto.tallac@ciplima.org.pe",
       "direccion": "JR. SAN JOSE 496",
       "ubigeo": "150143",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-05"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -1231,11 +1536,16 @@
       "apellido_materno": "REAL",
       "fecha_nacimiento": "1978-06-05",
       "genero": "M",
+      "celular": "993466356",
       "correo_personal": "glopezreal@gmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "JR. CARAZ 868 URB. MERCURIO",
       "ubigeo": "150140",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-03"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -1251,11 +1561,16 @@
       "apellido_materno": "CEPEDA",
       "fecha_nacimiento": "1978-05-01",
       "genero": "M",
+      "celular": "998394556",
       "correo_personal": "ricardo.bautista@veahome.com",
       "correo_institucional": "ricardo.bautistac@ciplima.org.pe",
       "direccion": "AV. CRISTOBAL DE P¿RALTA 1219  VALLE HERMOZO - MONTERRICO",
       "ubigeo": "150140",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1271,11 +1586,16 @@
       "apellido_materno": "DIAZ",
       "fecha_nacimiento": "1964-06-22",
       "genero": "M",
+      "celular": "907272010",
       "correo_personal": "jclopezdiaz@hotmail.com",
       "correo_institucional": "juan.lopezd@ciplima.org.pe",
       "direccion": null,
       "ubigeo": "150136",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -1291,11 +1611,16 @@
       "apellido_materno": "GONZALEZ",
       "fecha_nacimiento": "1974-03-15",
       "genero": "M",
+      "celular": "968693300",
       "correo_personal": "rtoledo@edincosac.com",
       "correo_institucional": "ricardo.toledog@ciplima.org.pe",
       "direccion": "AV. GERARDO UNGER 247 110 INGENIERIA",
       "ubigeo": "150136",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1311,11 +1636,16 @@
       "apellido_materno": "SILVA",
       "fecha_nacimiento": "1971-11-04",
       "genero": "M",
+      "celular": "983488154",
       "correo_personal": "cardisi411@yahoo.es",
       "correo_institucional": "carlos.diazs@ciplima.org.pe",
       "direccion": "JR. PALLKA N?1115  URB. MANGOMARCA",
       "ubigeo": "150132",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1331,11 +1661,16 @@
       "apellido_materno": "TOLEDO",
       "fecha_nacimiento": "1967-10-14",
       "genero": "M",
+      "celular": "994677968",
       "correo_personal": "andres.arandat@ciplima.org.pe",
       "correo_institucional": "andres.arandat@ciplima.org.pe",
       "direccion": "AV. BOLIVAR 2150 EDIFICIO 19 DPTO 402   JARDINES DE LA CATOLICA",
       "ubigeo": "150122",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-08"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1351,11 +1686,16 @@
       "apellido_materno": "SALCEDO",
       "fecha_nacimiento": "1979-10-21",
       "genero": "M",
+      "celular": "973962509",
       "correo_personal": "lmiguel96@yahoo.com",
       "correo_institucional": "luis.nunezs@ciplima.org.pe",
       "direccion": "CALLE LEONARDO DA VINCI NRO. 242  URB. LA CALERA D",
       "ubigeo": "150141",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "0",
+        "ultimo_periodo_pagado_cip": "2026-02"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1371,11 +1711,16 @@
       "apellido_materno": "CONDE",
       "fecha_nacimiento": "1978-11-08",
       "genero": "M",
+      "celular": "981257634",
       "correo_personal": "rodasing@yahoo.es",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "PROLOG. IQUITOS NRO. 2208",
       "ubigeo": "150116",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-11"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1391,11 +1736,16 @@
       "apellido_materno": "MUÑOZ",
       "fecha_nacimiento": "1978-09-11",
       "genero": "M",
+      "celular": "936738681",
       "correo_personal": "laztal.consultores2020@gmail.com",
       "correo_institucional": "julio.lazom@ciplima.org.pe",
       "direccion": "AV. LA PAZ 06 - CERCADO",
       "ubigeo": "150110",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-02"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1411,11 +1761,16 @@
       "apellido_materno": "CAJAHUANCA",
       "fecha_nacimiento": "1979-10-18",
       "genero": "M",
+      "celular": "929957363",
       "correo_personal": "renato.chavez@gmail.com",
       "correo_institucional": "renato.chavezc@ciplima.org.pe",
       "direccion": "AV. PABLO CARRIQUIRRY NRO. 451",
       "ubigeo": "150131",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-07"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -1431,11 +1786,16 @@
       "apellido_materno": "BARZOLA",
       "fecha_nacimiento": "1975-08-13",
       "genero": "M",
+      "celular": "996363220",
       "correo_personal": "rodrigoabc@hotmail.com",
       "correo_institucional": "jose.alvaradob@ciplima.org.pe",
       "direccion": "JR. ZEPITA NRO. 538 DPTO. 403",
       "ubigeo": "150101",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-08"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1451,11 +1811,16 @@
       "apellido_materno": "MACHUCA",
       "fecha_nacimiento": "1981-02-25",
       "genero": "M",
+      "celular": "993271429",
       "correo_personal": "ediaz.ing@gmail.com",
       "correo_institucional": "ever.diazm@ciplima.org.pe",
       "direccion": null,
       "ubigeo": "150121",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1471,11 +1836,16 @@
       "apellido_materno": "ALAMO",
       "fecha_nacimiento": "1978-09-07",
       "genero": "M",
+      "celular": "991135447",
       "correo_personal": "perccalamo@yahoo.es",
       "correo_institucional": "manuel.perccaa@ciplima.org.pe           ",
       "direccion": "SECTOR 2 GRUPO 14 MZ. G LOTE 22",
       "ubigeo": "150142",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -1491,11 +1861,16 @@
       "apellido_materno": "ORIHUELA",
       "fecha_nacimiento": "1981-07-01",
       "genero": "M",
+      "celular": "975143375",
       "correo_personal": "avillegasorihuela@gmail.com",
       "correo_institucional": "alfredo.villegaso@ciplima.org.pe",
       "direccion": "CALLE LAS GOLONDRINAS 160 URB LOS NOGALES LOS OLIVOS",
       "ubigeo": "150114",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -1511,11 +1886,16 @@
       "apellido_materno": "SOTO",
       "fecha_nacimiento": "1983-05-21",
       "genero": "M",
+      "celular": "991887811",
       "correo_personal": "luis.torress@ciplima.org.pe",
       "correo_institucional": "luis.torress@ciplima.org.pe",
       "direccion": "AV. LAS PALMAS S/N MZ F LOTE 1 - URB. LADERAS DE P",
       "ubigeo": "150123",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-05"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -1531,11 +1911,16 @@
       "apellido_materno": "MATOS",
       "fecha_nacimiento": "1980-01-07",
       "genero": "M",
+      "celular": "992714658",
       "correo_personal": "silva.jl@pucp.edu.pe",
       "correo_institucional": "julio.silvam@ciplima.org.pe",
       "direccion": "JR. DELFIN PUCCIO ULLOA 195",
       "ubigeo": "150108",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-10"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1551,11 +1936,16 @@
       "apellido_materno": "DOMINGUEZ",
       "fecha_nacimiento": "1958-12-25",
       "genero": "M",
+      "celular": "982285629",
       "correo_personal": "falcondominguezflavio4@gmail.com",
       "correo_institucional": "flavio.falcond@ciplima.org.pe",
       "direccion": "CALLE MARIA AUXILIADORA #3741",
       "ubigeo": "150135",
       "codigo_especialidad": "10",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -1571,11 +1961,16 @@
       "apellido_materno": "FLORES",
       "fecha_nacimiento": "1977-04-30",
       "genero": "M",
+      "celular": "996297621",
       "correo_personal": "luisantonio441@gmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": null,
       "ubigeo": "070101",
       "codigo_especialidad": "04",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -1591,11 +1986,16 @@
       "apellido_materno": "MISAJEL",
       "fecha_nacimiento": "1979-11-10",
       "genero": "M",
+      "celular": "988998080",
       "correo_personal": "gerencia.rapm@gmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "PASAJE ISMAEL POZO 165-301",
       "ubigeo": "150130",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-02"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -1611,11 +2011,16 @@
       "apellido_materno": "QUICHICA",
       "fecha_nacimiento": "1979-07-24",
       "genero": "M",
+      "celular": "989098931",
       "correo_personal": "jlssamaniego@gmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "MZA B LOTE 15 URB. COOPIP",
       "ubigeo": "150106",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1631,11 +2036,16 @@
       "apellido_materno": "ESTRADA",
       "fecha_nacimiento": "1981-10-27",
       "genero": "M",
+      "celular": "988001326",
       "correo_personal": "luistarazonaestrada@yahoo.com",
       "correo_institucional": "luis.tarazonae@ciplima.org.pe",
       "direccion": "CALLE JORGE LUIS BORGES MZ A LT 24 URB. STA. LEONOR II ETAPA",
       "ubigeo": "150108",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1651,11 +2061,16 @@
       "apellido_materno": "VIZCARRA",
       "fecha_nacimiento": "1964-11-08",
       "genero": "M",
+      "celular": "991898007",
       "correo_personal": "luis.moreyra@gmail.com",
       "correo_institucional": "porfidio.moreyrav@ciplima.org.pe",
       "direccion": "JR. LOS JASMINEZ 223 UR. VILLA JARDIN",
       "ubigeo": "150134",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -1671,11 +2086,16 @@
       "apellido_materno": "HUAMANI",
       "fecha_nacimiento": "1963-01-23",
       "genero": "M",
+      "celular": "913281203",
       "correo_personal": "pjuradoh1@gmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "MZ I LT 7 URB CIUDAD DE GOSEN VILLA MARIA DEL TRIU",
       "ubigeo": "150143",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-10"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -1691,11 +2111,16 @@
       "apellido_materno": "SÁENZ",
       "fecha_nacimiento": "1988-01-25",
       "genero": "M",
+      "celular": "973928698",
       "correo_personal": "rv.granados@gmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "P             ROLONG LOA FAISANES 266 DPTO. 303",
       "ubigeo": "150113",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1711,11 +2136,16 @@
       "apellido_materno": "ENCISO",
       "fecha_nacimiento": "1964-05-20",
       "genero": "M",
+      "celular": "993399305",
       "correo_personal": "fbringas@izperu.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "JR. GERARDO UNGER 219",
       "ubigeo": "150135",
       "codigo_especialidad": "10",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-12"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -1731,11 +2161,16 @@
       "apellido_materno": "ALIAGA",
       "fecha_nacimiento": "1980-05-07",
       "genero": "F",
+      "celular": "994983403",
       "correo_personal": "kdelacruza@gmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "CALLE LOS PETALOS 144 URB . LOS FICUS",
       "ubigeo": "150137",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-05"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -1751,11 +2186,16 @@
       "apellido_materno": "CRUZ",
       "fecha_nacimiento": "1973-10-06",
       "genero": "F",
+      "celular": "988464879",
       "correo_personal": "elizabethwh@yahoo.es",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "SECTOR 1 GRUPO 5 MANZANA P LOTE 24",
       "ubigeo": "150142",
       "codigo_especialidad": "04",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-01"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -1771,11 +2211,16 @@
       "apellido_materno": "LLANOS",
       "fecha_nacimiento": "1987-06-23",
       "genero": "M",
+      "celular": "984762720",
       "correo_personal": "cgfalconi@pucp.pe",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "AV. PARDO 901 DPTO. 702",
       "ubigeo": "150113",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-04"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1791,11 +2236,16 @@
       "apellido_materno": "HERNANDEZ",
       "fecha_nacimiento": "1973-02-10",
       "genero": "M",
+      "celular": "971300792",
       "correo_personal": "marioquispealaya@gmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "JR. PUMACAHUA 982",
       "ubigeo": "150113",
       "codigo_especialidad": "02",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-11"
+      },
       "capitulo": {
         "registro_id": "05",
         "abreviacion": "MECANICA",
@@ -1811,11 +2261,16 @@
       "apellido_materno": "SIANCAS",
       "fecha_nacimiento": "1985-10-05",
       "genero": "M",
+      "celular": "980205158",
       "correo_personal": "omar.faustor@gmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "CA. DANIEL FERNANDEZ 3807 - PISO 4 - URB. PANAMERICANA NORTE",
       "ubigeo": "150104",
       "codigo_especialidad": "04",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-08"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",
@@ -1831,11 +2286,16 @@
       "apellido_materno": "MENDIVIL",
       "fecha_nacimiento": "1985-08-28",
       "genero": "M",
+      "celular": "993723421",
       "correo_personal": "dvargas@cip.org.pe",
       "correo_institucional": "diego.vargasm@ciplima.org.pe",
       "direccion": "PARQUE SAN BERNARDO 105",
       "ubigeo": "150140",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-05"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1851,11 +2311,16 @@
       "apellido_materno": "MEGO",
       "fecha_nacimiento": "1988-04-26",
       "genero": "M",
+      "celular": "957646994",
       "correo_personal": "aromeroingcivil@gmail.com",
-      "correo_institucional": null,
+      "correo_institucional": "",
       "direccion": "JR ARACENA 381 HIGUERETA",
       "ubigeo": "150140",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-08"
+      },
       "capitulo": {
         "registro_id": "02",
         "abreviacion": "CIVIL",
@@ -1871,11 +2336,16 @@
       "apellido_materno": "HUAMAN",
       "fecha_nacimiento": "1985-05-12",
       "genero": "M",
+      "celular": "995564433",
       "correo_personal": "rmatos.makoto@gmail.com",
       "correo_institucional": "ronel.matosh@ciplima.org.pe",
       "direccion": "NAZCA 367 A 903",
       "ubigeo": "150113",
       "codigo_especialidad": "01",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2027-06"
+      },
       "capitulo": {
         "registro_id": "09",
         "abreviacion": "SANITARIA",
@@ -1891,11 +2361,16 @@
       "apellido_materno": "ZEVALLOS",
       "fecha_nacimiento": "1992-02-20",
       "genero": "M",
+      "celular": "992205484",
       "correo_personal": "Jheredia@hzedificaciones.com",
       "correo_institucional": "juancarlos.herediaz@ciplima.org.pe",
       "direccion": "LAS CRUCINELAS 1355 MZ. L LT. 39 LAS FLORES DE LIMA",
       "ubigeo": "150141",
       "codigo_especialidad": "04",
+      "habilitacion": {
+        "condicion_cip": "1",
+        "ultimo_periodo_pagado_cip": "2026-09"
+      },
       "capitulo": {
         "registro_id": "15",
         "abreviacion": "ELECTRICA",

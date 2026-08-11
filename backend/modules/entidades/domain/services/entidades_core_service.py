@@ -95,7 +95,7 @@ class EntidadesCoreService:
         from modules.entidades.domain.models import Municipalidad
 
         return list(
-            Municipalidad.objects.filter(activo=True)
+            Municipalidad.objects.all()
             .select_related("provincia", "distrito__provincia")
             .order_by("nombre")
         )

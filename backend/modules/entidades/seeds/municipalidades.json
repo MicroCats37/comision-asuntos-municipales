@@ -1,0 +1,198 @@
+{
+  "version": "1.0",
+  "source": "Legacy DEVCOMU - tabla Municipios (codigos principales, sin ubigeo/distrito)",
+  "municipalidades": [
+    {
+      "codigo": "L1",
+      "nombre": "CERCADO DE LIMA"
+    },
+    {
+      "codigo": "L2",
+      "nombre": "ANCON"
+    },
+    {
+      "codigo": "L3",
+      "nombre": "ATE VITARTE"
+    },
+    {
+      "codigo": "L4",
+      "nombre": "BARRANCO"
+    },
+    {
+      "codigo": "L5",
+      "nombre": "BREÑA"
+    },
+    {
+      "codigo": "L6",
+      "nombre": "CARABAYLLO"
+    },
+    {
+      "codigo": "L7",
+      "nombre": "COMAS"
+    },
+    {
+      "codigo": "L8",
+      "nombre": "CHACLACAYO"
+    },
+    {
+      "codigo": "L9",
+      "nombre": "CHORRILLOS"
+    },
+    {
+      "codigo": "L10",
+      "nombre": "EL AGUSTINO"
+    },
+    {
+      "codigo": "L11",
+      "nombre": "JESUS MARIA"
+    },
+    {
+      "codigo": "L12",
+      "nombre": "LA MOLINA"
+    },
+    {
+      "codigo": "L13",
+      "nombre": "LA VICTORIA"
+    },
+    {
+      "codigo": "L14",
+      "nombre": "LINCE"
+    },
+    {
+      "codigo": "L15",
+      "nombre": "LURIGANCHO - CHOSICA"
+    },
+    {
+      "codigo": "L16",
+      "nombre": "LURIN"
+    },
+    {
+      "codigo": "L17",
+      "nombre": "MAGDALENA DEL MAR"
+    },
+    {
+      "codigo": "L18",
+      "nombre": "MIRAFLORES"
+    },
+    {
+      "codigo": "L19",
+      "nombre": "PACHACAMAC"
+    },
+    {
+      "codigo": "L20",
+      "nombre": "PUCUSANA"
+    },
+    {
+      "codigo": "L21",
+      "nombre": "PUEBLO LIBRE"
+    },
+    {
+      "codigo": "L22",
+      "nombre": "PUENTE PIEDRA"
+    },
+    {
+      "codigo": "L23",
+      "nombre": "PUNTA NEGRA"
+    },
+    {
+      "codigo": "L24",
+      "nombre": "PUNTA HERMOSA"
+    },
+    {
+      "codigo": "L25",
+      "nombre": "RIMAC"
+    },
+    {
+      "codigo": "L26",
+      "nombre": "SAN BARTOLO"
+    },
+    {
+      "codigo": "L27",
+      "nombre": "SAN ISIDRO"
+    },
+    {
+      "codigo": "L28",
+      "nombre": "INDEPENDENCIA"
+    },
+    {
+      "codigo": "L29",
+      "nombre": "SAN JUAN DE MIRAFLORES"
+    },
+    {
+      "codigo": "L30",
+      "nombre": "SAN LUIS"
+    },
+    {
+      "codigo": "L31",
+      "nombre": "SAN MARTIN DE PORRES"
+    },
+    {
+      "codigo": "L32",
+      "nombre": "SAN MIGUEL"
+    },
+    {
+      "codigo": "L33",
+      "nombre": "SANTIAGO DE SURCO"
+    },
+    {
+      "codigo": "L34",
+      "nombre": "SURQUILLO"
+    },
+    {
+      "codigo": "L35",
+      "nombre": "VILLA MARIA DEL TRIUNFO"
+    },
+    {
+      "codigo": "L36",
+      "nombre": "SAN JUAN DE LURIGANCHO"
+    },
+    {
+      "codigo": "L37",
+      "nombre": "SANTA MARIA DEL MAR"
+    },
+    {
+      "codigo": "L38",
+      "nombre": "SANTA ROSA"
+    },
+    {
+      "codigo": "L39",
+      "nombre": "LOS OLIVOS"
+    },
+    {
+      "codigo": "L40",
+      "nombre": "CIENEGUILLA"
+    },
+    {
+      "codigo": "L41",
+      "nombre": "SAN BORJA"
+    },
+    {
+      "codigo": "L42",
+      "nombre": "VILLA EL SALVADOR"
+    },
+    {
+      "codigo": "L43",
+      "nombre": "SANTA ANITA"
+    },
+    {
+      "codigo": "L44",
+      "nombre": "SAN VICENTE DE CAÑETE"
+    },
+    {
+      "codigo": "L50",
+      "nombre": "HUARAL"
+    },
+    {
+      "codigo": "L60",
+      "nombre": "HUAURA"
+    },
+    {
+      "codigo": "L70",
+      "nombre": "BARRANCA - NORTE"
+    },
+    {
+      "codigo": "L-80",
+      "nombre": "HUAROCHIRI"
+    }
+  ]
+}
