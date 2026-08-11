@@ -211,7 +211,7 @@ export function LiquidacionImpactoVialCard({
         open={delegadosModalOpen}
         onOpenChange={setDelegadosModalOpen}
         liquidacionId={lg.id}
-        municipalidadId={lg.municipalidad_id}
+        municipalidadId={lg.municipalidad?.id ?? ""}
         tipoLiquidacion="impacto_vial"
         revisionIds={[]}
         delegadosActuales={[]}

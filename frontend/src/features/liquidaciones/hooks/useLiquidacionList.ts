@@ -40,7 +40,8 @@ export function useLiquidacionList<T>({
 
   const { data: apiData, isLoading, isError, refetch } = useApiQuery({
     queryKey: [...queryKey, paginationParams.page, paginationParams.page_size],
-    url: `${url}?page=${paginationParams.page}&page_size=${paginationParams.page_size}`,
+    url,
+    params: paginationParams,
     schema: paginatedSchema as ZodType<{ success: boolean; data: PaginatedData<T>; error: unknown }>,
   });
 

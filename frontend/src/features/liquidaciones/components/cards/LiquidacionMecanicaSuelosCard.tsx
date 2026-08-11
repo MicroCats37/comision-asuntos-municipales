@@ -132,7 +132,7 @@ export function LiquidacionMecanicaSuelosCard({
         open={delegadosModalOpen}
         onOpenChange={setDelegadosModalOpen}
         liquidacionId={lg.id}
-        municipalidadId={lg.municipalidad_id}
+        municipalidadId={lg.municipalidad?.id ?? ""}
         tipoLiquidacion="mecanica_suelos"
         revisionIds={[]}
         delegadosActuales={[]}

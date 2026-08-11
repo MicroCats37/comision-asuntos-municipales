@@ -131,7 +131,7 @@ export function LiquidacionHabilitacionUrbanaCard({
         open={delegadosModalOpen}
         onOpenChange={setDelegadosModalOpen}
         liquidacionId={lg.id}
-        municipalidadId={lg.municipalidad_id}
+        municipalidadId={lg.municipalidad?.id ?? ""}
         tipoLiquidacion="habilitacion_urbana"
         revisionIds={[]}
         delegadosActuales={[]}

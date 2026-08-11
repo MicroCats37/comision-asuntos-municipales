@@ -8,14 +8,16 @@
  * - GenericForm = orchestrator (useForm + zodResolver)
  * - Smart Fields = self-contained components connected via `control` using useController
  */
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { Control, UseFormReturn, FieldErrors } from "react-hook-form";
-import { useController } from "react-hook-form";
+import { useController, useWatch } from "react-hook-form";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { notify } from "@/errors";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
 import { GenericInput } from "@/components/genericForm/GenericInput";
 import { useMunicipalidades } from "../../hooks/useMunicipalidades";
@@ -23,12 +25,14 @@ import { useDistritos } from "../../hooks/useDistritos";
 import { useCrearEdificaciones } from "../../hooks/useCrearEdificaciones";
 import {
   type EdificacionesFormData,
+  type ContactoInline,
   edificacionesFormSchema,
 } from "../../schemas/liquidacion-edificaciones-form.schema";
 import { CotizacionPorcentajeSmartField } from "./CotizacionPorcentajeSmartField";
-import { Building2, FileText, MapPin, User } from "lucide-react";
+import { Building2, FileText, MapPin, Phone, Plus, Trash2, User } from "lucide-react";
 import { PrimeraRevisionTarifasSmartField } from "./PrimeraRevisionTarifasSmartField";
 import { EntidadLookupField } from "./EntidadLookupSmartField";
+import { ContactoFormModal } from "./ContactoFormModal";
 
 interface EdificacionesFormModalProps {
   open: boolean;
@@ -44,40 +48,72 @@ export function EdificacionesFormModal({
   onCreated,
 }: EdificacionesFormModalProps) {
   const crearMutation = useCrearEdificaciones();
+  // Contacto state lives at the parent level so ContactoFormModal renders
+  // as a SIBLING of the main form (never nested inside another <form>).
+  // Backend: SINGLE contacto (not an array).
+  const [contacto, setContacto] = useState<ContactoInline | null>(null);
+  const [contactoModalOpen, setContactoModalOpen] = useState(false);
+
+  const handleContactoSaved = useCallback((saved: ContactoInline) => {
+    setContacto(saved);
+    setContactoModalOpen(false);
+  }, []);
+
+  const handleRemoveContacto = useCallback(() => {
+    setContacto(null);
+  }, []);
 
   const handleSubmit = useCallback(
     async (data: EdificacionesFormData) => {
       try {
-        await crearMutation.mutateAsync(data);
+        await crearMutation.mutateAsync({ ...data, contacto: contacto ?? undefined });
         notify.success("Liquidación creada correctamente");
+        setContacto(null);
         onSuccess?.();
         onCreated?.();
       } catch {
         // Error handled by mutation
       }
     },
-    [crearMutation, onSuccess, onCreated],
+    [crearMutation, contacto, onSuccess, onCreated],
   );
 
   return (
-    <AppFormModal
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Nueva Liquidación — Edificaciones"
-      eyebrow="Edificaciones"
-      icon={<FileText className="h-5 w-5 text-primary" />}
-      primaryLabel="Crear Liquidación"
-      primaryLoadingLabel="Creando..."
-      primaryLoading={crearMutation.isPending}
-      onPrimary={() => {}}
-      schema={edificacionesFormSchema}
-      initialData={{ valor_declarado: 0 }}
-      onSubmit={handleSubmit}
-    >
-      {({ methods, isSubmitting }) => (
-        <EdificacionesFormBody control={methods.control} isSubmitting={isSubmitting} methods={methods} />
-      )}
-    </AppFormModal>
+    <>
+      <AppFormModal
+        open={open}
+        onOpenChange={onOpenChange}
+        title="Nueva Liquidación — Edificaciones"
+        eyebrow="Edificaciones"
+        icon={<FileText className="h-5 w-5 text-primary" />}
+        primaryLabel="Crear Liquidación"
+        primaryLoadingLabel="Creando..."
+        primaryLoading={crearMutation.isPending}
+        onPrimary={() => {}}
+        schema={edificacionesFormSchema}
+        initialData={{ valor_declarado: 0 }}
+        onSubmit={handleSubmit}
+      >
+        {({ methods, isSubmitting }) => (
+          <EdificacionesFormBody
+            control={methods.control}
+            isSubmitting={isSubmitting}
+            methods={methods}
+            contacto={contacto}
+            onAddContacto={() => setContactoModalOpen(true)}
+            onRemoveContacto={handleRemoveContacto}
+          />
+        )}
+      </AppFormModal>
+
+      {/* Sibling modal — NOT nested inside the main form */}
+      <ContactoFormModal
+        open={contactoModalOpen}
+        onOpenChange={setContactoModalOpen}
+        onSaved={handleContactoSaved}
+        initialData={contacto ?? undefined}
+      />
+    </>
   );
 }
 
@@ -218,9 +254,19 @@ interface EdificacionesFormBodyProps {
   control: Control<EdificacionesFormData>;
   isSubmitting: boolean;
   methods: UseFormReturn<EdificacionesFormData>;
+  contacto: ContactoInline | null;
+  onAddContacto: () => void;
+  onRemoveContacto: () => void;
 }
 
-function EdificacionesFormBody({ control, isSubmitting, methods }: EdificacionesFormBodyProps) {
+function EdificacionesFormBody({
+  control,
+  isSubmitting,
+  methods,
+  contacto,
+  onAddContacto,
+  onRemoveContacto,
+}: EdificacionesFormBodyProps) {
   const { formState: { errors }, register } = methods;
 
   return (
@@ -282,6 +328,70 @@ function EdificacionesFormBody({ control, isSubmitting, methods }: Edificaciones
             <div className="sm:col-span-2">
               <DireccionField control={control} />
             </div>
+          </div>
+
+          {/* Contacto principal (singular) */}
+          <div className="space-y-3 pt-2 border-t border-border/60">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <Phone className="h-3.5 w-3.5 text-primary/70" />
+                <span>Contacto Principal</span>
+                {contacto && (
+                  <span className="inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[9px] font-bold text-primary">
+                    Agregado
+                  </span>
+                )}
+              </div>
+              {!contacto ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddContacto}
+                  className="h-8 gap-1 text-xs"
+                >
+                  <Plus className="h-3 w-3" />
+                  Agregar
+                </Button>
+              ) : null}
+            </div>
+
+            {contacto ? (
+              <div className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-background px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {contacto.nombres} {contacto.apellidos}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {[contacto.cargo, contacto.email, contacto.celular].filter(Boolean).join(" · ") || "Sin datos"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={onAddContacto}
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                    onClick={onRemoveContacto}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground/70 italic">
+                Sin contacto. Agrega el contacto principal de referencia.
+              </p>
+            )}
           </div>
         </div>
       </div>

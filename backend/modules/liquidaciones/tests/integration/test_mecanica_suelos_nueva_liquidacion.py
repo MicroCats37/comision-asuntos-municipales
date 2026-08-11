@@ -198,7 +198,7 @@ def test_ms_nueva_liquidacion_happy_path(
     # Verify liquidacion_general has expected fields
     lg = result["liquidacion_general"]
     assert "id" in lg
-    assert "municipalidad_id" in lg
+    assert "municipalidad" in lg
     assert "usuario_creador" in lg
     assert lg["expediente"] == "EXP-MS-2024-001"
     assert lg["numero_revision"] == 1
@@ -422,19 +422,21 @@ def test_ms_nueva_liquidacion_has_igv_and_uit_ids(
     result = data["data"]
     lg = result["liquidacion_general"]
 
-    # Verify igv_id and uit_id are present (they may be None if no IGV/UIT is configured)
-    assert "igv_id" in lg, "liquidacion_general should have 'igv_id' field"
-    assert "uit_id" in lg, "liquidacion_general should have 'uit_id' field"
+    # Verify igv and uit are present (they may be None if no IGV/UIT is configured)
+    assert "igv" in lg, "liquidacion_general should have 'igv' field"
+    assert "uit" in lg, "liquidacion_general should have 'uit' field"
 
-    # If igv_id is not None, verify it's a valid UUID
-    if lg["igv_id"] is not None:
-        igv_uuid = uuid.UUID(str(lg["igv_id"]))
-        assert isinstance(igv_uuid, uuid.UUID), f"igv_id should be a valid UUID, got {lg['igv_id']}"
+    # If igv is not None, verify it's an object with valid UUID id
+    if lg["igv"] is not None:
+        igv_uuid = uuid.UUID(str(lg["igv"]["id"]))
+        assert isinstance(igv_uuid, uuid.UUID), \
+            f"igv.id should be a valid UUID, got {lg['igv']['id']}"
 
-    # If uit_id is not None, verify it's a valid UUID
-    if lg["uit_id"] is not None:
-        uit_uuid = uuid.UUID(str(lg["uit_id"]))
-        assert isinstance(uit_uuid, uuid.UUID), f"uit_id should be a valid UUID, got {lg['uit_id']}"
+    # If uit is not None, verify it's an object with valid UUID id
+    if lg["uit"] is not None:
+        uit_uuid = uuid.UUID(str(lg["uit"]["id"]))
+        assert isinstance(uit_uuid, uuid.UUID), \
+            f"uit.id should be a valid UUID, got {lg['uit']['id']}"
 
 
 @pytest.mark.django_db
@@ -489,10 +491,10 @@ def test_ms_nueva_liquidacion_total_calculation(
     assert "total" in lg, "liquidacion_general should have 'total' field"
     assert lg["total"] > 0, f"total should be positive, got {lg['total']}"
 
-    # If igv_id is None (no IGV configured), total should equal sub_total
-    if lg["igv_id"] is None:
+    # If igv is None (no IGV configured), total should equal sub_total
+    if lg["igv"] is None:
         assert lg["total"] == lg["sub_total"], \
-            f"When igv_id is None, total should equal sub_total, got total={lg['total']}, sub_total={lg['sub_total']}"
+            f"When igv is None, total should equal sub_total, got total={lg['total']}, sub_total={lg['sub_total']}"
 
 
 @pytest.mark.django_db

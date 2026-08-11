@@ -17,6 +17,12 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     UsuarioCreadorOutput,
     ProyectoOutput,
     EntidadInlineSchema,
+    MunicipalidadOutput,
+    IgvOutput,
+    UitOutput,
+    DistritoOutput,
+    ProvinciaOutput,
+    DepartamentoOutput,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas import (
     LiquidacionTipoOutput,
@@ -56,22 +62,74 @@ class LiquidacionMecanicaSuelosPresenter:
 
         general_out = LiquidacionGeneralOutput(
             id=uuid.UUID(general.id),
-            municipalidad_id=uuid.UUID(general.municipalidad_id),
-            usuario_creador=UsuarioCreadorOutput(id=uuid.UUID(general.usuario_creador.id)),
+            municipalidad=MunicipalidadOutput(
+                id=uuid.UUID(general.municipalidad.id),
+                codigo=general.municipalidad.codigo,
+                nombre=general.municipalidad.nombre,
+            ),
+            usuario_creador=UsuarioCreadorOutput(
+                id=uuid.UUID(general.usuario_creador.id),
+                nombres=general.usuario_creador.nombres,
+                apellidos=general.usuario_creador.apellidos,
+                email=general.usuario_creador.email,
+                dni=general.usuario_creador.dni,
+                username=general.usuario_creador.username,
+            ),
             fecha_registro=general.fecha_registro,
             expediente=general.expediente,
             observacion=general.observacion,
             numero_revision=general.numero_revision,
             sub_total=general.sub_total,
             total=general.total,
-            igv_id=uuid.UUID(general.igv_id) if general.igv_id else None,
-            uit_id=uuid.UUID(general.uit_id) if general.uit_id else None,
+            retencion=general.retencion,
+            igv=(
+                IgvOutput(
+                    id=uuid.UUID(general.igv.id),
+                    valor=general.igv.valor,
+                    periodo_inicio=general.igv.periodo_inicio,
+                )
+                if general.igv
+                else None
+            ),
+            uit=(
+                UitOutput(
+                    id=uuid.UUID(general.uit.id),
+                    valor=general.uit.valor,
+                    periodo_inicio=general.uit.periodo_inicio,
+                )
+                if general.uit
+                else None
+            ),
             proyecto=ProyectoOutput(
                 id=uuid.UUID(general.proyecto.id),
                 denominacion=general.proyecto.denominacion,
                 nombre_propietario=general.proyecto.nombre_propietario,
                 direccion=general.proyecto.direccion,
-                distrito_id=uuid.UUID(general.proyecto.distrito_id),
+                distrito=(
+                    DistritoOutput(
+                        id=uuid.UUID(general.proyecto.distrito.id),
+                        nombre=general.proyecto.distrito.nombre,
+                        ubigeo=general.proyecto.distrito.ubigeo,
+                        provincia=(
+                            ProvinciaOutput(
+                                id=uuid.UUID(general.proyecto.distrito.provincia.id),
+                                nombre=general.proyecto.distrito.provincia.nombre,
+                            )
+                            if general.proyecto.distrito.provincia
+                            else None
+                        ),
+                        departamento=(
+                            DepartamentoOutput(
+                                id=uuid.UUID(general.proyecto.distrito.departamento.id),
+                                nombre=general.proyecto.distrito.departamento.nombre,
+                            )
+                            if general.proyecto.distrito.departamento
+                            else None
+                        ),
+                    )
+                    if general.proyecto.distrito
+                    else None
+                ),
                 entidad=EntidadInlineSchema(
                     tipo_documento=general.proyecto.entidad.tipo_documento,
                     numero_documento=general.proyecto.entidad.numero_documento,

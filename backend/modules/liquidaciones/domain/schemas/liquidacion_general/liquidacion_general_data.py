@@ -31,5 +31,6 @@ class LiquidacionGeneralData(BaseModel):
     municipalidad_id: str
     expediente: str
     observacion: Optional[str] = None
+    retencion: bool = False
     proyecto: ProyectoData
     contacto: Optional[ContactoData] = None

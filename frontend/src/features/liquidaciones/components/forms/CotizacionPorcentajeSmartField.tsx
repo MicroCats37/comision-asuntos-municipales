@@ -58,7 +58,6 @@ export function CotizacionPorcentajeSmartField({
 }: CotizacionPorcentajeSmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const lastPayloadRef = useRef<string>("");
 
   const cotizacionMutation = useMutation({
     mutationFn: async (payload: {
@@ -78,6 +77,14 @@ export function CotizacionPorcentajeSmartField({
       );
       return data.data;
     },
+    onSuccess: (result) => {
+      setQuote(result);
+      setError(null);
+    },
+    onError: (err) => {
+      setQuote(null);
+      setError(err instanceof Error ? err.message : "Error al calcular cotización");
+    },
   });
 
   // Auto-recalculate when valor_declarado changes (debounced). Empty tarifas = backend auto-fill.
@@ -95,34 +102,11 @@ export function CotizacionPorcentajeSmartField({
     }
 
     const ids = (tarifasIds || []) as string[];
-    const payloadKey = JSON.stringify({ v, ids });
 
-    // Skip if the same payload is already being processed
-    if (lastPayloadRef.current === payloadKey) return;
-    lastPayloadRef.current = payloadKey;
-
-    let cancelled = false;
-    // Clear previous quote immediately so stale value doesn't linger
-    setQuote(null);
-    setError(null);
-
-    cotizacionMutation
-      .mutateAsync({ valor_declarado: v, tarifas_ids: ids })
-      .then((result) => {
-        if (!cancelled) {
-          setQuote(result);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setQuote(null);
-          setError(err instanceof Error ? err.message : "Error al calcular cotización");
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    cotizacionMutation.mutate({
+      valor_declarado: v,
+      tarifas_ids: ids,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedValor, tarifasIds]);
 

@@ -1,15 +1,18 @@
 import { z } from 'zod';
 
+// Coerce helper: backend may send Decimal as string ("123.45") or number
+const num = () => z.coerce.number();
+
 // PorcentajeObraDetalleOut: id, tarifa_aplicada_id, especialidad_id, porcentaje_aplicado, subtotal, igv, uit, total
 export const PorcentajeObraDetalleOutSchema = z.object({
   id: z.string(),
   tarifa_aplicada_id: z.string(),
   especialidad_id: z.string(),
-  porcentaje_aplicado: z.number(),
-  subtotal: z.number(),
-  igv: z.number(),
-  uit: z.number(),
-  total: z.number(),
+  porcentaje_aplicado: num(),
+  subtotal: num(),
+  igv: num(),
+  uit: num(),
+  total: num(),
 });
 
 // PorcentajeObraDatosOut (Edificaciones, Taludes, Impacto Vial):
@@ -17,12 +20,12 @@ export const PorcentajeObraDetalleOutSchema = z.object({
 // porcentaje_minimo_uit, derecho_aplicado_id, detalles: [{...}]
 export const PorcentajeObraDatosOutSchema = z.object({
   id: z.string(),
-  valor_declarado: z.number(),
-  porcentaje_liquidacion: z.number(),
-  tipo_tramite: z.string().optional(),
-  derecho_minimo: z.number().optional(),
-  derecho_maximo: z.number().optional(),
-  porcentaje_minimo_uit: z.number(),
+  valor_declarado: num(),
+  porcentaje_liquidacion: num(),
+  tipo_tramite: z.string().nullish(),
+  derecho_minimo: num().nullish(),
+  derecho_maximo: num().nullish(),
+  porcentaje_minimo_uit: num(),
   derecho_aplicado_id: z.string(),
   detalles: z.array(PorcentajeObraDetalleOutSchema),
 });

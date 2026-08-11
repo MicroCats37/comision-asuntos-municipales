@@ -316,7 +316,7 @@ def test_happy_path_auto_fill_mode(
     # Verify liquidacion_general has expected fields
     lg = result["liquidacion_general"]
     assert "id" in lg
-    assert "municipalidad_id" in lg
+    assert "municipalidad" in lg
     assert "usuario_creador" in lg
     assert lg["expediente"] == "EXP-EDIF-2024-001"
     assert lg["numero_revision"] == 1
@@ -782,10 +782,10 @@ def test_total_calculation_with_igv(
 
     sub_total = Decimal(str(lg["sub_total"]))
     total = Decimal(str(lg["total"]))
-    igv_id = lg["igv_id"]
+    igv = lg["igv"]
 
-    # If igv_id is set, total should include IGV
-    if igv_id is not None:
+    # If igv is set, total should include IGV
+    if igv is not None:
         expected_total = sub_total * Decimal("1.18")
         assert abs(expected_total - total) < Decimal("0.01"), \
             f"Expected total={expected_total} (sub_total * 1.18), got {total}"
@@ -934,21 +934,21 @@ def test_snapshot_igv_uit_assigned(
     result = data["data"]
     lg = result["liquidacion_general"]
 
-    # Verify igv_id and uit_id are present (they may be None if no IGV/UIT is configured)
-    assert "igv_id" in lg, "liquidacion_general should have 'igv_id' field"
-    assert "uit_id" in lg, "liquidacion_general should have 'uit_id' field"
+    # Verify igv and uit are present (they may be None if no IGV/UIT is configured)
+    assert "igv" in lg, "liquidacion_general should have 'igv' field"
+    assert "uit" in lg, "liquidacion_general should have 'uit' field"
 
-    # If igv_id is not None, verify it's a valid UUID
-    if lg["igv_id"] is not None:
-        igv_uuid = uuid.UUID(str(lg["igv_id"]))
+    # If igv is not None, verify it's an object with valid UUID id
+    if lg["igv"] is not None:
+        igv_uuid = uuid.UUID(str(lg["igv"]["id"]))
         assert isinstance(igv_uuid, uuid.UUID), \
-            f"igv_id should be a valid UUID, got {lg['igv_id']}"
+            f"igv.id should be a valid UUID, got {lg['igv']['id']}"
 
-    # If uit_id is not None, verify it's a valid UUID
-    if lg["uit_id"] is not None:
-        uit_uuid = uuid.UUID(str(lg["uit_id"]))
+    # If uit is not None, verify it's an object with valid UUID id
+    if lg["uit"] is not None:
+        uit_uuid = uuid.UUID(str(lg["uit"]["id"]))
         assert isinstance(uit_uuid, uuid.UUID), \
-            f"uit_id should be a valid UUID, got {lg['uit_id']}"
+            f"uit.id should be a valid UUID, got {lg['uit']['id']}"
 
 @pytest.mark.django_db
 def test_crear_liquidacion_con_contacto_inline(

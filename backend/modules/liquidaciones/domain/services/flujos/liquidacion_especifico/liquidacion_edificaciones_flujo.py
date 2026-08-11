@@ -29,6 +29,12 @@ from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_genera
     EntidadResult,
     UsuarioCreadorResult,
     ContactoResult,
+    MunicipalidadResult,
+    IgvResult,
+    UitResult,
+    DistritoResult,
+    ProvinciaResult,
+    DepartamentoResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
     LiquidacionPorcentajeObraResult,
@@ -113,6 +119,7 @@ class LiquidacionEdificacionesFlujo:
               municipalidad_id=gen_data.municipalidad_id,
               expediente=gen_data.expediente,
               observacion=gen_data.observacion,
+              retencion=gen_data.retencion,
               proyecto=proyecto,
               tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.EDIFICACION),
               numero_revision=1,
@@ -193,12 +200,45 @@ class LiquidacionEdificacionesFlujo:
         
         # Build ProyectoResult
         proyecto = liquidacion_general.proyecto
+        distrito_result = None
+        if proyecto.distrito_id:
+            distrito = proyecto.distrito
+            if distrito:
+                distrito_result = DistritoResult(
+                    id=str(distrito.id),
+                    nombre=distrito.nombre,
+                    ubigeo=getattr(distrito, "ubigeo", None),
+                    provincia=(
+                        ProvinciaResult(
+                            id=str(distrito.provincia.id),
+                            nombre=distrito.provincia.nombre,
+                            departamento=(
+                                DepartamentoResult(
+                                    id=str(distrito.provincia.departamento.id),
+                                    nombre=distrito.provincia.departamento.nombre,
+                                )
+                                if distrito.provincia.departamento
+                                else None
+                            ),
+                        )
+                        if distrito.provincia
+                        else None
+                    ),
+                    departamento=(
+                        DepartamentoResult(
+                            id=str(distrito.provincia.departamento.id),
+                            nombre=distrito.provincia.departamento.nombre,
+                        )
+                        if distrito.provincia and distrito.provincia.departamento
+                        else None
+                    ),
+                )
         proyecto_result = ProyectoResult(
             id=str(proyecto.id),
             denominacion=proyecto.denominacion,
             nombre_propietario=proyecto.nombre_propietario,
             direccion=proyecto.direccion,
-            distrito_id=str(proyecto.distrito_id),
+            distrito=distrito_result,
             entidad=entidad_result,
         )
 
@@ -220,16 +260,44 @@ class LiquidacionEdificacionesFlujo:
         return EdificacionesPrimeraRevisionResult(
             liquidacion_general=LiquidacionGeneralResult(
                 id=str(liquidacion_general.id),
-                municipalidad_id=str(liquidacion_general.municipalidad_id),
-                usuario_creador=UsuarioCreadorResult(id=str(usuario_id)),
+                municipalidad=MunicipalidadResult(
+                    id=str(liquidacion_general.municipalidad.id),
+                    codigo=liquidacion_general.municipalidad.codigo,
+                    nombre=liquidacion_general.municipalidad.nombre,
+                ),
+                usuario_creador=UsuarioCreadorResult(
+                    id=str(usuario_id),
+                    nombres=getattr(liquidacion_general.usuario_creador, "nombres", None),
+                    apellidos=getattr(liquidacion_general.usuario_creador, "apellidos", None),
+                    email=getattr(liquidacion_general.usuario_creador, "email", None),
+                    dni=getattr(liquidacion_general.usuario_creador, "dni", None),
+                    username=getattr(liquidacion_general.usuario_creador, "username", None),
+                ),
                 fecha_registro=liquidacion_general.created_at.isoformat(),
                 expediente=liquidacion_general.expediente,
                 observacion=liquidacion_general.observacion,
                 numero_revision=liquidacion_general.numero_revision,
                 sub_total=float(liquidacion_general.sub_total),
                 total=float(liquidacion_general.total),
-                igv_id=str(liquidacion_general.igv_id.id) if liquidacion_general.igv_id else None,
-                uit_id=str(liquidacion_general.uit_id.id) if liquidacion_general.uit_id else None,
+                retencion=liquidacion_general.retencion,
+                igv=(
+                    IgvResult(
+                        id=str(liquidacion_general.igv_id.id),
+                        valor=float(liquidacion_general.igv_id.valor),
+                        periodo_inicio=liquidacion_general.igv_id.periodo_inicio.isoformat() if liquidacion_general.igv_id.periodo_inicio else None,
+                    )
+                    if liquidacion_general.igv_id
+                    else None
+                ),
+                uit=(
+                    UitResult(
+                        id=str(liquidacion_general.uit_id.id),
+                        valor=float(liquidacion_general.uit_id.valor),
+                        periodo_inicio=liquidacion_general.uit_id.periodo_inicio.isoformat() if liquidacion_general.uit_id.periodo_inicio else None,
+                    )
+                    if liquidacion_general.uit_id
+                    else None
+                ),
                 proyecto=proyecto_result,
                 contacto=contacto_result,
             ),

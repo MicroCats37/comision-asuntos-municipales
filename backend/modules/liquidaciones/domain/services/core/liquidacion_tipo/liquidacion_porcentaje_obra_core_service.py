@@ -93,29 +93,44 @@ class LiquidacionPorcentajeObraCoreService:
         Pure arithmetic for the PorcentajeObra motor.
 
         Steps:
-        1. Per-detalle: subtotal_raw = valor × tarifa.porcentaje
-        2. Per-detalle: minimo_subtotal = uit_valor × derecho.porcentaje_minimo_uit
-        3. Per-detalle: subtotal = max(subtotal_raw, minimo_subtotal)
-        4. Per-detalle: clamp to derecho_maximo if set
-        5. Per-detalle: igv = subtotal × igv_porcentaje
-        6. Per-detalle: total = subtotal + igv
-        7. Aggregate totals from details
+        1. Sumar porcentajes de todas las tarifas (ej: 3 x 0.05% = 0.15%)
+        2. subtotal_bruto = valor_declarado x porcentaje_total
+        3. minimo = uit_valor x derecho.porcentaje_minimo_uit (aplica a la LIQUIDACION, no por tarifa)
+        4. subtotal_total = max(subtotal_bruto, minimo)
+        5. clamp a derecho_maximo si aplica
+        6. Repartir subtotal_total proporcionalmente entre detalles
+        7. igv = subtotal_total x igv_porcentaje
+        8. total = subtotal_total + igv
         """
         if not tarifas:
             raise ValueError("At least one tarifa is required")
 
-        minimo_por_tarifa = uit_valor * derecho.porcentaje_minimo_uit
+        # Paso 1-2: subtotal bruto agregado (NO por tarifa)
+        porcentaje_total = sum(
+            (t.porcentaje_liquidacion for t in tarifas), Decimal("0")
+        )
+        subtotal_bruto = valor_declarado * porcentaje_total
 
-        # Step 1-6: per-detalle calculation with per-tariff clamping
+        # Paso 3-4: minimo aplica a la liquidacion completa (UNA vez)
+        minimo = uit_valor * derecho.porcentaje_minimo_uit
+        subtotal_total = max(subtotal_bruto, minimo)
+
+        # Paso 5: clamp a maximo si aplica
+        if derecho.derecho_maximo is not None and subtotal_total > derecho.derecho_maximo:
+            subtotal_total = derecho.derecho_maximo
+
+        # Paso 6: repartir proporcionalmente entre detalles
         detalles: List[DetallePorcentajeObraData] = []
         for tarifa in tarifas:
-            subtotal_raw = valor_declarado * tarifa.porcentaje_liquidacion
-            # Apply per-tariff minimum
-            subtotal = max(subtotal_raw, minimo_por_tarifa)
-            # Apply per-tariff maximum if set
-            if derecho.derecho_maximo is not None and subtotal > derecho.derecho_maximo:
-                subtotal = derecho.derecho_maximo
-            igv = subtotal * igv_porcentaje
+            # Proporcion de esta tarifa sobre el total
+            if porcentaje_total > 0:
+                proporcion = tarifa.porcentaje_liquidacion / porcentaje_total
+            else:
+                proporcion = Decimal("1") / Decimal(len(tarifas))
+
+            subtotal_detalle = subtotal_total * proporcion
+            igv_detalle = subtotal_detalle * igv_porcentaje
+
             detalles.append(
                 DetallePorcentajeObraData(
                     tarifa_aplicada=TarifaPorcentajeObraAplicada(
@@ -125,17 +140,15 @@ class LiquidacionPorcentajeObraCoreService:
                         especialidad_nombre=tarifa.especialidad.nombre,
                     ),
                     porcentaje_aplicado=tarifa.porcentaje_liquidacion,
-                    subtotal=subtotal,
-                    igv=igv,
-                    uit=minimo_por_tarifa,
-                    total=subtotal + igv,
+                    subtotal=subtotal_detalle,
+                    igv=igv_detalle,
+                    uit=minimo,
+                    total=subtotal_detalle + igv_detalle,
                 )
             )
 
-        # Step 7: aggregate
-        porcentaje_liquidacion = sum(
-            (t.porcentaje_liquidacion for t in tarifas), Decimal("0")
-        )
+        # Paso 7-8: agregados
+        porcentaje_liquidacion = porcentaje_total
         total_subtotal = sum((d.subtotal for d in detalles), Decimal("0"))
         total = sum((d.total for d in detalles), Decimal("0"))
 

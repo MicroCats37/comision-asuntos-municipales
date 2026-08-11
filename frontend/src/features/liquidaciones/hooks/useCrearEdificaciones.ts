@@ -59,6 +59,8 @@ export function useCrearEdificaciones() {
                 razon_social: rest.entidad_razon_social,
               },
             },
+            // Contacto principal (singular, opcional)
+            ...(rest.contacto ? { contacto: rest.contacto } : {}),
           },
           liquidacion_especifica: {
             datos: {
@@ -88,6 +90,8 @@ export function useCrearEdificaciones() {
                 razon_social: rest.entidad_razon_social,
               },
             },
+            // Contacto principal (singular, opcional)
+            ...(rest.contacto ? { contacto: rest.contacto } : {}),
           },
           liquidacion_especifica: {
             datos: {

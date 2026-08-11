@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+// Coerce helper: backend may send Decimal as string ("123.45") or number
+const num = () => z.coerce.number();
+
+// lenient uuid: Django Ninja may serialize UUIDs as plain strings
+const uuid = () => z.string();
+
 // Inline entity schema (no id, embedded in ProyectoOutput)
 export const EntidadInlineSchema = z.object({
   tipo_documento: z.string(),
@@ -7,51 +13,122 @@ export const EntidadInlineSchema = z.object({
   razon_social: z.string(),
 });
 
-// ProyectoOutput: id (uuid), denominacion, nombre_propietario, direccion, distrito_id (uuid), entidad
+// DistritoOutput: id, nombre, ubigeo?, provincia?, departamento?
+export const DepartamentoOutputSchema = z.object({
+  id: uuid(),
+  nombre: z.string(),
+});
+
+export const ProvinciaOutputSchema = z.object({
+  id: uuid(),
+  nombre: z.string(),
+});
+
+export const DistritoOutputSchema = z.object({
+  id: uuid(),
+  nombre: z.string(),
+  ubigeo: z.string().nullish(),
+  provincia: ProvinciaOutputSchema.nullish(),
+  departamento: DepartamentoOutputSchema.nullish(),
+});
+
+// ProyectoOutput: id (uuid), denominacion, nombre_propietario, direccion, distrito (object), entidad
 export const ProyectoOutputSchema = z.object({
-  id: z.string().uuid(),
+  id: uuid(),
   denominacion: z.string(),
   nombre_propietario: z.string(),
   direccion: z.string(),
-  distrito_id: z.string().uuid(),
-  entidad: EntidadInlineSchema,
+  distrito: DistritoOutputSchema.nullish(),
+  entidad: EntidadInlineSchema.nullable(),
+});
+
+// MunicipalidadOutput: id, codigo, nombre
+export const MunicipalidadOutputSchema = z.object({
+  id: uuid(),
+  codigo: z.string().nullable(),
+  nombre: z.string(),
+});
+
+// UsuarioCreadorOutput: id, nombres?, apellidos?, email?, dni?, username?
+export const UsuarioCreadorOutputSchema = z.object({
+  id: uuid(),
+  nombres: z.string().nullish(),
+  apellidos: z.string().nullish(),
+  email: z.string().nullish(),
+  dni: z.string().nullish(),
+  username: z.string().nullish(),
+});
+
+// IgvOutput: id, valor, periodo_inicio?
+export const IgvOutputSchema = z.object({
+  id: uuid(),
+  valor: num(),
+  periodo_inicio: z.string().nullish(),
+});
+
+// UitOutput: id, valor, periodo_inicio?
+export const UitOutputSchema = z.object({
+  id: uuid(),
+  valor: num(),
+  periodo_inicio: z.string().nullish(),
+});
+
+// ContactoOutput: id, nombres?, apellidos?, dni?, cargo?, telefono?, celular?, email?
+export const ContactoOutputSchema = z.object({
+  id: uuid(),
+  nombres: z.string().nullish(),
+  apellidos: z.string().nullish(),
+  dni: z.string().nullish(),
+  cargo: z.string().nullish(),
+  telefono: z.string().nullish(),
+  celular: z.string().nullish(),
+  email: z.string().nullish(),
 });
 
 // LiquidacionTipoOutput (identidad): id (uuid), numero (int)
 export const LiquidacionTipoOutputSchema = z.object({
-  id: z.string().uuid(),
-  numero: z.number().int(),
+  id: uuid(),
+  numero: z.coerce.number().int(),
 });
 
-// LiquidacionGeneralOutput: id, municipalidad_id, usuario_creador: { id }, fecha_registro, expediente, observacion?, numero_revision (int), sub_total (float), total (float), igv_id?, uit_id?, proyecto: ProyectoOutput
+// LiquidacionGeneralOutput — matches backend EXACTLY (rich fields), tolerant to nulls/strings
 export const LiquidacionGeneralOutputSchema = z.object({
-  id: z.string(),
-  municipalidad_id: z.string(),
-  usuario_creador: z.object({ id: z.string() }),
+  id: uuid(),
+  municipalidad: MunicipalidadOutputSchema.nullish(),
+  usuario_creador: UsuarioCreadorOutputSchema.nullish(),
   fecha_registro: z.string(),
-  expediente: z.string(),
-  observacion: z.string().optional(),
-  numero_revision: z.number().int(),
-  sub_total: z.number(),
-  total: z.number(),
-  igv_id: z.string().optional(),
-  uit_id: z.string().optional(),
+  expediente: z.string().nullish(),
+  observacion: z.string().nullish(),
+  numero_revision: z.coerce.number().int(),
+  sub_total: num(),
+  total: num(),
+  igv: IgvOutputSchema.nullish(),
+  uit: UitOutputSchema.nullish(),
   proyecto: ProyectoOutputSchema,
+  contacto: ContactoOutputSchema.nullish(),
 });
 
 // Paginated response helper (items directly, without ApiResponse wrapper)
 export function paginatedResponseSchema<T extends z.ZodTypeAny>(itemSchema: T) {
   return z.object({
     items: z.array(itemSchema),
-    total: z.number(),
-    page: z.number().int(),
-    page_size: z.number().int(),
-    total_pages: z.number().int(),
+    total: num(),
+    page: z.coerce.number().int(),
+    page_size: z.coerce.number().int(),
+    total_pages: z.coerce.number().int(),
   });
 }
 
 // Re-export for convenience
 export type EntidadInline = z.infer<typeof EntidadInlineSchema>;
 export type ProyectoOutput = z.infer<typeof ProyectoOutputSchema>;
+export type MunicipalidadOutput = z.infer<typeof MunicipalidadOutputSchema>;
+export type UsuarioCreadorOutput = z.infer<typeof UsuarioCreadorOutputSchema>;
+export type IgvOutput = z.infer<typeof IgvOutputSchema>;
+export type UitOutput = z.infer<typeof UitOutputSchema>;
+export type ContactoOutput = z.infer<typeof ContactoOutputSchema>;
+export type DepartamentoOutput = z.infer<typeof DepartamentoOutputSchema>;
+export type ProvinciaOutput = z.infer<typeof ProvinciaOutputSchema>;
+export type DistritoOutput = z.infer<typeof DistritoOutputSchema>;
 export type LiquidacionTipoOutput = z.infer<typeof LiquidacionTipoOutputSchema>;
 export type LiquidacionGeneralOutput = z.infer<typeof LiquidacionGeneralOutputSchema>;

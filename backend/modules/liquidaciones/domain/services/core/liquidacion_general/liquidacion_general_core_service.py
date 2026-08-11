@@ -94,6 +94,7 @@ class LiquidacionGeneralCoreService:
         tipo_liquidacion: str,
         numero_revision: int = 1,
         contacto=None,
+        retencion: bool = False,
     ) -> LiquidacionGeneral:
         """
         Creates a LiquidacionGeneral base record.
@@ -108,6 +109,7 @@ class LiquidacionGeneralCoreService:
             municipalidad_id=municipalidad_id,
             expediente=expediente,
             observacion=observacion,
+            retencion=retencion,
             estado=EstadoLiquidacion.PENDIENTE,
             tipo_liquidacion=tipo_liq_obj,
             numero_revision=numero_revision,

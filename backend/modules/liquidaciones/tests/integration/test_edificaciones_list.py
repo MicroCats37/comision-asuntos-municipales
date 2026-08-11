@@ -212,7 +212,7 @@ def test_list_liquidacion_general_has_expected_fields(
     lg = item["liquidacion_general"]
 
     assert "id" in lg
-    assert "municipalidad_id" in lg
+    assert "municipalidad" in lg
     assert "usuario_creador" in lg
     assert "fecha_registro" in lg
     assert "expediente" in lg

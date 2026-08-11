@@ -208,7 +208,7 @@ export function LiquidacionTaludesCard({
         open={delegadosModalOpen}
         onOpenChange={setDelegadosModalOpen}
         liquidacionId={lg.id}
-        municipalidadId={lg.municipalidad_id}
+        municipalidadId={lg.municipalidad?.id ?? ""}
         tipoLiquidacion="taludes"
         revisionIds={[]}
         delegadosActuales={[]}

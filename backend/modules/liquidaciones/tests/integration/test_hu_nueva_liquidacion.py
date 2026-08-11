@@ -198,7 +198,7 @@ def test_hu_nueva_liquidacion_happy_path(
     # Verify liquidacion_general has expected fields
     lg = result["liquidacion_general"]
     assert "id" in lg
-    assert "municipalidad_id" in lg
+    assert "municipalidad" in lg
     assert "usuario_creador" in lg
     assert lg["expediente"] == "EXP-2024-001"
     assert lg["numero_revision"] == 1

@@ -8,17 +8,59 @@ class EntidadResult(BaseModel):
     numero_documento: str
 
 
+class DepartamentoResult(BaseModel):
+    id: str
+    nombre: str
+
+
+class ProvinciaResult(BaseModel):
+    id: str
+    nombre: str
+    departamento: Optional[DepartamentoResult] = None
+
+
+class DistritoResult(BaseModel):
+    id: str
+    nombre: str
+    ubigeo: Optional[str] = None
+    provincia: Optional[ProvinciaResult] = None
+    departamento: Optional[DepartamentoResult] = None
+
+
 class ProyectoResult(BaseModel):
     id: str
     denominacion: str
     nombre_propietario: str
     direccion: str
-    distrito_id: str  # Required by presenter
+    distrito: Optional[DistritoResult] = None
     entidad: Optional[EntidadResult] = None
 
 
 class UsuarioCreadorResult(BaseModel):
     id: str
+    nombres: Optional[str] = None
+    apellidos: Optional[str] = None
+    email: Optional[str] = None
+    dni: Optional[str] = None
+    username: Optional[str] = None
+
+
+class MunicipalidadResult(BaseModel):
+    id: str
+    codigo: str
+    nombre: str
+
+
+class IgvResult(BaseModel):
+    id: str
+    valor: float
+    periodo_inicio: Optional[str] = None
+
+
+class UitResult(BaseModel):
+    id: str
+    valor: float
+    periodo_inicio: Optional[str] = None
 
 
 class ContactoResult(BaseModel):
@@ -34,7 +76,7 @@ class ContactoResult(BaseModel):
 
 class LiquidacionGeneralResult(BaseModel):
     id: str
-    municipalidad_id: str
+    municipalidad: MunicipalidadResult
     usuario_creador: UsuarioCreadorResult
     fecha_registro: str  # NEW
     expediente: str
@@ -42,7 +84,8 @@ class LiquidacionGeneralResult(BaseModel):
     numero_revision: int
     sub_total: float
     total: float
-    igv_id: Optional[str] = None  # NEW
-    uit_id: Optional[str] = None  # NEW
+    retencion: bool = False
+    igv: Optional[IgvResult] = None  # NEW
+    uit: Optional[UitResult] = None  # NEW
     proyecto: ProyectoResult
     contacto: Optional[ContactoResult] = None
