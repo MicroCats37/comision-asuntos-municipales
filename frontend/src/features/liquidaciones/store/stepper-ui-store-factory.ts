@@ -2,9 +2,9 @@
 
 import { create } from "zustand";
 import type { EntidadResult } from "@/features/entidades/types/entidad";
-import type { ContactoInline } from "../types/contacto";
-import type { CotizacionQuote } from "../types/liquidacion-edificaciones";
-import type { ProyectistaInline } from "../types/proyectista";
+import type { ContactoInline } from "@/features_deprecated/liquidaciones/types/contacto";
+import type { CotizacionQuote } from "../types/liquidacion-edificaciones.types";
+import type { ProyectistaInline } from "@/features_deprecated/liquidaciones/types/proyectista";
 
 // ── Entidad Simple ─────────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, Users } from "lucide-react";
-import type { DelegadoVigente } from "../types/liquidacion-edificaciones";
+import type { DelegadoVigente } from "../types/liquidacion-edificaciones.types";
 
 interface DelegadosSectionProps {
   /** List of available delegates for the selected municipalidad */

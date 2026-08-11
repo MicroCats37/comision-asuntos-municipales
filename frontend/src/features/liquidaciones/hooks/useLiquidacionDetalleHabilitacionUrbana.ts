@@ -3,9 +3,7 @@
  * Endpoint: GET /liquidaciones/habilitacion-urbana/{id}
  */
 import { useApiQuery } from "@/hooks";
-import { habilitacionUrbanaService } from "../services/habilitacion-urbana.service";
-import { liquidacionHabilitacionUrbanaDetailResponseSchema } from "../schemas/liquidacion-habilitacion-urbana.schema";
-import type { LiquidacionHabilitacionUrbanaListItem } from "../types/liquidacion-habilitacion-urbana.types";
+import { liquidacionHabilitacionUrbanaDetailResponseSchema } from "@/features_deprecated/liquidaciones/schemas/liquidacion-habilitacion-urbana.schema";
 
 interface UseLiquidacionDetalleHabilitacionUrbanaProps {
   id: string;

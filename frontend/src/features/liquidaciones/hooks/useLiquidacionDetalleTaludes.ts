@@ -3,9 +3,7 @@
  * Endpoint: GET /liquidaciones/taludes/{id}
  */
 import { useApiQuery } from "@/hooks";
-import { taludesService } from "../services/taludes.service";
-import { liquidacionTaludesDetailResponseSchema } from "../schemas/liquidacion-taludes.schema";
-import type { LiquidacionTaludesListItem } from "../types/liquidacion-taludes.types";
+import { liquidacionTaludesDetailResponseSchema } from "@/features_deprecated/liquidaciones/schemas/liquidacion-taludes.schema";
 
 interface UseLiquidacionDetalleTaludesProps {
   id: string;

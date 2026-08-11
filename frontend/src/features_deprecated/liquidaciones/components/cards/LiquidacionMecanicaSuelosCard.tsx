@@ -1,0 +1,140 @@
+"use client";
+
+import { useState } from "react";
+import {
+  AlertCircle,
+  Banknote,
+  Building2,
+  Hash,
+  MapPin,
+  Pen,
+  Ruler,
+  Scale,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { LiquidacionBaseCard } from "./LiquidacionBaseCard";
+import { LiquidacionCardHeader, type LiquidacionCardHeaderData } from "../LiquidacionCardHeader";
+import { SectionCard, LabelValue, formatCurrency } from "../liquidacion-ui";
+import { GestionarDelegadosModal } from "../GestionarDelegadosModal";
+import type { LiquidacionMecanicaSuelosListItem } from "../../types/liquidacion-mecanica-suelos.types";
+
+interface LiquidacionMecanicaSuelosCardProps {
+  item: LiquidacionMecanicaSuelosListItem;
+}
+
+/**
+ * LiquidacionMecanicaSuelosCard — renders a Mecánica de Suelos liquidacion
+ * using the new composition architecture (LiquidacionBaseCard).
+ *
+ * Shows MS-specific data: area_m2, costo_por_m2, derecho_minimo/max.
+ */
+export function LiquidacionMecanicaSuelosCard({
+  item,
+}: LiquidacionMecanicaSuelosCardProps) {
+  const router = useRouter();
+  const [delegadosModalOpen, setDelegadosModalOpen] = useState(false);
+
+  const headerData: LiquidacionCardHeaderData = {
+    public_id: item.public_id,
+    fecha_registro: item.fecha_registro,
+    proyectoNombre: item.proyecto.nombre,
+    kindBadge: "Mecánica de Suelos",
+    expediente: undefined,
+    total: item.valores.total_a_pagar,
+  };
+
+  const handleVerDetalle = () => {
+    router.push(`/liquidaciones/mecanica-suelos/${item.public_id}`);
+  };
+
+  const rightSlotActions = (
+    <div className="flex items-center gap-2">
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={(e) => { e.stopPropagation(); setDelegadosModalOpen(true); }}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setDelegadosModalOpen(true); } }}
+        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-semibold border-border/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary cursor-pointer select-none transition-colors"
+      >
+        <Pen className="h-3 w-3" />
+        Delegados
+      </span>
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={(e) => { e.stopPropagation(); handleVerDetalle(); }}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); handleVerDetalle(); } }}
+        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-semibold border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 cursor-pointer select-none transition-colors"
+      >
+        Ver detalle
+      </span>
+    </div>
+  );
+
+  return (
+    <>
+      <LiquidacionBaseCard
+        data={headerData}
+        rightSlotChildren={rightSlotActions}
+      >
+        {/* ─── Resumen Mecánica de Suelos ─── */}
+        <SectionCard icon={<Scale className="h-3.5 w-3.5" />} title="Mecánica de Suelos" className="border-border/60">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <LabelValue label="Revisión" value={`N° ${item.numero_revision}`} />
+          </div>
+        </SectionCard>
+
+        {/* ─── Three-column grid: Proyecto + Entidad + Valores ─── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <SectionCard icon={<Hash className="h-3.5 w-3.5" />} title="Proyecto" className="border-border/60">
+            <div className="space-y-2.5">
+              <LabelValue label="Nombre" value={item.proyecto.nombre} />
+              {item.proyecto.direccion && (
+                <div className="flex items-start gap-1.5 mt-1 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{item.proyecto.direccion}</span>
+                </div>
+              )}
+            </div>
+          </SectionCard>
+
+          <SectionCard icon={<Ruler className="h-3.5 w-3.5" />} title="Liquidación" className="border-border/60">
+            <div className="space-y-2.5">
+              <LabelValue label="Área (m²)" value={`${item.revisiones[0]?.tarifa?.area_m2 ?? 0}`} />
+              <LabelValue label="Costo/m²" value={formatCurrency(item.revisiones[0]?.tarifa?.costo_por_m2 ?? 0)} />
+            </div>
+          </SectionCard>
+
+          <SectionCard icon={<Banknote className="h-3.5 w-3.5" />} title="Valores" className="border-border/60">
+            <div className="space-y-2.5">
+              <LabelValue label="Subtotal" value={formatCurrency(item.valores.subtotal)} />
+              <LabelValue label="Total a Pagar" value={formatCurrency(item.valores.total_a_pagar)} valueClassName="text-primary font-bold" />
+            </div>
+          </SectionCard>
+        </div>
+
+        {/* ─── Totales ─── */}
+        <SectionCard icon={<Banknote className="h-3.5 w-3.5" />} title="Totales" className="border-border/60">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <LabelValue label="Subtotal" value={formatCurrency(item.valores.subtotal)} />
+            <LabelValue label="Total" value={formatCurrency(item.valores.total)} />
+            <div className="flex flex-col bg-primary/5 border border-primary/10 rounded-lg px-3 py-2 -my-0.5">
+              <span className="text-[9px] font-bold text-primary uppercase tracking-wider mb-0.5">Total a Pagar</span>
+              <span className="text-base font-black text-primary">{formatCurrency(item.valores.total_a_pagar)}</span>
+            </div>
+          </div>
+        </SectionCard>
+      </LiquidacionBaseCard>
+
+      <GestionarDelegadosModal
+        open={delegadosModalOpen}
+        onOpenChange={setDelegadosModalOpen}
+        liquidacionId={item.public_id}
+        municipalidadId={item.municipalidad.id}
+        tipoLiquidacion="mecanica_suelos"
+        revisionIds={item.revisiones.map(r => r.id)}
+        delegadosActuales={[]}
+      />
+    </>
+  );
+}

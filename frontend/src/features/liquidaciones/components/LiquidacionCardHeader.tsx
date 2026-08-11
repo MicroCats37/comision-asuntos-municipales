@@ -3,11 +3,11 @@
 import { Calendar, ChevronDown, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CollapsibleTrigger } from "@/components/ui/collapsible";
-import { getEstadoBadgeClass, formatDate, formatCurrency } from "./LiquidacionGeneralCard";
+import { getEstadoBadgeClass, formatDate, formatCurrency } from "./cards/../liquidacion-ui";
 
 export interface LiquidacionCardHeaderData {
   public_id: string;
-  estado: string;
+  estado?: string;
   fecha_registro: string;
   proyectoNombre: string;
   kindBadge: string;
@@ -46,7 +46,7 @@ export function LiquidacionCardHeader({ data, rightSlotChildren, displayPublicId
               <span
                 className={cn(
                   "shrink-0 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                  getEstadoBadgeClass(estado),
+                  getEstadoBadgeClass(estado ?? ""),
                 )}
               >
                 {estado}

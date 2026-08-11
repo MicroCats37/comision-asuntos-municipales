@@ -3,9 +3,8 @@
  * Endpoint: GET /liquidaciones/edificaciones/{id}
  */
 import { useApiQuery } from "@/hooks";
-import { liquidacionesEdificacionesService } from "../services/liquidaciones-edificaciones.service";
-import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificaciones";
-import { liquidacionEdificacionOutResponseSchema } from "../schemas/liquidacion.schema";
+import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificaciones.types";
+import { liquidacionEdificacionOutResponseSchema } from "@/features_deprecated/liquidaciones/schemas/liquidacion.schema";
 
 interface UseLiquidacionDetalleEdificacionProps {
   id: string;

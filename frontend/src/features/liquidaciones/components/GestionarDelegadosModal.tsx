@@ -10,7 +10,7 @@ import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { DelegadosSection } from "./DelegadosSection";
 import api from "@/lib/api";
 import { handleApiError, notify } from "@/errors";
-import type { DelegadoVigente } from "../types/liquidacion-edificaciones";
+import type { DelegadoVigente } from "../types/liquidacion-edificaciones.types";
 import { delegadosVigentesResponseSchema } from "../hooks/useDelegadosVigentes";
 
 interface HasId {

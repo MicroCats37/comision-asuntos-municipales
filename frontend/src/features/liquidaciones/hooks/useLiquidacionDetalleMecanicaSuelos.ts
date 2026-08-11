@@ -3,9 +3,7 @@
  * Endpoint: GET /liquidaciones/mecanica-suelos/{id}
  */
 import { useApiQuery } from "@/hooks";
-import { mecanicaSuelosService } from "../services/mecanica-suelos.service";
-import { liquidacionMecanicaSuelosDetailResponseSchema } from "../schemas/liquidacion-mecanica-suelos.schema";
-import type { LiquidacionMecanicaSuelosListItem } from "../types/liquidacion-mecanica-suelos.types";
+import { liquidacionMecanicaSuelosDetailResponseSchema } from "@/features_deprecated/liquidaciones/schemas/liquidacion-mecanica-suelos.schema";
 
 interface UseLiquidacionDetalleMecanicaSuelosProps {
   id: string;

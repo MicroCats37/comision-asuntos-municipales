@@ -10,7 +10,7 @@ import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { InspectoresSection } from "./InspectoresSection";
 import api from "@/lib/api";
 import { handleApiError, notify } from "@/errors";
-import type { InspectorVigente } from "../types/liquidacion-general";
+import type { InspectorVigente } from "@/features/inspectores/types/inspectores.types";
 import { useInspectoresVigentes } from "../hooks/useInspectoresVigentes";
 import { inspectoresVigentesResponseSchema } from "../hooks/useInspectoresVigentes";
 

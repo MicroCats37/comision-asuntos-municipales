@@ -14,10 +14,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { LiquidacionCardBase } from "../types/liquidacion-general";
+import type { LiquidacionCardBase } from "./LiquidacionDetalleCompleta";
 import { LiquidacionCardHeader } from "./LiquidacionCardHeader";
 import { GestionarDelegadosModal } from "./GestionarDelegadosModal";
-import { printLiquidacionDocument } from "./LiquidacionPDFModal";
+import { printLiquidacionDocument } from "@/features_deprecated/liquidaciones/components/LiquidacionPDFModal";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useState } from "react";
 

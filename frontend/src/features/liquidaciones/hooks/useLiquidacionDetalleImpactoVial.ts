@@ -3,9 +3,7 @@
  * Endpoint: GET /liquidaciones/impacto-vial/{id}
  */
 import { useApiQuery } from "@/hooks";
-import { impactoVialService } from "../services/impacto-vial.service";
-import { liquidacionImpactoVialDetailResponseSchema } from "../schemas/liquidacion-impacto-vial.schema";
-import type { LiquidacionImpactoVialListItem } from "../types/liquidacion-impacto-vial.types";
+import { liquidacionImpactoVialDetailResponseSchema } from "@/features_deprecated/liquidaciones/schemas/liquidacion-impacto-vial.schema";
 
 interface UseLiquidacionDetalleImpactoVialProps {
   id: string;

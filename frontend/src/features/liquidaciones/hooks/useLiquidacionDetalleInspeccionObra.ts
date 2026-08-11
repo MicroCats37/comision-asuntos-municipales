@@ -3,9 +3,7 @@
  * Endpoint: GET /liquidaciones/inspeccion-obra/{id}
  */
 import { useApiQuery } from "@/hooks";
-import { inspeccionObraService } from "../services/inspeccion-obra.service";
-import { liquidacionInspeccionObraDetailResponseSchema } from "../schemas/liquidacion-inspeccion-obra.schema";
-import type { LiquidacionInspeccionObraListItem } from "../types/liquidacion-inspeccion-obra.types";
+import { liquidacionInspeccionObraDetailResponseSchema } from "@/features_deprecated/liquidaciones/schemas/liquidacion-inspeccion-obra.schema";
 
 interface UseLiquidacionDetalleInspeccionObraProps {
   id: string;

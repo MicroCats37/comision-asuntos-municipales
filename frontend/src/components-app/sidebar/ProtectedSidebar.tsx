@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, LogOutIcon, Menu, X, ChevronDown } from "lucide-react";
+import { FileText, LogOutIcon, Menu, X, ChevronDown, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import {
@@ -48,6 +48,24 @@ const liquidacionesGroup = {
 };
 
 /**
+ * Accordion group for Operativa with Delegados and Inspectores sub-items.
+ */
+const operativaGroup = {
+  title: "Operativa",
+  icon: Users,
+  children: [
+    {
+      title: "Delegados",
+      href: "/liquidaciones/delegados",
+    },
+    {
+      title: "Inspectores",
+      href: "/liquidaciones/inspectores",
+    },
+  ],
+};
+
+/**
  * ProtectedSidebar - provides sidebar navigation for authenticated routes.
  * Fully responsive: desktop shows a bordered sidebar; mobile shows a floating
  * toggle button and a slide-in overlay with backdrop blur.
@@ -59,6 +77,7 @@ export function ProtectedSidebar({ user }: { user: MeResponse }) {
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [liquidacionesOpen, setLiquidacionesOpen] = useState(true);
+  const [operativaOpen, setOperativaOpen] = useState(true);
 
   const handleLogout = async () => {
     try {
@@ -80,6 +99,10 @@ export function ProtectedSidebar({ user }: { user: MeResponse }) {
   };
 
   const isChildActive = liquidacionesGroup.children.some(
+    (child) => pathname === child.href,
+  );
+
+  const isOperativaChildActive = operativaGroup.children.some(
     (child) => pathname === child.href,
   );
 
@@ -132,6 +155,60 @@ export function ProtectedSidebar({ user }: { user: MeResponse }) {
             >
               <div className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-3">
                 {liquidacionesGroup.children.map((child) => {
+                  const isActive = pathname === child.href;
+                  return (
+                    <a
+                      key={child.href}
+                      href={child.href}
+                      onClick={handleNavClick}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
+                      )}
+                    >
+                      <span className="min-w-0 truncate">{child.title}</span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Operativa Accordion Group */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setOperativaOpen((prev) => !prev)}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                isOperativaChildActive
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
+              )}
+            >
+              <operativaGroup.icon className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 truncate flex-1 text-left">
+                {operativaGroup.title}
+              </span>
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                  operativaOpen && "rotate-180",
+                )}
+              />
+            </button>
+
+            {/* Sub-items */}
+            <div
+              className={cn(
+                "overflow-hidden transition-all duration-200 ease-in-out",
+                operativaOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
+              )}
+            >
+              <div className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-3">
+                {operativaGroup.children.map((child) => {
                   const isActive = pathname === child.href;
                   return (
                     <a

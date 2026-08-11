@@ -1,225 +1,115 @@
 /**
  * Vista para lista de Liquidaciones de Inspección de Obra.
  * Ruta: /liquidaciones/inspeccion-obra
+ *
+ * Usa PageHeader + cards pattern. No AppDataTable.
  */
 "use client";
 
-import {
-  ClipboardCheck,
-  FileText,
-  Hash,
-  Home,
-  Plus,
-  Scale,
-  Search,
-  Truck,
-  UserCheck,
-  X,
-} from "lucide-react";
+import { ClipboardCheck, Plus, Search, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LiquidacionInspeccionObraCard } from "../components/LiquidacionInspeccionObraCard";
-import { ConsultarIngenieroDialog } from "../components/ConsultarIngenieroDialog";
-import { LiquidacionInspeccionObraSingleFormModal } from "../components/LiquidacionInspeccionObraSingleFormModal";
-import { printInspeccionObraDocument, adaptIOToPrintData } from "../components/inspeccion-obra-print";
-import { useLiquidacionesInspeccionObra } from "../hooks/useLiquidacionesInspeccionObra";
-import { useAuthStore } from "@/features/auth/store/auth.store";
-import type { LiquidacionCardBase } from "../types/liquidacion-general";
+import { PageHeader } from "@/components-app/pages/PageHeader";
+import { LiquidacionInspeccionObraCard } from "../components/cards/LiquidacionInspeccionObraCard";
+import { useLiquidacionesInspeccionObra } from "../hooks";
+import type { LiquidacionInspeccionObraListItem } from "../schemas/liquidacion-inspeccion-obra.schema";
 
 const KIND_ICON: LucideIcon = ClipboardCheck;
 
-interface LiquidacionesInspeccionObraViewProps {
-  onSuccess?: () => void;
-}
-
-export function LiquidacionesInspeccionObraView({
-  onSuccess,
-}: LiquidacionesInspeccionObraViewProps) {
-  const router = useRouter();
+export function LiquidacionesInspeccionObraView() {
   const [searchInput, setSearchInput] = useState("");
-  const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
-  const [ioModalOpen, setIoModalOpen] = useState(false);
-  const [consultDialogOpen, setConsultDialogOpen] = useState(false);
 
   const {
-    items: liquidationItems,
-    total: liquidationTotal,
-    page: liquidationPage,
-    pageSize: liquidationPageSize,
-    isLoading: isLiquidationLoading,
-    isError: isLiquidationError,
-    refetch: refetchLiquidaciones,
-    setPage: setLiquidationPage,
-  } = useLiquidacionesInspeccionObra({ page: 1, pageSize: 10 });
+    items,
+    total,
+    page,
+    pageSize,
+    totalPages,
+    isLoading,
+    isError,
+    setPage,
+  } = useLiquidacionesInspeccionObra();
 
-  const currentUser = useAuthStore((state) => state.user);
+  const filteredItems = items.filter((item) =>
+    item.liquidacion_general.proyecto.denominacion
+      .toLowerCase()
+      .includes(searchInput.toLowerCase())
+  );
 
-  const handleSearch = () => {
-    const trimmed = searchInput.trim();
-    setProyectoPublicId(trimmed ? trimmed : null);
-  };
-
-  const handleClearFilter = () => {
-    setSearchInput("");
-    setProyectoPublicId(null);
-  };
-
+  const handleSearch = () => {};
+  const handleClearFilter = () => setSearchInput("");
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
-  const handleVerDetalle = (item: LiquidacionCardBase) => {
-    router.push(`/liquidaciones/inspeccion-obra/${item.id}`);
+    if (e.key === "Enter") handleSearch();
   };
 
   return (
     <div className="page-section">
       <div className="space-y-6">
-        {/* Page Header */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
-              <KIND_ICON className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black tracking-tight">Inspección de Obra</h1>
-              <p className="text-sm text-muted-foreground">
-                Liquidaciones de inspección de obra
-              </p>
-            </div>
-          </div>
-          <Button
-            className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-            onClick={() => setIoModalOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Nueva Liquidación
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2 h-11 rounded-xl font-semibold shrink-0"
-            onClick={() => setConsultDialogOpen(true)}
-          >
-            <UserCheck className="h-4 w-4" />
-            Consultar ingeniero
-          </Button>
-        </div>
+        <PageHeader
+          title="Liquidaciones — Inspección de Obra"
+          description="Listado de liquidaciones de Inspección de Obra"
+          icon={KIND_ICON}
+          actionNodes={
+            <Button className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0">
+              <Plus className="h-4 w-4" />
+              Nueva Liquidación
+            </Button>
+          }
+        />
 
-        {/* Filter Bar */}
         <div className="flex items-center gap-4 p-4 bg-muted/20 rounded-xl border border-border/60">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-muted-foreground">
-              Filtrar liquidaciones por ID de Proyecto:
-            </span>
+            <span className="text-sm font-semibold text-muted-foreground">Filtrar liquidaciones por nombre de proyecto:</span>
             <div className="flex items-center gap-2">
-              <Input
-                placeholder="Ej. PROY-2026-00001"
-                aria-label="ID de proyecto público"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="w-[220px] h-9"
-              />
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleSearch}
-                className="h-9 px-3 gap-1"
-              >
+              <Input placeholder="Ej. Proyecto Ejemplo" aria-label="Nombre del proyecto" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={handleKeyDown} className="w-[220px] h-9" />
+              <Button variant="default" size="sm" onClick={handleSearch} className="h-9 px-3 gap-1">
                 <Search className="h-4 w-4" />
                 Buscar
               </Button>
             </div>
           </div>
-          {proyectoPublicId && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearFilter}
-              className="h-8 px-2 gap-1 text-xs"
-            >
+          {searchInput && (
+            <Button variant="ghost" size="sm" onClick={handleClearFilter} className="h-8 px-2 gap-1 text-xs">
               <X className="h-3 w-3" />
               Limpiar filtro
             </Button>
           )}
         </div>
 
-        {/* Cards View */}
         <div className="space-y-4">
-          {isLiquidationLoading ? (
+          {isLoading ? (
             <div className="flex flex-col gap-4">
               {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="bg-card rounded-xl border shadow-sm h-48 animate-pulse"
-                />
+                <div key={i} className="bg-card rounded-xl border shadow-sm h-48 animate-pulse" />
               ))}
             </div>
-          ) : isLiquidationError ? (
-            <div className="flex items-center justify-center p-8 text-destructive">
-              Error al cargar las liquidaciones
-            </div>
-          ) : liquidationItems.length === 0 ? (
+          ) : isError ? (
+            <div className="flex items-center justify-center p-8 text-destructive">Error al cargar las liquidaciones</div>
+          ) : filteredItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-xl">
               <KIND_ICON className="h-10 w-10 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No hay liquidaciones registradas</p>
-              <div className="mt-4">
-                <Button
-                  className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20"
-                  onClick={() => setIoModalOpen(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Nueva Liquidación
-                </Button>
-              </div>
             </div>
           ) : (
             <>
               <div className="flex flex-col gap-4">
-                {liquidationItems.map((item) => (
-                  <LiquidacionInspeccionObraCard
-                    key={item.id}
-                    item={item}
-                    onVerDetalle={handleVerDetalle}
-                  />
+                {filteredItems.map((item) => (
+                  <LiquidacionInspeccionObraCard key={item.liquidacion_general.id} item={item as unknown as LiquidacionInspeccionObraListItem} />
                 ))}
               </div>
-              {liquidationTotal > liquidationPageSize && (
+              {total > pageSize && (
                 <div className="flex items-center justify-between gap-4 pt-6 border-t border-border/50">
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Mostrando {liquidationItems.length} de {liquidationTotal} liquidaciones
-                  </span>
+                  <span className="text-xs text-muted-foreground font-medium">Mostrando {filteredItems.length} de {total} liquidaciones</span>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setLiquidationPage(liquidationPage - 1)}
-                      disabled={liquidationPage <= 1}
-                      className="h-9 px-4 text-xs font-semibold"
-                    >
-                      Anterior
-                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setPage(page - 1)} disabled={page <= 1} className="h-9 px-4 text-xs font-semibold">Anterior</Button>
                     <div className="flex items-center gap-1 px-3 h-9 rounded-md bg-muted border border-border">
-                      <span className="text-xs font-bold text-foreground">{liquidationPage}</span>
+                      <span className="text-xs font-bold text-foreground">{page}</span>
                       <span className="text-xs text-muted-foreground">de</span>
-                      <span className="text-xs font-bold text-foreground">
-                        {Math.ceil(liquidationTotal / liquidationPageSize)}
-                      </span>
+                      <span className="text-xs font-bold text-foreground">{totalPages}</span>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setLiquidationPage(liquidationPage + 1)}
-                      disabled={liquidationPage >= Math.ceil(liquidationTotal / liquidationPageSize)}
-                      className="h-9 px-4 text-xs font-semibold"
-                    >
-                      Siguiente
-                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={page >= totalPages} className="h-9 px-4 text-xs font-semibold">Siguiente</Button>
                   </div>
                 </div>
               )}
@@ -227,23 +117,6 @@ export function LiquidacionesInspeccionObraView({
           )}
         </div>
       </div>
-
-      <LiquidacionInspeccionObraSingleFormModal
-        open={ioModalOpen}
-        onOpenChange={setIoModalOpen}
-        onSuccess={refetchLiquidaciones}
-        onCreated={(created) => {
-          // Post-create direct print — flat list item has everything needed.
-          // Pass current session user for tramitado_por / hecho_por attribution.
-          const printData = adaptIOToPrintData(created, currentUser ?? undefined);
-          void printInspeccionObraDocument(printData);
-        }}
-      />
-
-      <ConsultarIngenieroDialog
-        open={consultDialogOpen}
-        onOpenChange={setConsultDialogOpen}
-      />
     </div>
   );
 }

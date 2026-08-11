@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, UserCheck } from "lucide-react";
-import type { InspectorVigente } from "../types/liquidacion-general";
+import type { InspectorVigente } from "@/features/inspectores/types/inspectores.types";
 
 interface InspectoresSectionProps {
   inspectores: InspectorVigente[];

@@ -1,230 +1,94 @@
+/**
+ * Main view for Liquidaciones — redirects or shows domain selection.
+ * Ruta: /liquidaciones
+ */
 "use client";
 
-import { FileText, Plus, Search, UserCheck, X } from "lucide-react";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ConsultarIngenieroDialog } from "../components/ConsultarIngenieroDialog";
-import { LiquidacionListCard } from "../components/LiquidacionListCard";
-import { NuevaRevisionEdificacionesFormModal } from "../components/NuevaRevisionEdificacionesFormModal";
-import { LiquidacionStepperModal } from "../components/LiquidacionStepperModal";
-import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificaciones";
-import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificaciones";
+import { ReceiptJapaneseYen } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { PageHeader } from "@/components-app/pages/PageHeader";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Building2, Map, AlertTriangle, Car, Mountain, ClipboardCheck } from "lucide-react";
+import Link from "next/link";
 
-/**
- * Vista genérica de Liquidaciones de Edificaciones (list).
- * Muestra tarjetas con información resumida de cada liquidación.
- *
- * @deprecated Use LiquidacionesEdificacionesView — this is a duplicate
- *   that was refactored to use non-snapshot list endpoint.
- */
+const KIND_ICON: LucideIcon = ReceiptJapaneseYen;
+
+interface DomainCard {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  href: string;
+}
+
+const DOMAIN_CARDS: DomainCard[] = [
+  {
+    title: "Edificaciones",
+    description: "Liquidaciones de proyectos de edificaciones",
+    icon: Building2,
+    href: "/liquidaciones/edificaciones",
+  },
+  {
+    title: "Habilitación Urbana",
+    description: "Liquidaciones de habilitación urbana",
+    icon: Map,
+    href: "/liquidaciones/habilitacion-urbana",
+  },
+  {
+    title: "Mecánica de Suelos",
+    description: "Liquidaciones de mecánica de suelos",
+    icon: AlertTriangle,
+    href: "/liquidaciones/mecanica-suelos",
+  },
+  {
+    title: "Impacto Vial",
+    description: "Liquidaciones de impacto vial",
+    icon: Car,
+    href: "/liquidaciones/impacto-vial",
+  },
+  {
+    title: "Taludes",
+    description: "Liquidaciones de taludes",
+    icon: Mountain,
+    href: "/liquidaciones/taludes",
+  },
+  {
+    title: "Inspección de Obra",
+    description: "Liquidaciones de inspección de obra",
+    icon: ClipboardCheck,
+    href: "/liquidaciones/inspeccion-obra",
+  },
+];
+
 export function LiquidacionesView() {
-  const [searchInput, setSearchInput] = useState("");
-  const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
-  const [nuevaRevisionLiquidacionId, setNuevaRevisionLiquidacionId] = useState<string | null>(null);
-  const [stepperOpen, setStepperOpen] = useState(false);
-  const [consultDialogOpen, setConsultDialogOpen] = useState(false);
-
-  const {
-    items: liquidacionItems,
-    total: liquidacionTotal,
-    page: liquidacionPage,
-    pageSize: liquidacionPageSize,
-    isLoading: isLiquidacionLoading,
-    isError: isLiquidacionError,
-    refetch: refetchLiquidaciones,
-    setPage: setLiquidacionPage,
-  } = useLiquidacionesEdificaciones({ page: 1, pageSize: 10, proyectoPublicId });
-
-  const handleSearch = () => {
-    const trimmed = searchInput.trim();
-    setProyectoPublicId(trimmed ? trimmed : null);
-  };
-
-  const handleClearFilter = () => {
-    setSearchInput("");
-    setProyectoPublicId(null);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
   return (
     <div className="page-section">
       <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-            onClick={() => setStepperOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Nueva Liquidación
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2 h-11 rounded-xl font-semibold shrink-0"
-            onClick={() => setConsultDialogOpen(true)}
-          >
-            <UserCheck className="h-4 w-4" />
-            Consultar ingeniero
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
-              <FileText className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black tracking-tight">
-                Liquidaciones de Edificaciones
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Gestiona las liquidaciones de proyectos de edificación
-              </p>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="Liquidaciones"
+          description="Gestión de liquidaciones por tipo de proyecto"
+          icon={KIND_ICON}
+        />
 
-        {/* Filter Bar */}
-        <div className="flex items-center gap-4 p-4 bg-muted/20 rounded-xl border border-border/60">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-muted-foreground">Filtrar liquidaciones por ID de Proyecto:</span>
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Ej. PROY-2026-00001"
-                aria-label="ID de proyecto público"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="w-[220px] h-9"
-              />
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleSearch}
-                className="h-9 px-3 gap-1"
-              >
-                <Search className="h-4 w-4" />
-                Buscar
-              </Button>
-            </div>
-          </div>
-          {proyectoPublicId && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearFilter}
-              className="h-8 px-2 gap-1 text-xs"
-            >
-              <X className="h-3 w-3" />
-              Limpiar filtro
-            </Button>
-          )}
-        </div>
-
-        {/* Cards View */}
-        <div className="space-y-4">
-          {isLiquidacionLoading ? (
-            <div className="flex flex-col gap-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="bg-card rounded-xl border shadow-sm h-48 animate-pulse"
-                />
-              ))}
-            </div>
-          ) : isLiquidacionError ? (
-            <div className="flex items-center justify-center p-8 text-destructive">
-              Error al cargar las liquidaciones
-            </div>
-          ) : liquidacionItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-xl">
-              <FileText className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">
-                No hay liquidaciones registradas
-              </p>
-              <div className="mt-4">
-                <Button
-                  className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20"
-                  onClick={() => setStepperOpen(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Nueva Liquidación
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-col gap-4">
-                {liquidacionItems.map((item) => (
-                  <LiquidacionListCard key={item.id} item={item} onNuevaRevision={(it) => setNuevaRevisionLiquidacionId(it.id)} />
-                ))}
-              </div>
-              {/* Pagination for cards */}
-              {liquidacionTotal > liquidacionPageSize && (
-                <div className="flex items-center justify-between gap-4 pt-6 border-t border-border/50">
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Mostrando {liquidacionItems.length} de {liquidacionTotal}{" "}
-                    liquidaciones
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setLiquidacionPage(liquidacionPage - 1)}
-                      disabled={liquidacionPage <= 1}
-                      className="h-9 px-4 text-xs font-semibold"
-                    >
-                      Anterior
-                    </Button>
-                    <div className="flex items-center gap-1 px-3 h-9 rounded-md bg-muted border border-border">
-                      <span className="text-xs font-bold text-foreground">
-                        {liquidacionPage}
-                      </span>
-                      <span className="text-xs text-muted-foreground">de</span>
-                      <span className="text-xs font-bold text-foreground">
-                        {Math.ceil(liquidacionTotal / liquidacionPageSize)}
-                      </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {DOMAIN_CARDS.map((card) => (
+            <Link key={card.href} href={card.href}>
+              <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+                <CardHeader>
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <card.icon className="h-6 w-6 text-primary" />
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setLiquidacionPage(liquidacionPage + 1)}
-                      disabled={
-                        liquidacionPage >=
-                        Math.ceil(liquidacionTotal / liquidacionPageSize)
-                      }
-                      className="h-9 px-4 text-xs font-semibold"
-                    >
-                      Siguiente
-                    </Button>
+                    <div>
+                      <CardTitle className="text-lg">{card.title}</CardTitle>
+                      <CardDescription>{card.description}</CardDescription>
+                    </div>
                   </div>
-                </div>
-              )}
-            </>
-          )}
+                </CardHeader>
+              </Card>
+            </Link>
+          ))}
         </div>
       </div>
-
-      <NuevaRevisionEdificacionesFormModal
-        open={!!nuevaRevisionLiquidacionId}
-        onOpenChange={(open) => { if (!open) setNuevaRevisionLiquidacionId(null); }}
-        liquidacionPreviaId={nuevaRevisionLiquidacionId}
-        onSuccess={() => { setNuevaRevisionLiquidacionId(null); refetchLiquidaciones(); }}
-      />
-
-      <LiquidacionStepperModal
-        open={stepperOpen}
-        onOpenChange={setStepperOpen}
-        onSuccess={refetchLiquidaciones}
-      />
-
-      <ConsultarIngenieroDialog
-        open={consultDialogOpen}
-        onOpenChange={setConsultDialogOpen}
-      />
     </div>
   );
 }

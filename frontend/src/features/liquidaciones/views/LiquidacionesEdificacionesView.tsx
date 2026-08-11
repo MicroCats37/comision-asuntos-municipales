@@ -1,252 +1,76 @@
-"use client";
-
-import { FileText, Plus, RefreshCw, Search, UserCheck, X } from "lucide-react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  formatCurrency,
-  LiquidacionGeneralCard,
-} from "../components/LiquidacionGeneralCard";
-import { ConsultarIngenieroDialog } from "../components/ConsultarIngenieroDialog";
-import { LiquidacionEdificacionesSingleFormModal } from "../components/LiquidacionEdificacionesSingleFormModal";
-import { NuevaRevisionEdificacionesFormModal } from "../components/NuevaRevisionEdificacionesFormModal";
-import { printLiquidacionDocument } from "../components/LiquidacionPDFModal";
-import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificaciones";
-import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificaciones";
-import type { LiquidacionCardBase, LiquidacionGeneralListItem } from "../types/liquidacion-general";
-import { useAuthStore } from "@/features/auth/store/auth.store";
-
-/** Format enum value to title case */
-const formatEnumLabel = (value: string | null | undefined): string => {
-  if (!value) return "—";
-  return value
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-};
-
-/** Full enum labels for better UX */
-const getTipoTramiteLabel = (value: string | null | undefined): string => {
-  switch (value) {
-    case "OBRA_NUEVA":
-      return "Obra Nueva";
-    case "DEMOLICION":
-      return "Demolición";
-    case "AMPLIACION":
-      return "Ampliación";
-    case "REMODELACION":
-      return "Remodelación";
-    case "MODIFICACION_LICENCIA":
-      return "Modificación de Licencia";
-    default:
-      return formatEnumLabel(value);
-  }
-};
-
-const getTramiteAccionLabel = (value: string | null | undefined): string => {
-  switch (value) {
-    case "PRIMERA_REVISION":
-      return "1ra. Revisión";
-    case "REVISION":
-      return "Revisión";
-    default:
-      return formatEnumLabel(value);
-  }
-};
-
 /**
- * Edificación-specific summary block showing tipo_tramite, tramite_accion, revision.
- */
-function EdificacionSummary({ item }: { item: LiquidacionEdificacionOut }) {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-          Tipo de Trámite
-        </span>
-        <span className="text-sm font-medium text-foreground">
-          {getTipoTramiteLabel(item.tipo_tramite)}
-        </span>
-      </div>
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-          Acción
-        </span>
-        <span className="text-sm font-medium text-foreground">
-          {getTramiteAccionLabel(item.tramite_accion)}
-        </span>
-      </div>
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-          Revisión
-        </span>
-        <span className="text-sm font-medium text-foreground">
-          N° {item.numero_revision}
-        </span>
-      </div>
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-          Expediente
-        </span>
-        <span className="text-sm font-medium text-foreground">
-          {item.expediente || "—"}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Edificación-specific values block showing valor_proyecto.
- */
-function EdificacionValues({ item }: { item: LiquidacionEdificacionOut }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-        Valor del Proyecto
-      </span>
-      <span className="text-sm font-medium text-foreground">
-        {formatCurrency(Number(item.proyecto.valor_proyecto))}
-      </span>
-    </div>
-  );
-}
-
-function toPdfItem(item: LiquidacionEdificacionOut): LiquidacionCardBase {
-  return {
-    ...item,
-    valores: {
-      subtotal: Number(item.valores.subtotal),
-      igv: Number(item.valores.igv),
-      total: Number(item.valores.total),
-      total_a_pagar: Number(item.valores.total_a_pagar),
-    },
-    proyecto: {
-      ...item.proyecto,
-      valor_proyecto: Number(item.proyecto.valor_proyecto),
-    },
-  } as LiquidacionCardBase;
-}
-
-/**
- * Vista de Liquidaciones de Edificaciones (list).
- * Muestra tarjetas con información resumida de cada liquidación.
+ * Vista para lista de Liquidaciones de Edificaciones.
  * Ruta: /liquidaciones/edificaciones
  *
- * @deprecated Use list/detail endpoints — this component uses the list
- *   endpoint (GET /liquidaciones/edificaciones) which returns basic info.
- *   For full detail (proyectistas, especialidades, totales), use the
- *   detail endpoint separately.
+ * Usa PageHeader + cards pattern. No AppDataTable.
  */
+"use client";
+
+import { Building2, Plus, Search, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components-app/pages/PageHeader";
+import { LiquidacionEdificacionesCard } from "../components/cards/LiquidacionEdificacionesCard";
+import { useLiquidacionesEdificaciones } from "../hooks";
+import type { LiquidacionEdificacionesListItem } from "../schemas/liquidacion-edificaciones.schema";
+
+const KIND_ICON: LucideIcon = Building2;
+
 export function LiquidacionesEdificacionesView() {
-  const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
-  const [proyectoPublicId, setProyectoPublicId] = useState<string | null>(null);
-  const [stepperOpen, setStepperOpen] = useState(false);
-  const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
-  const [consultDialogOpen, setConsultDialogOpen] = useState(false);
-  const currentUser = useAuthStore((state) => state.user);
-  const pdfUser = currentUser ? { nombres: currentUser.nombres, apellidos: currentUser.apellidos } : undefined;
 
   const {
-    items: liquidacionItems,
-    total: liquidacionTotal,
-    page: liquidacionPage,
-    pageSize: liquidacionPageSize,
-    isLoading: isLiquidacionLoading,
-    isError: isLiquidacionError,
-    refetch: refetchLiquidaciones,
-    setPage: setLiquidacionPage,
-  } = useLiquidacionesEdificaciones({
-    page: 1,
-    pageSize: 10,
-    proyectoPublicId,
-  });
+    items,
+    total,
+    page,
+    pageSize,
+    totalPages,
+    isLoading,
+    isError,
+    setPage,
+  } = useLiquidacionesEdificaciones();
 
-  const handleSearch = () => {
-    const trimmed = searchInput.trim();
-    setProyectoPublicId(trimmed ? trimmed : null);
-  };
+  const filteredItems = items.filter((item) =>
+    item.liquidacion_general.proyecto.denominacion
+      .toLowerCase()
+      .includes(searchInput.toLowerCase())
+  );
 
-  const handleClearFilter = () => {
-    setSearchInput("");
-    setProyectoPublicId(null);
-  };
-
+  const handleSearch = () => {};
+  const handleClearFilter = () => setSearchInput("");
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
+    if (e.key === "Enter") handleSearch();
   };
-
-  const handleVerDetalle = (item: LiquidacionCardBase) => {
-    router.push(`/liquidaciones/edificaciones/${item.id}`);
-  };
-
-  const handleLiquidacionCreated = (item: LiquidacionEdificacionOut) => {
-    void printLiquidacionDocument(toPdfItem(item), pdfUser);
-  };
-
-
 
   return (
     <div className="page-section">
       <div className="space-y-6">
-        {/* Page Header */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
-              <FileText className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black tracking-tight">
-                Liquidaciones de Edificaciones
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Gestiona las liquidaciones de proyectos de edificación
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
+        <PageHeader
+          title="Liquidaciones — Edificaciones"
+          description="Listado de liquidaciones de Edificaciones"
+          icon={KIND_ICON}
+          actionNodes={
             <Button
               className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-              onClick={() => setStepperOpen(true)}
             >
               <Plus className="h-4 w-4" />
               Nueva Liquidación
             </Button>
-            <Button
-              variant="outline"
-              className="gap-2 h-11 rounded-xl font-semibold shrink-0"
-              onClick={() => setNuevaRevisionOpen(true)}
-            >
-              <RefreshCw className="h-4 w-4" />
-              Nueva Revisión
-            </Button>
-            <Button
-              variant="outline"
-              className="gap-2 h-11 rounded-xl font-semibold shrink-0"
-              onClick={() => setConsultDialogOpen(true)}
-            >
-              <UserCheck className="h-4 w-4" />
-              Consultar ingeniero
-            </Button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Filter Bar */}
         <div className="flex items-center gap-4 p-4 bg-muted/20 rounded-xl border border-border/60">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-muted-foreground">
-              Filtrar liquidaciones por ID de Proyecto:
+              Filtrar liquidaciones por nombre de proyecto:
             </span>
             <div className="flex items-center gap-2">
               <Input
-                placeholder="Ej. PROY-2026-00001"
-                aria-label="ID de proyecto público"
+                placeholder="Ej. Proyecto Ejemplo"
+                aria-label="Nombre del proyecto"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -263,7 +87,7 @@ export function LiquidacionesEdificacionesView() {
               </Button>
             </div>
           </div>
-          {proyectoPublicId && (
+          {searchInput && (
             <Button
               variant="ghost"
               size="sm"
@@ -278,7 +102,7 @@ export function LiquidacionesEdificacionesView() {
 
         {/* Cards View */}
         <div className="space-y-4">
-          {isLiquidacionLoading ? (
+          {isLoading ? (
             <div className="flex flex-col gap-4">
               {[1, 2, 3].map((i) => (
                 <div
@@ -287,74 +111,53 @@ export function LiquidacionesEdificacionesView() {
                 />
               ))}
             </div>
-          ) : isLiquidacionError ? (
+          ) : isError ? (
             <div className="flex items-center justify-center p-8 text-destructive">
               Error al cargar las liquidaciones
             </div>
-          ) : liquidacionItems.length === 0 ? (
+          ) : filteredItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-xl">
-              <FileText className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">
-                No hay liquidaciones registradas
-              </p>
-              <div className="mt-4">
-                <Button
-                  className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20"
-                  onClick={() => setStepperOpen(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Nueva Liquidación
-                </Button>
-              </div>
+              <KIND_ICON className="h-10 w-10 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No hay liquidaciones registradas</p>
             </div>
           ) : (
             <>
               <div className="flex flex-col gap-4">
-                {liquidacionItems.map((item) => (
-                  <LiquidacionGeneralCard
-                    key={item.id}
-                    item={item as unknown as LiquidacionGeneralListItem}
-                    onVerDetalle={handleVerDetalle}
-                    typeSpecificSummary={<EdificacionSummary item={item} />}
-                    typeSpecificValues={<EdificacionValues item={item} />}
-                    displayPublicId={item.public_id.startsWith("LIQ-") ? item.public_id.slice(4) : item.public_id}
+                {filteredItems.map((item) => (
+                  <LiquidacionEdificacionesCard
+                    key={item.liquidacion_general.id}
+                    item={item as unknown as LiquidacionEdificacionesListItem}
                   />
                 ))}
               </div>
-              {/* Pagination for cards */}
-              {liquidacionTotal > liquidacionPageSize && (
+              {/* Pagination */}
+              {total > pageSize && (
                 <div className="flex items-center justify-between gap-4 pt-6 border-t border-border/50">
                   <span className="text-xs text-muted-foreground font-medium">
-                    Mostrando {liquidacionItems.length} de {liquidacionTotal}{" "}
-                    liquidaciones
+                    Mostrando {filteredItems.length} de {total} liquidaciones
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setLiquidacionPage(liquidacionPage - 1)}
-                      disabled={liquidacionPage <= 1}
+                      onClick={() => setPage(page - 1)}
+                      disabled={page <= 1}
                       className="h-9 px-4 text-xs font-semibold"
                     >
                       Anterior
                     </Button>
                     <div className="flex items-center gap-1 px-3 h-9 rounded-md bg-muted border border-border">
-                      <span className="text-xs font-bold text-foreground">
-                        {liquidacionPage}
-                      </span>
+                      <span className="text-xs font-bold text-foreground">{page}</span>
                       <span className="text-xs text-muted-foreground">de</span>
                       <span className="text-xs font-bold text-foreground">
-                        {Math.ceil(liquidacionTotal / liquidacionPageSize)}
+                        {totalPages}
                       </span>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setLiquidacionPage(liquidacionPage + 1)}
-                      disabled={
-                        liquidacionPage >=
-                        Math.ceil(liquidacionTotal / liquidacionPageSize)
-                      }
+                      onClick={() => setPage(page + 1)}
+                      disabled={page >= totalPages}
                       className="h-9 px-4 text-xs font-semibold"
                     >
                       Siguiente
@@ -366,26 +169,6 @@ export function LiquidacionesEdificacionesView() {
           )}
         </div>
       </div>
-
-      <LiquidacionEdificacionesSingleFormModal
-        open={stepperOpen}
-        onOpenChange={setStepperOpen}
-        onSuccess={refetchLiquidaciones}
-        onCreated={handleLiquidacionCreated}
-      />
-
-      <NuevaRevisionEdificacionesFormModal
-        open={nuevaRevisionOpen}
-        onOpenChange={setNuevaRevisionOpen}
-        onSuccess={() => { setNuevaRevisionOpen(false); refetchLiquidaciones(); }}
-        onCreated={handleLiquidacionCreated}
-        liquidacionPreviaId={null}
-      />
-
-      <ConsultarIngenieroDialog
-        open={consultDialogOpen}
-        onOpenChange={setConsultDialogOpen}
-      />
     </div>
   );
 }
