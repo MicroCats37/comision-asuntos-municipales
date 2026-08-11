@@ -12,7 +12,7 @@ from modules.entidades.presentation.schemas.entidad_schemas import (
     EntidadUpsertResponseOut,
     MunicipalidadesResponseOut,
     UbigeoDistritoOut,
-    UbigeoProvinciaOut,
+    UbigeoProvinciaBasicOut,
     UbigeoDepartamentoOut,
     DistritosResponseOut,
     ProvinciaBasicOut,
@@ -91,10 +91,9 @@ class EntidadPresenter:
                     id=d["departamento_id"],
                     nombre=d["departamento_nombre"],
                 )
-                provincia = UbigeoProvinciaOut(
+                provincia = UbigeoProvinciaBasicOut(
                     id=d["provincia_id"],
                     nombre=d["provincia_nombre"],
-                    departamento=departamento,
                 )
                 items.append(UbigeoDistritoOut(
                     id=d["distrito_id"],
@@ -109,10 +108,9 @@ class EntidadPresenter:
                     id=d.provincia.departamento.id,
                     nombre=d.provincia.departamento.nombre,
                 )
-                provincia = UbigeoProvinciaOut(
+                provincia = UbigeoProvinciaBasicOut(
                     id=d.provincia.id,
                     nombre=d.provincia.nombre,
-                    departamento=departamento,
                 )
                 items.append(UbigeoDistritoOut(
                     id=d.id,

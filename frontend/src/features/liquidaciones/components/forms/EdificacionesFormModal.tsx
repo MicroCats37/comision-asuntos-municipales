@@ -247,7 +247,7 @@ function EdificacionesFormBody({ control, isSubmitting, methods }: Edificaciones
         <CotizacionPorcentajeSmartField methods={methods} />
       </div>
 
-      {/* ── Columna Derecha: Proyecto + Entidad ── */}
+      {/* ── Columna Derecha: Entidad + Proyecto ── */}
       <div className="space-y-4">
         <div className="rounded-xl border border-border/50 bg-card p-4 space-y-4">
           <div className="flex items-center gap-2 border-b border-border/40 pb-2">
@@ -255,15 +255,21 @@ function EdificacionesFormBody({ control, isSubmitting, methods }: Edificaciones
             <h3 className="text-sm font-semibold uppercase tracking-wide">Datos del Proyecto</h3>
           </div>
 
+          {/* Entidad primero (RENIEC/SUNAT) + Nombre Propietario al lado */}
+          <EntidadLookupField
+            control={control as never}
+            errors={errors}
+            razonSocialSideSlot={
+              <NombrePropietarioField control={control} />
+            }
+          />
+
+          {/* Denominación + Dirección + Distrito */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <DenominacionField control={control} />
-            <NombrePropietarioField control={control} />
-            <DireccionField control={control} />
             <DistritoField register={register} control={control} errors={errors} />
+            <DireccionField control={control} />
           </div>
-
-          {/* Entidad */}
-          <EntidadLookupField control={control as never} errors={errors} />
         </div>
       </div>
     </div>

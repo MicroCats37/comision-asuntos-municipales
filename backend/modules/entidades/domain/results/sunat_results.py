@@ -1,7 +1,5 @@
 """
-Sunat Results — DTOs de salida para datos de instituciones SUNAT.
-
-NOTA: Stub mínimo — el archivo original fue eliminado en el purge.
+Sunat Results - DTOs de salida para datos de instituciones SUNAT.
 """
 from dataclasses import dataclass
 from typing import Optional
@@ -13,5 +11,10 @@ class SunatInstitucionResult:
     ruc: str
     razon_social: str
     estado: str
-    ubigeo: Optional[str] = None
+    nombre_comercial: Optional[str] = None
+    tipo_contribuyente: Optional[str] = None
     direccion: Optional[str] = None
+    departamento: Optional[str] = None
+    provincia: Optional[str] = None
+    distrito: Optional[str] = None
+    ubigeo: Optional[str] = None

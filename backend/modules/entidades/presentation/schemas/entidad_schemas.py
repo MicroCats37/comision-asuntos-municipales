@@ -55,6 +55,12 @@ class UbigeoDepartamentoOut(BaseSchema):
     nombre: str
 
 
+class UbigeoProvinciaBasicOut(BaseSchema):
+    """Provincia en respuesta de ubigeo (sin departamento anidado)."""
+    id: uuid.UUID
+    nombre: str
+
+
 class UbigeoProvinciaOut(BaseSchema):
     """Provincia en respuesta de ubigeo."""
     id: uuid.UUID
@@ -63,11 +69,11 @@ class UbigeoProvinciaOut(BaseSchema):
 
 
 class UbigeoDistritoOut(BaseSchema):
-    """Distrito en respuesta de ubigeo."""
+    """Distrito en respuesta de ubigeo (formato plano y legible)."""
     id: uuid.UUID
     nombre: str
     ubigeo: str
-    provincia: UbigeoProvinciaOut
+    provincia: UbigeoProvinciaBasicOut
     departamento: UbigeoDepartamentoOut
 
 
