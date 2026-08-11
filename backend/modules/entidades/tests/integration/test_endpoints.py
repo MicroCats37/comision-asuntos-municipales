@@ -105,3 +105,23 @@ class TestMunicipalidadesEndpoint:
             for m in data:
                 assert "codigo" in m
                 assert "nombre" in m
+
+    async def test_municipalidades_tienen_cache_control(self):
+        """Los datos estáticos deben cachearse 1 año en el navegador."""
+        client = AsyncClient()
+        resp = await client.get("/api/entidades/municipalidades")
+
+        assert resp.status_code == 200
+        assert resp.headers.get("Cache-Control") == "public, max-age=31536000"
+
+
+@pytest.mark.django_db
+class TestCacheHeaders:
+    """Verifica headers de caché en endpoints de datos estáticos."""
+
+    async def test_distritos_tienen_cache_control(self):
+        client = AsyncClient()
+        resp = await client.get("/api/entidades/ubigeo/distritos")
+
+        assert resp.status_code == 200
+        assert resp.headers.get("Cache-Control") == "public, max-age=31536000"

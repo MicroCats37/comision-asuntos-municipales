@@ -68,7 +68,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
     "ninja.compatibility.files.fix_request_files_middleware",
-]
+    "core.middleware.static_cache.StaticDataCacheMiddleware",
+  ]
 
 ROOT_URLCONF = "config.urls"
 

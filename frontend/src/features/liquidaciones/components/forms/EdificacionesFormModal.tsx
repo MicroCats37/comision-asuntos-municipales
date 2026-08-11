@@ -112,7 +112,7 @@ function MunicipalidadField({ register, control, errors }: { register: UseFormRe
         icon: Building2,
         required: true,
         options: (municipalidades || []).map((m) => ({
-          label: m.nombre,
+          label: m.codigo ? `${m.codigo} - ${m.nombre}` : m.nombre,
           value: m.id,
         })),
         isLoading,
@@ -189,7 +189,7 @@ function DistritoField({ register, control, errors }: { register: UseFormReturn<
         icon: MapPin,
         required: true,
         options: (distritos || []).map((d) => ({
-          label: `${d.nombre} - ${d.provincia_nombre}`,
+          label: `${d.nombre} - ${d.provinciaNombre}`,
           value: d.id,
         })),
         isLoading,
