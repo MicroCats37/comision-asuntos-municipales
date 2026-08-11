@@ -47,13 +47,29 @@ class DelegadoController:
         response={200: ApiResponse[DelegadoListOut]},
         auth=None,
     )
-    def list_delegados(self, page: int = 1, page_size: int = 10):
+    def list_delegados(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        cip: Optional[str] = None,
+        municipalidad_id: Optional[uuid.UUID] = None,
+        capitulo_id: Optional[uuid.UUID] = None,
+        especialidad_id: Optional[uuid.UUID] = None,
+        estado: Optional[str] = None,
+    ):
         """
-        GET /delegados/ — List all delegados paginated.
+        GET /delegados/?cip=&municipalidad_id=&capitulo_id=&especialidad_id=&estado=
+        - List all delegados paginated, con municipalidades y estado.
+        - estado: vigente | sin_vigencia | sin_asignaciones
         """
         domain_result = self.orchestrator.list_delegados_proceso(
             page=page,
             page_size=page_size,
+            cip=cip,
+            municipalidad_id=municipalidad_id,
+            capitulo_id=capitulo_id,
+            especialidad_id=especialidad_id,
+            estado=estado,
         )
         return success_response(self.presenter.present_list(domain_result))
 

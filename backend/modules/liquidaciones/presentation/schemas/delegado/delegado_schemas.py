@@ -8,6 +8,21 @@ from typing import Optional
 import uuid
 
 
+class EspecialidadOut(BaseSchema):
+    """Output schema for especialidad."""
+    id: uuid.UUID
+    codigo: str
+    nombre: str
+
+
+class CapituloOut(BaseSchema):
+    """Output schema for capitulo."""
+    id: uuid.UUID
+    registro_id: str
+    abreviacion: str
+    nombre: str
+
+
 class PerfilIngenieroOut(BaseSchema):
     """Output schema for ingeniero profile info."""
     id: uuid.UUID
@@ -19,12 +34,23 @@ class PerfilIngenieroOut(BaseSchema):
     nombre_completo: str
     correo_personal: Optional[str] = None
     correo_institucional: Optional[str] = None
+    especialidad: Optional[EspecialidadOut] = None
+    capitulo: Optional[CapituloOut] = None
+
+
+class MunicipalidadBasicOut(BaseSchema):
+    """Output schema for municipalidad basica."""
+    id: uuid.UUID
+    codigo: str
+    nombre: str
 
 
 class DelegadoOut(BaseSchema):
-    """Output schema for a basic Delegado (list item)."""
+    """Output schema for a Delegado (list item) con municipalidades y estado."""
     id: uuid.UUID
     perfil_ingeniero: PerfilIngenieroOut
+    municipalidades: list["MunicipalidadesAsignadasOut"] = []
+    estado: str  # vigente | sin_vigencia | sin_asignaciones
 
 
 class DelegadoListOut(BaseSchema):
@@ -39,8 +65,7 @@ class DelegadoListOut(BaseSchema):
 class MunicipalidadesAsignadasOut(BaseSchema):
     """Output schema for a municipalidad assignment with vigencia status."""
     id: uuid.UUID
-    municipalidad_id: uuid.UUID
-    municipalidad_nombre: str
+    municipalidad: MunicipalidadBasicOut
     tipo: str
     categoria: Optional[str] = None
     periodo_inicio: Optional[str] = None

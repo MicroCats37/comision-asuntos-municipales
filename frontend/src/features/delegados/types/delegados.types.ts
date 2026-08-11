@@ -39,28 +39,28 @@ export interface DelegadoListOut {
 // ── Zod Schemas ──────────────────────────────────────────────────────────────
 
 const perfilIngenieroSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
   cip: z.string(),
   dni: z.string(),
-  nombres: z.string(),
-  apellido_paterno: z.string(),
-  apellido_materno: z.string(),
+  nombres: z.string().nullish(),
+  apellido_paterno: z.string().nullish(),
+  apellido_materno: z.string().nullish(),
   nombre_completo: z.string(),
-  correo_personal: z.string().optional(),
-  correo_institucional: z.string().optional(),
+  correo_personal: z.string().nullish(),
+  correo_institucional: z.string().nullish(),
 });
 
 const delegadoSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
   perfil_ingeniero: perfilIngenieroSchema,
 });
 
 export const delegadosListPayloadSchema = z.object({
   items: z.array(delegadoSchema),
-  total: z.number(),
-  page: z.number(),
-  page_size: z.number(),
-  total_pages: z.number(),
+  total: z.coerce.number(),
+  page: z.coerce.number(),
+  page_size: z.coerce.number(),
+  total_pages: z.coerce.number(),
 });
 
 export const delegadosListResponseSchema = apiResponseSchema(delegadosListPayloadSchema);

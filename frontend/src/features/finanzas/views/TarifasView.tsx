@@ -9,10 +9,8 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { DollarSign, Calendar as CalendarIcon } from "lucide-react";
-import { type ColumnDef } from "@tanstack/react-table";
+import { Banknote, Calendar as CalendarIcon, DollarSign, Layers, Percent } from "lucide-react";
 import { PageHeader } from "@/components-app/pages/PageHeader";
-import { AppDataTable } from "@/components-app/tables/AppDataTable";
 import { useTarifasHistoricas } from "../hooks/useTarifasHistoricas";
 import { tipoTarifaSchema } from "../types/finanzas.types";
 import type { TarifaHistoricaPeriodo } from "../types/finanzas.types";
@@ -28,109 +26,108 @@ import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-// ── Tipo options ─────────────────────────────────────────────────────────────
+// ── Tipo options (rutas reales del backend) ─────────────────────────────
 
 const TIPO_OPTIONS: { value: string; label: string }[] = [
   { value: "edificaciones", label: "Edificaciones" },
   { value: "habilitacion-urbana", label: "Habilitación Urbana" },
-  { value: "ms", label: "Mecánica de Suelos" },
-  { value: "iv", label: "Impacto Vial" },
+  { value: "mecanica-suelos", label: "Mecánica de Suelos" },
+  { value: "impacto-vial", label: "Impacto Vial" },
   { value: "taludes", label: "Taludes" },
-  { value: "io", label: "Inspección de Obra" },
+  { value: "inspeccion-obra", label: "Inspección de Obra" },
 ];
 
-// ── Column Definitions ────────────────────────────────────────────────────────
+// ── Card de Tarifa Historica ─────────────────────────────────────────────
 
-const columns: ColumnDef<TarifaHistoricaPeriodo>[] = [
-  {
-    accessorKey: "periodo_inicio",
-    header: "Periodo Inicio",
-    cell: ({ row }) => (
-      <span className="font-medium">
-        {new Date(row.original.periodo_inicio).toLocaleDateString("es-PE", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "periodo_fin",
-    header: "Periodo Fin",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {row.original.periodo_fin
-          ? new Date(row.original.periodo_fin).toLocaleDateString("es-PE", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })
-          : "—"}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "tipo_liquidacion",
-    header: "Tipo Liquidación",
-    cell: ({ row }) => (
-      <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-        {row.original.tipo_liquidacion}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "tarifas_porcentaje",
-    header: "Especialidades",
-    cell: ({ row }) => (
-      <div className="flex flex-col gap-0.5">
-        {row.original.tarifas_porcentaje.slice(0, 3).map((t) => (
-          <span key={t.id} className="text-xs">
-            {t.especialidad_nombre}: {t.porcentaje_liquidacion}%
+function formatDate(value: string | null): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  return isNaN(d.getTime())
+    ? value
+    : d.toLocaleDateString("es-PE", { year: "numeric", month: "short", day: "numeric" });
+}
+
+function TarifaPeriodoCard({ item }: { item: TarifaHistoricaPeriodo }) {
+  const tipoLabel = TIPO_OPTIONS.find((o) => o.value === item.tipo_liquidacion)?.label
+    ?? item.tipo_liquidacion
+    ?? "—";
+
+  return (
+    <div className="rounded-2xl border bg-card shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 bg-gradient-to-r from-muted/40 via-muted/20 to-transparent border-b border-border/60 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/20">
+            <DollarSign className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-foreground tracking-tight">{tipoLabel}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {formatDate(item.periodo_inicio)} → {formatDate(item.periodo_fin)}
+            </p>
+          </div>
+        </div>
+        {item.tarifa_m2 ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-600 uppercase tracking-wider">
+            <Banknote className="h-3 w-3" />
+            S/ {Number(item.tarifa_m2.costo_por_m2).toFixed(2)}/m²
           </span>
-        ))}
-        {row.original.tarifas_porcentaje.length > 3 && (
-          <span className="text-xs text-muted-foreground">
-            +{row.original.tarifas_porcentaje.length - 3} más
-          </span>
+        ) : null}
+      </div>
+
+      {/* Body */}
+      <div className="p-4 space-y-3">
+        {/* Porcentaje tarifas */}
+        {item.tarifas_porcentaje.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+              <Percent className="h-3 w-3 text-primary/60" />
+              Especialidades
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {item.tarifas_porcentaje.map((t) => (
+                <span
+                  key={t.id}
+                  className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs"
+                >
+                  <Layers className="h-3 w-3 text-primary/60" />
+                  {t.especialidad_nombre}
+                  <span className="font-bold text-primary">
+                    {Number(t.porcentaje_liquidacion) * 100}%
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Visitas */}
+        {item.tarifas_visitas.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+              Visitas
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {item.tarifas_visitas.map((v) => (
+                <span
+                  key={v.id}
+                  className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs"
+                >
+                  {v.categoria}
+                  <span className="font-bold">{Number(v.porcentaje_uit)} UIT</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {item.tarifas_porcentaje.length === 0 && item.tarifas_visitas.length === 0 && !item.tarifa_m2 && (
+          <p className="text-xs text-muted-foreground/60 italic">Sin tarifas en este periodo</p>
         )}
       </div>
-    ),
-  },
-  {
-    accessorKey: "tarifa_m2",
-    header: "Tarifa M²",
-    cell: ({ row }) =>
-      row.original.tarifa_m2 ? (
-        <span className="font-mono text-sm">
-          {row.original.tarifa_m2.costo_por_m2.toFixed(2)}
-        </span>
-      ) : (
-        <span className="text-muted-foreground">—</span>
-      ),
-  },
-  {
-    accessorKey: "tarifas_visitas",
-    header: "Visitas",
-    cell: ({ row }) =>
-      row.original.tarifas_visitas.length > 0 ? (
-        <div className="flex flex-col gap-0.5">
-          {row.original.tarifas_visitas.slice(0, 2).map((v) => (
-            <span key={v.id} className="text-xs">
-              {v.categoria}: {v.porcentaje_uit} UIT
-            </span>
-          ))}
-          {row.original.tarifas_visitas.length > 2 && (
-            <span className="text-xs text-muted-foreground">
-              +{row.original.tarifas_visitas.length - 2} más
-            </span>
-          )}
-        </div>
-      ) : (
-        <span className="text-muted-foreground">—</span>
-      ),
-  },
-];
+    </div>
+  );
+}
 
 // ── View Component ───────────────────────────────────────────────────────────
 
@@ -156,16 +153,6 @@ export function TarifasView() {
     fechaHasta: fechaHasta || undefined,
   });
 
-  // AppDataTable uses 0-based pageIndex; our hook uses 1-based
-  const paginationState = {
-    pageIndex: page - 1,
-    pageSize,
-  };
-
-  const handlePaginationChange = (pagination: { pageIndex: number; pageSize: number }) => {
-    setPage(pagination.pageIndex + 1);
-  };
-
   return (
     <div className="page-section">
       <div className="space-y-6">
@@ -177,7 +164,6 @@ export function TarifasView() {
 
         {/* Filters */}
         <div className="flex flex-wrap items-end gap-4 p-4 bg-muted/20 rounded-xl border border-border/60">
-          {/* Tipo selector */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="tipo-select" className="text-xs font-semibold text-muted-foreground">
               Tipo de Liquidación
@@ -282,21 +268,70 @@ export function TarifasView() {
           )}
         </div>
 
-        {/* Data Table */}
-        <AppDataTable
-          columns={columns}
-          data={items}
-          isLoading={isLoading}
-          isError={isError}
-          onRetry={refetch}
-          pagination={paginationState}
-          onPaginationChange={handlePaginationChange}
-          showPagination={true}
-          rowCount={total}
-          emptyMessage="No hay periodos tarifarios"
-          emptyDescription="No se encontraron tarifas históricas para los filtros seleccionados."
-          emptyIcon={<DollarSign className="h-10 w-10 text-muted-foreground" />}
-        />
+        {/* Cards */}
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="flex flex-col gap-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-card rounded-2xl border shadow-sm h-32 animate-pulse" />
+              ))}
+            </div>
+          ) : isError ? (
+            <div className="flex flex-col items-center justify-center p-10 text-center border border-dashed border-border rounded-2xl">
+              <p className="text-destructive font-medium">Error al cargar las tarifas</p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
+                Reintentar
+              </Button>
+            </div>
+          ) : items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-2xl">
+              <DollarSign className="h-10 w-10 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No hay periodos tarifarios para los filtros</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-3">
+                {items.map((item) => (
+                  <TarifaPeriodoCard key={item.id} item={item} />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {total > pageSize && (
+                <div className="flex items-center justify-between gap-4 pt-6 border-t border-border/50">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    Mostrando {items.length} de {total} periodos
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page - 1)}
+                      disabled={page <= 1}
+                      className="h-9 px-4 text-xs font-semibold"
+                    >
+                      Anterior
+                    </Button>
+                    <div className="flex items-center gap-1 px-3 h-9 rounded-md bg-muted border border-border">
+                      <span className="text-xs font-bold text-foreground">{page}</span>
+                      <span className="text-xs text-muted-foreground">de</span>
+                      <span className="text-xs font-bold text-foreground">{totalPages}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page + 1)}
+                      disabled={page >= totalPages}
+                      className="h-9 px-4 text-xs font-semibold"
+                    >
+                      Siguiente
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

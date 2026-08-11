@@ -25,19 +25,38 @@ class DelegadoCoreService:
         self,
         page: int,
         page_size: int,
+        cip: Optional[str] = None,
+        municipalidad_id: Optional[uuid.UUID] = None,
+        capitulo_id: Optional[uuid.UUID] = None,
+        especialidad_id: Optional[uuid.UUID] = None,
     ) -> tuple:
         """
-        Returns paginated Delegado queryset.
-        Uses select_related to avoid N+1 on perfil_ingeniero.
+        Returns paginated Delegado queryset with optional filters.
+        Uses select_related/prefetch_related to avoid N+1.
         Returns (queryset, total_count).
         """
         qs = Delegado.objects.select_related(
             'perfil_ingeniero',
+            'perfil_ingeniero__especialidad',
+            'perfil_ingeniero__capitulo',
+        ).prefetch_related(
+            'municipalidades_asignadas',
+            'municipalidades_asignadas__municipalidad',
+            'municipalidades_asignadas__periodos',
         ).order_by(
             'perfil_ingeniero__apellido_paterno',
             'perfil_ingeniero__apellido_materno',
             'perfil_ingeniero__nombres',
         )
+
+        if cip:
+            qs = qs.filter(perfil_ingeniero__cip__icontains=cip)
+        if municipalidad_id:
+            qs = qs.filter(municipalidades_asignadas__municipalidad_id=municipalidad_id)
+        if capitulo_id:
+            qs = qs.filter(perfil_ingeniero__capitulo_id=capitulo_id)
+        if especialidad_id:
+            qs = qs.filter(perfil_ingeniero__especialidad_id=especialidad_id)
 
         total = qs.count()
         offset = (page - 1) * page_size

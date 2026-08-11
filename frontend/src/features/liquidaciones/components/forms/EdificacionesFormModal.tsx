@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
 import { GenericInput } from "@/components/genericForm/GenericInput";
 import { useMunicipalidades } from "../../hooks/useMunicipalidades";
@@ -170,6 +171,22 @@ function ObservacionField({ control }: { control: Control<EdificacionesFormData>
   );
 }
 
+function RetencionField({ control }: { control: Control<EdificacionesFormData> }) {
+  const { field } = useController({ name: "retencion", control, defaultValue: false });
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-background px-3 py-2.5">
+      <Checkbox
+        id="retencion"
+        checked={!!field.value}
+        onCheckedChange={(checked) => field.onChange(!!checked)}
+      />
+      <Label htmlFor="retencion" className="text-sm font-medium cursor-pointer">
+        ¿La liquidación tiene retención?
+      </Label>
+    </div>
+  );
+}
+
 function DenominacionField({ control }: { control: Control<EdificacionesFormData> }) {
   const { field, fieldState } = useController({ name: "denominacion", control, defaultValue: "" });
   return (
@@ -293,6 +310,7 @@ function EdificacionesFormBody({
                 defaultValue={0}
               />
             </div>
+            <RetencionField control={control} />
             <ObservacionField control={control} />
           </div>
         </div>

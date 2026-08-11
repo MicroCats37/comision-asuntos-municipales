@@ -123,6 +123,15 @@ class LiquidacionGeneralCoreService:
         tipo_liquidacion: str,
         page: int,
         page_size: int,
+        municipalidad_id=None,
+        propietario=None,
+        razon_social=None,
+        creador_username=None,
+        fecha_desde=None,
+        fecha_hasta=None,
+        numero=None,
+        numero_revision=None,
+        **kwargs
     ) -> tuple:
         """
         Returns paginated LiquidacionGeneral queryset for the given tipo_liquidacion.
@@ -147,6 +156,24 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__derecho_aplicado',
         ).order_by('-fecha_registro')
 
+        # Apply filters
+        if municipalidad_id:
+            qs = qs.filter(municipalidad_id=municipalidad_id)
+        if propietario:
+            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
+        if razon_social:
+            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
+        if creador_username:
+            qs = qs.filter(usuario_creador__username__icontains=creador_username)
+        if fecha_desde:
+            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
+        if numero is not None:
+            qs = qs.filter(edificaciones__numero=numero)
+        if numero_revision is not None:
+            qs = qs.filter(numero_revision=numero_revision)
+
         total = qs.count()
         offset = (page - 1) * page_size
         return qs[offset:offset + page_size], total
@@ -155,6 +182,15 @@ class LiquidacionGeneralCoreService:
         self,
         page: int,
         page_size: int,
+        municipalidad_id=None,
+        propietario=None,
+        razon_social=None,
+        creador_username=None,
+        fecha_desde=None,
+        fecha_hasta=None,
+        numero=None,
+        numero_revision=None,
+        **kwargs
     ) -> tuple:
         """
         Returns paginated LiquidacionGeneral queryset for Habilitación Urbana.
@@ -178,6 +214,24 @@ class LiquidacionGeneralCoreService:
             'liquidacion_m2__derecho',
         ).order_by('-fecha_registro')
 
+        # Apply filters
+        if municipalidad_id:
+            qs = qs.filter(municipalidad_id=municipalidad_id)
+        if propietario:
+            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
+        if razon_social:
+            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
+        if creador_username:
+            qs = qs.filter(usuario_creador__username__icontains=creador_username)
+        if fecha_desde:
+            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
+        if numero is not None:
+            qs = qs.filter(habilitacion_urbana__numero=numero)
+        if numero_revision is not None:
+            qs = qs.filter(numero_revision=numero_revision)
+
         total = qs.count()
         offset = (page - 1) * page_size
         return qs[offset:offset + page_size], total
@@ -186,6 +240,15 @@ class LiquidacionGeneralCoreService:
         self,
         page: int,
         page_size: int,
+        municipalidad_id=None,
+        propietario=None,
+        razon_social=None,
+        creador_username=None,
+        fecha_desde=None,
+        fecha_hasta=None,
+        numero=None,
+        numero_revision=None,
+        **kwargs
     ) -> tuple:
         """
         Returns paginated LiquidacionGeneral queryset for Mecánica de Suelos.
@@ -209,6 +272,24 @@ class LiquidacionGeneralCoreService:
             'mecanica_suelos',
         ).order_by('-fecha_registro')
 
+        # Apply filters
+        if municipalidad_id:
+            qs = qs.filter(municipalidad_id=municipalidad_id)
+        if propietario:
+            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
+        if razon_social:
+            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
+        if creador_username:
+            qs = qs.filter(usuario_creador__username__icontains=creador_username)
+        if fecha_desde:
+            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
+        if numero is not None:
+            qs = qs.filter(mecanica_suelos__numero=numero)
+        if numero_revision is not None:
+            qs = qs.filter(numero_revision=numero_revision)
+
         total = qs.count()
         offset = (page - 1) * page_size
         return qs[offset:offset + page_size], total
@@ -217,6 +298,15 @@ class LiquidacionGeneralCoreService:
         self,
         page: int,
         page_size: int,
+        municipalidad_id=None,
+        propietario=None,
+        razon_social=None,
+        creador_username=None,
+        fecha_desde=None,
+        fecha_hasta=None,
+        numero=None,
+        numero_revision=None,
+        **kwargs
     ) -> tuple:
         """
         Returns paginated LiquidacionGeneral queryset for Taludes.
@@ -244,6 +334,24 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__derecho_aplicado',
         ).order_by('-fecha_registro')
 
+        # Apply filters
+        if municipalidad_id:
+            qs = qs.filter(municipalidad_id=municipalidad_id)
+        if propietario:
+            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
+        if razon_social:
+            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
+        if creador_username:
+            qs = qs.filter(usuario_creador__username__icontains=creador_username)
+        if fecha_desde:
+            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
+        if numero is not None:
+            qs = qs.filter(taludes__numero=numero)
+        if numero_revision is not None:
+            qs = qs.filter(numero_revision=numero_revision)
+
         total = qs.count()
         offset = (page - 1) * page_size
         return qs[offset:offset + page_size], total
@@ -252,6 +360,15 @@ class LiquidacionGeneralCoreService:
         self,
         page: int,
         page_size: int,
+        municipalidad_id=None,
+        propietario=None,
+        razon_social=None,
+        creador_username=None,
+        fecha_desde=None,
+        fecha_hasta=None,
+        numero=None,
+        numero_revision=None,
+        **kwargs
     ) -> tuple:
         """
         Returns paginated LiquidacionGeneral queryset for Inspección de Obra.
@@ -277,6 +394,24 @@ class LiquidacionGeneralCoreService:
             'liquidacion_visitas__tarifa_aplicada',
         ).order_by('-fecha_registro')
 
+        # Apply filters
+        if municipalidad_id:
+            qs = qs.filter(municipalidad_id=municipalidad_id)
+        if propietario:
+            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
+        if razon_social:
+            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
+        if creador_username:
+            qs = qs.filter(usuario_creador__username__icontains=creador_username)
+        if fecha_desde:
+            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
+        if numero is not None:
+            qs = qs.filter(inspeccion_obra__numero=numero)
+        if numero_revision is not None:
+            qs = qs.filter(numero_revision=numero_revision)
+
         total = qs.count()
         offset = (page - 1) * page_size
         return qs[offset:offset + page_size], total
@@ -285,6 +420,15 @@ class LiquidacionGeneralCoreService:
         self,
         page: int,
         page_size: int,
+        municipalidad_id=None,
+        propietario=None,
+        razon_social=None,
+        creador_username=None,
+        fecha_desde=None,
+        fecha_hasta=None,
+        numero=None,
+        numero_revision=None,
+        **kwargs
     ) -> tuple:
         """
         Returns paginated LiquidacionGeneral queryset for Impacto Vial.
@@ -311,6 +455,24 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__detalles__especialidad',
             'liquidacion_porcentaje_obra__derecho_aplicado',
         ).order_by('-fecha_registro')
+
+        # Apply filters
+        if municipalidad_id:
+            qs = qs.filter(municipalidad_id=municipalidad_id)
+        if propietario:
+            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
+        if razon_social:
+            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
+        if creador_username:
+            qs = qs.filter(usuario_creador__username__icontains=creador_username)
+        if fecha_desde:
+            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
+        if numero is not None:
+            qs = qs.filter(impacto_vial__numero=numero)
+        if numero_revision is not None:
+            qs = qs.filter(numero_revision=numero_revision)
 
         total = qs.count()
         offset = (page - 1) * page_size

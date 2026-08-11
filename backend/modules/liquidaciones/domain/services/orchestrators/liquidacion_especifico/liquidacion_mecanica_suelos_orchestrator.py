@@ -4,6 +4,7 @@ LiquidacionMecanicaSuelosOrchestrator — sync facade for Mecanica de Suelos.
 Thin sync facade. Validates input and delegates to Core/Flujo for calculation.
 """
 import uuid
+from typing import List
 from injector import inject
 from ninja.errors import HttpError
 from django.core.exceptions import ObjectDoesNotExist
@@ -162,8 +163,16 @@ class LiquidacionMecanicaSuelosOrchestrator:
         return (tarifa, derecho)
 
     def listar_liquidaciones(
-        self, page: int, page_size: int
-    ) -> tuple:
+        self, page: int, page_size: int,
+        municipalidad_id=None,
+        propietario=None,
+        razon_social=None,
+        creador_username=None,
+        fecha_desde=None,
+        fecha_hasta=None,
+        numero=None,
+        numero_revision=None,
+    ) -> tuple[List[MecanicaSuelosPrimeraRevisionResult], int]:
         """
         Returns paginated MecanicaSuelosPrimeraRevisionResult list.
         Applies pagination defaults/boundaries, iterates ORM objects to build domain DTOs.
@@ -180,6 +189,14 @@ class LiquidacionMecanicaSuelosOrchestrator:
         orm_objects, total = self.general_core_service.list_liquidaciones_ms_paginated(
             page=page,
             page_size=page_size,
+            municipalidad_id=municipalidad_id,
+            propietario=propietario,
+            razon_social=razon_social,
+            creador_username=creador_username,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            numero=numero,
+            numero_revision=numero_revision,
         )
 
         # Build MecanicaSuelosPrimeraRevisionResult domain DTOs from ORM objects

@@ -8,6 +8,21 @@ from typing import Optional
 from datetime import date
 
 
+class EspecialidadResult(BaseModel):
+    """Domain DTO for especialidad."""
+    id: str
+    codigo: str
+    nombre: str
+
+
+class CapituloResult(BaseModel):
+    """Domain DTO for capitulo."""
+    id: str
+    registro_id: str
+    abreviacion: str
+    nombre: str
+
+
 class PerfilIngenieroResult(BaseModel):
     """Domain DTO for ingeniero profile info (delegado list item)."""
     id: str
@@ -19,12 +34,16 @@ class PerfilIngenieroResult(BaseModel):
     nombre_completo: str
     correo_personal: Optional[str] = None
     correo_institucional: Optional[str] = None
+    especialidad: Optional[EspecialidadResult] = None
+    capitulo: Optional[CapituloResult] = None
 
 
 class DelegadoResult(BaseModel):
-    """Domain DTO for a basic Delegado (list item)."""
+    """Domain DTO for a Delegado (list item) con municipalidades y estado."""
     id: str
     perfil_ingeniero: PerfilIngenieroResult
+    municipalidades: list["MunicipalidadesAsignadasResult"] = []
+    estado: str = "sin_asignaciones"  # vigente | sin_vigencia | sin_asignaciones
 
 
 class DelegadoListResult(BaseModel):
@@ -36,11 +55,17 @@ class DelegadoListResult(BaseModel):
     total_pages: int
 
 
+class MunicipalidadBasicResult(BaseModel):
+    """Domain DTO for municipalidad basica."""
+    id: str
+    codigo: str
+    nombre: str
+
+
 class MunicipalidadesAsignadasResult(BaseModel):
     """Domain DTO for a municipalidad assignment with vigencia status."""
     id: str
-    municipalidad_id: str
-    municipalidad_nombre: str
+    municipalidad: MunicipalidadBasicResult
     tipo: str
     categoria: Optional[str] = None
     periodo_inicio: Optional[date] = None

@@ -16,4 +16,5 @@ export const generalFormSchema = z.object({
   municipalidad_id: z.string().min(1, "Requerido"),
   expediente: z.string().min(1, "Requerido"),
   observacion: z.string().optional(),
+  retencion: z.boolean().optional(),
 });

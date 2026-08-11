@@ -12,42 +12,43 @@ import { apiResponseSchema } from "@/types/api.types";
 
 /**
  * Tipos de liquidacion que aparecen en el path de tarifas historicas.
- * coincide con los valores usados en la URL: edificaciones, habilitacion-urbana, etc.
+ * Coincide con las rutas REALES del backend:
+ * edificaciones, habilitacion-urbana, mecanica-suelos, impacto-vial, taludes, inspeccion-obra
  */
 export const tipoTarifaSchema = z.enum([
   "edificaciones",
   "habilitacion-urbana",
-  "ms",
-  "iv",
+  "mecanica-suelos",
+  "impacto-vial",
   "taludes",
-  "io",
+  "inspeccion-obra",
 ]);
 export type TipoTarifa = z.infer<typeof tipoTarifaSchema>;
 
 // ── Tarifas Porcentaje ────────────────────────────────────────────────────────
 
 export const tarifaPorcentajeSchema = z.object({
-  id: z.string().uuid(),
-  especialidad_id: z.string().uuid(),
+  id: z.string(),
+  especialidad_id: z.string(),
   especialidad_nombre: z.string(),
-  porcentaje_liquidacion: z.number(),
+  porcentaje_liquidacion: z.coerce.number(),
 });
 export type TarifaPorcentaje = z.infer<typeof tarifaPorcentajeSchema>;
 
 // ── Tarifa M2 ────────────────────────────────────────────────────────────────
 
 export const tarifaM2Schema = z.object({
-  id: z.string().uuid(),
-  costo_por_m2: z.number(),
+  id: z.string(),
+  costo_por_m2: z.coerce.number(),
 });
 export type TarifaM2 = z.infer<typeof tarifaM2Schema>;
 
 // ── Tarifas Visitas ───────────────────────────────────────────────────────────
 
 export const tarifaVisitaSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
   categoria: z.string(),
-  porcentaje_uit: z.number(),
+  porcentaje_uit: z.coerce.number(),
 });
 export type TarifaVisita = z.infer<typeof tarifaVisitaSchema>;
 
@@ -58,7 +59,7 @@ export type TarifaVisita = z.infer<typeof tarifaVisitaSchema>;
  * Representa un periodo tarifario con sus tarifas asociadas.
  */
 export const tarifaHistoricaPeriodoSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
   tipo_liquidacion: z.string(),
   periodo_inicio: z.string(), // date ISO
   periodo_fin: z.string().nullable(), // date ISO | null
@@ -74,10 +75,10 @@ export type TarifaHistoricaPeriodo = z.infer<typeof tarifaHistoricaPeriodoSchema
  * Matches DerechoHistoricoSchema from backend.
  */
 export const derechoHistoricoSchema = z.object({
-  id: z.string().uuid(),
-  derecho_minimo: z.number().nullable().optional(),
-  derecho_maximo: z.number().nullable().optional(),
-  porcentaje_minimo_uit: z.number().nullable().optional(),
+  id: z.string(),
+  derecho_minimo: z.coerce.number().nullable().optional(),
+  derecho_maximo: z.coerce.number().nullable().optional(),
+  porcentaje_minimo_uit: z.coerce.number().nullable().optional(),
   periodo_inicio: z.string(), // date ISO
   periodo_fin: z.string().nullable(), // date ISO | null
 });
@@ -88,10 +89,10 @@ export type DerechoHistorico = z.infer<typeof derechoHistoricoSchema>;
 // Paginación para tarifas históricas (usa page/page_size como query params)
 export const paginatedTarifaHistoricaPayloadSchema = z.object({
   items: z.array(tarifaHistoricaPeriodoSchema),
-  total: z.number(),
-  page: z.number(),
-  page_size: z.number(),
-  total_pages: z.number(),
+  total: z.coerce.number(),
+  page: z.coerce.number(),
+  page_size: z.coerce.number(),
+  total_pages: z.coerce.number(),
 });
 
 export const paginatedTarifaHistoricaResponseSchema = apiResponseSchema(

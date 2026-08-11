@@ -24,6 +24,9 @@ from modules.liquidaciones.presentation.schemas.delegado.delegado_schemas import
     DelegadoMunicipalidadesOut,
     DelegadoForMunicipalidadOut,
     DelegadosPorMunicipalidadOut,
+    EspecialidadOut,
+    CapituloOut,
+    MunicipalidadBasicOut,
 )
 from core.pagination import PaginatedData
 
@@ -47,6 +50,42 @@ class DelegadoPresenter:
             nombre_completo=result.nombre_completo,
             correo_personal=result.correo_personal,
             correo_institucional=result.correo_institucional,
+            especialidad=(
+                EspecialidadOut(
+                    id=uuid.UUID(result.especialidad.id),
+                    codigo=result.especialidad.codigo,
+                    nombre=result.especialidad.nombre,
+                )
+                if result.especialidad
+                else None
+            ),
+            capitulo=(
+                CapituloOut(
+                    id=uuid.UUID(result.capitulo.id),
+                    registro_id=result.capitulo.registro_id,
+                    abreviacion=result.capitulo.abreviacion,
+                    nombre=result.capitulo.nombre,
+                )
+                if result.capitulo
+                else None
+            ),
+        )
+
+    @staticmethod
+    def _map_municipalidad_asignada(result) -> MunicipalidadesAsignadasOut:
+        """Maps MunicipalidadesAsignadasResult to MunicipalidadesAsignadasOut."""
+        return MunicipalidadesAsignadasOut(
+            id=uuid.UUID(result.id),
+            municipalidad=MunicipalidadBasicOut(
+                id=uuid.UUID(result.municipalidad.id),
+                codigo=result.municipalidad.codigo,
+                nombre=result.municipalidad.nombre,
+            ),
+            tipo=result.tipo,
+            categoria=result.categoria,
+            periodo_inicio=result.periodo_inicio.isoformat() if result.periodo_inicio else None,
+            periodo_fin=result.periodo_fin.isoformat() if result.periodo_fin else None,
+            es_vigente=result.es_vigente,
         )
 
     @staticmethod
@@ -55,6 +94,11 @@ class DelegadoPresenter:
         return DelegadoOut(
             id=uuid.UUID(result.id),
             perfil_ingeniero=DelegadoPresenter._map_perfil_ingeniero(result.perfil_ingeniero),
+            municipalidades=[
+                DelegadoPresenter._map_municipalidad_asignada(m)
+                for m in result.municipalidades
+            ],
+            estado=result.estado,
         )
 
     @staticmethod
@@ -83,19 +127,10 @@ class DelegadoPresenter:
             delegado_id=uuid.UUID(domain_result.delegado_id),
             perfil_ingeniero=DelegadoPresenter._map_perfil_ingeniero(domain_result.perfil_ingeniero),
             municipalidades=[
-                MunicipalidadesAsignadasOut(
-                    id=uuid.UUID(m.id),
-                    municipalidad_id=uuid.UUID(m.municipalidad_id),
-                    municipalidad_nombre=m.municipalidad_nombre,
-                    tipo=m.tipo,
-                    categoria=m.categoria,
-                    periodo_inicio=m.periodo_inicio.isoformat() if m.periodo_inicio else None,
-                    periodo_fin=m.periodo_fin.isoformat() if m.periodo_fin else None,
-                    es_vigente=m.es_vigente,
-                )
+                DelegadoPresenter._map_municipalidad_asignada(m)
                 for m in domain_result.municipalidades
             ],
-        )
+          )
 
     @staticmethod
     def present_delegados_por_municipalidad(

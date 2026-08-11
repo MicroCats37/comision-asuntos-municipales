@@ -102,6 +102,7 @@ export const LiquidacionGeneralOutputSchema = z.object({
   numero_revision: z.coerce.number().int(),
   sub_total: num(),
   total: num(),
+  retencion: z.boolean().optional(),
   igv: IgvOutputSchema.nullish(),
   uit: UitOutputSchema.nullish(),
   proyecto: ProyectoOutputSchema,

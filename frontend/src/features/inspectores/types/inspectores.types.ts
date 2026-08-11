@@ -63,32 +63,32 @@ export type InspectorVigente = z.infer<typeof inspectorVigentePayloadSchema>;
 // ── Zod Schemas ──────────────────────────────────────────────────────────────
 
 const perfilIngenieroSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
   cip: z.string(),
   dni: z.string(),
-  nombres: z.string(),
-  apellido_paterno: z.string(),
-  apellido_materno: z.string(),
+  nombres: z.string().nullish(),
+  apellido_paterno: z.string().nullish(),
+  apellido_materno: z.string().nullish(),
   nombre_completo: z.string(),
-  correo_personal: z.string().optional(),
-  correo_institucional: z.string().optional(),
+  correo_personal: z.string().nullish(),
+  correo_institucional: z.string().nullish(),
 });
 
 const inspectorSchema = z.object({
-  id: z.string().uuid(),
-  tipo_liquidacion: z.string(),
-  numero_registro: z.string(),
-  telefono: z.string().optional(),
-  email: z.string().optional(),
+  id: z.string(),
+  tipo_liquidacion: z.string().nullish(),
+  numero_registro: z.string().nullish(),
+  telefono: z.string().nullish(),
+  email: z.string().nullish(),
   perfil_ingeniero: perfilIngenieroSchema,
 });
 
 export const inspectoresListPayloadSchema = z.object({
   items: z.array(inspectorSchema),
-  total: z.number(),
-  page: z.number(),
-  page_size: z.number(),
-  total_pages: z.number(),
+  total: z.coerce.number(),
+  page: z.coerce.number(),
+  page_size: z.coerce.number(),
+  total_pages: z.coerce.number(),
 });
 
 export const inspectoresListResponseSchema = apiResponseSchema(inspectoresListPayloadSchema);

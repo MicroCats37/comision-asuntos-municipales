@@ -1,225 +1,118 @@
-# Exploration: liquidaciones-query-filters
+# Exploration: liquidaciones-query-filters (v3 — Rápido para Apply)
 
-## 1. Contrato (citas relevantes)
+## Controllers (6 endpoints GET listado)
 
-### PLAN_REFACTORIZACION.md — Reglas aplicables a filtros en controllers
+| Controller | Archivo | Ruta | Método | Cómo llama al orquestador |
+|---|---|---|---|---|
+| LiquidacionEdificacionesController | `liquidacion_especifico/liquidacion_edificaciones_controller.py` | `GET /liquidaciones/edificaciones/` | `list_liquidaciones(page=1, page_size=10)` | `self.orchestrator.listar_liquidaciones(page=page, page_size=page_size)` |
+| LiquidacionTaludesController | `liquidacion_especifico/liquidacion_taludes_controller.py` | `GET /liquidaciones/taludes/` | `listar_liquidaciones(request, page=1, page_size=10)` | `self.orchestrator.listar_liquidaciones(page=page, page_size=page_size)` |
+| LiquidacionHabilitacionUrbanaController | `liquidacion_especifico/liquidacion_habilitacion_urbana_controller.py` | `GET /liquidaciones/habilitacion-urbana/` | `list_liquidaciones(page=1, page_size=10)` | `self.cotizar_orchestrator.listar_liquidaciones(page=page, page_size=page_size)` |
+| LiquidacionImpactoVialController | `liquidacion_especifico/liquidacion_impacto_vial_controller.py` | `GET /liquidaciones/impacto-vial/` | `listar_liquidaciones(request, page=1, page_size=10)` | `self.orchestrator.listar_liquidaciones(page=page, page_size=page_size)` |
+| LiquidacionInspeccionObraController | `liquidacion_especifico/liquidacion_inspeccion_obra_controller.py` | `GET /liquidaciones/inspeccion-obra/` | `list_liquidaciones(page=1, page_size=10)` | `self.orchestrator.listar_liquidaciones(page=page, page_size=page_size)` |
+| LiquidacionMecanicaSuelosController | `liquidacion_especifico/liquidacion_mecanica_suelos_controller.py` | `GET /liquidaciones/mecanica-suelos/` | `list_liquidaciones(page=1, page_size=10)` | `self.cotizar_orchestrator.listar_liquidaciones(page=page, page_size=page_size)` |
 
-**Sección 1.A — Los Controladores son "Sagrados" (Cero Lógica):**
-> El controlador solo hace 3 cosas: Parsear la entrada, llamar al Orquestador, y retornar el éxito formateado por un Presenter.
-> PROHIBIDO: Usar `if`, `for`, o variables de estado. PROHIBIDO: Tocar el ORM.
+## Firmas actuales del orquestador (listado)
 
-**Sección 2 — Patrones de Firmas de Controladores:**
-> La firma de un controlador solo puede aceptar `self`, `request`, el `payload` (o `data`/`files`), y **parámetros de ruta/query**. Cualquier otra variable suelta en la firma es un error arquitectónico.
-
-**Implicación para filtros query:** Los query params de filtrado se parsean en el controller (firmas tipo Query[...] de Ninja) y se pasan directamente al orchestrator. No hay lógica de filtrado en el controller.
-
-### django-app-architecture-contract.md — Parametrización de queries:
-> Params de query con `Query[...]` de Ninja. (línea 322)
-
-**Implicación:** El patrón es `from ninja import Query` + `Optional[T] = Query(None, description="...")`.
-
----
-
-## 2. Inventario de controllers/listados
-
-### Endpoints GET de listado en `backend/modules/liquidaciones/presentation/controllers/`:
-
-| Controller | Método | Ruta | Query Params HOY |
-|---|---|---|---|
-| `LiquidacionTaludesController.listar_liquidaciones` | GET | `/liquidaciones/taludes/` | `page`, `page_size` |
-| `LiquidacionMecanicaSuelosController.list_liquidaciones` | GET | `/liquidaciones/mecanica-suelos/` | `page`, `page_size` |
-| `LiquidacionInspeccionObraController.list_liquidaciones` | GET | `/liquidaciones/inspeccion-obra/` | `page`, `page_size` |
-| `LiquidacionImpactoVialController.listar_liquidaciones` | GET | `/liquidaciones/impacto-vial/` | `page`, `page_size` |
-| `LiquidacionHabilitacionUrbanaController.list_liquidaciones` | GET | `/liquidaciones/habilitacion-urbana/` | `page`, `page_size` |
-| `LiquidacionEdificacionesController.list_liquidaciones` | GET | `/liquidaciones/edificaciones/` | `page`, `page_size` |
-| `TarifasHistoricasController.get_tarifas_historicas` | GET | `/liquidaciones/{tipo}/tarifas/historicas` | `fecha_desde`, `fecha_hasta`, `page`, `page_size` |
-| `TarifasHistoricasController.get_derechos_historicos` | GET | `/liquidaciones/derechos/historicos` | `tipo`, `fecha_desde`, `fecha_hasta` |
-| `InspectorController.list_inspectores` | GET | `/inspectores/` | `page`, `page_size` |
-| `InspectorController.list_inspectores_vigentes` | GET | `/inspectores/vigentes` | `tipo_liquidacion`, `page`, `page_size` |
-| `DelegadoController.list_delegados` | GET | `/delegados/` | `page`, `page_size` |
-| `DelegadoController.list_delegados_por_municipalidad` | GET | `/delegados/municipalidad/{id}` | `vigente` (opcional), `page`, `page_size` |
-
-### Patrón existente de filtrado en otros módulos
-
-**Módulo `entidades` — `entidad_controller.py` (líneas 101-103):**
 ```python
-search: Optional[str] = Query(None, description="Texto para filtrar por nombre de distrito")
-provincia_id: Optional[str] = Query(None, description="ID de provincia para filtrar")
-departamento_id: Optional[str] = Query(None, description="ID de departamento para filtrar")
+# EdificacionesOrchestrator, TaludesOrchestrator, ImpactoVialOrchestrator, InspeccionObraOrchestrator:
+def listar_liquidaciones(self, page: int, page_size: int) -> tuple[List[XxxPrimeraRevisionResult], int]
+
+# HabilitacionUrbanaOrchestrator, MecanicaSuelosOrchestrator:
+def listar_liquidaciones(self, page: int, page_size: int) -> tuple[List[XxxPrimeraRevisionResult], int]
 ```
-Este es el patrón de referencia: `from ninja import Query`, query params optional tipados como `Optional[T] = Query(None, ...)`, pasados directamente al orchestrator.
 
-**Módulo `liquidaciones` — `tarifas_historicas_schemas.py` (líneas 16-28):**
+## Core service (donde se aplica el filtrado — 6 métodos)
+
 ```python
+# LiquidacionGeneralCoreService:
+def list_liquidaciones_by_type_paginated(self, tipo_liquidacion: str, page: int, page_size: int) -> tuple
+def list_liquidaciones_hu_paginated(self, page: int, page_size: int) -> tuple
+def list_liquidaciones_ms_paginated(self, page: int, page_size: int) -> tuple
+def list_liquidaciones_taludes_paginated(self, page: int, page_size: int) -> tuple
+def list_liquidaciones_io_paginated(self, page: int, page_size: int) -> tuple
+def list_liquidaciones_iv_paginated(self, page: int, page_size: int) -> tuple
+```
+
+## Campos exactos por filtro
+
+| Filtro | Campo en modelo | Ruta Django ORM | Tipo match | Notas |
+|---|---|---|---|---|
+| **entidad** | `LiquidacionGeneral.municipalidad_id` | `municipalidad_id` | exact (UUID) | FK directo; join ya en `select_related('municipalidad')` |
+| **propietario** | `Proyecto.nombre_propietario` | `proyecto__nombre_propietario__icontains` | icontains | Join ya en `select_related('proyecto')` |
+| **fecha_desde** | `LiquidacionGeneral.fecha_registro` | `fecha_registro__date__gte` | gte | DateTimeField con auto_now_add |
+| **fecha_hasta** | `LiquidacionGeneral.fecha_registro` | `fecha_registro__date__lte` | lte | |
+| **numero** | `{tipo}.numero` (AutoNumeroModel) | `edificaciones__numero`, `taludes__numero`, `habilitacion_urbana__numero`, `impacto_vial__numero`, `inspeccion_obra__numero`, `mecanica_suelos__numero` | exact | JOIN ya en `prefetch_related` del tipo específico |
+| **razon_social** | `Proyecto.entidad_razon_social` | `proyecto__entidad_razon_social__icontains` | icontains | Snapshot denormalizado en Proyecto; join ya en `select_related('proyecto__entidad')` |
+| **creado_por / usuario** | `LiquidacionGeneral.usuario_creador` → User | `usuario_creador__id` (exact) o `usuario_creador__username__icontains` | exact/icontains | FK directo; join ya en `select_related('usuario_creador')` |
+| **numero_revisiones** | `LiquidacionGeneral.numero_revision` | `numero_revision__gte`, `numero_revision__exact` | gte/exact | PositiveIntegerField; no requiere join |
+
+## Listado general
+
+**NO existe** endpoint `GET /liquidaciones/` general. Solo los 6 endpoints por tipo.
+
+## Convenciones Ninja
+
+```python
+# Controller actual (Ninja Query):
+page: int = Query(default=1, ge=1)
+page_size: int = Query(default=10, ge=1, le=100)
+
+# Schema de referencia (tarifas_historicas_schemas.py):
 class TarifasHistoricasQueryParams(BaseSchema):
-    fecha_desde: date
-    fecha_hasta: date
+    fecha_desde: date = Field(..., description="Start date for the historical range")
+    fecha_hasta: date = Field(..., description="End date for the historical range")
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=10, ge=1, le=100)
 ```
-Patrón de schema query params tipado con `BaseSchema` (para casos más complejos).
 
----
+## Aplicación del filtrado (contrato §1.A)
 
-## 3. Estado actual de filtros
+**Controller** → parsea query params → pasa kwargs al orquestador → formatea salida.
+**Orchestrator** → recibe kwargs → los pasa al core service.
+**Core service** → recibe kwargs → encadena `.filter()` al QuerySet ANTES de offset/limit.
 
-**Ningún endpoint de listado de liquidaciones por tipo soporta filtros más allá de paginación.**
+Patrón de改动 en core service (ejemplo para `list_liquidaciones_by_type_paginated`):
 
-- 6 controllers de liquidaciones específico (taludes, mecánica suelos, inspección obra, impacto vial, habilitación urbana, edificaciones) → solo `page` y `page_size`
-- El frontend YA tiene UI de búsqueda textual (Input con `searchQuery` en los UI stores) pero **filtra en memoria** (client-side), no en el backend
-- `TarifasHistoricasController` SÍ soporta filtros de fecha (`fecha_desde`, `fecha_hasta`) — es el único patrón de filtrado query params existente en liquidaciones
+```python
+def list_liquidaciones_by_type_paginated(
+    self, tipo_liquidacion: str, page: int, page_size: int,
+    municipalidad_id=None, propietario=None, razon_social=None,
+    creador_username=None, fecha_desde=None, fecha_hasta=None,
+    numero=None, numero_revision=None, **kwargs
+) -> tuple:
+    qs = LiquidacionGeneral.objects.filter(tipo_liquidacion__codigo=tipo_liquidacion)
 
----
+    if municipalidad_id:
+        qs = qs.filter(municipalidad_id=municipalidad_id)
+    if propietario:
+        qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
+    if razon_social:
+        qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
+    if creador_username:
+        qs = qs.filter(usuario_creador__username__icontains=creador_username)
+    if fecha_desde:
+        qs = qs.filter(fecha_registro__date__gte=fecha_desde)
+    if fecha_hasta:
+        qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
+    if numero_revision is not None:
+        qs = qs.filter(numero_revision=numero_revision)
 
-## 4. Patrón de filtrado existente en el repo
-
-| Patrón | Ubicación | Descripción |
-|---|---|---|
-| `Query(...)` de Ninja | `modules/entidades/presentation/controllers/entidad_controller.py` | `Optional[str] = Query(None)` para filtros textuales y por ID |
-| `BaseSchema` como QueryParams | `modules/liquidaciones/presentation/schemas/tarifas_historicas_schemas.py` | `TarifasHistoricasQueryParams(BaseSchema)` con `Field(...)` de Ninja |
-| Custom managers filtrados | `modules/entidades/domain/models/municipalidad.py` | `MunicipalidadManager` con `get_queryset().filter(...)` para proxy models |
-| Vigencia filter | `modules/liquidaciones/domain/services/orchestrators/delegado_orchestrator.py` | `vigente` param con filtro `periodo_inicio <= today AND (periodo_fin IS NULL OR periodo_fin >= today)` |
-
-**No existe `FilterSet` de Django ni библиотека de filtros dedicada.** El filtrado es manual en los orquestadores.
-
----
-
-## 5. Modelos y campos filtrables
-
-### `LiquidacionGeneral` (dominio: `liquidacion_general`)
-Campos con potencial de filtrado:
-- `estado` — CharField con choices `EstadoLiquidacion`: `PENDIENTE`, `APROBADA`, `REINGRESADA`, `RECHAZADA`
-- `fecha_registro` — DateTimeField (auto_now_add)
-- `expediente` — CharField (número de expediente, texto libre)
-- `numero_revision` — PositiveIntegerField (1 = primera revisión)
-- `retencion` — BooleanField
-- `tipo_liquidacion` — ForeignKey a `TipoLiquidacion`
-- `municipalidad` — ForeignKey a `entidades.Municipalidad`
-- `proyecto` — ForeignKey a `Proyecto`
-
-### `Proyecto` (dominio: `proyecto`)
-Campos con potencial de filtrado:
-- `denominacion` — CharField (nombre del proyecto, **búsqueda textual**)
-- `entidad_razon_social` — CharField (snapshot de razón social, **búsqueda textual**)
-- `entidad_numero_documento` — CharField (RUC/DNI)
-- `distrito` — ForeignKey a `UbigeoDistrito`
-- `direccion` — CharField
-
-### `LiquidacionPorcentajeObra` (dominio: específico — Edificaciones, IV, Taludes)
-- `tipo_tramite` — CharField con choices `TipoTramiteEdificaciones`: `OBRA_NUEVA`, `DEMOLICION`, `AMPLIACION`, `REMODELACION`, etc.
-- `valor_declarado` — DecimalField
-
-### `LiquidacionPorMetroCuadrado` (dominio: HU, MS)
-- `area_m2` — DecimalField
-
-### `LiquidacionPorCategoriaVisitas` (dominio: IO)
-- `cantidad_visitas` — PositiveIntegerField
-- `categoria` — CharField (A, B, C...)
-
----
-
-## 6. Frontend expectations
-
-### hooks/useLiquidacionList.ts
-```typescript
-url: `${url}?page=${paginationParams.page}&page_size=${paginationParams.page_size}`
-```
-Hoy solo envía `page` y `page_size`. **No envía search ni estado.**
-
-### UI Stores (e.g., `taludes-ui-list.store.ts`)
-```typescript
-interface TaludesUIState {
-  page: number;
-  pageSize: number;
-  searchQuery: string;  // ← YA EXISTE pero NO se envía al backend
-  isFormModalOpen: boolean;
-  selectedItemId: string | null;
-}
-```
-El `searchQuery` se mantiene en el store pero **filtra en memoria**:
-```typescript
-const filteredItems = items.filter((item) =>
-  item.liquidacion_general.proyecto.denominacion.toLowerCase().includes(searchInput.toLowerCase())
-);
+    # ... select_related + prefetch_related + order_by + offset/limit ...
 ```
 
-### LiquidacionesTaludesView.tsx (líneas 38-42)
-```typescript
-const filteredItems = items.filter((item) =>
-  item.liquidacion_general.proyecto.denominacion.toLowerCase().includes(searchInput.toLowerCase())
-);
-```
-**Client-side filtering on denominacion — ineficiente para grandes volúmenes.**
+**Para `numero`** (tipo-específico), cada método de core service sabe su tipo → filtra sobre el JOIN correcto:
+- `list_liquidaciones_by_type_paginated` → `filter(edificaciones__numero=numero)`
+- `list_liquidaciones_taludes_paginated` → `filter(taludes__numero=numero)`
+- `list_liquidaciones_hu_paginated` → `filter(habilitacion_urbana__numero=numero)`
+- `list_liquidaciones_iv_paginated` → `filter(impacto_vial__numero=numero)`
+- `list_liquidaciones_io_paginated` → `filter(inspeccion_obra__numero=numero)`
+- `list_liquidaciones_ms_paginated` → `filter(mecanica_suelos__numero=numero)`
 
-### Frontend UI que SÍ tiene filtros en otros features
-- `entidades` → `search`, `provincia_id`, `departamento_id` (enviados al backend)
-- Inspectores → `tipo_liquidacion` (enviado al backend)
-- Delegados → `vigente` (enviado al backend)
+## Join existente para filtros core (no se agregan nuevos)
 
----
-
-## 7. Recomendaciones iniciales
-
-### Filtros valiosos por implementar (prioridad sugerida)
-
-| Filtro | Campo del modelo | Tipo | Descripción |
-|---|---|---|---|
-| Búsqueda textual | `proyecto.denominacion` / `proyecto.entidad_razon_social` | `str` | Busca en nombre de proyecto o razón social |
-| Estado | `liquidacion_general.estado` | `str` (enum) | `PENDIENTE`, `APROBADA`, `REINGRESADA`, `RECHAZADA` |
-| Fecha desde/hasta | `liquidacion_general.fecha_registro` | `date` | Rango de fecha de registro |
-| Expediente | `liquidacion_general.expediente` | `str` | Número de expediente exacto o parcial |
-| Orden | — | `str` | `fecha_registro`, `estado`, `total` (asc/desc) |
-
-### Patrón recomendado (siguiendo el contrato)
-
-1. **Crear schema QueryParams** en `presentation/schemas/` por cada controller:
-   - `LiquidacionTaludesQueryParams(BaseSchema)` con `Field(...)` de Ninja
-   - O usar `Query(...)` directo en la firma del controller (más simple para params pocos)
-
-2. **Firma del controller** (Patrón 3 del contrato — JSON Estricto):
-   ```python
-   def listar_liquidaciones(
-       self,
-       request,
-       page: int = 1,
-       page_size: int = 10,
-       search: Optional[str] = Query(None, description="Búsqueda por denominacion de proyecto"),
-       estado: Optional[str] = Query(None, description="Estado: PENDIENTE, APROBADA, REINGRESADA, RECHAZADA"),
-       orden_por: Optional[str] = Query("fecha_registro", description="Campo de ordenamiento"),
-       orden_dir: Optional[str] = Query("desc", description="Dirección: asc o desc"),
-   ):
-   ```
-
-3. **Pasar al orchestrator** — sin lógica en controller:
-   ```python
-   liquidaciones, total = self.orchestrator.listar_liquidaciones(
-       page=page,
-       page_size=page_size,
-       search=search,
-       estado=estado,
-       orden_por=orden_por,
-       orden_dir=orden_dir,
-   )
-   ```
-
-4. **En el orchestrator** — aplicar filtros al queryset base.
-
-### Consideraciones de arquitectura
-
-- **6 controllers** de liquidaciones específico necesitan filtros (taludes, ms, io, iv, hu, edificaciones)
-- **Patrón uniforme** es deseable: mismo schema de query params para los 6
-- **Losorchestrator de cada tipo** (`listar_liquidaciones_proceso`) recibe los filtros y los aplica al `qs.filter(...)`
-- **No usar Django Filter** — filtrado manual en los orchestors es consistente con el resto del codebase
-- **Contrato de refactorización**: los filtros van en query params del controller, se delegan al orchestrator sin `if`/`for` en el controller
+`select_related`: `proyecto`, `proyecto__entidad`, `municipalidad`, `usuario_creador`, `tipo_liquidacion`
+`prefetch_related` por tipo: `{edificaciones|taludes|habilitacion_urbana|impacto_vial|inspeccion_obra|mecanica_suelos}`
 
 ---
 
-## 8. Riesgos encontrados
-
-| Riesgo | Descripción |
-|---|---|
-| **Fragilización del orchestrator** | Si los orchestors reciben muchos parámetros de filtro, el método `listar_liquidaciones` crece. Considerar un objeto `LiquidacionListFilters` o QueryParams schema como único parámetro. |
-| **Inconsistencia entre 6 controllers** | Cada controller tiene su propio `listar_liquidaciones`. Si los 6 implementan filtros, asegurar que los schemas yparams sean consistentes (misma semántica de `search`, `estado`, `orden`). |
-| **Ordenamiento injection** | Si `orden_por` se usa directamente en `.order_by()`, sanitizar contra campos válidos para evitar SQL injection (Django ORM es seguro pero un valor inesperado causaría error). |
-| **Front-end no consume los filtros** | Hoy el frontend NO envía `search`/`estado`/`orden` al backend. Se requiere cambios paralelos en `useLiquidacionList` y los UI stores para construir la query string con los filtros. |
-| **Tests existentes** | Los 6 `test_*_list.py` asumen solo `page`/`page_size`. Agregar filtros requiere actualizar los tests. |
+*Documento: v3 — 2026-08-11 — Rápido para apply*

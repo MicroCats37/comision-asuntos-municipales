@@ -22,6 +22,9 @@ from modules.liquidaciones.domain.results.delegado.delegado_result import (
     DelegadoMunicipalidadesResult,
     DelegadoForMunicipalidadResult,
     DelegadosPorMunicipalidadResult,
+    EspecialidadResult,
+    CapituloResult,
+    MunicipalidadBasicResult,
 )
 
 
@@ -45,6 +48,21 @@ class DelegadoOrchestrator:
 
     def _build_perfil_ingeniero_result(self, perfil) -> PerfilIngenieroResult:
         """Builds PerfilIngenieroResult from ORM object."""
+        especialidad_result = None
+        if getattr(perfil, "especialidad", None):
+            especialidad_result = EspecialidadResult(
+                id=str(perfil.especialidad.id),
+                codigo=perfil.especialidad.codigo,
+                nombre=perfil.especialidad.nombre,
+            )
+        capitulo_result = None
+        if getattr(perfil, "capitulo", None):
+            capitulo_result = CapituloResult(
+                id=str(perfil.capitulo.id),
+                registro_id=perfil.capitulo.registro_id,
+                abreviacion=perfil.capitulo.abreviacion,
+                nombre=perfil.capitulo.nombre,
+            )
         return PerfilIngenieroResult(
             id=str(perfil.id),
             cip=perfil.cip or "",
@@ -55,22 +73,67 @@ class DelegadoOrchestrator:
             nombre_completo=perfil.nombre_completo,
             correo_personal=perfil.correo_personal,
             correo_institucional=perfil.correo_institucional,
+            especialidad=especialidad_result,
+            capitulo=capitulo_result,
         )
 
-    def _build_delegado_result(self, delegado) -> DelegadoResult:
-        """Builds DelegadoResult from ORM object."""
+    def _build_municipalidad_asignada_result(self, dm, today: date) -> MunicipalidadesAsignadasResult:
+        """Builds MunicipalidadesAsignadasResult from a DelegadoMunicipalidad ORM object."""
+        current_periodo = None
+        for periodo in dm.periodos.all():
+            if periodo.periodo_inicio <= today and (
+                periodo.periodo_fin is None or periodo.periodo_fin >= today
+            ):
+                current_periodo = periodo
+                break
+
+        return MunicipalidadesAsignadasResult(
+            id=str(dm.id),
+            municipalidad=MunicipalidadBasicResult(
+                id=str(dm.municipalidad.id),
+                codigo=dm.municipalidad.codigo,
+                nombre=dm.municipalidad.nombre,
+            ),
+            tipo=dm.tipo or "",
+            categoria=dm.categoria,
+            periodo_inicio=current_periodo.periodo_inicio if current_periodo else None,
+            periodo_fin=current_periodo.periodo_fin if current_periodo else None,
+            es_vigente=current_periodo is not None,
+        )
+
+    def _build_delegado_result(self, delegado, today: date) -> DelegadoResult:
+        """Builds DelegadoResult from ORM object, incluyendo municipalidades y estado."""
+        municipalidades = [
+            self._build_municipalidad_asignada_result(dm, today)
+            for dm in delegado.municipalidades_asignadas.all()
+        ]
+
+        if not municipalidades:
+            estado = "sin_asignaciones"
+        elif any(m.es_vigente for m in municipalidades):
+            estado = "vigente"
+        else:
+            estado = "sin_vigencia"
+
         return DelegadoResult(
             id=str(delegado.id),
             perfil_ingeniero=self._build_perfil_ingeniero_result(delegado.perfil_ingeniero),
+            municipalidades=municipalidades,
+            estado=estado,
         )
 
     def list_delegados_proceso(
         self,
         page: int = 1,
         page_size: int = 10,
+        cip: Optional[str] = None,
+        municipalidad_id: Optional[uuid.UUID] = None,
+        capitulo_id: Optional[uuid.UUID] = None,
+        especialidad_id: Optional[uuid.UUID] = None,
+        estado: Optional[str] = None,
     ) -> DelegadoListResult:
         """
-        Returns paginated list of DelegadoResult.
+        Returns paginated list of DelegadoResult con municipalidades y estado.
         """
         if page < 1:
             page = 1
@@ -82,17 +145,26 @@ class DelegadoOrchestrator:
         orm_objects, total = self.core_service.list_delegados_paginated(
             page=page,
             page_size=page_size,
+            cip=cip,
+            municipalidad_id=municipalidad_id,
+            capitulo_id=capitulo_id,
+            especialidad_id=especialidad_id,
         )
 
+        today = date.today()
         domain_results: list[DelegadoResult] = [
-            self._build_delegado_result(d) for d in orm_objects
+            self._build_delegado_result(d, today) for d in orm_objects
         ]
+
+        # Filtro por estado (post-proceso porque es derivado)
+        if estado:
+            domain_results = [d for d in domain_results if d.estado == estado]
 
         total_pages = math.ceil(total / page_size) if page_size > 0 else 0
 
         return DelegadoListResult(
             items=domain_results,
-            total=total,
+            total=len(domain_results),
             page=page,
             page_size=page_size,
             total_pages=total_pages,
@@ -113,32 +185,10 @@ class DelegadoOrchestrator:
         dm_list = self.core_service.get_municipalidades_for_delegado(delegado_id)
         today = date.today()
 
-        municipalidades_result: list[MunicipalidadesAsignadasResult] = []
-        for dm in dm_list:
-            current_periodo = None
-            for periodo in dm.periodos.all():
-                if periodo.periodo_inicio <= today and (
-                    periodo.periodo_fin is None or periodo.periodo_fin >= today
-                ):
-                    current_periodo = periodo
-                    break
-
-            es_vigente = current_periodo is not None
-            periodo_inicio = current_periodo.periodo_inicio if current_periodo else None
-            periodo_fin = current_periodo.periodo_fin if current_periodo else None
-
-            municipalidades_result.append(
-                MunicipalidadesAsignadasResult(
-                    id=str(dm.id),
-                    municipalidad_id=str(dm.municipalidad_id),
-                    municipalidad_nombre=dm.municipalidad.nombre if dm.municipalidad else "",
-                    tipo=dm.tipo or "",
-                    categoria=dm.categoria,
-                    periodo_inicio=periodo_inicio,
-                    periodo_fin=periodo_fin,
-                    es_vigente=es_vigente,
-                )
-            )
+        municipalidades_result: list[MunicipalidadesAsignadasResult] = [
+            self._build_municipalidad_asignada_result(dm, today)
+            for dm in dm_list
+        ]
 
         return DelegadoMunicipalidadesResult(
             delegado_id=str(delegado.id),

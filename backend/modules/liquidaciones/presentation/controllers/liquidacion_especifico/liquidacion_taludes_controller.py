@@ -10,9 +10,11 @@ Endpoints:
 Thin controller — only delegates, no logic.
 """
 import uuid
+from datetime import date
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
+from ninja import Query
 
 from core.responses import ApiResponse, success_response
 from core.pagination import PaginatedData
@@ -54,13 +56,33 @@ class LiquidacionTaludesController:
         "/",
         response={200: ApiResponse[PaginatedData[LiquidacionTaludesOutput]]},
     )
-    def listar_liquidaciones(self, request, page: int = 1, page_size: int = 10):
+    def listar_liquidaciones(
+        self,
+        page: int = Query(default=1, ge=1),
+        page_size: int = Query(default=10, ge=1, le=100),
+        entidad_id: uuid.UUID = Query(default=None, description="Filter by municipalidad ID"),
+        propietario: str = Query(default=None, description="Filter by propietario name (icontains)"),
+        fecha_desde: date = Query(default=None, description="Filter by fecha_registro >= date"),
+        fecha_hasta: date = Query(default=None, description="Filter by fecha_registro <= date"),
+        numero: int = Query(default=None, description="Filter by talud numero (exact)"),
+        razon_social: str = Query(default=None, description="Filter by entidad razon_social (icontains)"),
+        creado_por: str = Query(default=None, description="Filter by usuario_creador username (icontains)"),
+        numero_revisiones: int = Query(default=None, description="Filter by numero_revision (exact)"),
+    ):
         """
-        Returns paginated list of Taludes liquidaciones.
+        Returns paginated list of Taludes liquidaciones with optional filters.
         """
         liquidaciones, total = self.orchestrator.listar_liquidaciones(
             page=page,
             page_size=page_size,
+            municipalidad_id=entidad_id,
+            propietario=propietario,
+            razon_social=razon_social,
+            creador_username=creado_por,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            numero=numero,
+            numero_revision=numero_revisiones,
         )
         result = self.presenter.present_list(
             liquidaciones=liquidaciones,
