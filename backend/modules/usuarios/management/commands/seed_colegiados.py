@@ -122,6 +122,7 @@ class Command(BaseCommand):
             if hab.get("condicion_cip") or hab.get("ultimo_periodo_pagado_cip"):
                 IngenieroHabilitacion.objects.update_or_create(
                     perfil_ingeniero=perfil,
+                    fecha_busqueda=None,
                     defaults={
                         "condicion_cip": hab.get("condicion_cip"),
                         "ultimo_periodo_pagado_cip": hab.get("ultimo_periodo_pagado_cip"),

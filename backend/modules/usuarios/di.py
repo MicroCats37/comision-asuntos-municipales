@@ -11,6 +11,7 @@ from injector import Module, singleton, Binder
 
 from .domain.services.core.auth_core_service import AuthCoreService
 from .domain.services.core.perfil_ingeniero_core_service import PerfilIngenieroCoreService
+from .domain.services.core.ingeniero_habilitacion_core_service import IngenieroHabilitacionCoreService
 from .domain.services.flujos.auth_flujo import AuthFlujo
 from .domain.services.flujos.ingeniero_habilitado_flujo import IngenieroHabilitadoFlujo
 from .domain.services.orchestrators.auth_orchestrator import AuthOrchestrator
@@ -58,5 +59,6 @@ class UsuariosModule(Module):
         else:
             binder.bind(ICipClient, to=RealCipClient, scope=singleton)
         binder.bind(PerfilIngenieroCoreService, to=PerfilIngenieroCoreService, scope=singleton)
+        binder.bind(IngenieroHabilitacionCoreService, to=IngenieroHabilitacionCoreService, scope=singleton)
         binder.bind(IngenieroHabilitadoFlujo, to=IngenieroHabilitadoFlujo, scope=singleton)
         binder.bind(IngenieroHabilitadoOrchestrator, to=IngenieroHabilitadoOrchestrator, scope=singleton)

@@ -66,12 +66,34 @@ class LiquidacionGeneralCoreService:
             distrito_id=proyecto_data.get("distrito_id"),
         )
 
+    def upsert_contacto(self, contacto_data: dict):
+        """
+        Upserts a Contacto by ALL fields (nombres, apellidos, dni, cargo, telefono, celular, email).
+        If all fields match an existing Contacto, returns it; otherwise creates a new one.
+        """
+        from modules.entidades.domain.models.contacto import Contacto
+
+        filtros = {
+            "nombres": contacto_data.get("nombres"),
+            "apellidos": contacto_data.get("apellidos"),
+            "dni": contacto_data.get("dni"),
+            "cargo": contacto_data.get("cargo"),
+            "telefono": contacto_data.get("telefono"),
+            "celular": contacto_data.get("celular"),
+            "email": contacto_data.get("email"),
+        }
+        existente = Contacto.objects.filter(**filtros).first()
+        if existente:
+            return existente
+        return Contacto.objects.create(**filtros)
+
     def create_contacto(
         self,
         contacto_data: dict,
     ):
         """
         Creates a new Contacto (contacto principal de la liquidación).
+        DEPRECATED: Use upsert_contacto instead for nueva revision.
         """
         from modules.entidades.domain.models.contacto import Contacto
 
@@ -645,3 +667,32 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__detalles__especialidad',
             'liquidacion_porcentaje_obra__derecho_aplicado',
         ).get(id=liquidacion_id)
+
+    def get_ultima_revision_por_proyecto(
+        self,
+        proyecto_id: uuid.UUID,
+        tipo_liquidacion: str,
+    ) -> Optional[LiquidacionGeneral]:
+        """
+        Returns the LiquidacionGeneral with the highest numero_revision for a given proyecto.
+        Optionally filters by tipo_liquidacion.
+        Returns None if no liquidacion exists for the proyecto.
+        """
+        qs = LiquidacionGeneral.objects.filter(
+            proyecto_id=proyecto_id,
+        ).select_related(
+            'proyecto',
+            'proyecto__entidad',
+            'municipalidad',
+            'usuario_creador',
+        ).prefetch_related(
+            'edificaciones',
+            'liquidacion_porcentaje_obra',
+            'liquidacion_porcentaje_obra__detalles',
+            'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+            'liquidacion_porcentaje_obra__detalles__especialidad',
+            'liquidacion_porcentaje_obra__derecho_aplicado',
+        )
+        if tipo_liquidacion:
+            qs = qs.filter(tipo_liquidacion__codigo=tipo_liquidacion)
+        return qs.order_by('-numero_revision').first()

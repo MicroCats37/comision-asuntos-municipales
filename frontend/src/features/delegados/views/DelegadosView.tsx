@@ -1,19 +1,28 @@
 "use client";
 
-import { Users } from "lucide-react";
+import { Users, Filter, X } from "lucide-react";
+import { useState } from "react";
 import { PageHeader } from "@/components-app/pages/PageHeader";
+import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { useDelegados } from "../hooks/useDelegados";
 import { useDelegadosUIStore } from "../store/delegados-ui.store";
 import { DelegadoCard } from "../components/DelegadoCard";
+import { DelegadosFiltroModal } from "../components/DelegadosFiltroModal";
+import type { DelegadoFiltros } from "../types/delegados.types";
 
 /**
- * Vista de Delegados — cards con paginación.
+ * Vista de Delegados — cards con paginación + filtros.
+ * Los filtros activos se muestran arriba de la lista.
  */
 export function DelegadosView() {
   const page = useDelegadosUIStore((s) => s.page);
   const pageSize = useDelegadosUIStore((s) => s.pageSize);
   const setPage = useDelegadosUIStore((s) => s.setPage);
+  const setPageSize = useDelegadosUIStore((s) => s.setPageSize);
+
+  const [filtros, setFiltros] = useState<DelegadoFiltros>({});
+  const [filtroModalOpen, setFiltroModalOpen] = useState(false);
 
   const {
     items,
@@ -22,7 +31,14 @@ export function DelegadosView() {
     isError,
     refetch,
     totalPages,
-  } = useDelegados({ page, pageSize });
+  } = useDelegados({ page, pageSize, filtros });
+
+  const activeFilterCount = Object.values(filtros).filter(Boolean).length;
+
+  const handleClearFiltros = () => {
+    setFiltros({});
+    setPage(1);
+  };
 
   return (
     <div className="page-section">
@@ -31,7 +47,53 @@ export function DelegadosView() {
           title="Delegados"
           description="Lista de delegados profesionales registrados"
           icon={Users}
+          actionNodes={
+            <Button
+              variant={activeFilterCount > 0 ? "default" : "outline"}
+              className="gap-2 h-10 rounded-xl font-semibold"
+              onClick={() => setFiltroModalOpen(true)}
+            >
+              <Filter className="h-4 w-4" />
+              Filtros
+              {activeFilterCount > 0 && (
+                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-foreground/20 text-xs font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
+          }
         />
+
+        {/* Filtros activos */}
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/20 rounded-xl border border-border/60">
+            <span className="text-xs font-semibold text-muted-foreground">Filtros activos:</span>
+            {filtros.cip && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+                CIP: {filtros.cip}
+              </span>
+            )}
+            {filtros.municipalidad_id && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+                Municipalidad seleccionada
+              </span>
+            )}
+            {filtros.estado && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+                Estado: {filtros.estado}
+              </span>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearFiltros}
+              className="h-7 px-2 gap-1 text-xs text-destructive"
+            >
+              <X className="h-3 w-3" />
+              Limpiar
+            </Button>
+          </div>
+        )}
 
         {/* Cards */}
         <div className="space-y-4">
@@ -62,42 +124,30 @@ export function DelegadosView() {
               </div>
 
               {/* Pagination */}
-              {total > pageSize && (
-                <div className="flex items-center justify-between gap-4 pt-6 border-t border-border/50">
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Mostrando {items.length} de {total} delegados
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page - 1)}
-                      disabled={page <= 1}
-                      className="h-9 px-4 text-xs font-semibold"
-                    >
-                      Anterior
-                    </Button>
-                    <div className="flex items-center gap-1 px-3 h-9 rounded-md bg-muted border border-border">
-                      <span className="text-xs font-bold text-foreground">{page}</span>
-                      <span className="text-xs text-muted-foreground">de</span>
-                      <span className="text-xs font-bold text-foreground">{totalPages}</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page + 1)}
-                      disabled={page >= totalPages}
-                      className="h-9 px-4 text-xs font-semibold"
-                    >
-                      Siguiente
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={total}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
             </>
           )}
         </div>
       </div>
+
+      {/* Filtro modal — sibling, no nested form */}
+      <DelegadosFiltroModal
+        open={filtroModalOpen}
+        onOpenChange={setFiltroModalOpen}
+        initialFiltros={filtros}
+        onApply={(nuevos) => {
+          setFiltros(nuevos);
+          setPage(1);
+          setFiltroModalOpen(false);
+        }}
+      />
     </div>
   );
 }

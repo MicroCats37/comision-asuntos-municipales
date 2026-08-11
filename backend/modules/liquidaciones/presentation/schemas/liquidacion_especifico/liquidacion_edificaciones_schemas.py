@@ -64,6 +64,28 @@ class LiquidacionEdificacionesCotizarDetalleOut(BaseSchema):
     total: Decimal
 
 
+class LiquidacionPreviaSummary(BaseSchema):
+    """Summary of a previous liquidacion for the same proyecto."""
+    id: uuid.UUID
+    numero_revision: int
+    expediente: str
+
+
+class LiquidacionEdificacionesNuevaRevisionInput(BaseSchema):
+    """Input for /nueva-revision endpoint — extends base input with liquidacion_previa_id."""
+    liquidacion_general: LiquidacionGeneralRevisionIn
+    liquidacion_especifica: LiquidacionPorcentajeObraIn
+    liquidacion_previa_id: uuid.UUID
+
+
+class LiquidacionEdificacionesOutput(BaseSchema):
+    """Output: 3 wrappers + revisiones_previas."""
+    liquidacion_general: LiquidacionGeneralOutput
+    liquidacion_especifica: LiquidacionTipoOutput  # identidad
+    liquidacion_tipo: LiquidacionPorcentajeObraDatosOut  # cálculo
+    revisiones_previas: List[LiquidacionPreviaSummary] = []
+
+
 class LiquidacionEdificacionesCotizarOutput(BaseSchema):
     """Output for /cotizar endpoint."""
     valor_declarado: Decimal

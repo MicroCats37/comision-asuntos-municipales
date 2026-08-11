@@ -7,7 +7,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useApiCreate } from "@/hooks";
-import type { PorcentajeObraFormData } from "../schemas/liquidacion-porcentaje-form.schema";
+import type { ImpactoVialFormData } from "../schemas/liquidacion-impacto-vial-form.schema";
 
 const BASE_URL = "/liquidaciones/impacto-vial";
 
@@ -38,7 +38,7 @@ export function useCrearImpactoVial() {
   const crearMutation = useMemo(
     () => ({
       ...mutation,
-      mutate: (payload: PorcentajeObraFormData) => {
+      mutate: (payload: ImpactoVialFormData) => {
         const { tarifas_ids, ...rest } = payload;
         mutation.mutate({
           liquidacion_general: {
@@ -67,7 +67,7 @@ export function useCrearImpactoVial() {
           },
         });
       },
-      mutateAsync: async (payload: PorcentajeObraFormData) => {
+      mutateAsync: async (payload: ImpactoVialFormData) => {
         const { tarifas_ids, ...rest } = payload;
         return mutation.mutateAsync({
           liquidacion_general: {

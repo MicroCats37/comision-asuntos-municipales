@@ -172,7 +172,9 @@ class PerfilIngeniero(BaseModel):
 class IngenieroHabilitacion(BaseModel):
     history = HistoricalRecords()
     """
-    Modelo para almacenar información de habilitacion historica
+    Modelo para almacenar información de habilitacion historica.
+    También sirve como registro de búsquedas con deduplicación diaria:
+    1 fila por PerfilIngeniero por día (campo fecha_busqueda).
     """
     perfil_ingeniero = models.ForeignKey(
         "PerfilIngeniero",
@@ -196,4 +198,21 @@ class IngenieroHabilitacion(BaseModel):
         verbose_name="Condición CIP",
         help_text="Condición del ingeniero según CIP (ej. '1' = habilitado).",
     )
+
+    fecha_busqueda = models.DateField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Fecha de Búsqueda",
+        help_text="Fecha de la búsqueda (deduplicación diaria: 1 registro por CIP por día).",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["perfil_ingeniero", "fecha_busqueda"],
+                name="unique_perfil_fecha_busqueda",
+                condition=models.Q(fecha_busqueda__isnull=False),
+            )
+        ]
     

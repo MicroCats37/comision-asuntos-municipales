@@ -97,6 +97,10 @@ KIND_SLUG_TO_TIPO_LIQUIDACION: dict[str, str] = {
 TIPO_LIQUIDACION_TO_KIND_SLUG: dict[str, str] = {v: k for k, v in KIND_SLUG_TO_TIPO_LIQUIDACION.items()}
 
 
+# Maximum number of revisions allowed for any liquidacion (odd numbers: 1, 3, 5)
+MAX_REVISIONES = 5
+
+
 def normalizar_tipo_liquidacion(tipo_liquidacion: str) -> str:
     """
     Normaliza un tipo_liquidacion que puede venir como slug (frontend) o como enum (backend).

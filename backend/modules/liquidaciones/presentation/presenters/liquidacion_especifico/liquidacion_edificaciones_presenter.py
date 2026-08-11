@@ -17,6 +17,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
     LiquidacionEdificacionesCotizarOutput,
     LiquidacionEdificacionesCotizarDetalleOut,
     LiquidacionTipoOutput,
+    LiquidacionPreviaSummary,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
     LiquidacionGeneralOutput,
@@ -166,10 +167,20 @@ class LiquidacionEdificacionesPresenter:
             ],
         )
 
+        revisiones_previas_out = [
+            LiquidacionPreviaSummary(
+                id=uuid.UUID(rp.id),
+                numero_revision=rp.numero_revision,
+                expediente=rp.expediente,
+            )
+            for rp in domain_result.revisiones_previas
+        ]
+
         return LiquidacionEdificacionesOutput(
             liquidacion_general=general_out,
             liquidacion_especifica=tipo_out,
             liquidacion_tipo=tipo_datos_out,
+            revisiones_previas=revisiones_previas_out,
         )
 
     @staticmethod

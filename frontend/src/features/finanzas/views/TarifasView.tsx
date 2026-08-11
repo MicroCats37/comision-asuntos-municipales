@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Banknote, Calendar as CalendarIcon, DollarSign, Layers, Percent } from "lucide-react";
 import { PageHeader } from "@/components-app/pages/PageHeader";
+import { Pagination } from "@/components/genericPagination/Pagination";
 import { useTarifasHistoricas } from "../hooks/useTarifasHistoricas";
 import { tipoTarifaSchema } from "../types/finanzas.types";
 import type { TarifaHistoricaPeriodo } from "../types/finanzas.types";
@@ -297,38 +298,14 @@ export function TarifasView() {
               </div>
 
               {/* Pagination */}
-              {total > pageSize && (
-                <div className="flex items-center justify-between gap-4 pt-6 border-t border-border/50">
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Mostrando {items.length} de {total} periodos
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page - 1)}
-                      disabled={page <= 1}
-                      className="h-9 px-4 text-xs font-semibold"
-                    >
-                      Anterior
-                    </Button>
-                    <div className="flex items-center gap-1 px-3 h-9 rounded-md bg-muted border border-border">
-                      <span className="text-xs font-bold text-foreground">{page}</span>
-                      <span className="text-xs text-muted-foreground">de</span>
-                      <span className="text-xs font-bold text-foreground">{totalPages}</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page + 1)}
-                      disabled={page >= totalPages}
-                      className="h-9 px-4 text-xs font-semibold"
-                    >
-                      Siguiente
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={total}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
             </>
           )}
         </div>

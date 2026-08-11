@@ -14,6 +14,7 @@ interface InspectoresUIState {
 
 interface InspectoresUIActions {
   setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
   setSearchQuery: (query: string) => void;
 }
 
@@ -29,6 +30,8 @@ export const useInspectoresUIStore = create<InspectoresUIStore>()((set) => ({
   ...initialState,
 
   setPage: (page) => set({ page }),
+
+  setPageSize: (pageSize) => set({ pageSize, page: 1 }),
 
   setSearchQuery: (searchQuery) => set({ searchQuery, page: 1 }),
 }));

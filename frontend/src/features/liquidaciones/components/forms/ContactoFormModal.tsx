@@ -15,7 +15,7 @@ import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Briefcase, Mail, Phone, User } from "lucide-react";
-import { contactoInlineSchema, type ContactoInline } from "../../schemas/liquidacion-edificaciones-form.schema";
+import { contactoInlineSchema, type ContactoInline } from "../../schemas/liquidacion-form-base.schema";
 
 export type ContactoFormData = z.infer<typeof contactoInlineSchema>;
 

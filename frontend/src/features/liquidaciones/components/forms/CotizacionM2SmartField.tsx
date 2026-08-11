@@ -1,40 +1,32 @@
 "use client";
 
 /**
- * CotizacionM2SmartField — Smart Field for M2 cotizacion preview.
+ * CotizacionM2SmartField — Smart Field para preview de cotización M2 (HU, MS).
  *
- * Architecture:
- * - Receives `methods: UseFormReturn<M2FormData>` from parent
- * - Reads `area_solicitada` and `tarifa_m2_id` from form
- * - "Calcular" button triggers POST /liquidaciones/{tipo}/cotizar
- * - Shows result: subtotal, IGV, total in its OWN state
- * - Does NOT write back to form until user confirms
+ * Backend POST /liquidaciones/{tipo}/cotizar
+ * Input: { liquidacion_especifica: { datos: { area_solicitada }, tarifa: { tarifa_m2_id } } }
+ * Output: { datos: { entrada, tarifa, derecho, variables_financieras }, calculo: { monto_bruto, subtotal, total } }
+ *
+ * Auto-recalcula con debounce cuando cambian area_solicitada o tarifa_m2_id.
  */
-import { useState, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import type { UseFormReturn } from "react-hook-form";
-import { Calculator, CheckCircle2, Loader2, XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { notify } from "@/errors";
+import { useWatch } from "react-hook-form";
+import { Calculator, Loader2 } from "lucide-react";
+import { useDebounce } from "@/hooks/system/useDebounce";
 import api from "@/lib/api";
-import type { M2FormData } from "../../schemas/liquidacion-m2-form.schema";
 
-interface CotizacionResult {
-  subtotal: number;
-  igv: number;
-  total: number;
-  liquidacion_total: number;
-  total_a_pagar: number;
-}
-
-interface CotizacionM2Quote {
-  numero_revision: number;
-  calculo_m2: {
-    area_solicitada: number;
-    area_base_calculo: number;
-    derecho: number;
-  };
-  totales: CotizacionResult;
+interface CotizacionM2Output {
+  datos?: {
+    tarifa?: { id?: string; costo_por_m2?: number } | null;
+    derecho?: { id?: string; derecho_minimo?: number; derecho_maximo?: number } | null;
+  } | null;
+  calculo?: {
+    monto_bruto?: number;
+    subtotal?: number;
+    total?: number;
+  } | null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,26 +35,31 @@ interface CotizacionM2SmartFieldProps {
   tipo?: "habilitacion-urbana" | "mecanica-suelos";
 }
 
-const formatSoles = (value: number): string => `S/ ${value.toFixed(2)}`;
+const toNumber = (value: unknown): number => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+const formatSoles = (value: unknown): string => `S/ ${toNumber(value).toFixed(2)}`;
 
 export function CotizacionM2SmartField({
   methods,
   tipo = "habilitacion-urbana",
 }: CotizacionM2SmartFieldProps) {
-  // Own state — does not cause form re-render
-  const [quote, setQuote] = useState<CotizacionM2Quote | null>(null);
+  const [quote, setQuote] = useState<CotizacionM2Output | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const cotizacionMutation = useMutation({
     mutationFn: async (payload: {
       area_solicitada: number;
-      tarifas_ids: string[];
-    }): Promise<CotizacionM2Quote> => {
+      tarifa_m2_id: string;
+    }): Promise<CotizacionM2Output> => {
       const { data } = await api.post(`/liquidaciones/${tipo}/cotizar`, {
-        liquidacion: payload,
+        liquidacion_especifica: {
+          datos: { area_solicitada: payload.area_solicitada },
+          tarifa: { tarifa_m2_id: payload.tarifa_m2_id },
+        },
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (data as any).data;
+      return data.data;
     },
     onSuccess: (result) => {
       setQuote(result);
@@ -71,30 +68,29 @@ export function CotizacionM2SmartField({
     onError: (err) => {
       setQuote(null);
       setError(err instanceof Error ? err.message : "Error al calcular cotización");
-      notify.error("Error al calcular la cotización");
     },
   });
 
-  const handleCalcular = useCallback(() => {
-    const valores = methods.getValues();
-    const areaSolicitada = valores.area_solicitada;
-    const tarifaM2Id = valores.tarifa_m2_id;
+  // Auto-recalculate when area or tarifa change (debounced)
+  const areaSolicitada = useWatch({ control: methods.control, name: "area_solicitada" });
+  const tarifaM2Id = useWatch({ control: methods.control, name: "tarifa_m2_id" });
+  const debouncedArea = useDebounce(areaSolicitada, 500);
 
-    if (!areaSolicitada || areaSolicitada <= 0) {
-      notify.error("Ingresa un área solicitada válida");
-      return;
-    }
+  useEffect(() => {
+    const area = toNumber(debouncedArea);
 
-    if (!tarifaM2Id) {
-      notify.error("Selecciona una tarifa");
+    if (!area || area <= 0 || !tarifaM2Id) {
+      setQuote(null);
+      setError(null);
       return;
     }
 
     cotizacionMutation.mutate({
-      area_solicitada: areaSolicitada,
-      tarifas_ids: [tarifaM2Id],
+      area_solicitada: area,
+      tarifa_m2_id: tarifaM2Id,
     });
-  }, [methods, cotizacionMutation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedArea, tarifaM2Id]);
 
   const isLoading = cotizacionMutation.isPending;
 
@@ -105,66 +101,28 @@ export function CotizacionM2SmartField({
         <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
           Cotización
         </h3>
+        {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
       </div>
 
-      <Button
-        type="button"
-        onClick={handleCalcular}
-        disabled={isLoading}
-        className="w-full"
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Calculando...
-          </>
-        ) : (
-          <>
-            <Calculator className="h-4 w-4" />
-            Calcular Cotización
-          </>
-        )}
-      </Button>
+      {error && <p className="text-xs text-destructive">{error}</p>}
 
-      {error && (
-        <div className="flex items-center gap-2 text-sm text-destructive">
-          <XCircle className="h-4 w-4" />
-          <span>{error}</span>
-        </div>
+      {isLoading && !quote && (
+        <p className="text-xs text-muted-foreground animate-pulse">Calculando cotización...</p>
       )}
 
-      {quote && (
+      {quote && quote.calculo && (
         <div className="space-y-2 rounded-lg border border-border bg-card p-3">
-          <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>Cotización Calculada</span>
+          <div className="grid grid-cols-2 gap-1 text-sm">
+            <span className="text-muted-foreground">Costo/m²:</span>
+            <span className="font-medium text-right">{formatSoles(quote.datos?.tarifa?.costo_por_m2)}</span>
+            <span className="text-muted-foreground">Derecho mín.:</span>
+            <span className="font-medium text-right">{formatSoles(quote.datos?.derecho?.derecho_minimo)}</span>
+            <span className="text-muted-foreground">Subtotal:</span>
+            <span className="font-medium text-right">{formatSoles(quote.calculo.subtotal)}</span>
           </div>
-
-          <div className="space-y-1.5 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Área:</span>
-              <span className="font-medium">
-                {quote.calculo_m2.area_solicitada} m²
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal:</span>
-              <span className="font-medium">
-                {formatSoles(quote.totales.subtotal)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">IGV (18%):</span>
-              <span className="font-medium">
-                {formatSoles(quote.totales.igv)}
-              </span>
-            </div>
-            <div className="flex justify-between border-t border-border pt-1.5 font-semibold">
-              <span>Total:</span>
-              <span className="text-primary">
-                {formatSoles(quote.totales.total)}
-              </span>
-            </div>
+          <div className="border-t border-border pt-1.5 flex justify-between font-semibold text-sm">
+            <span>Total a Pagar:</span>
+            <span className="text-primary">{formatSoles(quote.calculo.total)}</span>
           </div>
         </div>
       )}

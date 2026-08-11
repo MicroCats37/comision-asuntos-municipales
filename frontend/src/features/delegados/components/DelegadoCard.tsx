@@ -2,23 +2,40 @@
 
 /**
  * DelegadoCard — Card para un delegado profesional.
- * Muestra CIP, DNI, nombre completo, correo e iniciales.
+ * Distribución balanceada: header (avatar + nombre + estado),
+ * luego grid 2 columnas (CIP/DNI | Especialidad/Capítulo),
+ * y abajo municipalidades asignadas.
  */
-import { BadgeCheck, IdCard, Mail, User } from "lucide-react";
+import {
+  BadgeCheck,
+  Building2,
+  IdCard,
+  Landmark,
+  Layers,
+  User,
+} from "lucide-react";
 
 export interface DelegadoCardItem {
   id: string;
   perfil_ingeniero: {
     id: string;
     cip: string;
-    dni: string;
+    dni?: string | null;
     nombres?: string | null;
     apellido_paterno?: string | null;
     apellido_materno?: string | null;
     nombre_completo: string;
-    correo_personal?: string | null;
-    correo_institucional?: string | null;
+    especialidad?: { id: string; codigo?: string | null; nombre?: string | null } | null;
+    capitulo?: { id: string; registro_id?: string | null; abreviacion?: string | null; nombre?: string | null } | null;
   };
+  municipalidades?: {
+    id: string;
+    municipalidad?: { id: string; codigo?: string | null; nombre?: string } | null;
+    tipo?: string | null;
+    categoria?: string | null;
+    es_vigente?: boolean;
+  }[];
+  estado?: string | null;
 }
 
 interface DelegadoCardProps {
@@ -34,47 +51,92 @@ function initials(nombre: string): string {
     .join("");
 }
 
+function estadoConfig(estado?: string | null): { label: string; className: string } {
+  switch (estado) {
+    case "vigente":
+      return { label: "Vigente", className: "bg-green-500/10 border-green-500/20 text-green-600" };
+    case "sin_vigencia":
+      return { label: "Sin Vigencia", className: "bg-amber-500/10 border-amber-500/20 text-amber-600" };
+    case "sin_asignaciones":
+      return { label: "Sin Asignaciones", className: "bg-muted border-border text-muted-foreground" };
+    default:
+      return { label: estado ?? "—", className: "bg-muted border-border text-muted-foreground" };
+  }
+}
+
+function InfoItem({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value?: string | null }) {
+  return (
+    <div className="flex items-start gap-2">
+      <Icon className="h-3.5 w-3.5 text-primary/60 shrink-0 mt-0.5" />
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
+        <p className="text-sm font-semibold text-foreground truncate">{value || "—"}</p>
+      </div>
+    </div>
+  );
+}
+
 export function DelegadoCard({ item }: DelegadoCardProps) {
   const perfil = item.perfil_ingeniero;
-  const correo = perfil.correo_personal ?? perfil.correo_institucional;
+  const vigentes = (item.municipalidades || []).filter((m) => m.es_vigente);
+  const municipiosMostrar = vigentes.length > 0 ? vigentes : item.municipalidades || [];
+  const estado = estadoConfig(item.estado);
 
   return (
     <div className="rounded-2xl border bg-card shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden">
-      <div className="p-4 flex items-start gap-3">
-        {/* Avatar */}
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary font-black text-lg">
-          {initials(perfil.nombre_completo)}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
+      {/* Header: avatar + nombre + estado */}
+      <div className="px-4 py-3 bg-gradient-to-r from-muted/40 via-muted/20 to-transparent border-b border-border/60 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary font-black text-lg">
+            {initials(perfil.nombre_completo)}
+          </div>
+          <div className="min-w-0">
             <h3 className="text-base font-bold text-foreground tracking-tight truncate">
               {perfil.nombre_completo}
             </h3>
-            <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 border border-green-500/20 px-2 py-0.5 text-[10px] font-bold text-green-600 uppercase tracking-wider">
-              <BadgeCheck className="h-3 w-3" />
-              Delegado
-            </span>
+            <p className="text-[11px] text-muted-foreground">
+              {[perfil.nombres, perfil.apellido_paterno, perfil.apellido_materno].filter(Boolean).join(" ") || "—"}
+            </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <IdCard className="h-3.5 w-3.5 text-primary/60" />
-              CIP: <span className="font-mono font-semibold text-foreground">{perfil.cip}</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <User className="h-3.5 w-3.5 text-primary/60" />
-              DNI: <span className="font-mono font-semibold text-foreground">{perfil.dni}</span>
-            </span>
-          </div>
-
-          {correo && (
-            <div className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground">
-              <Mail className="h-3.5 w-3.5 text-primary/60" />
-              <span className="truncate">{correo}</span>
-            </div>
-          )}
         </div>
+        <span className={`shrink-0 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${estado.className}`}>
+          <BadgeCheck className="h-3 w-3" />
+          {estado.label}
+        </span>
+      </div>
+
+      {/* Body: grid 2 columnas */}
+      <div className="p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <InfoItem icon={IdCard} label="CIP" value={perfil.cip} />
+          <InfoItem icon={User} label="DNI" value={perfil.dni} />
+          <InfoItem icon={Layers} label="Especialidad" value={perfil.especialidad?.nombre} />
+          <InfoItem icon={Landmark} label="Capítulo" value={perfil.capitulo?.abreviacion ?? perfil.capitulo?.nombre} />
+        </div>
+
+        {/* Municipalidades */}
+        {municipiosMostrar.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-border/50">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-2">
+              <Building2 className="h-3 w-3 text-primary/60" />
+              Municipalidades asignadas
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {municipiosMostrar.map((m) => (
+                <span
+                  key={m.id}
+                  className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/20 px-2 py-1 text-[11px]"
+                >
+                  {m.municipalidad?.codigo ? `${m.municipalidad.codigo} - ` : ""}
+                  {m.municipalidad?.nombre ?? "—"}
+                  {m.categoria && (
+                    <span className="text-muted-foreground">({m.categoria})</span>
+                  )}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

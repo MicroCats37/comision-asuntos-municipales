@@ -7,7 +7,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useApiCreate } from "@/hooks";
-import type { PorcentajeObraFormData } from "../schemas/liquidacion-porcentaje-form.schema";
+import type { TaludesFormData } from "../schemas/liquidacion-taludes-form.schema";
 
 const BASE_URL = "/liquidaciones/taludes";
 
@@ -38,13 +38,14 @@ export function useCrearTaludes() {
   const crearMutation = useMemo(
     () => ({
       ...mutation,
-      mutate: (payload: PorcentajeObraFormData) => {
+      mutate: (payload: TaludesFormData) => {
         const { tarifas_ids, ...rest } = payload;
         mutation.mutate({
           liquidacion_general: {
             municipalidad_id: rest.municipalidad_id,
             expediente: rest.expediente,
             observacion: rest.observacion,
+            retencion: rest.retencion ?? false,
             proyecto: {
               denominacion: rest.denominacion,
               nombre_propietario: rest.nombre_propietario,
@@ -56,6 +57,8 @@ export function useCrearTaludes() {
                 razon_social: rest.entidad_razon_social,
               },
             },
+            // Contacto principal (singular, opcional)
+            ...(rest.contacto ? { contacto: rest.contacto } : {}),
           },
           liquidacion_especifica: {
             datos: {
@@ -67,13 +70,14 @@ export function useCrearTaludes() {
           },
         });
       },
-      mutateAsync: async (payload: PorcentajeObraFormData) => {
+      mutateAsync: async (payload: TaludesFormData) => {
         const { tarifas_ids, ...rest } = payload;
         return mutation.mutateAsync({
           liquidacion_general: {
             municipalidad_id: rest.municipalidad_id,
             expediente: rest.expediente,
             observacion: rest.observacion,
+            retencion: rest.retencion ?? false,
             proyecto: {
               denominacion: rest.denominacion,
               nombre_propietario: rest.nombre_propietario,
@@ -85,6 +89,8 @@ export function useCrearTaludes() {
                 razon_social: rest.entidad_razon_social,
               },
             },
+            // Contacto principal (singular, opcional)
+            ...(rest.contacto ? { contacto: rest.contacto } : {}),
           },
           liquidacion_especifica: {
             datos: {

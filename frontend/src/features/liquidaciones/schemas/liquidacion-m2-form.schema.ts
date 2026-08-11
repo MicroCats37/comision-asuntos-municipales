@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 import { generalFormSchema, proyectoFormSchema } from "./liquidacion-form-base.schema";
+import { contactoInlineSchema } from "./liquidacion-form-base.schema";
 
 export const m2FormSchema = z.object({
   ...proyectoFormSchema.shape,
@@ -12,6 +13,8 @@ export const m2FormSchema = z.object({
   area_solicitada: z.number().positive("El área solicitada debe ser positiva"),
   // Smart Field outputs (set by Smart Fields via setValue)
   tarifa_m2_id: z.string().optional(),
+  // Contacto principal (singular, managed via ContactoFormModal)
+  contacto: contactoInlineSchema.optional(),
 });
 
 export type M2FormData = z.infer<typeof m2FormSchema>;

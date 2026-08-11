@@ -1,12 +1,18 @@
 """
 IngenieroHabilitadoFlujo — flujos async para verificación de ingeniero habilitado CIP.
 """
+import logging
+
 from asgiref.sync import sync_to_async
+from django.db import transaction
 from injector import inject
 
 from ..core.perfil_ingeniero_core_service import PerfilIngenieroCoreService
+from ..core.ingeniero_habilitacion_core_service import IngenieroHabilitacionCoreService
 from ...schemas.ingeniero_habilitado_schemas import CipColegiadoData, IngenieroHabilitadoResult
 from ....infrastructure.services import ICipClient, CipServiceUnavailableError
+
+logger = logging.getLogger(__name__)
 
 
 class IngenieroHabilitadoFlujo:
@@ -16,7 +22,7 @@ class IngenieroHabilitadoFlujo:
     Caso de uso: GET /ingenieros/habilitados/{cip}
     - Llama al endpoint CIP externo
     - Retorna datos estructurados con habilitado = (condicion == '1')
-    - NO crea ni actualiza PerfilIngeniero en este flujo (solo lectura/validación)
+    - Registra la búsqueda con deduplicación diaria (efecto secundario invisible)
     """
 
     @inject
@@ -24,9 +30,11 @@ class IngenieroHabilitadoFlujo:
         self,
         cip_client: ICipClient,
         core: PerfilIngenieroCoreService,
+        habilitacion_core: IngenieroHabilitacionCoreService,
     ):
         self._cip_client = cip_client
         self._core = core
+        self._habilitacion_core = habilitacion_core
 
     def _normalizar_cip(self, cip: str) -> str:
         """Normaliza CIP a 6 dígitos."""
@@ -75,5 +83,46 @@ class IngenieroHabilitadoFlujo:
         # Mapear a CipColegiadoData
         cip_data = CipColegiadoData(**raw_data)
 
+        # Registrar la búsqueda con deduplicación diaria (efecto secundario invisible)
+        # Solo búsquedas exitosas: CIP encontrado + datos obtenidos
+        await self._registrar_busqueda_async(normalized_cip, cip_data)
+
         # Construir resultado
         return IngenieroHabilitadoResult.from_cip_data(cip_data)
+
+    async def _registrar_busqueda_async(
+        self,
+        normalized_cip: str,
+        cip_data: CipColegiadoData,
+    ) -> None:
+        """
+        Registra la búsqueda de ingeniero habilitado de forma asíncrona.
+
+        Efecto secundario invisible: no debe romper la respuesta del endpoint.
+        Si el registro falla, se loguea el error y se continúa.
+
+        Args:
+            normalized_cip: CIP normalizado (6 dígitos)
+            cip_data: Datos mapeados del endpoint CIP
+        """
+        try:
+
+            @sync_to_async
+            def _atomic_registrar():
+                with transaction.atomic():
+                    # Obtener o crear PerfilIngeniero por CIP (delegado al Core)
+                    perfil = self._core.obtener_o_crear_perfil_por_cip(normalized_cip)
+
+                    # Registrar la búsqueda con deduplicación diaria
+                    self._habilitacion_core.registrar_busqueda(
+                        perfil_ingeniero=perfil,
+                        condicion_cip=cip_data.condicion,
+                        ultimo_periodo_pagado_cip=cip_data.ultimoPeriodoPagado,
+                    )
+
+            await _atomic_registrar()
+        except Exception:
+            # NO debe romper la respuesta del endpoint
+            logger.exception(
+                f"Error al registrar búsqueda de ingeniero habilitado CIP {normalized_cip}"
+            )

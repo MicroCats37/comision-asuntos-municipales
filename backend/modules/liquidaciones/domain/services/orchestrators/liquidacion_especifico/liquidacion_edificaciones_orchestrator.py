@@ -12,7 +12,7 @@ import uuid
 from django.utils import timezone
 from injector import inject
 from ninja.errors import HttpError
-from modules.liquidaciones.domain.constants import TipoLiquidacion
+from modules.liquidaciones.domain.constants import TipoLiquidacion, MAX_REVISIONES
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_porcentaje_obra_core_service import (
     LiquidacionPorcentajeObraCoreService,
 )
@@ -463,10 +463,24 @@ class LiquidacionEdificacionesOrchestrator:
             ],
         )
 
+        # Build revisiones_previas from M2M
+        from modules.liquidaciones.domain.results.liquidacion_especifico.edificaciones_primera_revision_result import (
+            LiquidacionPreviaResult,
+        )
+        revisiones_previas = [
+            LiquidacionPreviaResult(
+                id=str(lp.id),
+                numero_revision=lp.numero_revision,
+                expediente=lp.expediente or "",
+            )
+            for lp in lg.liquidaciones_previas.all().order_by('numero_revision')
+        ]
+
         return EdificacionesPrimeraRevisionResult(
             liquidacion_general=general_result,
             liquidacion_especifica=especifica_result,
             liquidacion_tipo=tipo_result,
+            revisiones_previas=revisiones_previas,
         )
 
     def obtener_liquidacion(self, liquidacion_id: uuid.UUID) -> EdificacionesPrimeraRevisionResult:
@@ -479,3 +493,190 @@ class LiquidacionEdificacionesOrchestrator:
             return self._build_edificaciones_result(lg)
         except ObjectDoesNotExist:
             raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")
+
+    def crear_nueva_revision_proceso(
+        self,
+        usuario_id: int,
+        payload_in,
+        liquidacion_previa_id: uuid.UUID,
+    ) -> EdificacionesPrimeraRevisionResult:
+        """
+        Validates and creates a new revision (3 or 5) for an existing Edificaciones liquidacion.
+
+        Validations:
+        - liquidacion_previa_id exists and is Edificaciones
+        - numero_revision follows pattern: previa + 2 (1→3, 3→5)
+        - MAX_REVISIONES not exceeded
+        - Same proyecto as previa
+        - No duplicate revision for proyecto
+        - Tarifas vigentes
+
+        For revision 5: liquidaciones_previas M2M must include BOTH revision 1 AND 3.
+        """
+        # Step 1: Validate liquidacion_previa exists and is Edificaciones
+        try:
+            previa = self.general_core.get_liquidacion_edificaciones_by_id(liquidacion_previa_id)
+        except ObjectDoesNotExist:
+            raise HttpError(404, f"Liquidación previa {liquidacion_previa_id} no encontrada")
+
+        proyecto = previa.proyecto
+
+        # Step 2: Calculate new numero_revision
+        nueva_revision_numero = previa.numero_revision + 2
+        if nueva_revision_numero > MAX_REVISIONES:
+            raise HttpError(400, f"MAX_REVISIONES={MAX_REVISIONES} excedido. No se puede crear revisión {nueva_revision_numero}")
+
+        # Step 3: Validate even revision numbers not allowed (sanity check)
+        if nueva_revision_numero % 2 == 0:
+            raise HttpError(400, f"Solo se permiten revisiones impares (1, 3, 5). No se puede crear revisión {nueva_revision_numero}")
+
+        # Step 4: For revision 3, must have revision 1 in chain; for revision 5, must have 1 and 3
+        if nueva_revision_numero == 3:
+            # Need revision 1 to exist
+            revision_1 = self.general_core.get_ultima_revision_por_proyecto(
+                proyecto_id=proyecto.id,
+                tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+            )
+            # The ultima revision should be the previa (which should be revision 1)
+            if not previa.numero_revision == 1:
+                raise HttpError(400, f"Para crear revisión 3, la liquidación previa debe ser revisión 1. Se proporcionó revisión {previa.numero_revision}")
+        elif nueva_revision_numero == 5:
+            # Need revisions 1 AND 3 to exist
+            # Check previa is revision 3
+            if previa.numero_revision != 3:
+                raise HttpError(400, f"Para crear revisión 5, la liquidación previa debe ser revisión 3. Se proporcionó revisión {previa.numero_revision}")
+            # Also verify revision 1 exists via transitive chain
+            # The M2M liquidaciones_previas on previa should have revision 1
+            if not previa.liquidaciones_previas.filter(numero_revision=1).exists():
+                raise HttpError(400, "Para crear revisión 5, debe existir revisión 1 en el proyecto")
+
+        # Step 5: Validate same proyecto (already implicit since we're using previa's proyecto)
+
+        # Step 6: Check no duplicate revision for this proyecto
+        existente = self.general_core.get_ultima_revision_por_proyecto(
+            proyecto_id=proyecto.id,
+            tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+        )
+        if existente and existente.numero_revision == nueva_revision_numero:
+            raise HttpError(400, f"Ya existe una liquidación con revisión {nueva_revision_numero} para este proyecto")
+
+        # Step 7: Validate valor_declarado > 0
+        valor_declarado = payload_in.liquidacion_especifica.datos.valor_declarado
+        if valor_declarado <= 0:
+            raise HttpError(400, "valor_declarado debe ser mayor a 0")
+
+        # Step 8: Resolve tarifas (same as primera revision)
+        payload_tarifas_ids = [
+            str(t.tarifa_porcentaje_obra_id)
+            for t in payload_in.liquidacion_especifica.tarifas
+        ]
+        tarifas = self.porcentaje_core.resolver_tarifas(payload_tarifas_ids, TipoLiquidacion.EDIFICACION)
+
+        if payload_tarifas_ids:
+            for tarifa in tarifas:
+                self._validar_tarifa_explicita(tarifa)
+
+        if not tarifas:
+            raise HttpError(400, "No hay tarifas vigentes para edificaciones")
+
+        # Step 9: Get vigente IGV, UIT and derecho
+        igv_vigente = self.general_core.get_igv_vigente()
+        uit_vigente = self.general_core.get_uit_vigente()
+        if not igv_vigente or not uit_vigente:
+            raise HttpError(400, "No hay IGV o UIT vigente configurado")
+
+        derecho = self.porcentaje_core.get_derecho_porcentaje_vigente()
+        if not derecho:
+            raise HttpError(400, "No hay DerechoPorcentajeObra vigente")
+
+        # Step 10: Build domain DTO (same structure as primera revision but with different data)
+        tarifas_aplicadas = [
+            TarifaPorcentajeObraAplicada(
+                tarifa_id=str(t.id),
+                porcentaje_liquidacion=t.porcentaje_liquidacion,
+                especialidad_id=str(t.especialidad.id),
+                especialidad_nombre=t.especialidad.nombre,
+            )
+            for t in tarifas
+        ]
+
+        domain_data = EdificacionesPrimeraRevisionData(
+            liquidacion_general=LiquidacionGeneralData(
+                municipalidad_id=str(previa.municipalidad_id),
+                expediente=payload_in.liquidacion_general.expediente or previa.expediente,
+                observacion=payload_in.liquidacion_general.observacion,
+                retencion=getattr(payload_in.liquidacion_general, "retencion", False),
+                proyecto=ProyectoData(
+                    denominacion=proyecto.denominacion,
+                    nombre_propietario=proyecto.nombre_propietario,
+                    direccion=proyecto.direccion,
+                    distrito_id=str(proyecto.distrito_id),
+                    entidad_razon_social=proyecto.entidad_razon_social,
+                    entidad=EntidadData(
+                        tipo_documento=proyecto.entidad_tipo_documento,
+                        numero_documento=proyecto.entidad_numero_documento,
+                    ),
+                ),
+                contacto=(
+                    ContactoData(
+                        nombres=payload_in.liquidacion_general.contacto.nombres,
+                        apellidos=payload_in.liquidacion_general.contacto.apellidos,
+                        dni=payload_in.liquidacion_general.contacto.dni,
+                        cargo=payload_in.liquidacion_general.contacto.cargo,
+                        telefono=payload_in.liquidacion_general.contacto.telefono,
+                        celular=payload_in.liquidacion_general.contacto.celular,
+                        email=payload_in.liquidacion_general.contacto.email,
+                    )
+                    if payload_in.liquidacion_general.contacto
+                    else None
+                ),
+            ),
+            liquidacion_especifica=LiquidacionPorcentajeObraData(
+                datos=DatosPorcentajeObra(valor_declarado=valor_declarado),
+                tarifas=tarifas_aplicadas,
+                tipo_tramite=None,
+            ),
+        )
+
+        # Step 11: Delegate to Flujo with previa_id and previa objects for M2M
+        return self.flujo.ejecutar_nueva_revision(
+            usuario_id=usuario_id,
+            data=domain_data,
+            igv_porcentaje=Decimal(str(igv_vigente.valor)),
+            derecho=derecho,
+            uit_valor=Decimal(str(uit_vigente.valor)),
+            liquidacion_previa=previa,
+        )
+
+    def obtener_ultima_revision_proceso(
+        self,
+        proyecto_id: uuid.UUID,
+        razon_social: str = None,
+        numero_documento: str = None,
+    ) -> EdificacionesPrimeraRevisionResult:
+        """
+        Returns the liquidacion with the highest numero_revision for a proyecto.
+        Optional filters by razon_social and numero_documento of the proyecto's entidad.
+        """
+        # First find the proyecto to validate filters
+        from modules.liquidaciones.domain.models.proyecto import Proyecto
+        try:
+            proyecto = Proyecto.objects.get(id=proyecto_id)
+        except ObjectDoesNotExist:
+            raise HttpError(404, f"Proyecto {proyecto_id} no encontrado")
+
+        # Apply optional filters
+        if razon_social and razon_social not in (proyecto.entidad_razon_social or ""):
+            raise HttpError(400, "razon_social no coincide con el proyecto")
+        if numero_documento and numero_documento != proyecto.entidad_numero_documento:
+            raise HttpError(400, "numero_documento no coincide con el proyecto")
+
+        # Get ultima revision
+        lg = self.general_core.get_ultima_revision_por_proyecto(
+            proyecto_id=proyecto_id,
+            tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+        )
+        if not lg:
+            raise HttpError(404, f"No se encontró liquidación para el proyecto {proyecto_id}")
+
+        return self._build_edificaciones_result(lg)

@@ -2,6 +2,7 @@
 
 import { ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components-app/pages/PageHeader";
+import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { useInspectores } from "../hooks/useInspectores";
 import { useInspectoresUIStore } from "../store/inspectores-ui.store";
@@ -14,6 +15,7 @@ export function InspectoresView() {
   const page = useInspectoresUIStore((s) => s.page);
   const pageSize = useInspectoresUIStore((s) => s.pageSize);
   const setPage = useInspectoresUIStore((s) => s.setPage);
+  const setPageSize = useInspectoresUIStore((s) => s.setPageSize);
 
   const {
     items,
@@ -62,38 +64,14 @@ export function InspectoresView() {
               </div>
 
               {/* Pagination */}
-              {total > pageSize && (
-                <div className="flex items-center justify-between gap-4 pt-6 border-t border-border/50">
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Mostrando {items.length} de {total} inspectores
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page - 1)}
-                      disabled={page <= 1}
-                      className="h-9 px-4 text-xs font-semibold"
-                    >
-                      Anterior
-                    </Button>
-                    <div className="flex items-center gap-1 px-3 h-9 rounded-md bg-muted border border-border">
-                      <span className="text-xs font-bold text-foreground">{page}</span>
-                      <span className="text-xs text-muted-foreground">de</span>
-                      <span className="text-xs font-bold text-foreground">{totalPages}</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page + 1)}
-                      disabled={page >= totalPages}
-                      className="h-9 px-4 text-xs font-semibold"
-                    >
-                      Siguiente
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={total}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
             </>
           )}
         </div>

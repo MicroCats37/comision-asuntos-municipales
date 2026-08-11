@@ -32,6 +32,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
     LiquidacionEdificacionesOutput,
     LiquidacionEdificacionesCotizarInput,
     LiquidacionEdificacionesCotizarOutput,
+    LiquidacionEdificacionesNuevaRevisionInput,
 )
 
 
@@ -133,6 +134,46 @@ class LiquidacionEdificacionesController:
             payload_in=payload,
         )
 
+        result = self.presenter.present_primera_revision(domain_result)
+        return success_response(result)
+
+    @route.post(
+        "/nueva-revision",
+        response={200: ApiResponse[LiquidacionEdificacionesOutput]},
+    )
+    def crear_nueva_revision(self, request, payload: LiquidacionEdificacionesNuevaRevisionInput):
+        """
+        Crea una nueva revisión (3 o 5) para una Edificación existente.
+        """
+        usuario_id = self.auth_core_service.get_authenticated_user_id(request)
+
+        domain_result = self.orchestrator.crear_nueva_revision_proceso(
+            usuario_id=usuario_id,
+            payload_in=payload,
+            liquidacion_previa_id=payload.liquidacion_previa_id,
+        )
+
+        result = self.presenter.present_primera_revision(domain_result)
+        return success_response(result)
+
+    @route.get(
+        "/ultima-revision",
+        response={200: ApiResponse[LiquidacionEdificacionesOutput]},
+    )
+    def obtener_ultima_revision(
+        self,
+        proyecto_id: uuid.UUID = Query(..., description="ID del proyecto"),
+        razon_social: str = Query(default=None, description="Razón social de la entidad (opcional)"),
+        numero_documento: str = Query(default=None, description="Número de documento de la entidad (opcional)"),
+    ):
+        """
+        Retorna la liquidación con el mayor numero_revision para un proyecto.
+        """
+        domain_result = self.orchestrator.obtener_ultima_revision_proceso(
+            proyecto_id=proyecto_id,
+            razon_social=razon_social,
+            numero_documento=numero_documento,
+        )
         result = self.presenter.present_primera_revision(domain_result)
         return success_response(result)
 

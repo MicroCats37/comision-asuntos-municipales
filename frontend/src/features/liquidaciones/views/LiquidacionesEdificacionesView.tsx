@@ -2,19 +2,21 @@
  * Vista para lista de Liquidaciones de Edificaciones.
  * Ruta: /liquidaciones/edificaciones
  *
- * Usa PageHeader + cards pattern. No AppDataTable.
+ * Usa PageHeader + cards pattern + filtros.
  */
 "use client";
 
-import { Building2, Plus, Search, X } from "lucide-react";
+import { Building2, Filter, Plus, Search, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components-app/pages/PageHeader";
+import { Pagination } from "@/components/genericPagination/Pagination";
 import { LiquidacionEdificacionesCard } from "../components/cards/LiquidacionEdificacionesCard";
 import { EdificacionesFormModal } from "../components/forms/EdificacionesFormModal";
-import { useLiquidacionesEdificaciones } from "../hooks";
+import { LiquidacionFiltroModal } from "../components/forms/LiquidacionFiltroModal";
+import { useLiquidacionesEdificaciones, type LiquidacionFiltros } from "../hooks";
 import type { LiquidacionEdificacionesListItem } from "../schemas/liquidacion-edificaciones.schema";
 
 const KIND_ICON: LucideIcon = Building2;
@@ -22,6 +24,8 @@ const KIND_ICON: LucideIcon = Building2;
 export function LiquidacionesEdificacionesView() {
   const [searchInput, setSearchInput] = useState("");
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const [filtros, setFiltros] = useState<LiquidacionFiltros>({});
+  const [filtroModalOpen, setFiltroModalOpen] = useState(false);
 
   const {
     items,
@@ -32,8 +36,9 @@ export function LiquidacionesEdificacionesView() {
     isLoading,
     isError,
     setPage,
+    setPageSize,
     refetch,
-  } = useLiquidacionesEdificaciones();
+  } = useLiquidacionesEdificaciones(filtros);
 
   const filteredItems = items.filter((item) =>
     item.liquidacion_general.proyecto.denominacion
@@ -47,6 +52,8 @@ export function LiquidacionesEdificacionesView() {
     if (e.key === "Enter") handleSearch();
   };
 
+  const activeFilterCount = Object.values(filtros).filter(Boolean).length;
+
   return (
     <div className="page-section">
       <div className="space-y-6">
@@ -55,17 +62,32 @@ export function LiquidacionesEdificacionesView() {
           description="Listado de liquidaciones de Edificaciones"
           icon={KIND_ICON}
           actionNodes={
-            <Button
-              className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-              onClick={() => setFormModalOpen(true)}
-            >
-              <Plus className="h-4 w-4" />
-              Nueva Liquidación
-            </Button>
+            <>
+              <Button
+                variant={activeFilterCount > 0 ? "default" : "outline"}
+                className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+                onClick={() => setFiltroModalOpen(true)}
+              >
+                <Filter className="h-4 w-4" />
+                Filtros
+                {activeFilterCount > 0 && (
+                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-foreground/20 text-xs font-bold">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+              <Button
+                className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+                onClick={() => setFormModalOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Nueva Liquidación
+              </Button>
+            </>
           }
         />
 
-        {/* Filter Bar */}
+        {/* Filter Bar (búsqueda rápida) */}
         <div className="flex items-center gap-4 p-4 bg-muted/20 rounded-xl border border-border/60">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-muted-foreground">
@@ -104,6 +126,65 @@ export function LiquidacionesEdificacionesView() {
           )}
         </div>
 
+        {/* Filtros activos */}
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/20 rounded-xl border border-border/60">
+            <span className="text-xs font-semibold text-muted-foreground">Filtros activos:</span>
+            {filtros.propietario && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+                Propietario: {filtros.propietario}
+              </span>
+            )}
+            {filtros.razon_social && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+                Razón Social: {filtros.razon_social}
+              </span>
+            )}
+            {filtros.entidad_id && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+                Municipalidad
+              </span>
+            )}
+            {filtros.fecha_desde && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+                Desde: {filtros.fecha_desde}
+              </span>
+            )}
+            {filtros.fecha_hasta && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+                Hasta: {filtros.fecha_hasta}
+              </span>
+            )}
+            {filtros.creado_por && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+                Creado por: {filtros.creado_por}
+              </span>
+            )}
+            {filtros.numero && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+                N°: {filtros.numero}
+              </span>
+            )}
+            {filtros.numero_revisiones && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+                Rev: {filtros.numero_revisiones}
+              </span>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFiltros({});
+                setPage(1);
+              }}
+              className="h-7 px-2 gap-1 text-xs text-destructive"
+            >
+              <X className="h-3 w-3" />
+              Limpiar
+            </Button>
+          </div>
+        )}
+
         {/* Cards View */}
         <div className="space-y-4">
           {isLoading ? (
@@ -135,40 +216,14 @@ export function LiquidacionesEdificacionesView() {
                 ))}
               </div>
               {/* Pagination */}
-              {total > pageSize && (
-                <div className="flex items-center justify-between gap-4 pt-6 border-t border-border/50">
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Mostrando {filteredItems.length} de {total} liquidaciones
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page - 1)}
-                      disabled={page <= 1}
-                      className="h-9 px-4 text-xs font-semibold"
-                    >
-                      Anterior
-                    </Button>
-                    <div className="flex items-center gap-1 px-3 h-9 rounded-md bg-muted border border-border">
-                      <span className="text-xs font-bold text-foreground">{page}</span>
-                      <span className="text-xs text-muted-foreground">de</span>
-                      <span className="text-xs font-bold text-foreground">
-                        {totalPages}
-                      </span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page + 1)}
-                      disabled={page >= totalPages}
-                      className="h-9 px-4 text-xs font-semibold"
-                    >
-                      Siguiente
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={total}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
             </>
           )}
         </div>
@@ -180,6 +235,18 @@ export function LiquidacionesEdificacionesView() {
         onSuccess={() => {
           setFormModalOpen(false);
           refetch();
+        }}
+      />
+
+      {/* Filtro modal — sibling, no nested form */}
+      <LiquidacionFiltroModal
+        open={filtroModalOpen}
+        onOpenChange={setFiltroModalOpen}
+        initialFiltros={filtros}
+        onApply={(nuevos) => {
+          setFiltros(nuevos);
+          setPage(1);
+          setFiltroModalOpen(false);
         }}
       />
     </div>

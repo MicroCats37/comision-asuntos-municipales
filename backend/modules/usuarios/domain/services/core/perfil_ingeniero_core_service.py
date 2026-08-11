@@ -36,6 +36,25 @@ class PerfilIngenieroCoreService:
         except PerfilIngeniero.DoesNotExist:
             return None
 
+    def obtener_o_crear_perfil_por_cip(self, cip: str) -> PerfilIngeniero:
+        """
+        Obtiene o crea un PerfilIngeniero por CIP normalizado.
+
+        Args:
+            cip: Número de CIP (se normaliza a 6 dígitos)
+
+        Returns:
+            Instancia de PerfilIngeniero (existente o recién creada)
+
+        Raises:
+            ValueError: Si el CIP no puede normalizarse
+        """
+        normalized = self._normalizar_cip(cip)
+        if not normalized:
+            raise ValueError(f"CIP inválido: {cip}")
+        perfil, _ = PerfilIngeniero.objects.get_or_create(cip=normalized)
+        return perfil
+
     def _obtener_o_crear_capitulo(self, capitulo_data: dict) -> Optional[Capitulo]:
         """
         Obtiene o crea un Capítulo desde datos del endpoint CIP.

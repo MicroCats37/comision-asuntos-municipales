@@ -1,40 +1,47 @@
 /**
- * Hook para lista de delegados con paginación.
- * Usa useApiQuery genérico del proyecto.
- * Endpoint: GET /delegados/
+ * Hook para lista de delegados con paginación + filtros.
+ * CONTROLADO: recibe page/pageSize como props (la vista los gestiona vía store).
+ * Endpoint: GET /delegados/?cip=&municipalidad_id=&capitulo_id=&especialidad_id=&estado=
  */
-import { usePagination } from "@/hooks/system/usePagination";
 import { useApiQuery } from "@/hooks";
 import {
   delegadosListResponseSchema,
+  type DelegadoFiltros,
   type DelegadoOut,
 } from "../types/delegados.types";
 
 interface UseDelegadosProps {
   page?: number;
   pageSize?: number;
+  filtros?: DelegadoFiltros;
 }
 
 const BASE_URL = "/delegados";
 
-export function useDelegados(props: UseDelegadosProps = {}) {
-  const { page, pageSize, onPageChange, onPageSizeChange, paginationParams } = usePagination({
-    initialPage: props.page ?? 1,
-    initialPageSize: props.pageSize ?? 10,
-  });
+export function useDelegados({ page = 1, pageSize = 10, filtros }: UseDelegadosProps = {}) {
+  // Merge pagination + filters into query params
+  const params: Record<string, string | number> = {
+    page,
+    page_size: pageSize,
+  };
+  if (filtros?.cip) params.cip = filtros.cip;
+  if (filtros?.municipalidad_id) params.municipalidad_id = filtros.municipalidad_id;
+  if (filtros?.capitulo_id) params.capitulo_id = filtros.capitulo_id;
+  if (filtros?.especialidad_id) params.especialidad_id = filtros.especialidad_id;
+  if (filtros?.estado) params.estado = filtros.estado;
 
   const query = useApiQuery({
-    queryKey: ["delegados", page, pageSize],
+    queryKey: ["delegados", page, pageSize, filtros],
     url: BASE_URL,
     schema: delegadosListResponseSchema,
-    params: paginationParams,
+    params,
     queryOptions: {
       select: (data) => {
         if (!data?.data) {
           return {
             items: [] as DelegadoOut[],
             total: 0,
-            page: 1,
+            page,
             page_size: pageSize,
             total_pages: 1,
           };
@@ -51,7 +58,5 @@ export function useDelegados(props: UseDelegadosProps = {}) {
     page: query.data?.page ?? page,
     pageSize: query.data?.page_size ?? pageSize,
     totalPages: query.data?.total_pages ?? 1,
-    setPage: onPageChange,
-    setPageSize: onPageSizeChange,
   };
 }
