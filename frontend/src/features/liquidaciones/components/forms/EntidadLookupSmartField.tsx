@@ -33,6 +33,7 @@ interface EntidadLookupFieldProps {
     tipoDocumento: string;
     numeroDocumento: string;
     razonSocial: string;
+    nombrePropietario?: string;
   };
 }
 
@@ -65,6 +66,7 @@ export function EntidadLookupField({
     tipoDocumento: "entidad_tipo_documento",
     numeroDocumento: "entidad_numero_documento",
     razonSocial: "entidad_razon_social",
+    nombrePropietario: "nombre_propietario",
   };
   // ── Local search UI state (independent from RHF until lookup completes) ────
   const [lookupState, setLookupState] = useState<LookupState>({
@@ -93,6 +95,10 @@ export function EntidadLookupField({
     control,
     rules: { required: "Razón social o nombre completo es requerido" },
   });
+  // Optional: sync nombre_propietario with razon_social when lookup succeeds
+  const nombrePropietarioCtrl = fn.nombrePropietario
+    ? useController({ name: fn.nombrePropietario, control })
+    : null;
 
   // ── Sync flag: prevents circular RHF ↔ lookupState updates ───────────────
   // When true, the sync effect skips updating lookupState to avoid loops
@@ -152,10 +158,17 @@ export function EntidadLookupField({
     tipoDocCtrl.field.onChange(tipoDoc);
     numDocCtrl.field.onChange(numDoc);
     razonSocialCtrl.field.onChange(razonSocial);
+    // Auto-fill propietario with the same razon_social / nombre_completo
+    if (nombrePropietarioCtrl) {
+      nombrePropietarioCtrl.field.onChange(razonSocial);
+    }
 
     onFieldChange?.(fn.tipoDocumento, tipoDoc);
     onFieldChange?.(fn.numeroDocumento, numDoc);
     onFieldChange?.(fn.razonSocial, razonSocial);
+    if (fn.nombrePropietario) {
+      onFieldChange?.(fn.nombrePropietario, razonSocial);
+    }
   };
 
   const handleLookup = async () => {

@@ -17,8 +17,19 @@ export function useCrearHabilitacionUrbana() {
   const mutation = useApiCreate<unknown, { liquidacion_general: unknown; liquidacion_especifica: unknown }>({
     url: `${BASE_URL}/primera-revision`,
     options: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["liquidaciones", "habilitacion-urbana"] });
+      onSuccess: (created) => {
+        const newItem = (created as { data?: unknown })?.data ?? created;
+        queryClient.setQueriesData<{ items: unknown[]; total: number }>(
+          { queryKey: ["liquidaciones", "habilitacion-urbana"] },
+          (old) => {
+            if (!old || !Array.isArray(old.items)) return old;
+            return {
+              ...old,
+              items: [newItem, ...old.items],
+              total: (old.total ?? 0) + 1,
+            };
+          },
+        );
       },
     },
   });

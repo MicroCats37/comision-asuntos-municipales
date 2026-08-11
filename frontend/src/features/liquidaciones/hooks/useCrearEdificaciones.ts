@@ -18,8 +18,21 @@ export function useCrearEdificaciones() {
   const mutation = useApiCreate<unknown, { liquidacion_general: unknown; liquidacion_especifica: unknown }>({
     url: `${BASE_URL}/primera-revision`,
     options: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["liquidaciones", "edificaciones"] });
+      onSuccess: (created) => {
+        // The POST returns ApiResponse envelope: { success, data: { liquidacion_general, ... }, error }
+        // Unwrap to get the list item shape and prepend to cache
+        const newItem = (created as { data?: unknown })?.data ?? created;
+        queryClient.setQueriesData<{ items: unknown[]; total: number }>(
+          { queryKey: ["liquidaciones", "edificaciones"] },
+          (old) => {
+            if (!old || !Array.isArray(old.items)) return old;
+            return {
+              ...old,
+              items: [newItem, ...old.items],
+              total: (old.total ?? 0) + 1,
+            };
+          },
+        );
       },
     },
   });

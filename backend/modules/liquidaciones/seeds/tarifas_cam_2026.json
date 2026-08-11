@@ -1,0 +1,98 @@
+{
+  "version": "1.0",
+  "periodo": "2026",
+  "descripcion": "Tarifas oficiales CAM — CIP Lima",
+  "derechos_porcentaje": {
+    "periodo_inicio": "2026-01-01",
+    "periodo_fin": null,
+    "porcentaje_minimo_uit": "0.02"
+  },
+  "derechos_m2": {
+    "periodo_inicio": "2026-01-01",
+    "periodo_fin": null,
+    "derecho_minimo": "1000.00",
+    "derecho_maximo": "10000.00"
+  },
+  "tarifas_porcentaje": [
+    {
+      "tipo_liquidacion": "EDIFICACION",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "especialidad": "01",
+      "porcentaje_liquidacion": "0.0005"
+    },
+    {
+      "tipo_liquidacion": "EDIFICACION",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "especialidad": "02",
+      "porcentaje_liquidacion": "0.0005"
+    },
+    {
+      "tipo_liquidacion": "EDIFICACION",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "especialidad": "04",
+      "porcentaje_liquidacion": "0.0005"
+    },
+    {
+      "tipo_liquidacion": "IMPACTO_VIAL",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "especialidad": "01",
+      "porcentaje_liquidacion": "0.0015"
+    },
+    {
+      "tipo_liquidacion": "TALUDES",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "especialidad": "01",
+      "porcentaje_liquidacion": "0.0015"
+    }
+  ],
+  "tarifas_m2": [
+    {
+      "tipo_liquidacion": "HABILITACION_URBANA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "costo_por_m2": "0.20"
+    },
+    {
+      "tipo_liquidacion": "MECANICA_SUELOS",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "costo_por_m2": "0.20"
+    }
+  ],
+  "tarifas_inspeccion": [
+    {
+      "tipo_liquidacion": "INSPECCION_OBRA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "categoria_visitas": "A",
+      "porcentaje_uit": "0.032"
+    },
+    {
+      "tipo_liquidacion": "INSPECCION_OBRA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "categoria_visitas": "B",
+      "porcentaje_uit": "0.037"
+    },
+    {
+      "tipo_liquidacion": "INSPECCION_OBRA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "categoria_visitas": "C",
+      "porcentaje_uit": "0.042"
+    },
+    {
+      "tipo_liquidacion": "INSPECCION_OBRA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "categoria_visitas": "D",
+      "porcentaje_uit": "0.088"
+    }
+  ]
+}
+
