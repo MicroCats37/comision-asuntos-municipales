@@ -27,6 +27,7 @@ from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_visitas_r
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_inspeccion_obra import (
     LiquidacionInspeccionObra,
 )
+from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
 class LiquidacionInspeccionObraFlujo:
@@ -83,14 +84,13 @@ class LiquidacionInspeccionObraFlujo:
         proyecto = self.general_core.create_proyecto(proyecto_data, entidad)
 
         # 3. Crear General
-        from modules.liquidaciones.domain.constants import TipoLiquidacion
-        
+        from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
         liquidacion_general = self.general_core.create_liquidacion_general(
             municipalidad_id=gen_data.municipalidad_id,
             expediente=gen_data.expediente,
             observacion=gen_data.observacion,
             proyecto=proyecto,
-            tipo_liquidacion=TipoLiquidacion.INSPECCION_OBRA,
+            tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.INSPECCION_OBRA),
             numero_revision=1,
         )
         

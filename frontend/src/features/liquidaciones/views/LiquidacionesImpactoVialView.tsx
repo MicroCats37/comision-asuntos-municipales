@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { LiquidacionImpactoVialCard } from "../components/cards/LiquidacionImpactoVialCard";
+import { ImpactoVialFormModal } from "../components/forms/ImpactoVialFormModal";
 import { useLiquidacionesImpactoVial } from "../hooks";
 import type { LiquidacionImpactoVialListItem } from "../schemas/liquidacion-impacto-vial.schema";
 
@@ -20,6 +21,7 @@ const KIND_ICON: LucideIcon = Car;
 
 export function LiquidacionesImpactoVialView() {
   const [searchInput, setSearchInput] = useState("");
+  const [formModalOpen, setFormModalOpen] = useState(false);
 
   const {
     items,
@@ -30,6 +32,7 @@ export function LiquidacionesImpactoVialView() {
     isLoading,
     isError,
     setPage,
+    refetch,
   } = useLiquidacionesImpactoVial();
 
   const filteredItems = items.filter((item) =>
@@ -52,7 +55,10 @@ export function LiquidacionesImpactoVialView() {
           description="Listado de liquidaciones de Impacto Vial"
           icon={KIND_ICON}
           actionNodes={
-            <Button className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0">
+            <Button
+              className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+              onClick={() => setFormModalOpen(true)}
+            >
               <Plus className="h-4 w-4" />
               Nueva Liquidación
             </Button>
@@ -117,6 +123,15 @@ export function LiquidacionesImpactoVialView() {
           )}
         </div>
       </div>
+
+      <ImpactoVialFormModal
+        open={formModalOpen}
+        onOpenChange={setFormModalOpen}
+        onSuccess={() => {
+          setFormModalOpen(false);
+          refetch();
+        }}
+      />
     </div>
   );
 }

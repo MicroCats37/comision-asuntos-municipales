@@ -33,13 +33,14 @@ from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 # ── Fixture ────────────────────────────────────────────────────────────────────
 
 @pytest.fixture
-def tarifa_liquidacion_base_ms(db):
+def tarifa_liquidacion_base_ms(db, tipo_mecanica_suelos):
     """Create a TarifaLiquidacionBase for Mecánica de Suelos."""
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
         TarifaLiquidacionBase,
     )
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
+        tipo_liquidacion=tipo_mecanica_suelos,
         periodo_inicio="2024-01-01",
         periodo_fin=None,
     )
@@ -75,6 +76,7 @@ def liquidacion_ms_detail(
     igv_vigente,
     uit_vigente,
     tarifa_m2_ms,
+    tipo_mecanica_suelos,
 ):
     """
     Create a persisted LiquidacionGeneral + LiquidacionMecanicaSuelos + LiquidacionPorMetroCuadrado
@@ -90,7 +92,7 @@ def liquidacion_ms_detail(
         expediente="EXP-MS-2024-001",
         observacion="Test liquidation MS detail",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
+        tipo_liquidacion=tipo_mecanica_suelos,
         numero_revision=1,
         sub_total=Decimal("15000.00"),
         total=Decimal("17700.00"),
@@ -265,13 +267,12 @@ def test_detail_returns_404_for_wrong_tipo_liquidacion(
     create_user,
     igv_vigente,
     uit_vigente,
+    tipo_habilitacion_urbana,
 ):
     """
     GET /liquidaciones/mecanica-suelos/{id} returns 404 when the ID belongs to
     a different tipo_liquidacion (e.g., Habilitación Urbana).
     """
-    from modules.liquidaciones.domain.constants import TipoLiquidacion
-
     user = create_user
 
     # Create a HU liquidacion
@@ -282,7 +283,7 @@ def test_detail_returns_404_for_wrong_tipo_liquidacion(
         expediente="EXP-HU-WRONG-001",
         observacion="Wrong tipo liquidacion",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         numero_revision=1,
         sub_total=Decimal("15000.00"),
         total=Decimal("17700.00"),

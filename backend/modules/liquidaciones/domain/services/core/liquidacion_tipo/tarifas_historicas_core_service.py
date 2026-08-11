@@ -37,7 +37,7 @@ class TarifasHistoricasCoreService:
         Returns (list of TarifaLiquidacionBase, total_count).
         """
         qs = TarifaLiquidacionBase.objects.filter(
-            tipo_liquidacion=tipo_liquidacion,
+            tipo_liquidacion__codigo=tipo_liquidacion,
         ).filter(
             periodo_inicio__gte=fecha_desde,
             periodo_inicio__lte=fecha_hasta,

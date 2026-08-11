@@ -147,6 +147,17 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
         return;
       }
 
+      // Allow typing decimal point: show partial input like "S/ 1 000." without parsing
+      if (stripped.endsWith(".")) {
+        const intPart = stripped.slice(0, -1) || "0";
+        const parsedInt = parseFloat(intPart);
+        if (isNaN(parsedInt)) return;
+        const formattedInt = Math.round(parsedInt).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        isInternalUpdate.current = true;
+        setDisplayValue(`S/ ${formattedInt}.`);
+        return;
+      }
+
       const parsed = parseFloat(stripped);
       if (isNaN(parsed) || !isFinite(parsed)) {
         return;

@@ -30,13 +30,14 @@ from modules.liquidaciones.domain.constants import TipoLiquidacion
 # ── IV-specific Tarifa Fixtures ─────────────────────────────────────────────────
 
 @pytest.fixture
-def tarifa_liquidacion_base_iv(db):
+def tarifa_liquidacion_base_iv(db, tipo_impacto_vial):
     """Create a TarifaLiquidacionBase for Impacto Vial."""
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
         TarifaLiquidacionBase,
     )
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL,
+        tipo_liquidacion=tipo_impacto_vial,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -78,6 +79,7 @@ def liquidacion_iv_detail(
     uit_vigente,
     tarifa_porcentaje_obra_iv,
     especialidad_impacto_vial,
+    tipo_impacto_vial,
 ):
     """
     Create a persisted LiquidacionGeneral + LiquidacionImpactoVial + LiquidacionPorcentajeObra
@@ -93,7 +95,7 @@ def liquidacion_iv_detail(
         expediente="EXP-IV-DETAIL-001",
         observacion="Test liquidation for IV detail",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL,
+        tipo_liquidacion=tipo_impacto_vial,
         numero_revision=1,
         sub_total=Decimal("1000.00"),
         total=Decimal("1180.00"),
@@ -298,6 +300,7 @@ def test_detail_endpoint_returns_404_for_wrong_type_liquidacion(
     municipalidad,
     proyecto,
     create_user,
+    tipo_habilitacion_urbana,
 ):
     """
     GET /liquidaciones/impacto-vial/{id_of_different_type} returns 404.
@@ -305,9 +308,9 @@ def test_detail_endpoint_returns_404_for_wrong_type_liquidacion(
     verifies that requesting it via the IV endpoint returns 404.
     """
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
-    from modules.liquidaciones.domain.constants import TipoLiquidacion
-
+    
     user = create_user
+    
 
     # Create HU liquidacion
     hu_lg = LiquidacionGeneral.objects.create(
@@ -316,7 +319,7 @@ def test_detail_endpoint_returns_404_for_wrong_type_liquidacion(
         usuario_creador=user,
         expediente="EXP-HU-001",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         numero_revision=1,
         sub_total=Decimal("500.00"),
         total=Decimal("590.00"),

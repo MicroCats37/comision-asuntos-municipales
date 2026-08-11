@@ -22,13 +22,11 @@ class Inspector(BaseModel):
         verbose_name="Perfil de Ingeniero",
     )
 
-    tipo_liquidacion = models.CharField(
-        max_length=30,
-        choices=(
-            (TipoLiquidacion.EDIFICACION, "Edificacion"),
-            (TipoLiquidacion.HABILITACION_URBANA, "Habilitacion Urbana"),
-        ),
-        verbose_name="Tipo de Liquidacion",
+    tipo_liquidacion = models.ForeignKey(
+        'liquidaciones.TipoLiquidacion',
+        on_delete=models.PROTECT,
+        related_name='inspectores',
+        verbose_name="Tipo de Liquidación",
     )
     
     categoria = models.CharField(

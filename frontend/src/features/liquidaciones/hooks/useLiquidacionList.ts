@@ -1,9 +1,8 @@
 import { useApiQuery } from '@/hooks/callsApi/useApiQuery';
 import { usePagination } from '@/hooks/system/usePagination';
-import { useGenericCacheSync } from '@/hooks/cache/useGenericCacheSync';
-import { useEffect } from 'react';
 import type { ZodType } from 'zod';
 import { paginatedResponseSchema } from '../schemas/liquidacion-base.schema';
+import { apiResponseSchema } from '@/types/api.types';
 
 interface PaginatedData<T> {
   items: T[];
@@ -24,8 +23,6 @@ interface UseLiquidacionListReturn<T> {
   isLoading: boolean;
   isError: boolean;
   refetch: () => void;
-  syncItem: (item: T) => void;
-  removeItem: (itemId: string | number) => void;
 }
 
 export function useLiquidacionList<T>({
@@ -39,28 +36,15 @@ export function useLiquidacionList<T>({
 }): UseLiquidacionListReturn<T> {
   const { page, pageSize, onPageChange, onPageSizeChange, paginationParams } = usePagination();
 
-  // Derive domain from queryKey (e.g., ['liquidaciones', 'edificaciones'] -> 'edificaciones')
-  const domain = queryKey[1];
+  const paginatedSchema = apiResponseSchema(paginatedResponseSchema(schema));
 
-  const { seedDetailCaches, syncItem, removeItem } = useGenericCacheSync<T>({
-    listQueryKey: queryKey,
-    detailKeyFn: (item) => ['liquidaciones', domain, item.liquidacion_general.id],
-  });
-
-  const paginatedSchema = paginatedResponseSchema(schema);
-
-  const { data, isLoading, isError, refetch } = useApiQuery({
+  const { data: apiData, isLoading, isError, refetch } = useApiQuery({
     queryKey: [...queryKey, paginationParams.page, paginationParams.page_size],
     url: `${url}?page=${paginationParams.page}&page_size=${paginationParams.page_size}`,
-    schema: paginatedSchema as ZodType<PaginatedData<T>>,
+    schema: paginatedSchema as ZodType<{ success: boolean; data: PaginatedData<T>; error: unknown }>,
   });
 
-  // Seed detail caches after successful query
-  useEffect(() => {
-    if (data?.items && data.items.length > 0) {
-      seedDetailCaches(data.items);
-    }
-  }, [data, seedDetailCaches]);
+  const data = apiData?.data;
 
   return {
     items: data?.items ?? [],
@@ -73,7 +57,5 @@ export function useLiquidacionList<T>({
     isLoading,
     isError,
     refetch,
-    syncItem,
-    removeItem,
   };
 }

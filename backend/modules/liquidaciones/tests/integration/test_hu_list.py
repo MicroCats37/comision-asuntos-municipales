@@ -32,13 +32,14 @@ from modules.liquidaciones.domain.constants import TipoLiquidacion
 # ── Fixture ────────────────────────────────────────────────────────────────────
 
 @pytest.fixture
-def tarifa_liquidacion_base_hu(db):
+def tarifa_liquidacion_base_hu(db, tipo_habilitacion_urbana):
     """Create a TarifaLiquidacionBase for Habilitacion Urbana."""
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
         TarifaLiquidacionBase,
     )
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         periodo_inicio="2024-01-01",
         periodo_fin=None,
     )
@@ -74,6 +75,7 @@ def liquidacion_hu_created(
     igv_vigente,
     uit_vigente,
     tarifa_m2_vigente,
+    tipo_habilitacion_urbana,
 ):
     """
     Create a persisted LiquidacionGeneral + LiquidacionHabilitacionUrbana + LiquidacionPorMetroCuadrado
@@ -89,7 +91,7 @@ def liquidacion_hu_created(
         expediente="EXP-HU-2024-001",
         observacion="Test liquidation HU",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         numero_revision=1,
         sub_total=Decimal("5000.00"),
         total=Decimal("5900.00"),

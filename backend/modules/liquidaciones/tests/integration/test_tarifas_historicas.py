@@ -133,13 +133,15 @@ def test_tarifas_historicas_edificaciones(
 @pytest.mark.django_db
 def test_tarifas_historicas_hu(
     api_client,
+    tipo_habilitacion_urbana,
 ):
     """
     GET /liquidaciones/habilitacion-urbana/tarifas/historicas returns M2 tariff detail.
     """
     # Create HU tariff base and M2 detail
+    
     base = TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -167,15 +169,17 @@ def test_tarifas_historicas_hu(
 @pytest.mark.django_db
 def test_tarifas_historicas_inspeccion_obras(
     api_client,
+    tipo_inspeccion_obra,
 ):
     """
     GET /liquidaciones/inspeccion-obra/tarifas/historicas returns visitas categories.
     Note: Due to OneToOne constraint on TarifaPorCategoriaVisitas, each category needs its own base.
     """
     # Create multiple IO tariff bases, one per category (since OneToOne limits one per base)
+    
     for i, (categoria, pct_uit) in enumerate([("A", "0.05"), ("B", "0.08")]):
         base = TarifaLiquidacionBase.objects.create(
-            tipo_liquidacion=TipoLiquidacion.INSPECCION_OBRA,
+            tipo_liquidacion=tipo_inspeccion_obra,
             periodo_inicio=date(2024, 1, 1),
             periodo_fin=None,
         )
@@ -221,14 +225,16 @@ def test_tarifas_historicas_empty_result(
 @pytest.mark.django_db
 def test_tarifas_historicas_pagination(
     api_client,
+    tipo_edificacion,
 ):
     """
     GET respects page and page_size parameters.
     """
     # Create multiple tariff bases
+    
     for i in range(3):
         base = TarifaLiquidacionBase.objects.create(
-            tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+            tipo_liquidacion=tipo_edificacion,
             periodo_inicio=date(2024, 1, 1),
             periodo_fin=None,
         )

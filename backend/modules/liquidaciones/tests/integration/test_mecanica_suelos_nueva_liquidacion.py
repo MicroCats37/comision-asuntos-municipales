@@ -83,10 +83,11 @@ def municipalidad(db, ubigeo_distrito):
 
 
 @pytest.fixture
-def tarifa_liquidacion_base_ms(db):
+def tarifa_liquidacion_base_ms(db, tipo_mecanica_suelos):
     """Create a TarifaLiquidacionBase for Mecanica de Suelos."""
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
+        tipo_liquidacion=tipo_mecanica_suelos,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )

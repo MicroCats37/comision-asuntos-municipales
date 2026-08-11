@@ -92,12 +92,13 @@ class LiquidacionHabilitacionUrbanaFlujo:
             uit_vigente = self.general_core.get_uit_vigente()
 
             # Paso 3: LiquidacionGeneral (General Core)
+            from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
             liquidacion_general = self.general_core.create_liquidacion_general(
                 municipalidad_id=gen_data.municipalidad_id,
                 expediente=gen_data.expediente,
                 observacion=gen_data.observacion,
                 proyecto=proyecto,
-                tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+                tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.HABILITACION_URBANA),
                 numero_revision=1,
             )
             liquidacion_general.sub_total = Decimal(str(cotizacion.subtotal))

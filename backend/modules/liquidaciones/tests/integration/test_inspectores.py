@@ -55,11 +55,12 @@ def perfil_ingeniero_inspector_2(db):
 
 
 @pytest.fixture
-def inspector_edificacion(db, perfil_ingeniero_inspector):
+def inspector_edificacion(db, perfil_ingeniero_inspector, tipo_edificacion):
     """Create an Inspector for Edificacion testing."""
+    
     return Inspector.objects.create(
         perfil_ingeniero=perfil_ingeniero_inspector,
-        tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+        tipo_liquidacion=tipo_edificacion,
         numero_registro="REG-001-EDIF",
         telefono="999888777",
         email="juan.perez@test.com",
@@ -67,11 +68,12 @@ def inspector_edificacion(db, perfil_ingeniero_inspector):
 
 
 @pytest.fixture
-def inspector_habilitacion_urbana(db, perfil_ingeniero_inspector_2):
+def inspector_habilitacion_urbana(db, perfil_ingeniero_inspector_2, tipo_habilitacion_urbana):
     """Create an Inspector for Habilitacion Urbana testing."""
+    
     return Inspector.objects.create(
         perfil_ingeniero=perfil_ingeniero_inspector_2,
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         numero_registro="REG-002-HU",
         telefono="999888666",
         email="maria.lopez@test.com",

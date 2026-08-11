@@ -39,7 +39,7 @@ export const LiquidacionGeneralOutputSchema = z.object({
   proyecto: ProyectoOutputSchema,
 });
 
-// Paginated response helper
+// Paginated response helper (items directly, without ApiResponse wrapper)
 export function paginatedResponseSchema<T extends z.ZodTypeAny>(itemSchema: T) {
   return z.object({
     items: z.array(itemSchema),

@@ -147,7 +147,7 @@ class TarifasHistoricasOrchestrator:
 
             resultados.append(TarifaHistoricaPeriodoResult(
                 id=base.id,
-                tipo_liquidacion=base.tipo_liquidacion,
+                tipo_liquidacion=base.tipo_liquidacion.codigo,
                 periodo_inicio=base.periodo_inicio,
                 periodo_fin=base.periodo_fin,
                 tarifas_porcentaje=tarifas_porcentaje,

@@ -21,10 +21,11 @@ from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
 @pytest.fixture
-def tarifa_liquidacion_base_edificacion(db):
+def tarifa_liquidacion_base_edificacion(db, tipo_edificacion):
     """Create a TarifaLiquidacionBase for Edificaciones."""
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+        tipo_liquidacion=tipo_edificacion,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -162,7 +163,8 @@ def test_returns_derecho_info(
 
 @pytest.mark.django_db
 def test_excludes_other_tipo_liquidacion(
-    api_client, db, tarifa_porcentaje_obra_estructuras
+    api_client, db, tarifa_porcentaje_obra_estructuras,
+    tipo_habilitacion_urbana, tipo_mecanica_suelos
 ):
     """
     Only EDIFICACION tarifas returned, not HU or IO.
@@ -170,8 +172,9 @@ def test_excludes_other_tipo_liquidacion(
     Creates a HU tariff and verifies Edificaciones endpoint doesn't return it.
     """
     # Create HU tariff (should NOT be returned)
+    
     hu_tarifa_base = TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -182,8 +185,9 @@ def test_excludes_other_tipo_liquidacion(
     )
 
     # Create MS tariff (should NOT be returned)
+    
     ms_tarifa_base = TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
+        tipo_liquidacion=tipo_mecanica_suelos,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -213,7 +217,8 @@ def test_excludes_other_tipo_liquidacion(
 
 @pytest.mark.django_db
 def test_excludes_expired_tarifas(
-    api_client, db, tarifa_porcentaje_obra_estructuras
+    api_client, db, tarifa_porcentaje_obra_estructuras,
+    tipo_edificacion
 ):
     """
     Only vigentes tarifas returned (not expired).
@@ -221,8 +226,9 @@ def test_excludes_expired_tarifas(
     Creates an expired tariff and verifies it's not returned.
     """
     # Create expired tariff (should NOT be returned)
+    
     expired_tarifa_base = TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+        tipo_liquidacion=tipo_edificacion,
         periodo_inicio=date(2023, 1, 1),
         periodo_fin=date(2023, 12, 31),  # Expired
     )

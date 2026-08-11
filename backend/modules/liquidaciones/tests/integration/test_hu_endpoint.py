@@ -58,10 +58,11 @@ def municipalidad(db, ubigeo_distrito):
 
 
 @pytest.fixture
-def tarifa_liquidacion_base_hu(db):
+def tarifa_liquidacion_base_hu(db, tipo_habilitacion_urbana):
     """Create a TarifaLiquidacionBase for Habilitacion Urbana."""
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )

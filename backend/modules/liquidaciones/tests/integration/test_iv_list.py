@@ -30,13 +30,14 @@ from modules.liquidaciones.domain.constants import TipoLiquidacion
 # ── IV-specific Tarifa Fixtures ─────────────────────────────────────────────────
 
 @pytest.fixture
-def tarifa_liquidacion_base_iv(db):
+def tarifa_liquidacion_base_iv(db, tipo_impacto_vial):
     """Create a TarifaLiquidacionBase for Impacto Vial."""
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
         TarifaLiquidacionBase,
     )
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL,
+        tipo_liquidacion=tipo_impacto_vial,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -78,6 +79,7 @@ def liquidacion_iv_created(
     uit_vigente,
     tarifa_porcentaje_obra_iv,
     especialidad_impacto_vial,
+    tipo_impacto_vial,
 ):
     """
     Create a persisted LiquidacionGeneral + LiquidacionImpactoVial + LiquidacionPorcentajeObra
@@ -97,7 +99,7 @@ def liquidacion_iv_created(
         expediente="EXP-IV-2024-001",
         observacion="Test liquidation",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL,
+        tipo_liquidacion=tipo_impacto_vial,
         numero_revision=1,
         sub_total=Decimal("1000.00"),
         total=Decimal("1180.00"),

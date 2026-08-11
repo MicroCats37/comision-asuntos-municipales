@@ -71,7 +71,7 @@ class LiquidacionTaludesOrchestrator:
         )
         if not is_vigente:
             raise HttpError(400, f"Tarifa {tarifa.id} no está vigente")
-        if tarifa.tarifa_base.tipo_liquidacion != TipoLiquidacion.TALUDES:
+        if tarifa.tarifa_base.tipo_liquidacion.codigo != TipoLiquidacion.TALUDES:
             raise HttpError(400, f"Tarifa {tarifa.id} no es de taludes")
 
     @inject

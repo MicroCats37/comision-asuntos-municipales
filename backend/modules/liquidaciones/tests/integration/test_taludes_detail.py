@@ -31,13 +31,14 @@ from modules.liquidaciones.domain.constants import TipoLiquidacion
 # ── Taludes-specific Tarifa Fixtures ─────────────────────────────────────────────────
 
 @pytest.fixture
-def tarifa_liquidacion_base_taludes(db):
+def tarifa_liquidacion_base_taludes(db, tipo_taludes):
     """Create a TarifaLiquidacionBase for Taludes."""
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
         TarifaLiquidacionBase,
     )
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.TALUDES,
+        tipo_liquidacion=tipo_taludes,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -79,6 +80,7 @@ def liquidacion_taludes_detail(
     uit_vigente,
     tarifa_porcentaje_obra_taludes,
     especialidad_taludes,
+    tipo_taludes,
 ):
     """
     Create a persisted LiquidacionGeneral + LiquidacionTaludes + LiquidacionPorcentajeObra
@@ -94,7 +96,7 @@ def liquidacion_taludes_detail(
         expediente="EXP-TALUDES-DETAIL-001",
         observacion="Test detail liquidation",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.TALUDES,
+        tipo_liquidacion=tipo_taludes,
         numero_revision=1,
         sub_total=Decimal("1000.00"),
         total=Decimal("1180.00"),
@@ -299,16 +301,17 @@ def test_detail_returns_404_for_wrong_tipo_liquidacion(
     igv_vigente,
     uit_vigente,
     db,
+    tipo_habilitacion_urbana,
 ):
     """
     GET /liquidaciones/taludes/{id} where the liquidacion is NOT of tipo TALUDES
     returns 404 (not found for this tipo).
     """
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
-    from modules.liquidaciones.domain.constants import TipoLiquidacion
-
+    
     # Create a Habilitacion Urbana liquidacion
     user = create_user
+    
     lg = LiquidacionGeneral.objects.create(
         proyecto=proyecto,
         municipalidad=municipalidad,
@@ -316,7 +319,7 @@ def test_detail_returns_404_for_wrong_tipo_liquidacion(
         expediente="EXP-HU-WRONG-TIPO",
         observacion="Wrong tipo liquidacion",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         numero_revision=1,
         sub_total=Decimal("500.00"),
         total=Decimal("590.00"),

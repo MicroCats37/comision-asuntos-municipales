@@ -31,7 +31,7 @@ class LiquidacionPorCategoriaVisitasCoreService:
     def get_tarifas_vigentes(self) -> list[TarifaPorCategoriaVisitas]:
         """Obtiene todas las tarifas vigentes para la categoría de visitas."""
         bases = TarifaLiquidacionBase.objects.vigentes().filter(
-            tipo_liquidacion=TipoLiquidacion.INSPECCION_OBRA
+            tipo_liquidacion__codigo=TipoLiquidacion.INSPECCION_OBRA
         )
         return list(
             TarifaPorCategoriaVisitas.objects.filter(

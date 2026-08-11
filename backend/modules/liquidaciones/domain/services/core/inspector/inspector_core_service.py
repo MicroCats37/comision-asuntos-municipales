@@ -67,7 +67,7 @@ class InspectorCoreService:
         """
         today = date.today()
         qs = Inspector.objects.filter(
-            tipo_liquidacion=tipo_liquidacion,
+            tipo_liquidacion__codigo=tipo_liquidacion,
         ).select_related(
             'perfil_ingeniero',
         ).filter(

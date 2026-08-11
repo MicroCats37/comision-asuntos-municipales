@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { LiquidacionEdificacionesCard } from "../components/cards/LiquidacionEdificacionesCard";
+import { EdificacionesFormModal } from "../components/forms/EdificacionesFormModal";
 import { useLiquidacionesEdificaciones } from "../hooks";
 import type { LiquidacionEdificacionesListItem } from "../schemas/liquidacion-edificaciones.schema";
 
@@ -20,6 +21,7 @@ const KIND_ICON: LucideIcon = Building2;
 
 export function LiquidacionesEdificacionesView() {
   const [searchInput, setSearchInput] = useState("");
+  const [formModalOpen, setFormModalOpen] = useState(false);
 
   const {
     items,
@@ -30,6 +32,7 @@ export function LiquidacionesEdificacionesView() {
     isLoading,
     isError,
     setPage,
+    refetch,
   } = useLiquidacionesEdificaciones();
 
   const filteredItems = items.filter((item) =>
@@ -54,6 +57,7 @@ export function LiquidacionesEdificacionesView() {
           actionNodes={
             <Button
               className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+              onClick={() => setFormModalOpen(true)}
             >
               <Plus className="h-4 w-4" />
               Nueva Liquidación
@@ -169,6 +173,15 @@ export function LiquidacionesEdificacionesView() {
           )}
         </div>
       </div>
+
+      <EdificacionesFormModal
+        open={formModalOpen}
+        onOpenChange={setFormModalOpen}
+        onSuccess={() => {
+          setFormModalOpen(false);
+          refetch();
+        }}
+      />
     </div>
   );
 }

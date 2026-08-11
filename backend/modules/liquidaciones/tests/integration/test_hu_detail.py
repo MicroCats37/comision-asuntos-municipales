@@ -32,13 +32,14 @@ from modules.liquidaciones.domain.constants import TipoLiquidacion
 # ── Fixtures ────────────────────────────────────────────────────────────────────
 
 @pytest.fixture
-def tarifa_liquidacion_base_hu(db):
+def tarifa_liquidacion_base_hu(db, tipo_habilitacion_urbana):
     """Create a TarifaLiquidacionBase for Habilitacion Urbana."""
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
         TarifaLiquidacionBase,
     )
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         periodo_inicio="2024-01-01",
         periodo_fin=None,
     )
@@ -74,6 +75,7 @@ def liquidacion_hu_detail(
     igv_vigente,
     uit_vigente,
     tarifa_m2_vigente,
+    tipo_habilitacion_urbana,
 ):
     """
     Create a persisted LiquidacionGeneral + LiquidacionHabilitacionUrbana + LiquidacionPorMetroCuadrado
@@ -89,7 +91,7 @@ def liquidacion_hu_detail(
         expediente="EXP-HU-DETAIL-001",
         observacion="Test liquidation HU for detail",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         numero_revision=1,
         sub_total=Decimal("5000.00"),
         total=Decimal("5900.00"),
@@ -253,6 +255,7 @@ def test_detail_endpoint_returns_404_for_wrong_type_liquidacion(
     municipalidad,
     proyecto,
     create_user,
+    tipo_edificacion,
 ):
     """
     GET /liquidaciones/habilitacion-urbana/{id_of_different_type} returns 404.
@@ -276,8 +279,9 @@ def test_detail_endpoint_returns_404_for_wrong_type_liquidacion(
     user = create_user
 
     # Create TarifaLiquidacionBase for Edificacion
+    
     tarifa_base_edif = TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+        tipo_liquidacion=tipo_edificacion,
         periodo_inicio="2024-01-01",
         periodo_fin=None,
     )
@@ -311,7 +315,7 @@ def test_detail_endpoint_returns_404_for_wrong_type_liquidacion(
         usuario_creador=user,
         expediente="EXP-EDIF-001",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+        tipo_liquidacion=tipo_edificacion,
         numero_revision=1,
         sub_total=Decimal("1000.00"),
         total=Decimal("1180.00"),

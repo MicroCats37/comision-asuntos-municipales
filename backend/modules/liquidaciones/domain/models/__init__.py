@@ -1,6 +1,7 @@
 """Domain models — re-exported from domain/models/."""
 
 from .delegado import Delegado, DelegadoMunicipalidad, DelegadoMunicipalidadPeriodo
+from .tipo_liquidacion import TipoLiquidacion
 from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
 from .liquidacion.liquidacion_general.liquidacion import (
     LiquidacionGeneral,
@@ -42,6 +43,7 @@ __all__ = [
     "Delegado",
     "DelegadoMunicipalidad",
     "DelegadoMunicipalidadPeriodo",
+    "TipoLiquidacion",
     "Especialidad",
     "LiquidacionGeneral",
     "LiquidacionContacto",

@@ -19,12 +19,12 @@ from modules.liquidaciones.domain.constants import TramiteAccion, TipoLiquidacio
 
 class TarifaLiquidacionBase(BaseModel, VigenciaModel):
     
-    tipo_liquidacion = models.CharField(
-        max_length=30,
-        choices=TipoLiquidacion.choices,
-        default=TipoLiquidacion.EDIFICACION,
+    tipo_liquidacion = models.ForeignKey(
+        'liquidaciones.TipoLiquidacion',
+        on_delete=models.PROTECT,
+        related_name='tarifas_base',
         verbose_name="Tipo de Liquidación",
-        help_text="Tipo de liquidación/formulario: EDIFICACION, HABILITACION_URBANA, MECANICA_SUELOS, IMPACTO_VIAL, TALUDES, INSPECCION_OBRA.",
+        help_text="Tipo de liquidación/formulario.",
     )
         
     class Meta:

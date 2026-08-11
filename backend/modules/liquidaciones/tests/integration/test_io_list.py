@@ -36,6 +36,7 @@ def liquidacion_io_created(
     igv_vigente,
     uit_vigente,
     tarifa_visitas_io,
+    tipo_inspeccion_obra,
 ):
     """
     Create a persisted LiquidacionGeneral + LiquidacionInspeccionObra + LiquidacionPorCategoriaVisitas
@@ -51,7 +52,7 @@ def liquidacion_io_created(
         expediente="EXP-IO-2024-001",
         observacion="Test liquidation IO",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.INSPECCION_OBRA,
+        tipo_liquidacion=tipo_inspeccion_obra,
         numero_revision=1,
         sub_total=Decimal("772.50"),
         total=Decimal("911.55"),

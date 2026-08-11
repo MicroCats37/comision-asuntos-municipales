@@ -3,10 +3,10 @@
  * Usa useApiQuery genérico del proyecto.
  * Endpoint: GET /inspectores/
  */
-import { useState } from "react";
+import { usePagination } from "@/hooks/system/usePagination";
 import { useApiQuery } from "@/hooks";
 import {
-  inspectoresListPayloadSchema,
+  inspectoresListResponseSchema,
   type InspectorOut,
 } from "../types/inspectores.types";
 
@@ -17,48 +17,41 @@ interface UseInspectoresProps {
 
 const BASE_URL = "/inspectores";
 
-export function useInspectores({
-  page = 1,
-  pageSize = 10,
-}: UseInspectoresProps = {}) {
-  const [currentPage, setCurrentPage] = useState(page);
-  const [currentPageSize, setCurrentPageSize] = useState(pageSize);
-
-  const params: Record<string, string | number> = {
-    page: currentPage,
-    page_size: currentPageSize,
-  };
+export function useInspectores(props: UseInspectoresProps = {}) {
+  const { page, pageSize, onPageChange, onPageSizeChange, paginationParams } = usePagination({
+    initialPage: props.page ?? 1,
+    initialPageSize: props.pageSize ?? 10,
+  });
 
   const query = useApiQuery({
-    queryKey: ["inspectores", currentPage, currentPageSize],
+    queryKey: ["inspectores", page, pageSize],
     url: BASE_URL,
-    schema: inspectoresListPayloadSchema,
-    params,
+    schema: inspectoresListResponseSchema,
+    params: paginationParams,
     queryOptions: {
       select: (data) => {
-        if (!data) {
+        if (!data?.data) {
           return {
             items: [] as InspectorOut[],
             total: 0,
-            page: currentPage,
-            page_size: currentPageSize,
+            page: 1,
+            page_size: pageSize,
             total_pages: 1,
           };
         }
-        return data;
+        return data.data;
       },
     },
   });
 
   return {
     ...query,
-    data: query.data,
     items: query.data?.items ?? ([] as InspectorOut[]),
     total: query.data?.total ?? 0,
-    page: query.data?.page ?? currentPage,
-    pageSize: query.data?.page_size ?? currentPageSize,
+    page: query.data?.page ?? page,
+    pageSize: query.data?.page_size ?? pageSize,
     totalPages: query.data?.total_pages ?? 1,
-    setPage: setCurrentPage,
-    setPageSize: setCurrentPageSize,
+    setPage: onPageChange,
+    setPageSize: onPageSizeChange,
   };
 }

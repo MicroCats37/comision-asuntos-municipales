@@ -100,12 +100,13 @@ class LiquidacionImpactoVialFlujo:
         proyecto = self.general_core.create_proyecto(proyecto_data, entidad)
 
         # Paso 3: LiquidacionGeneral (with totals=0 initially)
+        from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
         liquidacion_general = self.general_core.create_liquidacion_general(
             municipalidad_id=gen_data.municipalidad_id,
             expediente=gen_data.expediente,
             observacion=gen_data.observacion,
             proyecto=proyecto,
-            tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL,
+            tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.IMPACTO_VIAL),
             numero_revision=1,
         )
 

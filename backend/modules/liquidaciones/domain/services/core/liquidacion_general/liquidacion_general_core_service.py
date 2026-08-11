@@ -14,6 +14,7 @@ from modules.liquidaciones.domain.models.proyecto import Proyecto
 from modules.finanzas.domain.models.impuestos import UIT, IGV
 from modules.entidades.domain.models import Entidad
 from modules.liquidaciones.domain.constants import EstadoLiquidacion, TipoLiquidacion
+from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
 
 
 class LiquidacionGeneralCoreService:
@@ -76,14 +77,19 @@ class LiquidacionGeneralCoreService:
     ) -> LiquidacionGeneral:
         """
         Creates a LiquidacionGeneral base record.
+        Resolves tipo_liquidacion string/enum to TipoLiquidacion FK instance.
         """
+        if isinstance(tipo_liquidacion, TipoLiquidacionModel):
+            tipo_liq_obj = tipo_liquidacion
+        else:
+            tipo_liq_obj = TipoLiquidacionModel.objects.get(codigo=tipo_liquidacion)
         return LiquidacionGeneral.objects.create(
             proyecto=proyecto,
             municipalidad_id=municipalidad_id,
             expediente=expediente,
             observacion=observacion,
             estado=EstadoLiquidacion.PENDIENTE,
-            tipo_liquidacion=tipo_liquidacion,
+            tipo_liquidacion=tipo_liq_obj,
             numero_revision=numero_revision,
             sub_total=Decimal("0"),
             total=Decimal("0"),
@@ -102,12 +108,13 @@ class LiquidacionGeneralCoreService:
         Returns (queryset, total_count).
         """
         qs = LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=tipo_liquidacion
+            tipo_liquidacion__codigo=tipo_liquidacion
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'edificaciones',
             'liquidacion_porcentaje_obra',
@@ -134,12 +141,13 @@ class LiquidacionGeneralCoreService:
         Returns (queryset, total_count).
         """
         qs = LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA
+            tipo_liquidacion__codigo=TipoLiquidacion.HABILITACION_URBANA
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'habilitacion_urbana',
             'liquidacion_m2',
@@ -164,12 +172,13 @@ class LiquidacionGeneralCoreService:
         Returns (queryset, total_count).
         """
         qs = LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS
+            tipo_liquidacion__codigo=TipoLiquidacion.MECANICA_SUELOS
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'liquidacion_m2',
             'liquidacion_m2__tarifa_aplicada',
@@ -196,12 +205,13 @@ class LiquidacionGeneralCoreService:
         Returns (queryset, total_count).
         """
         qs = LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.TALUDES
+            tipo_liquidacion__codigo=TipoLiquidacion.TALUDES
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'taludes',
             'liquidacion_porcentaje_obra',
@@ -231,12 +241,13 @@ class LiquidacionGeneralCoreService:
         Returns (queryset, total_count).
         """
         qs = LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.INSPECCION_OBRA
+            tipo_liquidacion__codigo=TipoLiquidacion.INSPECCION_OBRA
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'inspeccion_obra',
             'liquidacion_visitas',
@@ -262,12 +273,13 @@ class LiquidacionGeneralCoreService:
         Returns (queryset, total_count).
         """
         qs = LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL
+            tipo_liquidacion__codigo=TipoLiquidacion.IMPACTO_VIAL
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'impacto_vial',
             'liquidacion_porcentaje_obra',
@@ -291,12 +303,13 @@ class LiquidacionGeneralCoreService:
         Raises LiquidacionGeneral.DoesNotExist if not found.
         """
         return LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.EDIFICACION
+            tipo_liquidacion__codigo=TipoLiquidacion.EDIFICACION
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'edificaciones',
             'liquidacion_porcentaje_obra',
@@ -315,12 +328,13 @@ class LiquidacionGeneralCoreService:
         Raises LiquidacionGeneral.DoesNotExist if not found.
         """
         return LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.EDIFICACION
+            tipo_liquidacion__codigo=TipoLiquidacion.EDIFICACION
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'edificaciones',
             'liquidacion_porcentaje_obra',
@@ -339,12 +353,13 @@ class LiquidacionGeneralCoreService:
         Raises LiquidacionGeneral.DoesNotExist if not found.
         """
         return LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA
+            tipo_liquidacion__codigo=TipoLiquidacion.HABILITACION_URBANA
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'habilitacion_urbana',
             'liquidacion_m2',
@@ -361,12 +376,13 @@ class LiquidacionGeneralCoreService:
         Raises LiquidacionGeneral.DoesNotExist if not found.
         """
         return LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS
+            tipo_liquidacion__codigo=TipoLiquidacion.MECANICA_SUELOS
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'liquidacion_m2',
             'liquidacion_m2__tarifa_aplicada',
@@ -383,12 +399,13 @@ class LiquidacionGeneralCoreService:
         Raises LiquidacionGeneral.DoesNotExist if not found.
         """
         return LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.TALUDES
+            tipo_liquidacion__codigo=TipoLiquidacion.TALUDES
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'taludes',
             'liquidacion_porcentaje_obra',
@@ -407,12 +424,13 @@ class LiquidacionGeneralCoreService:
         Raises LiquidacionGeneral.DoesNotExist if not found.
         """
         return LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.INSPECCION_OBRA
+            tipo_liquidacion__codigo=TipoLiquidacion.INSPECCION_OBRA
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'inspeccion_obra',
             'liquidacion_visitas',
@@ -427,12 +445,13 @@ class LiquidacionGeneralCoreService:
         Raises LiquidacionGeneral.DoesNotExist if not found.
         """
         return LiquidacionGeneral.objects.filter(
-            tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL
+            tipo_liquidacion__codigo=TipoLiquidacion.IMPACTO_VIAL
         ).select_related(
             'proyecto',
             'proyecto__entidad',
             'municipalidad',
             'usuario_creador',
+            'tipo_liquidacion',
         ).prefetch_related(
             'impacto_vial',
             'liquidacion_porcentaje_obra',

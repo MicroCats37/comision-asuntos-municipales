@@ -124,12 +124,12 @@ class LiquidacionGeneral(BaseModel):
         help_text="Número de expediente associated with the liquidacion.",
     )
 
-    tipo_liquidacion = models.CharField(
-        max_length=30,
-        choices=TipoLiquidacion.choices,
-        default=TipoLiquidacion.EDIFICACION,
+    tipo_liquidacion = models.ForeignKey(
+        'liquidaciones.TipoLiquidacion',
+        on_delete=models.PROTECT,
+        related_name='liquidaciones',
         verbose_name="Tipo de Liquidación",
-        help_text="Tipo de liquidación/formulario: EDIFICACION, HABILITACION_URBANA, MECANICA_SUELOS, IMPACTO_VIAL, TALUDES, INSPECCION_OBRA.",
+        help_text="Tipo de liquidación/formulario.",
     )
 
     numero_revision = models.PositiveIntegerField(
@@ -163,12 +163,12 @@ class LiquidacionGeneral(BaseModel):
 
 
 class LiquidacionCodigo(BaseModel):
-    tipo_liquidacion = models.CharField(
-        max_length=30,
-        choices=TipoLiquidacion.choices,
-        default=TipoLiquidacion.EDIFICACION,
+    tipo_liquidacion = models.ForeignKey(
+        'liquidaciones.TipoLiquidacion',
+        on_delete=models.PROTECT,
+        related_name='codigos',
         verbose_name="Tipo de Liquidación",
-        help_text="Tipo de liquidación/formulario: EDIFICACION, HABILITACION_URBANA, MECANICA_SUELOS, IMPACTO_VIAL, TALUDES, INSPECCION_OBRA.",
+        help_text="Tipo de liquidación/formulario.",
     )
 
     codigo_cta = models.CharField(
@@ -308,11 +308,12 @@ class LiquidacionEspecialidadDisponibles(BaseModel):
 
     history = HistoricalRecords()
 
-    tipo_liquidacion = models.CharField(
-        max_length=30,
-        choices=TipoLiquidacion.choices,
+    tipo_liquidacion = models.ForeignKey(
+        'liquidaciones.TipoLiquidacion',
+        on_delete=models.PROTECT,
+        related_name='especialidades_disponibles',
         verbose_name="Tipo de Liquidación",
-        help_text="Tipo de liquidación/formulario: EDIFICACION, HABILITACION_URBANA, MECANICA_SUELOS, IMPACTO_VIAL, TALUDES, INSPECCION_OBRA.",
+        help_text="Tipo de liquidación/formulario.",
     )
 
     especialidad = models.ForeignKey(

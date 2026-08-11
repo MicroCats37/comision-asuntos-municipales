@@ -60,7 +60,7 @@ class InspectorOrchestrator:
         """Builds InspectorResult from ORM object."""
         return InspectorResult(
             id=str(inspector.id),
-            tipo_liquidacion=inspector.tipo_liquidacion,
+            tipo_liquidacion=inspector.tipo_liquidacion.codigo,
             numero_registro=inspector.numero_registro,
             telefono=inspector.telefono,
             email=inspector.email,
@@ -121,7 +121,7 @@ class InspectorOrchestrator:
 
         return InspectorDetailResult(
             id=str(inspector.id),
-            tipo_liquidacion=inspector.tipo_liquidacion,
+            tipo_liquidacion=inspector.tipo_liquidacion.codigo,
             numero_registro=inspector.numero_registro,
             telefono=inspector.telefono,
             email=inspector.email,
@@ -165,7 +165,7 @@ class InspectorOrchestrator:
             domain_results.append(
                 InspectorVigenteResult(
                     id=str(inspector.id),
-                    tipo_liquidacion=inspector.tipo_liquidacion,
+                    tipo_liquidacion=inspector.tipo_liquidacion.codigo,
                     numero_registro=inspector.numero_registro,
                     telefono=inspector.telefono,
                     email=inspector.email,

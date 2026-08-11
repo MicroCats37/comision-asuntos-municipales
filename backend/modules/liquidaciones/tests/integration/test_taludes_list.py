@@ -30,13 +30,14 @@ from modules.liquidaciones.domain.constants import TipoLiquidacion
 # ── Taludes-specific Tarifa Fixtures ─────────────────────────────────────────────────
 
 @pytest.fixture
-def tarifa_liquidacion_base_taludes(db):
+def tarifa_liquidacion_base_taludes(db, tipo_taludes):
     """Create a TarifaLiquidacionBase for Taludes."""
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
         TarifaLiquidacionBase,
     )
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.TALUDES,
+        tipo_liquidacion=tipo_taludes,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -78,6 +79,7 @@ def liquidacion_taludes_created(
     uit_vigente,
     tarifa_porcentaje_obra_taludes,
     especialidad_taludes,
+    tipo_taludes,
 ):
     """
     Create a persisted LiquidacionGeneral + LiquidacionTaludes + LiquidacionPorcentajeObra
@@ -97,7 +99,7 @@ def liquidacion_taludes_created(
         expediente="EXP-TALUDES-2024-001",
         observacion="Test liquidation",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.TALUDES,
+        tipo_liquidacion=tipo_taludes,
         numero_revision=1,
         sub_total=Decimal("1000.00"),
         total=Decimal("1180.00"),

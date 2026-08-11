@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { LiquidacionTaludesCard } from "../components/cards/LiquidacionTaludesCard";
+import { TaludesFormModal } from "../components/forms/TaludesFormModal";
 import { useLiquidacionesTaludes } from "../hooks";
 import type { LiquidacionTaludesListItem } from "../schemas/liquidacion-taludes.schema";
 
@@ -20,6 +21,7 @@ const KIND_ICON: LucideIcon = Mountain;
 
 export function LiquidacionesTaludesView() {
   const [searchInput, setSearchInput] = useState("");
+  const [formModalOpen, setFormModalOpen] = useState(false);
 
   const {
     items,
@@ -30,6 +32,7 @@ export function LiquidacionesTaludesView() {
     isLoading,
     isError,
     setPage,
+    refetch,
   } = useLiquidacionesTaludes();
 
   const filteredItems = items.filter((item) =>
@@ -52,7 +55,10 @@ export function LiquidacionesTaludesView() {
           description="Listado de liquidaciones de Taludes"
           icon={KIND_ICON}
           actionNodes={
-            <Button className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0">
+            <Button
+              className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+              onClick={() => setFormModalOpen(true)}
+            >
               <Plus className="h-4 w-4" />
               Nueva Liquidación
             </Button>
@@ -117,6 +123,15 @@ export function LiquidacionesTaludesView() {
           )}
         </div>
       </div>
+
+      <TaludesFormModal
+        open={formModalOpen}
+        onOpenChange={setFormModalOpen}
+        onSuccess={() => {
+          setFormModalOpen(false);
+          refetch();
+        }}
+      />
     </div>
   );
 }

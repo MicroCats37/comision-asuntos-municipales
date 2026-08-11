@@ -3,10 +3,10 @@
  * Usa useApiQuery genérico del proyecto.
  * Endpoint: GET /delegados/
  */
-import { useState } from "react";
+import { usePagination } from "@/hooks/system/usePagination";
 import { useApiQuery } from "@/hooks";
 import {
-  delegadosListPayloadSchema,
+  delegadosListResponseSchema,
   type DelegadoOut,
 } from "../types/delegados.types";
 
@@ -17,48 +17,41 @@ interface UseDelegadosProps {
 
 const BASE_URL = "/delegados";
 
-export function useDelegados({
-  page = 1,
-  pageSize = 10,
-}: UseDelegadosProps = {}) {
-  const [currentPage, setCurrentPage] = useState(page);
-  const [currentPageSize, setCurrentPageSize] = useState(pageSize);
-
-  const params: Record<string, string | number> = {
-    page: currentPage,
-    page_size: currentPageSize,
-  };
+export function useDelegados(props: UseDelegadosProps = {}) {
+  const { page, pageSize, onPageChange, onPageSizeChange, paginationParams } = usePagination({
+    initialPage: props.page ?? 1,
+    initialPageSize: props.pageSize ?? 10,
+  });
 
   const query = useApiQuery({
-    queryKey: ["delegados", currentPage, currentPageSize],
+    queryKey: ["delegados", page, pageSize],
     url: BASE_URL,
-    schema: delegadosListPayloadSchema,
-    params,
+    schema: delegadosListResponseSchema,
+    params: paginationParams,
     queryOptions: {
       select: (data) => {
-        if (!data) {
+        if (!data?.data) {
           return {
             items: [] as DelegadoOut[],
             total: 0,
-            page: currentPage,
-            page_size: currentPageSize,
+            page: 1,
+            page_size: pageSize,
             total_pages: 1,
           };
         }
-        return data;
+        return data.data;
       },
     },
   });
 
   return {
     ...query,
-    data: query.data,
     items: query.data?.items ?? ([] as DelegadoOut[]),
     total: query.data?.total ?? 0,
-    page: query.data?.page ?? currentPage,
-    pageSize: query.data?.page_size ?? currentPageSize,
+    page: query.data?.page ?? page,
+    pageSize: query.data?.page_size ?? pageSize,
     totalPages: query.data?.total_pages ?? 1,
-    setPage: setCurrentPage,
-    setPageSize: setCurrentPageSize,
+    setPage: onPageChange,
+    setPageSize: onPageSizeChange,
   };
 }

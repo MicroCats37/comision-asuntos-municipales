@@ -34,7 +34,7 @@ class LiquidacionPorMetroCuadradoCoreService:
         """
         return (
             TarifaLiquidacionBase.objects.vigentes()
-            .filter(tipo_liquidacion=tipo_liquidacion)
+            .filter(tipo_liquidacion__codigo=tipo_liquidacion)
             .select_related("detalle_m2", "detalle_visitas")
             .first()
         )
@@ -48,7 +48,7 @@ class LiquidacionPorMetroCuadradoCoreService:
         """
         return (
             TarifaPorMetroCuadradoModel.objects.select_related("tarifa_base")
-            .filter(tarifa_base__tipo_liquidacion=tipo_liquidacion)
+            .filter(tarifa_base__tipo_liquidacion__codigo=tipo_liquidacion)
             .filter(tarifa_base__periodo_fin__isnull=True)
             .order_by("-tarifa_base__periodo_inicio")
             .first()

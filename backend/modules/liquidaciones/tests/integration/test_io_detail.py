@@ -37,6 +37,7 @@ def liquidacion_io_detail(
     igv_vigente,
     uit_vigente,
     tarifa_visitas_io,
+    tipo_inspeccion_obra,
 ):
     """
     Create a persisted LiquidacionGeneral + LiquidacionInspeccionObra + LiquidacionPorCategoriaVisitas
@@ -52,7 +53,7 @@ def liquidacion_io_detail(
         expediente="EXP-IO-DETAIL-001",
         observacion="Test liquidation IO for detail",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.INSPECCION_OBRA,
+        tipo_liquidacion=tipo_inspeccion_obra,
         numero_revision=1,
         sub_total=Decimal("772.50"),
         total=Decimal("911.55"),
@@ -213,6 +214,7 @@ def test_detail_endpoint_returns_404_for_wrong_type_liquidacion(
     municipalidad,
     proyecto,
     create_user,
+    tipo_habilitacion_urbana,
 ):
     """
     GET /liquidaciones/inspeccion-obra/{id_of_different_type} returns 404.
@@ -220,9 +222,9 @@ def test_detail_endpoint_returns_404_for_wrong_type_liquidacion(
     verifies that requesting it via the IO endpoint returns 404.
     """
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
-    from modules.liquidaciones.domain.constants import TipoLiquidacion
-
+    
     user = create_user
+    
 
     # Create HU liquidacion
     hu_lg = LiquidacionGeneral.objects.create(
@@ -231,7 +233,7 @@ def test_detail_endpoint_returns_404_for_wrong_type_liquidacion(
         usuario_creador=user,
         expediente="EXP-HU-001",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         numero_revision=1,
         sub_total=Decimal("500.00"),
         total=Decimal("590.00"),

@@ -75,9 +75,10 @@ def municipalidad(db, ubigeo_distrito):
 
 
 @pytest.fixture
-def tarifa_liquidacion_base_io(db):
+def tarifa_liquidacion_base_io(db, tipo_inspeccion_obra):
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.INSPECCION_OBRA,
+        tipo_liquidacion=tipo_inspeccion_obra,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )

@@ -46,7 +46,7 @@ class LiquidacionPorcentajeObraCoreService:
         if not payload_tarifas_ids:
             # Auto-fill mode: get all vigentes for the specified tipo_liquidacion
             bases = TarifaLiquidacionBase.objects.vigentes().filter(
-                tipo_liquidacion=tipo_liquidacion
+                tipo_liquidacion__codigo=tipo_liquidacion
             )
             return list(
                 TarifaPorcentajeObra.objects.filter(
@@ -73,7 +73,7 @@ class LiquidacionPorcentajeObraCoreService:
             tipo_liquidacion: The liquidacion type (e.g., TipoLiquidacion.EDIFICACION).
         """
         bases = TarifaLiquidacionBase.objects.vigentes().filter(
-            tipo_liquidacion=tipo_liquidacion
+            tipo_liquidacion__codigo=tipo_liquidacion
         )
         return list(
             TarifaPorcentajeObra.objects.filter(

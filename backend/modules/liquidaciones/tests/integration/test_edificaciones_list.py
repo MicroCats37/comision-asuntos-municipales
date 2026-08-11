@@ -39,6 +39,7 @@ def liquidacion_edificacion_created(
     uit_vigente,
     tarifa_porcentaje_obra_estructuras,
     especialidad_estructuras,
+    tipo_edificacion,
 ):
     """
     Create a persisted LiquidacionGeneral + LiquidacionEdificacion + LiquidacionPorcentajeObra
@@ -58,7 +59,7 @@ def liquidacion_edificacion_created(
         expediente="EXP-EDIF-2024-001",
         observacion="Test liquidation",
         estado="PENDIENTE",
-        tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+        tipo_liquidacion=tipo_edificacion,
         numero_revision=1,
         sub_total=Decimal("1000.00"),
         total=Decimal("1180.00"),

@@ -94,10 +94,11 @@ def municipalidad(db, ubigeo_distrito):
 
 
 @pytest.fixture
-def tarifa_liquidacion_base_edificacion(db):
+def tarifa_liquidacion_base_edificacion(db, tipo_edificacion):
     """Create a TarifaLiquidacionBase for Edificaciones."""
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+        tipo_liquidacion=tipo_edificacion,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -505,7 +506,8 @@ def test_invalid_tarifa_id_returns_400(
 @pytest.mark.django_db
 def test_tarifa_wrong_type_returns_400(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    tarifa_liquidacion_base_edificacion, valid_municipalidad_id, valid_distrito_id
+    tarifa_liquidacion_base_edificacion, valid_municipalidad_id, valid_distrito_id,
+    tipo_habilitacion_urbana
 ):
     """
     Validation: HU tarifa sent → HttpError 400 'no es de edificaciones'.
@@ -516,8 +518,9 @@ def test_tarifa_wrong_type_returns_400(
     # Create a HU tariff
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import TarifaPorMetroCuadrado
 
+    
     hu_tarifa_base = TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -565,7 +568,8 @@ def test_tarifa_wrong_type_returns_400(
 @pytest.mark.django_db
 def test_tarifa_not_vigente_returns_400(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    especialidad_estructuras, valid_municipalidad_id, valid_distrito_id
+    especialidad_estructuras, valid_municipalidad_id, valid_distrito_id,
+    tipo_edificacion
 ):
     """
     Validation: expired tarifa → HttpError 400 'no está vigente'.
@@ -574,8 +578,9 @@ def test_tarifa_not_vigente_returns_400(
     HttpError 400 with message 'no está vigente'.
     """
     # Create an expired tariff
+    
     expired_tarifa_base = TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+        tipo_liquidacion=tipo_edificacion,
         periodo_inicio=date(2023, 1, 1),
         periodo_fin=date(2023, 12, 31),  # Expired
     )

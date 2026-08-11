@@ -71,7 +71,7 @@ class LiquidacionImpactoVialOrchestrator:
         )
         if not is_vigente:
             raise HttpError(400, f"Tarifa {tarifa.id} no está vigente")
-        if tarifa.tarifa_base.tipo_liquidacion != TipoLiquidacion.IMPACTO_VIAL:
+        if tarifa.tarifa_base.tipo_liquidacion.codigo != TipoLiquidacion.IMPACTO_VIAL:
             raise HttpError(400, f"Tarifa {tarifa.id} no es de impacto vial")
 
     @inject

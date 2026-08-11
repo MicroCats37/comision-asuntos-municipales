@@ -20,10 +20,11 @@ from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
 @pytest.fixture
-def tarifa_liquidacion_base_ms(db):
+def tarifa_liquidacion_base_ms(db, tipo_mecanica_suelos):
     """Create a TarifaLiquidacionBase for Mecánica de Suelos."""
+    
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
+        tipo_liquidacion=tipo_mecanica_suelos,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -92,15 +93,16 @@ def test_ms_tarifas_vigentes_exitoso(api_client, tarifa_m2_ms, derecho_m2_vigent
 
 
 @pytest.mark.django_db
-def test_ms_tarifas_vigentes_filtro_tipo(api_client, db):
+def test_ms_tarifas_vigentes_filtro_tipo(api_client, db, tipo_habilitacion_urbana, tipo_mecanica_suelos):
     """
     Verify that /tarifas/vigentes for MS only returns MS tariffs, not HU tariffs.
 
     Creates a HU tariff and verifies MS endpoint doesn't return it.
     """
     # Create HU tariff
+    
     hu_tarifa_base = TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -110,8 +112,9 @@ def test_ms_tarifas_vigentes_filtro_tipo(api_client, db):
     )
 
     # Create MS tariff
+    
     ms_tarifa_base = TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
+        tipo_liquidacion=tipo_mecanica_suelos,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )

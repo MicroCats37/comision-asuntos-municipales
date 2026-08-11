@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { LiquidacionMecanicaSuelosCard } from "../components/cards/LiquidacionMecanicaSuelosCard";
+import { MecanicaSuelosFormModal } from "../components/forms/MecanicaSuelosFormModal";
 import { useLiquidacionesMecanicaSuelos } from "../hooks";
 import type { LiquidacionMecanicaSuelosListItem } from "../schemas/liquidacion-mecanica-suelos.schema";
 
@@ -20,6 +21,7 @@ const KIND_ICON: LucideIcon = AlertTriangle;
 
 export function LiquidacionesMecanicaSuelosView() {
   const [searchInput, setSearchInput] = useState("");
+  const [formModalOpen, setFormModalOpen] = useState(false);
 
   const {
     items,
@@ -30,6 +32,7 @@ export function LiquidacionesMecanicaSuelosView() {
     isLoading,
     isError,
     setPage,
+    refetch,
   } = useLiquidacionesMecanicaSuelos();
 
   const filteredItems = items.filter((item) =>
@@ -52,7 +55,10 @@ export function LiquidacionesMecanicaSuelosView() {
           description="Listado de liquidaciones de Mecánica de Suelos"
           icon={KIND_ICON}
           actionNodes={
-            <Button className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0">
+            <Button
+              className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+              onClick={() => setFormModalOpen(true)}
+            >
               <Plus className="h-4 w-4" />
               Nueva Liquidación
             </Button>
@@ -117,6 +123,15 @@ export function LiquidacionesMecanicaSuelosView() {
           )}
         </div>
       </div>
+
+      <MecanicaSuelosFormModal
+        open={formModalOpen}
+        onOpenChange={setFormModalOpen}
+        onSuccess={() => {
+          setFormModalOpen(false);
+          refetch();
+        }}
+      />
     </div>
   );
 }
