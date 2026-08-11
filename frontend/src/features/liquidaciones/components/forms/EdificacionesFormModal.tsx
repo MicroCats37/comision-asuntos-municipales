@@ -27,7 +27,7 @@ import {
 } from "../../schemas/liquidacion-edificaciones-form.schema";
 import { CotizacionPorcentajeSmartField } from "./CotizacionPorcentajeSmartField";
 import { Building2, FileText, MapPin, User } from "lucide-react";
-import { TarifasPorcentajePrimeraRevisionSmartField } from "./TarifasPorcentajePrimeraRevisionSmartField";
+import { PrimeraRevisionTarifasSmartField } from "./PrimeraRevisionTarifasSmartField";
 import { EntidadLookupField } from "./EntidadLookupSmartField";
 
 interface EdificacionesFormModalProps {
@@ -84,7 +84,7 @@ export function EdificacionesFormModal({
 // ── Smart Inputs (useController pattern) ─────────────────────────────────
 
 function ExpedienteField({ control }: { control: Control<EdificacionesFormData> }) {
-  const { field, fieldState } = useController({ name: "expediente", control });
+  const { field, fieldState } = useController({ name: "expediente", control, defaultValue: "" });
   return (
     <div className="space-y-2">
       <Label htmlFor="expediente">
@@ -125,7 +125,7 @@ function MunicipalidadField({ register, control, errors }: { register: UseFormRe
 }
 
 function ObservacionField({ control }: { control: Control<EdificacionesFormData> }) {
-  const { field } = useController({ name: "observacion", control });
+  const { field } = useController({ name: "observacion", control, defaultValue: "" });
   return (
     <div className="space-y-2">
       <Label htmlFor="observacion">Observación</Label>
@@ -135,7 +135,7 @@ function ObservacionField({ control }: { control: Control<EdificacionesFormData>
 }
 
 function DenominacionField({ control }: { control: Control<EdificacionesFormData> }) {
-  const { field, fieldState } = useController({ name: "denominacion", control });
+  const { field, fieldState } = useController({ name: "denominacion", control, defaultValue: "" });
   return (
     <div className="space-y-2">
       <Label htmlFor="denominacion">Denominación <span className="text-destructive">*</span></Label>
@@ -149,7 +149,7 @@ function DenominacionField({ control }: { control: Control<EdificacionesFormData
 }
 
 function NombrePropietarioField({ control }: { control: Control<EdificacionesFormData> }) {
-  const { field, fieldState } = useController({ name: "nombre_propietario", control });
+  const { field, fieldState } = useController({ name: "nombre_propietario", control, defaultValue: "" });
   return (
     <div className="space-y-2">
       <Label htmlFor="nombre_propietario">Propietario <span className="text-destructive">*</span></Label>
@@ -164,7 +164,7 @@ function NombrePropietarioField({ control }: { control: Control<EdificacionesFor
 
 /** Versión compacta para usar como razonSocialSideSlot dentro de EntidadLookupField */
 function NombrePropietarioInline({ control }: { control: Control<EdificacionesFormData> }) {
-  const { field } = useController({ name: "nombre_propietario", control });
+  const { field } = useController({ name: "nombre_propietario", control, defaultValue: "" });
   return (
     <div className="space-y-2">
       <Label htmlFor="nombre_propietario">Propietario <span className="text-destructive">*</span></Label>
@@ -174,7 +174,7 @@ function NombrePropietarioInline({ control }: { control: Control<EdificacionesFo
 }
 
 function DireccionField({ control }: { control: Control<EdificacionesFormData> }) {
-  const { field, fieldState } = useController({ name: "direccion", control });
+  const { field, fieldState } = useController({ name: "direccion", control, defaultValue: "" });
   return (
     <div className="space-y-2">
       <Label htmlFor="direccion">Dirección <span className="text-destructive">*</span></Label>
@@ -252,7 +252,7 @@ function EdificacionesFormBody({ control, isSubmitting, methods }: Edificaciones
         </div>
 
         {/* Tarifas */}
-        <TarifasPorcentajePrimeraRevisionSmartField methods={methods} />
+        <PrimeraRevisionTarifasSmartField methods={methods} tipo="edificaciones" />
 
         {/* Cotización */}
         <CotizacionPorcentajeSmartField methods={methods} />

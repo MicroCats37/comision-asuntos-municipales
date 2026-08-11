@@ -14,7 +14,7 @@ import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import type { UseFormReturn } from "react-hook-form";
 import { useWatch } from "react-hook-form";
-import { Calculator, CheckCircle2, Loader2 } from "lucide-react";
+import { Calculator, Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import api from "@/lib/api";
 import type { EdificacionesFormData } from "../../schemas/liquidacion-edificaciones-form.schema";
@@ -45,13 +45,20 @@ interface CotizacionPorcentajeSmartFieldProps {
   methods: UseFormReturn<any>;
 }
 
-const formatSoles = (value: number): string => `S/ ${value.toFixed(2)}`;
+// Backend serializes Decimal as strings — coerce to Number defensively
+const toNumber = (value: unknown): number => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const formatSoles = (value: unknown): string => `S/ ${toNumber(value).toFixed(2)}`;
 
 export function CotizacionPorcentajeSmartField({
   methods,
 }: CotizacionPorcentajeSmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const lastPayloadRef = useRef<string>("");
 
   const cotizacionMutation = useMutation({
     mutationFn: async (payload: {
@@ -71,14 +78,6 @@ export function CotizacionPorcentajeSmartField({
       );
       return data.data;
     },
-    onSuccess: (result) => {
-      setQuote(result);
-      setError(null);
-    },
-    onError: (err) => {
-      setQuote(null);
-      setError(err instanceof Error ? err.message : "Error al calcular cotización");
-    },
   });
 
   // Auto-recalculate when valor_declarado changes (debounced). Empty tarifas = backend auto-fill.
@@ -96,11 +95,34 @@ export function CotizacionPorcentajeSmartField({
     }
 
     const ids = (tarifasIds || []) as string[];
+    const payloadKey = JSON.stringify({ v, ids });
 
-    cotizacionMutation.mutate({
-      valor_declarado: v,
-      tarifas_ids: ids,
-    });
+    // Skip if the same payload is already being processed
+    if (lastPayloadRef.current === payloadKey) return;
+    lastPayloadRef.current = payloadKey;
+
+    let cancelled = false;
+    // Clear previous quote immediately so stale value doesn't linger
+    setQuote(null);
+    setError(null);
+
+    cotizacionMutation
+      .mutateAsync({ valor_declarado: v, tarifas_ids: ids })
+      .then((result) => {
+        if (!cancelled) {
+          setQuote(result);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setQuote(null);
+          setError(err instanceof Error ? err.message : "Error al calcular cotización");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedValor, tarifasIds]);
 
@@ -115,6 +137,10 @@ export function CotizacionPorcentajeSmartField({
         </h3>
         {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
       </div>
+
+      {error && (
+        <p className="text-xs text-destructive">{error}</p>
+      )}
 
       {isLoading && !quote && (
         <p className="text-xs text-muted-foreground animate-pulse">Calculando cotización...</p>

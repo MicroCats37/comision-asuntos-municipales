@@ -26,6 +26,7 @@ from modules.liquidaciones.domain.schemas.liquidacion_general.liquidacion_genera
     EntidadData,
     LiquidacionGeneralData,
     ProyectoData,
+    ContactoData,
 )
 from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_porcentaje_data import (
     DatosPorcentajeObra,
@@ -160,6 +161,19 @@ class LiquidacionEdificacionesOrchestrator:
                         tipo_documento=payload_in.liquidacion_general.proyecto.entidad.tipo_documento,
                         numero_documento=payload_in.liquidacion_general.proyecto.entidad.numero_documento,
                     ),
+                ),
+                contacto=(
+                    ContactoData(
+                        nombres=payload_in.liquidacion_general.contacto.nombres,
+                        apellidos=payload_in.liquidacion_general.contacto.apellidos,
+                        dni=payload_in.liquidacion_general.contacto.dni,
+                        cargo=payload_in.liquidacion_general.contacto.cargo,
+                        telefono=payload_in.liquidacion_general.contacto.telefono,
+                        celular=payload_in.liquidacion_general.contacto.celular,
+                        email=payload_in.liquidacion_general.contacto.email,
+                    )
+                    if payload_in.liquidacion_general.contacto
+                    else None
                 ),
                 # FUTURE: when tipo_tramite is added, pass payload_in.tipo_tramite here
             ),

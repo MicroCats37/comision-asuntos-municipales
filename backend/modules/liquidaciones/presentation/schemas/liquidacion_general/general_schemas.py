@@ -27,6 +27,28 @@ class ProyectoOutput(BaseSchema):
     distrito_id: uuid.UUID = Field(..., description="ID del distrito")
     entidad: EntidadInlineSchema = Field(..., description="Entidad propietaria")
 
+# --- Contacto (In/Out) ---
+class ContactoInlineSchema(BaseSchema):
+    """Contacto principal de la liquidación — se crea inline como el proyecto."""
+    nombres: str = Field(..., description="Nombres del contacto")
+    apellidos: Optional[str] = Field(None, description="Apellidos del contacto")
+    dni: Optional[str] = Field(None, description="DNI del contacto")
+    cargo: Optional[str] = Field(None, description="Cargo del contacto")
+    telefono: Optional[str] = Field(None, description="Teléfono del contacto")
+    celular: Optional[str] = Field(None, description="Celular del contacto")
+    email: Optional[str] = Field(None, description="Email del contacto")
+
+class ContactoOutput(BaseSchema):
+    """Contacto principal anidado en la respuesta."""
+    id: uuid.UUID = Field(..., description="ID del contacto")
+    nombres: Optional[str] = Field(None, description="Nombres del contacto")
+    apellidos: Optional[str] = Field(None, description="Apellidos del contacto")
+    dni: Optional[str] = Field(None, description="DNI del contacto")
+    cargo: Optional[str] = Field(None, description="Cargo del contacto")
+    telefono: Optional[str] = Field(None, description="Teléfono del contacto")
+    celular: Optional[str] = Field(None, description="Celular del contacto")
+    email: Optional[str] = Field(None, description="Email del contacto")
+
 # --- Variables Financieras ---
 class VariablesFinancierasNulasOut(BaseSchema):
     igv: Optional[dict] = Field(None, description="IGV nulo")
@@ -42,6 +64,7 @@ class LiquidacionGeneralRevisionIn(BaseSchema):
     expediente: str = Field(..., description="Número de expediente")
     observacion: Optional[str] = Field(None, description="Observación opcional")
     proyecto: ProyectoCotizarSchema = Field(..., description="Datos del proyecto")
+    contacto: Optional[ContactoInlineSchema] = Field(None, description="Contacto principal (se crea inline)")
 
 class UsuarioCreadorOutput(BaseSchema):
     id: uuid.UUID = Field(..., description="ID del usuario creador")
@@ -59,3 +82,4 @@ class LiquidacionGeneralOutput(BaseSchema):
     igv_id: Optional[uuid.UUID] = Field(None, description="ID del IGV")
     uit_id: Optional[uuid.UUID] = Field(None, description="ID del UIT")
     proyecto: ProyectoOutput = Field(..., description="Datos del proyecto")
+    contacto: Optional[ContactoOutput] = Field(None, description="Contacto principal")

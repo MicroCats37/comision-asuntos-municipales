@@ -23,6 +23,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     UsuarioCreadorOutput,
     ProyectoOutput,
     EntidadInlineSchema,
+    ContactoOutput,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraDatosOut,
@@ -61,6 +62,20 @@ class LiquidacionEdificacionesPresenter:
                     numero_documento=general.proyecto.entidad.numero_documento,
                     razon_social=general.proyecto.entidad.razon_social,
                 ) if general.proyecto.entidad else None,
+            ),
+            contacto=(
+                ContactoOutput(
+                    id=uuid.UUID(general.contacto.id),
+                    nombres=general.contacto.nombres,
+                    apellidos=general.contacto.apellidos,
+                    dni=general.contacto.dni,
+                    cargo=general.contacto.cargo,
+                    telefono=general.contacto.telefono,
+                    celular=general.contacto.celular,
+                    email=general.contacto.email,
+                )
+                if general.contacto
+                else None
             ),
         )
 

@@ -66,6 +66,25 @@ class LiquidacionGeneralCoreService:
             distrito_id=proyecto_data.get("distrito_id"),
         )
 
+    def create_contacto(
+        self,
+        contacto_data: dict,
+    ):
+        """
+        Creates a new Contacto (contacto principal de la liquidación).
+        """
+        from modules.entidades.domain.models.contacto import Contacto
+
+        return Contacto.objects.create(
+            nombres=contacto_data.get("nombres"),
+            apellidos=contacto_data.get("apellidos"),
+            dni=contacto_data.get("dni"),
+            cargo=contacto_data.get("cargo"),
+            telefono=contacto_data.get("telefono"),
+            celular=contacto_data.get("celular"),
+            email=contacto_data.get("email"),
+        )
+
     def create_liquidacion_general(
         self,
         municipalidad_id: str,
@@ -74,6 +93,7 @@ class LiquidacionGeneralCoreService:
         proyecto: Proyecto,
         tipo_liquidacion: str,
         numero_revision: int = 1,
+        contacto=None,
     ) -> LiquidacionGeneral:
         """
         Creates a LiquidacionGeneral base record.
@@ -93,6 +113,7 @@ class LiquidacionGeneralCoreService:
             numero_revision=numero_revision,
             sub_total=Decimal("0"),
             total=Decimal("0"),
+            contacto=contacto,
         )
 
     def list_liquidaciones_by_type_paginated(

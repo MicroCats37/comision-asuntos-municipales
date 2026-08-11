@@ -83,21 +83,24 @@ export function EntidadLookupField({
   const tipoDocCtrl = useController({
     name: fn.tipoDocumento,
     control,
+    defaultValue: "DNI",
     rules: { required: "Tipo de documento es requerido" },
   });
   const numDocCtrl = useController({
     name: fn.numeroDocumento,
     control,
+    defaultValue: "",
     rules: { required: "Número de documento es requerido" },
   });
   const razonSocialCtrl = useController({
     name: fn.razonSocial,
     control,
+    defaultValue: "",
     rules: { required: "Razón social o nombre completo es requerido" },
   });
   // Optional: sync nombre_propietario with razon_social when lookup succeeds
   const nombrePropietarioCtrl = fn.nombrePropietario
-    ? useController({ name: fn.nombrePropietario, control })
+    ? useController({ name: fn.nombrePropietario, control, defaultValue: "" })
     : null;
 
   // ── Sync flag: prevents circular RHF ↔ lookupState updates ───────────────

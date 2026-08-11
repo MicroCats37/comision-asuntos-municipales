@@ -949,3 +949,65 @@ def test_snapshot_igv_uit_assigned(
         uit_uuid = uuid.UUID(str(lg["uit_id"]))
         assert isinstance(uit_uuid, uuid.UUID), \
             f"uit_id should be a valid UUID, got {lg['uit_id']}"
+
+@pytest.mark.django_db
+def test_crear_liquidacion_con_contacto_inline(
+    auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
+    tarifa_porcentaje_obra_estructuras, valid_municipalidad_id, valid_distrito_id,
+):
+    """Crea una liquidacion con contacto inline y verifica que el output lo incluya anidado."""
+    payload = {
+        "liquidacion_general": {
+            "municipalidad_id": valid_municipalidad_id,
+            "expediente": "EXP-CONTACTO-001",
+            "observacion": "Test contacto inline",
+            "proyecto": {
+                "denominacion": "Proyecto Contacto Test",
+                "nombre_propietario": "Propietario Test",
+                "direccion": "Av. Test 123",
+                "distrito_id": valid_distrito_id,
+                "entidad": {
+                    "tipo_documento": "DNI",
+                    "numero_documento": "12345678",
+                    "razon_social": "Propietario Test",
+                },
+            },
+            "contacto": {
+                "nombres": "MARIA CONTACTO",
+                "apellidos": "GARCIA PEREZ",
+                "dni": "87654321",
+                "cargo": "PROPIETARIA",
+                "celular": "999888777",
+            },
+        },
+        "liquidacion_especifica": {
+            "datos": {"valor_declarado": 100000.00},
+            "tarifas": [],
+        },
+    }
+    response = auth_client.post("/liquidaciones/edificaciones/nueva-liquidacion/primera-revision", json=payload)
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+    data = response.json()["data"]
+    lg = data["liquidacion_general"]
+
+    assert lg["contacto"] is not None, "El output debe incluir contacto anidado"
+    assert lg["contacto"]["nombres"] == "MARIA CONTACTO"
+    assert lg["contacto"]["apellidos"] == "GARCIA PEREZ"
+    assert lg["contacto"]["dni"] == "87654321"
+    assert lg["contacto"]["cargo"] == "PROPIETARIA"
+
+
+@pytest.mark.django_db
+def test_crear_liquidacion_sin_contacto(
+    auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
+    tarifa_porcentaje_obra_estructuras, valid_payload_auto_fill,
+):
+    """Sin contacto en el input, el output debe traer contacto=None."""
+    response = auth_client.post("/liquidaciones/edificaciones/nueva-liquidacion/primera-revision", json=valid_payload_auto_fill)
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+    data = response.json()["data"]
+    lg = data["liquidacion_general"]
+
+    assert lg["contacto"] is None, "Sin contacto en input, output debe ser None"

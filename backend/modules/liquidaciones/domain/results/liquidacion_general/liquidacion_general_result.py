@@ -21,6 +21,17 @@ class UsuarioCreadorResult(BaseModel):
     id: str
 
 
+class ContactoResult(BaseModel):
+    id: str
+    nombres: Optional[str] = None
+    apellidos: Optional[str] = None
+    dni: Optional[str] = None
+    cargo: Optional[str] = None
+    telefono: Optional[str] = None
+    celular: Optional[str] = None
+    email: Optional[str] = None
+
+
 class LiquidacionGeneralResult(BaseModel):
     id: str
     municipalidad_id: str
@@ -34,3 +45,4 @@ class LiquidacionGeneralResult(BaseModel):
     igv_id: Optional[str] = None  # NEW
     uit_id: Optional[str] = None  # NEW
     proyecto: ProyectoResult
+    contacto: Optional[ContactoResult] = None

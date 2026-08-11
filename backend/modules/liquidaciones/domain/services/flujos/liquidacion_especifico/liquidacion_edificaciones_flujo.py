@@ -28,6 +28,7 @@ from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_genera
     ProyectoResult,
     EntidadResult,
     UsuarioCreadorResult,
+    ContactoResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
     LiquidacionPorcentajeObraResult,
@@ -99,16 +100,24 @@ class LiquidacionEdificacionesFlujo:
         }
         proyecto = self.general_core.create_proyecto(proyecto_data, entidad)
         
+        # Paso 2.5: Contacto principal (inline, opcional)
+        contacto = None
+        if gen_data.contacto:
+            contacto = self.general_core.create_contacto(
+                gen_data.contacto.model_dump() if hasattr(gen_data.contacto, "model_dump") else gen_data.contacto.__dict__
+            )
+        
         # Paso 3: LiquidacionGeneral (with totals=0 initially)
         from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
         liquidacion_general = self.general_core.create_liquidacion_general(
-            municipalidad_id=gen_data.municipalidad_id,
-            expediente=gen_data.expediente,
-            observacion=gen_data.observacion,
-            proyecto=proyecto,
-            tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.EDIFICACION),
-            numero_revision=1,
-        )
+              municipalidad_id=gen_data.municipalidad_id,
+              expediente=gen_data.expediente,
+              observacion=gen_data.observacion,
+              proyecto=proyecto,
+              tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.EDIFICACION),
+              numero_revision=1,
+              contacto=contacto,
+          )
         
         # Get IGV/UIT FKs for snapshot
         igv_vigente = self.general_core.get_igv_vigente()
@@ -192,7 +201,22 @@ class LiquidacionEdificacionesFlujo:
             distrito_id=str(proyecto.distrito_id),
             entidad=entidad_result,
         )
-        
+
+        # Build ContactoResult (inline contacto principal, opcional)
+        contacto_result = None
+        if liquidacion_general.contacto:
+            contacto = liquidacion_general.contacto
+            contacto_result = ContactoResult(
+                id=str(contacto.id),
+                nombres=contacto.nombres,
+                apellidos=contacto.apellidos,
+                dni=contacto.dni,
+                cargo=contacto.cargo,
+                telefono=contacto.telefono,
+                celular=contacto.celular,
+                email=contacto.email,
+            )
+
         return EdificacionesPrimeraRevisionResult(
             liquidacion_general=LiquidacionGeneralResult(
                 id=str(liquidacion_general.id),
@@ -207,6 +231,7 @@ class LiquidacionEdificacionesFlujo:
                 igv_id=str(liquidacion_general.igv_id.id) if liquidacion_general.igv_id else None,
                 uit_id=str(liquidacion_general.uit_id.id) if liquidacion_general.uit_id else None,
                 proyecto=proyecto_result,
+                contacto=contacto_result,
             ),
             liquidacion_especifica=LiquidacionEspecificaEdificacionesResult(
                 id=str(edificacion.id),
