@@ -668,6 +668,69 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__derecho_aplicado',
         ).get(id=liquidacion_id)
 
+    def list_ultimas_revisiones_por_proyecto(
+        self,
+        tipo_liquidacion: str,
+        page: int,
+        page_size: int,
+        razon_social=None,
+        numero_documento=None,
+        fecha_desde=None,
+        fecha_hasta=None,
+    ) -> tuple:
+        """
+        Returns paginated LiquidacionGeneral queryset containing only the latest revision
+        per project for the given tipo_liquidacion.
+
+        Applies optional filters and returns only the liquidacion with the highest
+        numero_revision for each proyecto.
+        Uses select_related and prefetch_related like list_liquidaciones_by_type_paginated.
+        Returns (queryset, total_count).
+        """
+        from django.db.models import Max, OuterRef, Subquery
+
+        # Base queryset with same prefetch chain as list_liquidaciones_by_type_paginated
+        qs = LiquidacionGeneral.objects.filter(
+            tipo_liquidacion__codigo=tipo_liquidacion
+        ).select_related(
+            'proyecto',
+            'proyecto__entidad',
+            'municipalidad',
+            'usuario_creador',
+            'tipo_liquidacion',
+        ).prefetch_related(
+            'edificaciones',
+            'liquidacion_porcentaje_obra',
+            'liquidacion_porcentaje_obra__detalles',
+            'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+            'liquidacion_porcentaje_obra__detalles__especialidad',
+            'liquidacion_porcentaje_obra__derecho_aplicado',
+        )
+
+        # Apply filters
+        if razon_social:
+            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
+        if numero_documento:
+            qs = qs.filter(proyecto__entidad_numero_documento=numero_documento)
+        if fecha_desde:
+            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
+
+        # Subquery to get max numero_revision per proyecto
+        max_rev_subquery = LiquidacionGeneral.objects.filter(
+            proyecto_id=OuterRef('proyecto_id'),
+            tipo_liquidacion__codigo=tipo_liquidacion,
+        ).order_by().values('proyecto_id').annotate(
+            max_rev=Max('numero_revision')
+        ).values('max_rev')[:1]
+
+        qs = qs.filter(numero_revision=Subquery(max_rev_subquery))
+
+        total = qs.count()
+        offset = (page - 1) * page_size
+        return qs[offset:offset + page_size], total
+
     def get_ultima_revision_por_proyecto(
         self,
         proyecto_id: uuid.UUID,

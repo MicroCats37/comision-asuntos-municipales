@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { Building2, Filter, Plus, X } from "lucide-react";
+import { Building2, Filter, Plus, RefreshCw, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { Pagination } from "@/components/genericPagination/Pagination";
 import { LiquidacionEdificacionesCard } from "../components/cards/LiquidacionEdificacionesCard";
 import { EdificacionesFormModal } from "../components/forms/EdificacionesFormModal";
 import { LiquidacionFiltroModal } from "../components/forms/LiquidacionFiltroModal";
+import { SeleccionarUltimaRevisionModal } from "../components/forms/SeleccionarUltimaRevisionModal";
+import { NuevaRevisionEdificacionesFormModal } from "../components/forms/NuevaRevisionEdificacionesFormModal";
 import { useLiquidacionesEdificaciones, type LiquidacionFiltros } from "../hooks";
 import type { LiquidacionEdificacionesListItem } from "../schemas/liquidacion-edificaciones.schema";
 
@@ -24,6 +26,9 @@ export function LiquidacionesEdificacionesView() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [filtros, setFiltros] = useState<LiquidacionFiltros>({});
   const [filtroModalOpen, setFiltroModalOpen] = useState(false);
+  const [selectPreviaOpen, setSelectPreviaOpen] = useState(false);
+  const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
+  const [liquidacionPreviaId, setLiquidacionPreviaId] = useState<string | null>(null);
 
   const {
     items,
@@ -61,6 +66,14 @@ export function LiquidacionesEdificacionesView() {
                     {activeFilterCount}
                   </span>
                 )}
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+                onClick={() => setSelectPreviaOpen(true)}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Nueva Revisión
               </Button>
               <Button
                 className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
@@ -194,6 +207,29 @@ export function LiquidacionesEdificacionesView() {
           setFiltros(nuevos);
           setPage(1);
           setFiltroModalOpen(false);
+        }}
+      />
+
+      {/* Seleccionar la liquidación previa (última revisión) */}
+      <SeleccionarUltimaRevisionModal
+        open={selectPreviaOpen}
+        onOpenChange={setSelectPreviaOpen}
+        onSelect={(id) => {
+          setLiquidacionPreviaId(id);
+          setSelectPreviaOpen(false);
+          setNuevaRevisionOpen(true);
+        }}
+      />
+
+      {/* Form liviano de nueva revisión */}
+      <NuevaRevisionEdificacionesFormModal
+        open={nuevaRevisionOpen}
+        onOpenChange={setNuevaRevisionOpen}
+        liquidacionPreviaId={liquidacionPreviaId ?? ""}
+        onSuccess={() => {
+          setNuevaRevisionOpen(false);
+          setLiquidacionPreviaId(null);
+          refetch();
         }}
       />
     </div>

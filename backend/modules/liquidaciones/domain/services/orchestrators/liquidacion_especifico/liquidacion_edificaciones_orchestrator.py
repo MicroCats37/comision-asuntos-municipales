@@ -652,33 +652,40 @@ class LiquidacionEdificacionesOrchestrator:
 
     def obtener_ultima_revision_proceso(
         self,
-        proyecto_id: uuid.UUID,
+        page: int,
+        page_size: int,
         razon_social: str = None,
         numero_documento: str = None,
-    ) -> EdificacionesPrimeraRevisionResult:
+        fecha_desde=None,
+        fecha_hasta=None,
+    ) -> tuple[List[EdificacionesPrimeraRevisionResult], int]:
         """
-        Returns the liquidacion with the highest numero_revision for a proyecto.
-        Optional filters by razon_social and numero_documento of the proyecto's entidad.
+        Returns a paginated list of the latest revision per project for Edificaciones.
+        Applies optional filters and returns only the liquidacion with the highest
+        numero_revision for each proyecto.
+        Returns (List[EdificacionesPrimeraRevisionResult], total_count).
         """
-        # First find the proyecto to validate filters
-        from modules.liquidaciones.domain.models.proyecto import Proyecto
-        try:
-            proyecto = Proyecto.objects.get(id=proyecto_id)
-        except ObjectDoesNotExist:
-            raise HttpError(404, f"Proyecto {proyecto_id} no encontrado")
+        # Pagination boundary defaults
+        if page < 1:
+            page = 1
+        if page_size < 1:
+            page_size = 10
+        if page_size > 100:
+            page_size = 100
 
-        # Apply optional filters
-        if razon_social and razon_social not in (proyecto.entidad_razon_social or ""):
-            raise HttpError(400, "razon_social no coincide con el proyecto")
-        if numero_documento and numero_documento != proyecto.entidad_numero_documento:
-            raise HttpError(400, "numero_documento no coincide con el proyecto")
-
-        # Get ultima revision
-        lg = self.general_core.get_ultima_revision_por_proyecto(
-            proyecto_id=proyecto_id,
+        orm_objects, total = self.general_core.list_ultimas_revisiones_por_proyecto(
             tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+            page=page,
+            page_size=page_size,
+            razon_social=razon_social,
+            numero_documento=numero_documento,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
         )
-        if not lg:
-            raise HttpError(404, f"No se encontró liquidación para el proyecto {proyecto_id}")
 
-        return self._build_edificaciones_result(lg)
+        # Build EdificacionesPrimeraRevisionResult domain DTOs from ORM objects
+        domain_results: List[EdificacionesPrimeraRevisionResult] = []
+        for lg in orm_objects:
+            domain_results.append(self._build_edificaciones_result(lg))
+
+        return domain_results, total

@@ -3,7 +3,13 @@
  * Usa useApiCreate genérico del proyecto.
  *
  * Endpoint: POST /liquidaciones/edificaciones/nueva-revision
- * Payload: { liquidacion_general, liquidacion_especifica, liquidacion_previa_id }
+ * Payload (schema propio reducido):
+ * {
+ *   liquidacion_previa_id: uuid,
+ *   liquidacion_general: { expediente, observacion, retencion, contacto? },
+ *   liquidacion_especifica: { tarifas: [{ tarifa_porcentaje_obra_id }] }
+ * }
+ * Se hereda de la previa: valor_declarado, municipalidad_id, proyecto.
  */
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -35,72 +41,42 @@ export function useCrearNuevaRevisionEdificaciones() {
     },
   });
 
-  // Wrapper that formats payload for the API
+  // Wrapper that formats payload for the API — schema reducido propio
   const crearMutation = useMemo(
     () => ({
       ...mutation,
       mutate: (payload: NuevaRevisionEdificacionesFormData) => {
         const { tarifas_ids, liquidacion_previa_id, ...rest } = payload;
         mutation.mutate({
+          liquidacion_previa_id,
           liquidacion_general: {
-            municipalidad_id: rest.municipalidad_id,
             expediente: rest.expediente,
             observacion: rest.observacion,
             retencion: rest.retencion ?? false,
-            proyecto: {
-              denominacion: rest.denominacion,
-              nombre_propietario: rest.nombre_propietario,
-              direccion: rest.direccion,
-              distrito_id: rest.distrito_id,
-              entidad: {
-                tipo_documento: rest.entidad_tipo_documento,
-                numero_documento: rest.entidad_numero_documento,
-                razon_social: rest.entidad_razon_social,
-              },
-            },
             ...(rest.contacto ? { contacto: rest.contacto } : {}),
           },
           liquidacion_especifica: {
-            datos: {
-              valor_declarado: rest.valor_declarado,
-            },
             tarifas: (tarifas_ids || []).map((id) => ({
               tarifa_porcentaje_obra_id: id,
             })),
           },
-          liquidacion_previa_id,
         });
       },
       mutateAsync: async (payload: NuevaRevisionEdificacionesFormData) => {
         const { tarifas_ids, liquidacion_previa_id, ...rest } = payload;
         return mutation.mutateAsync({
+          liquidacion_previa_id,
           liquidacion_general: {
-            municipalidad_id: rest.municipalidad_id,
             expediente: rest.expediente,
             observacion: rest.observacion,
             retencion: rest.retencion ?? false,
-            proyecto: {
-              denominacion: rest.denominacion,
-              nombre_propietario: rest.nombre_propietario,
-              direccion: rest.direccion,
-              distrito_id: rest.distrito_id,
-              entidad: {
-                tipo_documento: rest.entidad_tipo_documento,
-                numero_documento: rest.entidad_numero_documento,
-                razon_social: rest.entidad_razon_social,
-              },
-            },
             ...(rest.contacto ? { contacto: rest.contacto } : {}),
           },
           liquidacion_especifica: {
-            datos: {
-              valor_declarado: rest.valor_declarado,
-            },
             tarifas: (tarifas_ids || []).map((id) => ({
               tarifa_porcentaje_obra_id: id,
             })),
           },
-          liquidacion_previa_id,
         });
       },
     }),

@@ -158,23 +158,35 @@ class LiquidacionEdificacionesController:
 
     @route.get(
         "/ultima-revision",
-        response={200: ApiResponse[LiquidacionEdificacionesOutput]},
+        response={200: ApiResponse[PaginatedData[LiquidacionEdificacionesOutput]]},
     )
     def obtener_ultima_revision(
         self,
-        proyecto_id: uuid.UUID = Query(..., description="ID del proyecto"),
-        razon_social: str = Query(default=None, description="Razón social de la entidad (opcional)"),
-        numero_documento: str = Query(default=None, description="Número de documento de la entidad (opcional)"),
+        page: int = Query(default=1, ge=1, description="Page number"),
+        page_size: int = Query(default=10, ge=1, le=100, description="Items per page"),
+        razon_social: str = Query(default=None, description="Filter by entidad razon_social (icontains)"),
+        numero_documento: str = Query(default=None, description="Filter by entidad numero_documento"),
+        fecha_desde: date = Query(default=None, description="Filter by fecha_registro >= date"),
+        fecha_hasta: date = Query(default=None, description="Filter by fecha_registro <= date"),
     ):
         """
-        Retorna la liquidación con el mayor numero_revision para un proyecto.
+        Returns a paginated list of the latest revision per project for Edificaciones.
+        Each item is the liquidacion with the highest numero_revision for a proyecto.
         """
-        domain_result = self.orchestrator.obtener_ultima_revision_proceso(
-            proyecto_id=proyecto_id,
+        liquidaciones, total = self.orchestrator.obtener_ultima_revision_proceso(
+            page=page,
+            page_size=page_size,
             razon_social=razon_social,
             numero_documento=numero_documento,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
         )
-        result = self.presenter.present_primera_revision(domain_result)
+        result = self.presenter.present_list(
+            liquidaciones=liquidaciones,
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
         return success_response(result)
 
     @route.post(

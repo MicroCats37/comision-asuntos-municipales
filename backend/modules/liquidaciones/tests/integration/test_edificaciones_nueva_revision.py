@@ -551,14 +551,15 @@ def test_ultima_revision_retorna_mayor_numero(
     assert response_r3.status_code == 200
     revision_3 = response_r3.json()["data"]
 
-    # Get ultima revision
+    # Get ultima revision (array paginado)
     response = auth_client.get(
-        f"/liquidaciones/edificaciones/ultima-revision?proyecto_id={proyecto_id}",
+        "/liquidaciones/edificaciones/ultima-revision",
     )
 
     assert response.status_code == 200, f"Ultima revision failed: {response.content}"
     data = response.json()["data"]
-    assert data["liquidacion_general"]["numero_revision"] == 3
+    assert len(data["items"]) >= 1, "Debe haber al menos una liquidacion"
+    assert data["items"][0]["liquidacion_general"]["numero_revision"] == 3
 
 
 @pytest.mark.django_db
@@ -576,12 +577,13 @@ def test_ultima_revision_con_filtros(
 
     # Get ultima revision with filters
     response = auth_client.get(
-        f"/liquidaciones/edificaciones/ultima-revision?proyecto_id={proyecto_id}&razon_social=Propietario%20Nueva%20Revision%20SAC&numero_documento=20456789020",
+        "/liquidaciones/edificaciones/ultima-revision?razon_social=Propietario%20Nueva%20Revision%20SAC&numero_documento=20456789020",
     )
 
     assert response.status_code == 200, f"Ultima revision with filters failed: {response.content}"
     data = response.json()["data"]
-    assert data["liquidacion_general"]["numero_revision"] == 1
+    assert len(data["items"]) >= 1, "Debe haber al menos una liquidacion"
+    assert data["items"][0]["liquidacion_general"]["numero_revision"] == 1
 
 
 @pytest.mark.django_db
@@ -684,15 +686,16 @@ def test_contacto_upsert_crea_nuevo_si_diferente(
 
 
 @pytest.mark.django_db
-def test_ultima_revision_proyecto_no_existe_devuelve_404(
+def test_ultima_revision_sin_resultados_devuelve_vacio(
     auth_client
 ):
     """
-    GET /ultima-revision with non-existent proyecto returns 404.
+    GET /ultima-revision with a filter that matches nothing returns empty items.
     """
-    fake_proyecto_id = str(uuid.uuid4())
     response = auth_client.get(
-        f"/liquidaciones/edificaciones/ultima-revision?proyecto_id={fake_proyecto_id}",
+        "/liquidaciones/edificaciones/ultima-revision?numero_documento=00000000",
     )
 
-    assert response.status_code == 404, f"Expected 404 for non-existent proyecto, got {response.status_code}"
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+    data = response.json()["data"]
+    assert data["items"] == [], "Debe devolver items vacios"
