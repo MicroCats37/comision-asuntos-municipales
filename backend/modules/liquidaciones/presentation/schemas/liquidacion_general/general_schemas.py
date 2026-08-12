@@ -70,6 +70,13 @@ class ContactoOutput(BaseSchema):
     celular: Optional[str] = Field(None, description="Celular del contacto")
     email: Optional[str] = Field(None, description="Email del contacto")
 
+
+class LiquidacionPreviaOutput(BaseSchema):
+    """Resumen de una liquidación previa del mismo proyecto."""
+    id: uuid.UUID = Field(..., description="ID de la liquidación previa")
+    numero_revision: int = Field(..., description="Número de revisión de la previa")
+    expediente: Optional[str] = Field(None, description="Expediente de la previa")
+
 # --- Variables Financieras ---
 class VariablesFinancierasNulasOut(BaseSchema):
     igv: Optional[dict] = Field(None, description="IGV nulo")
@@ -134,3 +141,4 @@ class LiquidacionGeneralOutput(BaseSchema):
     uit: Optional[UitOutput] = Field(None, description="UIT aplicada")
     proyecto: ProyectoOutput = Field(..., description="Datos del proyecto")
     contacto: Optional[ContactoOutput] = Field(None, description="Contacto principal")
+    revisiones_previas: list[LiquidacionPreviaOutput] = Field(default_factory=list, description="Liquidaciones previas del mismo proyecto")

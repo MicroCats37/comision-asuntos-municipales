@@ -293,9 +293,9 @@ def test_crear_revision_3_desde_revision_1(
 
     data = response.json()["data"]
     assert data["liquidacion_general"]["numero_revision"] == 3
-    assert "revisiones_previas" in data
-    assert len(data["revisiones_previas"]) == 1
-    assert data["revisiones_previas"][0]["numero_revision"] == 1
+    assert "revisiones_previas" in data["liquidacion_general"]
+    assert len(data["liquidacion_general"]["revisiones_previas"]) == 1
+    assert data["liquidacion_general"]["revisiones_previas"][0]["numero_revision"] == 1
 
 
 @pytest.mark.django_db
@@ -401,10 +401,10 @@ def test_crear_revision_5_desde_revision_3(
 
     data = response_r5.json()["data"]
     assert data["liquidacion_general"]["numero_revision"] == 5
-    assert "revisiones_previas" in data
+    assert "revisiones_previas" in data["liquidacion_general"]
     # Should include both revision 1 and revision 3
-    assert len(data["revisiones_previas"]) == 2
-    revisiones_numeros = sorted([rp["numero_revision"] for rp in data["revisiones_previas"]])
+    assert len(data["liquidacion_general"]["revisiones_previas"]) == 2
+    revisiones_numeros = sorted([rp["numero_revision"] for rp in data["liquidacion_general"]["revisiones_previas"]])
     assert revisiones_numeros == [1, 3]
 
 
@@ -595,8 +595,8 @@ def test_primera_revision_revisiones_previas_vacia(
     """
     primera = crear_primera_revision(auth_client, primera_revision_payload)
 
-    assert "revisiones_previas" in primera
-    assert primera["revisiones_previas"] == []
+    assert "revisiones_previas" in primera["liquidacion_general"]
+    assert primera["liquidacion_general"]["revisiones_previas"] == []
 
 
 @pytest.mark.django_db

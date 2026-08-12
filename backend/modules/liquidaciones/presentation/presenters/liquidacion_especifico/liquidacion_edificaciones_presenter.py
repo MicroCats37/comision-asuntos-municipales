@@ -17,7 +17,6 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
     LiquidacionEdificacionesCotizarOutput,
     LiquidacionEdificacionesCotizarDetalleOut,
     LiquidacionTipoOutput,
-    LiquidacionPreviaSummary,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
     LiquidacionGeneralOutput,
@@ -31,6 +30,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     DistritoOutput,
     ProvinciaOutput,
     DepartamentoOutput,
+    LiquidacionPreviaOutput,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraDatosOut,
@@ -136,6 +136,14 @@ class LiquidacionEdificacionesPresenter:
                 if general.contacto
                 else None
             ),
+            revisiones_previas=[
+                LiquidacionPreviaOutput(
+                    id=uuid.UUID(rp.id),
+                    numero_revision=rp.numero_revision,
+                    expediente=rp.expediente,
+                )
+                for rp in (general.revisiones_previas or [])
+            ],
         )
 
         tipo_out = LiquidacionTipoOutput(
@@ -167,20 +175,10 @@ class LiquidacionEdificacionesPresenter:
             ],
         )
 
-        revisiones_previas_out = [
-            LiquidacionPreviaSummary(
-                id=uuid.UUID(rp.id),
-                numero_revision=rp.numero_revision,
-                expediente=rp.expediente,
-            )
-            for rp in domain_result.revisiones_previas
-        ]
-
         return LiquidacionEdificacionesOutput(
             liquidacion_general=general_out,
             liquidacion_especifica=tipo_out,
             liquidacion_tipo=tipo_datos_out,
-            revisiones_previas=revisiones_previas_out,
         )
 
     @staticmethod

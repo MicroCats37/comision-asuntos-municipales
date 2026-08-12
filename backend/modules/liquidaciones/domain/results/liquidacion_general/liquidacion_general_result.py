@@ -63,6 +63,13 @@ class UitResult(BaseModel):
     periodo_inicio: Optional[str] = None
 
 
+class LiquidacionPreviaResult(BaseModel):
+    """Resumen de una liquidación previa del mismo proyecto."""
+    id: str
+    numero_revision: int
+    expediente: Optional[str] = None
+
+
 class ContactoResult(BaseModel):
     id: str
     nombres: Optional[str] = None
@@ -89,3 +96,4 @@ class LiquidacionGeneralResult(BaseModel):
     uit: Optional[UitResult] = None  # NEW
     proyecto: ProyectoResult
     contacto: Optional[ContactoResult] = None
+    revisiones_previas: list[LiquidacionPreviaResult] = []

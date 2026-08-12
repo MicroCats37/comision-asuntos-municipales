@@ -475,6 +475,8 @@ class LiquidacionEdificacionesOrchestrator:
             )
             for lp in lg.liquidaciones_previas.all().order_by('numero_revision')
         ]
+        # También exponer en el LiquidacionGeneralResult (campo general)
+        general_result.revisiones_previas = revisiones_previas
 
         return EdificacionesPrimeraRevisionResult(
             liquidacion_general=general_result,
@@ -560,8 +562,8 @@ class LiquidacionEdificacionesOrchestrator:
         if existente and existente.numero_revision == nueva_revision_numero:
             raise HttpError(400, f"Ya existe una liquidación con revisión {nueva_revision_numero} para este proyecto")
 
-        # Step 7: Validate valor_declarado > 0
-        valor_declarado = payload_in.liquidacion_especifica.datos.valor_declarado
+        # Step 7: valor_declarado se HEREDA de la previa (no viene en el input de nueva revision)
+        valor_declarado = previa.liquidacion_porcentaje_obra.valor_declarado
         if valor_declarado <= 0:
             raise HttpError(400, "valor_declarado debe ser mayor a 0")
 

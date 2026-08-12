@@ -439,6 +439,7 @@ class LiquidacionEdificacionesFlujo:
                 ),
                 proyecto=proyecto_result,
                 contacto=contacto_result,
+                revisiones_previas=revisiones_previas,
             ),
             liquidacion_especifica=LiquidacionEspecificaEdificacionesResult(
                 id=str(edificacion.id),
@@ -481,7 +482,10 @@ class LiquidacionEdificacionesFlujo:
         """Maps ORM objects to domain Result."""
         # Refresh to get calculated fields
         liquidacion_general.refresh_from_db()
-        
+
+        # Primera revisión: no hay previas
+        revisiones_previas = []
+
         # Build EntidadResult
         entidad_result = None
         if hasattr(liquidacion_general, 'proyecto') and liquidacion_general.proyecto:
@@ -596,6 +600,7 @@ class LiquidacionEdificacionesFlujo:
                 ),
                 proyecto=proyecto_result,
                 contacto=contacto_result,
+                revisiones_previas=revisiones_previas,
             ),
             liquidacion_especifica=LiquidacionEspecificaEdificacionesResult(
                 id=str(edificacion.id),

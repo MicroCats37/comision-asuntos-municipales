@@ -7,15 +7,18 @@ Output: 3 wrappers (general + especifica=identidad + tipo=cálculo)
 import uuid
 from decimal import Decimal
 from typing import Optional, List
+from ninja import Field
 from core.types import BaseSchema
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
     LiquidacionGeneralOutput,
     LiquidacionGeneralRevisionIn,
+    ContactoInlineSchema,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraIn,
     LiquidacionPorcentajeObraDatosOut,
     LiquidacionPorcentajeObraDetalleOut,
+    LiquidacionPorcentajeObraTarifaIn,
 )
 
 
@@ -64,26 +67,31 @@ class LiquidacionEdificacionesCotizarDetalleOut(BaseSchema):
     total: Decimal
 
 
-class LiquidacionPreviaSummary(BaseSchema):
-    """Summary of a previous liquidacion for the same proyecto."""
-    id: uuid.UUID
-    numero_revision: int
-    expediente: str
+class LiquidacionGeneralNuevaRevisionIn(BaseSchema):
+    """Input reducido para nueva revisión — solo campos editables (sin municipalidad/proyecto)."""
+    expediente: str = Field(..., description="Número de expediente")
+    observacion: Optional[str] = Field(None, description="Observación opcional")
+    retencion: bool = Field(False, description="Indica si la liquidación tiene retención")
+    contacto: Optional[ContactoInlineSchema] = Field(None, description="Contacto principal (se crea inline)")
+
+
+class LiquidacionEspecificaNuevaRevisionIn(BaseSchema):
+    """Input específico para nueva revisión — solo tarifas (sin datos, se hereda de la previa)."""
+    tarifas: List[LiquidacionPorcentajeObraTarifaIn] = Field(
+        ...,
+        description="Tarifas seleccionadas. NO puede estar vacío y deben estar vigentes.",
+    )
 
 
 class LiquidacionEdificacionesNuevaRevisionInput(BaseSchema):
-    """Input for /nueva-revision endpoint — extends base input with liquidacion_previa_id."""
-    liquidacion_general: LiquidacionGeneralRevisionIn
-    liquidacion_especifica: LiquidacionPorcentajeObraIn
+    """Input para /nueva-revision — schema específico reducido.
+
+    Hereda de la liquidación previa: proyecto, municipalidad, valor_declarado.
+    Solo se editan: expediente, observacion, retencion, contacto y tarifas.
+    """
     liquidacion_previa_id: uuid.UUID
-
-
-class LiquidacionEdificacionesOutput(BaseSchema):
-    """Output: 3 wrappers + revisiones_previas."""
-    liquidacion_general: LiquidacionGeneralOutput
-    liquidacion_especifica: LiquidacionTipoOutput  # identidad
-    liquidacion_tipo: LiquidacionPorcentajeObraDatosOut  # cálculo
-    revisiones_previas: List[LiquidacionPreviaSummary] = []
+    liquidacion_general: LiquidacionGeneralNuevaRevisionIn
+    liquidacion_especifica: LiquidacionEspecificaNuevaRevisionIn
 
 
 class LiquidacionEdificacionesCotizarOutput(BaseSchema):
