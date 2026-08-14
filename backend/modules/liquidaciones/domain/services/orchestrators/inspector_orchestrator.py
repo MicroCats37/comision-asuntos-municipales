@@ -57,21 +57,36 @@ class InspectorOrchestrator:
         )
 
     def _build_inspector_result(self, inspector) -> InspectorResult:
-        """Builds InspectorResult from ORM object."""
+        """Builds InspectorResult from ORM object.
+
+        tipo_liquidacion, numero_registro, telefono, email are now on
+        InspectorTipoLiquidacion (accessed via inspector.tipos_liquidacion).
+        """
+        tipos = list(inspector.tipos_liquidacion.all())
+        primer_tipo = tipos[0] if tipos else None
         return InspectorResult(
             id=str(inspector.id),
-            tipo_liquidacion=inspector.tipo_liquidacion.codigo,
-            numero_registro=inspector.numero_registro,
-            telefono=inspector.telefono,
-            email=inspector.email,
+            tipo_liquidacion=primer_tipo.tipo_liquidacion.codigo if primer_tipo else "",
+            numero_registro=primer_tipo.numero_registro if primer_tipo else "",
+            telefono=primer_tipo.telefono if primer_tipo else None,
+            email=primer_tipo.email if primer_tipo else None,
             perfil_ingeniero=self._build_perfil_ingeniero_result(inspector.perfil_ingeniero),
         )
 
     def _is_vigente(self, periodo, today: date) -> bool:
-        """Check if a InspectorPeriodo is vigente (active on given date)."""
+        """Check if a InspectorAsignacionPeriodo is vigente (active on given date)."""
         return periodo.periodo_inicio <= today and (
             periodo.periodo_fin is None or periodo.periodo_fin >= today
         )
+
+    def _inspector_es_vigente(self, inspector, today: date) -> bool:
+        """An Inspector is vigente if it has at least one InspectorAsignacionPeriodo
+        vigente under any of its InspectorTipoLiquidacion records."""
+        for tipo in inspector.tipos_liquidacion.all():
+            for periodo in tipo.periodos.all():
+                if self._is_vigente(periodo, today):
+                    return True
+        return False
 
     def list_inspectores_proceso(
         self,
@@ -121,10 +136,26 @@ class InspectorOrchestrator:
 
         return InspectorDetailResult(
             id=str(inspector.id),
-            tipo_liquidacion=inspector.tipo_liquidacion.codigo,
-            numero_registro=inspector.numero_registro,
-            telefono=inspector.telefono,
-            email=inspector.email,
+            tipo_liquidacion=(
+                inspector.tipos_liquidacion.all()[0].tipo_liquidacion.codigo
+                if inspector.tipos_liquidacion.exists()
+                else ""
+            ),
+            numero_registro=(
+                inspector.tipos_liquidacion.all()[0].numero_registro
+                if inspector.tipos_liquidacion.exists()
+                else ""
+            ),
+            telefono=(
+                inspector.tipos_liquidacion.all()[0].telefono
+                if inspector.tipos_liquidacion.exists()
+                else None
+            ),
+            email=(
+                inspector.tipos_liquidacion.all()[0].email
+                if inspector.tipos_liquidacion.exists()
+                else None
+            ),
             perfil_ingeniero=self._build_perfil_ingeniero_result(inspector.perfil_ingeniero),
         )
 
@@ -136,7 +167,8 @@ class InspectorOrchestrator:
     ) -> InspectorVigenteListResult:
         """
         Returns paginated list of vigentes Inspectores filtered by tipo_liquidacion.
-        An Inspector is vigente if it has at least one InspectorPeriodo with:
+        An Inspector is vigente if it has at least one InspectorAsignacionPeriodo
+        vigente (under any InspectorTipoLiquidacion) with:
         periodo_inicio <= today AND (periodo_fin IS NULL OR periodo_fin >= today).
         """
         if page < 1:
@@ -157,18 +189,31 @@ class InspectorOrchestrator:
         domain_results: list[InspectorVigenteResult] = []
         for inspector in orm_objects:
             # Check if inspector has any vigente periodo
-            periodos = list(inspector.municipalidades_asignadas.all())
-            es_vigente = any(
-                self._is_vigente(p, today) for p in periodos
-            )
+            es_vigente = self._inspector_es_vigente(inspector, today)
 
             domain_results.append(
                 InspectorVigenteResult(
                     id=str(inspector.id),
-                    tipo_liquidacion=inspector.tipo_liquidacion.codigo,
-                    numero_registro=inspector.numero_registro,
-                    telefono=inspector.telefono,
-                    email=inspector.email,
+                    tipo_liquidacion=(
+                        inspector.tipos_liquidacion.all()[0].tipo_liquidacion.codigo
+                        if inspector.tipos_liquidacion.exists()
+                        else tipo_liquidacion
+                    ),
+                    numero_registro=(
+                        inspector.tipos_liquidacion.all()[0].numero_registro
+                        if inspector.tipos_liquidacion.exists()
+                        else ""
+                    ),
+                    telefono=(
+                        inspector.tipos_liquidacion.all()[0].telefono
+                        if inspector.tipos_liquidacion.exists()
+                        else None
+                    ),
+                    email=(
+                        inspector.tipos_liquidacion.all()[0].email
+                        if inspector.tipos_liquidacion.exists()
+                        else None
+                    ),
                     perfil_ingeniero=self._build_perfil_ingeniero_result(inspector.perfil_ingeniero),
                     es_vigente=es_vigente,
                 )

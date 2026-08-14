@@ -13,9 +13,11 @@ from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_inspeccion_obra_schemas import (
     LiquidacionInspeccionObraInput,
+    LiquidacionInspeccionObraNuevaRevisionInput,
 )
 from modules.liquidaciones.domain.schemas.liquidacion_especifico.inspeccion_obra_primera_revision_data import (
     InspeccionObraPrimeraRevisionData,
+    InspeccionObraNuevaRevisionData,
 )
 from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_visitas_data import (
     LiquidacionCategoriaVisitasData,
@@ -252,22 +254,19 @@ class LiquidacionInspeccionObraOrchestrator:
             DistritoResult,
             ProvinciaResult,
             DepartamentoResult,
+            TipoLiquidacionResult,
         )
         from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_visitas_result import (
             LiquidacionVisitasResult,
         )
 
         proyecto = lg.proyecto
-        entidad = proyecto.entidad if hasattr(proyecto, 'entidad') and proyecto.entidad else None
 
-        if entidad is None:
-            ent_tipo = proyecto.entidad_tipo_documento if hasattr(proyecto, 'entidad_tipo_documento') else None
-            ent_numero = proyecto.entidad_numero_documento if hasattr(proyecto, 'entidad_numero_documento') else None
-            ent_razon = proyecto.entidad_razon_social if hasattr(proyecto, 'entidad_razon_social') else None
-        else:
-            ent_tipo = entidad.tipo_documento
-            ent_numero = entidad.numero_documento
-            ent_razon = entidad.razon_social
+        # La razon social/tipo/numero viven DENORMALIZADOS en Proyecto
+        # (el modelo Entidad no tiene razon_social). Usar siempre los del proyecto.
+        ent_tipo = proyecto.entidad_tipo_documento if hasattr(proyecto, 'entidad_tipo_documento') else None
+        ent_numero = proyecto.entidad_numero_documento if hasattr(proyecto, 'entidad_numero_documento') else None
+        ent_razon = proyecto.entidad_razon_social if hasattr(proyecto, 'entidad_razon_social') else None
 
         # Build distrito objeto (con provincia/departamento)
         distrito_result = None
@@ -348,6 +347,14 @@ class LiquidacionInspeccionObraOrchestrator:
                     razon_social=ent_razon or "",
                 ) if (ent_tipo or ent_numero or ent_razon) else None,
             ),
+            tipo_liquidacion=(
+                TipoLiquidacionResult(
+                    codigo=lg.tipo_liquidacion.codigo,
+                    nombre=lg.tipo_liquidacion.nombre,
+                )
+                if lg.tipo_liquidacion
+                else None
+            ),
         )
 
         io = lg.inspeccion_obra
@@ -381,5 +388,103 @@ class LiquidacionInspeccionObraOrchestrator:
             return self._build_io_result(lg)
         except ObjectDoesNotExist:
             raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")
+
+    def crear_primera_revision_desde_previa_proceso(
+        self,
+        usuario_id: int,
+        payload_in: LiquidacionInspeccionObraNuevaRevisionInput,
+    ) -> InspeccionObraPrimeraRevisionResult:
+        """
+        Crea una IO primera-revision heredando proyecto/municipalidad/entidad
+        de una liquidación previa (Edificación o Habilitación Urbana).
+
+        Validations:
+        - liquidacion_previa_id existe y es EDIFICACION o HABILITACION_URBANA
+        - tariff exists
+        - UIT and IGV are configured
+        """
+        from modules.liquidaciones.domain.models.liquidacion.liquidacion_general import LiquidacionGeneral
+        from modules.liquidaciones.domain.constants import TipoLiquidacion
+
+        # Step 1: Validate liquidacion_previa exists and is EDIFICACION or HABILITACION_URBANA
+        try:
+            previa = LiquidacionGeneral.objects.select_related(
+                'proyecto', 'proyecto__entidad', 'municipalidad', 'tipo_liquidacion'
+            ).get(id=payload_in.liquidacion_previa_id)
+        except ObjectDoesNotExist:
+            raise HttpError(404, f"Liquidación previa {payload_in.liquidacion_previa_id} no encontrada")
+
+        tipo_previo = previa.tipo_liquidacion.codigo
+        if tipo_previo not in (TipoLiquidacion.EDIFICACION, TipoLiquidacion.HABILITACION_URBANA):
+            raise HttpError(
+                400,
+                f"La liquidación previa debe ser Edificación o Habilitación Urbana. "
+                f"Se proporcionó: {tipo_previo}"
+            )
+
+        # Step 2: Pre-validate UIT and IGV
+        uit_vigente = self.general_core.get_uit_vigente()
+        if not uit_vigente:
+            raise HttpError(404, "No hay UIT vigente configurada.")
+
+        igv_vigente = self.general_core.get_igv_vigente()
+        if not igv_vigente:
+            raise HttpError(404, "No hay IGV vigente configurado.")
+
+        # Step 3: Pre-validate tariff
+        tarifa_visitas_id = str(payload_in.liquidacion_especifica.tarifa.tarifa_visitas_id)
+        tarifa = self.visitas_core.get_tarifa_por_id(tarifa_visitas_id)
+        if not tarifa:
+            raise HttpError(404, f"No se encontró tarifa válida para ID {tarifa_visitas_id}")
+
+        # Step 4: Pre-validate inspector exists
+        from modules.liquidaciones.domain.models.inspector import Inspector
+        try:
+            inspector = Inspector.objects.get(id=payload_in.liquidacion_especifica.inspector_id)
+        except ObjectDoesNotExist:
+            raise HttpError(404, f"No se encontró inspector con ID {payload_in.liquidacion_especifica.inspector_id}")
+
+        # Step 5: Build domain data inheriting from previa
+        # Entidad and Proyecto are reused from previa (not created new)
+        gen_data = payload_in.liquidacion_especifica
+        visitas_data = LiquidacionCategoriaVisitasData(
+            datos=DatosVisitas(
+                cantidad_visitas=gen_data.datos.cantidad_visitas,
+                categoria=gen_data.datos.categoria,
+            ),
+            tarifa=TarifaVisitas(
+                tarifa_visitas_id=str(gen_data.tarifa.tarifa_visitas_id)
+            ),
+        )
+
+        domain_data = InspeccionObraNuevaRevisionData(
+            liquidacion_general=LiquidacionGeneralData(
+                municipalidad_id=str(previa.municipalidad_id),
+                expediente=previa.expediente,
+                observacion=previa.observacion,
+                retencion=previa.retencion,
+                proyecto=ProyectoData(
+                    denominacion=previa.proyecto.denominacion,
+                    nombre_propietario=previa.proyecto.nombre_propietario,
+                    direccion=previa.proyecto.direccion,
+                    distrito_id=str(previa.proyecto.distrito_id),
+                    entidad_razon_social=getattr(previa.proyecto, 'entidad_razon_social', None),
+                    entidad=EntidadData(
+                        tipo_documento=getattr(previa.proyecto, 'entidad_tipo_documento', None) or "",
+                        numero_documento=getattr(previa.proyecto, 'entidad_numero_documento', None) or "",
+                    ),
+                ),
+            ),
+            liquidacion_especifica=visitas_data,
+            inspector_id=payload_in.liquidacion_especifica.inspector_id,
+        )
+
+        # Step 6: Execute in flujo
+        return self.flujo.ejecutar_primera_revision_desde_previa(
+            usuario_id=usuario_id,
+            data=domain_data,
+            liquidacion_previa=previa,
+            inspector=inspector,
+        )
 
 

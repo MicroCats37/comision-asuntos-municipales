@@ -20,13 +20,13 @@ from config.api import api
 from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.finanzas.domain.models.impuestos import IGV, UIT
-from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorcentajeObra,
     DerechoPorcentajeObra,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
+from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
@@ -87,10 +87,16 @@ def uit_vigente(db):
 
 
 @pytest.fixture
-def tarifa_liquidacion_base_iv(db):
+def tipo_impacto_vial(db):
+    """Get or create TipoLiquidacion for IMPACTO_VIAL."""
+    return TipoLiquidacionModel.objects.get_or_create(codigo="IMPACTO_VIAL", defaults={"nombre": "Impacto Vial"})[0]
+
+
+@pytest.fixture
+def tarifa_liquidacion_base_iv(db, tipo_impacto_vial):
     """Create a TarifaLiquidacionBase for Impacto Vial."""
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL,
+        tipo_liquidacion=tipo_impacto_vial,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -99,19 +105,19 @@ def tarifa_liquidacion_base_iv(db):
 @pytest.fixture
 def especialidad_iv_transito(db):
     """Create an Especialidad for Impacto Vial testing - Transito."""
-    return Especialidad.objects.create(
+    return Especialidad.objects.get_or_create(
         codigo="T01",
-        nombre="Tránsito",
-    )
+        defaults={"slug": "transito", "nombre": "Tránsito"},
+    )[0]
 
 
 @pytest.fixture
 def especialidad_iv_urbanismo(db):
     """Create an Especialidad for Impacto Vial testing - Urbanismo."""
-    return Especialidad.objects.create(
+    return Especialidad.objects.get_or_create(
         codigo="U01",
-        nombre="Urbanismo",
-    )
+        defaults={"slug": "urbanismo", "nombre": "Urbanismo"},
+    )[0]
 
 
 @pytest.fixture

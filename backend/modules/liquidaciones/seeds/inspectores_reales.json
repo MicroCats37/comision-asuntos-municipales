@@ -1,0 +1,3200 @@
+[
+  {
+    "cip": "008272",
+    "identidad": {
+      "nombres": "MANUEL ANTONIO",
+      "dni": "09152140",
+      "apellido_paterno": "CARRASCO",
+      "apellido_materno": "ANGULO",
+      "correo_personal": "manuelcarrascoangulo@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM82724",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "012203",
+    "identidad": {
+      "nombres": "JUAN RICARDO",
+      "dni": "08203767",
+      "apellido_paterno": "CACERES",
+      "apellido_materno": "TEJADA",
+      "correo_personal": "rictesa@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM122034",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "018356",
+    "identidad": {
+      "nombres": "LUIS ENRIQUE",
+      "dni": "10213043",
+      "apellido_paterno": "LAZO",
+      "apellido_materno": "MAYORCA",
+      "correo_personal": "afrikakorpus@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM183564",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM183564",
+        "categoria": 4,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "022284",
+    "identidad": {
+      "nombres": "JOSE FREDY",
+      "dni": "10558577",
+      "apellido_paterno": "PONCE",
+      "apellido_materno": "CRESPO",
+      "correo_personal": "frejan53@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM222844",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "023335",
+    "identidad": {
+      "nombres": "LUIS ALBERTO",
+      "dni": "06080359",
+      "apellido_paterno": "MORAN",
+      "apellido_materno": "MENESES",
+      "correo_personal": "lmoranm.13@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM233354",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "023555",
+    "identidad": {
+      "nombres": "JESUS GERMAN",
+      "dni": "06633343",
+      "apellido_paterno": "AMEZAGA",
+      "apellido_materno": "QUEVEDO",
+      "correo_personal": "jaqsamex@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM235554",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "024636",
+    "identidad": {
+      "nombres": "RODOLFO ORESTE",
+      "dni": "04434815",
+      "apellido_paterno": "BALDI",
+      "apellido_materno": "BURGA",
+      "correo_personal": "rodolfobaldiburga@yahoo.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM24636",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "024657",
+    "identidad": {
+      "nombres": "BEDER FELIPE",
+      "dni": "06219711",
+      "apellido_paterno": "ULLOA",
+      "apellido_materno": "LLERENA",
+      "correo_personal": "beder_ulloa@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM246573",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "029935",
+    "identidad": {
+      "nombres": "EDDY TEOFILO",
+      "dni": "06087547",
+      "apellido_paterno": "SCIPION",
+      "apellido_materno": "PINELLA",
+      "correo_personal": "eddy_scipion@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM299354",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "030692",
+    "identidad": {
+      "nombres": "GUIDO GUSTAVO",
+      "dni": "07233454",
+      "apellido_paterno": "ROJAS",
+      "apellido_materno": "SALAS",
+      "correo_personal": "guidorojas7@hotmail.com,",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM306924",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "031821",
+    "identidad": {
+      "nombres": "JOSE ALEJANDRO",
+      "dni": "08772765",
+      "apellido_paterno": "PERALTA",
+      "apellido_materno": "GORE",
+      "correo_personal": "aperaltagore@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM318214",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM318214",
+        "categoria": 4,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "032452",
+    "identidad": {
+      "nombres": "JOSE RICARDO",
+      "dni": "21413375",
+      "apellido_paterno": "RAMIREZ",
+      "apellido_materno": "LI",
+      "correo_personal": "ing_jramirez@yahoo.com",
+      "codigo_especialidad": "02",
+      "capitulo": {
+        "registro_id": "05",
+        "abreviacion": "MECANICA",
+        "nombre": "INGENIERIA MECÁNICA Y MECÁNICA ELÉCTRICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM324524",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Mecánica Eléctrica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "037359",
+    "identidad": {
+      "nombres": "JOSE ALEX",
+      "dni": "07952081",
+      "apellido_paterno": "CHAPARRO",
+      "apellido_materno": "MENDEZ",
+      "correo_personal": "jachme284@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM373594",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "038003",
+    "identidad": {
+      "nombres": "JOSE",
+      "dni": "07739198",
+      "apellido_paterno": "MIRANDA",
+      "apellido_materno": "VEGA",
+      "correo_personal": "josemirandavega@hotmail.com",
+      "codigo_especialidad": "04",
+      "capitulo": {
+        "registro_id": "15",
+        "abreviacion": "ELECTRICA",
+        "nombre": "INGENIERIA ELECTRICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM380034",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Eléctrica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "038626",
+    "identidad": {
+      "nombres": "OSCAR DE LOS MILAGROS",
+      "dni": "07851360",
+      "apellido_paterno": "OYOLA",
+      "apellido_materno": "VALLEJOS",
+      "correo_personal": "oscarov50@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM386263",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "038927",
+    "identidad": {
+      "nombres": "RAFAEL GREGORIO",
+      "dni": "07908383",
+      "apellido_paterno": "KOU",
+      "apellido_materno": "JIMENEZ",
+      "correo_personal": "rafaelkou@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM389274",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "040561",
+    "identidad": {
+      "nombres": "ROQUE JESUS LEONARDO",
+      "dni": "10585544",
+      "apellido_paterno": "GARCIA-URRUTIA",
+      "apellido_materno": "OLAVARRIA",
+      "correo_personal": "sup_roque77@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM405614",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "041426",
+    "identidad": {
+      "nombres": "ANA BASILIA",
+      "dni": "07610866",
+      "apellido_paterno": "HURTADO",
+      "apellido_materno": "PANUERA",
+      "correo_personal": "anahurtado192006@gmail.com",
+      "codigo_especialidad": "02",
+      "capitulo": {
+        "registro_id": "05",
+        "abreviacion": "MECANICA",
+        "nombre": "INGENIERIA MECÁNICA Y MECÁNICA ELÉCTRICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM414264",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Mecánica Eléctrica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "041891",
+    "identidad": {
+      "nombres": "JOSE FEDERICO",
+      "dni": "25596975",
+      "apellido_paterno": "NORIEGA",
+      "apellido_materno": "GONZALES",
+      "correo_personal": "jnoriega77@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM418914",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "041955",
+    "identidad": {
+      "nombres": "LUIS ANTONIO",
+      "dni": "06164761",
+      "apellido_paterno": "LAURA",
+      "apellido_materno": "RAMON",
+      "correo_personal": "llauraramon@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM419553",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "042896",
+    "identidad": {
+      "nombres": "JORGE LUIS",
+      "dni": "08569056",
+      "apellido_paterno": "LA CRUZ",
+      "apellido_materno": "AGUIRRE",
+      "correo_personal": "jlacruz2603@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM428964",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "043995",
+    "identidad": {
+      "nombres": "LUIS",
+      "dni": "08351801",
+      "apellido_paterno": "SANCHEZ",
+      "apellido_materno": "SANTUR",
+      "correo_personal": "luisantur@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM439952",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "046017",
+    "identidad": {
+      "nombres": "AUGUSTO LUIS",
+      "dni": "25422737",
+      "apellido_paterno": "IWAMOTO",
+      "apellido_materno": "ITO",
+      "correo_personal": "aiwamoto1@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM460174",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "046025",
+    "identidad": {
+      "nombres": "JAIME ANTONIO",
+      "dni": "09136133",
+      "apellido_paterno": "MELENDEZ",
+      "apellido_materno": "ORBEGOSO",
+      "correo_personal": "melendezorbegoso@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM460253",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "046061",
+    "identidad": {
+      "nombres": "JULIO ENRIQUE",
+      "dni": "15599352",
+      "apellido_paterno": "SHINODA",
+      "apellido_materno": "GANAJA",
+      "correo_personal": "j_shinoda@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM460614",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "046758",
+    "identidad": {
+      "nombres": "GLADYS FILOMENA",
+      "dni": "08314422",
+      "apellido_paterno": "CHAUCA",
+      "apellido_materno": "TORO",
+      "correo_personal": "gladys_chauca@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM467584",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "047691",
+    "identidad": {
+      "nombres": "GONZALO EMILIO",
+      "dni": "07225085",
+      "apellido_paterno": "FERNANDEZ",
+      "apellido_materno": "VALDERRAMA",
+      "correo_personal": "gfernandezval@gmail.com",
+      "codigo_especialidad": "10",
+      "capitulo": {
+        "registro_id": "15",
+        "abreviacion": "ELECTRICA",
+        "nombre": "INGENIERIA ELECTRICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM476914",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Eléctrica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "048549",
+    "identidad": {
+      "nombres": "MANUEL ANTONIO",
+      "dni": "09356332",
+      "apellido_paterno": "MONASTERIO",
+      "apellido_materno": "FLORES",
+      "correo_personal": "manuel_monasterio@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM485494",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "048564",
+    "identidad": {
+      "nombres": "CESAR AUGUSTO",
+      "dni": "09140105",
+      "apellido_paterno": "RUIZ",
+      "apellido_materno": "YNGUNZA",
+      "correo_personal": "cesarruizy@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM485644",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "048988",
+    "identidad": {
+      "nombres": "ENRIQUE ANTONIO",
+      "dni": "08713899",
+      "apellido_paterno": "CHAMOCHUMBI",
+      "apellido_materno": "APONTE",
+      "correo_personal": "enriquechamo64@yahoo.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM489884",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "049991",
+    "identidad": {
+      "nombres": "MOISES VITERBO",
+      "dni": "09016300",
+      "apellido_paterno": "LAZO",
+      "apellido_materno": "MAYORGA",
+      "correo_personal": "ingmlazom@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM499914",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "050194",
+    "identidad": {
+      "nombres": "ALEJANDRO EFRAIN",
+      "dni": "08206626",
+      "apellido_paterno": "PARRAGA",
+      "apellido_materno": "RODRIGUEZ",
+      "correo_personal": "parragaalex59@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM501944",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "051921",
+    "identidad": {
+      "nombres": "JAIME HIPOLITO",
+      "dni": "06154129",
+      "apellido_paterno": "MARTINEZ",
+      "apellido_materno": "CARRASCO",
+      "correo_personal": "jaimemartinezcarrasco@yahoo.es",
+      "codigo_especialidad": "02",
+      "capitulo": {
+        "registro_id": "05",
+        "abreviacion": "MECANICA",
+        "nombre": "INGENIERIA MECÁNICA Y MECÁNICA ELÉCTRICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM519214",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Mecánica Eléctrica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "052516",
+    "identidad": {
+      "nombres": "DANIEL PAUL",
+      "dni": "07265742",
+      "apellido_paterno": "CONTRERAS",
+      "apellido_materno": "OLIVEROS",
+      "correo_personal": "danielco@acbingenieros.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM525164",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "052539",
+    "identidad": {
+      "nombres": "WILMER LUCIANO",
+      "dni": "06655089",
+      "apellido_paterno": "PEÑA",
+      "apellido_materno": "RUESTA",
+      "correo_personal": "wiperu@yahoo.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM525394",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "052557",
+    "identidad": {
+      "nombres": "DORIS YDEMA",
+      "dni": "08540358",
+      "apellido_paterno": "VELAZCO",
+      "apellido_materno": "GONZALES",
+      "correo_personal": "dorisyvg@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM525573",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "053210",
+    "identidad": {
+      "nombres": "HECTOR ERIK",
+      "dni": "25728879",
+      "apellido_paterno": "GANDOLFO",
+      "apellido_materno": "OSAMBELA",
+      "correo_personal": "hector.erik.gandolfo.osambela@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM532103",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "053226",
+    "identidad": {
+      "nombres": "LUIS ANTONIO",
+      "dni": "07326713",
+      "apellido_paterno": "NARVASTA",
+      "apellido_materno": "MENDOZA",
+      "correo_personal": "narmen.ings@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM532264",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "054552",
+    "identidad": {
+      "nombres": "JORGE EMILIO",
+      "dni": "09372476",
+      "apellido_paterno": "ESPIRITU",
+      "apellido_materno": "TAPIA",
+      "correo_personal": "obragolf@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM545524",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "056295",
+    "identidad": {
+      "nombres": "JORGE LUIS",
+      "dni": "08769536",
+      "apellido_paterno": "INFANTAS",
+      "apellido_materno": "LIRA",
+      "correo_personal": "jlinfantas@yahoo.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM562954",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "056604",
+    "identidad": {
+      "nombres": "CARLOS RAFAEL",
+      "dni": "09272283",
+      "apellido_paterno": "HERVIAS",
+      "apellido_materno": "GUTIERREZ",
+      "correo_personal": "carlosherviasgutierrez@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM566043",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "057599",
+    "identidad": {
+      "nombres": "JOSE ANTONIO",
+      "dni": "07317946",
+      "apellido_paterno": "ARDILES",
+      "apellido_materno": "MARCOS-IBAÑEZ",
+      "correo_personal": "proyectos_ardiles@outlook.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM575994",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "057632",
+    "identidad": {
+      "nombres": "CESAR PEDRO",
+      "dni": "06145599",
+      "apellido_paterno": "MUÑOZ",
+      "apellido_materno": "VARGAS",
+      "correo_personal": "solucion55@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM576322",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "058975",
+    "identidad": {
+      "nombres": "NESTOR RAUL",
+      "dni": "06680803",
+      "apellido_paterno": "CARDENAS",
+      "apellido_materno": "SANCHEZ",
+      "correo_personal": "vkningenieros@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM589754",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "058992",
+    "identidad": {
+      "nombres": "FRANCHESCO JAVIER",
+      "dni": "07262885",
+      "apellido_paterno": "RULLO",
+      "apellido_materno": "PADILLA",
+      "correo_personal": "rulloperu@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM589924",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "060001",
+    "identidad": {
+      "nombres": "FLORENTINO",
+      "dni": "08712921",
+      "apellido_paterno": "GOMEZ",
+      "apellido_materno": "GUERRERO",
+      "correo_personal": "fgomezgg@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM600012",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "060005",
+    "identidad": {
+      "nombres": "LUIS DIGNO",
+      "dni": "15392349",
+      "apellido_paterno": "HUAPAYA",
+      "apellido_materno": "AVILA",
+      "correo_personal": "luisdig21@yahoo.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM600053",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "060950",
+    "identidad": {
+      "nombres": "LUIS FERNANDO",
+      "dni": "09274377",
+      "apellido_paterno": "VITTERI",
+      "apellido_materno": "QUIROS",
+      "correo_personal": "fvitteri@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM609504",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "062722",
+    "identidad": {
+      "nombres": "MYRIAM",
+      "dni": "07393489",
+      "apellido_paterno": "SOTO",
+      "apellido_materno": "GODOY",
+      "correo_personal": "msotogodoy61@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM627223",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "062895",
+    "identidad": {
+      "nombres": "ELIZABETH LUZMILA",
+      "dni": "10213515",
+      "apellido_paterno": "LAZO",
+      "apellido_materno": "MUÑOZ",
+      "correo_personal": "elizabeth_lazo@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM628953",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "063969",
+    "identidad": {
+      "nombres": "OMAR ELISEO",
+      "dni": "09866887",
+      "apellido_paterno": "CABREJOS",
+      "apellido_materno": "CANEVARO",
+      "correo_personal": "omarcabrejos_14@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM639693",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "063981",
+    "identidad": {
+      "nombres": "FANY",
+      "dni": "10303045",
+      "apellido_paterno": "HERNANDEZ",
+      "apellido_materno": "ALVAREZ",
+      "correo_personal": "fany.halv@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM639813",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "063986",
+    "identidad": {
+      "nombres": "JESSICA LUCILA",
+      "dni": "00954864",
+      "apellido_paterno": "MEJIA",
+      "apellido_materno": "AZAÑERO",
+      "correo_personal": "jessicalmejia@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM639864",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM639864",
+        "categoria": 4,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "064222",
+    "identidad": {
+      "nombres": "PEDRO ALFREDO",
+      "dni": "06926295",
+      "apellido_paterno": "VILLADEZA",
+      "apellido_materno": "PRINCIPE",
+      "correo_personal": "alfvilladeza@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "16",
+        "abreviacion": "ELECTRONICA",
+        "nombre": "INGENIERIA ELECTRONICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM642224",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Electrónica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "064438",
+    "identidad": {
+      "nombres": "CARLOS IGNACIO",
+      "dni": "09380375",
+      "apellido_paterno": "URIBE",
+      "apellido_materno": "LAYSECA",
+      "correo_personal": "curibe_l@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM644384",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "064445",
+    "identidad": {
+      "nombres": "ROSA MARIBEL",
+      "dni": "09828528",
+      "apellido_paterno": "VIVANCO",
+      "apellido_materno": "HERNANDEZ",
+      "correo_personal": "maribelvivanco.mpl@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM644451",
+        "categoria": 1,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "066899",
+    "identidad": {
+      "nombres": "ALEX MARTIN",
+      "dni": "09348172",
+      "apellido_paterno": "DELFIN",
+      "apellido_materno": "ABRAMONTE",
+      "correo_personal": "dalex_martin@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM668993",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "066922",
+    "identidad": {
+      "nombres": "ANTERO RODOLFO",
+      "dni": "06783301",
+      "apellido_paterno": "TAVERA",
+      "apellido_materno": "TAVERA",
+      "correo_personal": "atavera.t2@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM669223",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "068386",
+    "identidad": {
+      "nombres": "LILI PATRICIA",
+      "dni": "07536054",
+      "apellido_paterno": "LUNA",
+      "apellido_materno": "BERRIOS",
+      "correo_personal": "liplub@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "16",
+        "abreviacion": "ELECTRONICA",
+        "nombre": "INGENIERIA ELECTRONICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM683864",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Electrónica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "069304",
+    "identidad": {
+      "nombres": "MANUEL ANTONIO",
+      "dni": "09389177",
+      "apellido_paterno": "COLLAZOS",
+      "apellido_materno": "HUAMANTUMBA",
+      "correo_personal": "manuelcollazos@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM693044",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "069692",
+    "identidad": {
+      "nombres": "MIGUEL ANGEL",
+      "dni": "06173534",
+      "apellido_paterno": "ACOSTA",
+      "apellido_materno": "QUINECHE",
+      "correo_personal": "maaq_3@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM696924",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM696924",
+        "categoria": 4,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "070611",
+    "identidad": {
+      "nombres": "ELMER ALFREDO",
+      "dni": "06664920",
+      "apellido_paterno": "LLOSA",
+      "apellido_materno": "ARHUIRE",
+      "correo_personal": "elmeralfredollosaarhuire@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM706113",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "072900",
+    "identidad": {
+      "nombres": "VIVIANA PAOLA",
+      "dni": "09823966",
+      "apellido_paterno": "CASTAÑEDA",
+      "apellido_materno": "AMES",
+      "correo_personal": "vp_castaneda@cip.org.pe",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM729003",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "075315",
+    "identidad": {
+      "nombres": "NELSON RENATO",
+      "dni": "10490267",
+      "apellido_paterno": "PEREZ",
+      "apellido_materno": "ORMEÑO",
+      "correo_personal": "incoperobrasyservicios@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM753154",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "075801",
+    "identidad": {
+      "nombres": "VICTOR AURELIO",
+      "dni": "09988436",
+      "apellido_paterno": "CHAHUA",
+      "apellido_materno": "PACCHO",
+      "correo_personal": "gm3gerencia@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM758014",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM758014",
+        "categoria": 4,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "076798",
+    "identidad": {
+      "nombres": "RONALD ARNALDO",
+      "dni": "09450797",
+      "apellido_paterno": "AMORETTI",
+      "apellido_materno": "SOTELO",
+      "correo_personal": "ronyamoretti@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM767984",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "077632",
+    "identidad": {
+      "nombres": "JUAN CARLOS",
+      "dni": "07417726",
+      "apellido_paterno": "LOPEZ",
+      "apellido_materno": "DIAZ",
+      "correo_personal": "jclopezdiaz@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "09",
+        "abreviacion": "SANITARIA",
+        "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM776324",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Sanitaria",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "081225",
+    "identidad": {
+      "nombres": "ORBAL",
+      "dni": "10491852",
+      "apellido_paterno": "MAURICIO",
+      "apellido_materno": "QUIQUIA",
+      "correo_personal": "orbal.mauricio@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM812254",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "081234",
+    "identidad": {
+      "nombres": "EDUARDO WILLIAM",
+      "dni": "09673678",
+      "apellido_paterno": "TAM",
+      "apellido_materno": "WONG",
+      "correo_personal": "etam002@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM812344",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM812344",
+        "categoria": 4,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "082702",
+    "identidad": {
+      "nombres": "CARLOS DAVID",
+      "dni": "09661269",
+      "apellido_paterno": "DIAZ",
+      "apellido_materno": "SILVA",
+      "correo_personal": "cardisi411@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM827024",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM827024",
+        "categoria": 4,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "083102",
+    "identidad": {
+      "nombres": "WILFREDO",
+      "dni": "07641076",
+      "apellido_paterno": "MAGALLANES",
+      "apellido_materno": "ALMEYDA",
+      "correo_personal": "wmachsac@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM831023",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "084509",
+    "identidad": {
+      "nombres": "JACQUELINE CAROLINA LUZ",
+      "dni": "01157853",
+      "apellido_paterno": "PEREZ",
+      "apellido_materno": "ALVARADO",
+      "correo_personal": "karoluz18@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM845093",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "084872",
+    "identidad": {
+      "nombres": "NANCY MERCEDES",
+      "dni": "06921783",
+      "apellido_paterno": "BARRENECHEA",
+      "apellido_materno": "AGUILAR",
+      "correo_personal": "nancybarrenechea@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM848724",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "084885",
+    "identidad": {
+      "nombres": "HELI ARISTIDES",
+      "dni": "10055234",
+      "apellido_paterno": "JUAREZ",
+      "apellido_materno": "CARHUAS",
+      "correo_personal": "helijuarez@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM848854",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "085369",
+    "identidad": {
+      "nombres": "KARINA GISELA",
+      "dni": "21860485",
+      "apellido_paterno": "CANALES",
+      "apellido_materno": "TASAYCO",
+      "correo_personal": "kgcanales@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM853694",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "085509",
+    "identidad": {
+      "nombres": "LUIS ALBERTO",
+      "dni": "21533164",
+      "apellido_paterno": "CHANCO",
+      "apellido_materno": "RAMOS",
+      "correo_personal": "luischanco2020@gmail.com",
+      "codigo_especialidad": "02",
+      "capitulo": {
+        "registro_id": "05",
+        "abreviacion": "MECANICA",
+        "nombre": "INGENIERIA MECÁNICA Y MECÁNICA ELÉCTRICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM855093",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Mecánica Eléctrica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "088444",
+    "identidad": {
+      "nombres": "ALFREDO HECTOR",
+      "dni": "10774569",
+      "apellido_paterno": "ELGUERA",
+      "apellido_materno": "ROJAS",
+      "correo_personal": "elguera_alfredo@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM884443",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "089939",
+    "identidad": {
+      "nombres": "JORGE ENRIQUE",
+      "dni": "40290099",
+      "apellido_paterno": "PAREDES",
+      "apellido_materno": "SALAZAR",
+      "correo_personal": "jorge.paredessalazar@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM899393",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "090699",
+    "identidad": {
+      "nombres": "CHRISTIAN JESUS",
+      "dni": "10467712",
+      "apellido_paterno": "GILBONIO",
+      "apellido_materno": "PALOMINO",
+      "correo_personal": "Chgilboniop@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM906993",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "090713",
+    "identidad": {
+      "nombres": "DOMINGO CHRISTIAN",
+      "dni": "40064338",
+      "apellido_paterno": "RODAS",
+      "apellido_materno": "CONDE",
+      "correo_personal": "rodasing@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM907134",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "091616",
+    "identidad": {
+      "nombres": "JULIO CESAR",
+      "dni": "40250756",
+      "apellido_paterno": "LAZO",
+      "apellido_materno": "MUÑOZ",
+      "correo_personal": "laztal.consultores2020@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM916163",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM916163",
+        "categoria": 3,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "095700",
+    "identidad": {
+      "nombres": "KARINA LEYLA",
+      "dni": "09872111",
+      "apellido_paterno": "BARRETO",
+      "apellido_materno": "CHAPEYQUEN",
+      "correo_personal": "karinaleyla@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM957003",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "096404",
+    "identidad": {
+      "nombres": "ANDRES RAFAEL",
+      "dni": "09592129",
+      "apellido_paterno": "SULCA",
+      "apellido_materno": "YLLACCANQUI",
+      "correo_personal": "andresulca@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM964043",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "096941",
+    "identidad": {
+      "nombres": "OSCAR SANTIAGO",
+      "dni": "20077288",
+      "apellido_paterno": "CARDENAS",
+      "apellido_materno": "GUTIERREZ",
+      "correo_personal": "oscardenasg@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "16",
+        "abreviacion": "ELECTRONICA",
+        "nombre": "INGENIERIA ELECTRONICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM969412",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Electrónica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "099331",
+    "identidad": {
+      "nombres": "JOSE RAPHAEL",
+      "dni": "40971812",
+      "apellido_paterno": "PARDO",
+      "apellido_materno": "CIENFUEGOS",
+      "correo_personal": "jose_pardo22@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM993314",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "100268",
+    "identidad": {
+      "nombres": "EVER",
+      "dni": "41086405",
+      "apellido_paterno": "DIAZ",
+      "apellido_materno": "MACHUCA",
+      "correo_personal": "ediaz.ing@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1002684",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM1002684",
+        "categoria": 4,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "100639",
+    "identidad": {
+      "nombres": "VICTOR MANUEL",
+      "dni": "09043271",
+      "apellido_paterno": "ORE",
+      "apellido_materno": "OCHOA",
+      "correo_personal": "ing_ore@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1006392",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "103773",
+    "identidad": {
+      "nombres": "ELMER EDILBERTO",
+      "dni": "32819596",
+      "apellido_paterno": "GIL",
+      "apellido_materno": "GUEVARA",
+      "correo_personal": "elmer.gil.guevara@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "16",
+        "abreviacion": "ELECTRONICA",
+        "nombre": "INGENIERIA ELECTRONICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1037734",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Electrónica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "103900",
+    "identidad": {
+      "nombres": "GODOFREDO VLADIMIRO",
+      "dni": "10158933",
+      "apellido_paterno": "VALDEZ",
+      "apellido_materno": "BLANCO",
+      "correo_personal": "valdezblancog@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1039002",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "103902",
+    "identidad": {
+      "nombres": "JAIME FERNANDO",
+      "dni": "40457930",
+      "apellido_paterno": "VIDAL",
+      "apellido_materno": "MORALES",
+      "correo_personal": "gerenciadeproyectos072@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1039024",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM1039024",
+        "categoria": 4,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "105486",
+    "identidad": {
+      "nombres": "MARCOS ADRIAN",
+      "dni": "40090698",
+      "apellido_paterno": "MARQUINA",
+      "apellido_materno": "SIERRA",
+      "correo_personal": "marcosmarquina@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1054862",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "109034",
+    "identidad": {
+      "nombres": "MILAGROS JEANETT",
+      "dni": "40313890",
+      "apellido_paterno": "MEJIA",
+      "apellido_materno": "ACEVEDO",
+      "correo_personal": "jeanett1022@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1090341",
+        "categoria": 1,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "109703",
+    "identidad": {
+      "nombres": "DANNY MANUEL",
+      "dni": "40798807",
+      "apellido_paterno": "ROJAS",
+      "apellido_materno": "MATOS",
+      "correo_personal": "inspector.drojas@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1097034",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "111665",
+    "identidad": {
+      "nombres": "LUIS DAVID",
+      "dni": "41916642",
+      "apellido_paterno": "TORRES",
+      "apellido_materno": "SOTO",
+      "correo_personal": "luis.torress@ciplima.org.pe",
+      "codigo_especialidad": "02",
+      "capitulo": {
+        "registro_id": "05",
+        "abreviacion": "MECANICA",
+        "nombre": "INGENIERIA MECÁNICA Y MECÁNICA ELÉCTRICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1116654",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Mecánica Eléctrica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "111674",
+    "identidad": {
+      "nombres": "JOSE LUIS",
+      "dni": "40615055",
+      "apellido_paterno": "CASTILLO",
+      "apellido_materno": "MORENO",
+      "correo_personal": "jlcm1980@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1116743",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "114939",
+    "identidad": {
+      "nombres": "LUIS ANTONIO",
+      "dni": "25842932",
+      "apellido_paterno": "RODRIGUEZ",
+      "apellido_materno": "FLORES",
+      "correo_personal": "luisantonio441@gmail.com",
+      "codigo_especialidad": "04",
+      "capitulo": {
+        "registro_id": "15",
+        "abreviacion": "ELECTRICA",
+        "nombre": "INGENIERIA ELECTRICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1149394",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Eléctrica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "116190",
+    "identidad": {
+      "nombres": "LENIN ARNULFO",
+      "dni": "29665366",
+      "apellido_paterno": "VELARDE",
+      "apellido_materno": "PAREDES",
+      "correo_personal": "leninvelardeparedes@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1161903",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "117130",
+    "identidad": {
+      "nombres": "MILTON DEDY",
+      "dni": "42320100",
+      "apellido_paterno": "QUISPE",
+      "apellido_materno": "FLORES",
+      "correo_personal": "mquispef@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1171303",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "117690",
+    "identidad": {
+      "nombres": "ROMMEL JHONNY",
+      "dni": "42392332",
+      "apellido_paterno": "LU",
+      "apellido_materno": "NIETO",
+      "correo_personal": "rommel.lu@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1176903",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM1176904",
+        "categoria": 4,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "117696",
+    "identidad": {
+      "nombres": "BLANCA ESTEPHANI",
+      "dni": "42846675",
+      "apellido_paterno": "PIÑAS",
+      "apellido_materno": "CAPO",
+      "correo_personal": "blancapinas@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1176963",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM1176964",
+        "categoria": 4,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "118318",
+    "identidad": {
+      "nombres": "LUIS ALBERTO",
+      "dni": "41134413",
+      "apellido_paterno": "TARAZONA",
+      "apellido_materno": "ESTRADA",
+      "correo_personal": "luistarazonaestrada@yahoo.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1183183",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM1183183",
+        "categoria": 3,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "118321",
+    "identidad": {
+      "nombres": "EDITH ELIZABETH",
+      "dni": "10465561",
+      "apellido_paterno": "YAURI",
+      "apellido_materno": "DE LA CRUZ",
+      "correo_personal": "edithauri21@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1183211",
+        "categoria": 1,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "124844",
+    "identidad": {
+      "nombres": "RENATO DAVID",
+      "dni": "09992952",
+      "apellido_paterno": "VERA",
+      "apellido_materno": "ANTENUCCI",
+      "correo_personal": "renvera@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1248443",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "127253",
+    "identidad": {
+      "nombres": "ERICK ALBERTO",
+      "dni": "42035148",
+      "apellido_paterno": "CHAVEZ",
+      "apellido_materno": "GONZAGA",
+      "correo_personal": "echavez@biabo.pe",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1272533",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "127995",
+    "identidad": {
+      "nombres": "CECILIA BEATRIZ",
+      "dni": "10868970",
+      "apellido_paterno": "SERPA",
+      "apellido_materno": "PANDURO",
+      "correo_personal": "ceciliabeat@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1279953",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "128791",
+    "identidad": {
+      "nombres": "CARLOS ALBERTO",
+      "dni": "06742727",
+      "apellido_paterno": "CARPIO",
+      "apellido_materno": "TORRES",
+      "correo_personal": "obrasalaverry@yahoo.es",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1287912",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "131997",
+    "identidad": {
+      "nombres": "CESAR EDUARDO",
+      "dni": "10348654",
+      "apellido_paterno": "DAVALOS",
+      "apellido_materno": "DE LA CRUZ",
+      "correo_personal": "csardvalos@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1319973",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "135923",
+    "identidad": {
+      "nombres": "YANETT CARMIN",
+      "dni": "43326321",
+      "apellido_paterno": "RAMOS",
+      "apellido_materno": "LLICAHUA",
+      "correo_personal": "yanett20132021@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1359233",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "136482",
+    "identidad": {
+      "nombres": "DANIELA",
+      "dni": "00512184",
+      "apellido_paterno": "FLORES",
+      "apellido_materno": "JAVIER",
+      "correo_personal": "daniela_propec@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1364824",
+        "categoria": 4,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "138328",
+    "identidad": {
+      "nombres": "FEIDER PAVEL",
+      "dni": "06532850",
+      "apellido_paterno": "BRINGAS",
+      "apellido_materno": "ENCISO",
+      "correo_personal": "fbringas@izperu.com",
+      "codigo_especialidad": "10",
+      "capitulo": {
+        "registro_id": "15",
+        "abreviacion": "ELECTRICA",
+        "nombre": "INGENIERIA ELECTRICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1383282",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Eléctrica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "139244",
+    "identidad": {
+      "nombres": "JEANS PAUL",
+      "dni": "40965028",
+      "apellido_paterno": "MARTINEZ",
+      "apellido_materno": "SOSA",
+      "correo_personal": "jpaulms@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1392443",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "144683",
+    "identidad": {
+      "nombres": "JORGE ORLANDO",
+      "dni": "40929810",
+      "apellido_paterno": "CONDEMARIN",
+      "apellido_materno": "CORDOVA",
+      "correo_personal": "j_condemarin@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1446833",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "151709",
+    "identidad": {
+      "nombres": "CARLOS MARTIN",
+      "dni": "40035687",
+      "apellido_paterno": "PEREZ",
+      "apellido_materno": "URTEAGA",
+      "correo_personal": "carperu123@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1517093",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "158136",
+    "identidad": {
+      "nombres": "TOMAS HUMBERTO",
+      "dni": "41692633",
+      "apellido_paterno": "LECCA",
+      "apellido_materno": "MEZA",
+      "correo_personal": "ingthlecca@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1581362",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "166552",
+    "identidad": {
+      "nombres": "MIRKO LUIS MARTIN",
+      "dni": "10806103",
+      "apellido_paterno": "KUSIANOVICH",
+      "apellido_materno": "CAMPBELL",
+      "correo_personal": "mirkokusianovich@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1665522",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "172586",
+    "identidad": {
+      "nombres": "CLIFFORD",
+      "dni": "23274695",
+      "apellido_paterno": "GARCIA",
+      "apellido_materno": "ÑAÑEZ",
+      "correo_personal": "cligarcia29@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1725862",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "174992",
+    "identidad": {
+      "nombres": "JHIM VLADIMIR",
+      "dni": "44737728",
+      "apellido_paterno": "ARAUJO",
+      "apellido_materno": "CAMPOS",
+      "correo_personal": "jhim.araujo@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1749921",
+        "categoria": 1,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "176130",
+    "identidad": {
+      "nombres": "LUIS JUAN",
+      "dni": "22099526",
+      "apellido_paterno": "CCOLQUI",
+      "apellido_materno": "QUILLA",
+      "correo_personal": "lj-fi@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1761302",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "177764",
+    "identidad": {
+      "nombres": "PATRICIA",
+      "dni": "42564137",
+      "apellido_paterno": "GOMEZ",
+      "apellido_materno": "CUBAS",
+      "correo_personal": "ing.patricia2828@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1777641",
+        "categoria": 1,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "178595",
+    "identidad": {
+      "nombres": "EDWIN YONNEL",
+      "dni": "42867652",
+      "apellido_paterno": "PANTOJA",
+      "apellido_materno": "DOMINGUEZ",
+      "correo_personal": "edwin.pantoja.d@uni.pe",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1785952",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "181089",
+    "identidad": {
+      "nombres": "NISOFRO",
+      "dni": "01036402",
+      "apellido_paterno": "VARGAS",
+      "apellido_materno": "ASPAJO",
+      "correo_personal": "nisofro@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1810891",
+        "categoria": 1,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "189162",
+    "identidad": {
+      "nombres": "FREDY ABILIO",
+      "dni": "41027593",
+      "apellido_paterno": "QUISPE",
+      "apellido_materno": "SALVATIERRA",
+      "correo_personal": "fredy1407@hotmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1891622",
+        "categoria": 2,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      },
+      {
+        "numero_registro": "CAM1891622",
+        "categoria": 2,
+        "tipo_liquidacion": "HABILITACION_URBANA",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "191863",
+    "identidad": {
+      "nombres": "DORIS ARCELIA",
+      "dni": "44898244",
+      "apellido_paterno": "ABAD",
+      "apellido_materno": "CORDOVA",
+      "correo_personal": "doris.abadc@ciplima.org.pe",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "16",
+        "abreviacion": "ELECTRONICA",
+        "nombre": "INGENIERIA ELECTRONICA"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM1918633",
+        "categoria": 3,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Electrónica",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  },
+  {
+    "cip": "204722",
+    "identidad": {
+      "nombres": "SEGUNDO ROGELIO",
+      "dni": "45232655",
+      "apellido_paterno": "TARRILLO",
+      "apellido_materno": "OLIVERA",
+      "correo_personal": "ingeniero3105@gmail.com",
+      "codigo_especialidad": "01",
+      "capitulo": {
+        "registro_id": "02",
+        "abreviacion": "CIVIL",
+        "nombre": "INGENIERIA CIVIL"
+      }
+    },
+    "registros": [
+      {
+        "numero_registro": "CAM2047221",
+        "categoria": 1,
+        "tipo_liquidacion": "EDIFICACION",
+        "especialidad": "Ingeniería Civil",
+        "vigencia": "2026-07-31"
+      }
+    ]
+  }
+]

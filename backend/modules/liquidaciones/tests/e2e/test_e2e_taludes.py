@@ -20,13 +20,13 @@ from config.api import api
 from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.finanzas.domain.models.impuestos import IGV, UIT
-from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorcentajeObra,
     DerechoPorcentajeObra,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
+from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
@@ -87,10 +87,16 @@ def uit_vigente(db):
 
 
 @pytest.fixture
-def tarifa_liquidacion_base_ta(db):
+def tipo_taludes(db):
+    """Get or create TipoLiquidacion for TALUDES."""
+    return TipoLiquidacionModel.objects.get_or_create(codigo="TALUDES", defaults={"nombre": "Taludes"})[0]
+
+
+@pytest.fixture
+def tarifa_liquidacion_base_ta(db, tipo_taludes):
     """Create a TarifaLiquidacionBase for Taludes."""
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.TALUDES,
+        tipo_liquidacion=tipo_taludes,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -99,19 +105,19 @@ def tarifa_liquidacion_base_ta(db):
 @pytest.fixture
 def especialidad_ta_geotecnia(db):
     """Create an Especialidad for Taludes testing - Geotecnia."""
-    return Especialidad.objects.create(
-        codigo="G01",
-        nombre="Geotecnia",
-    )
+    return Especialidad.objects.get_or_create(
+        slug="geotecnia",
+        defaults={"codigo": "G01", "nombre": "Geotecnia"},
+    )[0]
 
 
 @pytest.fixture
 def especialidad_ta_civil(db):
     """Create an Especialidad for Taludes testing - Civil."""
-    return Especialidad.objects.create(
-        codigo="C01",
-        nombre="Civil",
-    )
+    return Especialidad.objects.get_or_create(
+        slug="civil",
+        defaults={"codigo": "C01", "nombre": "Civil"},
+    )[0]
 
 
 @pytest.fixture

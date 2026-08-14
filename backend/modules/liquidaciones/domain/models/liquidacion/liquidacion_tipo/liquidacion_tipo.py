@@ -16,6 +16,7 @@ from modules.liquidaciones.domain.constants import (
     TipoTramiteEdificaciones,
     TramiteAccion,
 )
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 
 
 class LiquidacionPorMetroCuadrado(BaseModel):
@@ -263,10 +264,10 @@ class LiquidacionPorcentajeObraDetalle(BaseModel):
     )
 
     especialidad = models.ForeignKey(
-        "usuarios.Especialidad",
+        EspecialidadRevision,
         on_delete=models.PROTECT,
         related_name="detalles_porcentaje_obra",
-        verbose_name="Especialidad",
+        verbose_name="Especialidad de Revisión",
     )
 
     porcentaje_aplicado = models.DecimalField(

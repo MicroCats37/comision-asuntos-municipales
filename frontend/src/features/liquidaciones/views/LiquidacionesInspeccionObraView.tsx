@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { ClipboardCheck, Plus, X, Filter } from "lucide-react";
+import { ClipboardCheck, Plus, X, Filter, RefreshCw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,10 @@ import { PageHeader } from "@/components-app/pages/PageHeader";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { LiquidacionInspeccionObraCard } from "../components/cards/LiquidacionInspeccionObraCard";
 import { LiquidacionFiltroModal } from "../components/forms/LiquidacionFiltroModal";
+import { SeleccionarPreviaModal } from "../components/forms/SeleccionarPreviaModal";
+import { NuevaRevisionInspeccionObraFormModal } from "../components/forms/NuevaRevisionInspeccionObraFormModal";
 import { useLiquidacionesInspeccionObra, type LiquidacionFiltros } from "../hooks";
+import type { LiquidacionGeneralItem } from "../hooks/useLiquidacionesGenerales";
 import type { LiquidacionInspeccionObraListItem } from "../schemas/liquidacion-inspeccion-obra.schema";
 
 const KIND_ICON: LucideIcon = ClipboardCheck;
@@ -22,6 +25,9 @@ const KIND_ICON: LucideIcon = ClipboardCheck;
 export function LiquidacionesInspeccionObraView() {
   const [filtros, setFiltros] = useState<LiquidacionFiltros>({});
   const [filtroModalOpen, setFiltroModalOpen] = useState(false);
+  const [selectPreviaOpen, setSelectPreviaOpen] = useState(false);
+  const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
+  const [previa, setPrevia] = useState<LiquidacionGeneralItem | null>(null);
 
   const {
     items,
@@ -63,7 +69,7 @@ export function LiquidacionesInspeccionObraView() {
               </Button>
               <Button
                 className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-                onClick={() => { /* Form modal will be rebuilt */ }}
+                onClick={() => setSelectPreviaOpen(true)}
               >
                 <Plus className="h-4 w-4" />
                 Nueva Liquidación
@@ -176,6 +182,32 @@ export function LiquidacionesInspeccionObraView() {
           setFiltros(nuevos);
           setPage(1);
           setFiltroModalOpen(false);
+        }}
+      />
+
+      {/* Seleccionar liquidación previa (Edificación o HU) para la primera liquidación IO */}
+      <SeleccionarPreviaModal
+        open={selectPreviaOpen}
+        onOpenChange={setSelectPreviaOpen}
+        tiposPermitidos={["EDIFICACION", "HABILITACION_URBANA"]}
+        title="Nueva Liquidación"
+        description="Busca la liquidación previa (Edificación o Habilitación Urbana) para crear la primera liquidación de Inspección de Obra"
+        onSelect={(p) => {
+          setPrevia(p);
+          setSelectPreviaOpen(false);
+          setNuevaRevisionOpen(true);
+        }}
+      />
+
+      {/* Form liviano de nueva revisión IO */}
+      <NuevaRevisionInspeccionObraFormModal
+        open={nuevaRevisionOpen}
+        onOpenChange={setNuevaRevisionOpen}
+        previa={previa}
+        onSuccess={() => {
+          setNuevaRevisionOpen(false);
+          setPrevia(null);
+          refetch();
         }}
       />
     </div>

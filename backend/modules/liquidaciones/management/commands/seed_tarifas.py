@@ -31,7 +31,7 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     DerechoPorcentajeObra,
     DerechoPorMetroCuadrado,
 )
-from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
 
 
 class Command(BaseCommand):

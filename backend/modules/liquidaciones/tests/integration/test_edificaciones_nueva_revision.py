@@ -25,7 +25,7 @@ from ninja_jwt.tokens import AccessToken
 from config.api import api
 from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
 from modules.entidades.domain.models.municipalidad import Municipalidad
-from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
 from modules.finanzas.domain.models.impuestos import UIT, IGV
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
@@ -107,6 +107,7 @@ def tarifa_liquidacion_base_edificacion(db, tipo_edificacion):
 def especialidad_estructuras(db):
     return Especialidad.objects.create(
         codigo="E01",
+        slug="estructuras",
         nombre="Estructuras",
     )
 
@@ -115,6 +116,7 @@ def especialidad_estructuras(db):
 def especialidad_arquitectura(db):
     return Especialidad.objects.create(
         codigo="A01",
+        slug="arquitectura",
         nombre="Arquitectura",
     )
 

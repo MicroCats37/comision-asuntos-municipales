@@ -274,7 +274,7 @@ def test_detail_endpoint_returns_404_for_wrong_type_liquidacion(
         DerechoPorcentajeObra,
     )
     from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
-    from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
+    from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
 
     user = create_user
 
@@ -289,6 +289,7 @@ def test_detail_endpoint_returns_404_for_wrong_type_liquidacion(
     # Create especialidad
     especialidad = Especialidad.objects.create(
         codigo="E01",
+        slug="estructuras",
         nombre="Estructuras",
     )
 

@@ -2,7 +2,7 @@
 
 from .delegado import Delegado, DelegadoMunicipalidad, DelegadoMunicipalidadPeriodo
 from .tipo_liquidacion import TipoLiquidacion
-from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadIngeniero, EspecialidadRevision
 from .liquidacion.liquidacion_general.liquidacion import (
     LiquidacionGeneral,
     LiquidacionContacto,
@@ -37,14 +37,20 @@ from .proyecto import (
     ProyectoPersonaNatural,
 )
 from .delegado import LiquidacionDelegado
-from .inspector import Inspector, InspectorPeriodo, LiquidacionInspector
+from .inspector import (
+    Inspector,
+    InspectorTipoLiquidacion,
+    InspectorAsignacionPeriodo,
+    LiquidacionInspector,
+)
 
 __all__ = [
     "Delegado",
     "DelegadoMunicipalidad",
     "DelegadoMunicipalidadPeriodo",
     "TipoLiquidacion",
-    "Especialidad",
+    "EspecialidadIngeniero",
+    "EspecialidadRevision",
     "LiquidacionGeneral",
     "LiquidacionContacto",
     "LiquidacionDocumentos",
@@ -74,6 +80,7 @@ __all__ = [
     "ProyectoPersonaNatural",
     "LiquidacionDelegado",
     "Inspector",
-    "InspectorPeriodo",
+    "InspectorTipoLiquidacion",
+    "InspectorAsignacionPeriodo",
     "LiquidacionInspector",
 ]

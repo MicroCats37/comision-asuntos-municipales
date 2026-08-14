@@ -46,10 +46,11 @@ def tarifa_liquidacion_base_taludes(db, tipo_taludes):
 
 @pytest.fixture
 def especialidad_taludes(db):
-    """Create an Especialidad for Taludes testing."""
-    from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
+    """Create an EspecialidadRevision for Taludes testing."""
+    from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
     return Especialidad.objects.create(
         codigo="T01",
+        slug="taludes",
         nombre="Taludes",
     )
 

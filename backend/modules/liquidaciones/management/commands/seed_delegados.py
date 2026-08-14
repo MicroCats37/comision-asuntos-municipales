@@ -24,7 +24,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 
 from modules.entidades.domain.models.municipalidad import Municipalidad
-from modules.liquidaciones.domain.constants import TipoDelegado, CategoriaDelegado
+from modules.liquidaciones.domain.constants import TipoDelegado
 from modules.liquidaciones.domain.models.delegado import (
     Delegado,
     DelegadoMunicipalidad,
@@ -40,15 +40,6 @@ def normalize(name: str) -> str:
     normalized = unicodedata.normalize("NFD", name.upper())
     ascii_name = "".join(c for c in normalized if unicodedata.category(c) != "Mn")
     return " ".join(ascii_name.replace("-", " ").replace("/", " ").split())
-
-
-# Mapeo texto especialidad -> (codigo_especialidad, categoria)
-SPECIALTY_MAP = {
-    "INGENIERIA CIVIL EDIFICACIONES": ("01", CategoriaDelegado.EDIFICACIONES),
-    "INGENIERIA CIVIL HABILITACIONES URBANAS": ("01", CategoriaDelegado.HABILITACIONES_URBANAS),
-    "INGENIERIA SANITARIA EDIFICACIONES": ("09", CategoriaDelegado.EDIFICACIONES),
-    "INGENIERIA ELECTRICA Y MECANICA ELECTRICA EDIFICACIONES": ("02", CategoriaDelegado.EDIFICACIONES),
-}
 
 
 class Command(BaseCommand):
@@ -130,10 +121,6 @@ class Command(BaseCommand):
                 sin_municipio.append(f"{cip} -> {asign.get('municipalidad_codigo')}")
                 continue
 
-            # Resolver especialidad -> categoria
-            esp_texto = normalize(asign.get("especialidad", ""))
-            _, categoria = SPECIALTY_MAP.get(esp_texto, (None, None))
-
             tipo_str = str(asign.get("tipo", "")).upper()
             tipo = tipo_str if tipo_str in ("TITULAR", "ALTERNO") else TipoDelegado.TITULAR
 
@@ -146,7 +133,6 @@ class Command(BaseCommand):
                 municipalidad=municipio,
                 defaults={
                     "tipo": tipo,
-                    "categoria": categoria,
                 },
             )
             asignaciones_creadas += 1

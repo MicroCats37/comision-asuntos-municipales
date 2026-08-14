@@ -9,7 +9,7 @@ from datetime import date
 
 from ninja.testing import TestClient
 from config.api import api
-from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad, EspecialidadRevision
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorMetroCuadrado,
@@ -31,18 +31,20 @@ def api_client(db):
 
 @pytest.fixture
 def especialidad_estructuras(db):
-    """Create an Especialidad for Edificaciones testing."""
+    """Create an EspecialidadRevision for Edificaciones testing."""
     return Especialidad.objects.create(
         codigo="E01",
+        slug="estructuras",
         nombre="Estructuras",
     )
 
 
 @pytest.fixture
 def especialidad_arquitectura(db):
-    """Create an Especialidad for Edificaciones testing."""
+    """Create an EspecialidadRevision for Edificaciones testing."""
     return Especialidad.objects.create(
         codigo="A01",
+        slug="arquitectura",
         nombre="Arquitectura",
     )
 
@@ -240,7 +242,7 @@ def test_tarifas_historicas_pagination(
         )
         TarifaPorcentajeObra.objects.create(
             tarifa_base=base,
-            especialidad=Especialidad.objects.create(codigo=f"E{i}", nombre=f"Especialidad {i}"),
+            especialidad=EspecialidadRevision.objects.create(codigo=f"E{i}", slug=f"especialidad-{i}", nombre=f"Especialidad {i}"),
             porcentaje_liquidacion=Decimal("0.0010"),
         )
 
@@ -355,3 +357,74 @@ def test_derechos_historicos_fields(
     assert "periodo_inicio" in d
     assert "periodo_fin" in d
     assert float(d["derecho_minimo"]) == 500.00
+
+
+# ── Overlap Bug Reproduction Tests ─────────────────────────────────────────────
+
+@pytest.mark.django_db
+def test_tarifas_historicas_overlap_periodo_fin_null(api_client, tipo_edificacion):
+    """
+    Regression: GET returns tariff whose periodo_inicio is BEFORE fecha_desde
+    but periodo_fin is NULL (ongoing) — the periods OVERLAP and MUST be included.
+
+    Bug: The original filter required periodo_inicio >= fecha_desde, which
+    wrongly excluded tariffs that started earlier but are still active.
+    """
+    # Tarifa starts 2024, still ongoing (periodo_fin=None)
+    base = TarifaLiquidacionBase.objects.create(
+        tipo_liquidacion=tipo_edificacion,
+        periodo_inicio=date(2024, 1, 1),
+        periodo_fin=None,
+    )
+    TarifaPorcentajeObra.objects.create(
+        tarifa_base=base,
+        especialidad=EspecialidadRevision.objects.create(codigo="OVLP", nombre="Overlap"),
+        porcentaje_liquidacion=Decimal("0.0015"),
+    )
+
+    # Query from 2025 onwards — the 2024-ongoing tariff OVERLAPS this range
+    response = api_client.get(
+        f"/liquidaciones/edificacion/tarifas/historicas?fecha_desde=2025-01-01&fecha_hasta=2026-12-31&page=1&page_size=10"
+    )
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+
+    data = response.json()
+    result = data["data"]
+    items = result["items"]
+
+    # The ongoing 2024 tariff IS active during 2025-2026, so it MUST appear
+    assert len(items) == 1, f"Expected 1 overlapping tariff (ongoing from 2024), got {len(items)}: {items}"
+    assert items[0]["periodo_inicio"] == "2024-01-01"
+    assert items[0]["periodo_fin"] is None
+
+
+@pytest.mark.django_db
+def test_derechos_historicos_overlap_periodo_fin_null(api_client, db):
+    """
+    Regression: GET /liquidaciones/derechos/historicos returns derecho whose
+    periodo_inicio is BEFORE fecha_desde but periodo_fin is NULL (ongoing).
+    Same overlap bug as tarifas_historicas.
+    """
+    # Derecho starts 2024, still ongoing
+    derecho = DerechoPorcentajeObra.objects.create(
+        derecho_minimo=Decimal("600.00"),
+        derecho_maximo=Decimal("60000.00"),
+        porcentaje_minimo_uit=Decimal("0.14"),
+        periodo_inicio=date(2024, 1, 1),
+        periodo_fin=None,
+    )
+
+    # Query from 2025 onwards — the 2024-ongoing derecho OVERLAPS
+    response = api_client.get(
+        f"/liquidaciones/derechos/historicos?tipo=PORCENTAJE&fecha_desde=2025-01-01&fecha_hasta=2026-12-31"
+    )
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+
+    data = response.json()
+    derechos = data["data"]["derechos"]
+
+    assert len(derechos) == 1, f"Expected 1 overlapping derecho (ongoing from 2024), got {len(derechos)}: {derechos}"
+    assert derechos[0]["periodo_inicio"] == "2024-01-01"
+    assert derechos[0]["periodo_fin"] is None

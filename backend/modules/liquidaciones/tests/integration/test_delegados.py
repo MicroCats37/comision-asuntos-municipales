@@ -78,7 +78,6 @@ def municipalidad_delegado(db, municipalidad, delegado):
         delegado=delegado,
         municipalidad=municipalidad,
         tipo="TITULAR",
-        categoria="Edificaciones",
     )
 
 
@@ -99,7 +98,6 @@ def municipalidad_delegado_2(db, municipalidad, delegado_2):
         delegado=delegado_2,
         municipalidad=municipalidad,
         tipo="ALTERNO",
-        categoria="Habilitaciones Urbanas",
     )
 
 
@@ -298,7 +296,6 @@ def test_municipalidades_includes_vigencia_status(
     assert "periodo_inicio" in mun
     assert "periodo_fin" in mun
     assert "tipo" in mun
-    assert "categoria" in mun
 
 
 @pytest.mark.django_db

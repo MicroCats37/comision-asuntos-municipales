@@ -12,6 +12,7 @@ import { useState } from "react";
 import {
   Banknote,
   Building2,
+  FileDown,
   FileText,
   Hash,
   MapPin,
@@ -27,6 +28,9 @@ import { LiquidacionBaseCard } from "./LiquidacionBaseCard";
 import { LiquidacionCardHeader, type LiquidacionCardHeaderData } from "../LiquidacionCardHeader";
 import { SectionCard, LabelValue, formatCurrency, formatEnumLabel, formatDate } from "../liquidacion-ui";
 import { GestionarDelegadosModal } from "../GestionarDelegadosModal";
+import { printLiquidacion } from "../../pdf/printLiquidacion";
+import { formatPublicId } from "../../utils/formatPublicId";
+import type { PdfLiquidacionItem } from "../../pdf/buildLiquidacionPdfElement";
 import type { LiquidacionEdificacionesListItem } from "../../schemas/liquidacion-edificaciones.schema";
 
 interface LiquidacionEdificacionesCardProps {
@@ -55,8 +59,19 @@ export function LiquidacionEdificacionesCard({
   const lg = item.liquidacion_general;
   const lt = item.liquidacion_tipo;
 
+  // Convertir item al tipo que el PDF espera
+  const pdfItem: PdfLiquidacionItem = {
+    liquidacion_general: lg as PdfLiquidacionItem["liquidacion_general"],
+    liquidacion_especifica: item.liquidacion_especifica as PdfLiquidacionItem["liquidacion_especifica"],
+    liquidacion_tipo: lt as PdfLiquidacionItem["liquidacion_tipo"],
+  };
+
+  const handlePrint = () => {
+    printLiquidacion(pdfItem, "edificacion");
+  };
+
   const headerData: LiquidacionCardHeaderData = {
-    public_id: lg.id,
+    public_id: formatPublicId("edificacion", lg.fecha_registro, item.liquidacion_especifica.numero),
     fecha_registro: lg.fecha_registro,
     proyectoNombre: lg.proyecto.denominacion,
     kindBadge: "Edificación",
@@ -79,6 +94,16 @@ export function LiquidacionEdificacionesCard({
       >
         <Users className="h-3 w-3" />
         Delegados
+      </span>
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={(e) => { e.stopPropagation(); handlePrint(); }}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); handlePrint(); } }}
+        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-semibold border-border/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary cursor-pointer select-none transition-colors"
+      >
+        <FileDown className="h-3 w-3" />
+        PDF
       </span>
       <span
         role="button"

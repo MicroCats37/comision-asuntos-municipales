@@ -45,10 +45,11 @@ def tarifa_liquidacion_base_iv(db, tipo_impacto_vial):
 
 @pytest.fixture
 def especialidad_impacto_vial(db):
-    """Create an Especialidad for Impacto Vial testing."""
-    from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
+    """Create an EspecialidadRevision for Impacto Vial testing."""
+    from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
     return Especialidad.objects.create(
         codigo="IV01",
+        slug="impacto-vial",
         nombre="Impacto Vial",
     )
 

@@ -1,7 +1,16 @@
 """
-Management command to load real delegados data from seed JSON or markdown.
+[LEGACY — NO USAR] Management command to load real delegados data from seed JSON or markdown.
 
-Usage:
+Este comando está MUERTO: importa los modelos legacy `MunicipalidadDelegado` y
+`PeriodoDelegado`, que ya NO existen (reemplazados por `DelegadoMunicipalidad`
+y `DelegadoMunicipalidadPeriodo` en modules/liquidaciones/domain/models/delegado.py).
+Ejecutarlo lanza ImportError. Usar en su lugar:
+    python manage.py seed_delegados --settings=config.settings.development
+
+Mantenido solo como referencia histórica de la lógica de carga. NO corregido a
+propósito: su reescritura completa contra los modelos nuevos queda fuera de scope.
+
+Usage (rotos — no ejecutar):
     python manage.py load_delegados_reales --settings=config.settings.development
     python manage.py load_delegados_reales --dry-run --settings=config.settings.development
     python manage.py load_delegados_reales --skip-endpoint --settings=config.settings.development
@@ -34,7 +43,7 @@ from django.core.management.base import BaseCommand, CommandError
 from modules.entidades.models import Banco
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.liquidaciones.domain.models.delegado import Delegado, TipoDelegado, CategoriaDelegado, MunicipalidadDelegado, PeriodoDelegado
-from modules.liquidaciones.domain.models.especialidades import Especialidad
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadIngeniero as Especialidad
 from modules.liquidaciones.domain.constants import DelegadoStatus
 from modules.usuarios.models import PerfilIngeniero
 from modules.usuarios.domain.models.perfil_ingeniero import Capitulo

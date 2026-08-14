@@ -9,7 +9,7 @@ import django
 django.setup()
 
 from modules.liquidaciones.domain.models.liquidacion.liquidacion import TarifaLiquidacionBase, TarifaPorcentajeObra, ReglaTarifaEdificacion
-from modules.liquidaciones.domain.models.especialidades import Especialidad
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadIngeniero as Especialidad
 
 # Load seed
 with open('modules/liquidaciones/seeds/tarifas_edificacion.json') as f:

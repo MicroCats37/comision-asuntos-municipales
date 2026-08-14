@@ -36,6 +36,7 @@ from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_genera
     DistritoResult,
     ProvinciaResult,
     DepartamentoResult,
+    TipoLiquidacionResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
     LiquidacionPorcentajeObraResult,
@@ -440,6 +441,14 @@ class LiquidacionEdificacionesFlujo:
                 proyecto=proyecto_result,
                 contacto=contacto_result,
                 revisiones_previas=revisiones_previas,
+                tipo_liquidacion=(
+                    TipoLiquidacionResult(
+                        codigo=liquidacion_general.tipo_liquidacion.codigo,
+                        nombre=liquidacion_general.tipo_liquidacion.nombre,
+                    )
+                    if liquidacion_general.tipo_liquidacion
+                    else None
+                ),
             ),
             liquidacion_especifica=LiquidacionEspecificaEdificacionesResult(
                 id=str(edificacion.id),
@@ -601,6 +610,14 @@ class LiquidacionEdificacionesFlujo:
                 proyecto=proyecto_result,
                 contacto=contacto_result,
                 revisiones_previas=revisiones_previas,
+                tipo_liquidacion=(
+                    TipoLiquidacionResult(
+                        codigo=liquidacion_general.tipo_liquidacion.codigo,
+                        nombre=liquidacion_general.tipo_liquidacion.nombre,
+                    )
+                    if liquidacion_general.tipo_liquidacion
+                    else None
+                ),
             ),
             liquidacion_especifica=LiquidacionEspecificaEdificacionesResult(
                 id=str(edificacion.id),

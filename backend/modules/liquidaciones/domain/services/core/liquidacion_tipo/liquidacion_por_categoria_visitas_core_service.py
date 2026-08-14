@@ -84,7 +84,7 @@ class LiquidacionPorCategoriaVisitasCoreService:
 
         return CotizacionVisitasResultDTO(
             cantidad_visitas=cantidad_visitas,
-            categoria=tarifa.categoria,
+            categoria=tarifa.categoria_visitas,
             costo_por_visita=costo_por_visita,
             tarifa_id=str(tarifa.id),
             monto_bruto=float(subtotal),

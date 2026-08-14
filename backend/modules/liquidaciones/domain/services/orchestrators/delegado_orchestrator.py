@@ -95,7 +95,6 @@ class DelegadoOrchestrator:
                 nombre=dm.municipalidad.nombre,
             ),
             tipo=dm.tipo or "",
-            categoria=dm.categoria,
             periodo_inicio=current_periodo.periodo_inicio if current_periodo else None,
             periodo_fin=current_periodo.periodo_fin if current_periodo else None,
             es_vigente=current_periodo is not None,
@@ -164,7 +163,7 @@ class DelegadoOrchestrator:
 
         return DelegadoListResult(
             items=domain_results,
-            total=len(domain_results),
+            total=total,
             page=page,
             page_size=page_size,
             total_pages=total_pages,
@@ -246,7 +245,6 @@ class DelegadoOrchestrator:
                     id=str(dm.delegado.id),
                     perfil_ingeniero=self._build_perfil_ingeniero_result(dm.delegado.perfil_ingeniero),
                     tipo=dm.tipo or "",
-                    categoria=dm.categoria,
                     periodo_inicio=periodo_inicio,
                     periodo_fin=periodo_fin,
                     es_vigente=es_vigente,

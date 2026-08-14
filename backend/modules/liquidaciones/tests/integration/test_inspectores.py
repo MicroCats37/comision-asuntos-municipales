@@ -20,7 +20,8 @@ import uuid
 
 from modules.liquidaciones.domain.models.inspector import (
     Inspector,
-    InspectorPeriodo,
+    InspectorAsignacionPeriodo,
+    InspectorTipoLiquidacion,
 )
 from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero
 from modules.liquidaciones.domain.constants import TipoLiquidacion
@@ -57,34 +58,40 @@ def perfil_ingeniero_inspector_2(db):
 @pytest.fixture
 def inspector_edificacion(db, perfil_ingeniero_inspector, tipo_edificacion):
     """Create an Inspector for Edificacion testing."""
-    
-    return Inspector.objects.create(
+    inspector = Inspector.objects.create(
         perfil_ingeniero=perfil_ingeniero_inspector,
+    )
+    InspectorTipoLiquidacion.objects.create(
+        inspector=inspector,
         tipo_liquidacion=tipo_edificacion,
         numero_registro="REG-001-EDIF",
         telefono="999888777",
         email="juan.perez@test.com",
     )
+    return inspector
 
 
 @pytest.fixture
 def inspector_habilitacion_urbana(db, perfil_ingeniero_inspector_2, tipo_habilitacion_urbana):
     """Create an Inspector for Habilitacion Urbana testing."""
-    
-    return Inspector.objects.create(
+    inspector = Inspector.objects.create(
         perfil_ingeniero=perfil_ingeniero_inspector_2,
+    )
+    InspectorTipoLiquidacion.objects.create(
+        inspector=inspector,
         tipo_liquidacion=tipo_habilitacion_urbana,
         numero_registro="REG-002-HU",
         telefono="999888666",
         email="maria.lopez@test.com",
     )
+    return inspector
 
 
 @pytest.fixture
 def inspector_periodo_vigente(db, inspector_edificacion):
-    """Create a vigente InspectorPeriodo for the inspector."""
-    return InspectorPeriodo.objects.create(
-        inspector=inspector_edificacion,
+    """Create a vigente InspectorAsignacionPeriodo for the inspector."""
+    return InspectorAsignacionPeriodo.objects.create(
+        inspector_tipo_liquidacion=inspector_edificacion.tipos_liquidacion.first(),
         periodo_inicio=date.today() - timedelta(days=30),
         periodo_fin=None,
     )
@@ -92,9 +99,9 @@ def inspector_periodo_vigente(db, inspector_edificacion):
 
 @pytest.fixture
 def inspector_periodo_pasado(db, inspector_habilitacion_urbana):
-    """Create a past (non-vigente) InspectorPeriodo."""
-    return InspectorPeriodo.objects.create(
-        inspector=inspector_habilitacion_urbana,
+    """Create a past (non-vigente) InspectorAsignacionPeriodo."""
+    return InspectorAsignacionPeriodo.objects.create(
+        inspector_tipo_liquidacion=inspector_habilitacion_urbana.tipos_liquidacion.first(),
         periodo_inicio=date.today() - timedelta(days=365),
         periodo_fin=date.today() - timedelta(days=30),
     )

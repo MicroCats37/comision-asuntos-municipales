@@ -6,7 +6,7 @@ Pure ORM. No business logic.
 from typing import List, Optional, Tuple
 from datetime import date
 
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
@@ -39,8 +39,9 @@ class TarifasHistoricasCoreService:
         qs = TarifaLiquidacionBase.objects.filter(
             tipo_liquidacion__codigo=tipo_liquidacion,
         ).filter(
-            periodo_inicio__gte=fecha_desde,
             periodo_inicio__lte=fecha_hasta,
+        ).filter(
+            Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha_desde)
         ).order_by("periodo_inicio")
 
         total = qs.count()
@@ -100,8 +101,9 @@ class TarifasHistoricasCoreService:
         """
         return list(
             DerechoPorcentajeObra.objects.filter(
-                periodo_inicio__gte=fecha_desde,
                 periodo_inicio__lte=fecha_hasta,
+            ).filter(
+                Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha_desde)
             ).order_by("periodo_inicio")
         )
 
@@ -115,7 +117,8 @@ class TarifasHistoricasCoreService:
         """
         return list(
             DerechoPorMetroCuadrado.objects.filter(
-                periodo_inicio__gte=fecha_desde,
                 periodo_inicio__lte=fecha_hasta,
+            ).filter(
+                Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha_desde)
             ).order_by("periodo_inicio")
         )

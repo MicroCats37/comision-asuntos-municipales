@@ -25,7 +25,7 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     TarifaPorMetroCuadrado,
     DerechoPorMetroCuadrado,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
+from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
@@ -86,10 +86,16 @@ def uit_vigente(db):
 
 
 @pytest.fixture
-def tarifa_liquidacion_base_hu(db):
+def tipo_habilitacion_urbana(db):
+    """Get or create TipoLiquidacion for HABILITACION_URBANA."""
+    return TipoLiquidacionModel.objects.get_or_create(codigo="HABILITACION_URBANA", defaults={"nombre": "Habilitación Urbana"})[0]
+
+
+@pytest.fixture
+def tarifa_liquidacion_base_hu(db, tipo_habilitacion_urbana):
     """Create a TarifaLiquidacionBase for Habilitación Urbana."""
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+        tipo_liquidacion=tipo_habilitacion_urbana,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )

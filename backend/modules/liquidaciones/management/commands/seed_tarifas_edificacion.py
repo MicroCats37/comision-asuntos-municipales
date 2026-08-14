@@ -33,7 +33,7 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion import (
     TarifaPorcentajeObra,
     ReglaTarifaEdificacion,
 )
-from modules.liquidaciones.domain.models.especialidades import Especialidad
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
 from modules.liquidaciones.domain.constants import TipoLiquidacion, TipoTramiteEdificaciones, TramiteAccion
 
 

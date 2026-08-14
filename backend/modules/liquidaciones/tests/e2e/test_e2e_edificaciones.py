@@ -20,13 +20,13 @@ from config.api import api
 from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.finanzas.domain.models.impuestos import IGV, UIT
-from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorcentajeObra,
     DerechoPorcentajeObra,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
+from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
@@ -87,10 +87,16 @@ def uit_vigente(db):
 
 
 @pytest.fixture
-def tarifa_liquidacion_base_edificacion(db):
+def tipo_edificacion(db):
+    """Get or create TipoLiquidacion for EDIFICACION."""
+    return TipoLiquidacionModel.objects.get_or_create(codigo="EDIFICACION", defaults={"nombre": "Edificaciones"})[0]
+
+
+@pytest.fixture
+def tarifa_liquidacion_base_edificacion(db, tipo_edificacion):
     """Create a TarifaLiquidacionBase for Edificaciones."""
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.EDIFICACION,
+        tipo_liquidacion=tipo_edificacion,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -99,28 +105,28 @@ def tarifa_liquidacion_base_edificacion(db):
 @pytest.fixture
 def especialidad_estructuras(db):
     """Create an Especialidad for Edificaciones testing - Civil/Estructuras."""
-    return Especialidad.objects.create(
-        codigo="E01",
-        nombre="Estructuras",
-    )
+    return Especialidad.objects.get_or_create(
+        slug="estructuras",
+        defaults={"codigo": "E01", "nombre": "Estructuras"},
+    )[0]
 
 
 @pytest.fixture
 def especialidad_sanitaria(db):
     """Create an Especialidad for Edificaciones testing - Sanitaria."""
-    return Especialidad.objects.create(
-        codigo="S01",
-        nombre="Sanitaria",
-    )
+    return Especialidad.objects.get_or_create(
+        slug="sanitaria",
+        defaults={"codigo": "S01", "nombre": "Sanitaria"},
+    )[0]
 
 
 @pytest.fixture
 def especialidad_electrica(db):
     """Create an Especialidad for Edificaciones testing - Electrica."""
-    return Especialidad.objects.create(
-        codigo="EL01",
-        nombre="Electrica",
-    )
+    return Especialidad.objects.get_or_create(
+        slug="electrica",
+        defaults={"codigo": "EL01", "nombre": "Electrica"},
+    )[0]
 
 
 @pytest.fixture

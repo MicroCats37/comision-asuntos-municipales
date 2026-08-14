@@ -25,7 +25,7 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     TarifaPorMetroCuadrado,
     DerechoPorMetroCuadrado,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
+from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
@@ -86,10 +86,16 @@ def uit_vigente(db):
 
 
 @pytest.fixture
-def tarifa_liquidacion_base_ms(db):
+def tipo_mecanica_suelos(db):
+    """Get or create TipoLiquidacion for MECANICA_SUELOS."""
+    return TipoLiquidacionModel.objects.get_or_create(codigo="MECANICA_SUELOS", defaults={"nombre": "Mecánica de Suelos"})[0]
+
+
+@pytest.fixture
+def tarifa_liquidacion_base_ms(db, tipo_mecanica_suelos):
     """Create a TarifaLiquidacionBase for Mecánica de Suelos."""
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
+        tipo_liquidacion=tipo_mecanica_suelos,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )

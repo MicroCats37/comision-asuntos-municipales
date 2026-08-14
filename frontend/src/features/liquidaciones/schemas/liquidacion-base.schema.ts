@@ -91,6 +91,12 @@ export const LiquidacionTipoOutputSchema = z.object({
   numero: z.coerce.number().int(),
 });
 
+// TipoLiquidacionOutput: codigo, nombre (sin id)
+export const TipoLiquidacionOutputSchema = z.object({
+  codigo: z.string().nullish(),
+  nombre: z.string().nullish(),
+});
+
 // LiquidacionGeneralOutput — matches backend EXACTLY (rich fields), tolerant to nulls/strings
 export const LiquidacionGeneralOutputSchema = z.object({
   id: uuid(),
@@ -107,6 +113,7 @@ export const LiquidacionGeneralOutputSchema = z.object({
   uit: UitOutputSchema.nullish(),
   proyecto: ProyectoOutputSchema,
   contacto: ContactoOutputSchema.nullish(),
+  tipo_liquidacion: TipoLiquidacionOutputSchema.nullish(),
 });
 
 // Paginated response helper (items directly, without ApiResponse wrapper)

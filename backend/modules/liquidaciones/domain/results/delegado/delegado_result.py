@@ -67,7 +67,6 @@ class MunicipalidadesAsignadasResult(BaseModel):
     id: str
     municipalidad: MunicipalidadBasicResult
     tipo: str
-    categoria: Optional[str] = None
     periodo_inicio: Optional[date] = None
     periodo_fin: Optional[date] = None
     es_vigente: bool
@@ -85,7 +84,6 @@ class DelegadoForMunicipalidadResult(BaseModel):
     id: str
     perfil_ingeniero: PerfilIngenieroResult
     tipo: str
-    categoria: Optional[str] = None
     periodo_inicio: Optional[date] = None
     periodo_fin: Optional[date] = None
     es_vigente: bool

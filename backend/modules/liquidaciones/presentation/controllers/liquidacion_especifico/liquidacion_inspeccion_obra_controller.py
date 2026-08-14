@@ -16,6 +16,7 @@ from modules.liquidaciones.domain.services.core.auth.auth_core_service import (
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_inspeccion_obra_schemas import (
     LiquidacionInspeccionObraInput,
     LiquidacionInspeccionObraOutput,
+    LiquidacionInspeccionObraNuevaRevisionInput,
 )
 from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.liquidacion_inspeccion_obra_orchestrator import (
     LiquidacionInspeccionObraOrchestrator,
@@ -152,6 +153,25 @@ class LiquidacionInspeccionObraController:
         usuario_id = self.auth_core_service.get_authenticated_user_id(request)
 
         domain_result = self.orchestrator.crear_primera_revision_proceso(
+            usuario_id=usuario_id,
+            payload_in=payload,
+        )
+
+        result = self.presenter.present_primera_revision(domain_result)
+        return success_response(result)
+
+    @route.post(
+        "/nueva-liquidacion/primera-revision-desde-previa",
+        response={200: ApiResponse[LiquidacionInspeccionObraOutput]},
+    )
+    def crear_primera_revision_desde_previa(self, request, payload: LiquidacionInspeccionObraNuevaRevisionInput):
+        """
+        Crea una Inspección de Obra primera-revision heredando
+        proyecto/municipalidad/entidad de una liquidación previa (Edificación o HU).
+        """
+        usuario_id = self.auth_core_service.get_authenticated_user_id(request)
+
+        domain_result = self.orchestrator.crear_primera_revision_desde_previa_proceso(
             usuario_id=usuario_id,
             payload_in=payload,
         )

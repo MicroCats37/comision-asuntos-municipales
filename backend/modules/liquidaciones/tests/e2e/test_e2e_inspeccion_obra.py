@@ -24,7 +24,7 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     TarifaLiquidacionBase,
     TarifaPorCategoriaVisitas,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
+from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
@@ -85,10 +85,16 @@ def uit_vigente(db):
 
 
 @pytest.fixture
-def tarifa_liquidacion_base_io(db):
+def tipo_inspeccion_obra(db):
+    """Get or create TipoLiquidacion for INSPECCION_OBRA."""
+    return TipoLiquidacionModel.objects.get_or_create(codigo="INSPECCION_OBRA", defaults={"nombre": "Inspección de Obra"})[0]
+
+
+@pytest.fixture
+def tarifa_liquidacion_base_io(db, tipo_inspeccion_obra):
     """Create a TarifaLiquidacionBase for Inspección de Obra."""
     return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=TipoLiquidacion.INSPECCION_OBRA,
+        tipo_liquidacion=tipo_inspeccion_obra,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
@@ -201,7 +207,7 @@ def test_e2e_inspeccion_obra_flow(
 
     # Step 4: POST crear liquidacion
     response = auth_client.post(
-        "/liquidaciones/inspeccion-obra/crear-primera-revision",
+        "/liquidaciones/inspeccion-obra/nueva-liquidacion/primera-revision",
         json=payload,
     )
 

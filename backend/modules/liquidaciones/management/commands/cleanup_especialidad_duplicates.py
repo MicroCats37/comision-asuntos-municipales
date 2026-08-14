@@ -24,7 +24,7 @@ import logging
 
 from django.core.management.base import BaseCommand, CommandError
 
-from modules.liquidaciones.domain.models.especialidades import Especialidad
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadIngeniero as Especialidad
 from modules.liquidaciones.domain.models.delegado import Delegado
 from modules.liquidaciones.domain.models.liquidacion.liquidacion import TarifaLiquidacionBase
 

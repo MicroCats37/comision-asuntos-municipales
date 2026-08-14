@@ -25,6 +25,8 @@ interface UseUltimaRevisionEdificacionesProps {
   pageSize?: number;
   razonSocial?: string;
   numeroDocumento?: string;
+  /** Si false, la query NO se dispara (espera a que el usuario busque) */
+  enabled?: boolean;
 }
 
 export function useUltimaRevisionEdificaciones({
@@ -32,6 +34,7 @@ export function useUltimaRevisionEdificaciones({
   pageSize = 10,
   razonSocial,
   numeroDocumento,
+  enabled = true,
 }: UseUltimaRevisionEdificacionesProps = {}) {
   const params: Record<string, string | number> = { page, page_size: pageSize };
   if (razonSocial) params.razon_social = razonSocial;
@@ -43,6 +46,7 @@ export function useUltimaRevisionEdificaciones({
     schema: paginatedSchema,
     params,
     queryOptions: {
+      enabled,
       select: (data) => {
         if (!data?.data) {
           return {

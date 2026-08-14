@@ -43,6 +43,10 @@ interface CotizacionOutput {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface CotizacionPorcentajeSmartFieldProps {
   methods: UseFormReturn<any>;
+  /** Tipo de liquidación para el endpoint de cotizar (default: edificaciones) */
+  tipo?: string;
+  /** Valor declarado FIJO (para nueva revisión — se hereda de la previa, no está en el form) */
+  valorDeclaradoFijo?: number;
 }
 
 // Backend serializes Decimal as strings — coerce to Number defensively
@@ -55,6 +59,8 @@ const formatSoles = (value: unknown): string => `S/ ${toNumber(value).toFixed(2)
 
 export function CotizacionPorcentajeSmartField({
   methods,
+  tipo = "edificaciones",
+  valorDeclaradoFijo,
 }: CotizacionPorcentajeSmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +71,7 @@ export function CotizacionPorcentajeSmartField({
       tarifas_ids: string[];
     }): Promise<CotizacionOutput> => {
       const { data } = await api.post(
-        "/liquidaciones/edificaciones/cotizar",
+        `/liquidaciones/${tipo}/cotizar`,
         {
           liquidacion_especifica: {
             datos: { valor_declarado: payload.valor_declarado },
@@ -88,9 +94,11 @@ export function CotizacionPorcentajeSmartField({
   });
 
   // Auto-recalculate when valor_declarado changes (debounced). Empty tarifas = backend auto-fill.
-  const valorDeclarado = useWatch({ control: methods.control, name: "valor_declarado" });
+  const valorDeclaradoForm = useWatch({ control: methods.control, name: "valor_declarado" });
   const tarifasIds = useWatch({ control: methods.control, name: "tarifas_ids" });
-  const debouncedValor = useDebounce(valorDeclarado, 500);
+  // Use fixed value (nueva revision) OR form value (primera revision)
+  const effectiveValor = valorDeclaradoFijo ?? valorDeclaradoForm;
+  const debouncedValor = useDebounce(effectiveValor, 500);
 
   useEffect(() => {
     const v = Number(debouncedValor);

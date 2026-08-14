@@ -13,8 +13,8 @@ from core.models import BaseModel
 from decimal import Decimal
 from core_application.models import VigenciaModel
 
-
 from modules.liquidaciones.domain.constants import TramiteAccion, TipoLiquidacion
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 
 
 class TarifaLiquidacionBase(BaseModel, VigenciaModel):
@@ -147,11 +147,11 @@ class TarifaPorcentajeObra(BaseModel):
     )
     
     especialidad = models.ForeignKey(
-        "usuarios.Especialidad",
+        EspecialidadRevision,
         on_delete=models.PROTECT,
         related_name="tarifas_porcentuales",
-        verbose_name="Especialidad",
-        help_text="Especialidad a la que aplica esta tarifa porcentual.",
+        verbose_name="Especialidad de Revisión",
+        help_text="Especialidad de revisión a la que aplica esta tarifa porcentual.",
     )
 
     porcentaje_liquidacion = models.DecimalField(

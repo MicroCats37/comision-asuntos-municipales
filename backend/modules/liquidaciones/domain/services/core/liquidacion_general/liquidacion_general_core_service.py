@@ -684,12 +684,12 @@ class LiquidacionGeneralCoreService:
 
         Applies optional filters and returns only the liquidacion with the highest
         numero_revision for each proyecto.
-        Uses select_related and prefetch_related like list_liquidaciones_by_type_paginated.
+        Uses select_related and prefetch_related with dynamic prefetch based on tipo_liquidacion.
         Returns (queryset, total_count).
         """
         from django.db.models import Max, OuterRef, Subquery
 
-        # Base queryset with same prefetch chain as list_liquidaciones_by_type_paginated
+        # Base queryset with dynamic prefetch based on tipo_liquidacion (FIX: was hardcoded to Edificaciones only)
         qs = LiquidacionGeneral.objects.filter(
             tipo_liquidacion__codigo=tipo_liquidacion
         ).select_related(
@@ -698,14 +698,76 @@ class LiquidacionGeneralCoreService:
             'municipalidad',
             'usuario_creador',
             'tipo_liquidacion',
-        ).prefetch_related(
-            'edificaciones',
-            'liquidacion_porcentaje_obra',
-            'liquidacion_porcentaje_obra__detalles',
-            'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
-            'liquidacion_porcentaje_obra__detalles__especialidad',
-            'liquidacion_porcentaje_obra__derecho_aplicado',
         )
+
+        # Dynamic prefetch based on tipo_liquidacion (matching the pattern in list_liquidaciones_generales_paginated)
+        if tipo_liquidacion == TipoLiquidacion.EDIFICACION:
+            qs = qs.prefetch_related(
+                'edificaciones',
+                'liquidacion_porcentaje_obra',
+                'liquidacion_porcentaje_obra__detalles',
+                'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+                'liquidacion_porcentaje_obra__detalles__especialidad',
+                'liquidacion_porcentaje_obra__derecho_aplicado',
+            )
+        elif tipo_liquidacion == TipoLiquidacion.HABILITACION_URBANA:
+            qs = qs.prefetch_related(
+                'habilitacion_urbana',
+                'liquidacion_m2',
+                'liquidacion_m2__tarifa_aplicada',
+                'liquidacion_m2__derecho',
+            )
+        elif tipo_liquidacion == TipoLiquidacion.MECANICA_SUELOS:
+            qs = qs.prefetch_related(
+                'liquidacion_m2',
+                'liquidacion_m2__tarifa_aplicada',
+                'liquidacion_m2__derecho',
+                'mecanica_suelos',
+            )
+        elif tipo_liquidacion == TipoLiquidacion.TALUDES:
+            qs = qs.prefetch_related(
+                'taludes',
+                'liquidacion_porcentaje_obra',
+                'liquidacion_porcentaje_obra__detalles',
+                'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+                'liquidacion_porcentaje_obra__detalles__especialidad',
+                'liquidacion_porcentaje_obra__derecho_aplicado',
+            )
+        elif tipo_liquidacion == TipoLiquidacion.INSPECCION_OBRA:
+            qs = qs.prefetch_related(
+                'inspeccion_obra',
+                'liquidacion_visitas',
+                'liquidacion_visitas__tarifa_aplicada',
+            )
+        elif tipo_liquidacion == TipoLiquidacion.IMPACTO_VIAL:
+            qs = qs.prefetch_related(
+                'impacto_vial',
+                'liquidacion_porcentaje_obra',
+                'liquidacion_porcentaje_obra__detalles',
+                'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+                'liquidacion_porcentaje_obra__detalles__especialidad',
+                'liquidacion_porcentaje_obra__derecho_aplicado',
+            )
+        else:
+            # Fallback: prefetch all relations
+            qs = qs.prefetch_related(
+                'edificaciones',
+                'liquidacion_porcentaje_obra',
+                'liquidacion_porcentaje_obra__detalles',
+                'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+                'liquidacion_porcentaje_obra__detalles__especialidad',
+                'liquidacion_porcentaje_obra__derecho_aplicado',
+                'habilitacion_urbana',
+                'liquidacion_m2',
+                'liquidacion_m2__tarifa_aplicada',
+                'liquidacion_m2__derecho',
+                'mecanica_suelos',
+                'inspeccion_obra',
+                'liquidacion_visitas',
+                'liquidacion_visitas__tarifa_aplicada',
+                'taludes',
+                'impacto_vial',
+            )
 
         # Apply filters
         if razon_social:
@@ -759,3 +821,260 @@ class LiquidacionGeneralCoreService:
         # El tipo_liquidacion siempre viene validado por el orquestador.
         qs = qs.filter(tipo_liquidacion__codigo=tipo_liquidacion)
         return qs.order_by('-numero_revision').first()
+
+    def list_liquidaciones_generales_paginated(
+        self,
+        page: int,
+        page_size: int,
+        tipo=None,
+        documento=None,
+        razon_social=None,
+        propietario=None,
+        expediente=None,
+        nombre_propietario=None,
+        **kwargs
+    ) -> tuple:
+        """
+        Returns paginated LiquidacionGeneral queryset for ALL tipos (no filter by tipo_liquidacion).
+        Applies optional filters for tipo, documento, razon_social, propietario.
+        Uses select_related and prefetch_related to avoid N+1 queries.
+
+        Prefetch strategy: when `tipo` is provided, only prefetches the relation
+        corresponding to that tipo. When `tipo` is None (general listing), prefetches
+        all 6 relations (acceptable price for unfiltered general listing).
+        Returns (queryset, total_count).
+        """
+        qs = LiquidacionGeneral.objects.all().select_related(
+            'proyecto',
+            'proyecto__entidad',
+            'municipalidad',
+            'usuario_creador',
+            'tipo_liquidacion',
+        )
+
+        # Conditional prefetch based on tipo filter to avoid N+1
+        # When tipo is specified, only prefetch the specific relation
+        if tipo == TipoLiquidacion.EDIFICACION:
+            qs = qs.prefetch_related(
+                'edificaciones',
+                'liquidacion_porcentaje_obra',
+                'liquidacion_porcentaje_obra__detalles',
+                'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+                'liquidacion_porcentaje_obra__detalles__especialidad',
+                'liquidacion_porcentaje_obra__derecho_aplicado',
+            )
+        elif tipo == TipoLiquidacion.HABILITACION_URBANA:
+            qs = qs.prefetch_related(
+                'habilitacion_urbana',
+                'liquidacion_m2',
+                'liquidacion_m2__tarifa_aplicada',
+                'liquidacion_m2__derecho',
+            )
+        elif tipo == TipoLiquidacion.MECANICA_SUELOS:
+            qs = qs.prefetch_related(
+                'liquidacion_m2',
+                'liquidacion_m2__tarifa_aplicada',
+                'liquidacion_m2__derecho',
+                'mecanica_suelos',
+            )
+        elif tipo == TipoLiquidacion.TALUDES:
+            qs = qs.prefetch_related(
+                'taludes',
+                'liquidacion_porcentaje_obra',
+                'liquidacion_porcentaje_obra__detalles',
+                'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+                'liquidacion_porcentaje_obra__detalles__especialidad',
+                'liquidacion_porcentaje_obra__derecho_aplicado',
+            )
+        elif tipo == TipoLiquidacion.INSPECCION_OBRA:
+            qs = qs.prefetch_related(
+                'inspeccion_obra',
+                'liquidacion_visitas',
+                'liquidacion_visitas__tarifa_aplicada',
+            )
+        elif tipo == TipoLiquidacion.IMPACTO_VIAL:
+            qs = qs.prefetch_related(
+                'impacto_vial',
+                'liquidacion_porcentaje_obra',
+                'liquidacion_porcentaje_obra__detalles',
+                'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+                'liquidacion_porcentaje_obra__detalles__especialidad',
+                'liquidacion_porcentaje_obra__derecho_aplicado',
+            )
+        else:
+            # No tipo filter: prefetch all relations (general listing)
+            qs = qs.prefetch_related(
+                'edificaciones',
+                'liquidacion_porcentaje_obra',
+                'liquidacion_porcentaje_obra__detalles',
+                'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+                'liquidacion_porcentaje_obra__detalles__especialidad',
+                'liquidacion_porcentaje_obra__derecho_aplicado',
+                'habilitacion_urbana',
+                'liquidacion_m2',
+                'liquidacion_m2__tarifa_aplicada',
+                'liquidacion_m2__derecho',
+                'mecanica_suelos',
+                'inspeccion_obra',
+                'liquidacion_visitas',
+                'liquidacion_visitas__tarifa_aplicada',
+                'taludes',
+                'impacto_vial',
+            )
+
+        qs = qs.order_by('-fecha_registro')
+
+        # Apply filters (only for non-None params)
+        if tipo:
+            qs = qs.filter(tipo_liquidacion__codigo=tipo)
+        if documento:
+            qs = qs.filter(proyecto__entidad_numero_documento__icontains=documento)
+        if razon_social:
+            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
+        if propietario:
+            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
+        # expediente: filters the LiquidacionGeneral.expediente field directly
+        if expediente:
+            qs = qs.filter(expediente__icontains=expediente)
+        # nombre_propietario: explicit alias for 'propietario' — both filter proyecto__nombre_propietario__icontains
+        if nombre_propietario:
+            qs = qs.filter(proyecto__nombre_propietario__icontains=nombre_propietario)
+
+        total = qs.count()
+        offset = (page - 1) * page_size
+        return qs[offset:offset + page_size], total
+
+    def list_liquidaciones_ultimas_generales_paginated(
+        self,
+        page: int,
+        page_size: int,
+        tipo=None,
+        documento=None,
+        razon_social=None,
+        propietario=None,
+        expediente=None,
+        nombre_propietario=None,
+        **kwargs
+    ) -> tuple:
+        """
+        Returns paginated LiquidacionGeneral queryset containing only the latest revision
+        per (proyecto, tipo_liquidacion) pair.
+
+        Uses subquery with Max('numero_revision') grouped by (proyecto_id, tipo_liquidacion__codigo)
+        to identify the latest revision per project+tipo.
+        Applies same optional filters as list_liquidaciones_generales_paginated.
+        Uses conditional prefetch based on tipo filter (same strategy as list_liquidaciones_generales_paginated).
+        Returns (queryset, total_count).
+        """
+        from django.db.models import Max, OuterRef, Subquery
+
+        # Base queryset
+        qs = LiquidacionGeneral.objects.all().select_related(
+            'proyecto',
+            'proyecto__entidad',
+            'municipalidad',
+            'usuario_creador',
+            'tipo_liquidacion',
+        )
+
+        # Conditional prefetch based on tipo filter (same strategy as list_liquidaciones_generales_paginated)
+        if tipo == TipoLiquidacion.EDIFICACION:
+            qs = qs.prefetch_related(
+                'edificaciones',
+                'liquidacion_porcentaje_obra',
+                'liquidacion_porcentaje_obra__detalles',
+                'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+                'liquidacion_porcentaje_obra__detalles__especialidad',
+                'liquidacion_porcentaje_obra__derecho_aplicado',
+            )
+        elif tipo == TipoLiquidacion.HABILITACION_URBANA:
+            qs = qs.prefetch_related(
+                'habilitacion_urbana',
+                'liquidacion_m2',
+                'liquidacion_m2__tarifa_aplicada',
+                'liquidacion_m2__derecho',
+            )
+        elif tipo == TipoLiquidacion.MECANICA_SUELOS:
+            qs = qs.prefetch_related(
+                'liquidacion_m2',
+                'liquidacion_m2__tarifa_aplicada',
+                'liquidacion_m2__derecho',
+                'mecanica_suelos',
+            )
+        elif tipo == TipoLiquidacion.TALUDES:
+            qs = qs.prefetch_related(
+                'taludes',
+                'liquidacion_porcentaje_obra',
+                'liquidacion_porcentaje_obra__detalles',
+                'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+                'liquidacion_porcentaje_obra__detalles__especialidad',
+                'liquidacion_porcentaje_obra__derecho_aplicado',
+            )
+        elif tipo == TipoLiquidacion.INSPECCION_OBRA:
+            qs = qs.prefetch_related(
+                'inspeccion_obra',
+                'liquidacion_visitas',
+                'liquidacion_visitas__tarifa_aplicada',
+            )
+        elif tipo == TipoLiquidacion.IMPACTO_VIAL:
+            qs = qs.prefetch_related(
+                'impacto_vial',
+                'liquidacion_porcentaje_obra',
+                'liquidacion_porcentaje_obra__detalles',
+                'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+                'liquidacion_porcentaje_obra__detalles__especialidad',
+                'liquidacion_porcentaje_obra__derecho_aplicado',
+            )
+        else:
+            # No tipo filter: prefetch all relations (general listing)
+            qs = qs.prefetch_related(
+                'edificaciones',
+                'liquidacion_porcentaje_obra',
+                'liquidacion_porcentaje_obra__detalles',
+                'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+                'liquidacion_porcentaje_obra__detalles__especialidad',
+                'liquidacion_porcentaje_obra__derecho_aplicado',
+                'habilitacion_urbana',
+                'liquidacion_m2',
+                'liquidacion_m2__tarifa_aplicada',
+                'liquidacion_m2__derecho',
+                'mecanica_suelos',
+                'inspeccion_obra',
+                'liquidacion_visitas',
+                'liquidacion_visitas__tarifa_aplicada',
+                'taludes',
+                'impacto_vial',
+            )
+
+        qs = qs.order_by('-fecha_registro')
+
+        # Apply filters (only for non-None params)
+        if tipo:
+            qs = qs.filter(tipo_liquidacion__codigo=tipo)
+        if documento:
+            qs = qs.filter(proyecto__entidad_numero_documento__icontains=documento)
+        if razon_social:
+            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
+        if propietario:
+            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
+        # expediente: filters the LiquidacionGeneral.expediente field directly
+        if expediente:
+            qs = qs.filter(expediente__icontains=expediente)
+        # nombre_propietario: explicit alias for 'propietario' — both filter proyecto__nombre_propietario__icontains
+        if nombre_propietario:
+            qs = qs.filter(proyecto__nombre_propietario__icontains=nombre_propietario)
+
+        # Subquery to get max numero_revision per (proyecto_id, tipo_liquidacion__codigo)
+        max_rev_subquery = LiquidacionGeneral.objects.filter(
+            proyecto_id=OuterRef('proyecto_id'),
+            tipo_liquidacion__codigo=OuterRef('tipo_liquidacion__codigo'),
+        ).order_by().values('proyecto_id', 'tipo_liquidacion__codigo').annotate(
+            max_rev=Max('numero_revision')
+        ).values('max_rev')[:1]
+
+        qs = qs.filter(numero_revision=Subquery(max_rev_subquery))
+
+        total = qs.count()
+        offset = (page - 1) * page_size
+        return qs[offset:offset + page_size], total
+

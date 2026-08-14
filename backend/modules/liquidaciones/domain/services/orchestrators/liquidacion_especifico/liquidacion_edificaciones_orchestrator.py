@@ -335,6 +335,7 @@ class LiquidacionEdificacionesOrchestrator:
             DistritoResult,
             ProvinciaResult,
             DepartamentoResult,
+            TipoLiquidacionResult,
         )
         from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
             LiquidacionPorcentajeObraResult,
@@ -428,6 +429,14 @@ class LiquidacionEdificacionesOrchestrator:
                     numero_documento=ent_numero or "",
                     razon_social=ent_razon or "",
                 ) if (ent_tipo or ent_numero or ent_razon) else None,
+            ),
+            tipo_liquidacion=(
+                TipoLiquidacionResult(
+                    codigo=lg.tipo_liquidacion.codigo,
+                    nombre=lg.tipo_liquidacion.nombre,
+                )
+                if lg.tipo_liquidacion
+                else None
             ),
         )
 

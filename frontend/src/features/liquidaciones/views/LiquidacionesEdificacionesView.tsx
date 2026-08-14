@@ -17,7 +17,10 @@ import { EdificacionesFormModal } from "../components/forms/EdificacionesFormMod
 import { LiquidacionFiltroModal } from "../components/forms/LiquidacionFiltroModal";
 import { SeleccionarUltimaRevisionModal } from "../components/forms/SeleccionarUltimaRevisionModal";
 import { NuevaRevisionEdificacionesFormModal } from "../components/forms/NuevaRevisionEdificacionesFormModal";
+import { LiquidacionPDFModal } from "../components/forms/LiquidacionPDFModal";
 import { useLiquidacionesEdificaciones, type LiquidacionFiltros } from "../hooks";
+import type { UltimaRevisionItem } from "../hooks/useUltimaRevisionEdificaciones";
+import type { PdfLiquidacionItem } from "../pdf/buildLiquidacionPdfElement";
 import type { LiquidacionEdificacionesListItem } from "../schemas/liquidacion-edificaciones.schema";
 
 const KIND_ICON: LucideIcon = Building2;
@@ -28,7 +31,8 @@ export function LiquidacionesEdificacionesView() {
   const [filtroModalOpen, setFiltroModalOpen] = useState(false);
   const [selectPreviaOpen, setSelectPreviaOpen] = useState(false);
   const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
-  const [liquidacionPreviaId, setLiquidacionPreviaId] = useState<string | null>(null);
+  const [previa, setPrevia] = useState<UltimaRevisionItem | null>(null);
+  const [pdfItem, setPdfItem] = useState<PdfLiquidacionItem | null>(null);
 
   const {
     items,
@@ -192,6 +196,10 @@ export function LiquidacionesEdificacionesView() {
       <EdificacionesFormModal
         open={formModalOpen}
         onOpenChange={setFormModalOpen}
+        onCreated={(item) => {
+          setFormModalOpen(false);
+          setPdfItem(item);
+        }}
         onSuccess={() => {
           setFormModalOpen(false);
           refetch();
@@ -214,8 +222,8 @@ export function LiquidacionesEdificacionesView() {
       <SeleccionarUltimaRevisionModal
         open={selectPreviaOpen}
         onOpenChange={setSelectPreviaOpen}
-        onSelect={(id) => {
-          setLiquidacionPreviaId(id);
+        onSelect={(p) => {
+          setPrevia(p);
           setSelectPreviaOpen(false);
           setNuevaRevisionOpen(true);
         }}
@@ -225,13 +233,23 @@ export function LiquidacionesEdificacionesView() {
       <NuevaRevisionEdificacionesFormModal
         open={nuevaRevisionOpen}
         onOpenChange={setNuevaRevisionOpen}
-        liquidacionPreviaId={liquidacionPreviaId ?? ""}
+        previa={previa}
         onSuccess={() => {
           setNuevaRevisionOpen(false);
-          setLiquidacionPreviaId(null);
+          setPrevia(null);
           refetch();
         }}
       />
+
+      {/* PDF de la liquidación creada */}
+      {pdfItem && (
+        <LiquidacionPDFModal
+          open={!!pdfItem}
+          onOpenChange={(o) => !o && setPdfItem(null)}
+          item={pdfItem}
+          tipo="edificacion"
+        />
+      )}
     </div>
   );
 }

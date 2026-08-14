@@ -13,6 +13,7 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
 )
 from modules.liquidaciones.domain.schemas.liquidacion_especifico.inspeccion_obra_primera_revision_data import (
     InspeccionObraPrimeraRevisionData,
+    InspeccionObraNuevaRevisionData,
 )
 from modules.liquidaciones.domain.results.liquidacion_especifico.inspeccion_obra_primera_revision_result import (
     InspeccionObraPrimeraRevisionResult,
@@ -116,7 +117,7 @@ class LiquidacionInspeccionObraFlujo:
         # 5. Mapear a Result puro (Cero dicts)
         from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
             ProyectoResult, EntidadResult, UsuarioCreadorResult, MunicipalidadResult, IgvResult, UitResult,
-            DistritoResult, ProvinciaResult, DepartamentoResult,
+            DistritoResult, ProvinciaResult, DepartamentoResult, TipoLiquidacionResult,
         )
 
         entidad_result = None
@@ -204,6 +205,229 @@ class LiquidacionInspeccionObraFlujo:
                 else None
             ),
             proyecto=proyecto_result,
+            tipo_liquidacion=(
+                TipoLiquidacionResult(
+                    codigo=liquidacion_general.tipo_liquidacion.codigo,
+                    nombre=liquidacion_general.tipo_liquidacion.nombre,
+                )
+                if liquidacion_general.tipo_liquidacion
+                else None
+            ),
+        )
+
+        tipo_result = LiquidacionVisitasResult(
+            id=str(liquidacion_visitas.id),
+            cantidad_visitas=liquidacion_visitas.cantidad_visitas,
+            porcentaje_uit=float(liquidacion_visitas.porcentaje_uit),
+            categoria=liquidacion_visitas.categoria,
+            tarifa_aplicada_id=str(liquidacion_visitas.tarifa_aplicada_id),
+        )
+
+        especifico_result = LiquidacionEspecificaInspeccionObraResult(
+            id=str(liquidacion_io.id),
+            numero=liquidacion_io.numero,
+        )
+
+        return InspeccionObraPrimeraRevisionResult(
+            liquidacion_general=general_result,
+            liquidacion_tipo=tipo_result,
+            liquidacion_especifica=especifico_result,
+        )
+
+    @transaction.atomic()
+    def ejecutar_primera_revision_desde_previa(
+        self,
+        usuario_id: int,
+        data: InspeccionObraNuevaRevisionData,
+        liquidacion_previa,
+        inspector,
+    ) -> InspeccionObraPrimeraRevisionResult:
+        """
+        Crea una IO primera-revision heredando proyecto/municipalidad/entidad
+        de una liquidación previa (Edificación o Habilitación Urbana).
+
+        Diferencias respecto a ejecutar_primera_revision:
+        - Entidad y Proyecto se HEREDAN de la liquidación previa (no se crean nuevos)
+        - numero_revision = 1 (siempre)
+        - Se crea LiquidacionInspector para asociar el inspector
+        - No se usa upsert_contacto (el contacto viene en el dominio, no se pide en el input)
+        """
+        # 1. Traer tarifa, UIT y calcular
+        tarifa = self.visitas_core.get_tarifa_por_id(data.liquidacion_especifica.tarifa.tarifa_visitas_id)
+        uit_vigente = self.general_core.get_uit_vigente()
+        igv_vigente = self.general_core.get_igv_vigente()
+
+        subtotal = self.visitas_core.calcular_subtotal_visitas(
+            cantidad_visitas=data.liquidacion_especifica.datos.cantidad_visitas,
+            tarifa=tarifa,
+            uit_vigente=uit_vigente,
+        )
+
+        # 2. Entidad y Proyecto ya existen — obtenerlos de la liquidación previa
+        proyecto = liquidacion_previa.proyecto
+        entidad = proyecto.entidad if hasattr(proyecto, 'entidad') and proyecto.entidad else None
+
+        # 3. Crear LiquidacionGeneral con tipo_liquidacion=INSPECCION_OBRA y numero_revision=1
+        from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
+        from modules.liquidaciones.domain.models.liquidacion.liquidacion_general import LiquidacionGeneral
+        from modules.liquidaciones.domain.models.inspector import LiquidacionInspector
+
+        liquidacion_general = self.general_core.create_liquidacion_general(
+            municipalidad_id=str(liquidacion_previa.municipalidad_id),
+            expediente=liquidacion_previa.expediente,
+            observacion=liquidacion_previa.observacion,
+            retencion=liquidacion_previa.retencion,
+            proyecto=proyecto,
+            tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.INSPECCION_OBRA),
+            numero_revision=1,
+        )
+
+        # Aplicar totales con IGV y asignar FKs de impuestos
+        liquidacion_general.sub_total = subtotal
+        liquidacion_general.total = subtotal * (1 + igv_vigente.valor)
+        liquidacion_general.igv_id = igv_vigente
+        liquidacion_general.uit_id = uit_vigente
+        liquidacion_general.usuario_creador_id = usuario_id
+        liquidacion_general.save()
+
+        # 4. Crear Tipo: LiquidacionPorCategoriaVisitas
+        liquidacion_visitas = self.visitas_core.crear_liquidacion_tipo_visitas(
+            liquidacion_general=liquidacion_general,
+            data=data.liquidacion_especifica,
+        )
+
+        # 5. Crear Específico: LiquidacionInspeccionObra
+        liquidacion_io = LiquidacionInspeccionObra.objects.create(
+            liquidacion=liquidacion_general,
+        )
+
+        # 6. Crear LiquidacionInspector (asocia el inspector a la liquidación)
+        LiquidacionInspector.objects.create(
+            liquidacion=liquidacion_general,
+            inspector=inspector,
+        )
+
+        # 7. Mapear a Result puro (reutiliza la lógica de mapeo de ejecutar_primera_revision)
+        return self._build_result_from_orm(
+            liquidacion_general=liquidacion_general,
+            liquidacion_io=liquidacion_io,
+            liquidacion_visitas=liquidacion_visitas,
+            proyecto=proyecto,
+            entidad=entidad,
+            usuario_id=usuario_id,
+        )
+
+    def _build_result_from_orm(
+        self,
+        liquidacion_general,
+        liquidacion_io,
+        liquidacion_visitas,
+        proyecto,
+        entidad,
+        usuario_id: int,
+    ) -> InspeccionObraPrimeraRevisionResult:
+        """
+        Construye InspeccionObraPrimeraRevisionResult a partir de objetos ORM.
+        Extrae la lógica de mapeo de ejecutar_primera_revision para reutilización.
+        """
+        from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
+            ProyectoResult, EntidadResult, UsuarioCreadorResult, MunicipalidadResult, IgvResult, UitResult,
+            DistritoResult, ProvinciaResult, DepartamentoResult, TipoLiquidacionResult,
+        )
+
+        entidad_result = None
+        if entidad:
+            entidad_result = EntidadResult(
+                razon_social=proyecto.entidad_razon_social,
+                tipo_documento=entidad.tipo_documento,
+                numero_documento=entidad.numero_documento,
+            )
+
+        # Build distrito objeto (con provincia/departamento)
+        distrito_result = None
+        if getattr(proyecto, "distrito_id", None):
+            distrito = proyecto.distrito
+            if distrito:
+                distrito_result = DistritoResult(
+                    id=str(distrito.id),
+                    nombre=distrito.nombre,
+                    ubigeo=getattr(distrito, "ubigeo", None),
+                    provincia=(
+                        ProvinciaResult(
+                            id=str(distrito.provincia.id),
+                            nombre=distrito.provincia.nombre,
+                        )
+                        if distrito.provincia
+                        else None
+                    ),
+                    departamento=(
+                        DepartamentoResult(
+                            id=str(distrito.provincia.departamento.id),
+                            nombre=distrito.provincia.departamento.nombre,
+                        )
+                        if distrito.provincia and distrito.provincia.departamento
+                        else None
+                    ),
+                )
+
+        proyecto_result = ProyectoResult(
+            id=str(proyecto.id),
+            denominacion=proyecto.denominacion,
+            nombre_propietario=proyecto.nombre_propietario,
+            direccion=proyecto.direccion,
+            distrito=distrito_result,
+            entidad=entidad_result,
+        )
+
+        general_result = LiquidacionGeneralResult(
+            id=str(liquidacion_general.id),
+            municipalidad=MunicipalidadResult(
+                id=str(liquidacion_general.municipalidad.id),
+                codigo=liquidacion_general.municipalidad.codigo,
+                nombre=liquidacion_general.municipalidad.nombre,
+            ),
+            usuario_creador=UsuarioCreadorResult(
+                id=str(usuario_id),
+                nombres=getattr(liquidacion_general.usuario_creador, "nombres", None),
+                apellidos=getattr(liquidacion_general.usuario_creador, "apellidos", None),
+                email=getattr(liquidacion_general.usuario_creador, "email", None),
+                dni=getattr(liquidacion_general.usuario_creador, "dni", None),
+                username=getattr(liquidacion_general.usuario_creador, "username", None),
+            ),
+            fecha_registro=str(liquidacion_general.fecha_registro) if liquidacion_general.fecha_registro else "",
+            expediente=liquidacion_general.expediente,
+            observacion=liquidacion_general.observacion,
+            numero_revision=liquidacion_general.numero_revision,
+            sub_total=float(liquidacion_general.sub_total),
+            total=float(liquidacion_general.total),
+            retencion=liquidacion_general.retencion,
+            igv=(
+                IgvResult(
+                    id=str(liquidacion_general.igv_id.id),
+                    valor=float(liquidacion_general.igv_id.valor),
+                    periodo_inicio=liquidacion_general.igv_id.periodo_inicio.isoformat() if liquidacion_general.igv_id.periodo_inicio else None,
+                )
+                if liquidacion_general.igv_id
+                else None
+            ),
+            uit=(
+                UitResult(
+                    id=str(liquidacion_general.uit_id.id),
+                    valor=float(liquidacion_general.uit_id.valor),
+                    periodo_inicio=liquidacion_general.uit_id.periodo_inicio.isoformat() if liquidacion_general.uit_id.periodo_inicio else None,
+                )
+                if liquidacion_general.uit_id
+                else None
+            ),
+            proyecto=proyecto_result,
+            tipo_liquidacion=(
+                TipoLiquidacionResult(
+                    codigo=liquidacion_general.tipo_liquidacion.codigo,
+                    nombre=liquidacion_general.tipo_liquidacion.nombre,
+                )
+                if liquidacion_general.tipo_liquidacion
+                else None
+            ),
         )
 
         tipo_result = LiquidacionVisitasResult(

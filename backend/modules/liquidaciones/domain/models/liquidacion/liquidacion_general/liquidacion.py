@@ -13,6 +13,7 @@ from modules.liquidaciones.domain.constants import (
     EstadoLiquidacion,
     TipoLiquidacion,
 )
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 
 
 class LiquidacionGeneral(BaseModel):
@@ -31,10 +32,10 @@ class LiquidacionGeneral(BaseModel):
     )
 
     especialidades_revisadas = models.ManyToManyField(
-        "usuarios.Especialidad",
+        EspecialidadRevision,
         related_name="liquidaciones_revisadas",
         verbose_name="Especialidades Revisadas",
-        help_text="Especialidades que han sido revisadas en esta liquidación.",
+        help_text="Especialidades de revisión que han sido revisadas en esta liquidación.",
     )
 
     municipalidad = models.ForeignKey(
@@ -328,10 +329,10 @@ class LiquidacionEspecialidadDisponibles(BaseModel):
     )
 
     especialidad = models.ForeignKey(
-        "usuarios.Especialidad",
+        EspecialidadRevision,
         on_delete=models.PROTECT,
         related_name="liquidaciones_especialidad",
-        verbose_name="Especialidad",
+        verbose_name="Especialidad de Revisión",
     )
 
     activo = models.BooleanField(

@@ -126,6 +126,12 @@ class UitOutput(BaseSchema):
     periodo_inicio: Optional[str] = Field(None, description="Inicio de vigencia")
 
 
+class TipoLiquidacionOutput(BaseSchema):
+    """Tipo de liquidacion en la respuesta — solo codigo y nombre, sin id."""
+    codigo: str = Field(..., description="Código del tipo de liquidación")
+    nombre: str = Field(..., description="Nombre del tipo de liquidación")
+
+
 class LiquidacionGeneralOutput(BaseSchema):
     id: uuid.UUID = Field(..., description="ID de la liquidación general")
     municipalidad: MunicipalidadOutput = Field(..., description="Municipalidad de la liquidación")
@@ -141,4 +147,5 @@ class LiquidacionGeneralOutput(BaseSchema):
     uit: Optional[UitOutput] = Field(None, description="UIT aplicada")
     proyecto: ProyectoOutput = Field(..., description="Datos del proyecto")
     contacto: Optional[ContactoOutput] = Field(None, description="Contacto principal")
+    tipo_liquidacion: Optional[TipoLiquidacionOutput] = Field(None, description="Tipo de liquidación (codigo y nombre)")
     revisiones_previas: list[LiquidacionPreviaOutput] = Field(default_factory=list, description="Liquidaciones previas del mismo proyecto")

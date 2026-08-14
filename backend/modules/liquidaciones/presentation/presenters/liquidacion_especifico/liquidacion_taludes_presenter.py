@@ -30,6 +30,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     DistritoOutput,
     ProvinciaOutput,
     DepartamentoOutput,
+    TipoLiquidacionOutput,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraDatosOut,
@@ -120,6 +121,14 @@ class LiquidacionTaludesPresenter:
                     numero_documento=general.proyecto.entidad.numero_documento,
                     razon_social=general.proyecto.entidad.razon_social,
                 ) if general.proyecto.entidad else None,
+            ),
+            tipo_liquidacion=(
+                TipoLiquidacionOutput(
+                    codigo=general.tipo_liquidacion.codigo,
+                    nombre=general.tipo_liquidacion.nombre,
+                )
+                if general.tipo_liquidacion
+                else None
             ),
         )
 

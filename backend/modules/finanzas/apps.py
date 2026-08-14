@@ -6,3 +6,7 @@ class FinanzasConfig(AppConfig):
     name = "modules.finanzas"
     label = "finanzas"
     verbose_name = "Finanzas"
+
+    def ready(self):
+        """Import admin package to trigger admin registration."""
+        from . import admin  # noqa: F401

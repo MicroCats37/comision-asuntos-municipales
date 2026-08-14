@@ -6,3 +6,7 @@ class LiquidacionesConfig(AppConfig):
     name = "modules.liquidaciones"
     label = "liquidaciones"
     verbose_name = "Liquidaciones"
+
+    def ready(self):
+        """Import admin package to trigger admin registration."""
+        from . import admin  # noqa: F401

@@ -13,6 +13,7 @@ import { FileText } from "lucide-react";
 import { useCrearEdificaciones } from "../../hooks/useCrearEdificaciones";
 import { edificacionesFormSchema, type EdificacionesFormData } from "../../schemas/liquidacion-edificaciones-form.schema";
 import type { ContactoInline } from "../../schemas/liquidacion-form-base.schema";
+import type { PdfLiquidacionItem } from "../../pdf/buildLiquidacionPdfElement";
 import { LiquidacionFormBodyBase } from "./LiquidacionFormBodyBase";
 import { PrimeraRevisionTarifasSmartField } from "./PrimeraRevisionTarifasSmartField";
 import { CotizacionPorcentajeSmartField } from "./CotizacionPorcentajeSmartField";
@@ -23,7 +24,8 @@ interface EdificacionesFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
-  onCreated?: () => void;
+  /** Recibe la liquidación creada (del backend) para abrir el PDF */
+  onCreated?: (item: PdfLiquidacionItem) => void;
 }
 
 export function EdificacionesFormModal({
@@ -44,11 +46,13 @@ export function EdificacionesFormModal({
   const handleSubmit = useCallback(
     async (data: EdificacionesFormData) => {
       try {
-        await crearMutation.mutateAsync({ ...data, contacto: contacto ?? undefined });
+        const result = await crearMutation.mutateAsync({ ...data, contacto: contacto ?? undefined });
         notify.success("Liquidación creada correctamente");
         setContacto(null);
+        // Desenvolver ApiResponse → data
+        const created = (result as { data?: PdfLiquidacionItem })?.data as PdfLiquidacionItem | undefined;
+        onCreated?.(created as PdfLiquidacionItem);
         onSuccess?.();
-        onCreated?.();
       } catch {
         // Error handled by mutation
       }

@@ -16,7 +16,7 @@ from django.core.management.base import BaseCommand
 
 from modules.usuarios.domain.models.perfil_ingeniero import (
     Capitulo,
-    Especialidad,
+    EspecialidadIngeniero,
     PerfilIngeniero,
     IngenieroHabilitacion,
 )
@@ -75,15 +75,17 @@ class Command(BaseCommand):
                 )
                 capitulos.add(cap_raw["registro_id"])
 
-            # Especialidad (codigo como nombre por ahora)
+            # EspecialidadIngeniero (codigo + capitulo para distinguir Civil vs Sanitaria con codigo 01)
             cod_esp = item.get("codigo_especialidad", "")
             especialidad = None
-            if cod_esp:
-                especialidad, _ = Especialidad.objects.get_or_create(
+            if cod_esp and capitulo:
+                # Unique key: (codigo, capitulo) — permite mismo codigo en capitulos diferentes
+                especialidad, _ = EspecialidadIngeniero.objects.get_or_create(
                     codigo=cod_esp,
+                    capitulo=capitulo,
                     defaults={"nombre": cod_esp},
                 )
-                especialidades.add(cod_esp)
+                especialidades.add((cod_esp, capitulo.registro_id))
 
             perfil_defaults = {
                 "dni": item.get("dni", ""),

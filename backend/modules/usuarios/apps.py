@@ -6,3 +6,7 @@ class UsuariosConfig(AppConfig):
     name = "modules.usuarios"
     label = "usuarios"
     verbose_name = "Usuarios"
+
+    def ready(self):
+        """Import admin package to trigger admin registration."""
+        from . import admin  # noqa: F401

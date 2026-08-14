@@ -31,6 +31,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     ProvinciaOutput,
     DepartamentoOutput,
     LiquidacionPreviaOutput,
+    TipoLiquidacionOutput,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraDatosOut,
@@ -144,6 +145,14 @@ class LiquidacionEdificacionesPresenter:
                 )
                 for rp in (general.revisiones_previas or [])
             ],
+            tipo_liquidacion=(
+                TipoLiquidacionOutput(
+                    codigo=general.tipo_liquidacion.codigo,
+                    nombre=general.tipo_liquidacion.nombre,
+                )
+                if general.tipo_liquidacion
+                else None
+            ),
         )
 
         tipo_out = LiquidacionTipoOutput(

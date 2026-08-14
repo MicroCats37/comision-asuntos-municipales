@@ -6,3 +6,7 @@ class EntidadesConfig(AppConfig):
     name = "modules.entidades"
     label = "entidades"
     verbose_name = "Entidades"
+
+    def ready(self):
+        """Import admin package to trigger admin registration."""
+        from . import admin  # noqa: F401

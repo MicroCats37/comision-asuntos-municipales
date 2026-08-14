@@ -67,7 +67,6 @@ class MunicipalidadesAsignadasOut(BaseSchema):
     id: uuid.UUID
     municipalidad: MunicipalidadBasicOut
     tipo: str
-    categoria: Optional[str] = None
     periodo_inicio: Optional[str] = None
     periodo_fin: Optional[str] = None
     es_vigente: bool
@@ -85,7 +84,6 @@ class DelegadoForMunicipalidadOut(BaseSchema):
     id: uuid.UUID
     perfil_ingeniero: PerfilIngenieroOut
     tipo: str
-    categoria: Optional[str] = None
     periodo_inicio: Optional[str] = None
     periodo_fin: Optional[str] = None
     es_vigente: bool

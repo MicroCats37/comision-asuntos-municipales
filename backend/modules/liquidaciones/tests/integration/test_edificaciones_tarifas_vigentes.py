@@ -11,7 +11,7 @@ from datetime import date
 
 from ninja.testing import TestClient
 from config.api import api
-from modules.usuarios.domain.models.perfil_ingeniero import Especialidad
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorcentajeObra,
@@ -33,27 +33,30 @@ def tarifa_liquidacion_base_edificacion(db, tipo_edificacion):
 
 @pytest.fixture
 def especialidad_estructuras(db):
-    """Create an Especialidad for Edificaciones testing."""
+    """Create an EspecialidadRevision for Edificaciones testing."""
     return Especialidad.objects.create(
         codigo="E01",
+        slug="estructuras",
         nombre="Estructuras",
     )
 
 
 @pytest.fixture
 def especialidad_arquitectura(db):
-    """Create an Especialidad for Edificaciones testing."""
+    """Create an EspecialidadRevision for Edificaciones testing."""
     return Especialidad.objects.create(
         codigo="A01",
+        slug="arquitectura",
         nombre="Arquitectura",
     )
 
 
 @pytest.fixture
 def especialidad_installaciones(db):
-    """Create an Especialidad for Edificaciones testing."""
+    """Create an EspecialidadRevision for Edificaciones testing."""
     return Especialidad.objects.create(
         codigo="I01",
+        slug="instalaciones",
         nombre="Instalaciones",
     )
 

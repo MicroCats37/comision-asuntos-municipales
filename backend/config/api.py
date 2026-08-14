@@ -30,6 +30,9 @@ from modules.liquidaciones.presentation.controllers.liquidacion_especifico.liqui
 from modules.liquidaciones.presentation.controllers.liquidacion_especifico.liquidacion_taludes_controller import (
     LiquidacionTaludesController,
 )
+from modules.liquidaciones.presentation.controllers.liquidacion_general_controller import (
+    LiquidacionGeneralController,
+)
 from modules.liquidaciones.presentation.controllers.delegado_controller import (
     DelegadoController,
 )
@@ -103,6 +106,7 @@ api.register_controllers(LiquidacionMecanicaSuelosController)
 api.register_controllers(LiquidacionEdificacionesController)
 api.register_controllers(LiquidacionImpactoVialController)
 api.register_controllers(LiquidacionTaludesController)
+api.register_controllers(LiquidacionGeneralController)
 
 # ── Delegados Controllers ─
 api.register_controllers(DelegadoController)

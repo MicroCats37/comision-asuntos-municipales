@@ -44,23 +44,78 @@ class Capitulo(BaseModel):
         return self.nombre
 
 
-class Especialidad(BaseModel):
+class EspecialidadIngeniero(BaseModel):
+    """
+    Especialidad profesional del ingeniero, asociada a un capítulo del CIP.
+
+    La combinación (codigo, capitulo) es única, permitiendo que el código "01"
+    exista como ING. CIVIL (capítulo 02) y ING. SANITARIA (capítulo 09).
+    """
     history = HistoricalRecords()
-    """
-    Especialidad profesional del ingeniero.
-    Un ingeniero puede tener múltiples especialidades (ManyToMany).
-    """
+
     codigo = models.CharField(
-        max_length=4, unique=True, verbose_name="Código de Especialidad"
+        max_length=4,
+        verbose_name="Código de Especialidad",
     )
 
     nombre = models.CharField(
-        max_length=100, unique=True, verbose_name="Nombre de Especialidad"
+        max_length=100,
+        verbose_name="Nombre de Especialidad",
+    )
+
+    capitulo = models.ForeignKey(
+        Capitulo,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="especialidades",
+        verbose_name="Capítulo",
     )
 
     class Meta:
-        verbose_name = "Especialidad"
-        verbose_name_plural = "Especialidades"
+        verbose_name = "Especialidad de Ingeniero"
+        verbose_name_plural = "Especialidades de Ingenieros"
+        ordering = ["nombre"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["codigo", "capitulo"],
+                name="unique_especialidad_ingeniero_codigo_capitulo",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.nombre} ({self.codigo})"
+
+
+class EspecialidadRevision(BaseModel):
+    """
+    Especialidad de cálculo/tarifa para liquidaciones.
+
+    Solo existen 3 registros: Civil, Sanitaria, Eléctrica/Mecánica.
+    Se usa en TarifaPorcentajeObra, LiquidacionPorcentajeObraDetalle,
+    LiquidacionEspecialidadDisponibles y LiquidacionGeneral.especialidades_revisadas.
+    """
+    history = HistoricalRecords()
+
+    codigo = models.CharField(
+        max_length=4,
+        verbose_name="Código de Especialidad",
+    )
+
+    slug = models.CharField(
+        max_length=50,
+        unique=True,
+        verbose_name="Slug",
+    )
+
+    nombre = models.CharField(
+        max_length=100,
+        verbose_name="Nombre de Especialidad",
+    )
+
+    class Meta:
+        verbose_name = "Especialidad de Revisión"
+        verbose_name_plural = "Especialidades de Revisión"
         ordering = ["nombre"]
 
     def __str__(self):
@@ -138,8 +193,8 @@ class PerfilIngeniero(BaseModel):
         help_text="Código de ubigeo del lugar de residencia.",
     )
 
-    especialidad= models.ForeignKey(
-        "Especialidad",
+    especialidad = models.ForeignKey(
+        EspecialidadIngeniero,
         on_delete=models.SET_NULL,
         blank=True,
         null=True,

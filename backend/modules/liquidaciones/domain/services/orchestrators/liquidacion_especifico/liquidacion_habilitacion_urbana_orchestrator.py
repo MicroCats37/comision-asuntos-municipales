@@ -224,22 +224,19 @@ class LiquidacionHabilitacionUrbanaOrchestrator:
             DistritoResult,
             ProvinciaResult,
             DepartamentoResult,
+            TipoLiquidacionResult,
         )
         from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_m2_result import (
             LiquidacionM2Result,
         )
 
         proyecto = lg.proyecto
-        entidad = proyecto.entidad if hasattr(proyecto, 'entidad') and proyecto.entidad else None
 
-        if entidad is None:
-            ent_tipo = proyecto.entidad_tipo_documento if hasattr(proyecto, 'entidad_tipo_documento') else None
-            ent_numero = proyecto.entidad_numero_documento if hasattr(proyecto, 'entidad_numero_documento') else None
-            ent_razon = proyecto.entidad_razon_social if hasattr(proyecto, 'entidad_razon_social') else None
-        else:
-            ent_tipo = entidad.tipo_documento
-            ent_numero = entidad.numero_documento
-            ent_razon = entidad.razon_social
+        # La razon social/tipo/numero viven DENORMALIZADOS en Proyecto
+        # (el modelo Entidad no tiene razon_social). Usar siempre los del proyecto.
+        ent_tipo = proyecto.entidad_tipo_documento if hasattr(proyecto, 'entidad_tipo_documento') else None
+        ent_numero = proyecto.entidad_numero_documento if hasattr(proyecto, 'entidad_numero_documento') else None
+        ent_razon = proyecto.entidad_razon_social if hasattr(proyecto, 'entidad_razon_social') else None
 
         # Build distrito objeto (con provincia/departamento)
         distrito_result = None
@@ -319,6 +316,14 @@ class LiquidacionHabilitacionUrbanaOrchestrator:
                     numero_documento=ent_numero or "",
                     razon_social=ent_razon or "",
                 ) if (ent_tipo or ent_numero or ent_razon) else None,
+            ),
+            tipo_liquidacion=(
+                TipoLiquidacionResult(
+                    codigo=lg.tipo_liquidacion.codigo,
+                    nombre=lg.tipo_liquidacion.nombre,
+                )
+                if lg.tipo_liquidacion
+                else None
             ),
         )
 

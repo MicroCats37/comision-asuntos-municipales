@@ -33,6 +33,10 @@ class ProyectoResult(BaseModel):
     nombre_propietario: str
     direccion: str
     distrito: Optional[DistritoResult] = None
+    # Denormalized entity fields (mirrors ORM proyecto.entidad_*)
+    entidad_tipo_documento: Optional[str] = None
+    entidad_numero_documento: Optional[str] = None
+    entidad_razon_social: Optional[str] = None
     entidad: Optional[EntidadResult] = None
 
 
@@ -81,6 +85,12 @@ class ContactoResult(BaseModel):
     email: Optional[str] = None
 
 
+class TipoLiquidacionResult(BaseModel):
+    """Tipo de liquidacion en el resultado domain — solo codigo y nombre."""
+    codigo: str
+    nombre: str
+
+
 class LiquidacionGeneralResult(BaseModel):
     id: str
     municipalidad: MunicipalidadResult
@@ -96,4 +106,5 @@ class LiquidacionGeneralResult(BaseModel):
     uit: Optional[UitResult] = None  # NEW
     proyecto: ProyectoResult
     contacto: Optional[ContactoResult] = None
+    tipo_liquidacion: Optional[TipoLiquidacionResult] = None
     revisiones_previas: list[LiquidacionPreviaResult] = []
