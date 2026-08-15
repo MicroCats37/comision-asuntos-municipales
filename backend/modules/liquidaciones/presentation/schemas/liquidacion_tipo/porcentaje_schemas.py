@@ -16,8 +16,15 @@ class LiquidacionPorcentajeObraDatosIn(BaseSchema):
 
 
 class LiquidacionPorcentajeObraTarifaIn(BaseSchema):
-    """Tarifa seleccionada por el usuario."""
+    """
+    Tarifa seleccionada por el usuario con especialidad explícita.
+
+    With tarifa-unica-especialidades: the same tarifa can be sent multiple
+    times with different especialidad_id values (one entry per specialty).
+    Backend validates each entry by tariff ID + vigencia.
+    """
     tarifa_porcentaje_obra_id: uuid.UUID
+    especialidad_id: uuid.UUID
 
 
 class LiquidacionPorcentajeObraIn(BaseSchema):

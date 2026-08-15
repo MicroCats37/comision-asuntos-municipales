@@ -146,14 +146,6 @@ class TarifaPorcentajeObra(BaseModel):
         blank=True,
     )
     
-    especialidad = models.ForeignKey(
-        EspecialidadRevision,
-        on_delete=models.PROTECT,
-        related_name="tarifas_porcentuales",
-        verbose_name="Especialidad de Revisión",
-        help_text="Especialidad de revisión a la que aplica esta tarifa porcentual.",
-    )
-
     porcentaje_liquidacion = models.DecimalField(
         max_digits=7,
         decimal_places=4,

@@ -5,8 +5,8 @@ Solo delega a IngenieroHabilitadoFlujo. Sin lógica de negocio aquí.
 """
 from injector import inject
 
-from ..flujos.ingeniero_habilitado_flujo import IngenieroHabilitadoFlujo
-from ...schemas.ingeniero_habilitado_schemas import IngenieroHabilitadoResult
+from modules.usuarios.domain.services.flujos.ingeniero_habilitado_flujo import IngenieroHabilitadoFlujo
+from modules.usuarios.domain.schemas.ingeniero_habilitado_schemas import IngenieroHabilitadoResult
 
 
 class IngenieroHabilitadoOrchestrator:

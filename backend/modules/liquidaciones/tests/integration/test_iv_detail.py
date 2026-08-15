@@ -55,14 +55,13 @@ def especialidad_impacto_vial(db):
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_iv(db, tarifa_liquidacion_base_iv, especialidad_impacto_vial):
-    """Create a TarifaPorcentajeObra for Impacto Vial."""
+def tarifa_porcentaje_obra_iv(db, tarifa_liquidacion_base_iv):
+    """Create a TarifaPorcentajeObra for Impacto Vial (sin especialidad — tarifa única por base)."""
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
         TarifaPorcentajeObra,
     )
     return TarifaPorcentajeObra.objects.create(
         tarifa_base=tarifa_liquidacion_base_iv,
-        especialidad=especialidad_impacto_vial,
         porcentaje_liquidacion=Decimal("0.0010"),  # 0.10%
     )
 

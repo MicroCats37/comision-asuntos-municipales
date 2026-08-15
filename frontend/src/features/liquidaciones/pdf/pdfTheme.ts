@@ -10,9 +10,9 @@ export const pdfTheme = {
   fontFamilyDisplay: "Arial, Helvetica, sans-serif",
 
   colors: {
-    ink: "#111827",        // texto principal
-    muted: "#4b5563",      // texto secundario
-    light: "#6b7280",      // texto terciario
+    ink: "#111827", // texto principal
+    muted: "#4b5563", // texto secundario
+    light: "#6b7280", // texto terciario
     paper: "#FFFFFF",
   },
 
@@ -79,20 +79,20 @@ export const pdfTheme = {
 
   notice: {
     textAlign: "center",
-    fontSize: "12px",
-    lineHeight: "1.35",
+    fontSize: "14px",
+    lineHeight: "1.45",
   } as Partial<CSSStyleDeclaration>,
 
   noticeLine: {
     margin: "0",
-    fontWeight: "700",
+    fontWeight: "800",
     borderBottom: "1px solid #111827",
   } as Partial<CSSStyleDeclaration>,
 
   title: {
     margin: "12px 0 8px",
     fontFamily: "Arial, Helvetica, sans-serif",
-    fontSize: "18px",
+    fontSize: "24px",
     fontWeight: "900",
     letterSpacing: "-0.03em",
   } as Partial<CSSStyleDeclaration>,
@@ -101,8 +101,8 @@ export const pdfTheme = {
     display: "flex",
     flexDirection: "column",
     gap: "1px",
-    fontSize: "14px",
-    lineHeight: "1.35",
+    fontSize: "19px",
+    lineHeight: "1.45",
   } as Partial<CSSStyleDeclaration>,
 
   lowerBody: {
@@ -117,16 +117,16 @@ export const pdfTheme = {
     display: "flex",
     flexDirection: "column",
     gap: "3px",
-    fontSize: "15px",
-    lineHeight: "1.4",
+    fontSize: "20px",
+    lineHeight: "1.5",
   } as Partial<CSSStyleDeclaration>,
 
   totals: {
     display: "flex",
     flexDirection: "column",
     gap: "2px",
-    fontSize: "15px",
-    lineHeight: "1.4",
+    fontSize: "20px",
+    lineHeight: "1.5",
     paddingTop: "0",
   } as Partial<CSSStyleDeclaration>,
 
@@ -160,11 +160,11 @@ export const pdfTheme = {
     gap: "12px",
     alignItems: "end",
     marginTop: "10px",
-    fontSize: "12px",
+    fontSize: "15px",
   } as Partial<CSSStyleDeclaration>,
 
   footerCol: {
-    lineHeight: "1.35",
+    lineHeight: "1.45",
   } as Partial<CSSStyleDeclaration>,
 
   noComprobante: {

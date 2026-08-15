@@ -24,6 +24,9 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
 )
 from modules.liquidaciones.domain.constants import TipoLiquidacion
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
+    LiquidacionEspecialidadDisponibles,
+)
 
 
 # ── TipoLiquidacion Fixtures ────────────────────────────────────────────────────
@@ -213,33 +216,36 @@ def especialidad_installaciones(db):
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_estructuras(db, tarifa_liquidacion_base_edificacion, especialidad_estructuras):
-    """Create a TarifaPorcentajeObra for Estructuras."""
+def tarifa_porcentaje_obra_estructuras(db, tarifa_liquidacion_base_edificacion):
+    """Create a TarifaPorcentajeObra (sin especialidad — tarifa única por base).
+
+    La especialidad se pasa explícitamente en el input; el modelo ya no tiene FK especialidad.
+    """
     return TarifaPorcentajeObra.objects.create(
         tarifa_base=tarifa_liquidacion_base_edificacion,
-        especialidad=especialidad_estructuras,
         porcentaje_liquidacion=Decimal("0.0010"),  # 0.10%
     )
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_arquitectura(db, tarifa_liquidacion_base_edificacion, especialidad_arquitectura):
-    """Create a TarifaPorcentajeObra for Arquitectura."""
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        especialidad=especialidad_arquitectura,
-        porcentaje_liquidacion=Decimal("0.0005"),  # 0.05%
-    )
+def especialidades_disponibles_edificacion(
+    db, tipo_edificacion, especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones
+):
+    """Create LiquidacionEspecialidadDisponibles for the 3 especialidades of Edificaciones.
 
-
-@pytest.fixture
-def tarifa_porcentaje_obra_installaciones(db, tarifa_liquidacion_base_edificacion, especialidad_installaciones):
-    """Create a TarifaPorcentajeObra for Instalaciones."""
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        especialidad=especialidad_installaciones,
-        porcentaje_liquidacion=Decimal("0.0003"),  # 0.03%
-    )
+    Required for auto-fill mode: the orchestrator combines vigentes tarifas x
+    vigentes especialidades when the input tarifas list is empty.
+    """
+    return [
+        LiquidacionEspecialidadDisponibles.objects.create(
+            tipo_liquidacion=tipo_edificacion,
+            especialidad=esp,
+            activo=True,
+            periodo_inicio=date(2024, 1, 1),
+            periodo_fin=None,
+        )
+        for esp in [especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones]
+    ]
 
 
 @pytest.fixture

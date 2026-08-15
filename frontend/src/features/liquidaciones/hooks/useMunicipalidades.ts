@@ -46,10 +46,11 @@ export function useMunicipalidades() {
     MunicipalidadOption[]
   >({
     queryKey: ["entidades", "municipalidades"],
-    url: "/entidades/municipalidades",
+    // Cache-buster: fuerza re-fetch al navegador (evita la respuesta vieja cacheada).
+    url: "/entidades/municipalidades?v=2",
     schema: municipalidadesResponseSchema,
     queryOptions: {
-      staleTime: 1000 * 60 * 10,
+      staleTime: 1000 * 60 * 1,
       select: (envelope) => {
         if (!envelope.data) return [];
         return Array.isArray(envelope.data)

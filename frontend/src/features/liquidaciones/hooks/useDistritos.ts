@@ -42,11 +42,13 @@ export interface DistritoOption {
 export function useDistritos(search?: string) {
   return useApiQuery({
     queryKey: ["entidades", "distritos", search || ""],
-    url: "/entidades/ubigeo/distritos",
+    // Cache-buster: fuerza re-fetch al navegador (evita servir la respuesta vieja
+    // cacheada con max-age=1 año cuando el middleware aún lo emitía).
+    url: "/entidades/ubigeo/distritos?v=2",
     schema: distritosResponseSchema,
     params: search ? { search } : undefined,
     queryOptions: {
-      staleTime: 1000 * 60 * 10,
+      staleTime: 1000 * 60 * 1,
       select: (envelope) => {
         if (!envelope.data?.items) return [] as DistritoOption[];
         return envelope.data.items.map((d) => ({

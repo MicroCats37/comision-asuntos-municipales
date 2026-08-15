@@ -12,8 +12,11 @@ export const impactoVialFormSchema = z.object({
   ...generalFormSchema.shape,
   // Especifica fields
   valor_declarado: z.number().positive("El valor declarado debe ser positivo"),
-  // Smart Field outputs (set by Smart Fields via setValue)
-  tarifas_ids: z.array(z.string()).optional(),
+  // Smart Field outputs — set by Smart Fields via setValue
+  /** ID de la única tarifa vigente de porcentaje de obra */
+  tarifa_unica_id: z.string().optional(),
+  /** IDs de especialidades seleccionadas por el usuario */
+  especialidades_seleccionadas: z.array(z.string()).optional(),
   // Contacto principal (singular, managed via ContactoFormModal)
   contacto: contactoInlineSchema.optional(),
 });

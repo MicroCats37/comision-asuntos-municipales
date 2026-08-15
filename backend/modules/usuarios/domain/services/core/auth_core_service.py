@@ -9,8 +9,8 @@ from django.utils import timezone
 from ninja_jwt.tokens import RefreshToken
 
 from injector import inject
-from ....domain.models import Usuario
-from ...schemas.auth_result_schemas import AuthUserResult, LoginTokenResult
+from modules.usuarios.domain.models import Usuario
+from modules.usuarios.domain.schemas.auth_result_schemas import AuthUserResult, LoginTokenResult
 
 
 class AuthCoreService:

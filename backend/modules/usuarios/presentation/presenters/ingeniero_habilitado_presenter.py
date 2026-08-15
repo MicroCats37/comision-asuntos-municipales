@@ -3,8 +3,8 @@ IngenieroHabilitadoPresenter — transforma IngenieroHabilitadoResult a esquema 
 
 Cumple con el contrato de arquitectura (sección 4.9: presenters).
 """
-from ...domain.schemas.ingeniero_habilitado_schemas import IngenieroHabilitadoResult
-from ..schemas.ingeniero_habilitado_schemas import IngenieroHabilitadoOut
+from modules.usuarios.domain.schemas.ingeniero_habilitado_schemas import IngenieroHabilitadoResult
+from modules.usuarios.presentation.schemas.ingeniero_habilitado_schemas import IngenieroHabilitadoOut
 
 
 class IngenieroHabilitadoPresenter:

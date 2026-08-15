@@ -315,8 +315,7 @@ export function LiquidacionEdificacionesCard({
         liquidacionId={lg.id}
         municipalidadId={lg.municipalidad?.id ?? ""}
         tipoLiquidacion="edificacion"
-        revisionIds={[]}
-        delegadosActuales={[]}
+        delegadosActuales={(lg.delegados ?? []).map((d) => ({ id: d.delegado_id }))}
       />
     </>
   );

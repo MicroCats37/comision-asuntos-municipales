@@ -39,7 +39,7 @@ export function useCrearTaludes() {
     () => ({
       ...mutation,
       mutate: (payload: TaludesFormData) => {
-        const { tarifas_ids, ...rest } = payload;
+        const { tarifa_unica_id, especialidades_seleccionadas, ...rest } = payload;
         mutation.mutate({
           liquidacion_general: {
             municipalidad_id: rest.municipalidad_id,
@@ -64,14 +64,15 @@ export function useCrearTaludes() {
             datos: {
               valor_declarado: rest.valor_declarado,
             },
-            tarifas: (tarifas_ids || []).map((id) => ({
-              tarifa_porcentaje_obra_id: id,
+            tarifas: (especialidades_seleccionadas || []).map((espId) => ({
+              tarifa_porcentaje_obra_id: tarifa_unica_id,
+              especialidad_id: espId,
             })),
           },
         });
       },
       mutateAsync: async (payload: TaludesFormData) => {
-        const { tarifas_ids, ...rest } = payload;
+        const { tarifa_unica_id, especialidades_seleccionadas, ...rest } = payload;
         return mutation.mutateAsync({
           liquidacion_general: {
             municipalidad_id: rest.municipalidad_id,
@@ -96,8 +97,9 @@ export function useCrearTaludes() {
             datos: {
               valor_declarado: rest.valor_declarado,
             },
-            tarifas: (tarifas_ids || []).map((id) => ({
-              tarifa_porcentaje_obra_id: id,
+            tarifas: (especialidades_seleccionadas || []).map((espId) => ({
+              tarifa_porcentaje_obra_id: tarifa_unica_id,
+              especialidad_id: espId,
             })),
           },
         });

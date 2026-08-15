@@ -176,6 +176,10 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
             'liquidacion_porcentaje_obra__detalles__especialidad',
             'liquidacion_porcentaje_obra__derecho_aplicado',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).order_by('-fecha_registro')
 
         # Apply filters
@@ -234,6 +238,10 @@ class LiquidacionGeneralCoreService:
             'liquidacion_m2',
             'liquidacion_m2__tarifa_aplicada',
             'liquidacion_m2__derecho',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).order_by('-fecha_registro')
 
         # Apply filters
@@ -292,6 +300,10 @@ class LiquidacionGeneralCoreService:
             'liquidacion_m2__tarifa_aplicada',
             'liquidacion_m2__derecho',
             'mecanica_suelos',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).order_by('-fecha_registro')
 
         # Apply filters
@@ -354,6 +366,10 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
             'liquidacion_porcentaje_obra__detalles__especialidad',
             'liquidacion_porcentaje_obra__derecho_aplicado',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).order_by('-fecha_registro')
 
         # Apply filters
@@ -414,6 +430,10 @@ class LiquidacionGeneralCoreService:
             'inspeccion_obra',
             'liquidacion_visitas',
             'liquidacion_visitas__tarifa_aplicada',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).order_by('-fecha_registro')
 
         # Apply filters
@@ -476,6 +496,10 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
             'liquidacion_porcentaje_obra__detalles__especialidad',
             'liquidacion_porcentaje_obra__derecho_aplicado',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).order_by('-fecha_registro')
 
         # Apply filters
@@ -524,6 +548,10 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
             'liquidacion_porcentaje_obra__detalles__especialidad',
             'liquidacion_porcentaje_obra__derecho_aplicado',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).get(id=liquidacion_id)
 
     def get_liquidacion_edificaciones_by_id(self, liquidacion_id: uuid.UUID) -> LiquidacionGeneral:
@@ -549,6 +577,10 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
             'liquidacion_porcentaje_obra__detalles__especialidad',
             'liquidacion_porcentaje_obra__derecho_aplicado',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).get(id=liquidacion_id)
 
     def get_liquidacion_hu_by_id(self, liquidacion_id: uuid.UUID) -> LiquidacionGeneral:
@@ -572,6 +604,10 @@ class LiquidacionGeneralCoreService:
             'liquidacion_m2',
             'liquidacion_m2__tarifa_aplicada',
             'liquidacion_m2__derecho',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).get(id=liquidacion_id)
 
     def get_liquidacion_ms_by_id(self, liquidacion_id: uuid.UUID) -> LiquidacionGeneral:
@@ -595,6 +631,10 @@ class LiquidacionGeneralCoreService:
             'liquidacion_m2__tarifa_aplicada',
             'liquidacion_m2__derecho',
             'mecanica_suelos',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).get(id=liquidacion_id)
 
     def get_liquidacion_taludes_by_id(self, liquidacion_id: uuid.UUID) -> LiquidacionGeneral:
@@ -620,6 +660,10 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
             'liquidacion_porcentaje_obra__detalles__especialidad',
             'liquidacion_porcentaje_obra__derecho_aplicado',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).get(id=liquidacion_id)
 
     def get_liquidacion_io_by_id(self, liquidacion_id: uuid.UUID) -> LiquidacionGeneral:
@@ -642,6 +686,10 @@ class LiquidacionGeneralCoreService:
             'inspeccion_obra',
             'liquidacion_visitas',
             'liquidacion_visitas__tarifa_aplicada',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).get(id=liquidacion_id)
 
     def get_liquidacion_iv_by_id(self, liquidacion_id: uuid.UUID) -> LiquidacionGeneral:
@@ -666,6 +714,10 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
             'liquidacion_porcentaje_obra__detalles__especialidad',
             'liquidacion_porcentaje_obra__derecho_aplicado',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         ).get(id=liquidacion_id)
 
     def list_ultimas_revisiones_por_proyecto(
@@ -709,6 +761,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
                 'liquidacion_porcentaje_obra__detalles__especialidad',
                 'liquidacion_porcentaje_obra__derecho_aplicado',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo_liquidacion == TipoLiquidacion.HABILITACION_URBANA:
             qs = qs.prefetch_related(
@@ -716,6 +772,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_m2',
                 'liquidacion_m2__tarifa_aplicada',
                 'liquidacion_m2__derecho',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo_liquidacion == TipoLiquidacion.MECANICA_SUELOS:
             qs = qs.prefetch_related(
@@ -723,6 +783,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_m2__tarifa_aplicada',
                 'liquidacion_m2__derecho',
                 'mecanica_suelos',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo_liquidacion == TipoLiquidacion.TALUDES:
             qs = qs.prefetch_related(
@@ -732,12 +796,20 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
                 'liquidacion_porcentaje_obra__detalles__especialidad',
                 'liquidacion_porcentaje_obra__derecho_aplicado',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo_liquidacion == TipoLiquidacion.INSPECCION_OBRA:
             qs = qs.prefetch_related(
                 'inspeccion_obra',
                 'liquidacion_visitas',
                 'liquidacion_visitas__tarifa_aplicada',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo_liquidacion == TipoLiquidacion.IMPACTO_VIAL:
             qs = qs.prefetch_related(
@@ -747,6 +819,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
                 'liquidacion_porcentaje_obra__detalles__especialidad',
                 'liquidacion_porcentaje_obra__derecho_aplicado',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         else:
             # Fallback: prefetch all relations
@@ -767,6 +843,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_visitas__tarifa_aplicada',
                 'taludes',
                 'impacto_vial',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
 
         # Apply filters
@@ -817,6 +897,10 @@ class LiquidacionGeneralCoreService:
             'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
             'liquidacion_porcentaje_obra__detalles__especialidad',
             'liquidacion_porcentaje_obra__derecho_aplicado',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
         )
         # El tipo_liquidacion siempre viene validado por el orquestador.
         qs = qs.filter(tipo_liquidacion__codigo=tipo_liquidacion)
@@ -862,6 +946,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
                 'liquidacion_porcentaje_obra__detalles__especialidad',
                 'liquidacion_porcentaje_obra__derecho_aplicado',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo == TipoLiquidacion.HABILITACION_URBANA:
             qs = qs.prefetch_related(
@@ -869,6 +957,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_m2',
                 'liquidacion_m2__tarifa_aplicada',
                 'liquidacion_m2__derecho',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo == TipoLiquidacion.MECANICA_SUELOS:
             qs = qs.prefetch_related(
@@ -876,6 +968,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_m2__tarifa_aplicada',
                 'liquidacion_m2__derecho',
                 'mecanica_suelos',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo == TipoLiquidacion.TALUDES:
             qs = qs.prefetch_related(
@@ -885,12 +981,20 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
                 'liquidacion_porcentaje_obra__detalles__especialidad',
                 'liquidacion_porcentaje_obra__derecho_aplicado',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo == TipoLiquidacion.INSPECCION_OBRA:
             qs = qs.prefetch_related(
                 'inspeccion_obra',
                 'liquidacion_visitas',
                 'liquidacion_visitas__tarifa_aplicada',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo == TipoLiquidacion.IMPACTO_VIAL:
             qs = qs.prefetch_related(
@@ -900,6 +1004,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
                 'liquidacion_porcentaje_obra__detalles__especialidad',
                 'liquidacion_porcentaje_obra__derecho_aplicado',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         else:
             # No tipo filter: prefetch all relations (general listing)
@@ -920,6 +1028,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_visitas__tarifa_aplicada',
                 'taludes',
                 'impacto_vial',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
 
         qs = qs.order_by('-fecha_registro')
@@ -986,6 +1098,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
                 'liquidacion_porcentaje_obra__detalles__especialidad',
                 'liquidacion_porcentaje_obra__derecho_aplicado',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo == TipoLiquidacion.HABILITACION_URBANA:
             qs = qs.prefetch_related(
@@ -993,6 +1109,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_m2',
                 'liquidacion_m2__tarifa_aplicada',
                 'liquidacion_m2__derecho',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo == TipoLiquidacion.MECANICA_SUELOS:
             qs = qs.prefetch_related(
@@ -1000,6 +1120,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_m2__tarifa_aplicada',
                 'liquidacion_m2__derecho',
                 'mecanica_suelos',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo == TipoLiquidacion.TALUDES:
             qs = qs.prefetch_related(
@@ -1009,12 +1133,20 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
                 'liquidacion_porcentaje_obra__detalles__especialidad',
                 'liquidacion_porcentaje_obra__derecho_aplicado',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo == TipoLiquidacion.INSPECCION_OBRA:
             qs = qs.prefetch_related(
                 'inspeccion_obra',
                 'liquidacion_visitas',
                 'liquidacion_visitas__tarifa_aplicada',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         elif tipo == TipoLiquidacion.IMPACTO_VIAL:
             qs = qs.prefetch_related(
@@ -1024,6 +1156,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
                 'liquidacion_porcentaje_obra__detalles__especialidad',
                 'liquidacion_porcentaje_obra__derecho_aplicado',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
         else:
             # No tipo filter: prefetch all relations (general listing)
@@ -1044,6 +1180,10 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_visitas__tarifa_aplicada',
                 'taludes',
                 'impacto_vial',
+                'liquidacion_delegados',
+                'liquidacion_delegados__delegado',
+                'liquidacion_delegados__delegado__perfil_ingeniero',
+                'liquidacion_delegados__especialidad_revision',
             )
 
         qs = qs.order_by('-fecha_registro')

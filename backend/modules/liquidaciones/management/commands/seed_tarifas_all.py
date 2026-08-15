@@ -30,16 +30,11 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from modules.liquidaciones.domain.models.liquidacion.liquidacion import (
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorcentajeObra,
-    ReglaTarifaEdificacion,
-)
-from modules.liquidaciones.domain.models.liquidacion.tarifas_reglas import (
     TarifaPorMetroCuadrado,
     TarifaPorCategoriaVisitas,
-    ReglaTarifaLiquidacion,
-    ReglaTarifaInspeccionObra,
 )
 from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
 from modules.liquidaciones.domain.constants import (

@@ -4,10 +4,11 @@ AuthFlujo — flujos de negocio asíncronos para autenticación.
 Cada método _proceso_* es un caso de uso completo.
 Usa sync_to_async para envolver operaciones ORM de AuthCoreService.
 """
+from ninja.errors import HttpError
 from injector import inject
 
-from ..core.auth_core_service import AuthCoreService
-from ...schemas.auth_result_schemas import LoginTokenResult, AuthUserResult
+from modules.usuarios.domain.services.core.auth_core_service import AuthCoreService
+from modules.usuarios.domain.schemas.auth_result_schemas import LoginTokenResult, AuthUserResult
 
 
 class AuthFlujo:
@@ -32,16 +33,16 @@ class AuthFlujo:
         # Paso 1: Buscar usuario por username
         usuario = await self.auth_core.buscar_usuario_por_username(username)
         if not usuario:
-            raise ValueError("Credenciales inválidas")
+            raise HttpError(401, "Credenciales inválidas")
 
         # Paso 2: Autenticar
         usuario = await self.auth_core.autenticar(username=username, password=password)
         if not usuario:
-            raise ValueError("Credenciales inválidas")
+            raise HttpError(401, "Credenciales inválidas")
 
         # Paso 3: Verificar si el usuario está activo
         if not usuario.is_active:
-            raise ValueError("Usuario inactivo")
+            raise HttpError(403, "Usuario inactivo")
 
         # Paso 4: Crear tokens
         access_token, refresh_token, expires_at = await self.auth_core.crear_tokens(usuario)
@@ -68,16 +69,16 @@ class AuthFlujo:
         # Paso 1: Buscar usuario por dni
         usuario = await self.auth_core.buscar_usuario_por_dni(dni)
         if not usuario:
-            raise ValueError("Credenciales inválidas")
+            raise HttpError(401, "Credenciales inválidas")
 
         # Paso 2: Autenticar usando username (el campo real de auth)
         usuario = await self.auth_core.autenticar(username=usuario.username, password=password)
         if not usuario:
-            raise ValueError("Credenciales inválidas")
+            raise HttpError(401, "Credenciales inválidas")
 
         # Paso 3: Verificar si el usuario está activo
         if not usuario.is_active:
-            raise ValueError("Usuario inactivo")
+            raise HttpError(403, "Usuario inactivo")
 
         # Paso 4: Crear tokens
         access_token, refresh_token, expires_at = await self.auth_core.crear_tokens(usuario)
@@ -104,16 +105,16 @@ class AuthFlujo:
         # Paso 1: Buscar usuario por email
         usuario = await self.auth_core.buscar_usuario_por_email(email)
         if not usuario:
-            raise ValueError("Credenciales inválidas")
+            raise HttpError(401, "Credenciales inválidas")
 
         # Paso 2: Autenticar usando username (el campo real de auth)
         usuario = await self.auth_core.autenticar(username=usuario.username, password=password)
         if not usuario:
-            raise ValueError("Credenciales inválidas")
+            raise HttpError(401, "Credenciales inválidas")
 
         # Paso 3: Verificar si el usuario está activo
         if not usuario.is_active:
-            raise ValueError("Usuario inactivo")
+            raise HttpError(403, "Usuario inactivo")
 
         # Paso 4: Crear tokens
         access_token, refresh_token, expires_at = await self.auth_core.crear_tokens(usuario)

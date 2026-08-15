@@ -114,8 +114,8 @@ class LiquidacionTaludesController:
         """
         Get the currently active tarifas and derecho for Taludes.
         """
-        tarifas = self.orchestrator.obtener_tarifas_vigentes_proceso()
-        presented = self.presenter.present_tarifas_vigentes(tarifas)
+        tarifas, especialidades_disponibles = self.orchestrator.obtener_tarifas_vigentes_proceso()
+        presented = self.presenter.present_tarifas_vigentes(tarifas, especialidades_disponibles)
         return success_response(presented)
 
     @route.post(

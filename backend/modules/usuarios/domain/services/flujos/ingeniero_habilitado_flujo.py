@@ -7,10 +7,10 @@ from asgiref.sync import sync_to_async
 from django.db import transaction
 from injector import inject
 
-from ..core.perfil_ingeniero_core_service import PerfilIngenieroCoreService
-from ..core.ingeniero_habilitacion_core_service import IngenieroHabilitacionCoreService
-from ...schemas.ingeniero_habilitado_schemas import CipColegiadoData, IngenieroHabilitadoResult
-from ....infrastructure.services import ICipClient, CipServiceUnavailableError
+from modules.usuarios.domain.services.core.perfil_ingeniero_core_service import PerfilIngenieroCoreService
+from modules.usuarios.domain.services.core.ingeniero_habilitacion_core_service import IngenieroHabilitacionCoreService
+from modules.usuarios.domain.schemas.ingeniero_habilitado_schemas import CipColegiadoData, IngenieroHabilitadoResult
+from modules.usuarios.infrastructure.services import ICipClient, CipServiceUnavailableError
 
 logger = logging.getLogger(__name__)
 

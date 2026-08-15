@@ -74,6 +74,26 @@ class LiquidacionImpactoVialOrchestrator:
         if tarifa.tarifa_base.tipo_liquidacion.codigo != TipoLiquidacion.IMPACTO_VIAL:
             raise HttpError(400, f"Tarifa {tarifa.id} no es de impacto vial")
 
+    def _obtener_especialidades_vigentes_para_tipo(self, tipo_liquidacion: str):
+        """
+        Fetches vigentes LiquidacionEspecialidadDisponibles for the given tipo_liquidacion.
+        Returns list of (especialidad_id, codigo, nombre).
+        """
+        from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
+            LiquidacionEspecialidadDisponibles,
+        )
+        from django.db.models import Q
+        today = timezone.now().date()
+        return list(
+            LiquidacionEspecialidadDisponibles.objects.filter(
+                tipo_liquidacion__codigo=tipo_liquidacion,
+                activo=True,
+                periodo_inicio__lte=today,
+            ).filter(
+                Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=today)
+            ).select_related("especialidad")
+        )
+
     @inject
     def __init__(
         self,
@@ -106,10 +126,10 @@ class LiquidacionImpactoVialOrchestrator:
             raise HttpError(400, "valor_declarado debe ser mayor a 0")
 
         # Step 2: Hybrid resolution
-        payload_tarifas_ids = [
-            str(t.tarifa_porcentaje_obra_id)
-            for t in payload_in.liquidacion_especifica.tarifas
-        ]
+        # With tarifa-unica-especialidades: each input entry brings its own
+        # especialidad_id (from LiquidacionEspecialidadDisponibles).
+        input_tarifas = payload_in.liquidacion_especifica.tarifas
+        payload_tarifas_ids = list(dict.fromkeys(str(t.tarifa_porcentaje_obra_id) for t in input_tarifas))
         tarifas = self.porcentaje_core.resolver_tarifas(payload_tarifas_ids, TipoLiquidacion.IMPACTO_VIAL)
 
         # Validate each tarifa (only in explicit mode)
@@ -119,6 +139,9 @@ class LiquidacionImpactoVialOrchestrator:
 
         if not tarifas:
             raise HttpError(400, "No hay tarifas vigentes para impacto vial")
+
+        # Build a map of tarifa_id -> ORM object for quick lookup
+        tarifa_map = {str(t.id): t for t in tarifas}
 
         # Step 3: Get vigente IGV and UIT
         igv_vigente = self.general_core.get_igv_vigente()
@@ -130,16 +153,33 @@ class LiquidacionImpactoVialOrchestrator:
         if not derecho:
             raise HttpError(400, "No hay DerechoPorcentajeObra vigente")
 
-        # Step 4: Build domain DTO
-        tarifas_aplicadas = [
-            TarifaPorcentajeObraAplicada(
-                tarifa_id=str(t.id),
-                porcentaje_liquidacion=t.porcentaje_liquidacion,
-                especialidad_id=str(t.especialidad.id),
-                especialidad_nombre=t.especialidad.nombre,
-            )
-            for t in tarifas
-        ]
+        # Step 4: Build domain DTOs with explicit especialidad from INPUT
+        if input_tarifas:
+            tarifas_aplicadas = [
+                TarifaPorcentajeObraAplicada(
+                    tarifa_id=str(t.tarifa_porcentaje_obra_id),
+                    porcentaje_liquidacion=tarifa_map[str(t.tarifa_porcentaje_obra_id)].porcentaje_liquidacion,
+                    especialidad_id=str(t.especialidad_id),
+                    especialidad_nombre=None,
+                )
+                for t in input_tarifas
+            ]
+        else:
+            # Auto-fill: combine one tarifa per base x every vigente especialidad.
+            # In tarifa-unica design there is ONE tarifa per TarifaLiquidacionBase/periodo,
+            # so deduplicate by tarifa_base to avoid duplicate (liquidacion_porcentaje, especialidad).
+            especialidades = self._obtener_especialidades_vigentes_para_tipo(TipoLiquidacion.IMPACTO_VIAL)
+            tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas}.values())
+            tarifas_aplicadas = [
+                TarifaPorcentajeObraAplicada(
+                    tarifa_id=str(t.id),
+                    porcentaje_liquidacion=t.porcentaje_liquidacion,
+                    especialidad_id=str(esp.especialidad_id),
+                    especialidad_nombre=esp.especialidad.nombre if esp.especialidad else None,
+                )
+                for t in tarifas_dedup
+                for esp in especialidades
+            ]
 
         domain_data = ImpactoVialPrimeraRevisionData(
             liquidacion_general=LiquidacionGeneralData(
@@ -176,10 +216,16 @@ class LiquidacionImpactoVialOrchestrator:
 
     def obtener_tarifas_vigentes_proceso(self):
         """
-        Fetches currently active TarifaPorcentajeObra list for Impacto Vial.
-        Returns List[TarifaPorcentajeObra].
+        Fetches currently active TarifaPorcentajeObra list and available
+        LiquidacionEspecialidadDisponibles for Impacto Vial.
+        
+        With tarifa-unica-especialidades: returns a tuple of
+        (tarifas, especialidades_disponibles) since the single tariff
+        no longer carries an especialidad FK.
         """
-        return self.porcentaje_core.get_tarifas_porcentaje_vigentes(TipoLiquidacion.IMPACTO_VIAL)
+        tarifas = self.porcentaje_core.get_tarifas_porcentaje_vigentes(TipoLiquidacion.IMPACTO_VIAL)
+        especialidades = self._obtener_especialidades_vigentes_para_tipo(TipoLiquidacion.IMPACTO_VIAL)
+        return tarifas, especialidades
 
     def cotizar_proceso(
         self,
@@ -196,18 +242,21 @@ class LiquidacionImpactoVialOrchestrator:
         if valor_declarado <= 0:
             raise HttpError(400, "valor_declarado debe ser mayor a 0")
 
-        # Step 2: Hybrid resolution
-        payload_tarifas_ids = [str(t.tarifa_porcentaje_obra_id) for t in tarifas_input]
+        # Step 2: Hybrid resolution (dedupe IDs for ORM query)
+        payload_tarifas_ids = list(dict.fromkeys(str(t.tarifa_porcentaje_obra_id) for t in tarifas_input))
         tarifas = self.porcentaje_core.resolver_tarifas(payload_tarifas_ids, TipoLiquidacion.IMPACTO_VIAL)
 
         # Validate explicit mode
         if payload_tarifas_ids:
             for tarifa in tarifas:
                 self._validar_tarifa_explicita(tarifa)
-
+        
         if not tarifas:
             raise HttpError(400, "No hay tarifas vigentes para impacto vial")
-
+        
+        # Build a map of tarifa_id -> ORM object for quick lookup
+        tarifa_map = {str(t.id): t for t in tarifas}
+        
         # Step 3: Get vigente IGV, UIT and derecho
         igv_vigente = self.general_core.get_igv_vigente()
         uit_vigente = self.general_core.get_uit_vigente()
@@ -215,21 +264,49 @@ class LiquidacionImpactoVialOrchestrator:
             raise HttpError(400, "No hay IGV vigente")
         if not uit_vigente:
             raise HttpError(400, "No hay UIT vigente configurado")
-
+        
         derecho = self.porcentaje_core.get_derecho_porcentaje_vigente()
         if not derecho:
             raise HttpError(400, "No hay DerechoPorcentajeObra vigente")
-
-        # Step 4: Calculate
+        
+        # Step 4: Build DTOs with explicit especialidad from input
+        if tarifas_input:
+            tarifas_aplicadas = [
+                TarifaPorcentajeObraAplicada(
+                    tarifa_id=str(t.tarifa_porcentaje_obra_id),
+                    porcentaje_liquidacion=tarifa_map[str(t.tarifa_porcentaje_obra_id)].porcentaje_liquidacion,
+                    especialidad_id=str(t.especialidad_id),
+                    especialidad_nombre=None,
+                )
+                for t in tarifas_input
+            ]
+        else:
+            # Auto-fill: combine one tarifa per base x every vigente especialidad.
+            # In tarifa-unica design there is ONE tarifa per TarifaLiquidacionBase/periodo,
+            # so deduplicate by tarifa_base to avoid duplicate (liquidacion_porcentaje, especialidad).
+            especialidades = self._obtener_especialidades_vigentes_para_tipo(TipoLiquidacion.IMPACTO_VIAL)
+            tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas}.values())
+            tarifas_aplicadas = [
+                TarifaPorcentajeObraAplicada(
+                    tarifa_id=str(t.id),
+                    porcentaje_liquidacion=t.porcentaje_liquidacion,
+                    especialidad_id=str(esp.especialidad_id),
+                    especialidad_nombre=esp.especialidad.nombre if esp.especialidad else None,
+                )
+                for t in tarifas_dedup
+                for esp in especialidades
+            ]
+        
+        # Step 5: Calculate with DTOs (not ORM objects)
         cotizacion = self.porcentaje_core.calcular_cotizacion_po(
             valor_declarado=valor_declarado,
-            tarifas=tarifas,
+            tarifas=tarifas_aplicadas,
             igv_porcentaje=Decimal(str(igv_vigente.valor)),
             derecho=derecho,
             uit_valor=Decimal(str(uit_vigente.valor)),
         )
-
-        # Step 5: Build result
+        
+        # Step 6: Build result
         return CotizacionPorcentajeObraResult(
             valor_declarado=cotizacion.valor_declarado,
             porcentaje_liquidacion=cotizacion.porcentaje_liquidacion,
@@ -240,6 +317,7 @@ class LiquidacionImpactoVialOrchestrator:
             detalles=[
                 CotizacionPorcentajeObraDetalleResult(
                     tarifa_id=d.tarifa_aplicada.tarifa_id,
+                    especialidad_id=d.tarifa_aplicada.especialidad_id,
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
                     igv=d.igv,

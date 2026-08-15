@@ -5,6 +5,9 @@ from core.types import BaseSchema
 from ninja import Field
 from typing import Optional
 import uuid
+from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+    LiquidacionDelegadoOut,
+)
 
 # --- Entidad & Proyecto (In/Out) ---
 class EntidadInlineSchema(BaseSchema):
@@ -149,3 +152,4 @@ class LiquidacionGeneralOutput(BaseSchema):
     contacto: Optional[ContactoOutput] = Field(None, description="Contacto principal")
     tipo_liquidacion: Optional[TipoLiquidacionOutput] = Field(None, description="Tipo de liquidación (codigo y nombre)")
     revisiones_previas: list[LiquidacionPreviaOutput] = Field(default_factory=list, description="Liquidaciones previas del mismo proyecto")
+    delegados: list[LiquidacionDelegadoOut] = Field(default_factory=list, description="Delegados asociados a la liquidación")

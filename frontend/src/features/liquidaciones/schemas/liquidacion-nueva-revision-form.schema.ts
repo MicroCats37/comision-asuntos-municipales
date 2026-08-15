@@ -17,8 +17,11 @@ export const nuevaRevisionEdificacionesFormSchema = z.object({
   retencion: z.boolean().optional(),
   // Contacto principal (singular)
   contacto: contactoInlineSchema.optional(),
-  // Tarifas — obligatorias, vigentes (el usuario las selecciona)
-  tarifas_ids: z.array(z.string()).min(1, "Selecciona al menos una tarifa"),
+  // Smart Field outputs — set by Smart Fields via setValue
+  /** ID de la única tarifa vigente de porcentaje de obra */
+  tarifa_unica_id: z.string().optional(),
+  /** IDs de especialidades seleccionadas — al menos una */
+  especialidades_seleccionadas: z.array(z.string()).min(1, "Selecciona al menos una especialidad"),
 });
 
 export type NuevaRevisionEdificacionesFormData = z.infer<typeof nuevaRevisionEdificacionesFormSchema>;

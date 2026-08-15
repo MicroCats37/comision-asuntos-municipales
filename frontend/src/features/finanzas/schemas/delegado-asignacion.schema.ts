@@ -1,0 +1,51 @@
+/**
+ * Zod schemas for Delegados Asignaciones — mirrors backend LiquidacionDelegadoOut.
+ * Endpoint: GET /liquidaciones/delegados-asignaciones
+ */
+import { z } from "zod";
+
+const uuid = () => z.string();
+
+export const tipoLiquidacionMinimalSchema = z.object({
+  codigo: z.string(),
+  nombre: z.string(),
+});
+
+export const liquidacionDelegadoLiquidacionSchema = z.object({
+  id: uuid(),
+  expediente: z.string().nullish(),
+  numero_revision: z.coerce.number().int(),
+  sub_total: z.number().nullish(),
+  total: z.number().nullish(),
+  municipalidad_nombre: z.string().nullish(),
+  proyecto_denominacion: z.string().nullish(),
+  tipo_liquidacion: tipoLiquidacionMinimalSchema.nullish(),
+});
+
+export const liquidacionDelegadoDelegadoSchema = z.object({
+  id: uuid(),
+  cip: z.string(),
+  dni: z.string(),
+  nombre_completo: z.string(),
+});
+
+export const especialidadRevisionSchema = z.object({
+  id: uuid(),
+  nombre: z.string(),
+});
+
+/** LiquidacionDelegadoOut — matches backend schema exactly */
+export const liquidacionDelegadoSchema = z.object({
+  id: uuid(),
+  liquidacion_id: uuid(),
+  delegado_id: uuid(),
+  especialidad_revision: especialidadRevisionSchema,
+  liquidacion: liquidacionDelegadoLiquidacionSchema.nullish(),
+  delegado: liquidacionDelegadoDelegadoSchema.nullish(),
+  periodo: z.string().nullish(),
+  dictamen_revision: z.string().nullish(),
+  fecha_presentacion: z.string().nullish(),
+  fecha_revision: z.string().nullish(),
+});
+
+export type LiquidacionDelegado = z.infer<typeof liquidacionDelegadoSchema>;

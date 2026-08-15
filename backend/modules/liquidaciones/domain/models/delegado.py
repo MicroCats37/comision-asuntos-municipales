@@ -125,21 +125,32 @@ class LiquidacionDelegado(BaseModel):
     """
 
     history = HistoricalRecords()
+    
     liquidacion = models.ForeignKey(
         "LiquidacionGeneral",
         on_delete=models.CASCADE,
         related_name="liquidacion_delegados",
         verbose_name="Liquidacion",
     )
+    
+    especialidad_revision = models.ForeignKey(
+        "usuarios.EspecialidadRevision",
+        on_delete=models.PROTECT,
+        related_name="liquidacion_delegados",
+        verbose_name="Especialidad de Revision",
+    )
+
     delegado = models.ForeignKey(
         "Delegado",
         on_delete=models.PROTECT,
         related_name="delegado_liquidacion",
         verbose_name="Delegado",
     )
+    
     periodo = models.CharField(
         max_length=100, blank=True, null=True, verbose_name="Periodo"
     )
+    
     dictamen_revision = models.CharField(
         max_length=20,
         choices=DictamenRevision.choices,
@@ -147,9 +158,11 @@ class LiquidacionDelegado(BaseModel):
         null=True,
         verbose_name="Dictamen de Revision",
     )
+    
     fecha_presentacion = models.DateField(
         blank=True, null=True, verbose_name="Fecha de Presentacion"
     )
+    
     fecha_revision = models.DateField(
         blank=True, null=True, verbose_name="Fecha de Revision"
     )

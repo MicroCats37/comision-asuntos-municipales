@@ -16,11 +16,17 @@ class DatosPorcentajeObra(BaseModel):
 
 
 class TarifaPorcentajeObraAplicada(BaseModel):
-    """Tarifa aplicada (resuelta por FK)."""
+    """
+    Tarifa aplicada (resuelta por FK).
+
+    With tarifa-unica-especialidades: especialidad_id/especialidad_nombre are passed
+    explicitly from the input/DTO (from LiquidacionEspecialidadDisponibles), NOT
+    read from TarifaPorcentajeObra.especialidad (that FK no longer exists).
+    """
     tarifa_id: str
     porcentaje_liquidacion: Decimal
     especialidad_id: str
-    especialidad_nombre: str
+    especialidad_nombre: Optional[str] = None
 
 
 class LiquidacionPorcentajeObraData(BaseModel):

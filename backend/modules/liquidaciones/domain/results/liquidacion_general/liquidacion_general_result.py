@@ -91,6 +91,26 @@ class TipoLiquidacionResult(BaseModel):
     nombre: str
 
 
+class LiquidacionDelegadoEnGeneralResult(BaseModel):
+    """
+    Minimal domain DTO for a LiquidacionDelegado nested inside LiquidacionGeneralResult.
+    Carries the same fields as LiquidacionDelegadoOut minus the nested liquidacion
+    (to avoid circular nesting inside liquidacion_general).
+    """
+    id: str
+    liquidacion_id: str
+    delegado_id: str
+    especialidad_revision_id: str
+    especialidad_revision_nombre: str
+    delegado_cip: str
+    delegado_dni: str
+    delegado_nombre_completo: str
+    periodo: Optional[str] = None
+    dictamen_revision: Optional[str] = None
+    fecha_presentacion: Optional[str] = None
+    fecha_revision: Optional[str] = None
+
+
 class LiquidacionGeneralResult(BaseModel):
     id: str
     municipalidad: MunicipalidadResult
@@ -108,3 +128,4 @@ class LiquidacionGeneralResult(BaseModel):
     contacto: Optional[ContactoResult] = None
     tipo_liquidacion: Optional[TipoLiquidacionResult] = None
     revisiones_previas: list[LiquidacionPreviaResult] = []
+    delegados: list[LiquidacionDelegadoEnGeneralResult] = []

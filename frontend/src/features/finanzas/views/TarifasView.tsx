@@ -1,131 +1,173 @@
 /**
- * Vista para Tarifas Históricas.
+ * Vista para Tarifas (Tarifario).
  * Ruta: /liquidaciones/finanzas
  *
- * Usa PageHeader + AppDataTable.
+ * Usa PageHeader + cards pattern + filtros en modal + paginación.
+ * - Sin fechas → el backend devuelve SOLO tarifas VIGENTES (1 periodo).
+ * - Con fechas (desde/hasta) → histórico por rango.
  */
 "use client";
 
-import { useState } from "react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { Banknote, Calendar as CalendarIcon, DollarSign, Layers, Percent } from "lucide-react";
-import { PageHeader } from "@/components-app/pages/PageHeader";
-import { Pagination } from "@/components/genericPagination/Pagination";
-import { useTarifasHistoricas } from "../hooks/useTarifasHistoricas";
-import { tipoTarifaSchema } from "../types/finanzas.types";
-import type { TarifaHistoricaPeriodo } from "../types/finanzas.types";
+import { parse } from "date-fns";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  BadgeCheck,
+  Banknote,
+  Building2,
+  Calendar as CalendarIcon,
+  DollarSign,
+  Filter,
+  Layers,
+  Percent,
+  X,
+} from "lucide-react";
+import { useState } from "react";
+import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { PageHeader } from "@/components-app/pages/PageHeader";
+import {
+  TarifasFiltroModal,
+  TIPO_OPTIONS,
+} from "../components/TarifasFiltroModal";
+import { useTarifasHistoricas } from "../hooks/useTarifasHistoricas";
+import type {
+  TarifaHistoricaPeriodo,
+  TarifasFiltros,
+} from "../types/finanzas.types";
 
-// ── Tipo options (rutas reales del backend) ─────────────────────────────
+// ── Format helpers ──────────────────────────────────────────────────────
 
-const TIPO_OPTIONS: { value: string; label: string }[] = [
-  { value: "edificaciones", label: "Edificaciones" },
-  { value: "habilitacion-urbana", label: "Habilitación Urbana" },
-  { value: "mecanica-suelos", label: "Mecánica de Suelos" },
-  { value: "impacto-vial", label: "Impacto Vial" },
-  { value: "taludes", label: "Taludes" },
-  { value: "inspeccion-obra", label: "Inspección de Obra" },
-];
+const formatSoles = (value: number | undefined | null): string =>
+  value == null
+    ? "—"
+    : `S/ ${Number(value).toLocaleString("es-PE", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
 
-// ── Card de Tarifa Historica ─────────────────────────────────────────────
+// Backend devuelve `porcentaje_liquidacion`/`porcentaje_uit` como fracción
+// (ej. 0.0015 → "0.15%").
+const formatPorcentaje = (value: number | undefined | null): string => {
+  if (value == null) return "—";
+  const pct = Number(value) * 100;
+  return `${pct.toLocaleString("es-PE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  })}%`;
+};
 
 function formatDate(value: string | null): string {
   if (!value) return "—";
-  const d = new Date(value);
-  return isNaN(d.getTime())
+  let d: Date;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    // Fecha "yyyy-MM-dd" → parsear local para evitar el shift de zona horaria
+    d = parse(value, "yyyy-MM-dd", new Date());
+  } else {
+    d = new Date(value);
+  }
+  return Number.isNaN(d.getTime())
     ? value
-    : d.toLocaleDateString("es-PE", { year: "numeric", month: "short", day: "numeric" });
+    : d.toLocaleDateString("es-PE", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
 }
 
+// ── Card de Tarifa ───────────────────────────────────────────────────────
+
 function TarifaPeriodoCard({ item }: { item: TarifaHistoricaPeriodo }) {
-  const tipoLabel = TIPO_OPTIONS.find((o) => o.value === item.tipo_liquidacion)?.label
-    ?? item.tipo_liquidacion
-    ?? "—";
+  const tipoLabel =
+    TIPO_OPTIONS.find((o) => o.value === item.tipo_liquidacion)?.label ??
+    item.tipo_liquidacion ??
+    "—";
 
   return (
     <div className="rounded-2xl border bg-card shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden">
-      {/* Header */}
+      {/* Header: tipo + periodo + badge m2 */}
       <div className="px-4 py-3 bg-gradient-to-r from-muted/40 via-muted/20 to-transparent border-b border-border/60 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/20">
             <DollarSign className="h-4 w-4 text-primary" />
           </div>
-          <div>
-            <p className="text-sm font-bold text-foreground tracking-tight">{tipoLabel}</p>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-foreground tracking-tight truncate">
+              {tipoLabel}
+            </p>
             <p className="text-[11px] text-muted-foreground">
               {formatDate(item.periodo_inicio)} → {formatDate(item.periodo_fin)}
             </p>
           </div>
         </div>
-        {item.tarifa_m2 ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-600 uppercase tracking-wider">
+        {item.tarifa_m2 && (
+          <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-600 uppercase tracking-wider">
             <Banknote className="h-3 w-3" />
-            S/ {Number(item.tarifa_m2.costo_por_m2).toFixed(2)}/m²
+            {formatSoles(item.tarifa_m2.costo_por_m2)}/m²
           </span>
-        ) : null}
+        )}
       </div>
 
       {/* Body */}
-      <div className="p-4 space-y-3">
-        {/* Porcentaje tarifas */}
-        {item.tarifas_porcentaje.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-              <Percent className="h-3 w-3 text-primary/60" />
-              Especialidades
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {item.tarifas_porcentaje.map((t) => (
-                <span
-                  key={t.id}
-                  className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs"
-                >
-                  <Layers className="h-3 w-3 text-primary/60" />
-                  {t.especialidad_nombre}
-                  <span className="font-bold text-primary">
-                    {Number(t.porcentaje_liquidacion) * 100}%
+      {(item.tarifas_porcentaje.length > 0 ||
+        item.tarifas_visitas.length > 0) && (
+        <div className="p-4 space-y-3">
+          {/* Especialidades (porcentaje) */}
+          {item.tarifas_porcentaje.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                <Percent className="h-3 w-3 text-primary/60" />
+                Especialidades
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {item.tarifas_porcentaje.map((t) => (
+                  <span
+                    key={t.id}
+                    className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs"
+                  >
+                    <Layers className="h-3 w-3 text-primary/60" />
+                    {t.especialidad_nombre}
+                    <span className="font-bold text-primary">
+                      {formatPorcentaje(t.porcentaje_liquidacion)}
+                    </span>
                   </span>
-                </span>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Visitas */}
-        {item.tarifas_visitas.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-              Visitas
+          {/* Visitas */}
+          {item.tarifas_visitas.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                <Building2 className="h-3 w-3 text-primary/60" />
+                Visitas
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {item.tarifas_visitas.map((v) => (
+                  <span
+                    key={v.id}
+                    className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs"
+                  >
+                    {v.categoria}
+                    <span className="font-bold">
+                      {formatPorcentaje(v.porcentaje_uit)} UIT
+                    </span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {item.tarifas_porcentaje.length === 0 &&
+        item.tarifas_visitas.length === 0 &&
+        !item.tarifa_m2 && (
+          <div className="p-4">
+            <p className="text-xs text-muted-foreground/60 italic">
+              Sin tarifas en este periodo
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              {item.tarifas_visitas.map((v) => (
-                <span
-                  key={v.id}
-                  className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs"
-                >
-                  {v.categoria}
-                  <span className="font-bold">{Number(v.porcentaje_uit)} UIT</span>
-                </span>
-              ))}
-            </div>
           </div>
         )}
-
-        {item.tarifas_porcentaje.length === 0 && item.tarifas_visitas.length === 0 && !item.tarifa_m2 && (
-          <p className="text-xs text-muted-foreground/60 italic">Sin tarifas en este periodo</p>
-        )}
-      </div>
     </div>
   );
 }
@@ -133,9 +175,10 @@ function TarifaPeriodoCard({ item }: { item: TarifaHistoricaPeriodo }) {
 // ── View Component ───────────────────────────────────────────────────────────
 
 export function TarifasView() {
-  const [selectedTipo, setSelectedTipo] = useState<string>("edificaciones");
-  const [fechaDesde, setFechaDesde] = useState<string>("");
-  const [fechaHasta, setFechaHasta] = useState<string>("");
+  const [filtros, setFiltros] = useState<TarifasFiltros>({
+    tipo: "edificaciones",
+  });
+  const [filtroModalOpen, setFiltroModalOpen] = useState(false);
 
   const {
     items,
@@ -149,124 +192,88 @@ export function TarifasView() {
     setPage,
     setPageSize,
   } = useTarifasHistoricas({
-    tipo: selectedTipo as (typeof tipoTarifaSchema.options)[number],
-    fechaDesde: fechaDesde || undefined,
-    fechaHasta: fechaHasta || undefined,
+    tipo: filtros.tipo,
+    fechaDesde: filtros.fechaDesde,
+    fechaHasta: filtros.fechaHasta,
   });
+
+  const hasFechas = !!filtros.fechaDesde || !!filtros.fechaHasta;
+  const activeFilterCount = [filtros.fechaDesde, filtros.fechaHasta].filter(
+    Boolean,
+  ).length;
+
+  const tipoLabel =
+    TIPO_OPTIONS.find((o) => o.value === filtros.tipo)?.label ?? filtros.tipo;
+
+  const handleLimpiar = () => {
+    setFiltros({ tipo: "edificaciones" });
+    setPage(1);
+  };
 
   return (
     <div className="page-section">
       <div className="space-y-6">
         <PageHeader
           title="Tarifario"
-          description="Consulta de tarifas históricas por tipo de liquidación"
+          description="Consulta de tarifas vigentes o históricas por tipo de liquidación"
           icon={DollarSign}
+          actionNodes={
+            <Button
+              variant={activeFilterCount > 0 ? "default" : "outline"}
+              className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+              onClick={() => setFiltroModalOpen(true)}
+            >
+              <Filter className="h-4 w-4" />
+              Filtros
+              {activeFilterCount > 0 && (
+                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-foreground/20 text-xs font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
+          }
         />
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-end gap-4 p-4 bg-muted/20 rounded-xl border border-border/60">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="tipo-select" className="text-xs font-semibold text-muted-foreground">
-              Tipo de Liquidación
-            </Label>
-            <Select value={selectedTipo} onValueChange={setSelectedTipo}>
-              <SelectTrigger id="tipo-select" className="w-[220px] h-9">
-                <SelectValue placeholder="Seleccionar tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {TIPO_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Fecha Desde */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="fecha-desde" className="text-xs font-semibold text-muted-foreground">
-              Fecha Desde
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="fecha-desde"
-                  variant="outline"
-                  className="w-[180px] h-9 justify-start text-left font-normal pl-9 relative"
-                >
-                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  {fechaDesde ? (
-                    format(new Date(fechaDesde), "PPP", { locale: es })
-                  ) : (
-                    <span className="text-muted-foreground">Seleccionar...</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={fechaDesde ? new Date(fechaDesde) : undefined}
-                  onSelect={(date) => setFechaDesde(date ? format(date, "yyyy-MM-dd") : "")}
-                  locale={es}
-                  initialFocus
-                  captionLayout="dropdown"
-                  startMonth={new Date(new Date().getFullYear() - 100, 0)}
-                  endMonth={new Date()}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Fecha Hasta */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="fecha-hasta" className="text-xs font-semibold text-muted-foreground">
-              Fecha Hasta
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="fecha-hasta"
-                  variant="outline"
-                  className="w-[180px] h-9 justify-start text-left font-normal pl-9 relative"
-                >
-                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  {fechaHasta ? (
-                    format(new Date(fechaHasta), "PPP", { locale: es })
-                  ) : (
-                    <span className="text-muted-foreground">Seleccionar...</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={fechaHasta ? new Date(fechaHasta) : undefined}
-                  onSelect={(date) => setFechaHasta(date ? format(date, "yyyy-MM-dd") : "")}
-                  locale={es}
-                  initialFocus
-                  captionLayout="dropdown"
-                  startMonth={new Date(new Date().getFullYear() - 100, 0)}
-                  endMonth={new Date()}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Clear filters */}
-          {(fechaDesde || fechaHasta) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setFechaDesde("");
-                setFechaHasta("");
-              }}
-              className="h-9 px-3 gap-1 text-xs"
-            >
-              Limpiar fechas
-            </Button>
+        {/* Filtros activos */}
+        <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/20 rounded-xl border border-border/60">
+          <span className="text-xs font-semibold text-muted-foreground">
+            Filtros activos:
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+            Tipo: {tipoLabel}
+          </span>
+          {hasFechas ? (
+            <>
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+                <CalendarIcon className="h-3 w-3" />
+                Histórico por rango
+              </span>
+              {filtros.fechaDesde && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2.5 py-1 text-xs font-medium">
+                  Desde: {formatDate(filtros.fechaDesde)}
+                </span>
+              )}
+              {filtros.fechaHasta && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2.5 py-1 text-xs font-medium">
+                  Hasta: {formatDate(filtros.fechaHasta)}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 border border-green-500/20 px-2.5 py-1 text-xs font-medium text-green-600">
+              <BadgeCheck className="h-3 w-3" />
+              Solo vigentes
+            </span>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLimpiar}
+            className="h-7 px-2 gap-1 text-xs text-destructive"
+          >
+            <X className="h-3 w-3" />
+            Limpiar
+          </Button>
         </div>
 
         {/* Cards */}
@@ -274,20 +281,34 @@ export function TarifasView() {
           {isLoading ? (
             <div className="flex flex-col gap-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-card rounded-2xl border shadow-sm h-32 animate-pulse" />
+                <div
+                  key={i}
+                  className="bg-card rounded-2xl border shadow-sm h-32 animate-pulse"
+                />
               ))}
             </div>
           ) : isError ? (
             <div className="flex flex-col items-center justify-center p-10 text-center border border-dashed border-border rounded-2xl">
-              <p className="text-destructive font-medium">Error al cargar las tarifas</p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
+              <p className="text-destructive font-medium">
+                Error al cargar las tarifas
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => refetch()}
+              >
                 Reintentar
               </Button>
             </div>
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-2xl">
               <DollarSign className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No hay periodos tarifarios para los filtros</p>
+              <p className="text-muted-foreground">
+                {hasFechas
+                  ? "No hay periodos tarifarios en el rango seleccionado"
+                  : "No hay tarifas vigentes para el tipo seleccionado"}
+              </p>
             </div>
           ) : (
             <>
@@ -310,6 +331,18 @@ export function TarifasView() {
           )}
         </div>
       </div>
+
+      {/* Filtro modal — sibling, no nested form */}
+      <TarifasFiltroModal
+        open={filtroModalOpen}
+        onOpenChange={setFiltroModalOpen}
+        initialFiltros={filtros}
+        onApply={(nuevos) => {
+          setFiltros(nuevos);
+          setPage(1);
+          setFiltroModalOpen(false);
+        }}
+      />
     </div>
   );
 }

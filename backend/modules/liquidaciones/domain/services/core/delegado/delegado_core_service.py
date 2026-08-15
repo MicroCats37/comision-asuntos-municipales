@@ -12,6 +12,11 @@ from modules.liquidaciones.domain.models.delegado import (
     Delegado,
     DelegadoMunicipalidad,
     DelegadoMunicipalidadPeriodo,
+    LiquidacionDelegado,
+)
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
+    LiquidacionGeneral,
+    LiquidacionEspecialidadDisponibles,
 )
 
 
@@ -138,6 +143,204 @@ class DelegadoCoreService:
                     Q(periodos__periodo_inicio__lte=today, periodos__periodo_fin__isnull=True)
                     | Q(periodos__periodo_inicio__lte=today, periodos__periodo_fin__gte=today)
                 )
+
+        total = qs.count()
+        offset = (page - 1) * page_size
+        return list(qs[offset:offset + page_size]), total
+
+    def get_liquidacion_general_by_id(
+        self,
+        liquidacion_id: uuid.UUID,
+    ) -> Optional[LiquidacionGeneral]:
+        """
+        Returns a single LiquidacionGeneral by UUID.
+        Returns None if not found.
+        """
+        return LiquidacionGeneral.objects.filter(id=liquidacion_id).select_related(
+            "tipo_liquidacion",
+            "municipalidad",
+        ).first()
+
+    def list_especialidad_ids_vigentes_para_tipo(
+        self,
+        tipo_codigo: str,
+        fecha: date,
+    ) -> list:
+        """
+        Returns string especialidad_ids of vigentes LiquidacionEspecialidadDisponibles
+        for the given tipo_liquidacion codigo on the given date.
+        Vigente: activo=True AND periodo_inicio <= fecha AND
+        (periodo_fin IS NULL OR periodo_fin >= fecha).
+        """
+        return [
+            str(especialidad_id)
+            for especialidad_id in LiquidacionEspecialidadDisponibles.objects.filter(
+                tipo_liquidacion__codigo=tipo_codigo,
+                activo=True,
+                periodo_inicio__lte=fecha,
+            ).filter(
+                Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha)
+            ).values_list("especialidad_id", flat=True)
+        ]
+
+    def list_delegados_vigentes(
+        self,
+        municipalidad_id: uuid.UUID,
+        tipo_codigo: str,
+        fecha: date,
+    ) -> list:
+        """
+        Returns DelegadoMunicipalidad candidates matching a liquidación tipo.
+
+        Match:
+        1. DelegadoMunicipalidad with municipalidad_id AND
+           (liquidacion_revision IS NULL OR liquidacion_revision.codigo == tipo_codigo)
+        2. delegado.especialidad_revision IN especialidades vigentes del tipo
+        3. periodo municipal vigente (inicio <= fecha AND fin IS NULL OR >= fecha)
+        """
+        especialidad_ids = self.list_especialidad_ids_vigentes_para_tipo(tipo_codigo, fecha)
+        return list(
+            DelegadoMunicipalidad.objects.filter(
+                municipalidad_id=municipalidad_id,
+            ).filter(
+                Q(liquidacion_revision__isnull=True)
+                | Q(liquidacion_revision__codigo=tipo_codigo)
+            ).filter(
+                delegado__especialidad_revision_id__in=especialidad_ids,
+            ).filter(
+                Q(
+                    periodos__periodo_inicio__lte=fecha,
+                    periodos__periodo_fin__isnull=True,
+                )
+                | Q(
+                    periodos__periodo_inicio__lte=fecha,
+                    periodos__periodo_fin__gte=fecha,
+                )
+            ).select_related(
+                "delegado__perfil_ingeniero",
+                "delegado__especialidad_revision",
+            ).prefetch_related(
+                "periodos",
+            ).distinct().order_by(
+                "delegado__perfil_ingeniero__apellido_paterno",
+                "delegado__perfil_ingeniero__apellido_materno",
+                "delegado__perfil_ingeniero__nombres",
+            )
+        )
+
+    def get_asignacion_municipal_vigente(
+        self,
+        delegado_id: uuid.UUID,
+        municipalidad_id: uuid.UUID,
+        fecha: date,
+    ) -> Optional[DelegadoMunicipalidad]:
+        """
+        Returns the DelegadoMunicipalidad for (delegado, municipalidad) with a
+        vigente periodo on the given date, or None.
+        """
+        return (
+            DelegadoMunicipalidad.objects.filter(
+                delegado_id=delegado_id,
+                municipalidad_id=municipalidad_id,
+            ).filter(
+                Q(
+                    periodos__periodo_inicio__lte=fecha,
+                    periodos__periodo_fin__isnull=True,
+                )
+                | Q(
+                    periodos__periodo_inicio__lte=fecha,
+                    periodos__periodo_fin__gte=fecha,
+                )
+            ).distinct().first()
+        )
+
+    def crear_liquidacion_delegado(
+        self,
+        liquidacion,
+        delegado,
+        especialidad_revision,
+        **kwargs,
+    ) -> LiquidacionDelegado:
+        """Creates a LiquidacionDelegado association (pure ORM wrapper)."""
+        return LiquidacionDelegado.objects.create(
+            liquidacion=liquidacion,
+            delegado=delegado,
+            especialidad_revision=especialidad_revision,
+            **kwargs,
+        )
+
+    def actualizar_liquidacion_delegado(
+        self,
+        liquidacion,
+        delegado,
+        **campos,
+    ) -> Optional[LiquidacionDelegado]:
+        """
+        Updates metadata fields of a LiquidacionDelegado association.
+        Returns the updated instance, or None if the association does not exist.
+        """
+        asociacion = LiquidacionDelegado.objects.filter(
+            liquidacion=liquidacion, delegado=delegado
+        ).first()
+        if not asociacion:
+            return None
+        for campo, valor in campos.items():
+            setattr(asociacion, campo, valor)
+        asociacion.save()
+        return asociacion
+
+    def eliminar_liquidacion_delegado(
+        self,
+        liquidacion,
+        delegado,
+    ) -> tuple:
+        """Deletes the LiquidacionDelegado association for (liquidacion, delegado)."""
+        return LiquidacionDelegado.objects.filter(
+            liquidacion=liquidacion, delegado=delegado
+        ).delete()
+
+    def obtener_liquidacion_delegado(
+        self,
+        liquidacion,
+        delegado,
+    ) -> Optional[LiquidacionDelegado]:
+        """
+        Returns the LiquidacionDelegado association for (liquidacion, delegado),
+        or None.
+        """
+        return LiquidacionDelegado.objects.filter(
+            liquidacion=liquidacion, delegado=delegado,
+        ).select_related(
+            "delegado__perfil_ingeniero",
+            "especialidad_revision",
+        ).first()
+
+    def list_liquidacion_delegado_paginated(
+        self,
+        page: int,
+        page_size: int,
+        cip: Optional[str] = None,
+        liquidacion_id: Optional[uuid.UUID] = None,
+    ) -> tuple:
+        """
+        Returns paginated LiquidacionDelegado queryset with optional filters.
+        Uses select_related to avoid N+1: liquidacion, liquidacion__proyecto,
+        liquidacion__municipalidad, liquidacion__tipo_liquidacion, delegado,
+        delegado__perfil_ingeniero, especialidad_revision.
+        Returns (queryset_list, total_count).
+        """
+        qs = LiquidacionDelegado.objects.select_related(
+            "liquidacion__proyecto",
+            "liquidacion__municipalidad",
+            "liquidacion__tipo_liquidacion",
+            "delegado__perfil_ingeniero",
+            "especialidad_revision",
+        ).order_by("-liquidacion__fecha_registro")
+
+        if cip:
+            qs = qs.filter(delegado__perfil_ingeniero__cip__icontains=cip)
+        if liquidacion_id:
+            qs = qs.filter(liquidacion_id=liquidacion_id)
 
         total = qs.count()
         offset = (page - 1) * page_size

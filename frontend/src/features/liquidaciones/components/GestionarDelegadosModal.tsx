@@ -1,25 +1,37 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
-import { useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Users } from "lucide-react";
-import { z } from "zod";
+import { useCallback, useMemo } from "react";
 import type { UseFormReturn } from "react-hook-form";
+import { z } from "zod";
 
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { DelegadosSection } from "./DelegadosSection";
-import api from "@/lib/api";
 import { handleApiError, notify } from "@/errors";
-import type { DelegadoVigente } from "../types/liquidacion-edificaciones.types";
+import api from "@/lib/api";
 import { delegadosVigentesResponseSchema } from "../hooks/useDelegadosVigentes";
+import { type Asignacion, DelegadosSection } from "./DelegadosSection";
 
 interface HasId {
   id: string;
 }
 
 const gestionarDelegadosSchema = z.object({
-  delegados_ids: z.array(z.string()),
+  asignaciones: z.array(
+    z.object({
+      delegado_id: z.string(),
+      periodo: z.string().optional().nullable(),
+      dictamen_revision: z
+        .enum(["CONFORME", "NO_CONFORME", "PENDIENTE", "AP_OB"])
+        .optional()
+        .nullable(),
+      fecha_presentacion: z.string().optional().nullable(),
+      fecha_revision: z.string().optional().nullable(),
+    }),
+  ),
 });
+
+type GestionarDelegadosFormData = z.infer<typeof gestionarDelegadosSchema>;
 
 interface GestionarDelegadosModalProps {
   open: boolean;
@@ -27,7 +39,6 @@ interface GestionarDelegadosModalProps {
   liquidacionId: string;
   municipalidadId: string;
   tipoLiquidacion: string;
-  revisionIds: string[];
   delegadosActuales: HasId[];
   onSuccess?: () => void;
 }
@@ -38,7 +49,6 @@ export function GestionarDelegadosModal({
   liquidacionId,
   municipalidadId,
   tipoLiquidacion,
-  revisionIds,
   delegadosActuales,
   onSuccess,
 }: GestionarDelegadosModalProps) {
@@ -49,52 +59,72 @@ export function GestionarDelegadosModal({
     [delegadosActuales],
   );
 
-  const delegadosQueries = useQueries({
-    queries: revisionIds.map((revisionId) => ({
-      queryKey: ["delegados-vigentes", municipalidadId, tipoLiquidacion, revisionId],
-      queryFn: async () => {
-        const { data } = await api.get("/liquidaciones/delegados/vigentes", {
-          params: {
-            municipalidad_id: municipalidadId,
-            tipo_liquidacion: tipoLiquidacion,
-            revision_id: revisionId,
-          },
-        });
-        const parsed = delegadosVigentesResponseSchema.parse(data);
-        return parsed.data?.delegados ?? [];
-      },
-      enabled: open && !!municipalidadId && !!revisionId,
-      staleTime: 1000 * 60 * 5,
-    })),
+  const delegadosQuery = useQuery({
+    queryKey: [
+      "delegados-vigentes",
+      municipalidadId,
+      tipoLiquidacion,
+    ],
+    queryFn: async () => {
+      const { data } = await api.get("/liquidaciones/delegados/vigentes", {
+        params: {
+          municipalidad_id: municipalidadId,
+          tipo_liquidacion: tipoLiquidacion,
+        },
+      });
+      const parsed = delegadosVigentesResponseSchema.parse(data);
+      return parsed.data?.delegados ?? [];
+    },
+    enabled: open && !!municipalidadId,
+    staleTime: 1000 * 60 * 5,
   });
 
-  const isLoading = delegadosQueries.some((q) => q.isLoading);
-  const allDelegados = useMemo(() => {
-    const seen = new Map<string, DelegadoVigente>();
-    for (const q of delegadosQueries) {
-      if (q.data) {
-        for (const d of q.data) {
-          if (!seen.has(d.id)) {
-            seen.set(d.id, d);
-          }
-        }
-      }
-    }
-    return Array.from(seen.values());
-  }, [delegadosQueries]);
+  const isLoading = delegadosQuery.isLoading;
+  const allDelegados = useMemo(
+    () => delegadosQuery.data ?? [],
+    [delegadosQuery.data],
+  );
 
   const batchMutation = useMutation({
-    mutationFn: async (selectedIds: string[]) => {
-      const create = selectedIds
-        .filter((id) => !currentDelegadosIds.has(id))
+    mutationFn: async (
+      asignaciones: z.infer<typeof gestionarDelegadosSchema>["asignaciones"],
+    ) => {
+      const selectedIds = new Set(asignaciones.map((a) => a.delegado_id));
+
+      // create = selected ids not in currentDelegadosIds (metadata fields omitted)
+      const create = asignaciones
+        .filter((a) => !currentDelegadosIds.has(a.delegado_id))
+        .map((a) => ({ delegado_id: a.delegado_id }));
+
+      // delete = current ids not in selected
+      const deleteItems = Array.from(currentDelegadosIds)
+        .filter((id) => !selectedIds.has(id))
         .map((id) => ({ delegado_id: id }));
 
-      const deleteItems = Array.from(currentDelegadosIds)
-        .filter((id) => !selectedIds.includes(id))
-        .map((id) => ({ delegado_id: id }));
+      // update = selected ids that ARE in currentDelegadosIds AND have at least one non-null metadata field
+      const update = asignaciones
+        .filter(
+          (a) =>
+            currentDelegadosIds.has(a.delegado_id) &&
+            (a.periodo != null ||
+              a.dictamen_revision != null ||
+              a.fecha_presentacion != null ||
+              a.fecha_revision != null),
+        )
+        .map((a) => {
+          const entry: Record<string, string> = { delegado_id: a.delegado_id };
+          if (a.periodo != null) entry.periodo = a.periodo;
+          if (a.dictamen_revision != null)
+            entry.dictamen_revision = a.dictamen_revision;
+          if (a.fecha_presentacion != null)
+            entry.fecha_presentacion = a.fecha_presentacion;
+          if (a.fecha_revision != null) entry.fecha_revision = a.fecha_revision;
+          return entry;
+        });
 
       const payload: Record<string, unknown[]> = {};
       if (create.length > 0) payload.create = create;
+      if (update.length > 0) payload.update = update;
       if (deleteItems.length > 0) payload.delete = deleteItems;
 
       if (Object.keys(payload).length === 0) return null;
@@ -116,8 +146,8 @@ export function GestionarDelegadosModal({
   });
 
   const handleSubmit = useCallback(
-    async (data: { delegados_ids: string[] }) => {
-      await batchMutation.mutateAsync(data.delegados_ids);
+    async (data: GestionarDelegadosFormData) => {
+      await batchMutation.mutateAsync(data.asignaciones);
     },
     [batchMutation],
   );
@@ -125,21 +155,55 @@ export function GestionarDelegadosModal({
   const renderContent = useCallback(
     ({
       methods,
-      isSubmitting,
     }: {
-      methods: UseFormReturn<{ delegados_ids: string[] }>;
+      methods: UseFormReturn<GestionarDelegadosFormData>;
       isSubmitting: boolean;
       onSubmit: () => void;
       submissionMessage: { type: "success" | "error"; message: string } | null;
     }) => {
-      const selectedIds = methods.watch("delegados_ids");
+      const selectedIds = methods
+        .watch("asignaciones")
+        .map((a) => a.delegado_id);
 
       const handleToggle = (id: string) => {
-        const current = methods.getValues("delegados_ids");
-        const updated = current.includes(id)
-          ? current.filter((i) => i !== id)
-          : [...current, id];
-        methods.setValue("delegados_ids", updated, { shouldDirty: true });
+        const current = methods.getValues("asignaciones");
+        const existing = current.find((a) => a.delegado_id === id);
+        if (existing) {
+          // Toggle OFF — remove
+          methods.setValue(
+            "asignaciones",
+            current.filter((a) => a.delegado_id !== id),
+            { shouldDirty: true },
+          );
+        } else {
+          // Toggle ON — add with null metadata
+          methods.setValue(
+            "asignaciones",
+            [
+              ...current,
+              {
+                delegado_id: id,
+                periodo: null,
+                dictamen_revision: null,
+                fecha_presentacion: null,
+                fecha_revision: null,
+              },
+            ],
+            { shouldDirty: true },
+          );
+        }
+      };
+
+      const handleUpdateAsignacion = (
+        delegadoId: string,
+        field: keyof Omit<Asignacion, "delegado_id">,
+        value: string | null,
+      ) => {
+        const current = methods.getValues("asignaciones");
+        const updated = current.map((a) =>
+          a.delegado_id === delegadoId ? { ...a, [field]: value } : a,
+        );
+        methods.setValue("asignaciones", updated, { shouldDirty: true });
       };
 
       return (
@@ -149,6 +213,8 @@ export function GestionarDelegadosModal({
           isLoading={isLoading}
           hasMunicipalidad={!!municipalidadId}
           onToggleDelegado={handleToggle}
+          asignaciones={methods.getValues("asignaciones") as Asignacion[]}
+          onUpdateAsignacion={handleUpdateAsignacion}
         />
       );
     },
@@ -160,7 +226,7 @@ export function GestionarDelegadosModal({
       open={open}
       onOpenChange={onOpenChange}
       title="Gestionar Delegados"
-      description="Selecciona los delegados a asociar a esta liquidación. Los cambios se aplican en lote."
+      description="Selecciona los delegados a asociar a esta liquidación y completa sus datos. Los cambios se aplican en lote."
       eyebrow="Liquidación"
       icon={<Users className="h-5 w-5 text-primary" />}
       primaryLabel="Guardar cambios"
@@ -168,7 +234,15 @@ export function GestionarDelegadosModal({
       primaryLoading={batchMutation.isPending}
       onPrimary={() => {}}
       schema={gestionarDelegadosSchema}
-      initialData={{ delegados_ids: delegadosActuales.map((d) => d.id) }}
+      initialData={{
+        asignaciones: delegadosActuales.map((d) => ({
+          delegado_id: d.id,
+          periodo: null,
+          dictamen_revision: null,
+          fecha_presentacion: null,
+          fecha_revision: null,
+        })),
+      }}
       onSubmit={handleSubmit}
       size="xl"
     >

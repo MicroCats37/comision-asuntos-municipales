@@ -4,6 +4,9 @@
  * TarifasPorcentajePrimeraRevisionSmartField — wraps TarifasPorcentajeSmartField
  * with auto-select-all behavior on first mount. Used by all PorcentajeObra types
  * (Edificaciones, Taludes, Impacto Vial).
+ *
+ * NEW contract: the API returns a SINGLE tariff + especialidades_disponibles array.
+ * Auto-selects ALL especialidades on mount.
  */
 import { useEffect } from "react";
 import type { UseFormReturn } from "react-hook-form";
@@ -13,37 +16,51 @@ import { TarifasPorcentajeSmartField } from "./TarifasPorcentajeSmartField";
 
 interface TarifaVigente {
   id: string;
-  especialidad: string;
   porcentaje_liquidacion: number;
+}
+
+interface EspecialidadDisponible {
+  id: string;
+  codigo: string;
+  nombre: string;
+}
+
+interface TarifasVigentesResponse {
+  tarifas: TarifaVigente[];
+  especialidades_disponibles: EspecialidadDisponible[];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface TarifasPorcentajePrimeraRevisionSmartFieldProps {
   methods: UseFormReturn<any>;
+  /** Tipo de liquidación para el endpoint (default: edificaciones) */
+  tipo?: string;
 }
 
 export function TarifasPorcentajePrimeraRevisionSmartField({
   methods,
+  tipo = "edificaciones",
 }: TarifasPorcentajePrimeraRevisionSmartFieldProps) {
-  // Fetch tariffs once to get all IDs for auto-selection
-  const { data: tarifas } = useQuery<TarifaVigente[]>({
-    queryKey: ["liquidaciones", "edificaciones", "tarifas-vigentes-auto"],
+  // Fetch tarifas + especialidades once for auto-select-all
+  const { data } = useQuery<TarifasVigentesResponse>({
+    queryKey: ["liquidaciones", tipo, "tarifas-vigentes-auto"],
     queryFn: async () => {
-      const { data } = await api.get("/liquidaciones/edificaciones/tarifas/vigentes");
-      return data.data?.tarifas || [];
+      const { data: resp } = await api.get(`/liquidaciones/${tipo}/tarifas/vigentes`);
+      return resp.data ?? { tarifas: [], especialidades_disponibles: [] };
     },
   });
 
-  // Auto-select all on first load
+  // Auto-select ALL especialidades on first load
   useEffect(() => {
-    if (tarifas && tarifas.length > 0) {
-      const current = methods.getValues("tarifas_ids") as string[] | undefined;
+    if (data?.especialidades_disponibles && data.especialidades_disponibles.length > 0) {
+      const current = methods.getValues("especialidades_seleccionadas") as string[] | undefined;
       if (!current || current.length === 0) {
-        const allIds = tarifas.map((t) => t.id);
-        methods.setValue("tarifas_ids", allIds, { shouldValidate: true });
+        const allIds = data.especialidades_disponibles.map((e) => e.id);
+        methods.setValue("especialidades_seleccionadas", allIds, { shouldValidate: true });
       }
     }
-  }, [tarifas, methods]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
-  return <TarifasPorcentajeSmartField methods={methods} />;
+  return <TarifasPorcentajeSmartField methods={methods} tipo={tipo} />;
 }

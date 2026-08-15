@@ -81,12 +81,11 @@ class TarifaPorCategoriaVisitasAdmin(admin.ModelAdmin):
 class TarifaPorcentajeObraAdmin(admin.ModelAdmin):
     """Standalone admin for TarifaPorcentajeObra."""
 
-    list_display = ["tarifa_base", "especialidad", "porcentaje_liquidacion"]
+    list_display = ["tarifa_base", "porcentaje_liquidacion"]
     search_fields = [
         "tarifa_base__tipo_liquidacion__nombre",
-        "especialidad__nombre",
     ]
-    list_filter = ["tarifa_base__tipo_liquidacion", "especialidad"]
+    list_filter = ["tarifa_base__tipo_liquidacion"]
     readonly_fields = ["created_at", "updated_at"]
 
 

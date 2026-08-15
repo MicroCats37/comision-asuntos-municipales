@@ -26,6 +26,7 @@ from modules.liquidaciones.domain.results.liquidacion_especifico.edificaciones_p
 )
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
     LiquidacionGeneralResult,
+    LiquidacionDelegadoEnGeneralResult,
     ProyectoResult,
     EntidadResult,
     UsuarioCreadorResult,
@@ -136,17 +137,12 @@ class LiquidacionEdificacionesFlujo:
         liquidacion_general.usuario_creador_id = usuario_id
         
         # Paso 4: Calculate PorcentajeObra
-        from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import TarifaPorcentajeObra
-        
-        # Reconstruct tarifas from the DTO (for Core)
-        tarifas_orm = [
-            TarifaPorcentajeObra.objects.get(id=t.tarifa_id)
-            for t in po_data.tarifas
-        ]
-        
+        # With tarifa-unica-especialidades: po_data.tarifas already contains
+        # TarifaPorcentajeObraAplicada DTOs with explicit especialidad from input.
+        # Pass DTOs directly to calcular_cotizacion_po (no ORM reconstruction needed).
         cotizacion = self.porcentaje_core.calcular_cotizacion_po(
             valor_declarado=po_data.datos.valor_declarado,
-            tarifas=tarifas_orm,
+            tarifas=po_data.tarifas,  # DTOs with explicit especialidad
             igv_porcentaje=igv_porcentaje,
             derecho=derecho,
             uit_valor=uit_valor,
@@ -256,16 +252,11 @@ class LiquidacionEdificacionesFlujo:
         liquidacion_general.usuario_creador_id = usuario_id
 
         # Calculate PorcentajeObra
-        from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import TarifaPorcentajeObra
-
-        tarifas_orm = [
-            TarifaPorcentajeObra.objects.get(id=t.tarifa_id)
-            for t in po_data.tarifas
-        ]
-
+        # With tarifa-unica-especialidades: po_data.tarifas already contains
+        # TarifaPorcentajeObraAplicada DTOs with explicit especialidad from input.
         cotizacion = self.porcentaje_core.calcular_cotizacion_po(
             valor_declarado=po_data.datos.valor_declarado,
-            tarifas=tarifas_orm,
+            tarifas=po_data.tarifas,  # DTOs with explicit especialidad
             igv_porcentaje=igv_porcentaje,
             derecho=derecho,
             uit_valor=uit_valor,
@@ -325,6 +316,25 @@ class LiquidacionEdificacionesFlujo:
                 expediente=lp.expediente or "",
             )
             for lp in liquidacion_general.liquidaciones_previas.all().order_by('numero_revision')
+        ]
+
+        # Build delegados list
+        delegados = [
+            LiquidacionDelegadoEnGeneralResult(
+                id=str(ld.id),
+                liquidacion_id=str(liquidacion_general.id),
+                delegado_id=str(ld.delegado_id),
+                especialidad_revision_id=str(ld.especialidad_revision_id),
+                especialidad_revision_nombre=ld.especialidad_revision.nombre,
+                delegado_cip=ld.delegado.perfil_ingeniero.cip,
+                delegado_dni=ld.delegado.perfil_ingeniero.dni,
+                delegado_nombre_completo=ld.delegado.perfil_ingeniero.nombre_completo,
+                periodo=ld.periodo,
+                dictamen_revision=ld.dictamen_revision,
+                fecha_presentacion=ld.fecha_presentacion.isoformat() if ld.fecha_presentacion else None,
+                fecha_revision=ld.fecha_revision.isoformat() if ld.fecha_revision else None,
+            )
+            for ld in getattr(liquidacion_general, 'liquidacion_delegados', []).all()
         ]
 
         # Build EntidadResult
@@ -441,6 +451,7 @@ class LiquidacionEdificacionesFlujo:
                 proyecto=proyecto_result,
                 contacto=contacto_result,
                 revisiones_previas=revisiones_previas,
+                delegados=delegados,
                 tipo_liquidacion=(
                     TipoLiquidacionResult(
                         codigo=liquidacion_general.tipo_liquidacion.codigo,
@@ -610,6 +621,7 @@ class LiquidacionEdificacionesFlujo:
                 proyecto=proyecto_result,
                 contacto=contacto_result,
                 revisiones_previas=revisiones_previas,
+                delegados=[],
                 tipo_liquidacion=(
                     TipoLiquidacionResult(
                         codigo=liquidacion_general.tipo_liquidacion.codigo,

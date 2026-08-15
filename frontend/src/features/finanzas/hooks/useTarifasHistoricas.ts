@@ -1,6 +1,10 @@
 /**
- * Hook para tarifas históricas con paginación.
+ * Hook para tarifas con paginación.
  * Endpoint: GET /liquidaciones/{tipo}/tarifas/historicas
+ *
+ * - SIN fechas: el backend devuelve SOLO las tarifas VIGENTES (1 periodo).
+ * - CON fechas (desde/hasta): devuelve el histórico por rango.
+ * La consulta está SIEMPRE habilitada; los params de fecha se agregan solo si existen.
  */
 import { usePagination } from "@/hooks/system/usePagination";
 import { useApiQuery } from "@/hooks";
@@ -43,8 +47,6 @@ export function useTarifasHistoricas({
     params.fecha_hasta = fechaHasta;
   }
 
-  const isEnabled = !!fechaDesde && !!fechaHasta;
-
   const query = useApiQuery({
     queryKey: [
       "liquidaciones",
@@ -56,11 +58,11 @@ export function useTarifasHistoricas({
       fechaDesde,
       fechaHasta,
     ],
-    url: isEnabled ? `/liquidaciones/${tipo}/tarifas/historicas` : null,
+    url: `/liquidaciones/${tipo}/tarifas/historicas`,
     schema: paginatedTarifaHistoricaResponseSchema,
     params,
     queryOptions: {
-      enabled: isEnabled,
+      enabled: true,
       select: (data) => {
         if (!data?.data) {
           return {

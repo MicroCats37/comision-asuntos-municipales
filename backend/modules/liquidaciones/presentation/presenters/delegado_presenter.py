@@ -15,6 +15,14 @@ from modules.liquidaciones.domain.results.delegado.delegado_result import (
     DelegadoMunicipalidadesResult,
     DelegadoForMunicipalidadResult,
     DelegadosPorMunicipalidadResult,
+    EspecialidadRevisionResult,
+    DelegadoVigenteResult,
+    DelegadosVigentesResult,
+    LiquidacionDelegadoResult,
+    LiquidacionDelegadoBatchResult,
+    LiquidacionDelegadoLiquidacionMinimal,
+    LiquidacionDelegadoDelegadoMinimal,
+    TipoLiquidacionMinimalResult,
 )
 from modules.liquidaciones.presentation.schemas.delegado.delegado_schemas import (
     PerfilIngenieroOut,
@@ -27,6 +35,13 @@ from modules.liquidaciones.presentation.schemas.delegado.delegado_schemas import
     EspecialidadOut,
     CapituloOut,
     MunicipalidadBasicOut,
+)
+from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+    EspecialidadRevisionOut,
+    DelegadoVigenteOut,
+    DelegadosVigentesOut,
+    LiquidacionDelegadoOut,
+    LiquidacionDelegadoBatchOut,
 )
 from core.pagination import PaginatedData
 
@@ -155,4 +170,167 @@ class DelegadoPresenter:
             page=domain_result.page,
             page_size=domain_result.page_size,
             total_pages=domain_result.total_pages,
+        )
+
+    @staticmethod
+    def _map_especialidad_revision(
+        result: EspecialidadRevisionResult,
+    ) -> EspecialidadRevisionOut:
+        """Maps EspecialidadRevisionResult to EspecialidadRevisionOut."""
+        return EspecialidadRevisionOut(
+            id=uuid.UUID(result.id),
+            nombre=result.nombre,
+        )
+
+    @staticmethod
+    def _map_delegado_vigente(result: DelegadoVigenteResult) -> DelegadoVigenteOut:
+        """Maps DelegadoVigenteResult to DelegadoVigenteOut."""
+        return DelegadoVigenteOut(
+            id=uuid.UUID(result.id),
+            nombre_completo=result.nombre_completo,
+            cip=result.cip,
+            especialidad=DelegadoPresenter._map_especialidad_revision(
+                result.especialidad
+            ),
+            tipo=result.tipo,
+        )
+
+    @staticmethod
+    def present_delegados_vigentes(
+        domain_result: DelegadosVigentesResult,
+    ) -> DelegadosVigentesOut:
+        """Maps DelegadosVigentesResult to DelegadosVigentesOut."""
+        return DelegadosVigentesOut(
+            delegados=[
+                DelegadoPresenter._map_delegado_vigente(item)
+                for item in domain_result.delegados
+            ]
+        )
+
+    @staticmethod
+    def _map_tipo_liquidacion_minimal(
+        result: TipoLiquidacionMinimalResult,
+    ) -> "TipoLiquidacionMinimalOut":
+        """Maps TipoLiquidacionMinimalResult to TipoLiquidacionMinimalOut."""
+        from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+            TipoLiquidacionMinimalOut,
+        )
+        return TipoLiquidacionMinimalOut(
+            codigo=result.codigo,
+            nombre=result.nombre,
+        )
+
+    @staticmethod
+    def _map_liquidacion_delegado_liquidacion(
+        result: LiquidacionDelegadoLiquidacionMinimal,
+    ) -> "LiquidacionDelegadoLiquidacionOut":
+        """Maps LiquidacionDelegadoLiquidacionMinimal to LiquidacionDelegadoLiquidacionOut."""
+        from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+            LiquidacionDelegadoLiquidacionOut,
+        )
+        return LiquidacionDelegadoLiquidacionOut(
+            id=uuid.UUID(result.id),
+            expediente=result.expediente,
+            numero_revision=result.numero_revision,
+            sub_total=float(result.sub_total) if result.sub_total is not None else None,
+            total=float(result.total) if result.total is not None else None,
+            municipalidad_nombre=result.municipalidad_nombre,
+            proyecto_denominacion=result.proyecto_denominacion,
+            tipo_liquidacion=(
+                DelegadoPresenter._map_tipo_liquidacion_minimal(result.tipo_liquidacion)
+                if result.tipo_liquidacion
+                else None
+            ),
+        )
+
+    @staticmethod
+    def _map_liquidacion_delegado_delegado(
+        result: LiquidacionDelegadoDelegadoMinimal,
+    ) -> "LiquidacionDelegadoDelegadoOut":
+        """Maps LiquidacionDelegadoDelegadoMinimal to LiquidacionDelegadoDelegadoOut."""
+        from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+            LiquidacionDelegadoDelegadoOut,
+        )
+        return LiquidacionDelegadoDelegadoOut(
+            id=uuid.UUID(result.id),
+            cip=result.cip,
+            dni=result.dni,
+            nombre_completo=result.nombre_completo,
+        )
+
+    @staticmethod
+    def _map_liquidacion_delegado(
+        result: LiquidacionDelegadoResult,
+    ) -> LiquidacionDelegadoOut:
+        """Maps LiquidacionDelegadoResult to LiquidacionDelegadoOut."""
+        return LiquidacionDelegadoOut(
+            id=uuid.UUID(result.id),
+            liquidacion_id=uuid.UUID(result.liquidacion_id),
+            delegado_id=uuid.UUID(result.delegado_id),
+            especialidad_revision=DelegadoPresenter._map_especialidad_revision(
+                result.especialidad_revision
+            ),
+            liquidacion=(
+                DelegadoPresenter._map_liquidacion_delegado_liquidacion(result.liquidacion)
+                if result.liquidacion
+                else None
+            ),
+            delegado=(
+                DelegadoPresenter._map_liquidacion_delegado_delegado(result.delegado)
+                if result.delegado
+                else None
+            ),
+            periodo=result.periodo,
+            dictamen_revision=result.dictamen_revision,
+            fecha_presentacion=(
+                result.fecha_presentacion.isoformat()
+                if result.fecha_presentacion
+                else None
+            ),
+            fecha_revision=(
+                result.fecha_revision.isoformat()
+                if result.fecha_revision
+                else None
+            ),
+        )
+
+    @staticmethod
+    def present_liquidacion_delegado_batch(
+        domain_result: LiquidacionDelegadoBatchResult,
+    ) -> LiquidacionDelegadoBatchOut:
+        """Maps LiquidacionDelegadoBatchResult to LiquidacionDelegadoBatchOut."""
+        return LiquidacionDelegadoBatchOut(
+            created=[
+                DelegadoPresenter._map_liquidacion_delegado(item)
+                for item in domain_result.created
+            ],
+            updated=[
+                DelegadoPresenter._map_liquidacion_delegado(item)
+                for item in domain_result.updated
+            ],
+            deleted=domain_result.deleted,
+        )
+
+    @staticmethod
+    def present_asignaciones_list(
+        results: List[LiquidacionDelegadoResult],
+        total: int,
+        page: int,
+        page_size: int,
+    ) -> PaginatedData[LiquidacionDelegadoOut]:
+        """
+        Maps a list of LiquidacionDelegadoResult + pagination metadata
+        to PaginatedData[LiquidacionDelegadoOut].
+        """
+        items: List[LiquidacionDelegadoOut] = [
+            DelegadoPresenter._map_liquidacion_delegado(item)
+            for item in results
+        ]
+        total_pages = math.ceil(total / page_size) if page_size > 0 else 0
+        return PaginatedData(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
         )

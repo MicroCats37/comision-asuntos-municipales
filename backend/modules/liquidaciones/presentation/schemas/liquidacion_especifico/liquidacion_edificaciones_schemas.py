@@ -60,6 +60,7 @@ class LiquidacionEdificacionesCotizarTarifaOut(BaseSchema):
 class LiquidacionEdificacionesCotizarDetalleOut(BaseSchema):
     """Detalle of cotizacion."""
     tarifa_id: uuid.UUID
+    especialidad_id: uuid.UUID
     porcentaje_aplicado: Decimal
     subtotal: Decimal
     igv: Decimal

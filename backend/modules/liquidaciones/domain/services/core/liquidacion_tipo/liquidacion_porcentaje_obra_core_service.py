@@ -1,10 +1,13 @@
 """
 Core service for PorcentajeObra (PorcentajeObra) calculations.
 
-Pure ORM + arithmetic. No HttpError, no @transaction.atomic, no business rules.
+Pure ORM + arithmetic. No @transaction.atomic, no business rules.
+(HttpError se usa únicamente como guard de validación de entrada, ver nota en calcular_cotizacion_po.)
 """
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Optional
+from ninja.errors import HttpError
+
 from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacion_tipo import (
@@ -35,13 +38,17 @@ class LiquidacionPorcentajeObraCoreService:
     ) -> List[TarifaPorcentajeObra]:
         """
         Hybrid resolution: empty list → auto-fill, non-empty → validate each.
-        
+
         Returns the list of TarifaPorcentajeObra to apply.
         Caller (Orchestrator) is responsible for raising HttpError on invalid tarifas.
-        
+
         Args:
             payload_tarifas_ids: List of tariff IDs to validate, or empty for auto-fill.
             tipo_liquidacion: The liquidacion type (e.g., TipoLiquidacion.EDIFICACION).
+
+        Note: With tarifa-unica-especialidades, TarifaPorcentajeObra no longer has
+        especialidad FK. Caller receives ORM objects (for validation) but must build
+        TarifaPorcentajeObraAplicada DTOs with explicit especialidad from input.
         """
         if not payload_tarifas_ids:
             # Auto-fill mode: get all vigentes for the specified tipo_liquidacion
@@ -51,14 +58,14 @@ class LiquidacionPorcentajeObraCoreService:
             return list(
                 TarifaPorcentajeObra.objects.filter(
                     tarifa_base__in=bases
-                ).select_related("tarifa_base", "especialidad")
+                ).select_related("tarifa_base")
             )
         else:
             # Explicit mode: fetch and return for validation
             return list(
                 TarifaPorcentajeObra.objects.filter(
                     id__in=payload_tarifas_ids
-                ).select_related("tarifa_base", "especialidad")
+                ).select_related("tarifa_base")
             )
     
     def get_derecho_porcentaje_vigente(self) -> DerechoPorcentajeObra:
@@ -68,7 +75,7 @@ class LiquidacionPorcentajeObraCoreService:
     def get_tarifas_porcentaje_vigentes(self, tipo_liquidacion: str) -> List[TarifaPorcentajeObra]:
         """
         Returns all vigentes TarifaPorcentajeObra for the specified tipo_liquidacion.
-        
+
         Args:
             tipo_liquidacion: The liquidacion type (e.g., TipoLiquidacion.EDIFICACION).
         """
@@ -78,19 +85,24 @@ class LiquidacionPorcentajeObraCoreService:
         return list(
             TarifaPorcentajeObra.objects.filter(
                 tarifa_base__in=bases
-            ).select_related("tarifa_base", "especialidad")
+            ).select_related("tarifa_base")
         )
     
     def calcular_cotizacion_po(
         self,
         valor_declarado: Decimal,
-        tarifas: List[TarifaPorcentajeObra],
+        tarifas: List[TarifaPorcentajeObraAplicada],
         igv_porcentaje: Decimal,
         derecho: DerechoPorcentajeObra,
         uit_valor: Decimal,
     ) -> CotizacionPorcentajeObraData:
         """
         Pure arithmetic for the PorcentajeObra motor.
+
+        With tarifa-unica-especialidades: `tarifas` is List[TarifaPorcentajeObraAplicada].
+        These DTOs carry explicit especialidad_id/especialidad_nombre from the input
+        (sourced from LiquidacionEspecialidadDisponibles) — NOT from TarifaPorcentajeObra.especialidad
+        (that FK no longer exists).
 
         Steps:
         1. Sumar porcentajes de todas las tarifas (ej: 3 x 0.05% = 0.15%)
@@ -103,7 +115,9 @@ class LiquidacionPorcentajeObraCoreService:
         8. total = subtotal_total + igv
         """
         if not tarifas:
-            raise ValueError("At least one tarifa is required")
+            # NOTE: Validación de entrada; idealmente vive en el Orquestador/Flujo,
+            # pero no existe excepción de dominio específica y se mantiene como guard aquí.
+            raise HttpError(400, "At least one tarifa is required")
 
         # Paso 1-2: subtotal bruto agregado (NO por tarifa)
         porcentaje_total = sum(
@@ -119,27 +133,39 @@ class LiquidacionPorcentajeObraCoreService:
         if derecho.derecho_maximo is not None and subtotal_total > derecho.derecho_maximo:
             subtotal_total = derecho.derecho_maximo
 
-        # Paso 6: repartir proporcionalmente entre detalles
+        # Redondear el total a 2 decimales ANTES de repartir (moneda)
+        subtotal_total = subtotal_total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        # Paso 6: repartir proporcionalmente entre detalles.
+        # El último detalle absorbe la diferencia de redondeo (remainder) para que
+        # SUM(detalles.subtotal) == subtotal_total EXACTO (sin drift de céntimos).
         detalles: List[DetallePorcentajeObraData] = []
-        for tarifa in tarifas:
+        n = len(tarifas)
+        for idx, tarifa_dto in enumerate(tarifas):
             # Proporcion de esta tarifa sobre el total
             if porcentaje_total > 0:
-                proporcion = tarifa.porcentaje_liquidacion / porcentaje_total
+                proporcion = tarifa_dto.porcentaje_liquidacion / porcentaje_total
             else:
-                proporcion = Decimal("1") / Decimal(len(tarifas))
+                proporcion = Decimal("1") / Decimal(n)
 
-            subtotal_detalle = subtotal_total * proporcion
-            igv_detalle = subtotal_detalle * igv_porcentaje
+            if idx == n - 1:
+                # Último detalle: absorber la diferencia para cuadrar la suma
+                subtotal_detalle = subtotal_total - sum(
+                    (d.subtotal for d in detalles), Decimal("0")
+                )
+            else:
+                subtotal_detalle = (subtotal_total * proporcion).quantize(
+                    Decimal("0.01"), rounding=ROUND_HALF_UP
+                )
+            igv_detalle = (subtotal_detalle * igv_porcentaje).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
 
+            # With tarifa-unica: the DTO already has explicit especialidad from input
             detalles.append(
                 DetallePorcentajeObraData(
-                    tarifa_aplicada=TarifaPorcentajeObraAplicada(
-                        tarifa_id=str(tarifa.id),
-                        porcentaje_liquidacion=tarifa.porcentaje_liquidacion,
-                        especialidad_id=str(tarifa.especialidad.id),
-                        especialidad_nombre=tarifa.especialidad.nombre,
-                    ),
-                    porcentaje_aplicado=tarifa.porcentaje_liquidacion,
+                    tarifa_aplicada=tarifa_dto,  # already has especialidad_id/nombre
+                    porcentaje_aplicado=tarifa_dto.porcentaje_liquidacion,
                     subtotal=subtotal_detalle,
                     igv=igv_detalle,
                     uit=minimo,
@@ -147,7 +173,7 @@ class LiquidacionPorcentajeObraCoreService:
                 )
             )
 
-        # Paso 7-8: agregados
+        # Paso 7-8: agregados (suma de montos redondeados — coincide con la BD)
         porcentaje_liquidacion = porcentaje_total
         total_subtotal = sum((d.subtotal for d in detalles), Decimal("0"))
         total = sum((d.total for d in detalles), Decimal("0"))
@@ -179,7 +205,13 @@ class LiquidacionPorcentajeObraCoreService:
         derecho: DerechoPorcentajeObra,
         # FUTURE: tipo_tramite: Optional[str] = None,
     ) -> LiquidacionPorcentajeObra:
-        """Creates LiquidacionPorcentajeObra + all Detalles in DB."""
+        """
+        Creates LiquidacionPorcentajeObra + all Detalles in DB.
+
+        With tarifa-unica-especialidades: LiquidacionPorcentajeObraDetalle.especialidad
+        is set from detalle.tarifa_aplicada.especialidad_id (explicit from input),
+        NOT from TarifaPorcentajeObra.especialidad (FK removed).
+        """
         liquidacion_po = LiquidacionPorcentajeObra.objects.create(
             liquidacion_general=liquidacion_general,
             tipo_tramite=None,  # FUTURE: activate when frontend sends it
@@ -198,7 +230,7 @@ class LiquidacionPorcentajeObraCoreService:
             LiquidacionPorcentajeObraDetalle.objects.create(
                 liquidacion_porcentaje=liquidacion_po,
                 tarifa_aplicada=tarifa,
-                especialidad=tarifa.especialidad,
+                especialidad_id=detalle.tarifa_aplicada.especialidad_id,
                 porcentaje_aplicado=detalle.porcentaje_aplicado,
                 subtotal=detalle.subtotal,
                 igv=detalle.igv,

@@ -1,17 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { FileText, LogOutIcon, Menu, X, ChevronDown, Users, DollarSign } from "lucide-react";
-import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
 import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
+  ChevronDown,
+  DollarSign,
+  FileText,
+  LogOutIcon,
+  Menu,
+  Receipt,
+  Users,
+  X,
+} from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { MeResponse } from "@/features/auth/schemas/auth.types";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 /**
  * Accordion group for Liquidaciones with General and Edificaciones sub-items.
@@ -80,6 +85,20 @@ const finanzasGroup = {
 };
 
 /**
+ * Accordion group for Recibos por Honorario.
+ */
+const recibosGroup = {
+  title: "Recibos por Honorario",
+  icon: Receipt,
+  children: [
+    {
+      title: "Recibos de Honorario",
+      href: "/liquidaciones/recibos-honorario",
+    },
+  ],
+};
+
+/**
  * ProtectedSidebar - provides sidebar navigation for authenticated routes.
  * Fully responsive: desktop shows a bordered sidebar; mobile shows a floating
  * toggle button and a slide-in overlay with backdrop blur.
@@ -93,6 +112,7 @@ export function ProtectedSidebar({ user }: { user: MeResponse }) {
   const [liquidacionesOpen, setLiquidacionesOpen] = useState(true);
   const [operativaOpen, setOperativaOpen] = useState(true);
   const [finanzasOpen, setFinanzasOpen] = useState(true);
+  const [recibosOpen, setRecibosOpen] = useState(true);
 
   const handleLogout = async () => {
     try {
@@ -122,6 +142,10 @@ export function ProtectedSidebar({ user }: { user: MeResponse }) {
   );
 
   const isFinanzasChildActive = finanzasGroup.children.some(
+    (child) => pathname === child.href,
+  );
+
+  const isRecibosChildActive = recibosGroup.children.some(
     (child) => pathname === child.href,
   );
 
@@ -169,7 +193,9 @@ export function ProtectedSidebar({ user }: { user: MeResponse }) {
             <div
               className={cn(
                 "overflow-hidden transition-all duration-200 ease-in-out",
-                liquidacionesOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
+                liquidacionesOpen
+                  ? "max-h-96 opacity-100"
+                  : "max-h-0 opacity-0",
               )}
             >
               <div className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-3">
@@ -302,6 +328,60 @@ export function ProtectedSidebar({ user }: { user: MeResponse }) {
               </div>
             </div>
           </div>
+
+          {/* Recibos por Honorario Accordion Group */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setRecibosOpen((prev) => !prev)}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                isRecibosChildActive
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
+              )}
+            >
+              <recibosGroup.icon className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 truncate flex-1 text-left">
+                {recibosGroup.title}
+              </span>
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                  recibosOpen && "rotate-180",
+                )}
+              />
+            </button>
+
+            {/* Sub-items */}
+            <div
+              className={cn(
+                "overflow-hidden transition-all duration-200 ease-in-out",
+                recibosOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
+              )}
+            >
+              <div className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-3">
+                {recibosGroup.children.map((child) => {
+                  const isActive = pathname === child.href;
+                  return (
+                    <a
+                      key={child.href}
+                      href={child.href}
+                      onClick={handleNavClick}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
+                      )}
+                    >
+                      <span className="min-w-0 truncate">{child.title}</span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       </nav>
 
@@ -311,7 +391,8 @@ export function ProtectedSidebar({ user }: { user: MeResponse }) {
         <div className="flex items-center gap-3 px-3 py-3">
           <Avatar size="sm" className="shrink-0">
             <AvatarFallback>
-              {user.nombres?.charAt(0) ?? ""}{user.apellidos?.charAt(0) ?? ""}
+              {user.nombres?.charAt(0) ?? ""}
+              {user.apellidos?.charAt(0) ?? ""}
             </AvatarFallback>
           </Avatar>
           <div className="flex min-w-0 flex-col">

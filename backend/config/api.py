@@ -36,6 +36,9 @@ from modules.liquidaciones.presentation.controllers.liquidacion_general_controll
 from modules.liquidaciones.presentation.controllers.delegado_controller import (
     DelegadoController,
 )
+from modules.liquidaciones.presentation.controllers.liquidacion_delegado_controller import (
+    LiquidacionDelegadoController,
+)
 from modules.liquidaciones.presentation.controllers.inspector_controller import (
     InspectorController,
 )
@@ -110,6 +113,9 @@ api.register_controllers(LiquidacionGeneralController)
 
 # ── Delegados Controllers ─
 api.register_controllers(DelegadoController)
+
+# ── Delegados de Liquidación ─
+api.register_controllers(LiquidacionDelegadoController)
 
 # ── Inspectores Controllers ─
 api.register_controllers(InspectorController)

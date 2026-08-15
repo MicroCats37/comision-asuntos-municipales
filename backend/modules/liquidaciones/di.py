@@ -66,6 +66,12 @@ from modules.liquidaciones.domain.services.core.delegado.delegado_core_service i
 from modules.liquidaciones.domain.services.orchestrators.delegado_orchestrator import (
     DelegadoOrchestrator,
 )
+from modules.liquidaciones.domain.services.orchestrators.delegados_batch_orchestrator import (
+    DelegadosBatchOrchestrator,
+)
+from modules.liquidaciones.domain.services.flujos.delegados_batch_flujo import (
+    DelegadosBatchFlujo,
+)
 from modules.liquidaciones.presentation.presenters.delegado_presenter import (
     DelegadoPresenter,
 )
@@ -159,6 +165,12 @@ class LiquidacionesModule(Module):
 
         # Orchestrators — Delegado
         binder.bind(DelegadoOrchestrator, to=DelegadoOrchestrator)
+
+        # Flujos — Delegados Batch
+        binder.bind(DelegadosBatchFlujo, to=DelegadosBatchFlujo)
+
+        # Orchestrators — Delegados Batch
+        binder.bind(DelegadosBatchOrchestrator, to=DelegadosBatchOrchestrator)
 
         # Presenters — Delegado
         binder.bind(DelegadoPresenter, to=DelegadoPresenter)

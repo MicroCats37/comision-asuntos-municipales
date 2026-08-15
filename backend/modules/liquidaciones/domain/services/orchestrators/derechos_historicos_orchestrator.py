@@ -46,22 +46,33 @@ class DerechosHistoricosOrchestrator:
     def obtener_derechos_historicos_proceso(
         self,
         tipo: str,
-        fecha_desde: date,
-        fecha_hasta: date,
+        fecha_desde: date = None,
+        fecha_hasta: date = None,
     ) -> List[DerechoHistoricoResult]:
         """
-        Fetch historical derechos (PORCENTAJE or METRO_CUADRADO) within date range.
+        Fetch derechos (PORCENTAJE or METRO_CUADRADO).
+
+        If both fecha_desde and fecha_hasta are given: historical range query.
+        Otherwise: vigentes at the reference date (the provided one, or today).
         """
         if tipo == "PORCENTAJE":
-            derechos = self.core_service.get_derechos_porcentaje_historicos(
-                fecha_desde=fecha_desde,
-                fecha_hasta=fecha_hasta,
-            )
+            if fecha_desde is not None and fecha_hasta is not None:
+                derechos = self.core_service.get_derechos_porcentaje_historicos(
+                    fecha_desde=fecha_desde,
+                    fecha_hasta=fecha_hasta,
+                )
+            else:
+                fecha_ref = fecha_desde if fecha_desde is not None else fecha_hasta
+                derechos = self.core_service.get_derechos_porcentaje_vigentes(fecha=fecha_ref)
         elif tipo == "METRO_CUADRADO":
-            derechos = self.core_service.get_derechos_m2_historicos(
-                fecha_desde=fecha_desde,
-                fecha_hasta=fecha_hasta,
-            )
+            if fecha_desde is not None and fecha_hasta is not None:
+                derechos = self.core_service.get_derechos_m2_historicos(
+                    fecha_desde=fecha_desde,
+                    fecha_hasta=fecha_hasta,
+                )
+            else:
+                fecha_ref = fecha_desde if fecha_desde is not None else fecha_hasta
+                derechos = self.core_service.get_derechos_m2_vigentes(fecha=fecha_ref)
         else:
             derechos = []
 

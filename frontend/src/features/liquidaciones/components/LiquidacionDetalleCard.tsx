@@ -424,7 +424,6 @@ export function LiquidacionDetalleCard({ item, typeLabel, typeSpecificSummary }:
         liquidacionId={item.id}
         municipalidadId={municipalidad.id}
         tipoLiquidacion={tipoLiquidacion}
-        revisionIds={revisiones.map((r) => r.id)}
         delegadosActuales={delegados}
       />
     </div>

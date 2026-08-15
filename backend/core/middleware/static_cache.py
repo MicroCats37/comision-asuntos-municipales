@@ -10,8 +10,10 @@ from django.http import HttpResponse
 
 
 CACHEABLE_PREFIXES = [
-    "/api/entidades/ubigeo/distritos",
-    "/api/entidades/municipalidades",
+    # DESACTIVADO EN PRUEBAS — el cache de 1 año en distritos causaba que el
+    # navegador mostrara distritos obsoletos (viejos UUIDs) tras reseed.
+    # /api/entidades/ubigeo/distritos
+    # /api/entidades/municipalidades
 ]
 
 ONE_YEAR = 31536000

@@ -11,7 +11,7 @@ from ninja import Query
 from typing import Optional
 
 from core.responses import ApiResponse, success_response
-from ..schemas.entidad_schemas import (
+from modules.entidades.presentation.schemas.entidad_schemas import (
     EntidadInstitucionIn,
     EntidadPersonaNaturalIn,
     EntidadOut,
@@ -19,8 +19,8 @@ from ..schemas.entidad_schemas import (
     DistritosResponseOut,
     MunicipalidadesResponseOut,
 )
-from ..presenters.entidad_presenter import EntidadPresenter
-from ...domain.services.orchestrators.entidad_orchestrator import EntidadesOrchestrator
+from modules.entidades.presentation.presenters.entidad_presenter import EntidadPresenter
+from modules.entidades.domain.services.orchestrators.entidad_orchestrator import EntidadesOrchestrator
 
 
 @api_controller("/entidades", tags=["Entidades"], permissions=[AllowAny])

@@ -310,7 +310,7 @@ class LiquidacionProyectista(BaseModel):
         return f"Proyectista {self.proyectista} @ {self.liquidacion_general}"
 
 
-class LiquidacionEspecialidadDisponibles(BaseModel):
+class LiquidacionEspecialidadDisponibles(BaseModel,VigenciaModel):
     """
     Especialidades separadas de una LiquidacionGeneral.
 

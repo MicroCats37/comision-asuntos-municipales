@@ -24,6 +24,7 @@ from modules.liquidaciones.domain.results.liquidacion_especifico.mecanica_suelos
 )
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
     LiquidacionGeneralResult,
+    LiquidacionDelegadoEnGeneralResult,
     ProyectoResult,
     EntidadResult,
     UsuarioCreadorResult,
@@ -176,6 +177,25 @@ class LiquidacionMecanicaSuelosFlujo:
                 entidad=entidad_result,
             )
 
+            # Build delegados list
+            delegados = [
+                LiquidacionDelegadoEnGeneralResult(
+                    id=str(ld.id),
+                    liquidacion_id=str(liquidacion_general.id),
+                    delegado_id=str(ld.delegado_id),
+                    especialidad_revision_id=str(ld.especialidad_revision_id),
+                    especialidad_revision_nombre=ld.especialidad_revision.nombre,
+                    delegado_cip=ld.delegado.perfil_ingeniero.cip,
+                    delegado_dni=ld.delegado.perfil_ingeniero.dni,
+                    delegado_nombre_completo=ld.delegado.perfil_ingeniero.nombre_completo,
+                    periodo=ld.periodo,
+                    dictamen_revision=ld.dictamen_revision,
+                    fecha_presentacion=ld.fecha_presentacion.isoformat() if ld.fecha_presentacion else None,
+                    fecha_revision=ld.fecha_revision.isoformat() if ld.fecha_revision else None,
+                )
+                for ld in getattr(liquidacion_general, 'liquidacion_delegados', []).all()
+            ]
+
             general_result = LiquidacionGeneralResult(
                 id=str(liquidacion_general.id),
                 municipalidad=MunicipalidadResult(
@@ -217,6 +237,7 @@ class LiquidacionMecanicaSuelosFlujo:
                     else None
                 ),
                 proyecto=proyecto_result,
+                delegados=delegados,
             )
 
             tipo_result = LiquidacionM2Result(

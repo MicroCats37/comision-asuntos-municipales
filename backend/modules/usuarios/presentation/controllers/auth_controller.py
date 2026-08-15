@@ -8,14 +8,14 @@ from ninja_extra.permissions import AllowAny
 from injector import inject
 
 from core.responses import ApiResponse, success_response
-from ..schemas.auth_schemas import (
+from modules.usuarios.presentation.schemas.auth_schemas import (
     LoginUsernameIn,
     LoginDniIn,
     LoginEmailIn,
     LoginTokenOut,
 )
-from ..presenters.auth_presenter import AuthPresenter
-from ...domain.services.orchestrators.auth_orchestrator import AuthOrchestrator
+from modules.usuarios.presentation.presenters.auth_presenter import AuthPresenter
+from modules.usuarios.domain.services.orchestrators.auth_orchestrator import AuthOrchestrator
 
 
 @api_controller("/auth/login", tags=["Autenticación"], permissions=[AllowAny])

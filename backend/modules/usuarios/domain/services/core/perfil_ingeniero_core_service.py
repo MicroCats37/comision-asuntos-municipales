@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Optional
 
 from django.utils import timezone
+from ninja.errors import HttpError
 
 from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero, Capitulo
 from modules.usuarios.domain.schemas.ingeniero_habilitado_schemas import CipColegiadoData
@@ -47,11 +48,13 @@ class PerfilIngenieroCoreService:
             Instancia de PerfilIngeniero (existente o recién creada)
 
         Raises:
-            ValueError: Si el CIP no puede normalizarse
+            HttpError (400): Si el CIP no puede normalizarse.
+            NOTE: La validación de entrada pertenece idealmente al Orquestador/Flujo;
+            aquí se mantiene por compatibilidad con los flujos existentes.
         """
         normalized = self._normalizar_cip(cip)
         if not normalized:
-            raise ValueError(f"CIP inválido: {cip}")
+            raise HttpError(400, f"CIP inválido: {cip}")
         perfil, _ = PerfilIngeniero.objects.get_or_create(cip=normalized)
         return perfil
 
@@ -141,7 +144,7 @@ class PerfilIngenieroCoreService:
         """
         normalized_cip = self._normalizar_cip(cip)
         if not normalized_cip:
-            raise ValueError(f"CIP inválido: {cip}")
+            raise HttpError(400, f"CIP inválido: {cip}")
 
         fields = self._map_cip_data_to_perfil_fields(cip_data)
 

@@ -5,8 +5,8 @@ Solo delega a AuthFlujo. Sin lógica de negocio aquí.
 """
 from injector import inject
 
-from ..flujos.auth_flujo import AuthFlujo
-from ...schemas.auth_result_schemas import LoginTokenResult
+from modules.usuarios.domain.services.flujos.auth_flujo import AuthFlujo
+from modules.usuarios.domain.schemas.auth_result_schemas import LoginTokenResult
 
 
 class AuthOrchestrator:

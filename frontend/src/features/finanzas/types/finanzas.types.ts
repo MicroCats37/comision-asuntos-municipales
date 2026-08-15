@@ -110,6 +110,12 @@ export const derechosHistoricosResponseSchema = apiResponseSchema(
 
 // ── UI State Types ────────────────────────────────────────────────────────────
 
+export interface TarifasFiltros {
+  tipo: TipoTarifa;
+  fechaDesde?: string; // YYYY-MM-DD
+  fechaHasta?: string; // YYYY-MM-DD
+}
+
 export interface UseTarifasHistoricasProps {
   tipo: TipoTarifa;
   fechaDesde?: string; // YYYY-MM-DD

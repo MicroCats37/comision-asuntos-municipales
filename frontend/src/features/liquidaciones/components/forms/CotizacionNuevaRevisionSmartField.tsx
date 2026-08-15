@@ -17,6 +17,7 @@ import api from "@/lib/api";
 
 interface CotizacionDetalle {
   tarifa_id: string;
+  especialidad_id: string;
   porcentaje_aplicado: number;
   subtotal: number;
   igv: number;
@@ -39,8 +40,10 @@ interface CotizacionOutput {
 interface CotizacionNuevaRevisionSmartFieldProps {
   /** Valor declarado FIJO heredado de la previa */
   valorDeclarado: number | undefined;
-  /** Tarifa seleccionada en el radio selector */
+  /** Tarifa única seleccionada */
   tarifaId: string | null;
+  /** Especialidades seleccionadas (checkbox) */
+  especialidadesIds: string[];
 }
 
 const toNumber = (value: unknown): number => {
@@ -52,6 +55,7 @@ const formatSoles = (value: unknown): string => `S/ ${toNumber(value).toFixed(2)
 export function CotizacionNuevaRevisionSmartField({
   valorDeclarado,
   tarifaId,
+  especialidadesIds,
 }: CotizacionNuevaRevisionSmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,11 +64,15 @@ export function CotizacionNuevaRevisionSmartField({
     mutationFn: async (payload: {
       valor_declarado: number;
       tarifa_id: string;
+      especialidades_ids: string[];
     }): Promise<CotizacionOutput> => {
       const { data } = await api.post("/liquidaciones/edificaciones/cotizar", {
         liquidacion_especifica: {
           datos: { valor_declarado: payload.valor_declarado },
-          tarifas: [{ tarifa_porcentaje_obra_id: payload.tarifa_id }],
+          tarifas: payload.especialidades_ids.map((espId) => ({
+            tarifa_porcentaje_obra_id: payload.tarifa_id,
+            especialidad_id: espId,
+          })),
         },
       });
       return data.data;
@@ -80,12 +88,13 @@ export function CotizacionNuevaRevisionSmartField({
   });
 
   const debouncedTarifa = useDebounce(tarifaId, 400);
+  const debouncedEspecialidades = useDebounce(especialidadesIds, 400);
 
-  // Auto-recalculate when the selected tariff changes (debounced)
+  // Auto-recalculate when the selected tariff or especialidades change (debounced)
   useEffect(() => {
     const v = toNumber(valorDeclarado);
 
-    if (!v || v <= 0 || !debouncedTarifa) {
+    if (!v || v <= 0 || !debouncedTarifa || debouncedEspecialidades.length === 0) {
       setQuote(null);
       setError(null);
       return;
@@ -94,9 +103,10 @@ export function CotizacionNuevaRevisionSmartField({
     cotizacionMutation.mutate({
       valor_declarado: v,
       tarifa_id: debouncedTarifa,
+      especialidades_ids: debouncedEspecialidades,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedTarifa, valorDeclarado]);
+  }, [debouncedTarifa, debouncedEspecialidades, valorDeclarado]);
 
   const isLoading = cotizacionMutation.isPending;
 

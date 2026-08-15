@@ -52,7 +52,12 @@ class Command(BaseCommand):
         return TipoLiquidacion.objects.get(codigo=codigo)
 
     def _get_especialidad(self, codigo: str) -> Especialidad:
-        return Especialidad.objects.get(codigo=codigo)
+        """Devuelve la EspecialidadRevision por codigo; la crea si no existe."""
+        esp = Especialidad.objects.filter(codigo=codigo).first()
+        if esp:
+            return esp
+        # Crear la especialidad de revisión faltante (ej. codigo '04' de tarifas)
+        return Especialidad.objects.create(codigo=codigo, nombre=codigo)
 
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
@@ -93,15 +98,16 @@ class Command(BaseCommand):
             conteo["derechos"] += 1
 
         # ── Tarifas de porcentaje ──────────────────────────────────────────
+        # NUEVO: una sola TarifaPorcentajeObra por TarifaLiquidacionBase (sin especialidad).
+        # Las especialidades disponibles se gestionan via LiquidacionEspecialidadDisponibles.
         for item in data.get("tarifas_porcentaje", []):
             tipo = self._get_tipo(item["tipo_liquidacion"])
-            esp = self._get_especialidad(item["especialidad"])
             inicio = date.fromisoformat(item["periodo_inicio"])
             fin = date.fromisoformat(item["periodo_fin"]) if item.get("periodo_fin") else None
 
             if dry_run:
                 self.stdout.write(
-                    f"[DRY] % {item['tipo_liquidacion']} esp {item['especialidad']} "
+                    f"[DRY] % {item['tipo_liquidacion']} "
                     f"{item['porcentaje_liquidacion']}"
                 )
                 continue
@@ -113,9 +119,9 @@ class Command(BaseCommand):
             )
             conteo["bases"] += 1
 
+            # Una sola TarifaPorcentajeObra por base — sin especialidad FK.
             TarifaPorcentajeObra.objects.update_or_create(
                 tarifa_base=base,
-                especialidad=esp,
                 defaults={"porcentaje_liquidacion": Decimal(item["porcentaje_liquidacion"])},
             )
             conteo["porcentaje"] += 1

@@ -4,6 +4,7 @@ TarifasHistoricasController — Controller for historical tariff and derecho end
 ZERO business logic. Only parses input, delegates to orchestrator, maps via presenter.
 """
 from datetime import date
+from typing import Optional
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
@@ -53,28 +54,27 @@ class TarifasHistoricasController:
     def get_tarifas_historicas(
         self,
         tipo: str,
-        fecha_desde: str,
-        fecha_hasta: str,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
         page: int = 1,
         page_size: int = 10,
     ):
         """
         Get historical tariff matrix for a tipo_liquidacion within a date range.
-        
+
         - Query params: fecha_desde, fecha_hasta, page, page_size
+        - If both dates are omitted: returns only currently vigentes tariffs
         - Groups tariffs by periodo_inicio/fin
         - For PorcentajeObra types: includes tarifas per especialidad
         - For M2 types: includes single tarifa_m2 detail
         - For Visitas types: includes multiple categorias
         """
-        # Parse dates
-        desde = date.fromisoformat(fecha_desde)
-        hasta = date.fromisoformat(fecha_hasta)
-
+        # Ninja already parses Optional[date] query params; pass directly
+        # (orchestrator handles None -> vigentes at reference date/today)
         resultados, total = self.tarifas_orchestrator.obtener_tarifas_historicas_proceso(
             tipo=tipo,
-            fecha_desde=desde,
-            fecha_hasta=hasta,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
             page=page,
             page_size=page_size,
         )
@@ -95,23 +95,22 @@ class TarifasHistoricasController:
     def get_derechos_historicos(
         self,
         tipo: str,
-        fecha_desde: str,
-        fecha_hasta: str,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
     ):
         """
         Get historical derechos (PORCENTAJE or METRO_CUADRADO) within a date range.
-        
+
         - Query params: tipo (PORCENTAJE|METRO_CUADRADO), fecha_desde, fecha_hasta
+        - If both dates are omitted: returns only currently vigentes derechos
         - Returns list of derechos with their vigencia periods
         """
-        # Parse dates
-        desde = date.fromisoformat(fecha_desde)
-        hasta = date.fromisoformat(fecha_hasta)
-
+        # Ninja already parses Optional[date] query params; pass directly
+        # (orchestrator handles None -> vigentes at reference date/today)
         resultados = self.derechos_orchestrator.obtener_derechos_historicos_proceso(
             tipo=tipo,
-            fecha_desde=desde,
-            fecha_hasta=hasta,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
         )
 
         result = self.derechos_presenter.present_derechos_historicos(resultados)

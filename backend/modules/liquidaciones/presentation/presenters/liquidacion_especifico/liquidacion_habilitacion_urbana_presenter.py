@@ -25,6 +25,11 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     DepartamentoOutput,
     TipoLiquidacionOutput,
 )
+from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+    LiquidacionDelegadoOut,
+    EspecialidadRevisionOut,
+    LiquidacionDelegadoDelegadoOut,
+)
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas import (
     LiquidacionTipoOutput,
     LiquidacionPorMetroCuadradoDatosOut,
@@ -141,6 +146,28 @@ class LiquidacionHabilitacionUrbanaPresenter:
                 if general.tipo_liquidacion
                 else None
             ),
+            delegados=[
+                LiquidacionDelegadoOut(
+                    id=uuid.UUID(d.id),
+                    liquidacion_id=uuid.UUID(d.liquidacion_id),
+                    delegado_id=uuid.UUID(d.delegado_id),
+                    especialidad_revision=EspecialidadRevisionOut(
+                        id=uuid.UUID(d.especialidad_revision_id),
+                        nombre=d.especialidad_revision_nombre,
+                    ),
+                    delegado=LiquidacionDelegadoDelegadoOut(
+                        id=uuid.UUID(d.delegado_id),
+                        cip=d.delegado_cip,
+                        dni=d.delegado_dni,
+                        nombre_completo=d.delegado_nombre_completo,
+                    ),
+                    periodo=d.periodo,
+                    dictamen_revision=d.dictamen_revision,
+                    fecha_presentacion=d.fecha_presentacion,
+                    fecha_revision=d.fecha_revision,
+                )
+                for d in (general.delegados or [])
+            ],
         )
 
         tipo_out = LiquidacionTipoOutput(

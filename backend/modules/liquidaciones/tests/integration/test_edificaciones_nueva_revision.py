@@ -122,19 +122,41 @@ def especialidad_arquitectura(db):
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_estructuras(db, tarifa_liquidacion_base_edificacion, especialidad_estructuras):
+def tarifa_porcentaje_obra_estructuras(db, tarifa_liquidacion_base_edificacion):
     return TarifaPorcentajeObra.objects.create(
         tarifa_base=tarifa_liquidacion_base_edificacion,
-        especialidad=especialidad_estructuras,
         porcentaje_liquidacion=Decimal("0.0010"),
     )
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_arquitectura(db, tarifa_liquidacion_base_edificacion, especialidad_arquitectura):
+def tarifa_porcentaje_obra_arquitectura(db, tarifa_liquidacion_base_edificacion):
+    """Second TarifaPorcentajeObra (sin especialidad — tarifa única por base)."""
     return TarifaPorcentajeObra.objects.create(
         tarifa_base=tarifa_liquidacion_base_edificacion,
-        especialidad=especialidad_arquitectura,
+        porcentaje_liquidacion=Decimal("0.0005"),
+    )
+
+
+@pytest.fixture
+def tarifa_porcentaje_obra_installaciones(db, tarifa_liquidacion_base_edificacion):
+    """Third TarifaPorcentajeObra (sin especialidad — tarifa única por base)."""
+    return TarifaPorcentajeObra.objects.create(
+        tarifa_base=tarifa_liquidacion_base_edificacion,
+        porcentaje_liquidacion=Decimal("0.0003"),
+    )
+
+
+@pytest.fixture
+def tarifa_porcentaje_obra_base2(db, tipo_edificacion):
+    """Second base + TarifaPorcentajeObra for explicit mode test."""
+    base2 = TarifaLiquidacionBase.objects.create(
+        tipo_liquidacion=tipo_edificacion,
+        periodo_inicio=date(2024, 1, 1),
+        periodo_fin=None,
+    )
+    return TarifaPorcentajeObra.objects.create(
+        tarifa_base=base2,
         porcentaje_liquidacion=Decimal("0.0005"),
     )
 
@@ -174,10 +196,11 @@ def valid_distrito_id(ubigeo_distrito):
 
 
 @pytest.fixture
-def valid_tarifa_ids(tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura):
+def valid_tarifa_ids(tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_base2, especialidad_estructuras, especialidad_arquitectura):
+    """Return IDs of all two tarifas as dicts with especialidad_id (new contract)."""
     return [
-        str(tarifa_porcentaje_obra_estructuras.id),
-        str(tarifa_porcentaje_obra_arquitectura.id),
+        {"id": str(tarifa_porcentaje_obra_estructuras.id), "esp_id": str(especialidad_estructuras.id)},
+        {"id": str(tarifa_porcentaje_obra_base2.id), "esp_id": str(especialidad_arquitectura.id)},
     ]
 
 
@@ -215,8 +238,8 @@ def primera_revision_payload(valid_tarifa_ids, municipalidad, valid_distrito_id)
                 "valor_declarado": 100000.00,
             },
             "tarifas": [
-                {"tarifa_porcentaje_obra_id": valid_tarifa_ids[0]},
-                {"tarifa_porcentaje_obra_id": valid_tarifa_ids[1]},
+                {"tarifa_porcentaje_obra_id": valid_tarifa_ids[0]["id"], "especialidad_id": valid_tarifa_ids[0]["esp_id"]},
+                {"tarifa_porcentaje_obra_id": valid_tarifa_ids[1]["id"], "especialidad_id": valid_tarifa_ids[1]["esp_id"]},
             ],
         },
     }

@@ -32,6 +32,11 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     DepartamentoOutput,
     TipoLiquidacionOutput,
 )
+from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+    LiquidacionDelegadoOut,
+    EspecialidadRevisionOut,
+    LiquidacionDelegadoDelegadoOut,
+)
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraDatosOut,
     LiquidacionPorcentajeObraDetalleOut,
@@ -130,6 +135,28 @@ class LiquidacionImpactoVialPresenter:
                 if general.tipo_liquidacion
                 else None
             ),
+            delegados=[
+                LiquidacionDelegadoOut(
+                    id=uuid.UUID(d.id),
+                    liquidacion_id=uuid.UUID(d.liquidacion_id),
+                    delegado_id=uuid.UUID(d.delegado_id),
+                    especialidad_revision=EspecialidadRevisionOut(
+                        id=uuid.UUID(d.especialidad_revision_id),
+                        nombre=d.especialidad_revision_nombre,
+                    ),
+                    delegado=LiquidacionDelegadoDelegadoOut(
+                        id=uuid.UUID(d.delegado_id),
+                        cip=d.delegado_cip,
+                        dni=d.delegado_dni,
+                        nombre_completo=d.delegado_nombre_completo,
+                    ),
+                    periodo=d.periodo,
+                    dictamen_revision=d.dictamen_revision,
+                    fecha_presentacion=d.fecha_presentacion,
+                    fecha_revision=d.fecha_revision,
+                )
+                for d in (general.delegados or [])
+            ],
         )
 
         tipo_out = LiquidacionTipoOutput(
@@ -182,6 +209,7 @@ class LiquidacionImpactoVialPresenter:
             detalles=[
                 LiquidacionImpactoVialCotizarDetalleOut(
                     tarifa_id=uuid.UUID(d.tarifa_id),
+                    especialidad_id=uuid.UUID(d.especialidad_id),
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
                     igv=d.igv,
@@ -229,9 +257,14 @@ class LiquidacionImpactoVialPresenter:
         return LiquidacionImpactoVialPresenter.present_primera_revision(domain_result)
 
     @staticmethod
-    def present_tarifas_vigentes(tarifas) -> dict:
+    def present_tarifas_vigentes(tarifas, especialidades_disponibles) -> dict:
         """
-        Maps a list of TarifaPorcentajeObra domain objects to a dict response.
+        Maps TarifaPorcentajeObra domain objects and LiquidacionEspecialidadDisponibles
+        to a dict response.
+
+        With tarifa-unica-especialidades: the single tariff no longer has an
+        especialidad FK. The frontend must use LiquidacionEspecialidadDisponibles
+        to let the user pick which specialties to apply.
 
         Presenter only knows about Domain objects and plain dicts — no ORM access.
         """
@@ -239,9 +272,16 @@ class LiquidacionImpactoVialPresenter:
             "tarifas": [
                 {
                     "id": str(t.id),
-                    "especialidad": t.especialidad.nombre,
                     "porcentaje_liquidacion": float(t.porcentaje_liquidacion),
                 }
                 for t in tarifas
+            ],
+            "especialidades_disponibles": [
+                {
+                    "id": str(e.especialidad.id),
+                    "codigo": e.especialidad.codigo if hasattr(e.especialidad, 'codigo') else None,
+                    "nombre": e.especialidad.nombre,
+                }
+                for e in especialidades_disponibles
             ],
         }

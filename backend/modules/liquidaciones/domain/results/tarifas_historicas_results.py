@@ -9,7 +9,13 @@ from uuid import UUID
 
 @dataclass
 class TarifaPorcentajeObraDetalleResult:
-    """A single TarifaPorcentajeObra with its especialidad."""
+    """
+    A single TarifaPorcentajeObra with its especialidad.
+
+    With tarifa-unica-especialidades: TarifaPorcentajeObra no longer has especialidad FK.
+    The especialidad_id/nombre for historical records comes from
+    LiquidacionEspecialidadDisponibles (populated from the liquidacion input at creation time).
+    """
     id: UUID
     especialidad_id: UUID
     especialidad_nombre: str

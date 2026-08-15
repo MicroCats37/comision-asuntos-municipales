@@ -4,8 +4,8 @@ EntidadesFlujo — flujos async de negocio para entidades.
 from asgiref.sync import sync_to_async
 from injector import inject
 
-from ..entidades_core_service import EntidadesCoreService
-from ...schemas import EntidadCreateData, EntidadResult
+from modules.entidades.domain.services.entidades_core_service import EntidadesCoreService
+from modules.entidades.domain.schemas import EntidadCreateData, EntidadResult
 
 
 class EntidadFlujo:

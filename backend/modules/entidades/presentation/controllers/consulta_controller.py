@@ -13,9 +13,9 @@ from injector import inject
 from ninja import Path
 
 from core.responses import ApiResponse, success_response
-from ..schemas.consulta_schemas import InstitucionSunatOut, PersonaReniecOut
-from ..presenters.consulta_presenter import ConsultaPresenter
-from ...domain.services.orchestrators.consulta_orchestrator import ConsultaOrchestrator
+from modules.entidades.presentation.schemas.consulta_schemas import InstitucionSunatOut, PersonaReniecOut
+from modules.entidades.presentation.presenters.consulta_presenter import ConsultaPresenter
+from modules.entidades.domain.services.orchestrators.consulta_orchestrator import ConsultaOrchestrator
 
 
 @api_controller("/entidades", tags=["Consulta Externa"], permissions=[AllowAny])

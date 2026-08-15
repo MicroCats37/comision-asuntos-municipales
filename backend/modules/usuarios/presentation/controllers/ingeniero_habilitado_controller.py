@@ -8,9 +8,9 @@ from ninja_extra.permissions import AllowAny
 from injector import inject
 
 from core.responses import ApiResponse, success_response
-from ..schemas.ingeniero_habilitado_schemas import IngenieroHabilitadoOut
-from ..presenters.ingeniero_habilitado_presenter import IngenieroHabilitadoPresenter
-from ...domain.services.orchestrators.ingeniero_habilitado_orchestrator import IngenieroHabilitadoOrchestrator
+from modules.usuarios.presentation.schemas.ingeniero_habilitado_schemas import IngenieroHabilitadoOut
+from modules.usuarios.presentation.presenters.ingeniero_habilitado_presenter import IngenieroHabilitadoPresenter
+from modules.usuarios.domain.services.orchestrators.ingeniero_habilitado_orchestrator import IngenieroHabilitadoOrchestrator
 
 
 @api_controller("/ingenieros", tags=["Ingenieros"], permissions=[AllowAny])

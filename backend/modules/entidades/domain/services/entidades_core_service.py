@@ -83,7 +83,7 @@ class EntidadesCoreService:
         return list(
             queryset.select_related("provincia__departamento").order_by(
                 "provincia__departamento__nombre", "provincia__nombre", "nombre"
-            )[:100]
+            )
         )
 
     def _obtener_municipalidades(self) -> list:

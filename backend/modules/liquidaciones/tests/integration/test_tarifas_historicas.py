@@ -232,8 +232,7 @@ def test_tarifas_historicas_pagination(
     """
     GET respects page and page_size parameters.
     """
-    # Create multiple tariff bases
-    
+    # Create multiple tariff bases (new model: no especialidad FK)
     for i in range(3):
         base = TarifaLiquidacionBase.objects.create(
             tipo_liquidacion=tipo_edificacion,
@@ -242,7 +241,6 @@ def test_tarifas_historicas_pagination(
         )
         TarifaPorcentajeObra.objects.create(
             tarifa_base=base,
-            especialidad=EspecialidadRevision.objects.create(codigo=f"E{i}", slug=f"especialidad-{i}", nombre=f"Especialidad {i}"),
             porcentaje_liquidacion=Decimal("0.0010"),
         )
 
@@ -378,7 +376,6 @@ def test_tarifas_historicas_overlap_periodo_fin_null(api_client, tipo_edificacio
     )
     TarifaPorcentajeObra.objects.create(
         tarifa_base=base,
-        especialidad=EspecialidadRevision.objects.create(codigo="OVLP", nombre="Overlap"),
         porcentaje_liquidacion=Decimal("0.0015"),
     )
 

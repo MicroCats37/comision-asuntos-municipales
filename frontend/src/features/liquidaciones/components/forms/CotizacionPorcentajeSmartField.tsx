@@ -21,6 +21,7 @@ import type { EdificacionesFormData } from "../../schemas/liquidacion-edificacio
 
 interface CotizacionDetalle {
   tarifa_id: string;
+  especialidad_id: string;
   porcentaje_aplicado: number;
   subtotal: number;
   igv: number;
@@ -68,15 +69,17 @@ export function CotizacionPorcentajeSmartField({
   const cotizacionMutation = useMutation({
     mutationFn: async (payload: {
       valor_declarado: number;
-      tarifas_ids: string[];
+      tarifa_id: string;
+      especialidades_ids: string[];
     }): Promise<CotizacionOutput> => {
       const { data } = await api.post(
         `/liquidaciones/${tipo}/cotizar`,
         {
           liquidacion_especifica: {
             datos: { valor_declarado: payload.valor_declarado },
-            tarifas: payload.tarifas_ids.map((id) => ({
-              tarifa_porcentaje_obra_id: id,
+            tarifas: payload.especialidades_ids.map((espId) => ({
+              tarifa_porcentaje_obra_id: payload.tarifa_id,
+              especialidad_id: espId,
             })),
           },
         },
@@ -93,9 +96,10 @@ export function CotizacionPorcentajeSmartField({
     },
   });
 
-  // Auto-recalculate when valor_declarado changes (debounced). Empty tarifas = backend auto-fill.
+  // Auto-recalculate when valor_declarado changes (debounced). Empty especialidades = backend auto-fill.
   const valorDeclaradoForm = useWatch({ control: methods.control, name: "valor_declarado" });
-  const tarifasIds = useWatch({ control: methods.control, name: "tarifas_ids" });
+  const tarifaUnicaId = useWatch({ control: methods.control, name: "tarifa_unica_id" });
+  const especialidadesSeleccionadas = useWatch({ control: methods.control, name: "especialidades_seleccionadas" });
   // Use fixed value (nueva revision) OR form value (primera revision)
   const effectiveValor = valorDeclaradoFijo ?? valorDeclaradoForm;
   const debouncedValor = useDebounce(effectiveValor, 500);
@@ -109,14 +113,15 @@ export function CotizacionPorcentajeSmartField({
       return;
     }
 
-    const ids = (tarifasIds || []) as string[];
+    const espIds = (especialidadesSeleccionadas || []) as string[];
 
     cotizacionMutation.mutate({
       valor_declarado: v,
-      tarifas_ids: ids,
+      tarifa_id: tarifaUnicaId ?? "",
+      especialidades_ids: espIds,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedValor, tarifasIds]);
+  }, [debouncedValor, tarifaUnicaId, especialidadesSeleccionadas]);
 
   const isLoading = cotizacionMutation.isPending;
 

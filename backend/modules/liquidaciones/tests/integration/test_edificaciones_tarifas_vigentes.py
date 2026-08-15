@@ -62,31 +62,38 @@ def especialidad_installaciones(db):
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_estructuras(db, tarifa_liquidacion_base_edificacion, especialidad_estructuras):
-    """Create a TarifaPorcentajeObra for Estructuras (vigente)."""
+def tarifa_porcentaje_obra_estructuras(db, tarifa_liquidacion_base_edificacion):
+    """Create a TarifaPorcentajeObra for Estructuras (vigente, no especialidad FK)."""
     return TarifaPorcentajeObra.objects.create(
         tarifa_base=tarifa_liquidacion_base_edificacion,
-        especialidad=especialidad_estructuras,
         porcentaje_liquidacion=Decimal("0.0010"),  # 0.10%
     )
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_arquitectura(db, tarifa_liquidacion_base_edificacion, especialidad_arquitectura):
-    """Create a TarifaPorcentajeObra for Arquitectura (vigente)."""
+def tarifa_porcentaje_obra_base2(db, tipo_edificacion):
+    """Create a second TarifaLiquidacionBase + TarifaPorcentajeObra for Arquitectura (vigente)."""
+    base2 = TarifaLiquidacionBase.objects.create(
+        tipo_liquidacion=tipo_edificacion,
+        periodo_inicio=date(2024, 1, 1),
+        periodo_fin=None,
+    )
     return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        especialidad=especialidad_arquitectura,
+        tarifa_base=base2,
         porcentaje_liquidacion=Decimal("0.0005"),  # 0.05%
     )
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_installaciones(db, tarifa_liquidacion_base_edificacion, especialidad_installaciones):
-    """Create a TarifaPorcentajeObra for Instalaciones (vigente)."""
+def tarifa_porcentaje_obra_base3(db, tipo_edificacion):
+    """Create a third TarifaLiquidacionBase + TarifaPorcentajeObra for Instalaciones (vigente)."""
+    base3 = TarifaLiquidacionBase.objects.create(
+        tipo_liquidacion=tipo_edificacion,
+        periodo_inicio=date(2024, 1, 1),
+        periodo_fin=None,
+    )
     return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        especialidad=especialidad_installaciones,
+        tarifa_base=base3,
         porcentaje_liquidacion=Decimal("0.0003"),  # 0.03%
     )
 
@@ -111,14 +118,14 @@ def api_client(db):
 
 @pytest.mark.django_db
 def test_returns_vigentes_tarifas(
-    api_client, tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
-    tarifa_porcentaje_obra_installaciones, derecho_porcentaje_vigente
+    api_client, tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_base2,
+    tarifa_porcentaje_obra_base3, derecho_porcentaje_vigente
 ):
     """
     GET returns list of vigentes tarifas for EDIFICACION.
 
-    When there are active tarifas for Edificaciones, the endpoint should
-    return them in the response.
+    NEW contract: response has {tarifas: [{id, porcentaje_liquidacion}], especialidades_disponibles: [...]}.
+    Each TarifaPorcentajeObra has no especialidad FK — specialties come from LiquidacionEspecialidadDisponibles.
     """
     response = api_client.get("/liquidaciones/edificaciones/tarifas/vigentes")
 
@@ -130,15 +137,16 @@ def test_returns_vigentes_tarifas(
 
     result = data["data"]
     assert "tarifas" in result, "Result should have 'tarifas' wrapper"
+    assert "especialidades_disponibles" in result, \
+        "Result should have 'especialidades_disponibles' wrapper"
 
     tarifas = result["tarifas"]
     assert len(tarifas) == 3, \
         f"Expected 3 vigentes tarifas, got {len(tarifas)}"
 
-    # Verify each tarifa has required fields
+    # Verify each tarifa has required fields (NEW: no especialidad field)
     for tarifa in tarifas:
         assert "id" in tarifa, "Each tarifa should have 'id'"
-        assert "especialidad" in tarifa, "Each tarifa should have 'especialidad'"
         assert "porcentaje_liquidacion" in tarifa, \
             "Each tarifa should have 'porcentaje_liquidacion'"
 
@@ -175,29 +183,27 @@ def test_excludes_other_tipo_liquidacion(
     Creates a HU tariff and verifies Edificaciones endpoint doesn't return it.
     """
     # Create HU tariff (should NOT be returned)
-    
+    from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import TarifaPorMetroCuadrado
+
     hu_tarifa_base = TarifaLiquidacionBase.objects.create(
         tipo_liquidacion=tipo_habilitacion_urbana,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
-    hu_tarifa = TarifaPorcentajeObra.objects.create(
+    TarifaPorMetroCuadrado.objects.create(
         tarifa_base=hu_tarifa_base,
-        especialidad=tarifa_porcentaje_obra_estructuras.especialidad,
-        porcentaje_liquidacion=Decimal("0.0020"),
+        costo_por_m2=Decimal("150.0000"),
     )
 
     # Create MS tariff (should NOT be returned)
-    
     ms_tarifa_base = TarifaLiquidacionBase.objects.create(
         tipo_liquidacion=tipo_mecanica_suelos,
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
-    ms_tarifa = TarifaPorcentajeObra.objects.create(
+    TarifaPorMetroCuadrado.objects.create(
         tarifa_base=ms_tarifa_base,
-        especialidad=tarifa_porcentaje_obra_estructuras.especialidad,
-        porcentaje_liquidacion=Decimal("0.0015"),
+        costo_por_m2=Decimal("100.0000"),
     )
 
     response = api_client.get("/liquidaciones/edificaciones/tarifas/vigentes")
@@ -229,7 +235,6 @@ def test_excludes_expired_tarifas(
     Creates an expired tariff and verifies it's not returned.
     """
     # Create expired tariff (should NOT be returned)
-    
     expired_tarifa_base = TarifaLiquidacionBase.objects.create(
         tipo_liquidacion=tipo_edificacion,
         periodo_inicio=date(2023, 1, 1),
@@ -237,7 +242,6 @@ def test_excludes_expired_tarifas(
     )
     expired_tarifa = TarifaPorcentajeObra.objects.create(
         tarifa_base=expired_tarifa_base,
-        especialidad=tarifa_porcentaje_obra_estructuras.especialidad,
         porcentaje_liquidacion=Decimal("0.0010"),
     )
 

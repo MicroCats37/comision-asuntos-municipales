@@ -55,14 +55,13 @@ def especialidad_taludes(db):
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_taludes(db, tarifa_liquidacion_base_taludes, especialidad_taludes):
-    """Create a TarifaPorcentajeObra for Taludes."""
+def tarifa_porcentaje_obra_taludes(db, tarifa_liquidacion_base_taludes):
+    """Create a TarifaPorcentajeObra for Taludes (sin especialidad — tarifa única por base)."""
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
         TarifaPorcentajeObra,
     )
     return TarifaPorcentajeObra.objects.create(
         tarifa_base=tarifa_liquidacion_base_taludes,
-        especialidad=especialidad_taludes,
         porcentaje_liquidacion=Decimal("0.0010"),  # 0.10%
     )
 

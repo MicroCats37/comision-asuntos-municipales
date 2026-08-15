@@ -7,8 +7,8 @@ datos de instituciones y personas respectivamente.
 
 from injector import inject
 
-from ...ports import ISunatClient, IReniecClient
-from ...results import SunatInstitucionResult, ReniecPersonaResult
+from modules.entidades.domain.ports import ISunatClient, IReniecClient
+from modules.entidades.domain.results import SunatInstitucionResult, ReniecPersonaResult
 
 
 class ConsultaSunatFlujo:

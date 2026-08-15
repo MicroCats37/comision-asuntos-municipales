@@ -15,8 +15,8 @@ from core.pagination import PaginatedData
 
 class TarifasHistoricasQueryParams(BaseSchema):
     """Query parameters for GET /liquidaciones/{tipo}/tarifas/historicas."""
-    fecha_desde: date = Field(..., description="Start date for the historical range")
-    fecha_hasta: date = Field(..., description="End date for the historical range")
+    fecha_desde: Optional[date] = Field(default=None, description="Start date for the historical range; omit to get current vigentes")
+    fecha_hasta: Optional[date] = Field(default=None, description="End date for the historical range; omit to get current vigentes")
     page: int = Field(default=1, ge=1, description="Page number")
     page_size: int = Field(default=10, ge=1, le=100, description="Items per page")
 
@@ -24,8 +24,8 @@ class TarifasHistoricasQueryParams(BaseSchema):
 class DerechosHistoricosQueryParams(BaseSchema):
     """Query parameters for GET /liquidaciones/derechos/historicos."""
     tipo: str = Field(..., description="Tipo de derecho: PORCENTAJE or METRO_CUADRADO")
-    fecha_desde: date = Field(..., description="Start date for the historical range")
-    fecha_hasta: date = Field(..., description="End date for the historical range")
+    fecha_desde: Optional[date] = Field(default=None, description="Start date for the historical range; omit to get current vigentes")
+    fecha_hasta: Optional[date] = Field(default=None, description="End date for the historical range; omit to get current vigentes")
 
 
 # ── Tarifa Percentage Obra Detail ──────────────────────────────────────────────

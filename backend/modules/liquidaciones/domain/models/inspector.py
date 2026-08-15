@@ -134,6 +134,7 @@ class LiquidacionInspector(BaseModel):
     periodo = models.CharField(
         max_length=100, blank=True, null=True, verbose_name="Periodo"
     )
+    
     dictamen_revision = models.CharField(
         max_length=20,
         choices=DictamenRevision.choices,
@@ -141,9 +142,11 @@ class LiquidacionInspector(BaseModel):
         null=True,
         verbose_name="Dictamen de Revision",
     )
+    
     fecha_presentacion = models.DateField(
         blank=True, null=True, verbose_name="Fecha de Presentacion"
     )
+    
     fecha_revision = models.DateField(
         blank=True, null=True, verbose_name="Fecha de Revision"
     )

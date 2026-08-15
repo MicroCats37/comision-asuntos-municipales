@@ -32,6 +32,7 @@ class CotizacionVisitasResult(BaseModel):
 class CotizacionPorcentajeObraDetalleResult(BaseModel):
     """Detalle de cotización porcentual (no persiste)."""
     tarifa_id: str
+    especialidad_id: str
     porcentaje_aplicado: Decimal
     subtotal: Decimal
     igv: Decimal

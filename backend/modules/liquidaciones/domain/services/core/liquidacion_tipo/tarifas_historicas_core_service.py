@@ -55,12 +55,15 @@ class TarifasHistoricasCoreService:
     ) -> List[TarifaPorcentajeObra]:
         """
         Get all TarifaPorcentajeObra records for the given TarifaLiquidacionBase IDs.
-        Returns list ordered by especialidad.
+
+        With tarifa-unica-especialidades: TarifaPorcentajeObra no longer has especialidad FK.
+        The ordering by especialidad__nombre is removed. Caller (presenter) will fill
+        especialidad from LiquidacionEspecialidadDisponibles when building the result DTOs.
         """
         return list(
             TarifaPorcentajeObra.objects.filter(
                 tarifa_base_id__in=tarifa_base_ids
-            ).select_related("tarifa_base", "especialidad").order_by("especialidad__nombre")
+            ).select_related("tarifa_base").order_by("porcentaje_liquidacion")
         )
 
     def get_tarifa_m2_por_base(
@@ -122,3 +125,16 @@ class TarifasHistoricasCoreService:
                 Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha_desde)
             ).order_by("periodo_inicio")
         )
+
+    def get_derechos_porcentaje_vigentes(self, fecha: date = None) -> List[DerechoPorcentajeObra]:
+        """Derechos PORCENTAJE vigentes en la fecha dada (default hoy)."""
+        return list(DerechoPorcentajeObra.objects.vigentes(fecha=fecha).order_by("periodo_inicio"))
+
+    def get_derechos_m2_vigentes(self, fecha: date = None) -> List[DerechoPorMetroCuadrado]:
+        """Derechos M2 vigentes en la fecha dada (default hoy)."""
+        return list(DerechoPorMetroCuadrado.objects.vigentes(fecha=fecha).order_by("periodo_inicio"))
+
+    def get_tarifas_vigentes(self, tipo_liquidacion: str, fecha: date = None) -> List[TarifaLiquidacionBase]:
+        """Bases de tarifa vigentes en la fecha dada (default hoy) para un tipo."""
+        qs = TarifaLiquidacionBase.objects.filter(tipo_liquidacion__codigo=tipo_liquidacion)
+        return list(qs.vigentes(fecha=fecha).order_by("periodo_inicio"))

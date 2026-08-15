@@ -1,34 +1,48 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+import { CheckSquare, Percent, Square } from "lucide-react";
 /**
  * TarifasPorcentajeSmartField — Smart Field for PorcentajeObra tariff selection.
  *
  * Architecture:
  * - Receives `methods: UseFormReturn<EdificacionesFormData>` from parent
- * - Fetches vigentes from GET /liquidaciones/edificaciones/tarifas/vigentes
- * - Shows list of especialidades with porcentaje, checkboxes to select
- * - On selection change: `methods.setValue("tarifas_ids", selectedIds)`
- * - OWN state for selected IDs. Does NOT cause form re-render.
+ * - Fetches vigentes from GET /liquidaciones/{tipo}/tarifas/vigentes
+ * - NEW contract: returns { tarifas: [tarifa_unica], especialidades_disponibles: [...] }
+ * - Shows ONE read-only card with the single tariff percentage
+ * - Shows checkboxes for especialidades_disponibles (user selects which apply)
+ * - On toggle: setValue("especialidades_seleccionadas", [...]) and setValue("tarifa_unica_id", id)
+ * - OWN state for selected specialty IDs. Does NOT cause form re-render.
  */
-import { useState, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import { Percent, CircleCheck, Star } from "lucide-react";
 import api from "@/lib/api";
 
-/** Backend real: { id, especialidad: string, porcentaje_liquidacion: float } */
+/** Backend real (NEW): { tarifas: [{id, porcentaje_liquidacion}], especialidades_disponibles: [{id, codigo, nombre}] } */
 interface TarifaVigente {
   id: string;
-  especialidad: string;
   porcentaje_liquidacion: number;
+}
+
+interface EspecialidadDisponible {
+  id: string;
+  codigo: string;
+  nombre: string;
+}
+
+interface TarifasVigentesResponse {
+  tarifas: TarifaVigente[];
+  especialidades_disponibles: EspecialidadDisponible[];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface TarifasPorcentajeSmartFieldProps {
   methods: UseFormReturn<any>;
+  /** Tipo de liquidación para el endpoint (default: edificaciones) */
+  tipo?: string;
 }
 
-const formatPercent = (value: number): string => `${(value * 100).toFixed(2)}%`;
+const formatPercent = (value: number): string => `${(value * 100).toFixed(4)}%`;
 
 function LoadingCard() {
   return (
@@ -47,29 +61,44 @@ function LoadingCard() {
 
 export function TarifasPorcentajeSmartField({
   methods,
+  tipo = "edificaciones",
 }: TarifasPorcentajeSmartFieldProps) {
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // Source of truth = form field, so parent auto-select-all syncs the visual
+  const selectedEspecialidades =
+    methods.watch("especialidades_seleccionadas") ?? [];
 
-  const { data: tarifas, isLoading } = useQuery<TarifaVigente[]>({
-    queryKey: ["liquidaciones", "edificaciones", "tarifas-vigentes"],
+  const { data, isLoading } = useQuery<TarifasVigentesResponse>({
+    queryKey: ["liquidaciones", tipo, "tarifas-vigentes"],
     queryFn: async () => {
-      const { data } = await api.get("/liquidaciones/edificaciones/tarifas/vigentes");
-      return data.data?.tarifas || [];
+      const { data: resp } = await api.get(
+        `/liquidaciones/${tipo}/tarifas/vigentes`,
+      );
+      return resp.data ?? { tarifas: [], especialidades_disponibles: [] };
     },
   });
 
-  const handleToggle = useCallback(
+  const tarifas = data?.tarifas ?? [];
+  const especialidades = data?.especialidades_disponibles ?? [];
+  const tarifaUnica = tarifas[0];
+
+  const handleToggleEspecialidad = useCallback(
     (id: string) => {
-      setSelectedIds((prev) => {
-        const next = prev.includes(id)
-          ? prev.filter((x) => x !== id)
-          : [...prev, id];
-        methods.setValue("tarifas_ids", next, { shouldValidate: true });
-        return next;
+      const next = selectedEspecialidades.includes(id)
+        ? selectedEspecialidades.filter((x) => x !== id)
+        : [...selectedEspecialidades, id];
+      methods.setValue("especialidades_seleccionadas", next, {
+        shouldValidate: true,
       });
     },
-    [methods],
+    [methods, selectedEspecialidades],
   );
+
+  const handleSelectAll = useCallback(() => {
+    const allIds = especialidades.map((e) => e.id);
+    methods.setValue("especialidades_seleccionadas", allIds, {
+      shouldValidate: true,
+    });
+  }, [especialidades, methods]);
 
   if (isLoading) {
     return (
@@ -84,7 +113,7 @@ export function TarifasPorcentajeSmartField({
     );
   }
 
-  if (!tarifas || tarifas.length === 0) {
+  if (!tarifaUnica) {
     return (
       <div className="space-y-2">
         <label className="text-sm font-medium">Tarifas Vigentes</label>
@@ -95,63 +124,110 @@ export function TarifasPorcentajeSmartField({
     );
   }
 
-  const error = methods.formState.errors.tarifas_ids;
+  // Set tarifa_unica_id once the tariff is known
+  methods.setValue("tarifa_unica_id", tarifaUnica.id, {
+    shouldValidate: false,
+  });
+
+  // Total aplicado = tarifa única x cantidad de especialidades seleccionadas
+  const totalAplicado =
+    selectedEspecialidades.length > 0
+      ? tarifaUnica.porcentaje_liquidacion * selectedEspecialidades.length
+      : tarifaUnica.porcentaje_liquidacion;
+
+  const error = methods.formState.errors.especialidades_seleccionadas;
 
   return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium">
-        Tarifas Vigentes
-        {selectedIds.length > 0 && (
-          <span className="ml-2 text-xs text-muted-foreground">
-            ({selectedIds.length} seleccionadas)
-          </span>
-        )}
-      </label>
-      {error && (
-        <p className="text-xs text-destructive">{error.message?.toString()}</p>
-      )}
-      <div className="flex flex-col md:flex-row md:flex-wrap gap-2">
-        {tarifas.map((tarifa) => {
-          const isSelected = selectedIds.includes(tarifa.id);
+    <div className="space-y-3">
+      <label className="text-sm font-medium">Tarifa Única</label>
 
-          return (
-            <button
-              key={tarifa.id}
-              type="button"
-              onClick={() => handleToggle(tarifa.id)}
-              className={[
-                "rounded-lg border bg-card px-3 py-2 transition-all duration-200 text-left w-full md:flex-1 md:min-w-[220px] flex flex-col gap-1.5 cursor-pointer",
-                isSelected
-                  ? "border-primary ring-1 ring-primary/30 bg-primary/5"
-                  : "border-border hover:border-primary/40",
-              ].join(" ")}
-            >
-              <div className="flex items-center gap-2">
-                <div
-                  className={[
-                    "flex items-center justify-center rounded-md border shrink-0 p-1",
-                    isSelected
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted text-muted-foreground border-border",
-                  ].join(" ")}
-                >
-                  {isSelected ? (
-                    <CircleCheck className="h-3.5 w-3.5" />
-                  ) : (
-                    <Star className="h-3.5 w-3.5" />
-                  )}
-                </div>
+      {/* ── Single tariff card (read-only) ── */}
+      <div
+        className={[
+          "rounded-xl border bg-card px-4 py-3 w-full flex items-center justify-between",
+          "border-primary/30 bg-primary/[0.03]",
+        ].join(" ")}
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center rounded-lg border border-primary/20 bg-primary/10 p-2">
+            <Percent className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              Porcentaje de Obra
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Tarifa única por período
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <span className="text-lg font-bold text-primary">
+            {formatPercent(totalAplicado)}
+          </span>
+          {selectedEspecialidades.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {formatPercent(tarifaUnica.porcentaje_liquidacion)} ×{" "}
+              {selectedEspecialidades.length} especialidades
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Specialty selector ── */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium">
+            Especialidades a aplicar
+            {selectedEspecialidades.length > 0 && (
+              <span className="ml-2 text-xs text-muted-foreground">
+                ({selectedEspecialidades.length} seleccionadas)
+              </span>
+            )}
+          </label>
+          <button
+            type="button"
+            onClick={handleSelectAll}
+            className="text-xs text-primary hover:underline"
+          >
+            Seleccionar todas
+          </button>
+        </div>
+        {error && (
+          <p className="text-xs text-destructive">
+            {error.message?.toString()}
+          </p>
+        )}
+        <div className="flex flex-col md:flex-row md:flex-wrap gap-2">
+          {especialidades.map((esp) => {
+            const isSelected = selectedEspecialidades.includes(esp.id);
+            return (
+              <button
+                key={esp.id}
+                type="button"
+                onClick={() => handleToggleEspecialidad(esp.id)}
+                className={[
+                  "rounded-lg border bg-card px-3 py-2 transition-all duration-200 text-left w-full md:flex-1 md:min-w-[180px] flex items-center gap-2 cursor-pointer",
+                  isSelected
+                    ? "border-primary ring-1 ring-primary/30 bg-primary/5"
+                    : "border-border hover:border-primary/40",
+                ].join(" ")}
+              >
+                {isSelected ? (
+                  <CheckSquare className="h-4 w-4 text-primary shrink-0" />
+                ) : (
+                  <Square className="h-4 w-4 text-muted-foreground shrink-0" />
+                )}
                 <span className="text-sm font-medium truncate">
-                  {tarifa.especialidad}
+                  {esp.nombre}
                 </span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground pl-8">
-                <Percent className="h-3 w-3 text-primary/60" />
-                <span>{formatPercent(tarifa.porcentaje_liquidacion)}</span>
-              </div>
-            </button>
-          );
-        })}
+                <span className="text-xs text-muted-foreground shrink-0">
+                  ({esp.codigo})
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

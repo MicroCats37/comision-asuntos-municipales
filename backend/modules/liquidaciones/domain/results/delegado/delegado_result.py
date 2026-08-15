@@ -96,3 +96,70 @@ class DelegadosPorMunicipalidadResult(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class EspecialidadRevisionResult(BaseModel):
+    """Domain DTO for EspecialidadRevision (nested en delegado/liquidacion)."""
+    id: str
+    nombre: str
+
+
+class DelegadoVigenteResult(BaseModel):
+    """Domain DTO for a delegado vigente (match municipalidad + especialidad vigente)."""
+    id: str
+    nombre_completo: str
+    cip: str
+    especialidad: EspecialidadRevisionResult
+    tipo: str
+
+
+class DelegadosVigentesResult(BaseModel):
+    """Domain DTO for GET /delegados/vigentes response."""
+    delegados: list[DelegadoVigenteResult]
+
+
+class TipoLiquidacionMinimalResult(BaseModel):
+    """Domain DTO for tipo_liquidacion minimal (codigo + nombre)."""
+    codigo: str
+    nombre: str
+
+
+class LiquidacionDelegadoLiquidacionMinimal(BaseModel):
+    """Domain DTO for minimal liquidacion summary nested in LiquidacionDelegadoResult."""
+    id: str
+    expediente: Optional[str] = None
+    numero_revision: int
+    sub_total: Optional[float] = None
+    total: Optional[float] = None
+    municipalidad_nombre: Optional[str] = None
+    proyecto_denominacion: Optional[str] = None
+    tipo_liquidacion: Optional[TipoLiquidacionMinimalResult] = None
+
+
+class LiquidacionDelegadoDelegadoMinimal(BaseModel):
+    """Domain DTO for minimal delegado summary nested in LiquidacionDelegadoResult."""
+    id: str
+    cip: str
+    dni: str
+    nombre_completo: str
+
+
+class LiquidacionDelegadoResult(BaseModel):
+    """Domain DTO for a LiquidacionDelegado association."""
+    id: str
+    liquidacion_id: str
+    delegado_id: str
+    especialidad_revision: EspecialidadRevisionResult
+    liquidacion: Optional[LiquidacionDelegadoLiquidacionMinimal] = None
+    delegado: Optional[LiquidacionDelegadoDelegadoMinimal] = None
+    periodo: Optional[str] = None
+    dictamen_revision: Optional[str] = None
+    fecha_presentacion: Optional[date] = None
+    fecha_revision: Optional[date] = None
+
+
+class LiquidacionDelegadoBatchResult(BaseModel):
+    """Domain DTO for the grouped batch result of LiquidacionDelegado."""
+    created: list[LiquidacionDelegadoResult]
+    updated: list[LiquidacionDelegadoResult]
+    deleted: list[str]

@@ -53,14 +53,18 @@ class TarifasHistoricasOrchestrator:
     def obtener_tarifas_historicas_proceso(
         self,
         tipo: str,
-        fecha_desde: date,
-        fecha_hasta: date,
-        page: int,
-        page_size: int,
+        fecha_desde: date = None,
+        fecha_hasta: date = None,
+        page: int = 1,
+        page_size: int = 10,
     ) -> Tuple[List[TarifaHistoricaPeriodoResult], int]:
         """
-        Fetch historical tariffs for a tipo_liquidacion within date range.
-        
+        Fetch tariffs for a tipo_liquidacion.
+
+        If both fecha_desde and fecha_hasta are given: historical range query.
+        Otherwise: vigentes at the reference date (the provided one, or today).
+        Pagination applies over the tariff bases in both modes.
+
         Returns (list of TarifaHistoricaPeriodoResult, total_count).
         """
         # Normalize tipo
@@ -74,14 +78,24 @@ class TarifasHistoricasOrchestrator:
         if page_size > 100:
             page_size = 100
 
-        # Query historical bases
-        bases, total = self.core_service.get_tarifas_historicas(
-            tipo_liquidacion=tipo_normalized,
-            fecha_desde=fecha_desde,
-            fecha_hasta=fecha_hasta,
-            page=page,
-            page_size=page_size,
-        )
+        # Query bases: historical range or vigentes at reference date
+        if fecha_desde is not None and fecha_hasta is not None:
+            bases, total = self.core_service.get_tarifas_historicas(
+                tipo_liquidacion=tipo_normalized,
+                fecha_desde=fecha_desde,
+                fecha_hasta=fecha_hasta,
+                page=page,
+                page_size=page_size,
+            )
+        else:
+            fecha_ref = fecha_desde if fecha_desde is not None else fecha_hasta
+            all_bases = self.core_service.get_tarifas_vigentes(
+                tipo_liquidacion=tipo_normalized,
+                fecha=fecha_ref,
+            )
+            total = len(all_bases)
+            offset = (page - 1) * page_size
+            bases = all_bases[offset:offset + page_size]
 
         if not bases:
             return [], total
@@ -91,18 +105,36 @@ class TarifasHistoricasOrchestrator:
         # Fetch detail records based on tipo
         if tipo_normalized in TIPO_LIQUIDACION_PORCENTAJE:
             detalle_raw = self.core_service.get_tarifas_porcentaje_obra_por_base(base_ids)
+            # With tarifa-unica-especialidades: TarifaPorcentajeObra no longer has especialidad FK.
+            # Each tariff applies to ALL LiquidacionEspecialidadDisponibles for the tipo_liquidacion.
+            # Fetch them and expand: 1 tariff × N especialidades = N detail results.
+            from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
+                LiquidacionEspecialidadDisponibles,
+            )
+            from django.db.models import Q
+            from django.utils import timezone
+            today = timezone.now().date()
+            especialidades = LiquidacionEspecialidadDisponibles.objects.filter(
+                tipo_liquidacion__codigo=tipo_normalized,
+                activo=True,
+                periodo_inicio__lte=today,
+            ).filter(
+                Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=today)
+            ).select_related("especialidad")
             # Group by base
             detalle_map: dict[str, list] = {}
             for d in detalle_raw:
                 key = str(d.tarifa_base_id)
                 if key not in detalle_map:
                     detalle_map[key] = []
-                detalle_map[key].append(TarifaPorcentajeObraDetalleResult(
-                    id=d.id,
-                    especialidad_id=d.especialidad.id,
-                    especialidad_nombre=d.especialidad.nombre,
-                    porcentaje_liquidacion=float(d.porcentaje_liquidacion),
-                ))
+                # Expand: 1 tariff × N especialidades
+                for esp in especialidades:
+                    detalle_map[key].append(TarifaPorcentajeObraDetalleResult(
+                        id=d.id,
+                        especialidad_id=esp.especialidad.id,
+                        especialidad_nombre=esp.especialidad.nombre,
+                        porcentaje_liquidacion=float(d.porcentaje_liquidacion),
+                    ))
         elif tipo_normalized in TIPO_LIQUIDACION_M2:
             detalle_map = {}
             for bid in base_ids:
