@@ -21,21 +21,9 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
     LiquidacionGeneralOutput,
-    UsuarioCreadorOutput,
-    ProyectoOutput,
-    EntidadInlineSchema,
-    MunicipalidadOutput,
-    IgvOutput,
-    UitOutput,
-    DistritoOutput,
-    ProvinciaOutput,
-    DepartamentoOutput,
-    TipoLiquidacionOutput,
 )
-from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
-    LiquidacionDelegadoOut,
-    EspecialidadRevisionOut,
-    LiquidacionDelegadoDelegadoOut,
+from modules.liquidaciones.presentation.presenters.liquidacion_general.liquidacion_general_presenter import (
+    LiquidacionGeneralPresenter,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraDatosOut,
@@ -51,113 +39,7 @@ class LiquidacionTaludesPresenter:
         tipo = domain_result.liquidacion_tipo
         especifica = domain_result.liquidacion_especifica
 
-        general_out = LiquidacionGeneralOutput(
-            id=uuid.UUID(general.id),
-            municipalidad=MunicipalidadOutput(
-                id=uuid.UUID(general.municipalidad.id),
-                codigo=general.municipalidad.codigo,
-                nombre=general.municipalidad.nombre,
-            ),
-            usuario_creador=UsuarioCreadorOutput(
-                id=uuid.UUID(general.usuario_creador.id),
-                nombres=general.usuario_creador.nombres,
-                apellidos=general.usuario_creador.apellidos,
-                email=general.usuario_creador.email,
-                dni=general.usuario_creador.dni,
-                username=general.usuario_creador.username,
-            ),
-            fecha_registro=general.fecha_registro,
-            expediente=general.expediente,
-            observacion=general.observacion,
-            numero_revision=general.numero_revision,
-            sub_total=general.sub_total,
-            total=general.total,
-            retencion=general.retencion,
-            igv=(
-                IgvOutput(
-                    id=uuid.UUID(general.igv.id),
-                    valor=general.igv.valor,
-                    periodo_inicio=general.igv.periodo_inicio,
-                )
-                if general.igv
-                else None
-            ),
-            uit=(
-                UitOutput(
-                    id=uuid.UUID(general.uit.id),
-                    valor=general.uit.valor,
-                    periodo_inicio=general.uit.periodo_inicio,
-                )
-                if general.uit
-                else None
-            ),
-            proyecto=ProyectoOutput(
-                id=uuid.UUID(general.proyecto.id),
-                denominacion=general.proyecto.denominacion,
-                nombre_propietario=general.proyecto.nombre_propietario,
-                direccion=general.proyecto.direccion,
-                distrito=(
-                    DistritoOutput(
-                        id=uuid.UUID(general.proyecto.distrito.id),
-                        nombre=general.proyecto.distrito.nombre,
-                        ubigeo=general.proyecto.distrito.ubigeo,
-                        provincia=(
-                            ProvinciaOutput(
-                                id=uuid.UUID(general.proyecto.distrito.provincia.id),
-                                nombre=general.proyecto.distrito.provincia.nombre,
-                            )
-                            if general.proyecto.distrito.provincia
-                            else None
-                        ),
-                        departamento=(
-                            DepartamentoOutput(
-                                id=uuid.UUID(general.proyecto.distrito.departamento.id),
-                                nombre=general.proyecto.distrito.departamento.nombre,
-                            )
-                            if general.proyecto.distrito.departamento
-                            else None
-                        ),
-                    )
-                    if general.proyecto.distrito
-                    else None
-                ),
-                entidad=EntidadInlineSchema(
-                    tipo_documento=general.proyecto.entidad.tipo_documento,
-                    numero_documento=general.proyecto.entidad.numero_documento,
-                    razon_social=general.proyecto.entidad.razon_social,
-                ) if general.proyecto.entidad else None,
-            ),
-            tipo_liquidacion=(
-                TipoLiquidacionOutput(
-                    codigo=general.tipo_liquidacion.codigo,
-                    nombre=general.tipo_liquidacion.nombre,
-                )
-                if general.tipo_liquidacion
-                else None
-            ),
-            delegados=[
-                LiquidacionDelegadoOut(
-                    id=uuid.UUID(d.id),
-                    liquidacion_id=uuid.UUID(d.liquidacion_id),
-                    delegado_id=uuid.UUID(d.delegado_id),
-                    especialidad_revision=EspecialidadRevisionOut(
-                        id=uuid.UUID(d.especialidad_revision_id),
-                        nombre=d.especialidad_revision_nombre,
-                    ),
-                    delegado=LiquidacionDelegadoDelegadoOut(
-                        id=uuid.UUID(d.delegado_id),
-                        cip=d.delegado_cip,
-                        dni=d.delegado_dni,
-                        nombre_completo=d.delegado_nombre_completo,
-                    ),
-                    periodo=d.periodo,
-                    dictamen_revision=d.dictamen_revision,
-                    fecha_presentacion=d.fecha_presentacion,
-                    fecha_revision=d.fecha_revision,
-                )
-                for d in (general.delegados or [])
-            ],
-        )
+        general_out = LiquidacionGeneralPresenter.present_liquidacion_general(general)
 
         tipo_out = LiquidacionTipoOutput(
             id=uuid.UUID(especifica.id),
@@ -260,28 +142,13 @@ class LiquidacionTaludesPresenter:
     def present_tarifas_vigentes(tarifas, especialidades_disponibles) -> dict:
         """
         Maps TarifaPorcentajeObra domain objects and LiquidacionEspecialidadDisponibles
-        to a dict response.
+        to a dict response (motor PorcentajeObra).
 
-        With tarifa-unica-especialidades: the single tariff no longer has an
-        especialidad FK. The frontend must use LiquidacionEspecialidadDisponibles
-        to let the user pick which specialties to apply.
-
-        Presenter only knows about Domain objects and plain dicts — no ORM access.
+        Delegates to the shared PO helper to avoid duplication across
+        edificaciones/taludes/impacto_vial.
         """
-        return {
-            "tarifas": [
-                {
-                    "id": str(t.id),
-                    "porcentaje_liquidacion": float(t.porcentaje_liquidacion),
-                }
-                for t in tarifas
-            ],
-            "especialidades_disponibles": [
-                {
-                    "id": str(e.especialidad.id),
-                    "codigo": e.especialidad.codigo if hasattr(e.especialidad, 'codigo') else None,
-                    "nombre": e.especialidad.nombre,
-                }
-                for e in especialidades_disponibles
-            ],
-        }
+        from modules.liquidaciones.presentation.presenters._shared.po_tarifas_presenter import (
+            present_tarifas_vigentes_po,
+        )
+
+        return present_tarifas_vigentes_po(tarifas, especialidades_disponibles)

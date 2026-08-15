@@ -15,6 +15,21 @@ from modules.finanzas.domain.models.impuestos import UIT, IGV
 from modules.entidades.domain.models import Entidad
 from modules.liquidaciones.domain.constants import EstadoLiquidacion, TipoLiquidacion
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
+from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
+    LiquidacionGeneralResult,
+    LiquidacionDelegadoEnGeneralResult,
+    ProyectoResult,
+    EntidadResult,
+    UsuarioCreadorResult,
+    ContactoResult,
+    MunicipalidadResult,
+    IgvResult,
+    UitResult,
+    DistritoResult,
+    ProvinciaResult,
+    DepartamentoResult,
+    TipoLiquidacionResult,
+)
 
 
 class LiquidacionGeneralCoreService:
@@ -140,6 +155,145 @@ class LiquidacionGeneralCoreService:
             contacto=contacto,
         )
 
+    # ── PREFETCH CHAINS & NUMERO FILTER FIELD MAPS ─────────────────────────────────
+
+    # Maps tipo_liquidacion codigo → prefetch_related arguments
+    _PREFETCH_MAP = {
+        TipoLiquidacion.EDIFICACION: [
+            'edificaciones',
+            'liquidacion_porcentaje_obra',
+            'liquidacion_porcentaje_obra__detalles',
+            'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+            'liquidacion_porcentaje_obra__detalles__especialidad',
+            'liquidacion_porcentaje_obra__derecho_aplicado',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
+        ],
+        TipoLiquidacion.HABILITACION_URBANA: [
+            'habilitacion_urbana',
+            'liquidacion_m2',
+            'liquidacion_m2__tarifa_aplicada',
+            'liquidacion_m2__derecho',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
+        ],
+        TipoLiquidacion.MECANICA_SUELOS: [
+            'liquidacion_m2',
+            'liquidacion_m2__tarifa_aplicada',
+            'liquidacion_m2__derecho',
+            'mecanica_suelos',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
+        ],
+        TipoLiquidacion.TALUDES: [
+            'taludes',
+            'liquidacion_porcentaje_obra',
+            'liquidacion_porcentaje_obra__detalles',
+            'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+            'liquidacion_porcentaje_obra__detalles__especialidad',
+            'liquidacion_porcentaje_obra__derecho_aplicado',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
+        ],
+        TipoLiquidacion.INSPECCION_OBRA: [
+            'inspeccion_obra',
+            'liquidacion_visitas',
+            'liquidacion_visitas__tarifa_aplicada',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
+        ],
+        TipoLiquidacion.IMPACTO_VIAL: [
+            'impacto_vial',
+            'liquidacion_porcentaje_obra',
+            'liquidacion_porcentaje_obra__detalles',
+            'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+            'liquidacion_porcentaje_obra__detalles__especialidad',
+            'liquidacion_porcentaje_obra__derecho_aplicado',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
+        ],
+    }
+
+    # Maps tipo_liquidacion codigo → reverse lookup field for numero filter
+    _NUMERO_FILTER_FIELD_MAP = {
+        TipoLiquidacion.EDIFICACION: 'edificaciones__numero',
+        TipoLiquidacion.HABILITACION_URBANA: 'habilitacion_urbana__numero',
+        TipoLiquidacion.MECANICA_SUELOS: 'mecanica_suelos__numero',
+        TipoLiquidacion.TALUDES: 'taludes__numero',
+        TipoLiquidacion.INSPECCION_OBRA: 'inspeccion_obra__numero',
+        TipoLiquidacion.IMPACTO_VIAL: 'impacto_vial__numero',
+    }
+
+    def list_liquidaciones_paginated(
+        self,
+        tipo_liquidacion: str,
+        page: int,
+        page_size: int,
+        municipalidad_id=None,
+        propietario=None,
+        razon_social=None,
+        creador_username=None,
+        fecha_desde=None,
+        fecha_hasta=None,
+        numero=None,
+        numero_revision=None,
+        **kwargs
+    ) -> tuple:
+        """
+        Unified paginated queryset for LiquidacionGeneral, selected by tipo_liquidacion.
+
+        Applies the same filter set and pagination as the 6 legacy methods
+        (municipalidad_id, propietario, razon_social, creador_username, fecha_desde,
+        fecha_hasta, numero, numero_revision).
+        Uses conditional prefetch_related based on tipo_liquidacion.
+        Returns (queryset, total_count).
+        """
+        qs = LiquidacionGeneral.objects.filter(
+            tipo_liquidacion__codigo=tipo_liquidacion
+        ).select_related(
+            'proyecto',
+            'proyecto__entidad',
+            'municipalidad',
+            'usuario_creador',
+            'tipo_liquidacion',
+        ).prefetch_related(
+            *self._PREFETCH_MAP[tipo_liquidacion]
+        ).order_by('-fecha_registro')
+
+        # Apply filters
+        if municipalidad_id:
+            qs = qs.filter(municipalidad_id=municipalidad_id)
+        if propietario:
+            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
+        if razon_social:
+            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
+        if creador_username:
+            qs = qs.filter(usuario_creador__username__icontains=creador_username)
+        if fecha_desde:
+            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
+        if numero is not None:
+            qs = qs.filter(**{self._NUMERO_FILTER_FIELD_MAP[tipo_liquidacion]: numero})
+        if numero_revision is not None:
+            qs = qs.filter(numero_revision=numero_revision)
+
+        total = qs.count()
+        offset = (page - 1) * page_size
+        return qs[offset:offset + page_size], total
+
     def list_liquidaciones_by_type_paginated(
         self,
         tipo_liquidacion: str,
@@ -157,52 +311,21 @@ class LiquidacionGeneralCoreService:
     ) -> tuple:
         """
         Returns paginated LiquidacionGeneral queryset for the given tipo_liquidacion.
-
-        Uses select_related and prefetch_related to avoid N+1 queries.
-        Returns (queryset, total_count).
+        Thin delegation to list_liquidaciones_paginated.
         """
-        qs = LiquidacionGeneral.objects.filter(
-            tipo_liquidacion__codigo=tipo_liquidacion
-        ).select_related(
-            'proyecto',
-            'proyecto__entidad',
-            'municipalidad',
-            'usuario_creador',
-            'tipo_liquidacion',
-        ).prefetch_related(
-            'edificaciones',
-            'liquidacion_porcentaje_obra',
-            'liquidacion_porcentaje_obra__detalles',
-            'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
-            'liquidacion_porcentaje_obra__detalles__especialidad',
-            'liquidacion_porcentaje_obra__derecho_aplicado',
-            'liquidacion_delegados',
-            'liquidacion_delegados__delegado',
-            'liquidacion_delegados__delegado__perfil_ingeniero',
-            'liquidacion_delegados__especialidad_revision',
-        ).order_by('-fecha_registro')
-
-        # Apply filters
-        if municipalidad_id:
-            qs = qs.filter(municipalidad_id=municipalidad_id)
-        if propietario:
-            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
-        if razon_social:
-            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
-        if creador_username:
-            qs = qs.filter(usuario_creador__username__icontains=creador_username)
-        if fecha_desde:
-            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
-        if fecha_hasta:
-            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
-        if numero is not None:
-            qs = qs.filter(edificaciones__numero=numero)
-        if numero_revision is not None:
-            qs = qs.filter(numero_revision=numero_revision)
-
-        total = qs.count()
-        offset = (page - 1) * page_size
-        return qs[offset:offset + page_size], total
+        return self.list_liquidaciones_paginated(
+            tipo_liquidacion=tipo_liquidacion,
+            page=page,
+            page_size=page_size,
+            municipalidad_id=municipalidad_id,
+            propietario=propietario,
+            razon_social=razon_social,
+            creador_username=creador_username,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            numero=numero,
+            numero_revision=numero_revision,
+        )
 
     def list_liquidaciones_hu_paginated(
         self,
@@ -220,51 +343,21 @@ class LiquidacionGeneralCoreService:
     ) -> tuple:
         """
         Returns paginated LiquidacionGeneral queryset for Habilitación Urbana.
-
-        Uses select_related and prefetch_related to avoid N+1 queries.
-        Prefetch chain specific to HU (M2 calculation type).
-        Returns (queryset, total_count).
+        Thin delegation to list_liquidaciones_paginated.
         """
-        qs = LiquidacionGeneral.objects.filter(
-            tipo_liquidacion__codigo=TipoLiquidacion.HABILITACION_URBANA
-        ).select_related(
-            'proyecto',
-            'proyecto__entidad',
-            'municipalidad',
-            'usuario_creador',
-            'tipo_liquidacion',
-        ).prefetch_related(
-            'habilitacion_urbana',
-            'liquidacion_m2',
-            'liquidacion_m2__tarifa_aplicada',
-            'liquidacion_m2__derecho',
-            'liquidacion_delegados',
-            'liquidacion_delegados__delegado',
-            'liquidacion_delegados__delegado__perfil_ingeniero',
-            'liquidacion_delegados__especialidad_revision',
-        ).order_by('-fecha_registro')
-
-        # Apply filters
-        if municipalidad_id:
-            qs = qs.filter(municipalidad_id=municipalidad_id)
-        if propietario:
-            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
-        if razon_social:
-            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
-        if creador_username:
-            qs = qs.filter(usuario_creador__username__icontains=creador_username)
-        if fecha_desde:
-            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
-        if fecha_hasta:
-            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
-        if numero is not None:
-            qs = qs.filter(habilitacion_urbana__numero=numero)
-        if numero_revision is not None:
-            qs = qs.filter(numero_revision=numero_revision)
-
-        total = qs.count()
-        offset = (page - 1) * page_size
-        return qs[offset:offset + page_size], total
+        return self.list_liquidaciones_paginated(
+            tipo_liquidacion=TipoLiquidacion.HABILITACION_URBANA,
+            page=page,
+            page_size=page_size,
+            municipalidad_id=municipalidad_id,
+            propietario=propietario,
+            razon_social=razon_social,
+            creador_username=creador_username,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            numero=numero,
+            numero_revision=numero_revision,
+        )
 
     def list_liquidaciones_ms_paginated(
         self,
@@ -282,51 +375,21 @@ class LiquidacionGeneralCoreService:
     ) -> tuple:
         """
         Returns paginated LiquidacionGeneral queryset for Mecánica de Suelos.
-
-        Uses select_related and prefetch_related to avoid N+1 queries.
-        Prefetch chain specific to MS (M2 calculation type).
-        Returns (queryset, total_count).
+        Thin delegation to list_liquidaciones_paginated.
         """
-        qs = LiquidacionGeneral.objects.filter(
-            tipo_liquidacion__codigo=TipoLiquidacion.MECANICA_SUELOS
-        ).select_related(
-            'proyecto',
-            'proyecto__entidad',
-            'municipalidad',
-            'usuario_creador',
-            'tipo_liquidacion',
-        ).prefetch_related(
-            'liquidacion_m2',
-            'liquidacion_m2__tarifa_aplicada',
-            'liquidacion_m2__derecho',
-            'mecanica_suelos',
-            'liquidacion_delegados',
-            'liquidacion_delegados__delegado',
-            'liquidacion_delegados__delegado__perfil_ingeniero',
-            'liquidacion_delegados__especialidad_revision',
-        ).order_by('-fecha_registro')
-
-        # Apply filters
-        if municipalidad_id:
-            qs = qs.filter(municipalidad_id=municipalidad_id)
-        if propietario:
-            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
-        if razon_social:
-            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
-        if creador_username:
-            qs = qs.filter(usuario_creador__username__icontains=creador_username)
-        if fecha_desde:
-            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
-        if fecha_hasta:
-            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
-        if numero is not None:
-            qs = qs.filter(mecanica_suelos__numero=numero)
-        if numero_revision is not None:
-            qs = qs.filter(numero_revision=numero_revision)
-
-        total = qs.count()
-        offset = (page - 1) * page_size
-        return qs[offset:offset + page_size], total
+        return self.list_liquidaciones_paginated(
+            tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
+            page=page,
+            page_size=page_size,
+            municipalidad_id=municipalidad_id,
+            propietario=propietario,
+            razon_social=razon_social,
+            creador_username=creador_username,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            numero=numero,
+            numero_revision=numero_revision,
+        )
 
     def list_liquidaciones_taludes_paginated(
         self,
@@ -344,55 +407,21 @@ class LiquidacionGeneralCoreService:
     ) -> tuple:
         """
         Returns paginated LiquidacionGeneral queryset for Taludes.
-
-        Uses select_related and prefetch_related to avoid N+1 queries.
-        Prefetch chain mirrors Edificaciones/IV (PorcentajeObra calculation type):
-        - 'liquidacion_porcentaje_obra' + nested relations
-        - 'taludes' identity wrapper
-        Returns (queryset, total_count).
+        Thin delegation to list_liquidaciones_paginated.
         """
-        qs = LiquidacionGeneral.objects.filter(
-            tipo_liquidacion__codigo=TipoLiquidacion.TALUDES
-        ).select_related(
-            'proyecto',
-            'proyecto__entidad',
-            'municipalidad',
-            'usuario_creador',
-            'tipo_liquidacion',
-        ).prefetch_related(
-            'taludes',
-            'liquidacion_porcentaje_obra',
-            'liquidacion_porcentaje_obra__detalles',
-            'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
-            'liquidacion_porcentaje_obra__detalles__especialidad',
-            'liquidacion_porcentaje_obra__derecho_aplicado',
-            'liquidacion_delegados',
-            'liquidacion_delegados__delegado',
-            'liquidacion_delegados__delegado__perfil_ingeniero',
-            'liquidacion_delegados__especialidad_revision',
-        ).order_by('-fecha_registro')
-
-        # Apply filters
-        if municipalidad_id:
-            qs = qs.filter(municipalidad_id=municipalidad_id)
-        if propietario:
-            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
-        if razon_social:
-            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
-        if creador_username:
-            qs = qs.filter(usuario_creador__username__icontains=creador_username)
-        if fecha_desde:
-            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
-        if fecha_hasta:
-            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
-        if numero is not None:
-            qs = qs.filter(taludes__numero=numero)
-        if numero_revision is not None:
-            qs = qs.filter(numero_revision=numero_revision)
-
-        total = qs.count()
-        offset = (page - 1) * page_size
-        return qs[offset:offset + page_size], total
+        return self.list_liquidaciones_paginated(
+            tipo_liquidacion=TipoLiquidacion.TALUDES,
+            page=page,
+            page_size=page_size,
+            municipalidad_id=municipalidad_id,
+            propietario=propietario,
+            razon_social=razon_social,
+            creador_username=creador_username,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            numero=numero,
+            numero_revision=numero_revision,
+        )
 
     def list_liquidaciones_io_paginated(
         self,
@@ -410,53 +439,21 @@ class LiquidacionGeneralCoreService:
     ) -> tuple:
         """
         Returns paginated LiquidacionGeneral queryset for Inspección de Obra.
-
-        Uses select_related and prefetch_related to avoid N+1 queries.
-        Prefetch chain for Visitas calculation type:
-        - 'liquidacion_visitas' for calculation data
-        - 'liquidacion_visitas__tarifa_aplicada' for tariff
-        - 'inspeccion_obra' identity wrapper
-        Returns (queryset, total_count).
+        Thin delegation to list_liquidaciones_paginated.
         """
-        qs = LiquidacionGeneral.objects.filter(
-            tipo_liquidacion__codigo=TipoLiquidacion.INSPECCION_OBRA
-        ).select_related(
-            'proyecto',
-            'proyecto__entidad',
-            'municipalidad',
-            'usuario_creador',
-            'tipo_liquidacion',
-        ).prefetch_related(
-            'inspeccion_obra',
-            'liquidacion_visitas',
-            'liquidacion_visitas__tarifa_aplicada',
-            'liquidacion_delegados',
-            'liquidacion_delegados__delegado',
-            'liquidacion_delegados__delegado__perfil_ingeniero',
-            'liquidacion_delegados__especialidad_revision',
-        ).order_by('-fecha_registro')
-
-        # Apply filters
-        if municipalidad_id:
-            qs = qs.filter(municipalidad_id=municipalidad_id)
-        if propietario:
-            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
-        if razon_social:
-            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
-        if creador_username:
-            qs = qs.filter(usuario_creador__username__icontains=creador_username)
-        if fecha_desde:
-            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
-        if fecha_hasta:
-            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
-        if numero is not None:
-            qs = qs.filter(inspeccion_obra__numero=numero)
-        if numero_revision is not None:
-            qs = qs.filter(numero_revision=numero_revision)
-
-        total = qs.count()
-        offset = (page - 1) * page_size
-        return qs[offset:offset + page_size], total
+        return self.list_liquidaciones_paginated(
+            tipo_liquidacion=TipoLiquidacion.INSPECCION_OBRA,
+            page=page,
+            page_size=page_size,
+            municipalidad_id=municipalidad_id,
+            propietario=propietario,
+            razon_social=razon_social,
+            creador_username=creador_username,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            numero=numero,
+            numero_revision=numero_revision,
+        )
 
     def list_liquidaciones_iv_paginated(
         self,
@@ -474,55 +471,21 @@ class LiquidacionGeneralCoreService:
     ) -> tuple:
         """
         Returns paginated LiquidacionGeneral queryset for Impacto Vial.
-
-        Uses select_related and prefetch_related to avoid N+1 queries.
-        Prefetch chain mirrors Edificaciones (PorcentajeObra calculation type):
-        - 'liquidacion_porcentaje_obra' + nested relations
-        - 'impacto_vial' identity wrapper
-        Returns (queryset, total_count).
+        Thin delegation to list_liquidaciones_paginated.
         """
-        qs = LiquidacionGeneral.objects.filter(
-            tipo_liquidacion__codigo=TipoLiquidacion.IMPACTO_VIAL
-        ).select_related(
-            'proyecto',
-            'proyecto__entidad',
-            'municipalidad',
-            'usuario_creador',
-            'tipo_liquidacion',
-        ).prefetch_related(
-            'impacto_vial',
-            'liquidacion_porcentaje_obra',
-            'liquidacion_porcentaje_obra__detalles',
-            'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
-            'liquidacion_porcentaje_obra__detalles__especialidad',
-            'liquidacion_porcentaje_obra__derecho_aplicado',
-            'liquidacion_delegados',
-            'liquidacion_delegados__delegado',
-            'liquidacion_delegados__delegado__perfil_ingeniero',
-            'liquidacion_delegados__especialidad_revision',
-        ).order_by('-fecha_registro')
-
-        # Apply filters
-        if municipalidad_id:
-            qs = qs.filter(municipalidad_id=municipalidad_id)
-        if propietario:
-            qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
-        if razon_social:
-            qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
-        if creador_username:
-            qs = qs.filter(usuario_creador__username__icontains=creador_username)
-        if fecha_desde:
-            qs = qs.filter(fecha_registro__date__gte=fecha_desde)
-        if fecha_hasta:
-            qs = qs.filter(fecha_registro__date__lte=fecha_hasta)
-        if numero is not None:
-            qs = qs.filter(impacto_vial__numero=numero)
-        if numero_revision is not None:
-            qs = qs.filter(numero_revision=numero_revision)
-
-        total = qs.count()
-        offset = (page - 1) * page_size
-        return qs[offset:offset + page_size], total
+        return self.list_liquidaciones_paginated(
+            tipo_liquidacion=TipoLiquidacion.IMPACTO_VIAL,
+            page=page,
+            page_size=page_size,
+            municipalidad_id=municipalidad_id,
+            propietario=propietario,
+            razon_social=razon_social,
+            creador_username=creador_username,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            numero=numero,
+            numero_revision=numero_revision,
+        )
 
     # ── Detail (GET /{id}) methods ─────────────────────────────────────────────────
 
@@ -553,6 +516,35 @@ class LiquidacionGeneralCoreService:
             'liquidacion_delegados__delegado__perfil_ingeniero',
             'liquidacion_delegados__especialidad_revision',
         ).get(id=liquidacion_id)
+
+    def get_liquidacion_previa_para_io(self, liquidacion_id: uuid.UUID) -> LiquidacionGeneral:
+        """
+        Returns a LiquidacionGeneral usable as previa for Inspección de Obra.
+
+        A previa de IO debe ser de tipo EDIFICACION o HABILITACION_URBANA.
+        Raises LiquidacionGeneral.DoesNotExist if not found.
+
+        Incluye prefetch_related de liquidacion_delegados para evitar N+1
+        cuando se construye el resultado general (build_general_result).
+        """
+        return LiquidacionGeneral.objects.select_related(
+            'proyecto',
+            'proyecto__entidad',
+            'municipalidad',
+            'usuario_creador',
+            'tipo_liquidacion',
+        ).prefetch_related(
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__especialidad_revision',
+        ).get(
+            id=liquidacion_id,
+            tipo_liquidacion__codigo__in=[
+                TipoLiquidacion.EDIFICACION,
+                TipoLiquidacion.HABILITACION_URBANA,
+            ],
+        )
 
     def get_liquidacion_edificaciones_by_id(self, liquidacion_id: uuid.UUID) -> LiquidacionGeneral:
         """
@@ -1218,3 +1210,186 @@ class LiquidacionGeneralCoreService:
         offset = (page - 1) * page_size
         return qs[offset:offset + page_size], total
 
+    # ── Result Builders (ORM → Domain Result) ──────────────────────────────────
+
+    def build_general_result(
+        self,
+        liquidacion_general,
+        usuario_id: int,
+        contacto_result: Optional[ContactoResult] = None,
+        revisiones_previas: Optional[list] = None,
+        delegados: Optional[list] = None,
+        fecha_registro: Optional[str] = None,
+    ) -> LiquidacionGeneralResult:
+        """
+        Builds a complete LiquidacionGeneralResult from an ORM LiquidacionGeneral instance.
+
+        PURE MAPPING — no validation, no business logic.
+        All optional fields default to safe values (None/[]) when not provided.
+
+        Args:
+            liquidacion_general: ORM LiquidacionGeneral instance (already saved/refreshed).
+            usuario_id: ID of the creating user.
+            contacto_result: Optional ContactoResult; None if not provided.
+            revisiones_previas: Optional list of LiquidacionPreviaResult; defaults to [].
+            delegados: Optional list of LiquidacionDelegadoEnGeneralResult; defaults to [].
+            fecha_registro: Optional ISO string; if None, uses liquidacion_general.created_at.isoformat().
+        """
+        if fecha_registro is None:
+            fecha_registro = liquidacion_general.created_at.isoformat()
+
+        entidad_result = self._build_entidad_result(liquidacion_general.proyecto)
+        proyecto_result = self._build_proyecto_result(liquidacion_general.proyecto, entidad_result)
+
+        return LiquidacionGeneralResult(
+            id=str(liquidacion_general.id),
+            municipalidad=MunicipalidadResult(
+                id=str(liquidacion_general.municipalidad.id),
+                codigo=liquidacion_general.municipalidad.codigo,
+                nombre=liquidacion_general.municipalidad.nombre,
+            ),
+            usuario_creador=UsuarioCreadorResult(
+                id=str(usuario_id),
+                nombres=getattr(liquidacion_general.usuario_creador, "nombres", None),
+                apellidos=getattr(liquidacion_general.usuario_creador, "apellidos", None),
+                email=getattr(liquidacion_general.usuario_creador, "email", None),
+                dni=getattr(liquidacion_general.usuario_creador, "dni", None),
+                username=getattr(liquidacion_general.usuario_creador, "username", None),
+            ),
+            fecha_registro=fecha_registro,
+            expediente=liquidacion_general.expediente,
+            observacion=liquidacion_general.observacion,
+            numero_revision=liquidacion_general.numero_revision,
+            sub_total=float(liquidacion_general.sub_total),
+            total=float(liquidacion_general.total),
+            retencion=liquidacion_general.retencion,
+            igv=(
+                IgvResult(
+                    id=str(liquidacion_general.igv_id.id),
+                    valor=float(liquidacion_general.igv_id.valor),
+                    periodo_inicio=(
+                        liquidacion_general.igv_id.periodo_inicio.isoformat()
+                        if liquidacion_general.igv_id.periodo_inicio
+                        else None
+                    ),
+                )
+                if liquidacion_general.igv_id
+                else None
+            ),
+            uit=(
+                UitResult(
+                    id=str(liquidacion_general.uit_id.id),
+                    valor=float(liquidacion_general.uit_id.valor),
+                    periodo_inicio=(
+                        liquidacion_general.uit_id.periodo_inicio.isoformat()
+                        if liquidacion_general.uit_id.periodo_inicio
+                        else None
+                    ),
+                )
+                if liquidacion_general.uit_id
+                else None
+            ),
+            proyecto=proyecto_result,
+            contacto=contacto_result,
+            revisiones_previas=revisiones_previas if revisiones_previas is not None else [],
+            delegados=delegados if delegados is not None else [],
+            tipo_liquidacion=(
+                TipoLiquidacionResult(
+                    codigo=liquidacion_general.tipo_liquidacion.codigo,
+                    nombre=liquidacion_general.tipo_liquidacion.nombre,
+                )
+                if liquidacion_general.tipo_liquidacion
+                else None
+            ),
+        )
+
+    def _build_entidad_result(self, proyecto) -> Optional[EntidadResult]:
+        """Builds EntidadResult from denormalized fields on the proyecto ORM."""
+        if (
+            hasattr(proyecto, "entidad_razon_social")
+            and proyecto.entidad_razon_social
+        ):
+            return EntidadResult(
+                razon_social=proyecto.entidad_razon_social,
+                tipo_documento=getattr(proyecto, "entidad_tipo_documento", None) or "",
+                numero_documento=getattr(proyecto, "entidad_numero_documento", None) or "",
+            )
+        return None
+
+    def _build_proyecto_result(
+        self, proyecto, entidad_result: Optional[EntidadResult]
+    ) -> ProyectoResult:
+        """Builds ProyectoResult including nested distrito (with provincia/departamento)."""
+        distrito_result = self._build_distrito_result(proyecto)
+        return ProyectoResult(
+            id=str(proyecto.id),
+            denominacion=proyecto.denominacion,
+            nombre_propietario=proyecto.nombre_propietario,
+            direccion=proyecto.direccion,
+            distrito=distrito_result,
+            entidad=entidad_result,
+        )
+
+    def _build_distrito_result(self, proyecto) -> Optional[DistritoResult]:
+        """Builds DistritoResult with nested provincia and departamento from ORM."""
+        if not getattr(proyecto, "distrito_id", None):
+            return None
+        distrito = proyecto.distrito
+        if not distrito:
+            return None
+        return DistritoResult(
+            id=str(distrito.id),
+            nombre=distrito.nombre,
+            ubigeo=getattr(distrito, "ubigeo", None),
+            provincia=(
+                ProvinciaResult(
+                    id=str(distrito.provincia.id),
+                    nombre=distrito.provincia.nombre,
+                    departamento=(
+                        DepartamentoResult(
+                            id=str(distrito.provincia.departamento.id),
+                            nombre=distrito.provincia.departamento.nombre,
+                        )
+                        if distrito.provincia.departamento
+                        else None
+                    ),
+                )
+                if distrito.provincia
+                else None
+            ),
+            departamento=(
+                DepartamentoResult(
+                    id=str(distrito.provincia.departamento.id),
+                    nombre=distrito.provincia.departamento.nombre,
+                )
+                if distrito.provincia and distrito.provincia.departamento
+                else None
+            ),
+        )
+
+    def build_delegados_result(self, liquidacion_general) -> list[LiquidacionDelegadoEnGeneralResult]:
+        """
+        Builds a list of LiquidacionDelegadoEnGeneralResult from liquidacion_delegados prefetch.
+        Returns [] if no delegados are present.
+        """
+        return [
+            LiquidacionDelegadoEnGeneralResult(
+                id=str(ld.id),
+                liquidacion_id=str(liquidacion_general.id),
+                delegado_id=str(ld.delegado_id),
+                especialidad_revision_id=str(ld.especialidad_revision_id),
+                especialidad_revision_nombre=ld.especialidad_revision.nombre,
+                delegado_cip=ld.delegado.perfil_ingeniero.cip,
+                delegado_dni=ld.delegado.perfil_ingeniero.dni,
+                delegado_nombre_completo=ld.delegado.perfil_ingeniero.nombre_completo,
+                periodo=ld.periodo,
+                dictamen_revision=ld.dictamen_revision,
+                fecha_presentacion=(
+                    ld.fecha_presentacion.isoformat() if ld.fecha_presentacion else None
+                ),
+                fecha_revision=(
+                    ld.fecha_revision.isoformat() if ld.fecha_revision else None
+                ),
+            )
+            for ld in getattr(liquidacion_general, "liquidacion_delegados", []).all()
+        ]

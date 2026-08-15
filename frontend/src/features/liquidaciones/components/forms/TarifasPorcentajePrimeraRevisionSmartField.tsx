@@ -10,25 +10,8 @@
  */
 import { useEffect } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/api";
+import { useTarifasVigentesPorcentaje } from "../../hooks/useTarifasVigentes";
 import { TarifasPorcentajeSmartField } from "./TarifasPorcentajeSmartField";
-
-interface TarifaVigente {
-  id: string;
-  porcentaje_liquidacion: number;
-}
-
-interface EspecialidadDisponible {
-  id: string;
-  codigo: string;
-  nombre: string;
-}
-
-interface TarifasVigentesResponse {
-  tarifas: TarifaVigente[];
-  especialidades_disponibles: EspecialidadDisponible[];
-}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface TarifasPorcentajePrimeraRevisionSmartFieldProps {
@@ -42,13 +25,7 @@ export function TarifasPorcentajePrimeraRevisionSmartField({
   tipo = "edificaciones",
 }: TarifasPorcentajePrimeraRevisionSmartFieldProps) {
   // Fetch tarifas + especialidades once for auto-select-all
-  const { data } = useQuery<TarifasVigentesResponse>({
-    queryKey: ["liquidaciones", tipo, "tarifas-vigentes-auto"],
-    queryFn: async () => {
-      const { data: resp } = await api.get(`/liquidaciones/${tipo}/tarifas/vigentes`);
-      return resp.data ?? { tarifas: [], especialidades_disponibles: [] };
-    },
-  });
+  const { data } = useTarifasVigentesPorcentaje(tipo);
 
   // Auto-select ALL especialidades on first load
   useEffect(() => {

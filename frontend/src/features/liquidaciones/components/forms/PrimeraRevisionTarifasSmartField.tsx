@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Layers, Percent } from "lucide-react";
 /**
  * PrimeraRevisionTarifasSmartField — Smart Field visual para primera revisión
@@ -8,6 +7,7 @@ import { CheckCircle2, Layers, Percent } from "lucide-react";
  *
  * NEW contract:
  * - GET /liquidaciones/{tipo}/tarifas/vigentes → { tarifas: [tarifa_unica], especialidades_disponibles: [...] }
+ *   (via useTarifasVigentesPorcentaje)
  * - Shows ONE read-only card with the single tariff percentage
  * - Shows all especialidades as applied chips (all selected by default)
  * - Sets tarifa_unica_id + especialidades_seleccionadas in the form via setValue
@@ -18,23 +18,7 @@ import { CheckCircle2, Layers, Percent } from "lucide-react";
  */
 import { useEffect } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import api from "@/lib/api";
-
-interface TarifaVigente {
-  id: string;
-  porcentaje_liquidacion: number;
-}
-
-interface EspecialidadDisponible {
-  id: string;
-  codigo: string;
-  nombre: string;
-}
-
-interface TarifasVigentesResponse {
-  tarifas: TarifaVigente[];
-  especialidades_disponibles: EspecialidadDisponible[];
-}
+import { useTarifasVigentesPorcentaje } from "../../hooks/useTarifasVigentes";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface PrimeraRevisionTarifasSmartFieldProps {
@@ -49,15 +33,7 @@ export function PrimeraRevisionTarifasSmartField({
   methods,
   tipo = "edificaciones",
 }: PrimeraRevisionTarifasSmartFieldProps) {
-  const { data, isLoading } = useQuery<TarifasVigentesResponse>({
-    queryKey: ["liquidaciones", tipo, "tarifas-vigentes"],
-    queryFn: async () => {
-      const { data: resp } = await api.get(
-        `/liquidaciones/${tipo}/tarifas/vigentes`,
-      );
-      return resp.data ?? { tarifas: [], especialidades_disponibles: [] };
-    },
-  });
+  const { data, isLoading } = useTarifasVigentesPorcentaje(tipo);
 
   const tarifas = data?.tarifas ?? [];
   const especialidades = data?.especialidades_disponibles ?? [];

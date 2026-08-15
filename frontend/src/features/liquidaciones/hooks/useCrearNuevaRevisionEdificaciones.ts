@@ -1,6 +1,6 @@
 /**
  * Hook para crear NUEVA REVISIÓN de Edificaciones.
- * Usa useApiCreate genérico del proyecto.
+ * Usa useGenericCreateMutation (cache de lista + detalle) + useApiCreate interno.
  *
  * Endpoint: POST /liquidaciones/edificaciones/nueva-revision
  * Payload (schema propio reducido):
@@ -11,34 +11,25 @@
  * }
  * Se hereda de la previa: valor_declarado, municipalidad_id, proyecto.
  */
-import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { useApiCreate } from "@/hooks";
+import { useGenericCreateMutation } from "@/hooks/cache";
 import type { NuevaRevisionEdificacionesFormData } from "../schemas/liquidacion-nueva-revision-form.schema";
 
 const BASE_URL = "/liquidaciones/edificaciones";
+const LIST_KEY = ["liquidaciones", "edificaciones"] as const;
 
 export function useCrearNuevaRevisionEdificaciones() {
-  const queryClient = useQueryClient();
-
-  const mutation = useApiCreate<unknown, { liquidacion_general: unknown; liquidacion_especifica: unknown; liquidacion_previa_id: string }>({
+  const mutation = useGenericCreateMutation<
+    { id: string | number },
+    {
+      liquidacion_general: unknown;
+      liquidacion_especifica: unknown;
+      liquidacion_previa_id: string;
+    }
+  >({
     url: `${BASE_URL}/nueva-revision`,
-    options: {
-      onSuccess: (created) => {
-        const newItem = (created as { data?: unknown })?.data ?? created;
-        queryClient.setQueriesData<{ items: unknown[]; total: number }>(
-          { queryKey: ["liquidaciones", "edificaciones"] },
-          (old) => {
-            if (!old || !Array.isArray(old.items)) return old;
-            return {
-              ...old,
-              items: [newItem, ...old.items],
-              total: (old.total ?? 0) + 1,
-            };
-          },
-        );
-      },
-    },
+    queryKey: LIST_KEY,
+    listShape: "paginated",
   });
 
   // Wrapper that formats payload for the API — schema reducido propio

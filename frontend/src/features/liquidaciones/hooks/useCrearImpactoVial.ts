@@ -1,37 +1,24 @@
 /**
  * Hook para crear liquidaciones de Impacto Vial (primera revisión).
- * Usa useApiCreate genérico del proyecto.
+ * Usa useGenericCreateMutation (cache de lista + detalle) + useApiCreate interno.
  *
  * Endpoint: POST /liquidaciones/impacto-vial/primera-revision
  */
-import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { useApiCreate } from "@/hooks";
+import { useGenericCreateMutation } from "@/hooks/cache";
 import type { ImpactoVialFormData } from "../schemas/liquidacion-impacto-vial-form.schema";
 
 const BASE_URL = "/liquidaciones/impacto-vial";
+const LIST_KEY = ["liquidaciones", "impacto-vial"] as const;
 
 export function useCrearImpactoVial() {
-  const queryClient = useQueryClient();
-
-  const mutation = useApiCreate<unknown, { liquidacion_general: unknown; liquidacion_especifica: unknown }>({
+  const mutation = useGenericCreateMutation<
+    { id: string | number },
+    { liquidacion_general: unknown; liquidacion_especifica: unknown }
+  >({
     url: `${BASE_URL}/primera-revision`,
-    options: {
-      onSuccess: (created) => {
-        const newItem = (created as { data?: unknown })?.data ?? created;
-        queryClient.setQueriesData<{ items: unknown[]; total: number }>(
-          { queryKey: ["liquidaciones", "impacto-vial"] },
-          (old) => {
-            if (!old || !Array.isArray(old.items)) return old;
-            return {
-              ...old,
-              items: [newItem, ...old.items],
-              total: (old.total ?? 0) + 1,
-            };
-          },
-        );
-      },
-    },
+    queryKey: LIST_KEY,
+    listShape: "paginated",
   });
 
   // Wrapper that formats payload as { liquidacion_general, liquidacion_especifica } for the API

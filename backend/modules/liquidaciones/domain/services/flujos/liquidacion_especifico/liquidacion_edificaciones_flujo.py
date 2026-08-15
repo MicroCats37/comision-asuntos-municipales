@@ -38,6 +38,7 @@ from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_genera
     ProvinciaResult,
     DepartamentoResult,
     TipoLiquidacionResult,
+    LiquidacionPreviaResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
     LiquidacionPorcentajeObraResult,
@@ -305,10 +306,11 @@ class LiquidacionEdificacionesFlujo:
     ) -> EdificacionesPrimeraRevisionResult:
         """
         Maps ORM objects to domain Result including revisiones_previas.
+        Delegates common ORM→Result mapping to LiquidacionGeneralCoreService.
         """
         liquidacion_general.refresh_from_db()
 
-        # Build previas list
+        # Build previas list (specific to edificaciones nueva revision flow)
         revisiones_previas = [
             LiquidacionPreviaResult(
                 id=str(lp.id),
@@ -318,81 +320,7 @@ class LiquidacionEdificacionesFlujo:
             for lp in liquidacion_general.liquidaciones_previas.all().order_by('numero_revision')
         ]
 
-        # Build delegados list
-        delegados = [
-            LiquidacionDelegadoEnGeneralResult(
-                id=str(ld.id),
-                liquidacion_id=str(liquidacion_general.id),
-                delegado_id=str(ld.delegado_id),
-                especialidad_revision_id=str(ld.especialidad_revision_id),
-                especialidad_revision_nombre=ld.especialidad_revision.nombre,
-                delegado_cip=ld.delegado.perfil_ingeniero.cip,
-                delegado_dni=ld.delegado.perfil_ingeniero.dni,
-                delegado_nombre_completo=ld.delegado.perfil_ingeniero.nombre_completo,
-                periodo=ld.periodo,
-                dictamen_revision=ld.dictamen_revision,
-                fecha_presentacion=ld.fecha_presentacion.isoformat() if ld.fecha_presentacion else None,
-                fecha_revision=ld.fecha_revision.isoformat() if ld.fecha_revision else None,
-            )
-            for ld in getattr(liquidacion_general, 'liquidacion_delegados', []).all()
-        ]
-
-        # Build EntidadResult
-        entidad_result = None
-        if hasattr(liquidacion_general, 'proyecto') and liquidacion_general.proyecto:
-            proyecto = liquidacion_general.proyecto
-            if hasattr(proyecto, 'entidad_razon_social') and proyecto.entidad_razon_social:
-                entidad_result = EntidadResult(
-                    razon_social=proyecto.entidad_razon_social,
-                    tipo_documento=getattr(proyecto, 'entidad_tipo_documento', None) or "",
-                    numero_documento=getattr(proyecto, 'entidad_numero_documento', None) or "",
-                )
-
-        # Build ProyectoResult
-        proyecto = liquidacion_general.proyecto
-        distrito_result = None
-        if proyecto.distrito_id:
-            distrito = proyecto.distrito
-            if distrito:
-                distrito_result = DistritoResult(
-                    id=str(distrito.id),
-                    nombre=distrito.nombre,
-                    ubigeo=getattr(distrito, "ubigeo", None),
-                    provincia=(
-                        ProvinciaResult(
-                            id=str(distrito.provincia.id),
-                            nombre=distrito.provincia.nombre,
-                            departamento=(
-                                DepartamentoResult(
-                                    id=str(distrito.provincia.departamento.id),
-                                    nombre=distrito.provincia.departamento.nombre,
-                                )
-                                if distrito.provincia.departamento
-                                else None
-                            ),
-                        )
-                        if distrito.provincia
-                        else None
-                    ),
-                    departamento=(
-                        DepartamentoResult(
-                            id=str(distrito.provincia.departamento.id),
-                            nombre=distrito.provincia.departamento.nombre,
-                        )
-                        if distrito.provincia and distrito.provincia.departamento
-                        else None
-                    ),
-                )
-        proyecto_result = ProyectoResult(
-            id=str(proyecto.id),
-            denominacion=proyecto.denominacion,
-            nombre_propietario=proyecto.nombre_propietario,
-            direccion=proyecto.direccion,
-            distrito=distrito_result,
-            entidad=entidad_result,
-        )
-
-        # Build ContactoResult
+        # Build ContactoResult inline (specific mapping not extracted to core)
         contacto_result = None
         if liquidacion_general.contacto:
             contacto = liquidacion_general.contacto
@@ -407,60 +335,20 @@ class LiquidacionEdificacionesFlujo:
                 email=contacto.email,
             )
 
+        # Delegates: common mapping to core
+        delegados = self.general_core.build_delegados_result(liquidacion_general)
+
+        # Core: builds LiquidacionGeneralResult with all nested results
+        general_result = self.general_core.build_general_result(
+            liquidacion_general=liquidacion_general,
+            usuario_id=usuario_id,
+            contacto_result=contacto_result,
+            revisiones_previas=revisiones_previas,
+            delegados=delegados,
+        )
+
         return EdificacionesPrimeraRevisionResult(
-            liquidacion_general=LiquidacionGeneralResult(
-                id=str(liquidacion_general.id),
-                municipalidad=MunicipalidadResult(
-                    id=str(liquidacion_general.municipalidad.id),
-                    codigo=liquidacion_general.municipalidad.codigo,
-                    nombre=liquidacion_general.municipalidad.nombre,
-                ),
-                usuario_creador=UsuarioCreadorResult(
-                    id=str(usuario_id),
-                    nombres=getattr(liquidacion_general.usuario_creador, "nombres", None),
-                    apellidos=getattr(liquidacion_general.usuario_creador, "apellidos", None),
-                    email=getattr(liquidacion_general.usuario_creador, "email", None),
-                    dni=getattr(liquidacion_general.usuario_creador, "dni", None),
-                    username=getattr(liquidacion_general.usuario_creador, "username", None),
-                ),
-                fecha_registro=liquidacion_general.created_at.isoformat(),
-                expediente=liquidacion_general.expediente,
-                observacion=liquidacion_general.observacion,
-                numero_revision=liquidacion_general.numero_revision,
-                sub_total=float(liquidacion_general.sub_total),
-                total=float(liquidacion_general.total),
-                retencion=liquidacion_general.retencion,
-                igv=(
-                    IgvResult(
-                        id=str(liquidacion_general.igv_id.id),
-                        valor=float(liquidacion_general.igv_id.valor),
-                        periodo_inicio=liquidacion_general.igv_id.periodo_inicio.isoformat() if liquidacion_general.igv_id.periodo_inicio else None,
-                    )
-                    if liquidacion_general.igv_id
-                    else None
-                ),
-                uit=(
-                    UitResult(
-                        id=str(liquidacion_general.uit_id.id),
-                        valor=float(liquidacion_general.uit_id.valor),
-                        periodo_inicio=liquidacion_general.uit_id.periodo_inicio.isoformat() if liquidacion_general.uit_id.periodo_inicio else None,
-                    )
-                    if liquidacion_general.uit_id
-                    else None
-                ),
-                proyecto=proyecto_result,
-                contacto=contacto_result,
-                revisiones_previas=revisiones_previas,
-                delegados=delegados,
-                tipo_liquidacion=(
-                    TipoLiquidacionResult(
-                        codigo=liquidacion_general.tipo_liquidacion.codigo,
-                        nombre=liquidacion_general.tipo_liquidacion.nombre,
-                    )
-                    if liquidacion_general.tipo_liquidacion
-                    else None
-                ),
-            ),
+            liquidacion_general=general_result,
             liquidacion_especifica=LiquidacionEspecificaEdificacionesResult(
                 id=str(edificacion.id),
                 numero=edificacion.numero,
@@ -499,70 +387,10 @@ class LiquidacionEdificacionesFlujo:
         liquidacion_po,
         usuario_id: int,
     ) -> EdificacionesPrimeraRevisionResult:
-        """Maps ORM objects to domain Result."""
-        # Refresh to get calculated fields
+        """Maps ORM objects to domain Result. Delegates common mapping to core."""
         liquidacion_general.refresh_from_db()
 
-        # Primera revisión: no hay previas
-        revisiones_previas = []
-
-        # Build EntidadResult
-        entidad_result = None
-        if hasattr(liquidacion_general, 'proyecto') and liquidacion_general.proyecto:
-            proyecto = liquidacion_general.proyecto
-            if hasattr(proyecto, 'entidad_razon_social') and proyecto.entidad_razon_social:
-                # Fetch entidad for tipo_documento and numero_documento
-                entidad_result = EntidadResult(
-                    razon_social=proyecto.entidad_razon_social,
-                    tipo_documento=getattr(proyecto, 'entidad_tipo_documento', None) or "",
-                    numero_documento=getattr(proyecto, 'entidad_numero_documento', None) or "",
-                )
-        
-        # Build ProyectoResult
-        proyecto = liquidacion_general.proyecto
-        distrito_result = None
-        if proyecto.distrito_id:
-            distrito = proyecto.distrito
-            if distrito:
-                distrito_result = DistritoResult(
-                    id=str(distrito.id),
-                    nombre=distrito.nombre,
-                    ubigeo=getattr(distrito, "ubigeo", None),
-                    provincia=(
-                        ProvinciaResult(
-                            id=str(distrito.provincia.id),
-                            nombre=distrito.provincia.nombre,
-                            departamento=(
-                                DepartamentoResult(
-                                    id=str(distrito.provincia.departamento.id),
-                                    nombre=distrito.provincia.departamento.nombre,
-                                )
-                                if distrito.provincia.departamento
-                                else None
-                            ),
-                        )
-                        if distrito.provincia
-                        else None
-                    ),
-                    departamento=(
-                        DepartamentoResult(
-                            id=str(distrito.provincia.departamento.id),
-                            nombre=distrito.provincia.departamento.nombre,
-                        )
-                        if distrito.provincia and distrito.provincia.departamento
-                        else None
-                    ),
-                )
-        proyecto_result = ProyectoResult(
-            id=str(proyecto.id),
-            denominacion=proyecto.denominacion,
-            nombre_propietario=proyecto.nombre_propietario,
-            direccion=proyecto.direccion,
-            distrito=distrito_result,
-            entidad=entidad_result,
-        )
-
-        # Build ContactoResult (inline contacto principal, opcional)
+        # Build ContactoResult inline (specific mapping not extracted to core)
         contacto_result = None
         if liquidacion_general.contacto:
             contacto = liquidacion_general.contacto
@@ -577,60 +405,17 @@ class LiquidacionEdificacionesFlujo:
                 email=contacto.email,
             )
 
+        # Core: builds LiquidacionGeneralResult (delegados=[] for primera revision)
+        general_result = self.general_core.build_general_result(
+            liquidacion_general=liquidacion_general,
+            usuario_id=usuario_id,
+            contacto_result=contacto_result,
+            revisiones_previas=None,
+            delegados=None,
+        )
+
         return EdificacionesPrimeraRevisionResult(
-            liquidacion_general=LiquidacionGeneralResult(
-                id=str(liquidacion_general.id),
-                municipalidad=MunicipalidadResult(
-                    id=str(liquidacion_general.municipalidad.id),
-                    codigo=liquidacion_general.municipalidad.codigo,
-                    nombre=liquidacion_general.municipalidad.nombre,
-                ),
-                usuario_creador=UsuarioCreadorResult(
-                    id=str(usuario_id),
-                    nombres=getattr(liquidacion_general.usuario_creador, "nombres", None),
-                    apellidos=getattr(liquidacion_general.usuario_creador, "apellidos", None),
-                    email=getattr(liquidacion_general.usuario_creador, "email", None),
-                    dni=getattr(liquidacion_general.usuario_creador, "dni", None),
-                    username=getattr(liquidacion_general.usuario_creador, "username", None),
-                ),
-                fecha_registro=liquidacion_general.created_at.isoformat(),
-                expediente=liquidacion_general.expediente,
-                observacion=liquidacion_general.observacion,
-                numero_revision=liquidacion_general.numero_revision,
-                sub_total=float(liquidacion_general.sub_total),
-                total=float(liquidacion_general.total),
-                retencion=liquidacion_general.retencion,
-                igv=(
-                    IgvResult(
-                        id=str(liquidacion_general.igv_id.id),
-                        valor=float(liquidacion_general.igv_id.valor),
-                        periodo_inicio=liquidacion_general.igv_id.periodo_inicio.isoformat() if liquidacion_general.igv_id.periodo_inicio else None,
-                    )
-                    if liquidacion_general.igv_id
-                    else None
-                ),
-                uit=(
-                    UitResult(
-                        id=str(liquidacion_general.uit_id.id),
-                        valor=float(liquidacion_general.uit_id.valor),
-                        periodo_inicio=liquidacion_general.uit_id.periodo_inicio.isoformat() if liquidacion_general.uit_id.periodo_inicio else None,
-                    )
-                    if liquidacion_general.uit_id
-                    else None
-                ),
-                proyecto=proyecto_result,
-                contacto=contacto_result,
-                revisiones_previas=revisiones_previas,
-                delegados=[],
-                tipo_liquidacion=(
-                    TipoLiquidacionResult(
-                        codigo=liquidacion_general.tipo_liquidacion.codigo,
-                        nombre=liquidacion_general.tipo_liquidacion.nombre,
-                    )
-                    if liquidacion_general.tipo_liquidacion
-                    else None
-                ),
-            ),
+            liquidacion_general=general_result,
             liquidacion_especifica=LiquidacionEspecificaEdificacionesResult(
                 id=str(edificacion.id),
                 numero=edificacion.numero,
@@ -638,7 +423,7 @@ class LiquidacionEdificacionesFlujo:
             liquidacion_tipo=LiquidacionPorcentajeObraResult(
                 id=str(liquidacion_po.id),
                 liquidacion_general_id=str(liquidacion_po.liquidacion_general_id),
-                tipo_tramite=liquidacion_po.tipo_tramite,  # NULL for now
+                tipo_tramite=liquidacion_po.tipo_tramite,
                 valor_declarado=liquidacion_po.valor_declarado,
                 porcentaje_liquidacion=liquidacion_po.porcentaje_liquidacion,
                 derecho_minimo=liquidacion_po.derecho_minimo,

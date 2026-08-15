@@ -14,138 +14,28 @@ Tests cover:
 - Contact upsert: create new when fields differ
 - revisiones_previas array in response (empty for primera, populated for 3 and 5)
 - GET /ultima-revision returns highest numero_revision
+
+Fixtures shared via conftest.py: municipalidad, proyecto, ubigeo_distrito, auth_client,
+    api_client, create_user, igv_vigente, uit_vigente, tipo_edificacion,
+    tarifa_liquidacion_base_edificacion, especialidad_estructuras, especialidad_arquitectura,
+    tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
+    tarifa_porcentaje_obra_installaciones, derecho_porcentaje_vigente.
+
+Local fixtures (not in conftest): tarifa_porcentaje_obra_base2 (second base+tarifa for
+    explicit mode), valid_distrito_id, valid_tarifa_ids, primera_revision_payload.
 """
 import pytest
 import uuid
 from decimal import Decimal
 from datetime import date
 
-from ninja.testing import TestClient
-from ninja_jwt.tokens import AccessToken
-from config.api import api
-from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
-from modules.entidades.domain.models.municipalidad import Municipalidad
-from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
-from modules.finanzas.domain.models.impuestos import UIT, IGV
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorcentajeObra,
-    DerechoPorcentajeObra,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
-# ── Fixtures ────────────────────────────────────────────────────────────────
-
-@pytest.fixture
-def ubigeo_departamento(db):
-    return UbigeoDepartamento.objects.create(nombre="LIMA")
-
-
-@pytest.fixture
-def ubigeo_provincia(db, ubigeo_departamento):
-    return UbigeoProvincia.objects.create(
-        departamento=ubigeo_departamento,
-        nombre="LIMA",
-    )
-
-
-@pytest.fixture
-def ubigeo_distrito(db, ubigeo_provincia):
-    return UbigeoDistrito.objects.create(
-        provincia=ubigeo_provincia,
-        nombre="MIRAFLORES",
-        ubigeo="150132",
-    )
-
-
-@pytest.fixture
-def create_user(db):
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-    return User.objects.create_user(
-        username="testuser_nueva_rev",
-        email="test_nueva_rev@example.com",
-        password="testpass123",
-        dni="12345678",
-    )
-
-
-@pytest.fixture
-def auth_client(api_client, create_user):
-    user = create_user
-    token = AccessToken.for_user(user)
-    api_client.headers.update({"Authorization": f"Bearer {token}"})
-    api_client.user = user
-    return api_client
-
-
-@pytest.fixture
-def api_client(db):
-    return TestClient(api)
-
-
-@pytest.fixture
-def municipalidad(db, ubigeo_distrito):
-    return Municipalidad.objects.create(
-        codigo="M001",
-        nombre="Municipalidad de Miraflores",
-        distrito=ubigeo_distrito,
-    )
-
-
-@pytest.fixture
-def tarifa_liquidacion_base_edificacion(db, tipo_edificacion):
-    return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=tipo_edificacion,
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def especialidad_estructuras(db):
-    return Especialidad.objects.create(
-        codigo="E01",
-        slug="estructuras",
-        nombre="Estructuras",
-    )
-
-
-@pytest.fixture
-def especialidad_arquitectura(db):
-    return Especialidad.objects.create(
-        codigo="A01",
-        slug="arquitectura",
-        nombre="Arquitectura",
-    )
-
-
-@pytest.fixture
-def tarifa_porcentaje_obra_estructuras(db, tarifa_liquidacion_base_edificacion):
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        porcentaje_liquidacion=Decimal("0.0010"),
-    )
-
-
-@pytest.fixture
-def tarifa_porcentaje_obra_arquitectura(db, tarifa_liquidacion_base_edificacion):
-    """Second TarifaPorcentajeObra (sin especialidad — tarifa única por base)."""
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        porcentaje_liquidacion=Decimal("0.0005"),
-    )
-
-
-@pytest.fixture
-def tarifa_porcentaje_obra_installaciones(db, tarifa_liquidacion_base_edificacion):
-    """Third TarifaPorcentajeObra (sin especialidad — tarifa única por base)."""
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        porcentaje_liquidacion=Decimal("0.0003"),
-    )
-
+# ── Local Fixtures (not in conftest) ────────────────────────────────────────────
 
 @pytest.fixture
 def tarifa_porcentaje_obra_base2(db, tipo_edificacion):
@@ -162,42 +52,14 @@ def tarifa_porcentaje_obra_base2(db, tipo_edificacion):
 
 
 @pytest.fixture
-def derecho_porcentaje_vigente(db):
-    return DerechoPorcentajeObra.objects.create(
-        derecho_minimo=Decimal("500.00"),
-        derecho_maximo=Decimal("50000.00"),
-        porcentaje_minimo_uit=Decimal("0.10"),
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def igv_vigente(db):
-    return IGV.objects.create(
-        valor=Decimal("0.18"),
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def uit_vigente(db):
-    return UIT.objects.create(
-        valor=Decimal("5150.00"),
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
 def valid_distrito_id(ubigeo_distrito):
+    """District ID from conftest ubigeo_distrito."""
     return str(ubigeo_distrito.id)
 
 
 @pytest.fixture
 def valid_tarifa_ids(tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_base2, especialidad_estructuras, especialidad_arquitectura):
-    """Return IDs of all two tarifas as dicts with especialidad_id (new contract)."""
+    """Return IDs of two tarifas as dicts with especialidad_id (new contract)."""
     return [
         {"id": str(tarifa_porcentaje_obra_estructuras.id), "esp_id": str(especialidad_estructuras.id)},
         {"id": str(tarifa_porcentaje_obra_base2.id), "esp_id": str(especialidad_arquitectura.id)},
@@ -263,6 +125,8 @@ def crear_primera_revision(auth_client, payload):
 def test_crear_revision_3_desde_revision_1(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
+    tarifa_porcentaje_obra_installaciones,
+    especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones,
     primera_revision_payload
 ):
     """
@@ -305,7 +169,11 @@ def test_crear_revision_3_desde_revision_1(
             "datos": {
                 "valor_declarado": 150000.00,
             },
-            "tarifas": [],
+            "tarifas": [
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_installaciones.id), "especialidad_id": str(especialidad_installaciones.id)},
+            ],
         },
     }
 
@@ -327,6 +195,8 @@ def test_crear_revision_3_desde_revision_1(
 def test_crear_revision_5_desde_revision_3(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
+    tarifa_porcentaje_obra_installaciones,
+    especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones,
     primera_revision_payload
 ):
     """
@@ -369,7 +239,11 @@ def test_crear_revision_5_desde_revision_3(
             "datos": {
                 "valor_declarado": 150000.00,
             },
-            "tarifas": [],
+            "tarifas": [
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_installaciones.id), "especialidad_id": str(especialidad_installaciones.id)},
+            ],
         },
     }
 
@@ -413,7 +287,11 @@ def test_crear_revision_5_desde_revision_3(
             "datos": {
                 "valor_declarado": 200000.00,
             },
-            "tarifas": [],
+            "tarifas": [
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_installaciones.id), "especialidad_id": str(especialidad_installaciones.id)},
+            ],
         },
     }
 
@@ -437,6 +315,8 @@ def test_crear_revision_5_desde_revision_3(
 def test_previa_no_existe_devuelve_404(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
+    tarifa_porcentaje_obra_installaciones,
+    especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones,
     primera_revision_payload
 ):
     """
@@ -469,7 +349,11 @@ def test_previa_no_existe_devuelve_404(
             "datos": {
                 "valor_declarado": 150000.00,
             },
-            "tarifas": [],
+            "tarifas": [
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_installaciones.id), "especialidad_id": str(especialidad_installaciones.id)},
+            ],
         },
     }
 
@@ -485,6 +369,8 @@ def test_previa_no_existe_devuelve_404(
 def test_max_revisiones_excedido_devuelve_400(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
+    tarifa_porcentaje_obra_installaciones,
+    especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones,
     primera_revision_payload
 ):
     """
@@ -500,7 +386,11 @@ def test_max_revisiones_excedido_devuelve_400(
         "liquidacion_general": primera_revision_payload["liquidacion_general"],
         "liquidacion_especifica": {
             "datos": {"valor_declarado": 150000.00},
-            "tarifas": [],
+            "tarifas": [
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_installaciones.id), "especialidad_id": str(especialidad_installaciones.id)},
+            ],
         },
     }
     response_r3 = auth_client.post(
@@ -517,7 +407,11 @@ def test_max_revisiones_excedido_devuelve_400(
         "liquidacion_general": primera_revision_payload["liquidacion_general"],
         "liquidacion_especifica": {
             "datos": {"valor_declarado": 200000.00},
-            "tarifas": [],
+            "tarifas": [
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_installaciones.id), "especialidad_id": str(especialidad_installaciones.id)},
+            ],
         },
     }
     response_r5 = auth_client.post(
@@ -532,7 +426,11 @@ def test_max_revisiones_excedido_devuelve_400(
         "liquidacion_general": primera_revision_payload["liquidacion_general"],
         "liquidacion_especifica": {
             "datos": {"valor_declarado": 250000.00},
-            "tarifas": [],
+            "tarifas": [
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_installaciones.id), "especialidad_id": str(especialidad_installaciones.id)},
+            ],
         },
     }
 
@@ -550,6 +448,8 @@ def test_max_revisiones_excedido_devuelve_400(
 def test_ultima_revision_retorna_mayor_numero(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
+    tarifa_porcentaje_obra_installaciones,
+    especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones,
     primera_revision_payload
 ):
     """
@@ -566,7 +466,11 @@ def test_ultima_revision_retorna_mayor_numero(
         "liquidacion_general": primera_revision_payload["liquidacion_general"],
         "liquidacion_especifica": {
             "datos": {"valor_declarado": 150000.00},
-            "tarifas": [],
+            "tarifas": [
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_installaciones.id), "especialidad_id": str(especialidad_installaciones.id)},
+            ],
         },
     }
     response_r3 = auth_client.post(
@@ -630,6 +534,8 @@ def test_primera_revision_revisiones_previas_vacia(
 def test_contacto_upsert_reutiliza_existente(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
+    tarifa_porcentaje_obra_installaciones,
+    especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones,
     primera_revision_payload
 ):
     """
@@ -648,7 +554,11 @@ def test_contacto_upsert_reutiliza_existente(
         },
         "liquidacion_especifica": {
             "datos": {"valor_declarado": 150000.00},
-            "tarifas": [],
+            "tarifas": [
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_installaciones.id), "especialidad_id": str(especialidad_installaciones.id)},
+            ],
         },
     }
 
@@ -667,6 +577,8 @@ def test_contacto_upsert_reutiliza_existente(
 def test_contacto_upsert_crea_nuevo_si_diferente(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
+    tarifa_porcentaje_obra_installaciones,
+    especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones,
     primera_revision_payload
 ):
     """
@@ -694,7 +606,11 @@ def test_contacto_upsert_crea_nuevo_si_diferente(
         },
         "liquidacion_especifica": {
             "datos": {"valor_declarado": 150000.00},
-            "tarifas": [],
+            "tarifas": [
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_installaciones.id), "especialidad_id": str(especialidad_installaciones.id)},
+            ],
         },
     }
 

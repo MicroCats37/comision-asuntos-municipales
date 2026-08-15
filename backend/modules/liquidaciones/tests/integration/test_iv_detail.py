@@ -13,7 +13,6 @@ Fixtures are shared via conftest.py (ubigeo, municipalidad, auth, tarifas, etc.)
 """
 import pytest
 import uuid
-from datetime import date
 from decimal import Decimal
 
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
@@ -24,49 +23,9 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacio
     LiquidacionPorcentajeObra,
     LiquidacionPorcentajeObraDetalle,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
-# ── IV-specific Tarifa Fixtures ─────────────────────────────────────────────────
-
-@pytest.fixture
-def tarifa_liquidacion_base_iv(db, tipo_impacto_vial):
-    """Create a TarifaLiquidacionBase for Impacto Vial."""
-    from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
-        TarifaLiquidacionBase,
-    )
-    
-    return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=tipo_impacto_vial,
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def especialidad_impacto_vial(db):
-    """Create an EspecialidadRevision for Impacto Vial testing."""
-    from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
-    return Especialidad.objects.create(
-        codigo="IV01",
-        slug="impacto-vial",
-        nombre="Impacto Vial",
-    )
-
-
-@pytest.fixture
-def tarifa_porcentaje_obra_iv(db, tarifa_liquidacion_base_iv):
-    """Create a TarifaPorcentajeObra for Impacto Vial (sin especialidad — tarifa única por base)."""
-    from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
-        TarifaPorcentajeObra,
-    )
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_iv,
-        porcentaje_liquidacion=Decimal("0.0010"),  # 0.10%
-    )
-
-
-# ── Fixture ────────────────────────────────────────────────────────────────────
+# ── Fixture (uses conftest fixtures) ─────────────────────────────────────────
 
 @pytest.fixture
 def liquidacion_iv_detail(

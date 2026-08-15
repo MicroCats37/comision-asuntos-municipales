@@ -12,19 +12,15 @@
  *
  * Endpoints:
  * - GET /liquidaciones/inspeccion-obra/tarifas/vigentes → { tarifas: [{ id, costo_por_visita, categoria }] }
+ *   (via useTarifasVigentesVisitas)
  * - POST /liquidaciones/inspeccion-obra/cotizar → { datos: {...}, calculo: { monto_bruto, subtotal, total } }
  */
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Calculator, Loader2, Minus, Plus } from "lucide-react";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import api from "@/lib/api";
-
-interface TarifaVisita {
-  id: string;
-  costo_por_visita: number;
-  categoria: string;
-}
+import { useTarifasVigentesVisitas } from "../../hooks/useTarifasVigentes";
 
 interface CotizacionVisitasOutput {
   datos: {
@@ -74,13 +70,8 @@ export function TarifasVisitasNuevaRevisionSmartField({
   const [quote, setQuote] = useState<CotizacionVisitasOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: tarifas, isLoading } = useQuery<TarifaVisita[]>({
-    queryKey: ["liquidaciones", "inspeccion-obra", "tarifas-vigentes"],
-    queryFn: async () => {
-      const { data } = await api.get("/liquidaciones/inspeccion-obra/tarifas/vigentes");
-      return data.data?.tarifas || [];
-    },
-  });
+  const { data: tarifasData, isLoading } = useTarifasVigentesVisitas();
+  const tarifas = tarifasData?.tarifas ?? [];
 
   // Categorías únicas disponibles (orden estables: A, B, C...)
   const categorias = useMemo(

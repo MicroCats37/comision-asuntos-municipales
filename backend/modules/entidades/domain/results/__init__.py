@@ -1,6 +1,5 @@
 """Domain Results — DTOs de salida de servicios externos."""
 
-from .sunat_results import SunatInstitucionResult
-from .reniec_results import ReniecPersonaResult
+from .consulta_results import ConsultaDocumentoResult
 
-__all__ = ["SunatInstitucionResult", "ReniecPersonaResult"]
+__all__ = ["ConsultaDocumentoResult"]

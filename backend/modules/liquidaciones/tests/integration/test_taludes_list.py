@@ -13,7 +13,6 @@ Tests cover:
 Fixtures are shared via conftest.py (ubigeo, municipalidad, auth, tarifas, etc.).
 """
 import pytest
-from datetime import date
 from decimal import Decimal
 
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
@@ -24,49 +23,11 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacio
     LiquidacionPorcentajeObra,
     LiquidacionPorcentajeObraDetalle,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
-# ── Taludes-specific Tarifa Fixtures ─────────────────────────────────────────────────
-
-@pytest.fixture
-def tarifa_liquidacion_base_taludes(db, tipo_taludes):
-    """Create a TarifaLiquidacionBase for Taludes."""
-    from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
-        TarifaLiquidacionBase,
-    )
-    
-    return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=tipo_taludes,
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def especialidad_taludes(db):
-    """Create an EspecialidadRevision for Taludes testing."""
-    from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
-    return Especialidad.objects.create(
-        codigo="T01",
-        slug="taludes",
-        nombre="Taludes",
-    )
-
-
-@pytest.fixture
-def tarifa_porcentaje_obra_taludes(db, tarifa_liquidacion_base_taludes):
-    """Create a TarifaPorcentajeObra for Taludes (sin especialidad — tarifa única por base)."""
-    from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
-        TarifaPorcentajeObra,
-    )
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_taludes,
-        porcentaje_liquidacion=Decimal("0.0010"),  # 0.10%
-    )
-
-
-# ── Fixture ────────────────────────────────────────────────────────────────────
+# ── Fixture (uses conftest fixtures: municipalidad, proyecto, create_user,
+#    derecho_porcentaje_vigente, igv_vigente, uit_vigente,
+#    tarifa_porcentaje_obra_taludes, especialidad_taludes, tipo_taludes) ──────────
 
 @pytest.fixture
 def liquidacion_taludes_created(

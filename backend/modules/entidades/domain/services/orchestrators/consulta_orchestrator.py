@@ -1,17 +1,13 @@
 """
 ConsultaOrchestrator — fachada asíncrona ligera para consulta de datos externos.
 
-Delega a ConsultaSunatFlujo y ConsultaReniecFlujo para consultar
-datos de instituciones (SUNAT) y personas (RENIEC).
+Delega a ConsultaExternaFlujo para consultar datos de instituciones (SUNAT) y personas (RENIEC).
 """
 
 from injector import inject
 
-from modules.entidades.domain.results import SunatInstitucionResult, ReniecPersonaResult
-from modules.entidades.domain.services.flujos.consulta_externo_flujo import (
-    ConsultaSunatFlujo,
-    ConsultaReniecFlujo,
-)
+from modules.entidades.domain.results import ConsultaDocumentoResult
+from modules.entidades.domain.services.flujos.consulta_externo_flujo import ConsultaExternaFlujo
 
 
 class ConsultaOrchestrator:
@@ -24,38 +20,24 @@ class ConsultaOrchestrator:
     @inject
     def __init__(
         self,
-        sunat_flujo: ConsultaSunatFlujo,
-        reniec_flujo: ConsultaReniecFlujo,
+        externa_flujo: ConsultaExternaFlujo,
     ):
-        self.sunat_flujo = sunat_flujo
-        self.reniec_flujo = reniec_flujo
+        self.externa_flujo = externa_flujo
 
-    async def consultar_sunat(self, ruc: str) -> SunatInstitucionResult:
+    async def consultar_documento(self, documento: str) -> ConsultaDocumentoResult:
         """
-        Consulta datos de institución por RUC vía SUNAT.
+        Consulta datos de documento por número (DNI o RUC).
+
+        Auto-detecta: 8 dígitos → DNI (RENIEC), 11 dígitos → RUC (SUNAT).
 
         Args:
-            ruc: Número de RUC (11 dígitos).
+            documento: Número de documento (8 o 11 dígitos).
 
         Returns:
-            SunatInstitucionResult con los datos de la institución.
+            ConsultaDocumentoResult con tipo_documento, numero_documento, razon_social.
 
         Raises:
-            SunatNotFoundError: Si el RUC no existe.
+            SunatNotFoundError: Si el RUC (11 dígitos) no existe.
+            ReniecNotFoundError: Si el DNI (8 dígitos) no existe.
         """
-        return await self.sunat_flujo._proceso_consulta_sunat(ruc)
-
-    async def consultar_reniec(self, dni: str) -> ReniecPersonaResult:
-        """
-        Consulta datos de persona por DNI vía RENIEC.
-
-        Args:
-            dni: Número de DNI (8 dígitos).
-
-        Returns:
-            ReniecPersonaResult con los datos de la persona.
-
-        Raises:
-            ReniecNotFoundError: Si el DNI no existe.
-        """
-        return await self.reniec_flujo._proceso_consulta_reniec(dni)
+        return await self.externa_flujo._proceso_consulta_documento(documento)

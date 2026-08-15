@@ -27,6 +27,9 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     DerechoPorcentajeObra,
 )
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
+    LiquidacionEspecialidadDisponibles,
+)
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
@@ -121,23 +124,33 @@ def especialidad_iv_urbanismo(db):
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_transito(db, tarifa_liquidacion_base_iv, especialidad_iv_transito):
-    """Create a TarifaPorcentajeObra for Tránsito (Transporte)."""
+def tarifa_porcentaje_obra_unica(db, tarifa_liquidacion_base_iv):
+    """Create a single TarifaPorcentajeObra (tarifa única per base).
+
+    New contract: one TarifaPorcentajeObra per TarifaLiquidacionBase,
+    with LiquidacionEspecialidadDisponibles providing the specialty list.
+    """
     return TarifaPorcentajeObra.objects.create(
         tarifa_base=tarifa_liquidacion_base_iv,
-        especialidad=especialidad_iv_transito,
         porcentaje_liquidacion=Decimal("0.0010"),  # 0.10%
     )
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_urbanismo(db, tarifa_liquidacion_base_iv, especialidad_iv_urbanismo):
-    """Create a TarifaPorcentajeObra for Urbanismo."""
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_iv,
-        especialidad=especialidad_iv_urbanismo,
-        porcentaje_liquidacion=Decimal("0.0005"),  # 0.05%
-    )
+def especialidades_disponibles_impacto_vial(
+    db, tipo_impacto_vial, especialidad_iv_transito, especialidad_iv_urbanismo
+):
+    """Create LiquidacionEspecialidadDisponibles for Impacto Vial specialties."""
+    return [
+        LiquidacionEspecialidadDisponibles.objects.create(
+            tipo_liquidacion=tipo_impacto_vial,
+            especialidad=esp,
+            activo=True,
+            periodo_inicio=date(2024, 1, 1),
+            periodo_fin=None,
+        )
+        for esp in [especialidad_iv_transito, especialidad_iv_urbanismo]
+    ]
 
 
 @pytest.fixture
@@ -185,7 +198,7 @@ def auth_client(api_client, create_user):
 @pytest.mark.django_db
 def test_e2e_impacto_vial_flow(
     auth_client, municipalidad, igv_vigente, uit_vigente,
-    tarifa_porcentaje_obra_transito, tarifa_porcentaje_obra_urbanismo,
+    tarifa_porcentaje_obra_unica, especialidades_disponibles_impacto_vial,
     derecho_porcentaje_vigente, ubigeo_distrito
 ):
     """
@@ -209,24 +222,22 @@ def test_e2e_impacto_vial_flow(
     result = data["data"]
     assert "tarifas" in result, "Result should have 'tarifas' wrapper"
 
-    # Step 2: Extract tarifas from response
+    # Step 2: Extract the single tarifa and especialidades from response
     tarifas = result["tarifas"]
-    assert len(tarifas) == 2, \
-        f"Expected 2 tarifas, got {len(tarifas)}"
+    assert len(tarifas) == 1, \
+        f"Expected 1 tarifa (unique per periodo), got {len(tarifas)}"
 
-    # Extract IDs and especialidades
-    tarifa_info = []
-    for tarifa in tarifas:
-        tarifa_info.append({
-            "id": tarifa["id"],
-            "especialidad": tarifa["especialidad"],
-            "porcentaje_liquidacion": tarifa["porcentaje_liquidacion"],
-        })
+    tarifa_id = str(tarifas[0]["id"])
+
+    especialidades = result["especialidades_disponibles"]
+    assert len(especialidades) == 2, \
+        f"Expected 2 especialidades_disponibles, got {len(especialidades)}"
 
     municipalidad_id = str(municipalidad.id)
     distrito_id = str(ubigeo_distrito.id)
 
     # Step 3: Construct payload using explicit mode (tarifas array)
+    # New contract: one tarifa repeated with each especialidad_id
     payload = {
         "liquidacion_general": {
             "municipalidad_id": municipalidad_id,
@@ -249,8 +260,8 @@ def test_e2e_impacto_vial_flow(
                 "valor_declarado": 100000.00,
             },
             "tarifas": [
-                {"tarifa_porcentaje_obra_id": str(tarifa_info[0]["id"])},
-                {"tarifa_porcentaje_obra_id": str(tarifa_info[1]["id"])},
+                {"tarifa_porcentaje_obra_id": tarifa_id, "especialidad_id": str(especialidades[0]["id"])},
+                {"tarifa_porcentaje_obra_id": tarifa_id, "especialidad_id": str(especialidades[1]["id"])},
             ],
         },
     }
@@ -284,8 +295,8 @@ def test_e2e_impacto_vial_flow(
         "Result should have 'liquidacion_tipo' wrapper"
     lt = result["liquidacion_tipo"]
     assert "detalles" in lt, "liquidacion_tipo should have 'detalles'"
-    assert len(lt["detalles"]) == len(tarifas), \
-        f"Expected {len(tarifas)} detalles (same as fetched tarifas), got {len(lt['detalles'])}"
+    assert len(lt["detalles"]) == len(especialidades), \
+        f"Expected {len(especialidades)} detalles (one per especialidad), got {len(lt['detalles'])}"
 
     # Assert liquidacion_especifica is in response
     assert "liquidacion_especifica" in result, \

@@ -1,38 +1,25 @@
 /**
  * Hook para crear liquidaciones de Mecánica de Suelos (primera revisión).
- * Usa useApiCreate genérico del proyecto.
+ * Usa useGenericCreateMutation (cache de lista + detalle) + useApiCreate interno.
  *
  * Endpoint: POST /liquidaciones/mecanica-suelos/nueva-liquidacion/primera-revision
  * Payload M2: liquidacion_especifica { datos: { area_solicitada }, tarifa: { tarifa_m2_id } }
  */
-import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { useApiCreate } from "@/hooks";
+import { useGenericCreateMutation } from "@/hooks/cache";
 import type { MecanicaSuelosFormData } from "../schemas/liquidacion-mecanica-suelos-form.schema";
 
 const BASE_URL = "/liquidaciones/mecanica-suelos";
+const LIST_KEY = ["liquidaciones", "mecanica-suelos"] as const;
 
 export function useCrearMecanicaSuelos() {
-  const queryClient = useQueryClient();
-
-  const mutation = useApiCreate<unknown, { liquidacion_general: unknown; liquidacion_especifica: unknown }>({
+  const mutation = useGenericCreateMutation<
+    { id: string | number },
+    { liquidacion_general: unknown; liquidacion_especifica: unknown }
+  >({
     url: `${BASE_URL}/nueva-liquidacion/primera-revision`,
-    options: {
-      onSuccess: (created) => {
-        const newItem = (created as { data?: unknown })?.data ?? created;
-        queryClient.setQueriesData<{ items: unknown[]; total: number }>(
-          { queryKey: ["liquidaciones", "mecanica-suelos"] },
-          (old) => {
-            if (!old || !Array.isArray(old.items)) return old;
-            return {
-              ...old,
-              items: [newItem, ...old.items],
-              total: (old.total ?? 0) + 1,
-            };
-          },
-        );
-      },
-    },
+    queryKey: LIST_KEY,
+    listShape: "paginated",
   });
 
   // Wrapper that formats payload as { liquidacion_general, liquidacion_especifica } for the API

@@ -4,6 +4,10 @@ Integration tests for Edificaciones /nueva-liquidacion/primera-revision endpoint
 Tests use Ninja's TestClient (not Django's Client) for proper async handling.
 All tests use @pytest.mark.django_db for database access.
 
+Fixtures: All shared fixtures come from conftest.py (tests/conftest.py), which
+re-exports from tests/fixtures/*. Fixtures that are local to this file (not shared)
+are defined at the bottom of the file.
+
 Tests cover:
 - Hybrid mode (auto-fill empty array)
 - Explicit mode (3 tarifas sent)
@@ -18,198 +22,15 @@ import uuid
 from decimal import Decimal
 from datetime import date
 
-from ninja.testing import TestClient
-from ninja_jwt.tokens import AccessToken
-from config.api import api
-from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
-from modules.entidades.domain.models.municipalidad import Municipalidad
-from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
-from modules.finanzas.domain.models.impuestos import UIT, IGV
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorcentajeObra,
-    DerechoPorcentajeObra,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
+
+from modules.liquidaciones.tests.fixtures.factories import make_payload_po
 
 
-# ── Fixtures ────────────────────────────────────────────────────────────────
-
-@pytest.fixture
-def ubigeo_departamento(db):
-    """Create a department for testing."""
-    return UbigeoDepartamento.objects.create(nombre="LIMA")
-
-
-@pytest.fixture
-def ubigeo_provincia(db, ubigeo_departamento):
-    """Create a province for testing."""
-    return UbigeoProvincia.objects.create(
-        departamento=ubigeo_departamento,
-        nombre="LIMA",
-    )
-
-
-@pytest.fixture
-def ubigeo_distrito(db, ubigeo_provincia):
-    """Create a district for testing."""
-    return UbigeoDistrito.objects.create(
-        provincia=ubigeo_provincia,
-        nombre="MIRAFLORES",
-        ubigeo="150132",
-    )
-
-
-@pytest.fixture
-def create_user(db):
-    """Create a test user (needed for FK to usuarios_usuario on LiquidacionGeneral)."""
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-    return User.objects.create_user(
-        username="testuser_edif",
-        email="test_edif@example.com",
-        password="testpass123",
-        dni="12345678",
-    )
-
-
-@pytest.fixture
-def auth_client(api_client, create_user):
-    """Authenticate the test client using JWT token."""
-    user = create_user
-    token = AccessToken.for_user(user)
-    api_client.headers.update({"Authorization": f"Bearer {token}"})
-    api_client.user = user
-    return api_client
-
-
-@pytest.fixture
-def municipalidad(db, ubigeo_distrito):
-    """Create a municipalidad for testing."""
-    return Municipalidad.objects.create(
-        codigo="M001",
-        nombre="Municipalidad de Miraflores",
-        distrito=ubigeo_distrito,
-    )
-
-
-@pytest.fixture
-def tarifa_liquidacion_base_edificacion(db, tipo_edificacion):
-    """Create a TarifaLiquidacionBase for Edificaciones."""
-    
-    return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=tipo_edificacion,
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def especialidad_estructuras(db):
-    """Create an EspecialidadRevision for Edificaciones testing."""
-    return Especialidad.objects.create(
-        codigo="E01",
-        slug="estructuras",
-        nombre="Estructuras",
-    )
-
-
-@pytest.fixture
-def especialidad_arquitectura(db):
-    """Create an EspecialidadRevision for Edificaciones testing."""
-    return Especialidad.objects.create(
-        codigo="A01",
-        slug="arquitectura",
-        nombre="Arquitectura",
-    )
-
-
-@pytest.fixture
-def especialidad_installaciones(db):
-    """Create an EspecialidadRevision for Edificaciones testing."""
-    return Especialidad.objects.create(
-        codigo="I01",
-        slug="instalaciones",
-        nombre="Instalaciones",
-    )
-
-
-@pytest.fixture
-def tarifa_porcentaje_obra_estructuras(db, tarifa_liquidacion_base_edificacion):
-    """Create a TarifaPorcentajeObra (tarifa única por base, sin especialidad FK)."""
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        porcentaje_liquidacion=Decimal("0.0010"),  # 0.10%
-    )
-
-
-@pytest.fixture
-def tarifa_porcentaje_obra_arquitectura(db, tarifa_liquidacion_base_edificacion):
-    """Create a second TarifaPorcentajeObra for Arquitectura (different base)."""
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        porcentaje_liquidacion=Decimal("0.0005"),  # 0.05%
-    )
-
-
-@pytest.fixture
-def tarifa_porcentaje_obra_installaciones(db, tarifa_liquidacion_base_edificacion):
-    """Create a third TarifaPorcentajeObra for Instalaciones (different base)."""
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        porcentaje_liquidacion=Decimal("0.0003"),  # 0.03%
-    )
-
-
-@pytest.fixture
-def derecho_porcentaje_vigente(db):
-    """Create a DerechoPorcentajeObra vigente for testing."""
-    return DerechoPorcentajeObra.objects.create(
-        derecho_minimo=Decimal("500.00"),
-        derecho_maximo=Decimal("50000.00"),
-        porcentaje_minimo_uit=Decimal("0.10"),
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def igv_vigente(db):
-    """Create an IGV vigente for testing."""
-    return IGV.objects.create(
-        valor=Decimal("0.18"),
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def uit_vigente(db):
-    """Create a UIT vigente for testing."""
-    return UIT.objects.create(
-        valor=Decimal("5150.00"),
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def api_client(db):
-    """Ninja TestClient for testing Ninja endpoints with proper async handling."""
-    return TestClient(api)
-
-
-@pytest.fixture
-def valid_municipalidad_id(municipalidad):
-    """Return the ID of the municipalidad as a string."""
-    return str(municipalidad.id)
-
-
-@pytest.fixture
-def valid_distrito_id(ubigeo_distrito):
-    """Return the ID of the distrito as a string."""
-    return str(ubigeo_distrito.id)
-
+# ── Local-only fixtures (not in conftest) ────────────────────────────────────
 
 @pytest.fixture
 def tarifa_porcentaje_obra_base2(db, tipo_edificacion):
@@ -239,93 +60,13 @@ def tarifa_porcentaje_obra_base3(db, tipo_edificacion):
     )
 
 
-@pytest.fixture
-def valid_tarifa_ids(tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_base2, tarifa_porcentaje_obra_base3, especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones):
-    """Return IDs of all three tarifas as strings, each with its own base (new model: no especialidad FK)."""
-    return [
-        {"id": str(tarifa_porcentaje_obra_estructuras.id), "esp_id": str(especialidad_estructuras.id)},
-        {"id": str(tarifa_porcentaje_obra_base2.id), "esp_id": str(especialidad_arquitectura.id)},
-        {"id": str(tarifa_porcentaje_obra_base3.id), "esp_id": str(especialidad_installaciones.id)},
-    ]
-
-
-@pytest.fixture
-def valid_payload_auto_fill(valid_municipalidad_id, valid_distrito_id, especialidades_disponibles_edificacion):
-    """Return a valid payload with empty tarifas[] (auto-fill mode).
-
-    Depends on especialidades_disponibles_edificacion so auto-fill can combine
-    vigentes tarifas x vigentes especialidades.
-    """
-    return {
-        "liquidacion_general": {
-            "municipalidad_id": valid_municipalidad_id,
-            "expediente": "EXP-EDIF-2024-001",
-            "observacion": "Test auto-fill mode",
-            "proyecto": {
-                "denominacion": "Proyecto Edificaciones Test AutoFill",
-                "nombre_propietario": "Propietario Edif SAC",
-                "direccion": "Av. Edif 123, Lima",
-                "distrito_id": valid_distrito_id,
-                "entidad": {
-                    "tipo_documento": "RUC",
-                    "numero_documento": "20456789012",
-                    "razon_social": "Propietario Edif SAC",
-                },
-            },
-        },
-        "liquidacion_especifica": {
-            "datos": {
-                "valor_declarado": 100000.00,
-            },
-            "tarifas": [],  # Empty = auto-fill mode
-        },
-    }
-
-
-@pytest.fixture
-def valid_payload_explicit(valid_municipalidad_id, valid_distrito_id, valid_tarifa_ids):
-    """Return a valid payload with explicit tarifas[] (explicit mode).
-
-    NEW contract: each tarifa entry requires {tarifa_porcentaje_obra_id, especialidad_id}.
-    Each entry uses the same or different tarifa IDs with different especialidad IDs.
-    """
-    return {
-        "liquidacion_general": {
-            "municipalidad_id": valid_municipalidad_id,
-            "expediente": "EXP-EDIF-2024-002",
-            "observacion": "Test explicit mode",
-            "proyecto": {
-                "denominacion": "Proyecto Edificaciones Test Explicit",
-                "nombre_propietario": "Propietario Edif Explicit SAC",
-                "direccion": "Av. Edif 456, Lima",
-                "distrito_id": valid_distrito_id,
-                "entidad": {
-                    "tipo_documento": "RUC",
-                    "numero_documento": "20456789013",
-                    "razon_social": "Propietario Edif Explicit SAC",
-                },
-            },
-        },
-        "liquidacion_especifica": {
-            "datos": {
-                "valor_declarado": 100000.00,
-            },
-            "tarifas": [
-                {"tarifa_porcentaje_obra_id": valid_tarifa_ids[0]["id"], "especialidad_id": valid_tarifa_ids[0]["esp_id"]},
-                {"tarifa_porcentaje_obra_id": valid_tarifa_ids[1]["id"], "especialidad_id": valid_tarifa_ids[1]["esp_id"]},
-                {"tarifa_porcentaje_obra_id": valid_tarifa_ids[2]["id"], "especialidad_id": valid_tarifa_ids[2]["esp_id"]},
-            ],
-        },
-    }
-
-
 # ── Tests ────────────────────────────────────────────────────────────────────
 
 @pytest.mark.django_db
 def test_happy_path_auto_fill_mode(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
-    tarifa_porcentaje_obra_installaciones, valid_payload_auto_fill
+    tarifa_porcentaje_obra_installaciones,
 ):
     """
     Auto-fill: empty tarifas[] → backend picks all vigentes.
@@ -333,9 +74,17 @@ def test_happy_path_auto_fill_mode(
     The /nueva-liquidacion/primera-revision endpoint accepts a payload with
     empty tarifas[] and returns 200, auto-filling all vigentes.
     """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-001",
+        valor_declarado=100000.00,
+        tarifas=None,  # auto-fill mode
+        observacion="Test auto-fill mode",
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
-        json=valid_payload_auto_fill,
+        json=payload,
     )
 
     assert response.status_code == 200, \
@@ -378,7 +127,8 @@ def test_happy_path_auto_fill_mode(
 def test_happy_path_explicit_mode(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
-    tarifa_porcentaje_obra_installaciones, valid_payload_explicit
+    tarifa_porcentaje_obra_installaciones, especialidad_estructuras, especialidad_arquitectura,
+    especialidad_installaciones,
 ):
     """
     Explicit: 3 tarifa_ids sent → backend validates each.
@@ -386,9 +136,22 @@ def test_happy_path_explicit_mode(
     The /nueva-liquidacion/primera-revision endpoint accepts a payload with
     explicit tarifa_ids and returns 200 with those exact tarifas.
     """
+    tarifas_explicit = [
+        {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+        {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+        {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_installaciones.id), "especialidad_id": str(especialidad_installaciones.id)},
+    ]
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-002",
+        valor_declarado=100000.00,
+        tarifas=tarifas_explicit,
+        observacion="Test explicit mode",
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
-        json=valid_payload_explicit,
+        json=payload,
     )
 
     assert response.status_code == 200, \
@@ -409,38 +172,21 @@ def test_happy_path_explicit_mode(
 
 @pytest.mark.django_db
 def test_valor_declarado_zero_returns_400(
-    auth_client, municipalidad, valid_municipalidad_id, valid_distrito_id
+    auth_client, municipalidad,
 ):
     """
     Validation: valor_declarado = 0 → HttpError 400.
 
     The orchestrator validates that valor_declarado must be > 0.
     """
-    payload = {
-        "liquidacion_general": {
-            "municipalidad_id": valid_municipalidad_id,
-            "expediente": "EXP-EDIF-2024-VALID-001",
-            "observacion": None,
-            "proyecto": {
-                "denominacion": "Proyecto Test Validacion",
-                "nombre_propietario": "Propietario Test",
-                "direccion": "Av. Test 123",
-                "distrito_id": valid_distrito_id,
-                "entidad": {
-                    "tipo_documento": "RUC",
-                    "numero_documento": "20456789014",
-                    "razon_social": "Propietario Test Validacion",
-                },
-            },
-        },
-        "liquidacion_especifica": {
-            "datos": {
-                "valor_declarado": 0,  # Invalid
-            },
-            "tarifas": [],
-        },
-    }
-
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-VALID-001",
+        valor_declarado=0,  # Invalid
+        tarifas=None,
+        observacion=None,
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
         json=payload,
@@ -452,38 +198,21 @@ def test_valor_declarado_zero_returns_400(
 
 @pytest.mark.django_db
 def test_valor_declarado_negative_returns_400(
-    auth_client, municipalidad, valid_municipalidad_id, valid_distrito_id
+    auth_client, municipalidad,
 ):
     """
     Validation: valor_declarado < 0 → HttpError 400.
 
     The orchestrator validates that valor_declarado must be > 0.
     """
-    payload = {
-        "liquidacion_general": {
-            "municipalidad_id": valid_municipalidad_id,
-            "expediente": "EXP-EDIF-2024-VALID-002",
-            "observacion": None,
-            "proyecto": {
-                "denominacion": "Proyecto Test Validacion 2",
-                "nombre_propietario": "Propietario Test 2",
-                "direccion": "Av. Test 456",
-                "distrito_id": valid_distrito_id,
-                "entidad": {
-                    "tipo_documento": "RUC",
-                    "numero_documento": "20456789015",
-                    "razon_social": "Propietario Test Validacion 2",
-                },
-            },
-        },
-        "liquidacion_especifica": {
-            "datos": {
-                "valor_declarado": -1000.00,  # Invalid
-            },
-            "tarifas": [],
-        },
-    }
-
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-VALID-002",
+        valor_declarado=-1000.00,  # Invalid
+        tarifas=None,
+        observacion=None,
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
         json=payload,
@@ -496,40 +225,22 @@ def test_valor_declarado_negative_returns_400(
 @pytest.mark.django_db
 def test_invalid_tarifa_id_returns_400(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    valid_municipalidad_id, valid_distrito_id
 ):
     """
     Validation: non-existent tarifa_id → HttpError 400.
 
     When an explicit tarifa_id doesn't exist, the orchestrator raises HttpError 400.
     """
-    payload = {
-        "liquidacion_general": {
-            "municipalidad_id": valid_municipalidad_id,
-            "expediente": "EXP-EDIF-2024-VALID-003",
-            "observacion": None,
-            "proyecto": {
-                "denominacion": "Proyecto Test Invalid Tarifa",
-                "nombre_propietario": "Propietario Test",
-                "direccion": "Av. Test 789",
-                "distrito_id": valid_distrito_id,
-                "entidad": {
-                    "tipo_documento": "RUC",
-                    "numero_documento": "20456789016",
-                    "razon_social": "Propietario Test Invalid",
-                },
-            },
-        },
-        "liquidacion_especifica": {
-            "datos": {
-                "valor_declarado": 100000.00,
-            },
-            "tarifas": [
-                {"tarifa_porcentaje_obra_id": str(uuid.uuid4()), "especialidad_id": str(uuid.uuid4())},  # Non-existent
-            ],
-        },
-    }
-
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-VALID-003",
+        valor_declarado=100000.00,
+        tarifas=[
+            {"tarifa_porcentaje_obra_id": str(uuid.uuid4()), "especialidad_id": str(uuid.uuid4())},  # Non-existent
+        ],
+        observacion=None,
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
         json=payload,
@@ -542,8 +253,7 @@ def test_invalid_tarifa_id_returns_400(
 @pytest.mark.django_db
 def test_tarifa_wrong_type_returns_400(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    tarifa_liquidacion_base_edificacion, valid_municipalidad_id, valid_distrito_id,
-    tipo_habilitacion_urbana
+    tarifa_liquidacion_base_edificacion, tipo_habilitacion_urbana
 ):
     """
     Validation: HU tarifa sent → HttpError 400 'no es de edificaciones'.
@@ -551,10 +261,8 @@ def test_tarifa_wrong_type_returns_400(
     When a tariff of a different tipo_liquidacion is sent, the orchestrator
     raises HttpError 400 with message 'no es de edificaciones'.
     """
-    # Create a HU tariff
     from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import TarifaPorMetroCuadrado
 
-    
     hu_tarifa_base = TarifaLiquidacionBase.objects.create(
         tipo_liquidacion=tipo_habilitacion_urbana,
         periodo_inicio=date(2024, 1, 1),
@@ -565,33 +273,16 @@ def test_tarifa_wrong_type_returns_400(
         costo_por_m2=Decimal("150.0000"),
     )
 
-    payload = {
-        "liquidacion_general": {
-            "municipalidad_id": valid_municipalidad_id,
-            "expediente": "EXP-EDIF-2024-VALID-004",
-            "observacion": None,
-            "proyecto": {
-                "denominacion": "Proyecto Test Wrong Type",
-                "nombre_propietario": "Propietario Test",
-                "direccion": "Av. Test 999",
-                "distrito_id": valid_distrito_id,
-                "entidad": {
-                    "tipo_documento": "RUC",
-                    "numero_documento": "20456789017",
-                    "razon_social": "Propietario Test Wrong Type",
-                },
-            },
-        },
-        "liquidacion_especifica": {
-            "datos": {
-                "valor_declarado": 100000.00,
-            },
-            "tarifas": [
-                {"tarifa_porcentaje_obra_id": str(hu_tarifa.id), "especialidad_id": str(uuid.uuid4())},  # Wrong type!
-            ],
-        },
-    }
-
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-VALID-004",
+        valor_declarado=100000.00,
+        tarifas=[
+            {"tarifa_porcentaje_obra_id": str(hu_tarifa.id), "especialidad_id": str(uuid.uuid4())},  # Wrong type!
+        ],
+        observacion=None,
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
         json=payload,
@@ -604,7 +295,6 @@ def test_tarifa_wrong_type_returns_400(
 @pytest.mark.django_db
 def test_tarifa_not_vigente_returns_400(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    valid_municipalidad_id, valid_distrito_id,
     tipo_edificacion
 ):
     """
@@ -613,8 +303,6 @@ def test_tarifa_not_vigente_returns_400(
     When a tariff is expired (has periodo_fin), the orchestrator raises
     HttpError 400 with message 'no está vigente'.
     """
-    # Create an expired tariff
-    
     expired_tarifa_base = TarifaLiquidacionBase.objects.create(
         tipo_liquidacion=tipo_edificacion,
         periodo_inicio=date(2023, 1, 1),
@@ -625,33 +313,16 @@ def test_tarifa_not_vigente_returns_400(
         porcentaje_liquidacion=Decimal("0.0010"),
     )
 
-    payload = {
-        "liquidacion_general": {
-            "municipalidad_id": valid_municipalidad_id,
-            "expediente": "EXP-EDIF-2024-VALID-005",
-            "observacion": None,
-            "proyecto": {
-                "denominacion": "Proyecto Test Expired Tarifa",
-                "nombre_propietario": "Propietario Test",
-                "direccion": "Av. Test 111",
-                "distrito_id": valid_distrito_id,
-                "entidad": {
-                    "tipo_documento": "RUC",
-                    "numero_documento": "20456789018",
-                    "razon_social": "Propietario Test Expired",
-                },
-            },
-        },
-        "liquidacion_especifica": {
-            "datos": {
-                "valor_declarado": 100000.00,
-            },
-            "tarifas": [
-                {"tarifa_porcentaje_obra_id": str(expired_tarifa.id), "especialidad_id": str(uuid.uuid4())},
-            ],
-        },
-    }
-
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-VALID-005",
+        valor_declarado=100000.00,
+        tarifas=[
+            {"tarifa_porcentaje_obra_id": str(expired_tarifa.id), "especialidad_id": str(uuid.uuid4())},
+        ],
+        observacion=None,
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
         json=payload,
@@ -664,7 +335,7 @@ def test_tarifa_not_vigente_returns_400(
 @pytest.mark.django_db
 def test_response_has_three_wrappers(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    tarifa_porcentaje_obra_estructuras, valid_payload_auto_fill
+    tarifa_porcentaje_obra_estructuras,
 ):
     """
     Response structure: liquidacion_general + especifica + tipo.
@@ -672,9 +343,17 @@ def test_response_has_three_wrappers(
     The primera-revision endpoint returns LiquidacionEdificacionesOutput which
     is the union of the three wrappers.
     """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-WRAPPERS",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test three wrappers",
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
-        json=valid_payload_auto_fill,
+        json=payload,
     )
 
     assert response.status_code == 200, \
@@ -695,16 +374,24 @@ def test_response_has_three_wrappers(
 @pytest.mark.django_db
 def test_liquidacion_especifica_is_identity(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    tarifa_porcentaje_obra_estructuras, valid_payload_auto_fill
+    tarifa_porcentaje_obra_estructuras,
 ):
     """
     liquidacion_especifica wrapper has only id + numero.
 
     Semantically: especifica = identity wrapper (id + auto-generated numero).
     """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-IDENTITY",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test identity",
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
-        json=valid_payload_auto_fill,
+        json=payload,
     )
 
     assert response.status_code == 200
@@ -728,7 +415,7 @@ def test_liquidacion_especifica_is_identity(
 def test_liquidacion_tipo_has_detalles(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
-    tarifa_porcentaje_obra_installaciones, valid_payload_auto_fill
+    tarifa_porcentaje_obra_installaciones,
 ):
     """
     liquidacion_tipo.detalles has N entries (one per tarifa).
@@ -736,9 +423,17 @@ def test_liquidacion_tipo_has_detalles(
     Each detail has: id, tarifa_aplicada_id, especialidad_id, porcentaje_aplicado,
     subtotal, igv, uit, total.
     """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-DETALLES",
+        valor_declarado=100000.00,
+        tarifas=None,  # auto-fill
+        observacion="Test detalles",
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
-        json=valid_payload_auto_fill,
+        json=payload,
     )
 
     assert response.status_code == 200
@@ -767,16 +462,24 @@ def test_liquidacion_tipo_has_detalles(
 def test_subtotal_is_sum_of_detalles(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
-    tarifa_porcentaje_obra_installaciones, valid_payload_auto_fill
+    tarifa_porcentaje_obra_installaciones,
 ):
     """
     LiquidacionGeneral.sub_total = SUM(detalles.subtotal).
 
     The subtotal of the liquidacion_general should equal the sum of all detail subtotals.
     """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-SUBTOTAL",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test subtotal",
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
-        json=valid_payload_auto_fill,
+        json=payload,
     )
 
     assert response.status_code == 200
@@ -797,16 +500,24 @@ def test_subtotal_is_sum_of_detalles(
 @pytest.mark.django_db
 def test_total_calculation_with_igv(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    tarifa_porcentaje_obra_estructuras, valid_payload_auto_fill
+    tarifa_porcentaje_obra_estructuras,
 ):
     """
     LiquidacionGeneral.total = sub_total + IGV.
 
     With IGV = 18%, total should be sub_total * 1.18.
     """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-IGV",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test IGV",
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
-        json=valid_payload_auto_fill,
+        json=payload,
     )
 
     assert response.status_code == 200
@@ -833,16 +544,24 @@ def test_total_calculation_with_igv(
 @pytest.mark.django_db
 def test_tipo_tramite_is_null(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    tarifa_porcentaje_obra_estructuras, valid_payload_auto_fill
+    tarifa_porcentaje_obra_estructuras,
 ):
     """
     tipo_tramite field is None in response.
 
     Currently tipo_tramite stays NULL for all liquidations (FUTURE: activate when frontend sends it).
     """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-NULL-TRAMITE",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test tipo_tramite null",
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
-        json=valid_payload_auto_fill,
+        json=payload,
     )
 
     assert response.status_code == 200
@@ -858,7 +577,7 @@ def test_tipo_tramite_is_null(
 @pytest.mark.django_db
 def test_clamping_minimum_applied(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    tarifa_porcentaje_obra_estructuras, especialidad_estructuras, valid_municipalidad_id, valid_distrito_id
+    tarifa_porcentaje_obra_estructuras, especialidad_estructuras,
 ):
     """
     When total < derecho_minimo, clamp to min + distribute proportionally.
@@ -866,33 +585,16 @@ def test_clamping_minimum_applied(
     With derecho_minimo = 500.00 and a very small valor_declarado that would result
     in a subtotal below 500, the system should clamp to derecho_minimo.
     """
-    payload = {
-        "liquidacion_general": {
-            "municipalidad_id": valid_municipalidad_id,
-            "expediente": "EXP-EDIF-2024-CLAMP-MIN",
-            "observacion": "Test clamping minimum",
-            "proyecto": {
-                "denominacion": "Proyecto Test Clamping Min",
-                "nombre_propietario": "Propietario Test",
-                "direccion": "Av. Test 123",
-                "distrito_id": valid_distrito_id,
-                "entidad": {
-                    "tipo_documento": "RUC",
-                    "numero_documento": "20456789019",
-                    "razon_social": "Propietario Test Min",
-                },
-            },
-        },
-        "liquidacion_especifica": {
-            "datos": {
-                "valor_declarado": 1000.00,  # Small value, will result in < 500 subtotal
-            },
-            "tarifas": [
-                {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
-            ],
-        },
-    }
-
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-CLAMP-MIN",
+        valor_declarado=1000.00,  # Small value, will result in < 500 subtotal
+        tarifas=[
+            {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+        ],
+        observacion="Test clamping minimum",
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
         json=payload,
@@ -919,7 +621,8 @@ def test_clamping_minimum_applied(
 def test_porcentaje_liquidacion_is_sum(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
-    tarifa_porcentaje_obra_installaciones, valid_payload_explicit
+    tarifa_porcentaje_obra_installaciones, especialidad_estructuras, especialidad_arquitectura,
+    especialidad_installaciones,
 ):
     """
     porcentaje_liquidacion = SUM of all tarifa percentages.
@@ -927,9 +630,22 @@ def test_porcentaje_liquidacion_is_sum(
     The percentage_liquidacion in liquidacion_tipo should equal the sum of
     all applied tarifa percentages.
     """
+    tarifas_explicit = [
+        {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+        {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+        {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_installaciones.id), "especialidad_id": str(especialidad_installaciones.id)},
+    ]
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-PCT-SUM",
+        valor_declarado=100000.00,
+        tarifas=tarifas_explicit,
+        observacion="Test porcentaje sum",
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
-        json=valid_payload_explicit,
+        json=payload,
     )
 
     assert response.status_code == 200
@@ -949,7 +665,7 @@ def test_porcentaje_liquidacion_is_sum(
 @pytest.mark.django_db
 def test_snapshot_igv_uit_assigned(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    tarifa_porcentaje_obra_estructuras, valid_payload_auto_fill
+    tarifa_porcentaje_obra_estructuras,
 ):
     """
     igv_id and uit_id are populated in LiquidacionGeneral.
@@ -957,9 +673,17 @@ def test_snapshot_igv_uit_assigned(
     The primera-revision endpoint should populate igv_id and uit_id as FK references
     from the configured IGV and UIT vigente.
     """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-EDIF-2024-SNAPSHOT",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test igv/uit snapshot",
+    )
     response = auth_client.post(
         "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
-        json=valid_payload_auto_fill,
+        json=payload,
     )
 
     assert response.status_code == 200, \
@@ -985,43 +709,32 @@ def test_snapshot_igv_uit_assigned(
         assert isinstance(uit_uuid, uuid.UUID), \
             f"uit.id should be a valid UUID, got {lg['uit']['id']}"
 
+
 @pytest.mark.django_db
 def test_crear_liquidacion_con_contacto_inline(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    tarifa_porcentaje_obra_estructuras, valid_municipalidad_id, valid_distrito_id,
-    especialidades_disponibles_edificacion,
+    tarifa_porcentaje_obra_estructuras,
 ):
     """Crea una liquidacion con contacto inline y verifica que el output lo incluya anidado."""
-    payload = {
-        "liquidacion_general": {
-            "municipalidad_id": valid_municipalidad_id,
-            "expediente": "EXP-CONTACTO-001",
-            "observacion": "Test contacto inline",
-            "proyecto": {
-                "denominacion": "Proyecto Contacto Test",
-                "nombre_propietario": "Propietario Test",
-                "direccion": "Av. Test 123",
-                "distrito_id": valid_distrito_id,
-                "entidad": {
-                    "tipo_documento": "DNI",
-                    "numero_documento": "12345678",
-                    "razon_social": "Propietario Test",
-                },
-            },
-            "contacto": {
-                "nombres": "MARIA CONTACTO",
-                "apellidos": "GARCIA PEREZ",
-                "dni": "87654321",
-                "cargo": "PROPIETARIA",
-                "celular": "999888777",
-            },
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-CONTACTO-001",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test contacto inline",
+        contacto={
+            "nombres": "MARIA CONTACTO",
+            "apellidos": "GARCIA PEREZ",
+            "dni": "87654321",
+            "cargo": "PROPIETARIA",
+            "celular": "999888777",
         },
-        "liquidacion_especifica": {
-            "datos": {"valor_declarado": 100000.00},
-            "tarifas": [],
-        },
-    }
-    response = auth_client.post("/liquidaciones/edificaciones/nueva-liquidacion/primera-revision", json=payload)
+    )
+    response = auth_client.post(
+        "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
+        json=payload,
+    )
 
     assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
     data = response.json()["data"]
@@ -1037,10 +750,21 @@ def test_crear_liquidacion_con_contacto_inline(
 @pytest.mark.django_db
 def test_crear_liquidacion_sin_contacto(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    tarifa_porcentaje_obra_estructuras, valid_payload_auto_fill,
+    tarifa_porcentaje_obra_estructuras,
 ):
     """Sin contacto en el input, el output debe traer contacto=None."""
-    response = auth_client.post("/liquidaciones/edificaciones/nueva-liquidacion/primera-revision", json=valid_payload_auto_fill)
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-NO-CONTACTO-001",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test sin contacto",
+    )
+    response = auth_client.post(
+        "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
+        json=payload,
+    )
 
     assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
     data = response.json()["data"]

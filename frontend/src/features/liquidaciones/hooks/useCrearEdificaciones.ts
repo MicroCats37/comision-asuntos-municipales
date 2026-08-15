@@ -1,40 +1,24 @@
 /**
  * Hook para crear liquidaciones de Edificaciones (primera revisión).
- * Usa useApiCreate genérico del proyecto.
+ * Usa useGenericCreateMutation (cache de lista + detalle) + useApiCreate interno.
  *
  * Endpoint: POST /liquidaciones/edificaciones/nueva-liquidacion/primera-revision
  */
-import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { useApiCreate } from "@/hooks";
+import { useGenericCreateMutation } from "@/hooks/cache";
 import type { EdificacionesFormData } from "../schemas/liquidacion-edificaciones-form.schema";
-import { liquidacionEdificacionOutSchema } from "../types/liquidacion-edificaciones.types";
 
 const BASE_URL = "/liquidaciones/edificaciones/nueva-liquidacion";
+const LIST_KEY = ["liquidaciones", "edificaciones"] as const;
 
 export function useCrearEdificaciones() {
-  const queryClient = useQueryClient();
-
-  const mutation = useApiCreate<unknown, { liquidacion_general: unknown; liquidacion_especifica: unknown }>({
+  const mutation = useGenericCreateMutation<
+    { id: string | number },
+    { liquidacion_general: unknown; liquidacion_especifica: unknown }
+  >({
     url: `${BASE_URL}/primera-revision`,
-    options: {
-      onSuccess: (created) => {
-        // The POST returns ApiResponse envelope: { success, data: { liquidacion_general, ... }, error }
-        // Unwrap to get the list item shape and prepend to cache
-        const newItem = (created as { data?: unknown })?.data ?? created;
-        queryClient.setQueriesData<{ items: unknown[]; total: number }>(
-          { queryKey: ["liquidaciones", "edificaciones"] },
-          (old) => {
-            if (!old || !Array.isArray(old.items)) return old;
-            return {
-              ...old,
-              items: [newItem, ...old.items],
-              total: (old.total ?? 0) + 1,
-            };
-          },
-        );
-      },
-    },
+    queryKey: LIST_KEY,
+    listShape: "paginated",
   });
 
   // Wrapper that formats payload as { liquidacion_general, liquidacion_especifica } for the API

@@ -1,61 +1,40 @@
 """
 ConsultaExternoFlujo — flujos async para consulta de datos externos (SUNAT/RENIEC).
 
-Estos flujos consultan los servicios externos de SUNAT y RENIEC para obtener
-datos de instituciones y personas respectivamente.
+Flujo unificado que auto-detecta tipo de documento por longitud:
+- 8 dígitos → DNI (RENIEC)
+- 11 dígitos → RUC (SUNAT)
 """
 
 from injector import inject
 
-from modules.entidades.domain.ports import ISunatClient, IReniecClient
-from modules.entidades.domain.results import SunatInstitucionResult, ReniecPersonaResult
+from modules.entidades.domain.ports import IConsultaExternaClient
+from modules.entidades.domain.results import ConsultaDocumentoResult
 
 
-class ConsultaSunatFlujo:
+class ConsultaExternaFlujo:
     """
-    Flujo async para consultar datos de institución por RUC vía SUNAT.
-    """
+    Flujo async unificado para consulta de documento por número (DNI o RUC).
 
-    @inject
-    def __init__(self, sunat_client: ISunatClient):
-        self.sunat_client = sunat_client
-
-    async def _proceso_consulta_sunat(self, ruc: str) -> SunatInstitucionResult:
-        """
-        Proceso para consultar datos de institución por RUC.
-
-        Args:
-            ruc: Número de RUC (11 dígitos).
-
-        Returns:
-            SunatInstitucionResult con los datos de la institución.
-
-        Raises:
-            SunatNotFoundError: Si el RUC no existe.
-        """
-        return await self.sunat_client.get_institucion(ruc)
-
-
-class ConsultaReniecFlujo:
-    """
-    Flujo async para consultar datos de persona por DNI vía RENIEC.
+    Auto-detecta el tipo por longitud: 8=DNI, 11=RUC.
     """
 
     @inject
-    def __init__(self, reniec_client: IReniecClient):
-        self.reniec_client = reniec_client
+    def __init__(self, consulta_cliente: IConsultaExternaClient):
+        self.consulta_cliente = consulta_cliente
 
-    async def _proceso_consulta_reniec(self, dni: str) -> ReniecPersonaResult:
+    async def _proceso_consulta_documento(self, documento: str) -> ConsultaDocumentoResult:
         """
-        Proceso para consultar datos de persona por DNI.
+        Proceso para consultar datos de documento por número.
 
         Args:
-            dni: Número de DNI (8 dígitos).
+            documento: Número de documento (8 o 11 dígitos).
 
         Returns:
-            ReniecPersonaResult con los datos de la persona.
+            ConsultaDocumentoResult con tipo_documento, numero_documento, razon_social.
 
         Raises:
-            ReniecNotFoundError: Si el DNI no existe.
+            SunatNotFoundError: Si el RUC (11 dígitos) no existe.
+            ReniecNotFoundError: Si el DNI (8 dígitos) no existe.
         """
-        return await self.reniec_client.get_persona(dni)
+        return await self.consulta_cliente.consultar_documento(documento)

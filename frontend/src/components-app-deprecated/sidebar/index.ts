@@ -1,1 +1,0 @@
-export { ProtectedSidebar } from "./ProtectedSidebar";

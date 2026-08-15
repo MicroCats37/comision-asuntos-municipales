@@ -1,36 +1,44 @@
 """
 Infrastructure Services — Implementaciones de puertos para servicios externos.
 
-- SunatClientSimulator: Simulador con datos mock para desarrollo
-- ReniecClientSimulator: Simulador con datos mock para desarrollo
+- ConsultaExternaSimulator: Simulador unificado con datos mock para desarrollo
+  (DNI → RENIEC mock, RUC → SUNAT mock)
 
-# TODO: Implementar clientes reales cuando se tengan las credenciales API:
-# - RealSunatClient: Cliente real que consulta la API de SUNAT
-# - RealReniecClient: Cliente real que consulta la API de RENIEC
+# TODO: Implementar cliente real unificado cuando se tengan las credenciales API:
+# - RealConsultaExternaClient: Cliente real que consulta la API de RENIEC/SUNAT
 """
 
 import hashlib
 import random
 from datetime import date
 
-from ..domain.ports import ISunatClient, IReniecClient
-from ..domain.results import SunatInstitucionResult, ReniecPersonaResult
+from ..domain.ports import IConsultaExternaClient
+from ..domain.results import ConsultaDocumentoResult
+from ..domain.exceptions import SunatNotFoundError
 
 
-class SunatClientSimulator(ISunatClient):
+
+class ConsultaExternaSimulator(IConsultaExternaClient):
     """
-    Simulador del cliente SUNAT con datos mock para desarrollo.
+    Simulador unificado del cliente consulta externa con datos mock para desarrollo.
 
     Proporciona datos determinísticos para probar el flujo completo
-    sin depender de la API real de SUNAT.
+    sin depender de las APIs reales de RENIEC/SUNAT.
 
+    - DNIs hardcoded tienen datos mock determinísticos existentes.
     - RUCs hardcoded tienen datos mock determinísticos existentes.
-    - Cualquier otro RUC válido (11 dígitos) genera datos mock determinísticos
-      basados en el RUC (mismo RUC siempre devuelve los mismos datos).
+    - Cualquier otro documento válido genera datos mock determinísticos
+      basados en el número (mismo número siempre devuelve los mismos datos).
+
+    Comportamiento:
+      - documento length 11 → trata como RUC (SUNAT)
+      - documento length 8 → trata como DNI (RENIEC)
+      - otro length → tipo_documento="DESCONOCIDO"
     """
 
-    # Datos mock de instituciones — RUC válido de ejemplo
-    _SIMULADOS = {
+    # ── SUNAT MOCK DATA ─────────────────────────────────────────────────────────
+
+    _SUNAT_SIMULADOS = {
         "20492913151": {
             "ruc": "20492913151",
             "razon_social": "MUNICIPALIDAD PROVINCIAL DE LIMA",
@@ -66,8 +74,7 @@ class SunatClientSimulator(ISunatClient):
         },
     }
 
-    # Datos base para generación determinística
-    _RAZONES_SOCIALES = [
+    _SUNAT_RAZONES_SOCIALES = [
         "EMPRESA CONSTRUCTORA",
         "SERVICIOS GENERALES",
         "INDUSTRIA MANUFACTURERA",
@@ -88,7 +95,7 @@ class SunatClientSimulator(ISunatClient):
         "ADMINISTRACION PUBLICA",
     ]
 
-    _NOMBRES_COMERCIALES = [
+    _SUNAT_NOMBRES_COMERCIALES = [
         "ABC",
         "XYZ",
         "PRIMAX",
@@ -101,113 +108,21 @@ class SunatClientSimulator(ISunatClient):
         "OESTE",
     ]
 
-    _ESTADOS = ["ACTIVO", "ACTIVO", "ACTIVO", "BAJA", "SUSPENSION"]
-    _TIPOS_CONTRIBUYENTE = [
+    _SUNAT_ESTADOS = ["ACTIVO", "ACTIVO", "ACTIVO", "BAJA", "SUSPENSION"]
+    _SUNAT_TIPOS_CONTRIBUYENTE = [
         "ORDENANZA",
         "GOBIERNO LOCAL",
         "GOBIERNO NACIONAL",
         "CONTRATISTA",
         "EMPRESA PRIVADA",
     ]
-    _DEPARTAMENTOS = ["LIMA", "AREQUIPA", "CUSCO", "TRUJILLO", "PIURA", "ICA"]
-    _PROVINCIAS = ["LIMA", "AREQUIPA", "CUSCO", "TRUJILLO", "PIURA", "ICA"]
-    _DISTRITOS = ["LIMA", "MIRAFLORES", "SAN ISIDRO", "SURCO", "LA VICTORIA"]
+    _SUNAT_DEPARTAMENTOS = ["LIMA", "AREQUIPA", "CUSCO", "TRUJILLO", "PIURA", "ICA"]
+    _SUNAT_PROVINCIAS = ["LIMA", "AREQUIPA", "CUSCO", "TRUJILLO", "PIURA", "ICA"]
+    _SUNAT_DISTRITOS = ["LIMA", "MIRAFLORES", "SAN ISIDRO", "SURCO", "LA VICTORIA"]
 
-    async def get_institucion(self, ruc: str) -> SunatInstitucionResult:
-        """
-        Simula la consulta de institución por RUC.
+    # ── RENIEC MOCK DATA ─────────────────────────────────────────────────────────
 
-        Args:
-            ruc: Número de RUC (11 dígitos).
-
-        Returns:
-            SunatInstitucionResult con datos mock.
-
-        Note:
-            - Si el RUC está en datos hardcoded, devuelve esos datos.
-            - Para cualquier otro RUC válido de 11 dígitos, genera datos
-              determinísticos basados en el RUC.
-        """
-        data = self._SIMULADOS.get(ruc)
-        if data:
-            return SunatInstitucionResult(**data)
-
-        # Generar datos determinísticos para RUCs no hardcoded
-        return self._generar_institucion_determinista(ruc)
-
-    def _generar_institucion_determinista(self, ruc: str) -> SunatInstitucionResult:
-        """
-        Genera datos mock determinísticos basados en el RUC.
-
-        Usa hash del RUC como seed para que el mismo RUC siempre
-        devuelva los mismos datos.
-        """
-        # Crear seed determinístico a partir del RUC
-        seed = int(hashlib.md5(ruc.encode()).hexdigest(), 16)
-        rng = random.Random(seed)
-
-        razon_social = f"{rng.choice(self._RAZONES_SOCIALES)} S.A.C."
-        nombre_comercial = f"{rng.choice(self._NOMBRES_COMERCIALES)} {rng.randint(1, 999)}"
-        estado = rng.choice(self._ESTADOS)
-        tipo_contribuyente = rng.choice(self._TIPOS_CONTRIBUYENTE)
-
-        # Generar dirección fake
-        direccion = f"AV. {ruc[:4]} NRO. {rng.randint(100, 999)}"
-        departamento = rng.choice(self._DEPARTAMENTOS)
-        provincia = rng.choice(self._PROVINCIAS)
-        distrito = rng.choice(self._DISTRITOS)
-
-        return SunatInstitucionResult(
-            ruc=ruc,
-            razon_social=razon_social,
-            nombre_comercial=nombre_comercial,
-            estado=estado,
-            tipo_contribuyente=tipo_contribuyente,
-            direccion=direccion,
-            departamento=departamento,
-            provincia=provincia,
-            distrito=distrito,
-        )
-
-
-class RealSunatClient(ISunatClient):
-    """
-    Cliente real que consulta la API de SUNAT.
-
-    # TODO: Implementar cuando se tengan las credenciales y endpoint de la API SUNAT.
-    Requiere:
-    - SUNAT_API_BASE_URL en settings
-    - Autenticación (API key o token OAuth)
-    - Manejo de rate limiting
-    """
-
-    async def get_institucion(self, ruc: str) -> SunatInstitucionResult:
-        """
-        Consulta la API real de SUNAT.
-
-        Raises:
-            NotImplementedError: Aún no implementado.
-        """
-        raise NotImplementedError(
-            "RealSunatClient aún no implementado. "
-            "Usar SunatClientSimulator para desarrollo."
-        )
-
-
-class ReniecClientSimulator(IReniecClient):
-    """
-    Simulador del cliente RENIEC con datos mock para desarrollo.
-
-    Proporciona datos determinísticos para probar el flujo completo
-    sin depender de la API real de RENIEC.
-
-    - DNIs hardcoded tienen datos mock determinísticos existentes.
-    - Cualquier otro DNI válido (8 dígitos) genera datos mock determinísticos
-      basados en el DNI (mismo DNI siempre devuelve los mismos datos).
-    """
-
-    # Datos mock de personas — DNIs válidos de ejemplo
-    _SIMULADOS = {
+    _RENIEC_SIMULADOS = {
         "45406196": {
             "dni": "45406196",
             "nombres": "DENNIS JOEL",
@@ -240,8 +155,7 @@ class ReniecClientSimulator(IReniecClient):
         },
     }
 
-    # Datos base para generación determinística
-    _NOMBRES = [
+    _RENIEC_NOMBRES = [
         "JUAN",
         "CARLOS",
         "MIGUEL",
@@ -259,7 +173,7 @@ class ReniecClientSimulator(IReniecClient):
         "FRANCISCO",
     ]
 
-    _APELLIDOS = [
+    _RENIEC_APELLIDOS = [
         "GARCIA",
         "PEREZ",
         "LOPEZ",
@@ -277,88 +191,182 @@ class ReniecClientSimulator(IReniecClient):
         "JIMENEZ",
     ]
 
-    _GENEROS = ["M", "F"]
+    _RENIEC_GENEROS = ["M", "F"]
 
-    async def get_persona(self, dni: str) -> ReniecPersonaResult:
+    # ── Main dispatch method ─────────────────────────────────────────────────────
+
+    async def consultar_documento(self, documento: str) -> ConsultaDocumentoResult:
         """
-        Simula la consulta de persona por DNI.
+        Consulta documento unificada: auto-detecta DNI (8) vs RUC (11).
 
         Args:
-            dni: Número de DNI (8 dígitos).
+            documento: Número de documento (8 o 11 dígitos).
 
         Returns:
-            ReniecPersonaResult con datos mock.
+            ConsultaDocumentoResult unificado.
 
-        Note:
-            - Si el DNI está en datos hardcoded, devuelve esos datos.
-            - Para cualquier otro DNI válido de 8 dígitos, genera datos
-              determinísticos basados en el DNI.
+        Raises:
+            SunatNotFoundError: Si el RUC (11 dígitos) no se encuentra.
+            ReniecNotFoundError: Si el DNI (8 dígitos) no se encuentra.
         """
-        data = self._SIMULADOS.get(dni)
+        length = len(documento)
+
+        if length == 11:
+            return await self._consultar_ruc(documento)
+        elif length == 8:
+            return await self._consultar_dni(documento)
+        else:
+            # Longitud inválida → возвращает DESCONOCIDO sin error
+            return ConsultaDocumentoResult(
+                tipo_documento="DESCONOCIDO",
+                numero_documento=documento,
+                razon_social="",
+            )
+
+    # ── Internal helpers ─────────────────────────────────────────────────────────
+
+    async def _consultar_ruc(self, ruc: str) -> ConsultaDocumentoResult:
+        """Consulta RUC (SUNAT)."""
+        data = self._SUNAT_SIMULADOS.get(ruc)
         if data:
-            return ReniecPersonaResult(**data)
+            return ConsultaDocumentoResult(
+                tipo_documento="RUC",
+                numero_documento=ruc,
+                razon_social=data["razon_social"],
+            )
+
+        # Generar datos determinísticos para RUCs no hardcoded
+        return self._generar_ruc_determinista(ruc)
+
+    async def _consultar_dni(self, dni: str) -> ConsultaDocumentoResult:
+        """Consulta DNI (RENIEC)."""
+        data = self._RENIEC_SIMULADOS.get(dni)
+        if data:
+            return ConsultaDocumentoResult(
+                tipo_documento="DNI",
+                numero_documento=dni,
+                razon_social=data["nombre_completo"],
+            )
 
         # Generar datos determinísticos para DNIs no hardcoded
-        return self._generar_persona_determinista(dni)
+        return self._generar_dni_determinista(dni)
 
-    def _generar_persona_determinista(self, dni: str) -> ReniecPersonaResult:
-        """
-        Genera datos mock determinísticos basados en el DNI.
+    def _generar_ruc_determinista(self, ruc: str) -> ConsultaDocumentoResult:
+        """Genera datos mock determinísticos para RUCs no hardcoded."""
+        seed = int(hashlib.md5(ruc.encode()).hexdigest(), 16)
+        rng = random.Random(seed)
 
-        Usa hash del DNI como seed para que el mismo DNI siempre
-        devuelva los mismos datos.
-        """
+        razon_social = f"{rng.choice(self._SUNAT_RAZONES_SOCIALES)} S.A.C."
+
+        return ConsultaDocumentoResult(
+            tipo_documento="RUC",
+            numero_documento=ruc,
+            razon_social=razon_social,
+        )
+
+    def _generar_dni_determinista(self, dni: str) -> ConsultaDocumentoResult:
+        """Genera datos mock determinísticos para DNIs no hardcoded."""
         seed = int(hashlib.md5(dni.encode()).hexdigest(), 16)
         rng = random.Random(seed)
 
-        nombres = f"{rng.choice(self._NOMBRES)} {rng.choice(self._NOMBRES)}"
-        apellido_paterno = rng.choice(self._APELLIDOS)
-        apellido_materno = rng.choice(self._APELLIDOS)
+        nombres = f"{rng.choice(self._RENIEC_NOMBRES)} {rng.choice(self._RENIEC_NOMBRES)}"
+        apellido_paterno = rng.choice(self._RENIEC_APELLIDOS)
+        apellido_materno = rng.choice(self._RENIEC_APELLIDOS)
         apellidos = f"{apellido_paterno} {apellido_materno}"
         nombre_completo = f"{apellidos}, {nombres}"
-        genero = rng.choice(self._GENEROS)
 
-        # Generar fecha de nacimiento aleatoria pero determinística (entre 1970-2000)
-        year = rng.randint(1970, 2000)
-        month = rng.randint(1, 12)
-        day = rng.randint(1, 28)  # Usar 28 para evitar problemas con meses cortos
-        fecha_nacimiento = date(year, month, day)
-
-        # Generar dirección fake
-        direccion = f"JR. {apellido_paterno} NRO. {rng.randint(100, 999)}"
-        ubigeo = f"15{rng.randint(0, 9)}{rng.randint(0, 9)}{rng.randint(0, 9)}{rng.randint(0, 9)}"
-
-        return ReniecPersonaResult(
-            dni=dni,
-            nombres=nombres,
-            apellidos=apellidos,
-            nombre_completo=nombre_completo,
-            genero=genero,
-            fecha_nacimiento=fecha_nacimiento,
-            direccion=direccion,
-            ubigeo=ubigeo,
+        return ConsultaDocumentoResult(
+            tipo_documento="DNI",
+            numero_documento=dni,
+            razon_social=nombre_completo,
         )
 
 
-class RealReniecClient(IReniecClient):
+class RealConsultaExternaClient(IConsultaExternaClient):
     """
-    Cliente real que consulta la API de RENIEC.
+    Cliente real que consulta el microservicio scraper de documentos.
 
-    # TODO: Implementar cuando se tengan las credenciales y endpoint de la API RENIEC.
-    Requiere:
-    - RENIEC_API_BASE_URL en settings
-    - Autenticación (API key o token)
-    - Manejo de rate limiting
+    El scraper corre en worker/scraper/ y expone:
+      GET {SCRAPER_URL}/consultar/{documento}
+
+    Códigos HTTP del scraper:
+      200 → dato encontrado
+      404 → RUC/DNI no existe
+      422 → documento inválido (longitud o formato)
+      502 → formato del portal cambió (ScraperFormatError)
+      503 → portal no disponible / sin conectividad
+      504 → timeout esperando al portal
     """
 
-    async def get_persona(self, dni: str) -> ReniecPersonaResult:
+    def __init__(self):
+        import os
+        import httpx
+        self._base_url = os.environ.get("SCRAPER_URL", "http://scraper:8001")
+        self._client = httpx.AsyncClient(
+            base_url=self._base_url,
+            timeout=httpx.Timeout(
+                connect=10.0,
+                read=300.0,   # el portal puede tardar hasta 4 min
+                write=10.0,
+                pool=5.0,
+            ),
+        )
+
+    async def consultar_documento(self, documento: str) -> ConsultaDocumentoResult:
         """
-        Consulta la API real de RENIEC.
+        Consulta el microservicio scraper por DNI (8 dígitos) o RUC (11 dígitos).
 
         Raises:
-            NotImplementedError: Aún no implementado.
+            SunatNotFoundError: RUC no encontrado (404 del scraper)
+            ReniecNotFoundError: DNI no encontrado (404 del scraper)
+            HttpError 504: Timeout del portal
+            HttpError 502: Formato del portal cambió
+            HttpError 503: Portal o scraper no disponible
         """
-        raise NotImplementedError(
-            "RealReniecClient aún no implementado. "
-            "Usar ReniecClientSimulator para desarrollo."
-        )
+        import httpx
+        from core.exceptions import HttpError
+
+        try:
+            response = await self._client.get(f"/consultar/{documento}")
+        except httpx.ConnectTimeout:
+            raise HttpError(503, "No se pudo conectar al scraper de documentos")
+        except httpx.ReadTimeout:
+            raise HttpError(504, "Timeout esperando respuesta del scraper")
+        except httpx.ConnectError:
+            raise HttpError(503, "Scraper de documentos no disponible — verifique que el servicio esté corriendo")
+        except httpx.HTTPError as e:
+            raise HttpError(503, f"Error de red con el scraper: {e}")
+
+        if response.status_code == 200:
+            data = response.json()
+            return ConsultaDocumentoResult(
+                tipo_documento=data["tipo_documento"],
+                numero_documento=data["numero_documento"],
+                razon_social=data["razon_social"],
+            )
+
+        body = response.json() if response.headers.get("content-type", "").startswith("application/json") else {}
+        detail = body.get("detail", "Sin detalle")
+        error_code = body.get("error", "UNKNOWN")
+
+        if response.status_code == 404:
+            # Determinar tipo por longitud del documento
+            if len(documento) == 8:
+                from modules.entidades.domain.exceptions import ReniecNotFoundError
+                raise ReniecNotFoundError(documento)
+            raise SunatNotFoundError(documento)
+
+        if response.status_code == 422:
+            raise HttpError(422, f"Documento inválido: {detail}")
+
+        if response.status_code == 504:
+            raise HttpError(504, f"Portal de documentos no respondió a tiempo: {detail}")
+
+        if response.status_code == 502:
+            raise HttpError(502, f"Formato del portal cambió [{error_code}]: {detail}")
+
+        if response.status_code == 503:
+            raise HttpError(503, f"Portal de documentos no disponible [{error_code}]: {detail}")
+
+        raise HttpError(response.status_code, f"Error inesperado del scraper: {detail}")
+

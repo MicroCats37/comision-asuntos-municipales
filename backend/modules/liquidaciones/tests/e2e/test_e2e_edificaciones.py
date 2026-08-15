@@ -27,6 +27,9 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     DerechoPorcentajeObra,
 )
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
+    LiquidacionEspecialidadDisponibles,
+)
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
@@ -130,33 +133,36 @@ def especialidad_electrica(db):
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_estructuras(db, tarifa_liquidacion_base_edificacion, especialidad_estructuras):
-    """Create a TarifaPorcentajeObra for Estructuras (Civil)."""
+def tarifa_porcentaje_obra_unica(db, tarifa_liquidacion_base_edificacion):
+    """Create a single TarifaPorcentajeObra (tarifa única per base).
+
+    New contract: one TarifaPorcentajeObra per TarifaLiquidacionBase,
+    with LiquidacionEspecialidadDisponibles providing the specialty list.
+    """
     return TarifaPorcentajeObra.objects.create(
         tarifa_base=tarifa_liquidacion_base_edificacion,
-        especialidad=especialidad_estructuras,
         porcentaje_liquidacion=Decimal("0.0010"),  # 0.10%
     )
 
 
 @pytest.fixture
-def tarifa_porcentaje_obra_sanitaria(db, tarifa_liquidacion_base_edificacion, especialidad_sanitaria):
-    """Create a TarifaPorcentajeObra for Sanitaria."""
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        especialidad=especialidad_sanitaria,
-        porcentaje_liquidacion=Decimal("0.0005"),  # 0.05%
-    )
+def especialidades_disponibles_edificacion(
+    db, tipo_edificacion, especialidad_estructuras, especialidad_sanitaria, especialidad_electrica
+):
+    """Create LiquidacionEspecialidadDisponibles for the 3 especialidades of Edificaciones.
 
-
-@pytest.fixture
-def tarifa_porcentaje_obra_electrica(db, tarifa_liquidacion_base_edificacion, especialidad_electrica):
-    """Create a TarifaPorcentajeObra for Electrica."""
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        especialidad=especialidad_electrica,
-        porcentaje_liquidacion=Decimal("0.0003"),  # 0.03%
-    )
+    Required for the tarifas-vigentes endpoint to return available specialties.
+    """
+    return [
+        LiquidacionEspecialidadDisponibles.objects.create(
+            tipo_liquidacion=tipo_edificacion,
+            especialidad=esp,
+            activo=True,
+            periodo_inicio=date(2024, 1, 1),
+            periodo_fin=None,
+        )
+        for esp in [especialidad_estructuras, especialidad_sanitaria, especialidad_electrica]
+    ]
 
 
 @pytest.fixture
@@ -204,9 +210,8 @@ def auth_client(api_client, create_user):
 @pytest.mark.django_db
 def test_e2e_edificaciones_flow(
     auth_client, municipalidad, igv_vigente, uit_vigente,
-    tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_sanitaria,
-    tarifa_porcentaje_obra_electrica, derecho_porcentaje_vigente,
-    ubigeo_distrito
+    tarifa_porcentaje_obra_unica, especialidades_disponibles_edificacion,
+    derecho_porcentaje_vigente, ubigeo_distrito
 ):
     """
     E2E flow for Edificaciones:
@@ -229,24 +234,22 @@ def test_e2e_edificaciones_flow(
     result = data["data"]
     assert "tarifas" in result, "Result should have 'tarifas' wrapper"
 
-    # Step 2: Extract tarifas from response
+    # Step 2: Extract the single tarifa and especialidades from response
     tarifas = result["tarifas"]
-    assert len(tarifas) == 3, \
-        f"Expected 3 tarifas, got {len(tarifas)}"
+    assert len(tarifas) == 1, \
+        f"Expected 1 tarifa (unique per periodo), got {len(tarifas)}"
 
-    # Extract IDs and especialidades
-    tarifa_info = []
-    for tarifa in tarifas:
-        tarifa_info.append({
-            "id": tarifa["id"],
-            "especialidad": tarifa["especialidad"],
-            "porcentaje_liquidacion": tarifa["porcentaje_liquidacion"],
-        })
+    tarifa_id = str(tarifas[0]["id"])
+
+    especialidades = result["especialidades_disponibles"]
+    assert len(especialidades) == 3, \
+        f"Expected 3 especialidades_disponibles, got {len(especialidades)}"
 
     municipalidad_id = str(municipalidad.id)
     distrito_id = str(ubigeo_distrito.id)
 
     # Step 3: Construct payload using explicit mode (tarifas array)
+    # New contract: one tarifa repeated with each especialidad_id
     payload = {
         "liquidacion_general": {
             "municipalidad_id": municipalidad_id,
@@ -269,9 +272,9 @@ def test_e2e_edificaciones_flow(
                 "valor_declarado": 100000.00,
             },
             "tarifas": [
-                {"tarifa_porcentaje_obra_id": str(tarifa_info[0]["id"])},
-                {"tarifa_porcentaje_obra_id": str(tarifa_info[1]["id"])},
-                {"tarifa_porcentaje_obra_id": str(tarifa_info[2]["id"])},
+                {"tarifa_porcentaje_obra_id": tarifa_id, "especialidad_id": str(especialidades[0]["id"])},
+                {"tarifa_porcentaje_obra_id": tarifa_id, "especialidad_id": str(especialidades[1]["id"])},
+                {"tarifa_porcentaje_obra_id": tarifa_id, "especialidad_id": str(especialidades[2]["id"])},
             ],
         },
     }
@@ -305,8 +308,8 @@ def test_e2e_edificaciones_flow(
         "Result should have 'liquidacion_tipo' wrapper"
     lt = result["liquidacion_tipo"]
     assert "detalles" in lt, "liquidacion_tipo should have 'detalles'"
-    assert len(lt["detalles"]) == len(tarifas), \
-        f"Expected {len(tarifas)} detalles (same as fetched tarifas), got {len(lt['detalles'])}"
+    assert len(lt["detalles"]) == len(especialidades), \
+        f"Expected {len(especialidades)} detalles (one per especialidad), got {len(lt['detalles'])}"
 
     # Assert liquidacion_especifica is in response
     assert "liquidacion_especifica" in result, \

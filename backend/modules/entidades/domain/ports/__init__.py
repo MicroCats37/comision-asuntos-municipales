@@ -1,60 +1,34 @@
 """
 Domain Ports — Interfaces para clientes externos.
 
-Puerto para consulta de datos de instituciones (SUNAT) y personas (RENIEC).
+Puerto unificado para consulta de datos de instituciones (SUNAT) y personas (RENIEC).
 """
 
 from abc import ABC, abstractmethod
 
-from ..results.sunat_results import SunatInstitucionResult
-from ..results.reniec_results import ReniecPersonaResult
+from ..results.consulta_results import ConsultaDocumentoResult
 
 
-class ISunatClient(ABC):
+class IConsultaExternaClient(ABC):
     """
-    Puerto para obtener datos de una institución según SUNAT.
+    Puerto unificado para consulta de documento por número (DNI o RUC).
 
-    Esta interfaz permite consultar los datos de una empresa o institución
-    registrada en la SUNAT por su RUC.
+    Auto-detecta el tipo por longitud: 8=DNI, 11=RUC.
     """
 
     @abstractmethod
-    async def get_institucion(self, ruc: str) -> SunatInstitucionResult:
+    async def consultar_documento(self, documento: str) -> ConsultaDocumentoResult:
         """
-        Obtiene los datos de una institución por RUC.
+        Obtiene datos por DNI (8 dígitos) o RUC (11 dígitos).
 
         Args:
-            ruc: Número de RUC de la institución (11 dígitos).
+            documento: Número de documento (8 o 11 dígitos).
 
         Returns:
-            SunatInstitucionResult con los datos de la institución.
+            ConsultaDocumentoResult con tipo_documento, numero_documento, razon_social.
 
         Raises:
-            SunatNotFoundError: Si el RUC no existe o no se puede consultar.
-        """
-        ...
-
-
-class IReniecClient(ABC):
-    """
-    Puerto para obtener datos de una persona según RENIEC.
-
-    Esta interfaz permite consultar los datos personales de una persona
-    registrada en el RENIEC por su DNI.
-    """
-
-    @abstractmethod
-    async def get_persona(self, dni: str) -> ReniecPersonaResult:
-        """
-        Obtiene los datos de una persona por DNI.
-
-        Args:
-            dni: Número de DNI de la persona (8 dígitos).
-
-        Returns:
-            ReniecPersonaResult con los datos de la persona.
-
-        Raises:
-            ReniecNotFoundError: Si el DNI no existe o no se puede consultar.
+            SunatNotFoundError: Si el RUC no existe (longitud 11).
+            ReniecNotFoundError: Si el DNI no existe (longitud 8).
         """
         ...

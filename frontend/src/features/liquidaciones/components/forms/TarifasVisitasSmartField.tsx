@@ -5,29 +5,25 @@
  *
  * Architecture:
  * - Receives `methods: UseFormReturn<VisitasFormData>` from parent
- * - Fetches vigentes from GET /liquidaciones/inspeccion-obra/tarifas/vigentes
+ * - Fetches vigentes via useTarifasVigentesVisitas (GET /liquidaciones/inspeccion-obra/tarifas/vigentes)
  * - Shows categorias with costo_por_visita
  * - Select categoria + tarifa, sets `categoria` and `tarifa_visitas_id`
  */
-import { useState, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { Badge } from "@/components/ui/badge";
-import api from "@/lib/api";
 import type { VisitasFormData } from "../../schemas/liquidacion-visitas-form.schema";
-
-interface TarifaVigenteVisitas {
-  id: string;
-  costo_por_visita: number;
-  visitas_minimas: number;
-  categoria: string;
-  habilitada: boolean;
-}
+import {
+  type TarifasVigentesVisitas,
+  useTarifasVigentesVisitas,
+} from "../../hooks/useTarifasVigentes";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface TarifasVisitasSmartFieldProps {
   methods: UseFormReturn<any>;
 }
+
+type TarifaVigenteVisitas = TarifasVigentesVisitas["tarifas"][number];
 
 function LoadingCard() {
   return (
@@ -48,14 +44,8 @@ function LoadingCard() {
 export function TarifasVisitasSmartField({
   methods,
 }: TarifasVisitasSmartFieldProps) {
-  const { data: tarifas, isLoading } = useQuery<TarifaVigenteVisitas[]>({
-    queryKey: ["liquidaciones", "inspeccion-obra", "tarifas-vigentes"],
-    queryFn: async () => {
-      const { data } = await api.get("/liquidaciones/inspeccion-obra/tarifas/vigentes");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (data as any).data?.tarifas || [];
-    },
-  });
+  const { data: tarifasData, isLoading } = useTarifasVigentesVisitas();
+  const tarifas = tarifasData?.tarifas ?? [];
 
   // Group tarifas by categoria
   const groupedByCategoria = (tarifas || []).reduce<Record<string, TarifaVigenteVisitas[]>>(

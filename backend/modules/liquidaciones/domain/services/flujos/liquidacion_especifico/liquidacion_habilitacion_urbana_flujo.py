@@ -24,16 +24,6 @@ from modules.liquidaciones.domain.results.liquidacion_especifico.habilitacion_ur
 )
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
     LiquidacionGeneralResult,
-    LiquidacionDelegadoEnGeneralResult,
-    ProyectoResult,
-    EntidadResult,
-    UsuarioCreadorResult,
-    MunicipalidadResult,
-    IgvResult,
-    UitResult,
-    DistritoResult,
-    ProvinciaResult,
-    DepartamentoResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_m2_result import (
     LiquidacionM2Result,
@@ -133,111 +123,11 @@ class LiquidacionHabilitacionUrbanaFlujo:
             )
 
             # Paso 6: Construir el Result 100% tipado con Pydantic
-            entidad_result = None
-            if entidad:
-                entidad_result = EntidadResult(
-                    razon_social=proyecto.entidad_razon_social,
-                    tipo_documento=entidad.tipo_documento,
-                    numero_documento=entidad.numero_documento,
-                )
-
-            # Build distrito objeto (con provincia/departamento)
-            distrito_result = None
-            if getattr(proyecto, "distrito_id", None):
-                distrito = proyecto.distrito
-                if distrito:
-                    distrito_result = DistritoResult(
-                        id=str(distrito.id),
-                        nombre=distrito.nombre,
-                        ubigeo=getattr(distrito, "ubigeo", None),
-                        provincia=(
-                            ProvinciaResult(
-                                id=str(distrito.provincia.id),
-                                nombre=distrito.provincia.nombre,
-                            )
-                            if distrito.provincia
-                            else None
-                        ),
-                        departamento=(
-                            DepartamentoResult(
-                                id=str(distrito.provincia.departamento.id),
-                                nombre=distrito.provincia.departamento.nombre,
-                            )
-                            if distrito.provincia and distrito.provincia.departamento
-                            else None
-                        ),
-                    )
-
-            proyecto_result = ProyectoResult(
-                id=str(proyecto.id),
-                denominacion=proyecto.denominacion,
-                nombre_propietario=proyecto.nombre_propietario,
-                direccion=proyecto.direccion,
-                distrito=distrito_result,
-                entidad=entidad_result,
-            )
-
-            # Build delegados list
-            delegados = [
-                LiquidacionDelegadoEnGeneralResult(
-                    id=str(ld.id),
-                    liquidacion_id=str(liquidacion_general.id),
-                    delegado_id=str(ld.delegado_id),
-                    especialidad_revision_id=str(ld.especialidad_revision_id),
-                    especialidad_revision_nombre=ld.especialidad_revision.nombre,
-                    delegado_cip=ld.delegado.perfil_ingeniero.cip,
-                    delegado_dni=ld.delegado.perfil_ingeniero.dni,
-                    delegado_nombre_completo=ld.delegado.perfil_ingeniero.nombre_completo,
-                    periodo=ld.periodo,
-                    dictamen_revision=ld.dictamen_revision,
-                    fecha_presentacion=ld.fecha_presentacion.isoformat() if ld.fecha_presentacion else None,
-                    fecha_revision=ld.fecha_revision.isoformat() if ld.fecha_revision else None,
-                )
-                for ld in getattr(liquidacion_general, 'liquidacion_delegados', []).all()
-            ]
-
-            general_result = LiquidacionGeneralResult(
-                id=str(liquidacion_general.id),
-                municipalidad=MunicipalidadResult(
-                    id=str(liquidacion_general.municipalidad.id),
-                    codigo=liquidacion_general.municipalidad.codigo,
-                    nombre=liquidacion_general.municipalidad.nombre,
-                ),
-                usuario_creador=UsuarioCreadorResult(
-                    id=str(usuario_id),
-                    nombres=getattr(liquidacion_general.usuario_creador, "nombres", None),
-                    apellidos=getattr(liquidacion_general.usuario_creador, "apellidos", None),
-                    email=getattr(liquidacion_general.usuario_creador, "email", None),
-                    dni=getattr(liquidacion_general.usuario_creador, "dni", None),
-                    username=getattr(liquidacion_general.usuario_creador, "username", None),
-                ),
+            # Delegates common ORM→Result mapping to core
+            general_result = self.general_core.build_general_result(
+                liquidacion_general=liquidacion_general,
+                usuario_id=usuario_id,
                 fecha_registro=str(liquidacion_general.fecha_registro) if liquidacion_general.fecha_registro else "",
-                expediente=gen_data.expediente,
-                observacion=gen_data.observacion,
-                numero_revision=liquidacion_general.numero_revision,
-                sub_total=float(liquidacion_general.sub_total),
-                total=float(liquidacion_general.total),
-                retencion=gen_data.retencion,
-                igv=(
-                    IgvResult(
-                        id=str(liquidacion_general.igv_id.id),
-                        valor=float(liquidacion_general.igv_id.valor),
-                        periodo_inicio=liquidacion_general.igv_id.periodo_inicio.isoformat() if liquidacion_general.igv_id.periodo_inicio else None,
-                    )
-                    if liquidacion_general.igv_id
-                    else None
-                ),
-                uit=(
-                    UitResult(
-                        id=str(liquidacion_general.uit_id.id),
-                        valor=float(liquidacion_general.uit_id.valor),
-                        periodo_inicio=liquidacion_general.uit_id.periodo_inicio.isoformat() if liquidacion_general.uit_id.periodo_inicio else None,
-                    )
-                    if liquidacion_general.uit_id
-                    else None
-                ),
-                proyecto=proyecto_result,
-                delegados=delegados,
             )
 
             tipo_result = LiquidacionM2Result(

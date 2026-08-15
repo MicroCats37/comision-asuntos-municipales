@@ -273,30 +273,19 @@ def test_detail_endpoint_returns_404_for_wrong_type_liquidacion(
         TarifaPorcentajeObra,
         DerechoPorcentajeObra,
     )
-    from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
-    from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
 
     user = create_user
 
     # Create TarifaLiquidacionBase for Edificacion
-    
     tarifa_base_edif = TarifaLiquidacionBase.objects.create(
         tipo_liquidacion=tipo_edificacion,
         periodo_inicio="2024-01-01",
         periodo_fin=None,
     )
 
-    # Create especialidad
-    especialidad = Especialidad.objects.create(
-        codigo="E01",
-        slug="estructuras",
-        nombre="Estructuras",
-    )
-
-    # Create TarifaPorcentajeObra
+    # Create TarifaPorcentajeObra (sin especialidad FK)
     tarifa_pct = TarifaPorcentajeObra.objects.create(
         tarifa_base=tarifa_base_edif,
-        especialidad=especialidad,
         porcentaje_liquidacion=Decimal("0.0010"),
     )
 

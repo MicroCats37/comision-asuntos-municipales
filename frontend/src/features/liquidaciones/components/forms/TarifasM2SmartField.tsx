@@ -10,16 +10,10 @@
  * }
  * Single select — setValue("tarifa_m2_id", id)
  */
-import { useState, useCallback, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { Banknote, CircleCheck, MapPin, Square } from "lucide-react";
-import api from "@/lib/api";
-
-interface TarifaM2Data {
-  tarifa_vigente?: { datos?: { id?: string; costo_por_m2?: number } } | null;
-  derecho_vigente?: { datos?: { id?: string; derecho_minimo?: number; derecho_maximo?: number } } | null;
-}
+import { useTarifasVigentesM2 } from "../../hooks/useTarifasVigentes";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface TarifasM2SmartFieldProps {
@@ -36,13 +30,7 @@ export function TarifasM2SmartField({
 }: TarifasM2SmartFieldProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery<TarifaM2Data>({
-    queryKey: ["liquidaciones", tipo, "tarifas-vigentes-m2"],
-    queryFn: async () => {
-      const { data } = await api.get(`/liquidaciones/${tipo}/tarifas/vigentes`);
-      return data.data;
-    },
-  });
+  const { data, isLoading } = useTarifasVigentesM2(tipo);
 
   const tarifa = data?.tarifa_vigente?.datos;
   const derecho = data?.derecho_vigente?.datos;

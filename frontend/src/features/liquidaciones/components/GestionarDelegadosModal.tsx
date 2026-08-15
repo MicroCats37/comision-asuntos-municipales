@@ -1,15 +1,14 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { handleApiError, notify } from "@/errors";
-import api from "@/lib/api";
-import { delegadosVigentesResponseSchema } from "../hooks/useDelegadosVigentes";
+import { useApiUpdate } from "@/hooks";
+import { useDelegadosVigentes } from "../hooks/useDelegadosVigentes";
 import { type Asignacion, DelegadosSection } from "./DelegadosSection";
 
 interface HasId {
@@ -59,25 +58,11 @@ export function GestionarDelegadosModal({
     [delegadosActuales],
   );
 
-  const delegadosQuery = useQuery({
-    queryKey: [
-      "delegados-vigentes",
-      municipalidadId,
-      tipoLiquidacion,
-    ],
-    queryFn: async () => {
-      const { data } = await api.get("/liquidaciones/delegados/vigentes", {
-        params: {
-          municipalidad_id: municipalidadId,
-          tipo_liquidacion: tipoLiquidacion,
-        },
-      });
-      const parsed = delegadosVigentesResponseSchema.parse(data);
-      return parsed.data?.delegados ?? [];
-    },
-    enabled: open && !!municipalidadId,
-    staleTime: 1000 * 60 * 5,
-  });
+  const delegadosQuery = useDelegadosVigentes(
+    open ? municipalidadId : null,
+    open ? tipoLiquidacion : null,
+    null,
+  );
 
   const isLoading = delegadosQuery.isLoading;
   const allDelegados = useMemo(
@@ -85,10 +70,11 @@ export function GestionarDelegadosModal({
     [delegadosQuery.data],
   );
 
-  const batchMutation = useMutation({
-    mutationFn: async (
+  // Lógica de negocio del modal: arma el batch create/update/delete
+  const buildBatchPayload = useCallback(
+    (
       asignaciones: z.infer<typeof gestionarDelegadosSchema>["asignaciones"],
-    ) => {
+    ): Record<string, unknown[]> | null => {
       const selectedIds = new Set(asignaciones.map((a) => a.delegado_id));
 
       // create = selected ids not in currentDelegadosIds (metadata fields omitted)
@@ -127,29 +113,29 @@ export function GestionarDelegadosModal({
       if (update.length > 0) payload.update = update;
       if (deleteItems.length > 0) payload.delete = deleteItems;
 
-      if (Object.keys(payload).length === 0) return null;
+      return Object.keys(payload).length === 0 ? null : payload;
+    },
+    [currentDelegadosIds],
+  );
 
-      const { data } = await api.patch(
-        `/liquidaciones/${liquidacionId}/delegados`,
-        payload,
-      );
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["liquidaciones"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      const apiError = handleApiError(error);
-      notify.error(apiError.message);
+  const batchMutation = useApiUpdate<unknown, Record<string, unknown[]>>({
+    url: `/liquidaciones/${liquidacionId}/delegados`,
+    method: "PATCH",
+    options: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["liquidaciones"] });
+        onSuccess?.();
+      },
     },
   });
 
   const handleSubmit = useCallback(
     async (data: GestionarDelegadosFormData) => {
-      await batchMutation.mutateAsync(data.asignaciones);
+      const payload = buildBatchPayload(data.asignaciones);
+      if (!payload) return;
+      await batchMutation.mutateAsync(payload);
     },
-    [batchMutation],
+    [buildBatchPayload, batchMutation],
   );
 
   const renderContent = useCallback(

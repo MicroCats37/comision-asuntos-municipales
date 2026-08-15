@@ -1,13 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { CheckSquare, Percent, Square } from "lucide-react";
 /**
  * TarifasPorcentajeSmartField — Smart Field for PorcentajeObra tariff selection.
  *
  * Architecture:
  * - Receives `methods: UseFormReturn<EdificacionesFormData>` from parent
- * - Fetches vigentes from GET /liquidaciones/{tipo}/tarifas/vigentes
+ * - Fetches vigentes via useTarifasVigentesPorcentaje (GET /liquidaciones/{tipo}/tarifas/vigentes)
  * - NEW contract: returns { tarifas: [tarifa_unica], especialidades_disponibles: [...] }
  * - Shows ONE read-only card with the single tariff percentage
  * - Shows checkboxes for especialidades_disponibles (user selects which apply)
@@ -16,24 +15,7 @@ import { CheckSquare, Percent, Square } from "lucide-react";
  */
 import { useCallback } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import api from "@/lib/api";
-
-/** Backend real (NEW): { tarifas: [{id, porcentaje_liquidacion}], especialidades_disponibles: [{id, codigo, nombre}] } */
-interface TarifaVigente {
-  id: string;
-  porcentaje_liquidacion: number;
-}
-
-interface EspecialidadDisponible {
-  id: string;
-  codigo: string;
-  nombre: string;
-}
-
-interface TarifasVigentesResponse {
-  tarifas: TarifaVigente[];
-  especialidades_disponibles: EspecialidadDisponible[];
-}
+import { useTarifasVigentesPorcentaje } from "../../hooks/useTarifasVigentes";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface TarifasPorcentajeSmartFieldProps {
@@ -67,15 +49,7 @@ export function TarifasPorcentajeSmartField({
   const selectedEspecialidades =
     methods.watch("especialidades_seleccionadas") ?? [];
 
-  const { data, isLoading } = useQuery<TarifasVigentesResponse>({
-    queryKey: ["liquidaciones", tipo, "tarifas-vigentes"],
-    queryFn: async () => {
-      const { data: resp } = await api.get(
-        `/liquidaciones/${tipo}/tarifas/vigentes`,
-      );
-      return resp.data ?? { tarifas: [], especialidades_disponibles: [] };
-    },
-  });
+  const { data, isLoading } = useTarifasVigentesPorcentaje(tipo);
 
   const tarifas = data?.tarifas ?? [];
   const especialidades = data?.especialidades_disponibles ?? [];
@@ -84,7 +58,7 @@ export function TarifasPorcentajeSmartField({
   const handleToggleEspecialidad = useCallback(
     (id: string) => {
       const next = selectedEspecialidades.includes(id)
-        ? selectedEspecialidades.filter((x) => x !== id)
+        ? selectedEspecialidades.filter((x: string) => x !== id)
         : [...selectedEspecialidades, id];
       methods.setValue("especialidades_seleccionadas", next, {
         shouldValidate: true,

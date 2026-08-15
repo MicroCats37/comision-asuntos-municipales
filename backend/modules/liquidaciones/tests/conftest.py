@@ -1,290 +1,65 @@
 """
-Shared fixtures for liquidaciones integration tests.
+Shared fixtures index for liquidaciones integration tests.
 
-Extracted from test_edificaciones_nueva_liquidacion.py to avoid duplication
-across multiple test files.
+Fixtures organized into the fixtures/ subpackage.
+This file re-exports them directly so pytest discovers them.
+
+Factories (make_payload_*) are NOT re-exported — import directly:
+    from modules.liquidaciones.tests.fixtures.factories import make_payload_po
 """
-import pytest
-from decimal import Decimal
-from datetime import date
-
-from ninja.testing import TestClient
-from ninja_jwt.tokens import AccessToken
-from config.api import api
-from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
-from modules.entidades.domain.models.municipalidad import Municipalidad
-from modules.liquidaciones.domain.models.proyecto import Proyecto
-from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadIngeniero as Especialidad, EspecialidadRevision
-from modules.finanzas.domain.models.impuestos import UIT, IGV
-from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
-    TarifaLiquidacionBase,
-    TarifaPorcentajeObra,
-    DerechoPorcentajeObra,
-    TarifaPorCategoriaVisitas,
+from modules.liquidaciones.tests.fixtures.usuarios_fixtures import (
+    api_client,
+    create_user,
+    auth_client,
+    usuario_admin,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
-from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
-from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
-    LiquidacionEspecialidadDisponibles,
+from modules.liquidaciones.tests.fixtures.ubigeo_fixtures import (
+    ubigeo_departamento,
+    ubigeo_provincia,
+    ubigeo_distrito,
+    municipalidad,
+    proyecto,
 )
-
-
-# ── TipoLiquidacion Fixtures ────────────────────────────────────────────────────
-
-@pytest.fixture
-def tipo_edificacion(db):
-    """Get or create TipoLiquidacion for EDIFICACION."""
-    return TipoLiquidacionModel.objects.get_or_create(codigo="EDIFICACION", defaults={"nombre": "Edificaciones"})[0]
-
-
-@pytest.fixture
-def tipo_habilitacion_urbana(db):
-    """Get or create TipoLiquidacion for HABILITACION_URBANA."""
-    return TipoLiquidacionModel.objects.get_or_create(codigo="HABILITACION_URBANA", defaults={"nombre": "Habilitación Urbana"})[0]
-
-
-@pytest.fixture
-def tipo_mecanica_suelos(db):
-    """Get or create TipoLiquidacion for MECANICA_SUELOS."""
-    return TipoLiquidacionModel.objects.get_or_create(codigo="MECANICA_SUELOS", defaults={"nombre": "Mecánica de Suelos"})[0]
-
-
-@pytest.fixture
-def tipo_impacto_vial(db):
-    """Get or create TipoLiquidacion for IMPACTO_VIAL."""
-    return TipoLiquidacionModel.objects.get_or_create(codigo="IMPACTO_VIAL", defaults={"nombre": "Impacto Vial"})[0]
-
-
-@pytest.fixture
-def tipo_taludes(db):
-    """Get or create TipoLiquidacion for TALUDES."""
-    return TipoLiquidacionModel.objects.get_or_create(codigo="TALUDES", defaults={"nombre": "Taludes"})[0]
-
-
-@pytest.fixture
-def tipo_inspeccion_obra(db):
-    """Get or create TipoLiquidacion for INSPECCION_OBRA."""
-    return TipoLiquidacionModel.objects.get_or_create(codigo="INSPECCION_OBRA", defaults={"nombre": "Inspección de Obra"})[0]
-
-
-# ── Core Fixtures ──────────────────────────────────────────────────────────────
-
-@pytest.fixture
-def api_client(db):
-    """Ninja TestClient for testing Ninja endpoints with proper async handling."""
-    return TestClient(api)
-
-
-@pytest.fixture
-def create_user(db):
-    """Create a test user (needed for FK to usuarios_usuario on LiquidacionGeneral)."""
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-    return User.objects.create_user(
-        username="testuser_edif",
-        email="test_edif@example.com",
-        password="testpass123",
-        dni="12345678",
-    )
-
-
-@pytest.fixture
-def auth_client(api_client, create_user):
-    """Authenticate the test client using JWT token."""
-    user = create_user
-    token = AccessToken.for_user(user)
-    api_client.headers.update({"Authorization": f"Bearer {token}"})
-    api_client.user = user
-    return api_client
-
-
-# ── Ubigeo Fixtures ────────────────────────────────────────────────────────────
-
-@pytest.fixture
-def ubigeo_departamento(db):
-    """Create a department for testing."""
-    return UbigeoDepartamento.objects.create(nombre="LIMA")
-
-
-@pytest.fixture
-def ubigeo_provincia(db, ubigeo_departamento):
-    """Create a province for testing."""
-    return UbigeoProvincia.objects.create(
-        departamento=ubigeo_departamento,
-        nombre="LIMA",
-    )
-
-
-@pytest.fixture
-def ubigeo_distrito(db, ubigeo_provincia):
-    """Create a district for testing."""
-    return UbigeoDistrito.objects.create(
-        provincia=ubigeo_provincia,
-        nombre="MIRAFLORES",
-        ubigeo="150132",
-    )
-
-
-# ── Entidad Fixtures ────────────────────────────────────────────────────────────
-
-@pytest.fixture
-def municipalidad(db, ubigeo_distrito):
-    """Create a municipalidad for testing."""
-    return Municipalidad.objects.create(
-        codigo="M001",
-        nombre="Municipalidad de Miraflores",
-        distrito=ubigeo_distrito,
-    )
-
-
-@pytest.fixture
-def proyecto(db, municipalidad, ubigeo_distrito):
-    """Create a proyecto for testing."""
-    return Proyecto.objects.create(
-        denominacion="Proyecto Test Edificaciones",
-        nombre_propietario="Propietario Test SAC",
-        direccion="Av. Test 123",
-        distrito_id=ubigeo_distrito.id,
-        entidad_tipo_documento="RUC",
-        entidad_numero_documento="20456789012",
-        entidad_razon_social="Propietario Test SAC",
-    )
-
-
-# ── Finanzas Fixtures ─────────────────────────────────────────────────────────
-
-@pytest.fixture
-def igv_vigente(db):
-    """Create an IGV vigente for testing."""
-    return IGV.objects.create(
-        valor=Decimal("0.18"),
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def uit_vigente(db):
-    """Create a UIT vigente for testing."""
-    return UIT.objects.create(
-        valor=Decimal("5150.00"),
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-# ── Tarifa Fixtures ────────────────────────────────────────────────────────────
-
-@pytest.fixture
-def tarifa_liquidacion_base_edificacion(db, tipo_edificacion):
-    """Create a TarifaLiquidacionBase for Edificaciones."""
-    return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=tipo_edificacion,
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def especialidad_estructuras(db):
-    """Create an EspecialidadRevision for Edificaciones testing."""
-    return EspecialidadRevision.objects.create(
-        codigo="E01",
-        slug="estructuras",
-        nombre="Estructuras",
-    )
-
-
-@pytest.fixture
-def especialidad_arquitectura(db):
-    """Create an EspecialidadRevision for Edificaciones testing."""
-    return EspecialidadRevision.objects.create(
-        codigo="A01",
-        slug="arquitectura",
-        nombre="Arquitectura",
-    )
-
-
-@pytest.fixture
-def especialidad_installaciones(db):
-    """Create an EspecialidadRevision for Edificaciones testing."""
-    return EspecialidadRevision.objects.create(
-        codigo="I01",
-        slug="instalaciones",
-        nombre="Instalaciones",
-    )
-
-
-@pytest.fixture
-def tarifa_porcentaje_obra_estructuras(db, tarifa_liquidacion_base_edificacion):
-    """Create a TarifaPorcentajeObra (sin especialidad — tarifa única por base).
-
-    La especialidad se pasa explícitamente en el input; el modelo ya no tiene FK especialidad.
-    """
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        porcentaje_liquidacion=Decimal("0.0010"),  # 0.10%
-    )
-
-
-@pytest.fixture
-def especialidades_disponibles_edificacion(
-    db, tipo_edificacion, especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones
-):
-    """Create LiquidacionEspecialidadDisponibles for the 3 especialidades of Edificaciones.
-
-    Required for auto-fill mode: the orchestrator combines vigentes tarifas x
-    vigentes especialidades when the input tarifas list is empty.
-    """
-    return [
-        LiquidacionEspecialidadDisponibles.objects.create(
-            tipo_liquidacion=tipo_edificacion,
-            especialidad=esp,
-            activo=True,
-            periodo_inicio=date(2024, 1, 1),
-            periodo_fin=None,
-        )
-        for esp in [especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones]
-    ]
-
-
-@pytest.fixture
-def derecho_porcentaje_vigente(db):
-    """Create a DerechoPorcentajeObra vigente for testing."""
-    return DerechoPorcentajeObra.objects.create(
-        derecho_minimo=Decimal("500.00"),
-        derecho_maximo=Decimal("50000.00"),
-        porcentaje_minimo_uit=Decimal("0.10"),
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-# ── usuario_admin Fixture (alias for create_user) ──────────────────────────────
-
-@pytest.fixture
-def usuario_admin(db, create_user):
-    """Alias for create_user to match naming convention used in some tests."""
-    return create_user
-
-
-# ── IO (Inspección de Obra) Tarifa Fixtures ──────────────────────────────────
-
-@pytest.fixture
-def tarifa_liquidacion_base_io(db, tipo_inspeccion_obra):
-    """Create a TarifaLiquidacionBase for Inspección de Obra."""
-    return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=tipo_inspeccion_obra,
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def tarifa_visitas_io(db, tarifa_liquidacion_base_io):
-    """Create a TarifaPorCategoriaVisitas for Inspección de Obra testing."""
-    return TarifaPorCategoriaVisitas.objects.create(
-        tarifa_base=tarifa_liquidacion_base_io,
-        porcentaje_uit=Decimal("0.05"),  # 5% of UIT
-        categoria_visitas="INSPECCION",
-    )
+from modules.liquidaciones.tests.fixtures.finanzas_fixtures import (
+    igv_vigente,
+    uit_vigente,
+)
+from modules.liquidaciones.tests.fixtures.tipos_fixtures import (
+    tipo_edificacion,
+    tipo_habilitacion_urbana,
+    tipo_mecanica_suelos,
+    tipo_impacto_vial,
+    tipo_taludes,
+    tipo_inspeccion_obra,
+)
+from modules.liquidaciones.tests.fixtures.tarifas_po_fixtures import (
+    tarifa_liquidacion_base_edificacion,
+    especialidad_estructuras,
+    especialidad_arquitectura,
+    especialidad_installaciones,
+    tarifa_porcentaje_obra_estructuras,
+    tarifa_porcentaje_obra_arquitectura,
+    tarifa_porcentaje_obra_installaciones,
+    especialidades_disponibles_edificacion,
+    derecho_porcentaje_vigente,
+)
+from modules.liquidaciones.tests.fixtures.tarifas_m2_fixtures import (
+    tarifa_liquidacion_base_hu,
+    tarifa_m2_hu,
+    tarifa_liquidacion_base_ms,
+    tarifa_m2_ms,
+    derecho_m2_vigente,
+)
+from modules.liquidaciones.tests.fixtures.tarifas_io_fixtures import (
+    tarifa_liquidacion_base_io,
+    tarifa_visitas_io,
+)
+from modules.liquidaciones.tests.fixtures.setup_po_fixtures import (
+    po_base_setup,
+)
+from modules.liquidaciones.tests.fixtures.setup_m2_fixtures import (
+    m2_base_setup,
+)
+from modules.liquidaciones.tests.fixtures.setup_io_fixtures import (
+    io_base_setup,
+)

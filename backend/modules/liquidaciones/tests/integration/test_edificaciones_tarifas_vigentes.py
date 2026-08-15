@@ -9,66 +9,16 @@ import uuid
 from decimal import Decimal
 from datetime import date
 
-from ninja.testing import TestClient
-from config.api import api
-from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorcentajeObra,
-    DerechoPorcentajeObra,
 )
 from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
-@pytest.fixture
-def tarifa_liquidacion_base_edificacion(db, tipo_edificacion):
-    """Create a TarifaLiquidacionBase for Edificaciones."""
-    
-    return TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=tipo_edificacion,
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def especialidad_estructuras(db):
-    """Create an EspecialidadRevision for Edificaciones testing."""
-    return Especialidad.objects.create(
-        codigo="E01",
-        slug="estructuras",
-        nombre="Estructuras",
-    )
-
-
-@pytest.fixture
-def especialidad_arquitectura(db):
-    """Create an EspecialidadRevision for Edificaciones testing."""
-    return Especialidad.objects.create(
-        codigo="A01",
-        slug="arquitectura",
-        nombre="Arquitectura",
-    )
-
-
-@pytest.fixture
-def especialidad_installaciones(db):
-    """Create an EspecialidadRevision for Edificaciones testing."""
-    return Especialidad.objects.create(
-        codigo="I01",
-        slug="instalaciones",
-        nombre="Instalaciones",
-    )
-
-
-@pytest.fixture
-def tarifa_porcentaje_obra_estructuras(db, tarifa_liquidacion_base_edificacion):
-    """Create a TarifaPorcentajeObra for Estructuras (vigente, no especialidad FK)."""
-    return TarifaPorcentajeObra.objects.create(
-        tarifa_base=tarifa_liquidacion_base_edificacion,
-        porcentaje_liquidacion=Decimal("0.0010"),  # 0.10%
-    )
-
+# Local fixtures NOT in conftest:
+# - tarifa_porcentaje_obra_base2: second base+tarifa (Arquitectura 0.05%)
+# - tarifa_porcentaje_obra_base3: third base+tarifa (Instalaciones 0.03%)
 
 @pytest.fixture
 def tarifa_porcentaje_obra_base2(db, tipo_edificacion):
@@ -96,24 +46,6 @@ def tarifa_porcentaje_obra_base3(db, tipo_edificacion):
         tarifa_base=base3,
         porcentaje_liquidacion=Decimal("0.0003"),  # 0.03%
     )
-
-
-@pytest.fixture
-def derecho_porcentaje_vigente(db):
-    """Create a DerechoPorcentajeObra vigente for testing."""
-    return DerechoPorcentajeObra.objects.create(
-        derecho_minimo=Decimal("500.00"),
-        derecho_maximo=Decimal("50000.00"),
-        porcentaje_minimo_uit=Decimal("0.10"),
-        periodo_inicio=date(2024, 1, 1),
-        periodo_fin=None,
-    )
-
-
-@pytest.fixture
-def api_client(db):
-    """Ninja TestClient for testing Ninja endpoints with proper async handling."""
-    return TestClient(api)
 
 
 @pytest.mark.django_db

@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   Building2,
   FileText,
@@ -16,6 +15,7 @@ import {
  *
  * NEW contract:
  * - GET /liquidaciones/{tipo}/tarifas/vigentes → { tarifas: [tarifa_unica], especialidades_disponibles: [...] }
+ *   (via useTarifasVigentesPorcentaje)
  * - Shows ONE read-only tariff card + specialty CHECKBOXES (all selected by default)
  * - User can deselect specialties if needed
  *
@@ -31,8 +31,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { notify } from "@/errors";
-import api from "@/lib/api";
 import { useCrearNuevaRevisionEdificaciones } from "../../hooks/useCrearNuevaRevisionEdificaciones";
+import { useTarifasVigentesPorcentaje } from "../../hooks/useTarifasVigentes";
 import type { UltimaRevisionItem } from "../../hooks/useUltimaRevisionEdificaciones";
 import type { ContactoInline } from "../../schemas/liquidacion-form-base.schema";
 import {
@@ -41,22 +41,6 @@ import {
 } from "../../schemas/liquidacion-nueva-revision-form.schema";
 import { ContactoFormModal } from "./ContactoFormModal";
 import { CotizacionNuevaRevisionSmartField } from "./CotizacionNuevaRevisionSmartField";
-
-interface TarifaVigente {
-  id: string;
-  porcentaje_liquidacion: number;
-}
-
-interface EspecialidadDisponible {
-  id: string;
-  codigo: string;
-  nombre: string;
-}
-
-interface TarifasVigentesResponse {
-  tarifas: TarifaVigente[];
-  especialidades_disponibles: EspecialidadDisponible[];
-}
 
 // Hook to pre-select the first especialidad (radio) when modal opens
 function usePreselectEspecialidades(open: boolean): {
@@ -67,15 +51,7 @@ function usePreselectEspecialidades(open: boolean): {
   const [selectedEspecialidad, setSelectedEspecialidad] = useState<string | null>(null);
   const [tarifaUnicaId, setTarifaUnicaId] = useState<string | null>(null);
 
-  const { data } = useQuery<TarifasVigentesResponse>({
-    queryKey: ["liquidaciones", "edificaciones", "tarifas-vigentes-nueva-rev"],
-    queryFn: async () => {
-      const { data: resp } = await api.get(
-        "/liquidaciones/edificaciones/tarifas/vigentes",
-      );
-      return resp.data ?? { tarifas: [], especialidades_disponibles: [] };
-    },
-  });
+  const { data } = useTarifasVigentesPorcentaje("edificaciones");
 
   useEffect(() => {
     if (open && data) {
@@ -145,15 +121,7 @@ function EspecialidadesNuevaRevisionSelector({
   selectedEspecialidad: string | null;
   onSelectEspecialidad: (id: string) => void;
 }) {
-  const { data, isLoading } = useQuery<TarifasVigentesResponse>({
-    queryKey: ["liquidaciones", "edificaciones", "tarifas-vigentes-nueva-rev"],
-    queryFn: async () => {
-      const { data: resp } = await api.get(
-        "/liquidaciones/edificaciones/tarifas/vigentes",
-      );
-      return resp.data ?? { tarifas: [], especialidades_disponibles: [] };
-    },
-  });
+  const { data, isLoading } = useTarifasVigentesPorcentaje("edificaciones");
 
   const tarifaUnica = data?.tarifas[0];
   const especialidades = data?.especialidades_disponibles ?? [];
