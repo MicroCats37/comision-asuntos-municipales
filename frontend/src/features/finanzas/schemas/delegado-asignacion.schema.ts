@@ -3,13 +3,11 @@
  * Endpoint: GET /liquidaciones/delegados-asignaciones
  */
 import { z } from "zod";
+import { TipoLiquidacionMinimalSchema } from "./tipo-liquidacion-minimal.schema";
 
 const uuid = () => z.string();
 
-export const tipoLiquidacionMinimalSchema = z.object({
-  codigo: z.string(),
-  nombre: z.string(),
-});
+export { TipoLiquidacionMinimalSchema as tipoLiquidacionMinimalSchema } from "./tipo-liquidacion-minimal.schema";
 
 export const liquidacionDelegadoLiquidacionSchema = z.object({
   id: uuid(),
@@ -19,7 +17,7 @@ export const liquidacionDelegadoLiquidacionSchema = z.object({
   total: z.number().nullish(),
   municipalidad_nombre: z.string().nullish(),
   proyecto_denominacion: z.string().nullish(),
-  tipo_liquidacion: tipoLiquidacionMinimalSchema.nullish(),
+  tipo_liquidacion: TipoLiquidacionMinimalSchema.nullish(),
 });
 
 export const liquidacionDelegadoDelegadoSchema = z.object({

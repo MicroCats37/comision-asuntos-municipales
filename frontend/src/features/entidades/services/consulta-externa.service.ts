@@ -1,57 +1,41 @@
 /**
- * Servicio para consulta externa SUNAT/RENIEC.
+ * Servicio para consulta externa SUNAT/RENIEC unificado.
+ *
+ * Endpoint único: GET /entidades/consulta/{documento}
+ * - 8 dígitos → DNI (RENIEC)
+ * - 11 dígitos → RUC (SUNAT)
+ *
+ * Respuesta minimal: { tipo_documento, numero_documento, razon_social }
  */
-import api from "@/lib/api";
+
 import { z } from "zod";
+import api from "@/lib/api";
 import { apiResponseSchema } from "@/types/api.types";
-import type { InstitucionSunatResponse, PersonaReniecResponse } from "../types/entidad";
 
-// ── Schemas ─────────────────────────────────────────────────────────────────────
+// ── Unified Schema ─────────────────────────────────────────────────────────────
 
-export const institucionSunatResponseSchema = apiResponseSchema(
+export const documentoConsultaResponseSchema = apiResponseSchema(
   z.object({
-    ruc: z.string(),
+    tipo_documento: z.string(),
+    numero_documento: z.string(),
     razon_social: z.string(),
-    nombre_comercial: z.string().nullable(),
-    estado: z.string(),
-    tipo_contribuyente: z.string().nullable(),
-    direccion: z.string().nullable(),
-    departamento: z.string().nullable(),
-    provincia: z.string().nullable(),
-    distrito: z.string().nullable(),
-  })
+  }),
 );
 
-export const personaReniecResponseSchema = apiResponseSchema(
-  z.object({
-    dni: z.string(),
-    nombres: z.string(),
-    apellidos: z.string(),
-    nombre_completo: z.string(),
-    genero: z.string().nullable(),
-    fecha_nacimiento: z.string().nullable(),
-    direccion: z.string().nullable(),
-    ubigeo: z.string().nullable(),
-  })
-);
-
-export type InstitucionSunatApiResponse = z.infer<typeof institucionSunatResponseSchema>;
-export type PersonaReniecApiResponse = z.infer<typeof personaReniecResponseSchema>;
+export type DocumentoConsultaResponse = z.infer<
+  typeof documentoConsultaResponseSchema
+>;
 
 // ── Service Functions ───────────────────────────────────────────────────────────
 
-export async function consultarSunat(
-  ruc: string
-): Promise<InstitucionSunatResponse | null> {
-  const response = await api.get(`/entidades/consulta-sunat/${ruc}`);
-  const parsed = institucionSunatResponseSchema.parse(response.data);
-  return parsed.data as InstitucionSunatResponse | null;
-}
-
-export async function consultarReniec(
-  dni: string
-): Promise<PersonaReniecResponse | null> {
-  const response = await api.get(`/entidades/consulta-reniec/${dni}`);
-  const parsed = personaReniecResponseSchema.parse(response.data);
-  return parsed.data as PersonaReniecResponse | null;
+/**
+ * Consulta datos de documento por número (DNI o RUC).
+ * Auto-detecta: 8 dígitos → DNI, 11 dígitos → RUC.
+ */
+export async function consultarDocumento(
+  documento: string,
+): Promise<DocumentoConsultaResponse["data"] | null> {
+  const response = await api.get(`/entidades/consulta/${documento}`);
+  const parsed = documentoConsultaResponseSchema.parse(response.data);
+  return parsed.data;
 }

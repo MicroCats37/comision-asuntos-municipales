@@ -42,23 +42,11 @@ export interface InspectorListOut {
 
 // ── Inspector Vigente (for IO liquidaciones) ─────────────────────────────────
 
-const especialidadBasicaInspectorSchema = z.object({
-  id: z.string(),
-  nombre: z.string(),
-});
-
-const inspectorVigentePayloadSchema = z.object({
-  id: z.string(),
-  nombre_completo: z.string(),
-  cip: z.string(),
-  especialidad: especialidadBasicaInspectorSchema,
-  tipo_liquidacion: z.string(),
-  categoria: z.number().nullable(),
-  numero_registro: z.string(),
-  vigencia: z.string(),
-});
-
-export type InspectorVigente = z.infer<typeof inspectorVigentePayloadSchema>;
+export type {
+  EspecialidadBasicaInspector,
+  InspectorVigente,
+  InspectorVigenteData,
+} from "../schemas/inspector-vigente.schema";
 
 // ── Zod Schemas ──────────────────────────────────────────────────────────────
 
@@ -91,6 +79,12 @@ export const inspectoresListPayloadSchema = z.object({
   total_pages: z.coerce.number(),
 });
 
-export const inspectoresListResponseSchema = apiResponseSchema(inspectoresListPayloadSchema);
+export type InspectorListItem = z.infer<typeof inspectorSchema>;
 
-export type InspectoresListResponse = z.infer<typeof inspectoresListPayloadSchema>;
+export const inspectoresListResponseSchema = apiResponseSchema(
+  inspectoresListPayloadSchema,
+);
+
+export type InspectoresListResponse = z.infer<
+  typeof inspectoresListPayloadSchema
+>;

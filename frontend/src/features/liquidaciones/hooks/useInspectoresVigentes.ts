@@ -10,34 +10,16 @@
  *   (para formularios de creación, sin exclusion)
  */
 
-import { z } from "zod";
+import type { z } from "zod";
+import {
+  InspectoresVigentesResponseSchema,
+  type InspectorVigenteSchema,
+} from "@/features/inspectores/schemas/inspector-vigente.schema";
 import { useApiQuery } from "@/hooks";
-import { apiResponseSchema } from "@/types/api.types";
-
-/** Especialidad básica para inspector vigente */
-const especialidadBasicaInspectorSchema = z.object({
-  id: z.string(),
-  nombre: z.string(),
-});
-
-/** Payload schema para inspector vigente */
-const inspectorVigentePayloadSchema = z.object({
-  id: z.string(),
-  nombre_completo: z.string(),
-  cip: z.string(),
-  especialidad: especialidadBasicaInspectorSchema,
-  tipo_liquidacion: z.string(),
-  categoria: z.number().nullable(),
-  numero_registro: z.string(),
-  vigencia: z.string(),
-});
 
 /** Wrapper schema para inspectores vigentes API response */
-export const inspectoresVigentesResponseSchema = apiResponseSchema(
-  z.object({
-    inspectores: z.array(inspectorVigentePayloadSchema),
-  }),
-);
+export const inspectoresVigentesResponseSchema =
+  InspectoresVigentesResponseSchema;
 
 /**
  * Hook para obtener inspectores vigentes/elegibles.
@@ -53,8 +35,8 @@ export function useInspectoresVigentes(
 ) {
   // liquidacionPreviaId takes precedence for creation forms
   const query = useApiQuery<
-    z.infer<typeof inspectoresVigentesResponseSchema>,
-    z.infer<typeof inspectorVigentePayloadSchema>[]
+    z.infer<typeof InspectoresVigentesResponseSchema>,
+    z.infer<typeof InspectorVigenteSchema>[]
   >({
     queryKey: [
       "liquidaciones",
@@ -67,17 +49,17 @@ export function useInspectoresVigentes(
     params: liquidacionId
       ? undefined
       : liquidacionPreviaId
-      ? { liquidacion_previa_id: liquidacionPreviaId }
-      : tipoLiquidacion
-      ? { tipo_liquidacion: tipoLiquidacion }
-      : undefined,
+        ? { liquidacion_previa_id: liquidacionPreviaId }
+        : tipoLiquidacion
+          ? { tipo_liquidacion: tipoLiquidacion }
+          : undefined,
     schema: inspectoresVigentesResponseSchema,
     queryOptions: {
       enabled: !!(liquidacionId ?? tipoLiquidacion ?? liquidacionPreviaId),
       staleTime: 1000 * 60 * 5, // 5 minutes
       select: (data) => {
         if (!data.data) {
-          return [] as z.infer<typeof inspectorVigentePayloadSchema>[];
+          return [] as z.infer<typeof InspectorVigenteSchema>[];
         }
         return data.data.inspectores;
       },

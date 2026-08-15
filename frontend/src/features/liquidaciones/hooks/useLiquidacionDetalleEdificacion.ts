@@ -4,7 +4,7 @@
  */
 import { useApiQuery } from "@/hooks";
 import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificaciones.types";
-import { liquidacionEdificacionOutResponseSchema } from "@/features_deprecated/liquidaciones/schemas/liquidacion.schema";
+import { liquidacionEdificacionOutResponseSchema } from "../schemas/liquidacion-detail.schemas";
 
 interface UseLiquidacionDetalleEdificacionProps {
   id: string;

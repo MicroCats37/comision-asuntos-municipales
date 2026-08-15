@@ -13,17 +13,15 @@ import { useCallback } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { Badge } from "@/components/ui/badge";
 import type { VisitasFormData } from "../../schemas/liquidacion-visitas-form.schema";
-import {
-  type TarifasVigentesVisitas,
-  useTarifasVigentesVisitas,
-} from "../../hooks/useTarifasVigentes";
+import { useTarifasVigentesVisitas } from "../../hooks/useTarifasVigentes";
+import type { TarifasVigentesVisitasData } from "../../schemas/tarifas-vigentes.schema";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface TarifasVisitasSmartFieldProps {
   methods: UseFormReturn<any>;
 }
 
-type TarifaVigenteVisitas = TarifasVigentesVisitas["tarifas"][number];
+type TarifaVigenteVisitas = TarifasVigentesVisitasData["tarifas"][number];
 
 function LoadingCard() {
   return (
@@ -142,3 +140,4 @@ export function TarifasVisitasSmartField({
     </div>
   );
 }
+

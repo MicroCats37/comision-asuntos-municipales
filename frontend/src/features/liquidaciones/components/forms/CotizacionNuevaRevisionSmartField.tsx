@@ -1,5 +1,7 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
+import { Calculator, Loader2 } from "lucide-react";
 /**
  * CotizacionNuevaRevisionSmartField — Smart Field de cotización para NUEVA REVISIÓN.
  *
@@ -10,32 +12,9 @@
  * Auto-recalcula con debounce cuando cambia la tarifa seleccionada.
  */
 import { useEffect, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { Calculator, Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import api from "@/lib/api";
-
-interface CotizacionDetalle {
-  tarifa_id: string;
-  especialidad_id: string;
-  porcentaje_aplicado: number;
-  subtotal: number;
-  igv: number;
-  uit: number;
-  total: number;
-}
-
-interface CotizacionOutput {
-  valor_declarado: number;
-  porcentaje_liquidacion: number;
-  derecho_minimo: number;
-  derecho_maximo: number | null;
-  porcentaje_minimo_uit: number;
-  derecho_aplicado_id: string;
-  detalles: CotizacionDetalle[];
-  total_subtotal: number;
-  total: number;
-}
+import type { CotizacionOutput } from "../../schemas/cotizacion.schema";
 
 interface CotizacionNuevaRevisionSmartFieldProps {
   /** Valor declarado FIJO heredado de la previa */
@@ -50,7 +29,8 @@ const toNumber = (value: unknown): number => {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 };
-const formatSoles = (value: unknown): string => `S/ ${toNumber(value).toFixed(2)}`;
+const formatSoles = (value: unknown): string =>
+  `S/ ${toNumber(value).toFixed(2)}`;
 
 export function CotizacionNuevaRevisionSmartField({
   valorDeclarado,
@@ -83,7 +63,9 @@ export function CotizacionNuevaRevisionSmartField({
     },
     onError: (err) => {
       setQuote(null);
-      setError(err instanceof Error ? err.message : "Error al calcular cotización");
+      setError(
+        err instanceof Error ? err.message : "Error al calcular cotización",
+      );
     },
   });
 
@@ -94,7 +76,12 @@ export function CotizacionNuevaRevisionSmartField({
   useEffect(() => {
     const v = toNumber(valorDeclarado);
 
-    if (!v || v <= 0 || !debouncedTarifa || debouncedEspecialidades.length === 0) {
+    if (
+      !v ||
+      v <= 0 ||
+      !debouncedTarifa ||
+      debouncedEspecialidades.length === 0
+    ) {
       setQuote(null);
       setError(null);
       return;
@@ -117,13 +104,17 @@ export function CotizacionNuevaRevisionSmartField({
         <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
           Cotización
         </h3>
-        {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+        {isLoading && (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        )}
       </div>
 
       {error && <p className="text-xs text-destructive">{error}</p>}
 
       {isLoading && !quote && (
-        <p className="text-xs text-muted-foreground animate-pulse">Calculando cotización...</p>
+        <p className="text-xs text-muted-foreground animate-pulse">
+          Calculando cotización...
+        </p>
       )}
 
       {quote && (
@@ -134,7 +125,9 @@ export function CotizacionNuevaRevisionSmartField({
               {(toNumber(quote.porcentaje_liquidacion) * 100).toFixed(2)}%
             </span>
             <span className="text-muted-foreground">Subtotal:</span>
-            <span className="font-medium text-right">{formatSoles(quote.total_subtotal)}</span>
+            <span className="font-medium text-right">
+              {formatSoles(quote.total_subtotal)}
+            </span>
           </div>
           <div className="border-t border-border pt-1.5 flex justify-between font-semibold text-sm">
             <span>Total a Pagar:</span>

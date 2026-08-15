@@ -3,55 +3,11 @@
  * Usa useApiQuery genérico del proyecto.
  */
 import { useApiQuery } from "@/hooks";
-import { z } from "zod";
-import { apiResponseSchema } from "@/types/api.types";
-
-/** Nested schemas for distrito payload */
-const departamentoSchema = z.object({
-  id: z.string(),
-  nombre: z.string(),
-});
-
-const provinciaSchema = z.object({
-  id: z.string(),
-  nombre: z.string(),
-  departamento: departamentoSchema,
-});
-
-/** Data payload schema for distrito items */
-const distritoPayloadSchema = z.object({
-  id: z.string(),
-  nombre: z.string(),
-  ubigeo: z.string(),
-  provincia: provinciaSchema,
-  departamento: departamentoSchema,
-});
-
-/** Full envelope schema using shared helper */
-const distritoResponseSchema = apiResponseSchema(
-  z.object({
-    items: z.array(distritoPayloadSchema),
-    total: z.number(),
-  }),
-);
-
-export interface DistritoOption {
-  id: string;
-  nombre: string;
-  ubigeo: string;
-  provincia: {
-    id: string;
-    nombre: string;
-    departamento: {
-      id: string;
-      nombre: string;
-    };
-  };
-  departamento: {
-    id: string;
-    nombre: string;
-  };
-}
+import {
+  type DistritoOption,
+  type DistritosResponse,
+  DistritosResponseSchema,
+} from "../schemas/distrito.schema";
 
 interface UseDistritosProps {
   search?: string;
@@ -72,17 +28,12 @@ export function useDistritos({
   if (provincia_id) params.provincia_id = provincia_id;
   if (departamento_id) params.departamento_id = departamento_id;
 
-  const queryKey = params
-    ? ["distritos", params]
-    : ["distritos"];
+  const queryKey = params ? ["distritos", params] : ["distritos"];
 
-  return useApiQuery<
-    z.infer<typeof distritoResponseSchema>,
-    DistritoOption[]
-  >({
+  return useApiQuery<DistritosResponse, DistritoOption[]>({
     queryKey,
     url: "/entidades/ubigeo/distritos",
-    schema: distritoResponseSchema,
+    schema: DistritosResponseSchema,
     params: Object.keys(params).length > 0 ? params : undefined,
     queryOptions: {
       enabled,

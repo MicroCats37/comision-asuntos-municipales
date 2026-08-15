@@ -1,16 +1,12 @@
-import { useApiQuery } from '@/hooks/callsApi/useApiQuery';
-import { usePagination } from '@/hooks/system/usePagination';
-import type { ZodType } from 'zod';
-import { paginatedResponseSchema } from '../schemas/liquidacion-base.schema';
-import { apiResponseSchema } from '@/types/api.types';
+import type { ZodType, z } from "zod";
+import { useApiQuery } from "@/hooks/callsApi/useApiQuery";
+import { usePagination } from "@/hooks/system/usePagination";
+import { apiResponseSchema } from "@/types/api.types";
+import { paginatedResponseSchema } from "../schemas/liquidacion-base.schema";
 
-interface PaginatedData<T> {
-  items: T[];
-  total: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
-}
+type PaginatedData<T> = z.infer<
+  ReturnType<typeof paginatedResponseSchema<z.ZodType<T>>>
+>;
 
 /** Filtros comunes del backend para listas de liquidaciones. */
 export interface LiquidacionFiltros {
@@ -48,7 +44,8 @@ export function useLiquidacionList<T>({
   schema: ZodType<T>;
   filtros?: LiquidacionFiltros;
 }): UseLiquidacionListReturn<T> {
-  const { page, pageSize, onPageChange, onPageSizeChange, paginationParams } = usePagination();
+  const { page, pageSize, onPageChange, onPageSizeChange, paginationParams } =
+    usePagination();
 
   // Merge pagination + filters
   const params: Record<string, string | number> = {
@@ -61,15 +58,30 @@ export function useLiquidacionList<T>({
   if (filtros?.numero) params.numero = filtros.numero;
   if (filtros?.razon_social) params.razon_social = filtros.razon_social;
   if (filtros?.creado_por) params.creado_por = filtros.creado_por;
-  if (filtros?.numero_revisiones) params.numero_revisiones = filtros.numero_revisiones;
+  if (filtros?.numero_revisiones)
+    params.numero_revisiones = filtros.numero_revisiones;
 
   const paginatedSchema = apiResponseSchema(paginatedResponseSchema(schema));
 
-  const { data: apiData, isLoading, isError, refetch } = useApiQuery({
-    queryKey: [...queryKey, paginationParams.page, paginationParams.page_size, filtros],
+  const {
+    data: apiData,
+    isLoading,
+    isError,
+    refetch,
+  } = useApiQuery({
+    queryKey: [
+      ...queryKey,
+      paginationParams.page,
+      paginationParams.page_size,
+      filtros,
+    ],
     url,
     params,
-    schema: paginatedSchema as ZodType<{ success: boolean; data: PaginatedData<T>; error: unknown }>,
+    schema: paginatedSchema as ZodType<{
+      success: boolean;
+      data: PaginatedData<T>;
+      error: unknown;
+    }>,
   });
 
   const data = apiData?.data;

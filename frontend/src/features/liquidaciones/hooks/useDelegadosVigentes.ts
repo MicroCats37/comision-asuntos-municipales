@@ -1,6 +1,11 @@
 /**
  * Hook para obtener delegados vigentes para una municipalidad, tipo de liquidacion y tarifa.
  * Usa useApiQuery genérico del proyecto.
+ *
+ * `revisionId` es OPCIONAL: cuando se omite (null), el hook consulta con
+ * municipalidad_id + tipo_liquidacion (caso GestionarDelegadosModal, que no
+ * conoce la revisión). La queryKey conserva el slot para compartir cache
+ * con los consumidores que sí pasan revisión.
  */
 
 import { z } from "zod";
@@ -32,7 +37,7 @@ export const delegadosVigentesResponseSchema = apiResponseSchema(
 export function useDelegadosVigentes(
   municipalidadId: string | null,
   tipoLiquidacion: string | null,
-  revisionId: string | null,
+  revisionId: string | null = null,
 ) {
   const query = useApiQuery<
     z.infer<typeof delegadosVigentesResponseSchema>,
@@ -47,16 +52,16 @@ export function useDelegadosVigentes(
     ],
     url: "/liquidaciones/delegados/vigentes",
     params:
-      municipalidadId && tipoLiquidacion && revisionId
+      municipalidadId && tipoLiquidacion
         ? {
             municipalidad_id: municipalidadId,
             tipo_liquidacion: tipoLiquidacion,
-            revision_id: revisionId,
+            ...(revisionId ? { revision_id: revisionId } : {}),
           }
         : undefined,
     schema: delegadosVigentesResponseSchema,
     queryOptions: {
-      enabled: !!municipalidadId && !!tipoLiquidacion && !!revisionId,
+      enabled: !!municipalidadId && !!tipoLiquidacion,
       staleTime: 1000 * 60 * 5, // 5 minutes
       select: (data) => {
         if (!data.data) {

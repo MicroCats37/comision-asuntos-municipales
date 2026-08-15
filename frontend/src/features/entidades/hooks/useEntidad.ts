@@ -2,40 +2,26 @@
  * Hook para crear/upsert entidad.
  * Usa useApiCreate genérico del proyecto.
  */
+
+import type { z } from "zod";
 import { useApiCreate, useApiQuery } from "@/hooks";
-import { z } from "zod";
-import { apiResponseSchema } from "@/types/api.types";
-import type { EntidadInstitucion, EntidadPersonaNatural, EntidadResult } from "../types/entidad";
-
-/** Shared data payload schema for entidad */
-const entidadDataPayloadSchema = z.object({
-  id: z.string(),
-  tipo_documento: z.string(),
-  numero_documento: z.string(),
-  razon_social: z.string().nullable(),
-  nombres: z.string().nullable(),
-  apellidos: z.string().nullable(),
-  nombre_completo: z.string(),
-  direccion: z.string().nullable(),
-  distrito_id: z.string().nullable(),
-  activo: z.boolean(),
-});
-
-/** Full envelope schema for upsert response (includes 'creado' field) */
-const entidadUpsertPayloadSchema = entidadDataPayloadSchema.extend({
-  creado: z.boolean(),
-});
-
-const entidadResponseSchema = apiResponseSchema(entidadUpsertPayloadSchema);
-const entidadBuscarResponseSchema = apiResponseSchema(entidadDataPayloadSchema);
+import {
+  EntidadBuscarResponseSchema,
+  EntidadResponseSchema,
+} from "../schemas/entidad.schema";
+import type {
+  EntidadInstitucion,
+  EntidadPersonaNatural,
+  EntidadResult,
+} from "../types/entidad";
 
 export function useInstitucionUpsert() {
   const mutation = useApiCreate<
-    z.infer<typeof entidadResponseSchema>,
+    z.infer<typeof EntidadResponseSchema>,
     EntidadInstitucion
   >({
     url: "/entidades/instituciones",
-    schema: entidadResponseSchema,
+    schema: EntidadResponseSchema,
   });
 
   return mutation;
@@ -43,11 +29,11 @@ export function useInstitucionUpsert() {
 
 export function usePersonaNaturalUpsert() {
   const mutation = useApiCreate<
-    z.infer<typeof entidadResponseSchema>,
+    z.infer<typeof EntidadResponseSchema>,
     EntidadPersonaNatural
   >({
     url: "/entidades/personas-naturales",
-    schema: entidadResponseSchema,
+    schema: EntidadResponseSchema,
   });
 
   return mutation;
@@ -63,12 +49,12 @@ export function useEntidadBuscar({
   enabled = true,
 }: UseEntidadBuscarProps) {
   return useApiQuery<
-    z.infer<typeof entidadBuscarResponseSchema>,
+    z.infer<typeof EntidadBuscarResponseSchema>,
     EntidadResult | null
   >({
     queryKey: ["entidades", "buscar", numero_documento],
     url: numero_documento ? "/entidades/buscar" : null,
-    schema: entidadBuscarResponseSchema,
+    schema: EntidadBuscarResponseSchema,
     params: numero_documento ? { numero_documento } : undefined,
     queryOptions: {
       enabled: enabled && !!numero_documento,

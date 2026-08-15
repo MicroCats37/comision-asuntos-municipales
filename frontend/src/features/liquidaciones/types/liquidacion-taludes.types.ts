@@ -4,17 +4,19 @@
  */
 import { z } from "zod";
 import {
-  tipoLiquidacionSchema,
   entidadInlineSchema,
-  proyectoInlineSchema,
   municipalidadInlineSchema,
+  proyectoInlineSchema,
   revisionBasicaSchema,
+  tipoLiquidacionSchema,
   valoresFinancierosSchema,
   variablesFinancierasSchema,
 } from "./liquidacion-general.types";
 
-export const tramiteAccionSchema = z.enum(["PRIMERA_REVISION", "REVISION"]);
-export type TramiteAccion = z.infer<typeof tramiteAccionSchema>;
+export {
+  type TramiteAccion,
+  TramiteAccionSchema as tramiteAccionSchema,
+} from "../schemas/tramite.schema";
 
 // ── Flat Output Type ───────────────────────────────────────────────────────────
 

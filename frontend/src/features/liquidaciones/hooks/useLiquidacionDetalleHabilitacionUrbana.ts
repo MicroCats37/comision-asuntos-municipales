@@ -3,7 +3,7 @@
  * Endpoint: GET /liquidaciones/habilitacion-urbana/{id}
  */
 import { useApiQuery } from "@/hooks";
-import { liquidacionHabilitacionUrbanaDetailResponseSchema } from "@/features_deprecated/liquidaciones/schemas/liquidacion-habilitacion-urbana.schema";
+import { liquidacionHabilitacionUrbanaDetailResponseSchema } from "../schemas/liquidacion-detail.schemas";
 
 interface UseLiquidacionDetalleHabilitacionUrbanaProps {
   id: string;

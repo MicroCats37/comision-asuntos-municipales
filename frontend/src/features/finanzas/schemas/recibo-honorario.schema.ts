@@ -3,14 +3,12 @@
  * Endpoint: GET /finanzas/recibos-honorarios, POST /finanzas/recibos-honorarios
  */
 import { z } from "zod";
+import { TipoLiquidacionMinimalSchema } from "./tipo-liquidacion-minimal.schema";
 
 const uuid = () => z.string();
 const num = () => z.coerce.number();
 
-export const tipoLiquidacionMinimalSchema = z.object({
-  codigo: z.string(),
-  nombre: z.string(),
-});
+export { TipoLiquidacionMinimalSchema as tipoLiquidacionMinimalSchema } from "./tipo-liquidacion-minimal.schema";
 
 export const liquidacionGeneralMinimalSchema = z.object({
   id: uuid(),
@@ -19,7 +17,7 @@ export const liquidacionGeneralMinimalSchema = z.object({
   sub_total: num(),
   total: num(),
   fecha_registro: z.string(),
-  tipo_liquidacion: tipoLiquidacionMinimalSchema.nullish(),
+  tipo_liquidacion: TipoLiquidacionMinimalSchema.nullish(),
   municipalidad_nombre: z.string().nullish(),
   proyecto_denominacion: z.string().nullish(),
 });

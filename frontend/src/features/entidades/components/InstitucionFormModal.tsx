@@ -2,18 +2,19 @@
 
 import { Building2, MapPin, Search } from "lucide-react";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
 import { GenericInput } from "@/components/genericForm/GenericInput";
+import { Button } from "@/components/ui/button";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { useInstitucionUpsert } from "@/features/entidades/hooks/useEntidad";
-import { useDistritos } from "@/features/entidades/hooks/useDistritos";
 import { notify } from "@/errors";
+import { useDistritos } from "@/features/entidades/hooks/useDistritos";
+import { useInstitucionUpsert } from "@/features/entidades/hooks/useEntidad";
 import type { EntidadResult } from "@/features/entidades/types/entidad";
 import type { InstitucionFormModalProps } from "@/features/liquidaciones/types/liquidacion-edificaciones-form.types";
 import { useSunatLookup } from "../hooks/useConsultaExterna";
 
 const schema = z.object({
-  numero_documento: z.string()
+  numero_documento: z
+    .string()
     .length(11, "El RUC debe tener exactamente 11 dígitos")
     .regex(/^\d+$/, "El RUC solo debe contener números"),
   razon_social: z.string().min(1, "La razón social es requerida"),
@@ -39,15 +40,6 @@ export function InstitucionFormModal({
         value: d.id,
       }))
     : [];
-
-  // Find matching distrito by name (from SUNAT response)
-  const findDistritoByName = (distritoName: string | undefined): string | undefined => {
-    if (!distritoName || !distritosData) return undefined;
-    const found = distritosData.find(
-      (d) => d.nombre.toLowerCase() === distritoName.toLowerCase()
-    );
-    return found?.id;
-  };
 
   const handleSubmit = async (data: FormData) => {
     const payload = {
@@ -104,7 +96,13 @@ export function InstitucionFormModal({
       size="md"
     >
       {({ methods }) => {
-        const { register, control, setValue, watch, formState: { errors } } = methods;
+        const {
+          register,
+          control,
+          setValue,
+          watch,
+          formState: { errors },
+        } = methods;
         const rucValue = watch("numero_documento") || "";
 
         const handleSunatLookup = async () => {
@@ -115,18 +113,9 @@ export function InstitucionFormModal({
           try {
             const result = await sunatLookup.mutateAsync(rucValue);
             if (result) {
-              setValue("razon_social", result.razon_social, { shouldValidate: true });
-              if (result.nombre_comercial) {
-                setValue("nombre_comercial", result.nombre_comercial, { shouldValidate: true });
-              }
-              if (result.direccion) {
-                setValue("direccion", result.direccion, { shouldValidate: true });
-              }
-              // Try to match distrito by name
-              const distritoId = findDistritoByName(result.distrito);
-              if (distritoId) {
-                setValue("distrito_id", distritoId, { shouldValidate: true });
-              }
+              setValue("razon_social", result.razon_social, {
+                shouldValidate: true,
+              });
             }
           } catch {
             // Error is handled by the hook
@@ -138,12 +127,26 @@ export function InstitucionFormModal({
             <div className="rounded-xl border border-primary/20 bg-card p-4 space-y-4">
               <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
                 <Building2 className="h-4 w-4" />
-                <h3 className="text-sm font-semibold uppercase tracking-wide">Identificación</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-wide">
+                  Identificación
+                </h3>
               </div>
               {/* RUC field with SUNAT lookup button */}
               <div className="flex gap-2">
                 <div className="flex-1">
-                  <GenericInput field={{ name: "numero_documento", label: "RUC", type: "text", required: true, placeholder: "11 dígitos", icon: Building2 }} register={register as any} control={control as any} errors={errors} />
+                  <GenericInput
+                    field={{
+                      name: "numero_documento",
+                      label: "RUC",
+                      type: "text",
+                      required: true,
+                      placeholder: "11 dígitos",
+                      icon: Building2,
+                    }}
+                    register={register as any}
+                    control={control as any}
+                    errors={errors}
+                  />
                 </div>
                 <div className="flex flex-col justify-end">
                   <Button
@@ -160,16 +163,65 @@ export function InstitucionFormModal({
                   </Button>
                 </div>
               </div>
-              <GenericInput field={{ name: "razon_social", label: "Razón Social", type: "text", required: true, placeholder: "Razón social", icon: Building2 }} register={register as any} control={control as any} errors={errors} />
-              <GenericInput field={{ name: "nombre_comercial", label: "Nombre Comercial", type: "text", placeholder: "Nombre comercial", icon: Building2 }} register={register as any} control={control as any} errors={errors} />
+              <GenericInput
+                field={{
+                  name: "razon_social",
+                  label: "Razón Social",
+                  type: "text",
+                  required: true,
+                  placeholder: "Razón social",
+                  icon: Building2,
+                }}
+                register={register as any}
+                control={control as any}
+                errors={errors}
+              />
+              <GenericInput
+                field={{
+                  name: "nombre_comercial",
+                  label: "Nombre Comercial",
+                  type: "text",
+                  placeholder: "Nombre comercial",
+                  icon: Building2,
+                }}
+                register={register as any}
+                control={control as any}
+                errors={errors}
+              />
             </div>
             <div className="rounded-xl border border-primary/20 bg-card p-4 space-y-4">
               <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
                 <MapPin className="h-4 w-4" />
-                <h3 className="text-sm font-semibold uppercase tracking-wide">Ubicación</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-wide">
+                  Ubicación
+                </h3>
               </div>
-              <GenericInput field={{ name: "direccion", label: "Dirección", type: "text", placeholder: "Dirección", icon: MapPin }} register={register as any} control={control as any} errors={errors} />
-              <GenericInput field={{ name: "distrito_id", label: "Distrito", type: "searchable-select", placeholder: "Buscar distrito...", options: distritoOptions, isLoading: isLoadingDistritos, icon: MapPin }} register={register as any} control={control as any} errors={errors} />
+              <GenericInput
+                field={{
+                  name: "direccion",
+                  label: "Dirección",
+                  type: "text",
+                  placeholder: "Dirección",
+                  icon: MapPin,
+                }}
+                register={register as any}
+                control={control as any}
+                errors={errors}
+              />
+              <GenericInput
+                field={{
+                  name: "distrito_id",
+                  label: "Distrito",
+                  type: "searchable-select",
+                  placeholder: "Buscar distrito...",
+                  options: distritoOptions,
+                  isLoading: isLoadingDistritos,
+                  icon: MapPin,
+                }}
+                register={register as any}
+                control={control as any}
+                errors={errors}
+              />
             </div>
           </div>
         );

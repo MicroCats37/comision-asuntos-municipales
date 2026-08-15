@@ -1,5 +1,7 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
+import { Calculator, Loader2 } from "lucide-react";
 /**
  * CotizacionPorcentajeSmartField — Smart Field for cotizacion preview.
  *
@@ -10,36 +12,12 @@
  * - Shows result: subtotal, IGV, total in its OWN state
  * - Does NOT write back to form until user confirms
  */
-import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useWatch } from "react-hook-form";
-import { Calculator, Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import api from "@/lib/api";
-import type { EdificacionesFormData } from "../../schemas/liquidacion-edificaciones-form.schema";
-
-interface CotizacionDetalle {
-  tarifa_id: string;
-  especialidad_id: string;
-  porcentaje_aplicado: number;
-  subtotal: number;
-  igv: number;
-  uit: number;
-  total: number;
-}
-
-interface CotizacionOutput {
-  valor_declarado: number;
-  porcentaje_liquidacion: number;
-  derecho_minimo: number;
-  derecho_maximo: number | null;
-  porcentaje_minimo_uit: number;
-  derecho_aplicado_id: string;
-  detalles: CotizacionDetalle[];
-  total_subtotal: number;
-  total: number;
-}
+import type { CotizacionOutput } from "../../schemas/cotizacion.schema";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface CotizacionPorcentajeSmartFieldProps {
@@ -56,7 +34,8 @@ const toNumber = (value: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
-const formatSoles = (value: unknown): string => `S/ ${toNumber(value).toFixed(2)}`;
+const formatSoles = (value: unknown): string =>
+  `S/ ${toNumber(value).toFixed(2)}`;
 
 export function CotizacionPorcentajeSmartField({
   methods,
@@ -72,18 +51,15 @@ export function CotizacionPorcentajeSmartField({
       tarifa_id: string;
       especialidades_ids: string[];
     }): Promise<CotizacionOutput> => {
-      const { data } = await api.post(
-        `/liquidaciones/${tipo}/cotizar`,
-        {
-          liquidacion_especifica: {
-            datos: { valor_declarado: payload.valor_declarado },
-            tarifas: payload.especialidades_ids.map((espId) => ({
-              tarifa_porcentaje_obra_id: payload.tarifa_id,
-              especialidad_id: espId,
-            })),
-          },
+      const { data } = await api.post(`/liquidaciones/${tipo}/cotizar`, {
+        liquidacion_especifica: {
+          datos: { valor_declarado: payload.valor_declarado },
+          tarifas: payload.especialidades_ids.map((espId) => ({
+            tarifa_porcentaje_obra_id: payload.tarifa_id,
+            especialidad_id: espId,
+          })),
         },
-      );
+      });
       return data.data;
     },
     onSuccess: (result) => {
@@ -92,14 +68,25 @@ export function CotizacionPorcentajeSmartField({
     },
     onError: (err) => {
       setQuote(null);
-      setError(err instanceof Error ? err.message : "Error al calcular cotización");
+      setError(
+        err instanceof Error ? err.message : "Error al calcular cotización",
+      );
     },
   });
 
   // Auto-recalculate when valor_declarado changes (debounced). Empty especialidades = backend auto-fill.
-  const valorDeclaradoForm = useWatch({ control: methods.control, name: "valor_declarado" });
-  const tarifaUnicaId = useWatch({ control: methods.control, name: "tarifa_unica_id" });
-  const especialidadesSeleccionadas = useWatch({ control: methods.control, name: "especialidades_seleccionadas" });
+  const valorDeclaradoForm = useWatch({
+    control: methods.control,
+    name: "valor_declarado",
+  });
+  const tarifaUnicaId = useWatch({
+    control: methods.control,
+    name: "tarifa_unica_id",
+  });
+  const especialidadesSeleccionadas = useWatch({
+    control: methods.control,
+    name: "especialidades_seleccionadas",
+  });
   // Use fixed value (nueva revision) OR form value (primera revision)
   const effectiveValor = valorDeclaradoFijo ?? valorDeclaradoForm;
   const debouncedValor = useDebounce(effectiveValor, 500);
@@ -132,24 +119,30 @@ export function CotizacionPorcentajeSmartField({
         <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
           Cotización
         </h3>
-        {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+        {isLoading && (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        )}
       </div>
 
-      {error && (
-        <p className="text-xs text-destructive">{error}</p>
-      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
 
       {isLoading && !quote && (
-        <p className="text-xs text-muted-foreground animate-pulse">Calculando cotización...</p>
+        <p className="text-xs text-muted-foreground animate-pulse">
+          Calculando cotización...
+        </p>
       )}
 
       {quote && (
         <div className="space-y-2 rounded-lg border border-border bg-card p-3">
           <div className="grid grid-cols-2 gap-1 text-sm">
             <span className="text-muted-foreground">% Liquidación:</span>
-            <span className="font-medium text-right">{(Number(quote.porcentaje_liquidacion) * 100).toFixed(2)}%</span>
+            <span className="font-medium text-right">
+              {(Number(quote.porcentaje_liquidacion) * 100).toFixed(2)}%
+            </span>
             <span className="text-muted-foreground">Subtotal:</span>
-            <span className="font-medium text-right">{formatSoles(quote.total_subtotal)}</span>
+            <span className="font-medium text-right">
+              {formatSoles(quote.total_subtotal)}
+            </span>
           </div>
           <div className="border-t border-border pt-1.5 flex justify-between font-semibold text-sm">
             <span>Total a Pagar:</span>

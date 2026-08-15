@@ -14,29 +14,9 @@ import {
   Layers,
   User,
 } from "lucide-react";
+import type { DelegadoOut } from "../types/delegados.types";
 
-export interface DelegadoCardItem {
-  id: string;
-  perfil_ingeniero: {
-    id: string;
-    cip: string;
-    dni?: string | null;
-    nombres?: string | null;
-    apellido_paterno?: string | null;
-    apellido_materno?: string | null;
-    nombre_completo: string;
-    especialidad?: { id: string; codigo?: string | null; nombre?: string | null } | null;
-    capitulo?: { id: string; registro_id?: string | null; abreviacion?: string | null; nombre?: string | null } | null;
-  };
-  municipalidades?: {
-    id: string;
-    municipalidad?: { id: string; codigo?: string | null; nombre?: string } | null;
-    tipo?: string | null;
-    categoria?: string | null;
-    es_vigente?: boolean;
-  }[];
-  estado?: string | null;
-}
+export type DelegadoCardItem = DelegadoOut;
 
 interface DelegadoCardProps {
   item: DelegadoCardItem;
@@ -51,26 +31,53 @@ function initials(nombre: string): string {
     .join("");
 }
 
-function estadoConfig(estado?: string | null): { label: string; className: string } {
+function estadoConfig(estado?: string | null): {
+  label: string;
+  className: string;
+} {
   switch (estado) {
     case "vigente":
-      return { label: "Vigente", className: "bg-green-500/10 border-green-500/20 text-green-600" };
+      return {
+        label: "Vigente",
+        className: "bg-green-500/10 border-green-500/20 text-green-600",
+      };
     case "sin_vigencia":
-      return { label: "Sin Vigencia", className: "bg-amber-500/10 border-amber-500/20 text-amber-600" };
+      return {
+        label: "Sin Vigencia",
+        className: "bg-amber-500/10 border-amber-500/20 text-amber-600",
+      };
     case "sin_asignaciones":
-      return { label: "Sin Asignaciones", className: "bg-muted border-border text-muted-foreground" };
+      return {
+        label: "Sin Asignaciones",
+        className: "bg-muted border-border text-muted-foreground",
+      };
     default:
-      return { label: estado ?? "—", className: "bg-muted border-border text-muted-foreground" };
+      return {
+        label: estado ?? "—",
+        className: "bg-muted border-border text-muted-foreground",
+      };
   }
 }
 
-function InfoItem({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value?: string | null }) {
+function InfoItem({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value?: string | null;
+}) {
   return (
     <div className="flex items-start gap-2">
       <Icon className="h-3.5 w-3.5 text-primary/60 shrink-0 mt-0.5" />
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
-        <p className="text-sm font-semibold text-foreground truncate">{value || "—"}</p>
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          {label}
+        </p>
+        <p className="text-sm font-semibold text-foreground truncate">
+          {value || "—"}
+        </p>
       </div>
     </div>
   );
@@ -79,7 +86,8 @@ function InfoItem({ icon: Icon, label, value }: { icon: React.ElementType; label
 export function DelegadoCard({ item }: DelegadoCardProps) {
   const perfil = item.perfil_ingeniero;
   const vigentes = (item.municipalidades || []).filter((m) => m.es_vigente);
-  const municipiosMostrar = vigentes.length > 0 ? vigentes : item.municipalidades || [];
+  const municipiosMostrar =
+    vigentes.length > 0 ? vigentes : item.municipalidades || [];
   const estado = estadoConfig(item.estado);
 
   return (
@@ -95,11 +103,19 @@ export function DelegadoCard({ item }: DelegadoCardProps) {
               {perfil.nombre_completo}
             </h3>
             <p className="text-[11px] text-muted-foreground">
-              {[perfil.nombres, perfil.apellido_paterno, perfil.apellido_materno].filter(Boolean).join(" ") || "—"}
+              {[
+                perfil.nombres,
+                perfil.apellido_paterno,
+                perfil.apellido_materno,
+              ]
+                .filter(Boolean)
+                .join(" ") || "—"}
             </p>
           </div>
         </div>
-        <span className={`shrink-0 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${estado.className}`}>
+        <span
+          className={`shrink-0 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${estado.className}`}
+        >
           <BadgeCheck className="h-3 w-3" />
           {estado.label}
         </span>
@@ -110,8 +126,16 @@ export function DelegadoCard({ item }: DelegadoCardProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <InfoItem icon={IdCard} label="CIP" value={perfil.cip} />
           <InfoItem icon={User} label="DNI" value={perfil.dni} />
-          <InfoItem icon={Layers} label="Especialidad" value={perfil.especialidad?.nombre} />
-          <InfoItem icon={Landmark} label="Capítulo" value={perfil.capitulo?.abreviacion ?? perfil.capitulo?.nombre} />
+          <InfoItem
+            icon={Layers}
+            label="Especialidad"
+            value={perfil.especialidad?.nombre}
+          />
+          <InfoItem
+            icon={Landmark}
+            label="Capítulo"
+            value={perfil.capitulo?.abreviacion ?? perfil.capitulo?.nombre}
+          />
         </div>
 
         {/* Municipalidades */}
@@ -127,10 +151,14 @@ export function DelegadoCard({ item }: DelegadoCardProps) {
                   key={m.id}
                   className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/20 px-2 py-1 text-[11px]"
                 >
-                  {m.municipalidad?.codigo ? `${m.municipalidad.codigo} - ` : ""}
+                  {m.municipalidad?.codigo
+                    ? `${m.municipalidad.codigo} - `
+                    : ""}
                   {m.municipalidad?.nombre ?? "—"}
                   {m.categoria && (
-                    <span className="text-muted-foreground">({m.categoria})</span>
+                    <span className="text-muted-foreground">
+                      ({m.categoria})
+                    </span>
                   )}
                 </span>
               ))}

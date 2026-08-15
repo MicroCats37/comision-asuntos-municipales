@@ -195,14 +195,14 @@ export function EntidadLookupField({
       if (lookupState.tipo_documento === "RUC") {
         const result = await sunatLookup.mutateAsync(num);
         if (result) {
-          const data = result as InstitucionSunatResponse;
+          const data = result as unknown as InstitucionSunatResponse;
           setAllFields("RUC", num, data.razon_social || "");
           notify.success("Datos SUNAT cargados");
         }
       } else {
         const result = await reniecLookup.mutateAsync(num);
         if (result) {
-          const data = result as PersonaReniecResponse;
+          const data = result as unknown as PersonaReniecResponse;
           setAllFields("DNI", num, data.nombre_completo || "");
           notify.success("Datos RENIEC cargados");
         }

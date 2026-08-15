@@ -4,17 +4,19 @@
  */
 import { z } from "zod";
 import {
-  tipoLiquidacionSchema,
   entidadInlineSchema,
-  proyectoInlineSchema,
   municipalidadInlineSchema,
+  proyectoInlineSchema,
   revisionBasicaSchema,
+  tipoLiquidacionSchema,
   valoresFinancierosSchema,
   variablesFinancierasSchema,
 } from "./liquidacion-general.types";
 
-export const tramiteAccionSchema = z.enum(["PRIMERA_REVISION", "REVISION"]);
-export type TramiteAccion = z.infer<typeof tramiteAccionSchema>;
+export {
+  type TramiteAccion,
+  TramiteAccionSchema as tramiteAccionSchema,
+} from "../schemas/tramite.schema";
 
 // ── Flat Output Type ───────────────────────────────────────────────────────────
 
@@ -79,8 +81,11 @@ export const liquidacionHabilitacionUrbanaOutSchema = z.object({
   variables_financieras_usadas: variablesFinancierasSchema.nullable(),
 });
 
-export type LiquidacionHabilitacionUrbanaOut = z.infer<typeof liquidacionHabilitacionUrbanaOutSchema>;
-export type LiquidacionHabilitacionUrbanaListItem = LiquidacionHabilitacionUrbanaOut;
+export type LiquidacionHabilitacionUrbanaOut = z.infer<
+  typeof liquidacionHabilitacionUrbanaOutSchema
+>;
+export type LiquidacionHabilitacionUrbanaListItem =
+  LiquidacionHabilitacionUrbanaOut;
 
 // ── 3-Wrapper List Item ───────────────────────────────────────────────────────
 

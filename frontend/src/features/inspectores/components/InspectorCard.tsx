@@ -6,25 +6,9 @@
  * grid 2 columnas (CIP/DNI | Tipo/Registro).
  */
 import { BadgeCheck, IdCard, Mail, ShieldCheck, User } from "lucide-react";
+import type { InspectorListItem } from "../types/inspectores.types";
 
-export interface InspectorCardItem {
-  id: string;
-  tipo_liquidacion?: string | null;
-  numero_registro?: string | null;
-  telefono?: string | null;
-  email?: string | null;
-  perfil_ingeniero: {
-    id: string;
-    cip: string;
-    dni: string;
-    nombres?: string | null;
-    apellido_paterno?: string | null;
-    apellido_materno?: string | null;
-    nombre_completo: string;
-    correo_personal?: string | null;
-    correo_institucional?: string | null;
-  };
-}
+export type InspectorCardItem = InspectorListItem;
 
 interface InspectorCardProps {
   item: InspectorCardItem;
@@ -48,13 +32,25 @@ function formatTipoLiquidacion(value?: string | null): string {
     .join(" ");
 }
 
-function InfoItem({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value?: string | null }) {
+function InfoItem({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value?: string | null;
+}) {
   return (
     <div className="flex items-start gap-2">
       <Icon className="h-3.5 w-3.5 text-primary/60 shrink-0 mt-0.5" />
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
-        <p className="text-sm font-semibold text-foreground truncate">{value || "—"}</p>
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          {label}
+        </p>
+        <p className="text-sm font-semibold text-foreground truncate">
+          {value || "—"}
+        </p>
       </div>
     </div>
   );
@@ -62,7 +58,8 @@ function InfoItem({ icon: Icon, label, value }: { icon: React.ElementType; label
 
 export function InspectorCard({ item }: InspectorCardProps) {
   const perfil = item.perfil_ingeniero;
-  const correo = perfil.correo_personal ?? perfil.correo_institucional ?? item.email;
+  const correo =
+    perfil.correo_personal ?? perfil.correo_institucional ?? item.email;
 
   return (
     <div className="rounded-2xl border bg-card shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden">
@@ -77,7 +74,13 @@ export function InspectorCard({ item }: InspectorCardProps) {
               {perfil.nombre_completo}
             </h3>
             <p className="text-[11px] text-muted-foreground">
-              {[perfil.nombres, perfil.apellido_paterno, perfil.apellido_materno].filter(Boolean).join(" ") || "—"}
+              {[
+                perfil.nombres,
+                perfil.apellido_paterno,
+                perfil.apellido_materno,
+              ]
+                .filter(Boolean)
+                .join(" ") || "—"}
             </p>
           </div>
         </div>
@@ -92,8 +95,16 @@ export function InspectorCard({ item }: InspectorCardProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <InfoItem icon={IdCard} label="CIP" value={perfil.cip} />
           <InfoItem icon={User} label="DNI" value={perfil.dni} />
-          <InfoItem icon={ShieldCheck} label="Tipo" value={formatTipoLiquidacion(item.tipo_liquidacion)} />
-          <InfoItem icon={BadgeCheck} label="Registro" value={item.numero_registro} />
+          <InfoItem
+            icon={ShieldCheck}
+            label="Tipo"
+            value={formatTipoLiquidacion(item.tipo_liquidacion)}
+          />
+          <InfoItem
+            icon={BadgeCheck}
+            label="Registro"
+            value={item.numero_registro}
+          />
         </div>
 
         {correo && (

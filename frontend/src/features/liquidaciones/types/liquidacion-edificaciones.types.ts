@@ -4,32 +4,27 @@
  */
 import { z } from "zod";
 import {
-  tipoLiquidacionSchema,
+  TipoTramiteEdificacionesSchema,
+  TramiteAccionSchema,
+} from "../schemas/tramite.schema";
+import {
   entidadInlineSchema,
-  proyectoInlineSchema,
   municipalidadInlineSchema,
-  especialidadBasicaSchema,
-  tarifaBasicaSchema,
+  proyectoInlineSchema,
   revisionBasicaSchema,
+  tipoLiquidacionSchema,
   valoresFinancierosSchema,
   variablesFinancierasSchema,
 } from "./liquidacion-general.types";
 
 // ── Tipo Tramite Enum ─────────────────────────────────────────────────────────
 
-export const tipoTramiteEdificacionesSchema = z.enum([
-  "OBRA_NUEVA",
-  "DEMOLICION",
-  "AMPLIACION",
-  "REMODELACION",
-  "MODIFICACION_LICENCIA",
-  "REINTEGRO",
-  "PROYECTO_CON_PLANTAS_TIPICAS",
-]);
-export type TipoTramiteEdificaciones = z.infer<typeof tipoTramiteEdificacionesSchema>;
-
-export const tramiteAccionSchema = z.enum(["PRIMERA_REVISION", "REVISION"]);
-export type TramiteAccion = z.infer<typeof tramiteAccionSchema>;
+export {
+  type TipoTramiteEdificaciones,
+  TipoTramiteEdificacionesSchema as tipoTramiteEdificacionesSchema,
+  type TramiteAccion,
+  TramiteAccionSchema as tramiteAccionSchema,
+} from "../schemas/tramite.schema";
 
 // ── Domain-specific liquidacion_tipo ──────────────────────────────────────────
 
@@ -48,7 +43,7 @@ export const liquidacionEdificacionesTipoSchema = z.object({
   id: z.string(),
   valor_declarado: z.number(),
   porcentaje_liquidacion: z.number(),
-  tipo_tramite: tipoTramiteEdificacionesSchema.nullable(),
+  tipo_tramite: TipoTramiteEdificacionesSchema.nullable(),
   derecho_minimo: z.number().nullable(),
   derecho_maximo: z.number().nullable(),
   porcentaje_minimo_uit: z.number(),
@@ -56,7 +51,9 @@ export const liquidacionEdificacionesTipoSchema = z.object({
   detalles: z.array(liquidacionEdificacionesDetalleSchema),
 });
 
-export type LiquidacionEdificacionesTipo = z.infer<typeof liquidacionEdificacionesTipoSchema>;
+export type LiquidacionEdificacionesTipo = z.infer<
+  typeof liquidacionEdificacionesTipoSchema
+>;
 
 // ── Flat Output Type (matches backend LiquidacionEdificacionOut) ───────────────
 
@@ -69,8 +66,8 @@ export const liquidacionEdificacionOutSchema = z.object({
   expediente: z.string().nullable(),
   observacion: z.string().nullable(),
   numero_revision: z.number(),
-  tipo_tramite: tipoTramiteEdificacionesSchema,
-  tramite_accion: tramiteAccionSchema,
+  tipo_tramite: TipoTramiteEdificacionesSchema,
+  tramite_accion: TramiteAccionSchema,
   proyecto: proyectoInlineSchema,
   entidad: entidadInlineSchema.nullable(),
   municipalidad: municipalidadInlineSchema,
@@ -99,21 +96,23 @@ export const liquidacionEdificacionOutSchema = z.object({
       tipo: z.string().nullable(),
     }),
   ),
-  inspectores: z.array(
-    z.object({
-      id: z.string(),
-      perfil_ingeniero_id: z.string().nullable(),
-      perfil_ingeniero_nombres: z.string().nullable(),
-      perfil_ingeniero_apellidos: z.string().nullable(),
-      perfil_ingeniero_cip: z.string().nullable(),
-      especialidad_id: z.string().nullable(),
-      especialidad_nombre: z.string().nullable(),
-      tipo_liquidacion: z.string().nullable(),
-      categoria: z.number().nullable(),
-      numero_registro: z.string().nullable(),
-      vigencia: z.string().nullable(),
-    }),
-  ).default([]),
+  inspectores: z
+    .array(
+      z.object({
+        id: z.string(),
+        perfil_ingeniero_id: z.string().nullable(),
+        perfil_ingeniero_nombres: z.string().nullable(),
+        perfil_ingeniero_apellidos: z.string().nullable(),
+        perfil_ingeniero_cip: z.string().nullable(),
+        especialidad_id: z.string().nullable(),
+        especialidad_nombre: z.string().nullable(),
+        tipo_liquidacion: z.string().nullable(),
+        categoria: z.number().nullable(),
+        numero_registro: z.string().nullable(),
+        vigencia: z.string().nullable(),
+      }),
+    )
+    .default([]),
   contactos: z.array(
     z.object({
       id: z.string(),
@@ -137,7 +136,9 @@ export const liquidacionEdificacionOutSchema = z.object({
   variables_financieras_usadas: variablesFinancierasSchema.nullable(),
 });
 
-export type LiquidacionEdificacionOut = z.infer<typeof liquidacionEdificacionOutSchema>;
+export type LiquidacionEdificacionOut = z.infer<
+  typeof liquidacionEdificacionOutSchema
+>;
 
 // ── List Item Type ────────────────────────────────────────────────────────────
 
@@ -168,24 +169,28 @@ export interface ProyectoInline {
 
 export const primeraRevisionFormSchema = z.object({
   proyecto_public_id: z.string().optional(),
-  proyecto_inline: z.object({
-    denominacion: z.string().min(1, "Denominación es requerida"),
-    direccion: z.string().optional(),
-    distrito_id: z.string().uuid("Distrito es requerido").optional(),
-    entidad_id: z.string().uuid().optional().nullable(),
-  }).optional(),
+  proyecto_inline: z
+    .object({
+      denominacion: z.string().min(1, "Denominación es requerida"),
+      direccion: z.string().optional(),
+      distrito_id: z.string().uuid("Distrito es requerido").optional(),
+      entidad_id: z.string().uuid().optional().nullable(),
+    })
+    .optional(),
   municipalidad_id: z.string().uuid("Municipalidad es requerida"),
-  tipo_tramite: tipoTramiteEdificacionesSchema,
+  tipo_tramite: TipoTramiteEdificacionesSchema,
   valor_proyecto: z.number().positive("Valor debe ser positivo"),
   observacion: z.string().optional(),
   revisiones_ids: z.array(z.string()).default([]),
-  proyectistas: z.array(
-    z.object({
-      cip: z.string().min(1, "CIP es requerido"),
-      especialidad_id: z.string().uuid("Especialidad es requerida"),
-      descripcion: z.string().optional(),
-    }),
-  ).default([]),
+  proyectistas: z
+    .array(
+      z.object({
+        cip: z.string().min(1, "CIP es requerido"),
+        especialidad_id: z.string().uuid("Especialidad es requerida"),
+        descripcion: z.string().optional(),
+      }),
+    )
+    .default([]),
   tarifas_ids: z.array(z.string().uuid()).default([]),
 });
 
@@ -193,18 +198,10 @@ export type PrimeraRevisionFormData = z.infer<typeof primeraRevisionFormSchema>;
 
 // ── Delegados Vigentes ────────────────────────────────────────────────────────
 
-export interface EspecialidadBasicaDelegado {
-  id: string;
-  nombre: string;
-}
-
-export interface DelegadoVigente {
-  id: string;
-  nombre_completo: string;
-  cip: string;
-  especialidad: EspecialidadBasicaDelegado;
-  tipo: string;
-}
+export type {
+  DelegadoVigente,
+  EspecialidadBasicaDelegado,
+} from "../schemas/delegado-vigente.schema";
 
 // ── Cotización Types ─────────────────────────────────────────────────────────
 

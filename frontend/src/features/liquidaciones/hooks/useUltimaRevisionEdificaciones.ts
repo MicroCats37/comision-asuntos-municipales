@@ -5,20 +5,18 @@
  */
 import { useApiQuery } from "@/hooks";
 import { apiResponseSchema } from "@/types/api.types";
-import { paginatedResponseSchema, LiquidacionGeneralOutputSchema, LiquidacionTipoOutputSchema } from "../schemas/liquidacion-base.schema";
-import { PorcentajeObraDatosOutSchema } from "../schemas/liquidacion-porcentaje.schema";
-import { z } from "zod";
+import { paginatedResponseSchema } from "../schemas/liquidacion-base.schema";
+import {
+  type LiquidacionEdificacionesListItem,
+  liquidacionEdificacionesListItemSchema,
+} from "../schemas/liquidacion-edificaciones.schema";
 
-// Item = LiquidacionEdificacionesOutput (3 wrappers)
-export const ultimaRevisionItemSchema = z.object({
-  liquidacion_general: LiquidacionGeneralOutputSchema,
-  liquidacion_especifica: LiquidacionTipoOutputSchema,
-  liquidacion_tipo: PorcentajeObraDatosOutSchema,
-});
+/** Item = LiquidacionEdificacionesListItem (3 wrappers) */
+export type UltimaRevisionItem = LiquidacionEdificacionesListItem;
 
-export type UltimaRevisionItem = z.infer<typeof ultimaRevisionItemSchema>;
-
-const paginatedSchema = apiResponseSchema(paginatedResponseSchema(ultimaRevisionItemSchema));
+const paginatedSchema = apiResponseSchema(
+  paginatedResponseSchema(liquidacionEdificacionesListItemSchema),
+);
 
 interface UseUltimaRevisionEdificacionesProps {
   page?: number;
@@ -41,7 +39,15 @@ export function useUltimaRevisionEdificaciones({
   if (numeroDocumento) params.numero_documento = numeroDocumento;
 
   const query = useApiQuery({
-    queryKey: ["liquidaciones", "edificaciones", "ultima-revision", page, pageSize, razonSocial, numeroDocumento],
+    queryKey: [
+      "liquidaciones",
+      "edificaciones",
+      "ultima-revision",
+      page,
+      pageSize,
+      razonSocial,
+      numeroDocumento,
+    ],
     url: "/liquidaciones/edificaciones/ultima-revision",
     schema: paginatedSchema,
     params,

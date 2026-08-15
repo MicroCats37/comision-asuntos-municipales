@@ -25,23 +25,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import type { Asignacion } from "../schemas/asignacion-delegado.schema";
 import type { DelegadoVigente } from "../types/liquidacion-edificaciones.types";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+export type { Asignacion };
 
-export interface Asignacion {
-  delegado_id: string;
-  periodo: string | null | undefined;
-  dictamen_revision:
-    | "CONFORME"
-    | "NO_CONFORME"
-    | "PENDIENTE"
-    | "AP_OB"
-    | null
-    | undefined;
-  fecha_presentacion: string | null | undefined;
-  fecha_revision: string | null | undefined;
-}
+// ── Types ────────────────────────────────────────────────────────────────────
 
 export const dictamenOptions = [
   { value: "CONFORME", label: "Conforme" },
