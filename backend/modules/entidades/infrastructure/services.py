@@ -9,8 +9,11 @@ Infrastructure Services — Implementaciones de puertos para servicios externos.
 """
 
 import hashlib
+import os
 import random
 from datetime import date
+
+import httpx
 
 from ..domain.ports import IConsultaExternaClient
 from ..domain.results import ConsultaDocumentoResult
@@ -300,21 +303,21 @@ class RealConsultaExternaClient(IConsultaExternaClient):
 
     def __init__(self):
         import os
-        import httpx
         self._base_url = os.environ.get("SCRAPER_URL", "http://scraper:8001")
-        self._client = httpx.AsyncClient(
-            base_url=self._base_url,
-            timeout=httpx.Timeout(
-                connect=10.0,
-                read=300.0,   # el portal puede tardar hasta 4 min
-                write=10.0,
-                pool=5.0,
-            ),
+        self._timeout = httpx.Timeout(
+            connect=10.0,
+            read=300.0,   # el portal puede tardar hasta 4 min
+            write=10.0,
+            pool=5.0,
         )
 
     async def consultar_documento(self, documento: str) -> ConsultaDocumentoResult:
         """
         Consulta el microservicio scraper por DNI (8 dígitos) o RUC (11 dígitos).
+
+        Crea un AsyncClient por petición (async with) para evitar el error
+        "Event loop is closed" al reutilizar un cliente singleton entre
+        event loops distintos de gunicorn.
 
         Raises:
             SunatNotFoundError: RUC no encontrado (404 del scraper)
@@ -327,7 +330,11 @@ class RealConsultaExternaClient(IConsultaExternaClient):
         from core.exceptions import HttpError
 
         try:
-            response = await self._client.get(f"/consultar/{documento}")
+            async with httpx.AsyncClient(
+                base_url=self._base_url,
+                timeout=self._timeout,
+            ) as client:
+                response = await client.get(f"/consultar/{documento}")
         except httpx.ConnectTimeout:
             raise HttpError(503, "No se pudo conectar al scraper de documentos")
         except httpx.ReadTimeout:
