@@ -47,12 +47,8 @@ class EntidadesModule(Module):
 
         # ── External Clients (unificado) ────────────────────────────────────────
         # En DEBUG: usar simulador para desarrollo
-        # En producción: usar cliente real (cuando esté implementado)
-        #
-        # # TODO: Cuando se implemente RealConsultaExternaClient, cambiar a:
-        # if settings.DEBUG:
-        #     binder.bind(IConsultaExternaClient, to=ConsultaExternaSimulator, scope=singleton)
-        # else:
-        #     binder.bind(IConsultaExternaClient, to=RealConsultaExternaClient, scope=singleton)
-
-        binder.bind(IConsultaExternaClient, to=ConsultaExternaSimulator, scope=singleton)
+        # En producción: usar cliente real (scraper worker)
+        if settings.DEBUG:
+            binder.bind(IConsultaExternaClient, to=ConsultaExternaSimulator, scope=singleton)
+        else:
+            binder.bind(IConsultaExternaClient, to=RealConsultaExternaClient, scope=singleton)
