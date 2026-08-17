@@ -43,10 +43,9 @@ def _crear_perfil(cip: str, dni: str) -> PerfilIngeniero:
 
 
 def _crear_delegado(cip: str, dni: str, especialidad=None) -> Delegado:
-    """Creates a Delegado with an optional EspecialidadRevision."""
+    """Creates a Delegado. La especialidad vive en la operación, no en el base."""
     return Delegado.objects.create(
         perfil_ingeniero=_crear_perfil(cip, dni),
-        especialidad_revision=especialidad,
     )
 
 
@@ -55,12 +54,19 @@ def _crear_asignacion_municipal(
     municipalidad,
     tipo: str = "TITULAR",
     vigente: bool = True,
+    especialidad=None,
 ) -> DelegadoMunicipalidad:
-    """Creates a DelegadoMunicipalidad with a vigente or pasado periodo."""
+    """Creates a DelegadoMunicipalidad with a vigente or pasado periodo.
+
+    La especialidad_revision es obligatoria en la operación (vive ahí, no en
+    el Delegado base).
+    """
+    assert especialidad is not None, "La operación requiere especialidad_revision"
     dm = DelegadoMunicipalidad.objects.create(
         delegado=delegado,
         municipalidad=municipalidad,
         tipo=tipo,
+        especialidad_revision=especialidad,
     )
     if vigente:
         DelegadoMunicipalidadPeriodo.objects.create(
@@ -108,17 +114,18 @@ def test_delegados_vigentes_retorna_solo_match(
     especialidades vigentes del tipo + asignación municipal vigente.
     Excluye: especialidad no vigente, sin especialidad, periodo no vigente.
     """
-    delegado_match = _crear_delegado("11111", "11111111", especialidad_estructuras)
-    _crear_asignacion_municipal(delegado_match, municipalidad, tipo="TITULAR")
+    delegado_match = _crear_delegado("11111", "11111111")
+    _crear_asignacion_municipal(delegado_match, municipalidad, tipo="TITULAR", especialidad=especialidad_estructuras)
 
-    delegado_match_2 = _crear_delegado("22222", "22222222", especialidad_arquitectura)
-    _crear_asignacion_municipal(delegado_match_2, municipalidad, tipo="ALTERNO")
+    delegado_match_2 = _crear_delegado("22222", "22222222")
+    _crear_asignacion_municipal(delegado_match_2, municipalidad, tipo="ALTERNO", especialidad=especialidad_arquitectura)
 
-    delegado_periodo_pasado = _crear_delegado("33333", "33333333", especialidad_estructuras)
-    _crear_asignacion_municipal(delegado_periodo_pasado, municipalidad, vigente=False)
+    delegado_periodo_pasado = _crear_delegado("33333", "33333333")
+    _crear_asignacion_municipal(delegado_periodo_pasado, municipalidad, vigente=False, especialidad=especialidad_estructuras)
 
     delegado_sin_especialidad = _crear_delegado("44444", "44444444")
-    _crear_asignacion_municipal(delegado_sin_especialidad, municipalidad)
+    # Sin operación: la especialidad_revision es obligatoria en la operación,
+    # así que este delegado no puede tener asignación municipal → se excluye.
 
     response = auth_client.get(
         f"/liquidaciones/delegados/vigentes?municipalidad_id={municipalidad.id}"
@@ -159,8 +166,8 @@ def test_delegados_vigentes_tipo_sin_especialidades_vacio(
     GET /delegados/vigentes con un tipo sin LiquidacionEspecialidadDisponibles
     devuelve lista vacía.
     """
-    delegado = _crear_delegado("55555", "55555555", especialidad_estructuras)
-    _crear_asignacion_municipal(delegado, municipalidad)
+    delegado = _crear_delegado("55555", "55555555")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
 
     response = auth_client.get(
         f"/liquidaciones/delegados/vigentes?municipalidad_id={municipalidad.id}"
@@ -185,8 +192,8 @@ def test_batch_create_200_y_asociacion_con_especialidad_correcta(
     """
     PATCH create → 200 y la asociación existe con especialidad_revision correcta.
     """
-    delegado = _crear_delegado("66666", "66666666", especialidad_estructuras)
-    _crear_asignacion_municipal(delegado, municipalidad)
+    delegado = _crear_delegado("66666", "66666666")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
 
     response = auth_client.patch(
         f"/liquidaciones/{liquidacion.id}/delegados",
@@ -240,8 +247,8 @@ def test_batch_create_especialidad_no_vigente_400(
     especialidad_otra = EspecialidadRevision.objects.create(
         codigo="X01", slug="otra-especialidad", nombre="Otra Especialidad"
     )
-    delegado = _crear_delegado("88888", "88888888", especialidad_otra)
-    _crear_asignacion_municipal(delegado, municipalidad)
+    delegado = _crear_delegado("88888", "88888888")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_otra)
 
     response = auth_client.patch(
         f"/liquidaciones/{liquidacion.id}/delegados",
@@ -252,17 +259,20 @@ def test_batch_create_especialidad_no_vigente_400(
 
 
 @pytest.mark.django_db
-def test_batch_create_sin_especialidad_revision_400(
+def test_batch_create_sin_operacion_vigente_400(
     auth_client,
     liquidacion,
     municipalidad,
     especialidades_disponibles_edificacion,
 ):
     """
-    PATCH create con delegado sin especialidad_revision → 400.
+    PATCH create con delegado sin operación vigente (sin especialidad_revision
+    en la asignación municipal) → 400.
+
+    La especialidad_revision ahora es obligatoria en la operación: un delegado
+    sin operación no puede asignarse.
     """
     delegado = _crear_delegado("99999", "99999999")
-    _crear_asignacion_municipal(delegado, municipalidad)
 
     response = auth_client.patch(
         f"/liquidaciones/{liquidacion.id}/delegados",
@@ -283,8 +293,8 @@ def test_batch_delete_200_y_asociacion_eliminada(
     """
     PATCH delete → 200 y la asociación se elimina.
     """
-    delegado = _crear_delegado("12345", "12345678", especialidad_estructuras)
-    _crear_asignacion_municipal(delegado, municipalidad)
+    delegado = _crear_delegado("12345", "12345678")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
     LiquidacionDelegado.objects.create(
         liquidacion=liquidacion,
         delegado=delegado,
@@ -315,8 +325,8 @@ def test_batch_delegado_duplicado_en_payload_400(
     """
     PATCH con delegado duplicado dentro del payload → 400.
     """
-    delegado = _crear_delegado("54321", "87654321", especialidad_estructuras)
-    _crear_asignacion_municipal(delegado, municipalidad)
+    delegado = _crear_delegado("54321", "87654321")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
 
     response = auth_client.patch(
         f"/liquidaciones/{liquidacion.id}/delegados",
@@ -342,8 +352,8 @@ def test_batch_create_asociacion_existente_400(
     """
     PATCH create de un delegado ya asociado a la liquidación → 400.
     """
-    delegado = _crear_delegado("11112", "11112222", especialidad_estructuras)
-    _crear_asignacion_municipal(delegado, municipalidad)
+    delegado = _crear_delegado("11112", "11112222")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
     LiquidacionDelegado.objects.create(
         liquidacion=liquidacion,
         delegado=delegado,
@@ -383,8 +393,8 @@ def test_batch_delete_asociacion_inexistente_400(
     """
     PATCH delete de un delegado sin asociación previa → 400.
     """
-    delegado = _crear_delegado("22221", "22221111", especialidad_estructuras)
-    _crear_asignacion_municipal(delegado, municipalidad)
+    delegado = _crear_delegado("22221", "22221111")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
 
     response = auth_client.patch(
         f"/liquidaciones/{liquidacion.id}/delegados",
@@ -392,3 +402,37 @@ def test_batch_delete_asociacion_inexistente_400(
     )
 
     assert response.status_code == 400, f"Expected 400, got {response.status_code}: {response.content}"
+
+
+@pytest.mark.django_db
+def test_batch_create_en_liquidacion_io_400(
+    auth_client,
+    proyecto,
+    municipalidad,
+    tipo_inspeccion_obra,
+    create_user,
+):
+    """
+    PATCH create de delegados en una liquidación de Inspección de Obra → 400.
+
+    La IO es una liquidación especial: no admite delegados (el inspector se
+    asocia al tipo IO). El batch debe bloquearse sin importar el payload.
+    """
+    liquidacion_io = LiquidacionGeneral.objects.create(
+        proyecto=proyecto,
+        municipalidad=municipalidad,
+        tipo_liquidacion=tipo_inspeccion_obra,
+        numero_revision=1,
+        estado=EstadoLiquidacion.PENDIENTE,
+        sub_total=0,
+        total=0,
+        usuario_creador=create_user,
+    )
+
+    response = auth_client.patch(
+        f"/liquidaciones/{liquidacion_io.id}/delegados",
+        json={"create": [{"delegado_id": str(uuid.uuid4())}]},
+    )
+
+    assert response.status_code == 400, f"Expected 400, got {response.status_code}: {response.content}"
+    assert not LiquidacionDelegado.objects.filter(liquidacion=liquidacion_io).exists()

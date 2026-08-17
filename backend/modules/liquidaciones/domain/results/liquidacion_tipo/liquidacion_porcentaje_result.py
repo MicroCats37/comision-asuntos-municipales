@@ -13,9 +13,6 @@ class DetallePorcentajeObraResult(BaseModel):
     especialidad_id: str
     porcentaje_aplicado: Decimal
     subtotal: Decimal
-    igv: Decimal
-    uit: Decimal
-    total: Decimal
 
 
 class LiquidacionPorcentajeObraResult(BaseModel):

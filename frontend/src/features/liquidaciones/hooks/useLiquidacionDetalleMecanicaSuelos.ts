@@ -1,9 +1,13 @@
 /**
  * Hook para detalle de liquidación de Mecánica de Suelos.
  * Endpoint: GET /liquidaciones/mecanica-suelos/{id}
+ * Devuelve el detalle 3-wrappers tipado por liquidacionMecanicaSuelosDetailResponseSchema.
  */
 import { useApiQuery } from "@/hooks";
-import { liquidacionMecanicaSuelosDetailResponseSchema } from "../schemas/liquidacion-detail.schemas";
+import {
+  liquidacionMecanicaSuelosDetailResponseSchema,
+  type LiquidacionDetalleItem,
+} from "../schemas/liquidacion-detail.schemas";
 
 interface UseLiquidacionDetalleMecanicaSuelosProps {
   id: string;
@@ -19,7 +23,7 @@ export function useLiquidacionDetalleMecanicaSuelos({
     url: id ? `/liquidaciones/mecanica-suelos/${id}` : null,
     schema: liquidacionMecanicaSuelosDetailResponseSchema,
     queryOptions: {
-      select: (data) => data.data ?? null,
+      select: (data): LiquidacionDetalleItem | null => data.data ?? null,
       enabled: !!id,
     },
   });

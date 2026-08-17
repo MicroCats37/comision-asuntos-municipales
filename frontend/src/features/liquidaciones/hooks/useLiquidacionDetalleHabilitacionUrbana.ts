@@ -1,9 +1,13 @@
 /**
  * Hook para detalle de liquidación de Habilitación Urbana.
  * Endpoint: GET /liquidaciones/habilitacion-urbana/{id}
+ * Devuelve el detalle 3-wrappers tipado por liquidacionHabilitacionUrbanaDetailResponseSchema.
  */
 import { useApiQuery } from "@/hooks";
-import { liquidacionHabilitacionUrbanaDetailResponseSchema } from "../schemas/liquidacion-detail.schemas";
+import {
+  liquidacionHabilitacionUrbanaDetailResponseSchema,
+  type LiquidacionDetalleItem,
+} from "../schemas/liquidacion-detail.schemas";
 
 interface UseLiquidacionDetalleHabilitacionUrbanaProps {
   id: string;
@@ -19,7 +23,7 @@ export function useLiquidacionDetalleHabilitacionUrbana({
     url: id ? `/liquidaciones/habilitacion-urbana/${id}` : null,
     schema: liquidacionHabilitacionUrbanaDetailResponseSchema,
     queryOptions: {
-      select: (data) => data.data ?? null,
+      select: (data): LiquidacionDetalleItem | null => data.data ?? null,
       enabled: !!id,
     },
   });

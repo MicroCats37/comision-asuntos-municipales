@@ -181,6 +181,10 @@ class PerfilIngeniero(BaseModel):
         max_length=255, blank=True, null=True, verbose_name="Correo Institucional"
     )
 
+    celular = models.CharField(
+        max_length=20, blank=True, null=True, verbose_name="Celular"
+    )
+
     direccion = models.CharField(
         max_length=512, blank=True, null=True, verbose_name="Dirección"
     )
@@ -214,6 +218,10 @@ class PerfilIngeniero(BaseModel):
     @property
     def nombre_completo(self):
         return f"{self.nombres} {self.apellido_paterno} {self.apellido_materno}"
+
+    @property
+    def cip_sin_ceros(self):
+        return str(int(self.cip)) if self.cip else ""
 
     class Meta:
         verbose_name = "Perfil Ingeniero"

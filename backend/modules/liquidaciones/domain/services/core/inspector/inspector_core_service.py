@@ -10,8 +10,9 @@ from django.db.models import Prefetch, Q
 
 from modules.liquidaciones.domain.models.inspector import (
     Inspector,
-    InspectorAsignacionPeriodo,
-    InspectorTipoLiquidacion,
+    InspectorOperacion,
+    InspectorOperacionPeriodo,
+    LiquidacionInspector,
 )
 
 
@@ -37,7 +38,7 @@ class InspectorCoreService:
         ).prefetch_related(
             Prefetch(
                 'tipos_liquidacion',
-                queryset=InspectorTipoLiquidacion.objects.select_related('tipo_liquidacion'),
+                queryset=InspectorOperacion.objects.select_related('tipo_liquidacion'),
             ),
         ).order_by(
             'perfil_ingeniero__apellido_paterno',
@@ -60,7 +61,7 @@ class InspectorCoreService:
         ).prefetch_related(
             Prefetch(
                 'tipos_liquidacion',
-                queryset=InspectorTipoLiquidacion.objects.select_related('tipo_liquidacion'),
+                queryset=InspectorOperacion.objects.select_related('tipo_liquidacion'),
             ),
         ).filter(id=inspector_id).first()
 
@@ -71,8 +72,8 @@ class InspectorCoreService:
         page_size: int = 10,
     ) -> tuple:
         """
-        Returns all Inspectores with at least one vigente InspectorAsignacionPeriodo,
-        filtered by tipo_liquidacion (now through InspectorTipoLiquidacion).
+        Returns all Inspectores with at least one vigente InspectorOperacionPeriodo,
+        filtered by tipo_liquidacion (now through InspectorOperacion).
 
         vigentes: periodo_inicio <= today AND (periodo_fin IS NULL OR periodo_fin >= today)
 
@@ -90,7 +91,7 @@ class InspectorCoreService:
         ).prefetch_related(
             Prefetch(
                 'tipos_liquidacion',
-                queryset=InspectorTipoLiquidacion.objects.select_related(
+                queryset=InspectorOperacion.objects.select_related(
                     'tipo_liquidacion',
                 ).prefetch_related('periodos'),
             ),
@@ -99,6 +100,103 @@ class InspectorCoreService:
             'perfil_ingeniero__apellido_materno',
             'perfil_ingeniero__nombres',
         ).distinct()
+
+        total = qs.count()
+        offset = (page - 1) * page_size
+        return list(qs[offset:offset + page_size]), total
+
+    def list_inspectores_vigentes_para_tipo(
+        self,
+        tipo_liquidacion: str,
+        fecha: Optional[date] = None,
+        categoria: Optional[str] = None,
+        q: Optional[str] = None,
+    ) -> list:
+        """
+        Returns InspectorOperacion candidates vigentes para un tipo de liquidación.
+
+        Match (igual al alpha, ahora sobre el refactor):
+        1. operacion.tipo_liquidacion.codigo == tipo_liquidacion
+        2. operacion.especialidad_revision NOT NULL (siempre lo es en el refactor)
+        3. periodo vigente (periodo_inicio <= fecha AND (fin IS NULL OR fin >= fecha))
+
+        Filtros opcionales para el form de creación IO:
+        - categoria: coincidencia en operacion.categoria
+        - q: búsqueda por nombre/CIP (icontains)
+
+        Returns: list[InspectorOperacion] con select_related de perfil/especialidad/tipo.
+        """
+        if fecha is None:
+            from django.utils import timezone
+            fecha = timezone.localdate()
+
+        qs = InspectorOperacion.objects.filter(
+            tipo_liquidacion__codigo=tipo_liquidacion,
+        ).filter(
+            Q(
+                periodos__periodo_inicio__lte=fecha,
+                periodos__periodo_fin__isnull=True,
+            )
+            | Q(
+                periodos__periodo_inicio__lte=fecha,
+                periodos__periodo_fin__gte=fecha,
+            )
+        )
+
+        if categoria:
+            qs = qs.filter(categoria=categoria)
+        if q:
+            qs = qs.filter(
+                Q(inspector__perfil_ingeniero__nombres__icontains=q)
+                | Q(inspector__perfil_ingeniero__apellido_paterno__icontains=q)
+                | Q(inspector__perfil_ingeniero__apellido_materno__icontains=q)
+                | Q(inspector__perfil_ingeniero__cip__icontains=q)
+            )
+
+        return list(
+            qs.select_related(
+                "inspector__perfil_ingeniero",
+                "especialidad_revision",
+                "tipo_liquidacion",
+            ).prefetch_related(
+                "periodos",
+            ).distinct().order_by(
+                "inspector__perfil_ingeniero__apellido_paterno",
+                "inspector__perfil_ingeniero__apellido_materno",
+                "inspector__perfil_ingeniero__nombres",
+            )
+        )
+
+    def list_liquidacion_inspector_paginated(
+        self,
+        page: int,
+        page_size: int,
+        cip: Optional[str] = None,
+        liquidacion_id: Optional[uuid.UUID] = None,
+    ) -> tuple:
+        """
+        Returns paginated LiquidacionInspector queryset with optional filters.
+
+        select_related para evitar N+1:
+        liquidacion__liquidacion_general, inspector__perfil_ingeniero, especialidad_revision.
+
+        Returns (queryset_list, total_count).
+        """
+        qs = (
+            LiquidacionInspector.objects.select_related(
+                "liquidacion__liquidacion_general__proyecto",
+                "liquidacion__liquidacion_general__municipalidad",
+                "liquidacion__liquidacion_general__tipo_liquidacion",
+                "inspector__perfil_ingeniero",
+                "especialidad_revision",
+            )
+            .order_by("-liquidacion__liquidacion_general__fecha_registro")
+        )
+
+        if cip:
+            qs = qs.filter(inspector__perfil_ingeniero__cip__icontains=cip)
+        if liquidacion_id:
+            qs = qs.filter(liquidacion__liquidacion_general_id=liquidacion_id)
 
         total = qs.count()
         offset = (page - 1) * page_size

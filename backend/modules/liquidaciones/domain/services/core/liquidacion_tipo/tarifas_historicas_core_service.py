@@ -138,3 +138,42 @@ class TarifasHistoricasCoreService:
         """Bases de tarifa vigentes en la fecha dada (default hoy) para un tipo."""
         qs = TarifaLiquidacionBase.objects.filter(tipo_liquidacion__codigo=tipo_liquidacion)
         return list(qs.vigentes(fecha=fecha).order_by("periodo_inicio"))
+
+    # ── General (all tipos) ───────────────────────────────────────────────────
+
+    def get_tarifas_generales_vigentes(
+        self,
+        fecha: date = None,
+    ) -> List[TarifaLiquidacionBase]:
+        """
+        All TarifaLiquidacionBase vigentes (no tipo filter).
+
+        Returns bases for ALL tipo_liquidacion that are vigentes at fecha.
+        """
+        qs = TarifaLiquidacionBase.objects.vigentes(fecha=fecha).order_by(
+            "tipo_liquidacion__codigo", "periodo_inicio"
+        )
+        return list(qs)
+
+    def get_tarifas_generales_historicas(
+        self,
+        fecha_desde: date,
+        fecha_hasta: date,
+        page: int,
+        page_size: int,
+    ) -> Tuple[List[TarifaLiquidacionBase], int]:
+        """
+        Historical tariff bases across ALL tipo_liquidacion within a date range.
+
+        Returns (list of TarifaLiquidacionBase, total_count).
+        """
+        qs = TarifaLiquidacionBase.objects.filter(
+            periodo_inicio__lte=fecha_hasta,
+        ).filter(
+            Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha_desde)
+        ).order_by("tipo_liquidacion__codigo", "periodo_inicio")
+
+        total = qs.count()
+        offset = (page - 1) * page_size
+        items = list(qs[offset:offset + page_size])
+        return items, total

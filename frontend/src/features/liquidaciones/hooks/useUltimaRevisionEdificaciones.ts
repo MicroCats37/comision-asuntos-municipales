@@ -23,6 +23,7 @@ interface UseUltimaRevisionEdificacionesProps {
   pageSize?: number;
   razonSocial?: string;
   numeroDocumento?: string;
+  numero?: number;
   /** Si false, la query NO se dispara (espera a que el usuario busque) */
   enabled?: boolean;
 }
@@ -32,11 +33,13 @@ export function useUltimaRevisionEdificaciones({
   pageSize = 10,
   razonSocial,
   numeroDocumento,
+  numero,
   enabled = true,
 }: UseUltimaRevisionEdificacionesProps = {}) {
   const params: Record<string, string | number> = { page, page_size: pageSize };
   if (razonSocial) params.razon_social = razonSocial;
   if (numeroDocumento) params.numero_documento = numeroDocumento;
+  if (numero !== undefined) params.numero = numero;
 
   const query = useApiQuery({
     queryKey: [
@@ -47,6 +50,7 @@ export function useUltimaRevisionEdificaciones({
       pageSize,
       razonSocial,
       numeroDocumento,
+      numero,
     ],
     url: "/liquidaciones/edificaciones/ultima-revision",
     schema: paginatedSchema,

@@ -4,16 +4,16 @@ import { FileText, Loader2, Receipt, User, X } from "lucide-react";
 /**
  * ReciboHonorarioFormModal — Modal para crear un Recibo de Honorario.
  *
- * Usa el hook useCrearReciboHonorario y el buscador DelegadoAsignacionBuscarModal.
+ * Usa el hook useCrearReciboDelegado y el contenido BuscarAsignacionDelegadoContent.
  * El usuario busca una asignación por CIP, selecciona, y confirma la creación.
  */
 import { useCallback, useState } from "react";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import { Button } from "@/components/ui/button";
 import { notify } from "@/errors";
-import { useCrearReciboHonorario } from "@/features/finanzas/hooks/useCrearReciboHonorario";
+import { useCrearReciboDelegado } from "@/features/finanzas/hooks/useCrearReciboDelegado";
 import type { LiquidacionDelegado } from "@/features/finanzas/schemas/delegado-asignacion.schema";
-import { DelegadoAsignacionBuscarModal } from "./DelegadoAsignacionBuscarModal";
+import { BuscarAsignacionDelegadoContent } from "./BuscarAsignacionDelegadoContent";
 
 interface ReciboHonorarioFormModalProps {
   open: boolean;
@@ -26,15 +26,13 @@ export function ReciboHonorarioFormModal({
   onOpenChange,
   onSuccess,
 }: ReciboHonorarioFormModalProps) {
-  const crearMutation = useCrearReciboHonorario();
-  const [buscarModalOpen, setBuscarModalOpen] = useState(false);
+  const crearMutation = useCrearReciboDelegado();
   const [asignacionSeleccionada, setAsignacionSeleccionada] =
     useState<LiquidacionDelegado | null>(null);
 
   const handleSelectAsignacion = useCallback(
     (asignacion: LiquidacionDelegado) => {
       setAsignacionSeleccionada(asignacion);
-      setBuscarModalOpen(false);
     },
     [],
   );
@@ -56,7 +54,6 @@ export function ReciboHonorarioFormModal({
 
   const handleClose = () => {
     setAsignacionSeleccionada(null);
-    setBuscarModalOpen(false);
     onOpenChange(false);
   };
 
@@ -81,10 +78,14 @@ export function ReciboHonorarioFormModal({
                   Recibos de Honorario
                 </span>
                 <h2 className="text-2xl font-black tracking-tight text-foreground leading-tight">
-                  Nuevo Recibo de Honorario
+                  {asignacionSeleccionada
+                    ? "Nuevo Recibo de Honorario"
+                    : "Buscar Asignación"}
                 </h2>
                 <p className="hidden sm:block text-sm text-muted-foreground leading-relaxed">
-                  Busca la asignación de delegado para generar el recibo
+                  {asignacionSeleccionada
+                    ? "Revisa los datos de la asignación de delegado para generar el recibo"
+                    : "Busca la asignación de delegado para generar el recibo"}
                 </p>
               </div>
               <div className="w-9 shrink-0" aria-hidden="true" />
@@ -168,21 +169,9 @@ export function ReciboHonorarioFormModal({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center rounded-xl border border-dashed border-border">
-                <Receipt className="h-10 w-10 text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground mb-4">
-                  No hay asignación seleccionada
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="gap-2 h-10 rounded-xl font-semibold"
-                  onClick={() => setBuscarModalOpen(true)}
-                >
-                  <User className="h-4 w-4" />
-                  Buscar Asignación
-                </Button>
-              </div>
+              <BuscarAsignacionDelegadoContent
+                onSelect={handleSelectAsignacion}
+              />
             )}
           </GenericModal.Body>
 
@@ -197,30 +186,26 @@ export function ReciboHonorarioFormModal({
               >
                 Cancelar
               </Button>
-              <Button
-                type="button"
-                onClick={handleCrear}
-                disabled={!asignacionSeleccionada || crearMutation.isPending}
-                className="h-10 rounded-xl font-bold gap-1.5"
-              >
-                {crearMutation.isPending && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-                <Receipt className="h-4 w-4" />
-                Crear Recibo
-              </Button>
+              {asignacionSeleccionada && (
+                <Button
+                  type="button"
+                  onClick={handleCrear}
+                  disabled={crearMutation.isPending}
+                  className="h-10 rounded-xl font-bold gap-1.5"
+                >
+                  {crearMutation.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  <Receipt className="h-4 w-4" />
+                  Crear Recibo
+                </Button>
+              )}
             </div>
           </GenericModal.Footer>
 
           <GenericModal.CloseX />
         </GenericModal.Content>
       </GenericModal>
-
-      <DelegadoAsignacionBuscarModal
-        open={buscarModalOpen}
-        onOpenChange={setBuscarModalOpen}
-        onSelect={handleSelectAsignacion}
-      />
     </>
   );
 }

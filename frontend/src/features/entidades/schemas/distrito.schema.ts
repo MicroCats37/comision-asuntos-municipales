@@ -10,7 +10,6 @@ export type DepartamentoData = z.infer<typeof DepartamentoSchema>;
 export const ProvinciaSchema = z.object({
   id: z.string(),
   nombre: z.string(),
-  departamento: DepartamentoSchema,
 });
 export type ProvinciaData = z.infer<typeof ProvinciaSchema>;
 

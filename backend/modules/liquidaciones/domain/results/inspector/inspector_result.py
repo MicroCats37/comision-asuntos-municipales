@@ -68,3 +68,77 @@ class InspectorVigenteListResult(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class InspectorVigenteFormResult(BaseModel):
+    """
+    Domain DTO for un inspector vigente elegible en el form de creación de IO.
+
+    Shape alineado con el alpha (InspectorVigenteResult) y el schema del
+    frontend (inspector-vigente.schema.ts).
+    """
+    id: str
+    nombre_completo: str
+    cip: str
+    especialidad: Optional["EspecialidadBasicaFormResult"] = None
+    tipo_liquidacion: str
+    categoria: Optional[str] = None
+    numero_registro: str
+    vigencia: Optional[str] = None
+
+
+class EspecialidadBasicaFormResult(BaseModel):
+    """Domain DTO for basic especialidad info (id + nombre)."""
+    id: str
+    nombre: str
+
+
+class InspectoresVigentesFormResult(BaseModel):
+    """Domain DTO for GET /liquidaciones/inspectores/vigentes response."""
+    inspectores: list[InspectorVigenteFormResult]
+
+
+class LiquidacionInspectorLiquidacionMinimal(BaseModel):
+    """LiquidacionGeneral summary para asignación de inspector en el selector de recibos."""
+    id: str
+    expediente: Optional[str] = None
+    numero_revision: int
+    sub_total: Optional[float] = None
+    total: Optional[float] = None
+    municipalidad_nombre: Optional[str] = None
+    proyecto_denominacion: Optional[str] = None
+    tipo_liquidacion: Optional["TipoLiquidacionMinimalResult"] = None
+
+
+class TipoLiquidacionMinimalResult(BaseModel):
+    """TipoLiquidacion minimal — codigo y nombre."""
+    codigo: str
+    nombre: str
+
+
+class InspectorAsignacionInspectorMinimal(BaseModel):
+    """Inspector + perfil minimal para asignación de inspector."""
+    id: str
+    cip: str
+    dni: str
+    nombre_completo: str
+
+
+class LiquidacionInspectorAsignacionResult(BaseModel):
+    """Domain DTO para una asociación LiquidacionInspector (selector de recibos)."""
+    id: str
+    liquidacion_id: str
+    inspector_id: str
+    especialidad_revision: Optional["EspecialidadRevisionResult"] = None
+    liquidacion: Optional[LiquidacionInspectorLiquidacionMinimal] = None
+    inspector: Optional[InspectorAsignacionInspectorMinimal] = None
+    periodo: Optional[str] = None
+    dictamen_revision: Optional[str] = None
+    fecha_presentacion: Optional[str] = None
+    fecha_revision: Optional[str] = None
+
+
+class EspecialidadRevisionResult(BaseModel):
+    """Domain DTO for EspecialidadRevision (nested en inspector de asignación)."""
+    id: str
+    nombre: str

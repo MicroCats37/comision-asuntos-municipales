@@ -35,13 +35,7 @@ export const especialidadMinimalSchema = z.object({
   nombre: z.string(),
 });
 
-/** ReciboHonorarioDelegadoOut — matches backend schema exactly */
-export const reciboHonorarioDelegadoSchema = z.object({
-  id: uuid(),
-  liquidacion_delegado_id: uuid(),
-  liquidacion_general: liquidacionGeneralMinimalSchema,
-  delegado: delegadoMinimalSchema,
-  especialidad: especialidadMinimalSchema,
+export const reciboHonorarioCalculoSchema = z.object({
   sub_total: num(),
   imp_bruto: num(),
   renta_cip: num(),
@@ -49,9 +43,63 @@ export const reciboHonorarioDelegadoSchema = z.object({
   fondo_comun: num(),
   neto_honorario: num(),
   honorario: num(),
+});
+
+export const liquidacionEspecificaMinimalSchema = z.object({
+  id: uuid(),
+  numero: z.coerce.number(),
+});
+
+/** ReciboHonorarioDelegadoOut — matches backend schema exactly */
+export const reciboHonorarioDelegadoSchema = z.object({
+  id: uuid(),
+  liquidacion_delegado_id: uuid(),
+  liquidacion_general: liquidacionGeneralMinimalSchema,
+  liquidacion_especifica: liquidacionEspecificaMinimalSchema,
+  delegado: delegadoMinimalSchema,
+  especialidad: especialidadMinimalSchema,
+  calculo: reciboHonorarioCalculoSchema,
   created_at: z.string(),
 });
 
 export type ReciboHonorarioDelegado = z.infer<
   typeof reciboHonorarioDelegadoSchema
+>;
+
+// ── Inspector ─────────────────────────────────────────────────────────────────
+
+export const inspectorMinimalSchema = z.object({
+  id: uuid(),
+  cip: z.string(),
+  dni: z.string(),
+  nombre_completo: z.string(),
+});
+
+export const reciboHonorarioInspectorCalculoSchema = z.object({
+  inspecciones_programadas: z.coerce.number().int(),
+  costo_por_inspeccion: num(),
+  inspecciones_mes: z.coerce.number().int(),
+  monto_bruto: num(),
+  inspecciones_pagadas: z.coerce.number().int(),
+  saldo_inspecciones: z.coerce.number().int(),
+  sub_total: num(),
+  tasa_descuento_aplicada: num(),
+  descuento: num(),
+  honorarios: num(),
+});
+
+/** ReciboHonorarioInspectorOut — matches backend schema exactly */
+export const reciboHonorarioInspectorSchema = z.object({
+  id: uuid(),
+  liquidacion_inspector_id: uuid(),
+  liquidacion_general: liquidacionGeneralMinimalSchema,
+  liquidacion_especifica: liquidacionEspecificaMinimalSchema,
+  inspector: inspectorMinimalSchema,
+  especialidad: especialidadMinimalSchema,
+  calculo: reciboHonorarioInspectorCalculoSchema,
+  created_at: z.string(),
+});
+
+export type ReciboHonorarioInspector = z.infer<
+  typeof reciboHonorarioInspectorSchema
 >;

@@ -21,6 +21,14 @@ from modules.liquidaciones.domain.results.inspector.inspector_result import (
     InspectorDetailResult,
     InspectorVigenteResult,
     InspectorVigenteListResult,
+    InspectorVigenteFormResult,
+    EspecialidadBasicaFormResult,
+    InspectoresVigentesFormResult,
+    LiquidacionInspectorAsignacionResult,
+    LiquidacionInspectorLiquidacionMinimal,
+    InspectorAsignacionInspectorMinimal,
+    TipoLiquidacionMinimalResult,
+    EspecialidadRevisionResult,
 )
 
 
@@ -227,4 +235,158 @@ class InspectorOrchestrator:
             page=page,
             page_size=page_size,
             total_pages=total_pages,
+        )
+
+    def listar_inspectores_seleccionables_proceso(
+        self,
+        tipo_liquidacion: str,
+        categoria: Optional[str] = None,
+        q: Optional[str] = None,
+    ) -> InspectoresVigentesFormResult:
+        """
+        Returns inspectores vigentes elegibles para el form de creación de IO,
+        sin paginación.
+
+        Filtra InspectorOperacion por:
+        - tipo_liquidacion (el de la previa: EDIFICACION/HABILITACION_URBANA)
+        - categoria (opcional)
+        - q (búsqueda por nombre/CIP, opcional)
+        - periodo vigente
+
+        La especialidad NO es filtro — sale como dato en el output.
+
+        Shape alineado con el alpha (InspectorVigenteResult) y el schema del
+        frontend (inspector-vigente.schema.ts).
+        """
+        today = date.today()
+
+        operaciones = self.core_service.list_inspectores_vigentes_para_tipo(
+            tipo_liquidacion=tipo_liquidacion,
+            fecha=today,
+            categoria=categoria,
+            q=q,
+        )
+
+        inspectores: list[InspectorVigenteFormResult] = []
+        for operacion in operaciones:
+            perfil = operacion.inspector.perfil_ingeniero
+            esp = operacion.especialidad_revision
+            periodo = self._get_periodo_vigente(operacion, today)
+            inspectores.append(
+                InspectorVigenteFormResult(
+                    id=str(operacion.inspector_id),
+                    nombre_completo=perfil.nombre_completo,
+                    cip=perfil.cip or "",
+                    especialidad=(
+                        EspecialidadBasicaFormResult(
+                            id=str(esp.id),
+                            nombre=esp.nombre,
+                        )
+                        if esp
+                        else None
+                    ),
+                    tipo_liquidacion=(
+                        operacion.tipo_liquidacion.codigo
+                        if operacion.tipo_liquidacion
+                        else tipo_liquidacion
+                    ),
+                    categoria=operacion.categoria or None,
+                    numero_registro=operacion.numero_registro,
+                    vigencia=str(periodo.periodo_fin) if periodo and periodo.periodo_fin else None,
+                )
+            )
+
+        return InspectoresVigentesFormResult(inspectores=inspectores)
+
+    @staticmethod
+    def _get_periodo_vigente(operacion, fecha: date):
+        """Returns the vigente periodo of an InspectorOperacion, or None."""
+        for periodo in operacion.periodos.all():
+            if periodo.periodo_inicio <= fecha and (
+                periodo.periodo_fin is None or periodo.periodo_fin >= fecha
+            ):
+                return periodo
+        return None
+
+    def listar_asignaciones_inspectores_proceso(
+        self,
+        page: int,
+        page_size: int,
+        cip: Optional[str] = None,
+        liquidacion_id: Optional[uuid.UUID] = None,
+    ) -> tuple:
+        """
+        Returns (list[LiquidacionInspectorAsignacionResult], total) paginados
+        para el selector de Recibos de Honorarios de Inspectores.
+
+        Filtra LiquidacionInspector por cip del inspector o id de la liquidación general.
+        """
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))
+
+        objects, total = self.core_service.list_liquidacion_inspector_paginated(
+            page=page,
+            page_size=page_size,
+            cip=cip,
+            liquidacion_id=liquidacion_id,
+        )
+
+        results = [self._build_liquidacion_inspector_asignacion(li) for li in objects]
+        return results, total
+
+    @staticmethod
+    def _build_liquidacion_inspector_asignacion(li) -> LiquidacionInspectorAsignacionResult:
+        """Builds LiquidacionInspectorAsignacionResult from a LiquidacionInspector ORM object."""
+        lg = li.liquidacion.liquidacion_general
+        perfil = li.inspector.perfil_ingeniero
+
+        liquidacion_min = None
+        if lg is not None:
+            liquidacion_min = LiquidacionInspectorLiquidacionMinimal(
+                id=str(lg.id),
+                expediente=lg.expediente or "",
+                numero_revision=lg.numero_revision,
+                sub_total=float(lg.sub_total) if lg.sub_total is not None else None,
+                total=float(lg.total) if lg.total is not None else None,
+                municipalidad_nombre=(
+                    lg.municipalidad.nombre if lg.municipalidad else None
+                ),
+                proyecto_denominacion=(
+                    lg.proyecto.denominacion if lg.proyecto else None
+                ),
+                tipo_liquidacion=(
+                    TipoLiquidacionMinimalResult(
+                        codigo=lg.tipo_liquidacion.codigo,
+                        nombre=lg.tipo_liquidacion.nombre,
+                    )
+                    if lg.tipo_liquidacion
+                    else None
+                ),
+            )
+
+        return LiquidacionInspectorAsignacionResult(
+            id=str(li.id),
+            liquidacion_id=str(li.liquidacion_id),
+            inspector_id=str(li.inspector_id),
+            especialidad_revision=(
+                EspecialidadRevisionResult(
+                    id=str(li.especialidad_revision.id),
+                    nombre=li.especialidad_revision.nombre,
+                )
+                if li.especialidad_revision
+                else None
+            ),
+            liquidacion=liquidacion_min,
+            inspector=InspectorAsignacionInspectorMinimal(
+                id=str(li.inspector.id),
+                cip=perfil.cip or "",
+                dni=perfil.dni or "",
+                nombre_completo=perfil.nombre_completo,
+            ),
+            periodo=li.periodo,
+            dictamen_revision=li.dictamen_revision,
+            fecha_presentacion=(
+                str(li.fecha_presentacion) if li.fecha_presentacion else None
+            ),
+            fecha_revision=str(li.fecha_revision) if li.fecha_revision else None,
         )

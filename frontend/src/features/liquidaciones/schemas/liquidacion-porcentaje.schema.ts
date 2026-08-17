@@ -10,9 +10,6 @@ export const PorcentajeObraDetalleOutSchema = z.object({
   especialidad_id: z.string(),
   porcentaje_aplicado: num(),
   subtotal: num(),
-  igv: num(),
-  uit: num(),
-  total: num(),
 });
 
 // PorcentajeObraDatosOut (Edificaciones, Taludes, Impacto Vial):

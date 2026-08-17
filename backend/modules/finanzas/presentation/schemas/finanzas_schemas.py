@@ -18,7 +18,7 @@ class VariablesFinancierasOut(BaseSchema):
     uit_periodo_inicio: str = Field(..., description="Fecha inicio período UIT (ISO)")
 
 
-class ReciboHonorarioCrearIn(BaseSchema):
+class ReciboHonorarioDelegadoCrearIn(BaseSchema):
     """
     Schema de entrada para crear un ReciboHonorarioDelegado.
 
@@ -26,6 +26,22 @@ class ReciboHonorarioCrearIn(BaseSchema):
     """
     liquidacion_delegado_id: uuid.UUID = Field(
         ..., description="FK a LiquidacionDelegado"
+    )
+
+
+class ReciboHonorarioInspectorCrearIn(BaseSchema):
+    """
+    Schema de entrada para crear un ReciboHonorarioInspector.
+
+    Contrato 2 — Patrón 3: JSON Estricto.
+    """
+    liquidacion_inspector_id: uuid.UUID = Field(
+        ..., description="FK a LiquidacionInspector"
+    )
+    inspecciones_mes: int = Field(
+        ...,
+        ge=1,
+        description="Inspecciones liquidadas en el mes",
     )
 
 
@@ -65,6 +81,23 @@ class EspecialidadMinimalOut(BaseSchema):
     nombre: str
 
 
+class ReciboHonorarioCalculoOut(BaseSchema):
+    """Agrupa cálculos matemáticos del recibo."""
+    sub_total: Decimal
+    imp_bruto: Decimal
+    renta_cip: Decimal
+    aporte_codemu: Decimal
+    fondo_comun: Decimal
+    neto_honorario: Decimal
+    honorario: Decimal
+
+
+class LiquidacionEspecificaMinimalOut(BaseSchema):
+    """LiquidacionEspecifica minimal para recibos."""
+    id: uuid.UUID
+    numero: int
+
+
 class ReciboHonorarioDelegadoOut(BaseSchema):
     """
     Schema de salida para un ReciboHonorarioDelegado en lista paginada.
@@ -75,13 +108,47 @@ class ReciboHonorarioDelegadoOut(BaseSchema):
     id: uuid.UUID
     liquidacion_delegado_id: uuid.UUID
     liquidacion_general: LiquidacionGeneralMinimalOut
+    liquidacion_especifica: LiquidacionEspecificaMinimalOut
     delegado: DelegadoMinimalOut
     especialidad: EspecialidadMinimalOut
+    calculo: ReciboHonorarioCalculoOut
+    created_at: datetime
+
+
+class InspectorMinimalOut(BaseSchema):
+    """Inspector + PerfilIngeniero minimal for list item."""
+    id: uuid.UUID
+    cip: str
+    dni: str
+    nombre_completo: str
+
+
+class ReciboHonorarioInspectorCalculoOut(BaseSchema):
+    """Agrupa cálculos matemáticos del recibo del inspector."""
+    inspecciones_programadas: int
+    costo_por_inspeccion: Decimal
+    inspecciones_mes: int
+    monto_bruto: Decimal
+    inspecciones_pagadas: int
+    saldo_inspecciones: int
     sub_total: Decimal
-    imp_bruto: Decimal
-    renta_cip: Decimal
-    aporte_codemu: Decimal
-    fondo_comun: Decimal
-    neto_honorario: Decimal
-    honorario: Decimal
+    tasa_descuento_aplicada: Decimal
+    descuento: Decimal
+    honorarios: Decimal
+
+
+class ReciboHonorarioInspectorOut(BaseSchema):
+    """
+    Schema de salida para un ReciboHonorarioInspector en lista paginada.
+
+    Incluye montos del recibo + resúmenes anidados de liquidacion_general,
+    inspector y especialidad.
+    """
+    id: uuid.UUID
+    liquidacion_inspector_id: uuid.UUID
+    liquidacion_general: LiquidacionGeneralMinimalOut
+    liquidacion_especifica: LiquidacionEspecificaMinimalOut
+    inspector: InspectorMinimalOut
+    especialidad: EspecialidadMinimalOut
+    calculo: ReciboHonorarioInspectorCalculoOut
     created_at: datetime

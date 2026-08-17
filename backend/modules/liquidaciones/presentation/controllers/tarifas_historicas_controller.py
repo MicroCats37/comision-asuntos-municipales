@@ -115,3 +115,38 @@ class TarifasHistoricasController:
 
         result = self.derechos_presenter.present_derechos_historicos(resultados)
         return success_response(result)
+
+    @route.get(
+        "/tarifas",
+        response={200: ApiResponse[PaginatedData[TarifaHistoricaPeriodoSchema]]},
+        auth=None,
+    )
+    def get_tarifas_generales(
+        self,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
+        page: int = 1,
+        page_size: int = 10,
+    ):
+        """
+        Get historical tariff matrix for ALL tipo_liquidacion (general tarifario view).
+
+        - Query params: fecha_desde, fecha_hasta, page, page_size
+        - If both dates are omitted: returns currently vigentes tariffs across all tipos
+        - With dates: returns historical range across all tipos
+        - Each item includes tipo_liquidacion so the frontend can group by type
+        """
+        resultados, total = self.tarifas_orchestrator.obtener_tarifas_generales_proceso(
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            page=page,
+            page_size=page_size,
+        )
+
+        result = self.tarifas_presenter.present_tarifas_historicas(
+            resultados=resultados,
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+        return success_response(result)

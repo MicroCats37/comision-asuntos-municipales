@@ -1,38 +1,37 @@
 "use client";
 
+import { FileText } from "lucide-react";
 /**
  * EdificacionesFormModal — Form delgado para Edificaciones (motor PorcentajeObra).
  * Reutiliza LiquidacionFormBodyBase (general) + Smart Fields específicos del motor.
  */
 import { useCallback, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { notify } from "@/errors";
-import { FileText } from "lucide-react";
 import { useCrearEdificaciones } from "../../hooks/useCrearEdificaciones";
-import { edificacionesFormSchema, type EdificacionesFormData } from "../../schemas/liquidacion-edificaciones-form.schema";
-import type { ContactoInline } from "../../schemas/liquidacion-form-base.schema";
 import type { PdfLiquidacionItem } from "../../pdf/buildLiquidacionPdfElement";
+import { printLiquidacion } from "../../pdf/printLiquidacion";
+import {
+  type EdificacionesFormData,
+  edificacionesFormSchema,
+} from "../../schemas/liquidacion-edificaciones-form.schema";
+import type { ContactoInline } from "../../schemas/liquidacion-form-base.schema";
+import { ContactoFormModal } from "./ContactoFormModal";
+import { CotizacionPorcentajeSmartField } from "./CotizacionPorcentajeSmartField";
 import { LiquidacionFormBodyBase } from "./LiquidacionFormBodyBase";
 import { PrimeraRevisionTarifasSmartField } from "./PrimeraRevisionTarifasSmartField";
-import { CotizacionPorcentajeSmartField } from "./CotizacionPorcentajeSmartField";
-import { ContactoFormModal } from "./ContactoFormModal";
-import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
 
 interface EdificacionesFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
-  /** Recibe la liquidación creada (del backend) para abrir el PDF */
-  onCreated?: (item: PdfLiquidacionItem) => void;
 }
 
 export function EdificacionesFormModal({
   open,
   onOpenChange,
   onSuccess,
-  onCreated,
 }: EdificacionesFormModalProps) {
   const crearMutation = useCrearEdificaciones();
   const [contacto, setContacto] = useState<ContactoInline | null>(null);
@@ -46,18 +45,25 @@ export function EdificacionesFormModal({
   const handleSubmit = useCallback(
     async (data: EdificacionesFormData) => {
       try {
-        const result = await crearMutation.mutateAsync({ ...data, contacto: contacto ?? undefined });
+        const result = await crearMutation.mutateAsync({
+          ...data,
+          contacto: contacto ?? undefined,
+        });
         notify.success("Liquidación creada correctamente");
         setContacto(null);
-        // Desenvolver ApiResponse → data
-        const created = (result as { data?: PdfLiquidacionItem })?.data as PdfLiquidacionItem | undefined;
-        onCreated?.(created as PdfLiquidacionItem);
+        // Mismo window de impresión que el botón PDF de las cards
+        const created = (result as { data?: PdfLiquidacionItem })?.data as
+          | PdfLiquidacionItem
+          | undefined;
+        if (created) {
+          printLiquidacion(created, "edificacion");
+        }
         onSuccess?.();
       } catch {
         // Error handled by mutation
       }
     },
-    [crearMutation, contacto, onSuccess, onCreated],
+    [crearMutation, contacto, onSuccess],
   );
 
   return (
@@ -95,7 +101,10 @@ export function EdificacionesFormModal({
             }
             motorSection={
               <div className="space-y-3">
-                <PrimeraRevisionTarifasSmartField methods={methods} tipo="edificaciones" />
+                <PrimeraRevisionTarifasSmartField
+                  methods={methods}
+                  tipo="edificaciones"
+                />
                 <CotizacionPorcentajeSmartField methods={methods} />
               </div>
             }

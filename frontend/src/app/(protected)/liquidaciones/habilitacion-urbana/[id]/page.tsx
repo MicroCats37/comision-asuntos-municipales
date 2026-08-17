@@ -1,13 +1,9 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
 import { Home } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { LiquidacionDetalleCompleta } from "@/features/liquidaciones/components/LiquidacionDetalleCompleta";
 import { useLiquidacionDetalleHabilitacionUrbana } from "@/features/liquidaciones/hooks/useLiquidacionDetalleHabilitacionUrbana";
-import {
-  LiquidacionDetalleCompleta,
-  kindLabel,
-  type LiquidacionCardBase,
-} from "@/features/liquidaciones/components/LiquidacionDetalleCompleta";
 
 const KIND_LABEL = "Habilitación Urbana";
 
@@ -16,7 +12,11 @@ export default function LiquidacionDetalleHabilitacionUrbanaPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const { data: item, isLoading, isError } = useLiquidacionDetalleHabilitacionUrbana({ id });
+  const {
+    data: item,
+    isLoading,
+    isError,
+  } = useLiquidacionDetalleHabilitacionUrbana({ id });
 
   const handleBack = () => {
     router.back();
@@ -26,7 +26,7 @@ export default function LiquidacionDetalleHabilitacionUrbanaPage() {
     <div className="page-section">
       <div className="space-y-6">
         <LiquidacionDetalleCompleta
-          item={item as unknown as LiquidacionCardBase | null}
+          item={item}
           isLoading={isLoading}
           isError={isError}
           onBack={handleBack}

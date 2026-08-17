@@ -44,9 +44,6 @@ class DetallePorcentajeObraData(BaseModel):
     tarifa_aplicada: TarifaPorcentajeObraAplicada
     porcentaje_aplicado: Decimal
     subtotal: Decimal
-    igv: Decimal
-    uit: Decimal
-    total: Decimal
 
 
 class CotizacionPorcentajeObraData(BaseModel):

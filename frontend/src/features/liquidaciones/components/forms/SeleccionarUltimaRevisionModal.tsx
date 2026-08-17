@@ -6,15 +6,16 @@
  *
  * Endpoint: GET /liquidaciones/edificaciones/ultima-revision
  * NO dispara la búsqueda al abrir — espera a que el usuario presione "Buscar".
- * Validación: DNI 8 dígitos o RUC 11 dígitos para activar el botón.
+ * Validación: DNI 8 dígitos, RUC 11 dígitos o N° de liquidación para activar el botón.
  */
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, Loader2, RefreshCw, Search, X } from "lucide-react";
+import { Building2, Hash, Loader2, RefreshCw, Search, X } from "lucide-react";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import { useUltimaRevisionEdificaciones } from "../../hooks/useUltimaRevisionEdificaciones";
+import { formatPublicId } from "../../utils/formatPublicId";
 import { Pagination } from "@/components/genericPagination/Pagination";
 
 interface SeleccionarUltimaRevisionModalProps {
@@ -52,27 +53,31 @@ export function SeleccionarUltimaRevisionModal({
   onSelect,
 }: SeleccionarUltimaRevisionModalProps) {
   const [documento, setDocumento] = useState("");
+  const [numero, setNumero] = useState("");
   const [searched, setSearched] = useState(false);
   const [page, setPage] = useState(1);
 
   const isDocumentoValid = documento.trim().length === 8 || documento.trim().length === 11;
+  const canSearch = isDocumentoValid || numero.trim() !== "";
 
   const { items, total, totalPages, pageSize, isLoading, isError, refetch } = useUltimaRevisionEdificaciones({
     page,
     pageSize: 10,
     numeroDocumento: documento || undefined,
+    numero: numero ? Number(numero) : undefined,
     enabled: searched && open,
   });
 
   const handleSearch = useCallback(() => {
-    if (!isDocumentoValid) return;
+    if (!canSearch) return;
     setPage(1);
     setSearched(true);
     refetch();
-  }, [isDocumentoValid, refetch]);
+  }, [canSearch, refetch]);
 
   const handleReset = useCallback(() => {
     setDocumento("");
+    setNumero("");
     setSearched(false);
     setPage(1);
   }, []);
@@ -116,25 +121,47 @@ export function SeleccionarUltimaRevisionModal({
                     setDocumento(val);
                     setSearched(false);
                   }}
-                  onKeyDown={(e) => e.key === "Enter" && isDocumentoValid && handleSearch()}
+                  onKeyDown={(e) => e.key === "Enter" && canSearch && handleSearch()}
                   className="w-full h-10 font-mono"
                 />
                 <Button
                   type="button"
                   variant="default"
                   onClick={handleSearch}
-                  disabled={!isDocumentoValid}
+                  disabled={!canSearch}
                   className="h-10 shrink-0 gap-1.5 px-5"
                 >
                   <Search className="h-4 w-4" />
                   Buscar
                 </Button>
               </div>
-              {documento && !isDocumentoValid && (
+              {documento && !isDocumentoValid && !numero.trim() && (
                 <p className="text-xs text-destructive">
                   El documento debe tener 8 (DNI) u 11 (RUC) dígitos
                 </p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="buscar-numero" className="text-sm font-semibold">
+                N° Liquidación
+              </Label>
+              <div className="relative">
+                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  id="buscar-numero"
+                  placeholder="Ej. 15"
+                  inputMode="numeric"
+                  value={numero}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    setNumero(val);
+                    setSearched(false);
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && canSearch && handleSearch()}
+                  className="w-full h-10 font-mono pl-9"
+                />
+              </div>
             </div>
           </div>
 
@@ -146,10 +173,10 @@ export function SeleccionarUltimaRevisionModal({
                   <Search className="h-5 w-5 text-muted-foreground/70" />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Ingresa un número de documento y presiona Buscar
+                  Ingresa un documento o N° de liquidación y presiona Buscar
                 </p>
                 <p className="text-xs text-muted-foreground/60 mt-1">
-                  DNI: 8 dígitos · RUC: 11 dígitos
+                  DNI: 8 dígitos · RUC: 11 dígitos · N° Liquidación: correlativo
                 </p>
               </div>
             ) : isLoading ? (
@@ -193,9 +220,14 @@ export function SeleccionarUltimaRevisionModal({
                               </p>
                             </div>
                           </div>
-                          <span className="shrink-0 inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-bold text-primary">
-                            Rev. {lg.numero_revision}
-                          </span>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            <span className="inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-bold text-primary">
+                              Rev. {lg.numero_revision}
+                            </span>
+                            <span className="text-[11px] font-mono text-muted-foreground">
+                              {formatPublicId("edificacion", lg.fecha_registro, item.liquidacion_especifica.numero)}
+                            </span>
+                          </div>
                         </div>
                       </button>
                     );

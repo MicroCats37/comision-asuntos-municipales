@@ -25,6 +25,9 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     TarifaPorCategoriaVisitas,
 )
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
+    LiquidacionGeneral,
+)
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
@@ -141,109 +144,119 @@ def auth_client(api_client, create_user):
 # ── E2E Test ────────────────────────────────────────────────────────────────────
 
 @pytest.mark.django_db
-def test_e2e_inspeccion_obra_flow(
+def test_e2e_inspeccion_obra_desde_previa_con_inspector(
     auth_client, municipalidad, igv_vigente, uit_vigente,
-    tarifa_visitas_io, ubigeo_distrito
+    tarifa_visitas_io, ubigeo_distrito, tipo_edificacion, proyecto
 ):
     """
-    E2E flow for Inspección de Obra:
+    E2E flow: IO primera-revision DESDE una liquidación previa (Edificación),
+    con inspector asignado.
 
-    1. GET /liquidaciones/inspeccion-obra/tarifas/vigentes
-    2. Extract tarifa_id from response
-    3. POST /liquidaciones/inspeccion-obra/crear-primera-revision
-       with extracted tarifa_id
-    4. Assert 200 OK and liquidacion_general + liquidacion_especifica in response
+    Verifica que el inspector sale DENTRO de liquidacion_tipo (la IO asocia
+    inspectores al tipo, no a la general).
     """
+    from modules.liquidaciones.domain.models.inspector import (
+        Inspector,
+        LiquidacionInspector,
+    )
+    from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero
+
+    # Crear la liquidación previa (Edificación) — requiere tarifa de edificacion?
+    # Solo se necesita su proyecto/municipalidad, así que se crea directo.
+    from modules.liquidaciones.domain.constants import EstadoLiquidacion
+
+    # Especialidad + operación del inspector para que la especialidad_revision
+    # de la LiquidacionInspector se resuelva desde su operación.
+    from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
+    from modules.liquidaciones.domain.models.inspector import InspectorOperacion
+
+    esp_rev = EspecialidadRevision.objects.create(
+        codigo="02", slug="sanitaria", nombre="Ingeniería Sanitaria"
+    )
+    inspector = None
+
+    previa = LiquidacionGeneral.objects.create(
+        proyecto=proyecto,
+        municipalidad=municipalidad,
+        tipo_liquidacion=tipo_edificacion,
+        numero_revision=1,
+        estado=EstadoLiquidacion.PENDIENTE,
+        expediente="EXP-PREVIA-IO-2024-001",
+        sub_total=0,
+        total=0,
+        usuario_creador=auth_client.user,
+    )
+
+    # Crear inspector (perfil + Inspector)
+    perfil = PerfilIngeniero.objects.create(
+        cip="998877",
+        dni="99887766",
+        nombres="Inspector",
+        apellido_paterno="Prueba",
+        apellido_materno="IO",
+        correo_personal="inspector_io@test.com",
+    )
+    inspector = Inspector.objects.create(perfil_ingeniero=perfil)
+    InspectorOperacion.objects.create(
+        inspector=inspector,
+        tipo_liquidacion=tipo_edificacion,
+        categoria="1",
+        especialidad_revision=esp_rev,
+    )
+
     # Step 1: GET tarifas vigentes
     response = auth_client.get("/liquidaciones/inspeccion-obra/tarifas/vigentes")
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+    tarifa_id = response.json()["data"]["tarifas"][0]["id"]
 
-    assert response.status_code == 200, \
-        f"Expected 200 from GET tarifas vigentes, got {response.status_code}: {response.content}"
-
-    data = response.json()
-    assert "data" in data, "Response should have 'data' key"
-
-    result = data["data"]
-    assert "tarifas" in result, "Result should have 'tarifas' wrapper"
-
-    # Step 2: Extract tarifa_id from response
-    tarifas = result["tarifas"]
-    assert len(tarifas) >= 1, f"Expected at least 1 tarifa, got {len(tarifas)}"
-
-    tarifa_id = tarifas[0]["id"]
-    assert tarifa_id is not None, "tarifa_id should not be None"
-
-    municipalidad_id = str(municipalidad.id)
-    distrito_id = str(ubigeo_distrito.id)
-
-    # Step 3: Construct payload using extracted tarifa_id
+    # Step 2: POST nueva-liquidacion/primera-revision-desde-previa
     payload = {
-        "liquidacion_general": {
-            "municipalidad_id": municipalidad_id,
-            "expediente": "EXP-E2E-IO-2024-001",
-            "observacion": "E2E test Inspección de Obra",
-            "proyecto": {
-                "denominacion": "Proyecto E2E IO Test",
-                "nombre_propietario": "Propietario E2E IO SAC",
-                "direccion": "Av. E2E 123, Lima",
-                "distrito_id": distrito_id,
-                "entidad": {
-                    "tipo_documento": "RUC",
-                    "numero_documento": "20456789012",
-                    "razon_social": "Propietario E2E IO SAC",
-                },
-            },
-        },
+        "liquidacion_previa_id": str(previa.id),
         "liquidacion_especifica": {
             "datos": {
-                "cantidad_visitas": 3,
+                "cantidad_visitas": 2,
                 "categoria": "INSPECCION",
             },
             "tarifa": {
                 "tarifa_visitas_id": str(tarifa_id),
             },
+            "inspector_id": str(inspector.id),
         },
     }
 
-    # Step 4: POST crear liquidacion
     response = auth_client.post(
-        "/liquidaciones/inspeccion-obra/nueva-liquidacion/primera-revision",
+        "/liquidaciones/inspeccion-obra/nueva-liquidacion",
         json=payload,
     )
 
     assert response.status_code == 200, \
-        f"Expected 200 from POST crear liquidacion, got {response.status_code}: {response.content}"
+        f"Expected 200, got {response.status_code}: {response.content}"
 
-    data = response.json()
-    assert "data" in data, "Response should have 'data' key"
+    result = response.json()["data"]
 
-    result = data["data"]
-
-    # Assert liquidacion_general is in response
-    assert "liquidacion_general" in result, \
-        "Result should have 'liquidacion_general' wrapper"
-    lg = result["liquidacion_general"]
-    assert "id" in lg, "liquidacion_general should have 'id'"
-    assert lg["expediente"] == "EXP-E2E-IO-2024-001", \
-        f"Expected expediente 'EXP-E2E-IO-2024-001', got {lg['expediente']}"
-    assert lg["numero_revision"] == 1, \
-        f"Expected numero_revision=1, got {lg['numero_revision']}"
-
-    # Assert liquidacion_especifica is in response
-    assert "liquidacion_especifica" in result, \
-        "Result should have 'liquidacion_especifica' wrapper"
-    le = result["liquidacion_especifica"]
-    assert "id" in le, "liquidacion_especifica should have 'id'"
-    assert "numero" in le, "liquidacion_especifica should have 'numero'"
-
-    # Assert liquidacion_tipo is in response (calculation wrapper)
-    assert "liquidacion_tipo" in result, \
-        "Result should have 'liquidacion_tipo' wrapper"
+    # El inspector debe salir DENTRO de liquidacion_tipo
     lt = result["liquidacion_tipo"]
-    assert "id" in lt, "liquidacion_tipo should have 'id'"
-    assert "cantidad_visitas" in lt, "liquidacion_tipo should have 'cantidad_visitas'"
-    assert "categoria" in lt, "liquidacion_tipo should have 'categoria'"
-    assert lt["cantidad_visitas"] == 3, \
-        f"Expected cantidad_visitas=3, got {lt['cantidad_visitas']}"
-    assert lt["categoria"] == "INSPECCION", \
-        f"Expected categoria='INSPECCION', got {lt['categoria']}"
+    assert "inspectores" in lt, "liquidacion_tipo should have 'inspectores'"
+    assert len(lt["inspectores"]) == 1, \
+        f"Expected 1 inspector, got {len(lt['inspectores'])}"
+
+    insp_out = lt["inspectores"][0]
+    assert insp_out["inspector_id"] == str(inspector.id)
+    assert insp_out["perfil_ingeniero"]["cip"] == "998877"
+    assert insp_out["perfil_ingeniero"]["nombre_completo"] == perfil.nombre_completo
+    assert insp_out["especialidad_revision"] == {
+        "id": str(esp_rev.id),
+        "nombre": esp_rev.nombre,
+    }
+
+    # No debe salir en liquidacion_general (ni delegados ni inspectores)
+    lg = result["liquidacion_general"]
+    assert "delegados" in lg
+    assert lg["delegados"] == []
+
+    # La asociación LiquidacionInspector apunta al TIPO (LiquidacionPorCategoriaVisitas),
+    # que es lo que sale como liquidacion_tipo — no a la general ni a la extension.
+    tipo_id = result["liquidacion_tipo"]["id"]
+    assert LiquidacionInspector.objects.filter(
+        liquidacion_id=tipo_id, inspector=inspector
+    ).exists()

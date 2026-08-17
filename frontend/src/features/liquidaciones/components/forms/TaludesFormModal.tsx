@@ -1,34 +1,37 @@
 "use client";
 
+import { FileText } from "lucide-react";
 /**
  * TaludesFormModal — Form delgado para Taludes (motor PorcentajeObra).
  * Reutiliza LiquidacionFormBodyBase (general) + Smart Fields específicos del motor.
  */
 import { useCallback, useState } from "react";
+import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { notify } from "@/errors";
-import { FileText } from "lucide-react";
 import { useCrearTaludes } from "../../hooks/useCrearTaludes";
-import { taludesFormSchema, type TaludesFormData } from "../../schemas/liquidacion-taludes-form.schema";
+import type { PdfLiquidacionItem } from "../../pdf/buildLiquidacionPdfElement";
+import { printLiquidacion } from "../../pdf/printLiquidacion";
 import type { ContactoInline } from "../../schemas/liquidacion-form-base.schema";
+import {
+  type TaludesFormData,
+  taludesFormSchema,
+} from "../../schemas/liquidacion-taludes-form.schema";
+import { ContactoFormModal } from "./ContactoFormModal";
+import { CotizacionPorcentajeSmartField } from "./CotizacionPorcentajeSmartField";
 import { LiquidacionFormBodyBase } from "./LiquidacionFormBodyBase";
 import { PrimeraRevisionTarifasSmartField } from "./PrimeraRevisionTarifasSmartField";
-import { CotizacionPorcentajeSmartField } from "./CotizacionPorcentajeSmartField";
-import { ContactoFormModal } from "./ContactoFormModal";
-import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
 
 interface TaludesFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
-  onCreated?: () => void;
 }
 
 export function TaludesFormModal({
   open,
   onOpenChange,
   onSuccess,
-  onCreated,
 }: TaludesFormModalProps) {
   const crearMutation = useCrearTaludes();
   const [contacto, setContacto] = useState<ContactoInline | null>(null);
@@ -42,16 +45,25 @@ export function TaludesFormModal({
   const handleSubmit = useCallback(
     async (data: TaludesFormData) => {
       try {
-        await crearMutation.mutateAsync({ ...data, contacto: contacto ?? undefined });
+        const result = await crearMutation.mutateAsync({
+          ...data,
+          contacto: contacto ?? undefined,
+        });
         notify.success("Liquidación creada correctamente");
         setContacto(null);
+        // Mismo window de impresión que el botón PDF de las cards
+        const created = (result as { data?: PdfLiquidacionItem })?.data as
+          | PdfLiquidacionItem
+          | undefined;
+        if (created) {
+          printLiquidacion(created, "taludes");
+        }
         onSuccess?.();
-        onCreated?.();
       } catch {
         // Error handled by mutation
       }
     },
-    [crearMutation, contacto, onSuccess, onCreated],
+    [crearMutation, contacto, onSuccess],
   );
 
   return (
@@ -89,7 +101,10 @@ export function TaludesFormModal({
             }
             motorSection={
               <div className="space-y-3">
-                <PrimeraRevisionTarifasSmartField methods={methods} tipo="taludes" />
+                <PrimeraRevisionTarifasSmartField
+                  methods={methods}
+                  tipo="taludes"
+                />
                 <CotizacionPorcentajeSmartField methods={methods} />
               </div>
             }

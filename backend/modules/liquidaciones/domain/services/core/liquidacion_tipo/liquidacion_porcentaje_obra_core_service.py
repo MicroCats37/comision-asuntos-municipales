@@ -157,26 +157,27 @@ class LiquidacionPorcentajeObraCoreService:
                 subtotal_detalle = (subtotal_total * proporcion).quantize(
                     Decimal("0.01"), rounding=ROUND_HALF_UP
                 )
-            igv_detalle = (subtotal_detalle * igv_porcentaje).quantize(
-                Decimal("0.01"), rounding=ROUND_HALF_UP
-            )
 
-            # With tarifa-unica: the DTO already has explicit especialidad from input
+            # With tarifa-unica: the DTO already has explicit especialidad from input.
+            # El detalle SOLO lleva subtotal parcial — el IGV y el total se calculan
+            # a nivel global (subtotal_total), NO por tarifa.
             detalles.append(
                 DetallePorcentajeObraData(
                     tarifa_aplicada=tarifa_dto,  # already has especialidad_id/nombre
                     porcentaje_aplicado=tarifa_dto.porcentaje_liquidacion,
                     subtotal=subtotal_detalle,
-                    igv=igv_detalle,
-                    uit=minimo,
-                    total=subtotal_detalle + igv_detalle,
                 )
             )
 
-        # Paso 7-8: agregados (suma de montos redondeados — coincide con la BD)
+        # Paso 7-8: agregados GLOBALES (una sola vez sobre subtotal_total)
         porcentaje_liquidacion = porcentaje_total
         total_subtotal = sum((d.subtotal for d in detalles), Decimal("0"))
-        total = sum((d.total for d in detalles), Decimal("0"))
+        igv_global = (total_subtotal * igv_porcentaje).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+        total = (total_subtotal + igv_global).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
 
         # Derecho mínimo: si la tarifa no trae valor absoluto, se calcula
         # como (UIT * porcentaje_minimo_uit) + IGV vigente, sin hardcodear.
@@ -233,8 +234,5 @@ class LiquidacionPorcentajeObraCoreService:
                 especialidad_id=detalle.tarifa_aplicada.especialidad_id,
                 porcentaje_aplicado=detalle.porcentaje_aplicado,
                 subtotal=detalle.subtotal,
-                igv=detalle.igv,
-                uit=detalle.uit,
-                total=detalle.total,
             )
         return liquidacion_po

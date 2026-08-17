@@ -2,7 +2,7 @@
  * Hook para crear una Inspección de Obra PRIMERA-REVISIÓN desde una liquidación previa.
  * Usa useGenericCreateMutation (cache de lista + detalle) + useApiCreate interno.
  *
- * Endpoint: POST /liquidaciones/inspeccion-obra/nueva-liquidacion/primera-revision-desde-previa
+ * Endpoint: POST /liquidaciones/inspeccion-obra/nueva-liquidacion
  * Payload:
  * {
  *   liquidacion_previa_id: uuid,
@@ -33,7 +33,7 @@ export function useCrearInspeccionObraDesdePrevia() {
       };
     }
   >({
-    url: `${BASE_URL}/nueva-liquidacion/primera-revision-desde-previa`,
+    url: `${BASE_URL}/nueva-liquidacion`,
     queryKey: LIST_KEY,
     listShape: "paginated",
   });

@@ -13,6 +13,9 @@ from modules.liquidaciones.domain.results.inspector.inspector_result import (
     InspectorDetailResult,
     InspectorVigenteResult,
     InspectorVigenteListResult,
+    InspectorVigenteFormResult,
+    EspecialidadBasicaFormResult,
+    InspectoresVigentesFormResult,
 )
 from modules.liquidaciones.presentation.schemas.inspector.inspector_schemas import (
     PerfilIngenieroOut,
@@ -21,6 +24,9 @@ from modules.liquidaciones.presentation.schemas.inspector.inspector_schemas impo
     InspectorDetailOut,
     InspectorVigenteOut,
     InspectorVigenteListOut,
+    EspecialidadBasicaInspectorOut,
+    InspectorSeleccionableOut,
+    InspectoresSeleccionablesOut,
 )
 from core.pagination import PaginatedData
 
@@ -117,4 +123,119 @@ class InspectorPresenter:
             page=domain_result.page,
             page_size=domain_result.page_size,
             total_pages=domain_result.total_pages,
+        )
+
+    @staticmethod
+    def present_seleccionables(
+        domain_result: InspectoresVigentesFormResult,
+    ) -> InspectoresSeleccionablesOut:
+        """
+        Maps InspectoresVigentesFormResult to InspectoresSeleccionablesOut.
+
+        Para el form de creación de IO. Shape alineado con el alpha y el
+        schema del frontend (inspector-vigente.schema.ts).
+
+        especialidad es siempre requerida: InspectorOperacion.especialidad_revision
+        es NOT NULL en el refactor.
+        """
+        inspectores: List[InspectorSeleccionableOut] = []
+        for item in domain_result.inspectores:
+            inspectores.append(
+                InspectorSeleccionableOut(
+                    id=uuid.UUID(item.id),
+                    nombre_completo=item.nombre_completo,
+                    cip=item.cip,
+                    especialidad=EspecialidadBasicaInspectorOut(
+                        id=uuid.UUID(item.especialidad.id),
+                        nombre=item.especialidad.nombre,
+                    ),
+                    tipo_liquidacion=item.tipo_liquidacion,
+                    categoria=item.categoria,
+                    numero_registro=item.numero_registro,
+                    vigencia=item.vigencia,
+                )
+            )
+        return InspectoresSeleccionablesOut(inspectores=inspectores)
+
+    @staticmethod
+    def present_asignaciones_inspectores_list(
+        results,
+        total: int,
+        page: int,
+        page_size: int,
+    ) -> PaginatedData:
+        """
+        Maps list[LiquidacionInspectorAsignacionResult] to
+        PaginatedData[LiquidacionInspectorAsignacionOut].
+        """
+        from modules.liquidaciones.presentation.schemas.inspector.inspector_schemas import (
+            LiquidacionInspectorAsignacionOut,
+            LiquidacionInspectorLiquidacionOut,
+            InspectorAsignacionInspectorOut,
+            EspecialidadRevisionInspectorOut,
+            TipoLiquidacionMinimalOut,
+        )
+
+        import math
+
+        items = []
+        for r in results:
+            items.append(
+                LiquidacionInspectorAsignacionOut(
+                    id=uuid.UUID(r.id),
+                    liquidacion_id=uuid.UUID(r.liquidacion_id),
+                    inspector_id=uuid.UUID(r.inspector_id),
+                    especialidad_revision=(
+                        EspecialidadRevisionInspectorOut(
+                            id=uuid.UUID(r.especialidad_revision.id),
+                            nombre=r.especialidad_revision.nombre,
+                        )
+                        if r.especialidad_revision
+                        else None
+                    ),
+                    liquidacion=(
+                        LiquidacionInspectorLiquidacionOut(
+                            id=uuid.UUID(r.liquidacion.id),
+                            expediente=r.liquidacion.expediente,
+                            numero_revision=r.liquidacion.numero_revision,
+                            sub_total=r.liquidacion.sub_total,
+                            total=r.liquidacion.total,
+                            municipalidad_nombre=r.liquidacion.municipalidad_nombre,
+                            proyecto_denominacion=r.liquidacion.proyecto_denominacion,
+                            tipo_liquidacion=(
+                                TipoLiquidacionMinimalOut(
+                                    codigo=r.liquidacion.tipo_liquidacion.codigo,
+                                    nombre=r.liquidacion.tipo_liquidacion.nombre,
+                                )
+                                if r.liquidacion.tipo_liquidacion
+                                else None
+                            ),
+                        )
+                        if r.liquidacion
+                        else None
+                    ),
+                    inspector=(
+                        InspectorAsignacionInspectorOut(
+                            id=uuid.UUID(r.inspector.id),
+                            cip=r.inspector.cip,
+                            dni=r.inspector.dni,
+                            nombre_completo=r.inspector.nombre_completo,
+                        )
+                        if r.inspector
+                        else None
+                    ),
+                    periodo=r.periodo,
+                    dictamen_revision=r.dictamen_revision,
+                    fecha_presentacion=r.fecha_presentacion,
+                    fecha_revision=r.fecha_revision,
+                )
+            )
+
+        total_pages = math.ceil(total / page_size) if page_size > 0 else 0
+        return PaginatedData(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
         )

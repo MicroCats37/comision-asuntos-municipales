@@ -719,6 +719,7 @@ class LiquidacionGeneralCoreService:
         page_size: int,
         razon_social=None,
         numero_documento=None,
+        numero=None,
         fecha_desde=None,
         fecha_hasta=None,
     ) -> tuple:
@@ -846,6 +847,8 @@ class LiquidacionGeneralCoreService:
             qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
         if numero_documento:
             qs = qs.filter(proyecto__entidad_numero_documento=numero_documento)
+        if numero is not None:
+            qs = qs.filter(**{self._NUMERO_FILTER_FIELD_MAP[tipo_liquidacion]: numero})
         if fecha_desde:
             qs = qs.filter(fecha_registro__date__gte=fecha_desde)
         if fecha_hasta:

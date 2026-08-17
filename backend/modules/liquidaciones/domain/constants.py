@@ -25,6 +25,15 @@ class CategoriaDelegado(models.TextChoices):
     HABILITACIONES_URBANAS = "Habilitaciones Urbanas", "Habilitaciones Urbanas"
 
 
+class CategoriaIO(models.TextChoices):
+    """Categoría del Inspector de Operaciones (1-4)."""
+
+    CAT_1 = "1", "Categoría 1"
+    CAT_2 = "2", "Categoría 2"
+    CAT_3 = "3", "Categoría 3"
+    CAT_4 = "4", "Categoría 4"
+
+
 class EstadoLiquidacion(models.TextChoices):
     """Estado de LiquidacionGeneral."""
 

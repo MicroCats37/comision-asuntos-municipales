@@ -34,8 +34,8 @@ from django.core.management.base import BaseCommand
 
 from modules.liquidaciones.domain.models.inspector import (
     Inspector,
-    InspectorTipoLiquidacion,
-    InspectorAsignacionPeriodo,
+    InspectorOperacion,
+    InspectorOperacionPeriodo,
 )
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
 from modules.usuarios.domain.models.perfil_ingeniero import (
@@ -114,6 +114,56 @@ class Command(BaseCommand):
             perfil.save()
         return perfil, False
 
+    def _resolver_especialidad_revision(self, reg):
+        """
+        Resuelve la EspecialidadRevision para una operación de inspector,
+        desde el nombre de especialidad del registro del JSON
+        (ej. 'Ingeniería Civil').
+
+        La especialidad vive en la operación (InspectorOperacion), no en el
+        Inspector base. Retorna None si no se puede resolver.
+        """
+        from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
+
+        # Mapeo de sinónimos: especialidades del CIP → EspecialidadRevision (3 canónicas)
+        MAPEO_SINONIMOS = {
+            "ingenieria civil": "Ingeniería Civil",
+            "ingenieria sanitaria": "Ingeniería Sanitaria",
+            "ingenieria electrica": "Eléctrica/Mecánica",
+            "ingenieria mecanica electrica": "Eléctrica/Mecánica",
+            "ingenieria mecanica": "Eléctrica/Mecánica",
+            "ingenieria electronica": "Eléctrica/Mecánica",
+        }
+
+        nombre_esp = (reg.get("especialidad") or "").strip()
+        if nombre_esp:
+            key = nombre_esp.lower().strip()
+            canon = MAPEO_SINONIMOS.get(key)
+            if canon:
+                esp = EspecialidadRevision.objects.filter(nombre__iexact=canon).first()
+                if esp:
+                    return esp
+            esp = EspecialidadRevision.objects.filter(nombre__iexact=nombre_esp).first()
+            if esp:
+                return esp
+            # Fallback: normalizar sin acentos para el mapeo de sinónimos
+            from unicodedata import normalize as uni_norm
+            key_norm = uni_norm("NFD", key).encode("ascii", "ignore").decode()
+            canon_norm = {
+                "ingenieria civil": "Ingeniería Civil",
+                "ingenieria sanitaria": "Ingeniería Sanitaria",
+                "ingenieria electrica": "Eléctrica/Mecánica",
+                "ingenieria mecanica electrica": "Eléctrica/Mecánica",
+                "ingenieria mecanica": "Eléctrica/Mecánica",
+                "ingenieria electronica": "Eléctrica/Mecánica",
+            }
+            canon2 = canon_norm.get(key_norm)
+            if canon2:
+                esp = EspecialidadRevision.objects.filter(nombre__iexact=canon2).first()
+                if esp:
+                    return esp
+        return None
+
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
         seed_file = options["seed_path"] or (self.SEEDS_DIR / "inspectores_reales.json")
@@ -180,12 +230,24 @@ class Command(BaseCommand):
                     sin_tipo.append(f"{cip} -> {tipo_key}")
                     continue
 
-                itl, itl_created = InspectorTipoLiquidacion.objects.get_or_create(
+                # Resolver especialidad_revision desde el nombre de especialidad del registro
+                # (o desde la especialidad del inspector como fallback).
+                especialidad_rev = self._resolver_especialidad_revision(reg)
+                if especialidad_rev is None:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"    Sin especialidad_revision para {cip} -> {tipo_key}, saltando"
+                        )
+                    )
+                    continue
+
+                itl, itl_created = InspectorOperacion.objects.get_or_create(
                     inspector=inspector,
                     tipo_liquidacion=tipo,
-                    numero_registro=numero_registro,
+                    categoria=str(categoria) if categoria is not None else "",
                     defaults={
-                        "categoria": str(categoria) if categoria is not None else "",
+                        "numero_registro": numero_registro,
+                        "especialidad_revision": especialidad_rev,
                     },
                 )
                 if itl_created:
@@ -205,7 +267,7 @@ class Command(BaseCommand):
                     except ValueError:
                         periodo_fin = None
 
-                periodo, periodo_created = InspectorAsignacionPeriodo.objects.get_or_create(
+                periodo, periodo_created = InspectorOperacionPeriodo.objects.get_or_create(
                     inspector_tipo_liquidacion=itl,
                     periodo_inicio=inicio_default,
                     periodo_fin=periodo_fin,

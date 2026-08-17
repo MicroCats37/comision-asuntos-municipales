@@ -23,11 +23,20 @@ from modules.liquidaciones.domain.models.delegado import (
     DelegadoMunicipalidad,
     DelegadoMunicipalidadPeriodo,
 )
-from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero
+from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero, EspecialidadRevision
 from modules.entidades.domain.models.municipalidad import Municipalidad
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
+
+@pytest.fixture
+def especialidad_revision_civil(db):
+    """Create an EspecialidadRevision for testing."""
+    return EspecialidadRevision.objects.create(
+        codigo="01",
+        slug="civil",
+        nombre="Ingeniería Civil",
+    )
 
 @pytest.fixture
 def perfil_ingeniero_delegado(db):
@@ -72,12 +81,13 @@ def delegado_2(db, perfil_ingeniero_delegado_2):
 
 
 @pytest.fixture
-def municipalidad_delegado(db, municipalidad, delegado):
+def municipalidad_delegado(db, municipalidad, delegado, especialidad_revision_civil):
     """Delegado-Municipalidad assignment for the first delegado."""
     return DelegadoMunicipalidad.objects.create(
         delegado=delegado,
         municipalidad=municipalidad,
         tipo="TITULAR",
+        especialidad_revision=especialidad_revision_civil,
     )
 
 
@@ -92,12 +102,13 @@ def municipalidad_delegado_periodo_vigente(db, municipalidad_delegado):
 
 
 @pytest.fixture
-def municipalidad_delegado_2(db, municipalidad, delegado_2):
+def municipalidad_delegado_2(db, municipalidad, delegado_2, especialidad_revision_civil):
     """Delegado-Municipalidad assignment for the second delegado."""
     return DelegadoMunicipalidad.objects.create(
         delegado=delegado_2,
         municipalidad=municipalidad,
         tipo="ALTERNO",
+        especialidad_revision=especialidad_revision_civil,
     )
 
 

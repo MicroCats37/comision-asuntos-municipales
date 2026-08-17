@@ -61,9 +61,6 @@ class LiquidacionEdificacionesPresenter:
                     especialidad_id=uuid.UUID(d.especialidad_id),
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
-                    igv=d.igv,
-                    uit=d.uit,
-                    total=d.total,
                 )
                 for d in tipo.detalles
             ],
@@ -93,9 +90,6 @@ class LiquidacionEdificacionesPresenter:
                     especialidad_id=uuid.UUID(d.especialidad_id),
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
-                    igv=d.igv,
-                    uit=d.uit,
-                    total=d.total,
                 )
                 for d in domain_result.detalles
             ],
@@ -151,3 +145,4 @@ class LiquidacionEdificacionesPresenter:
         )
 
         return present_tarifas_vigentes_po(tarifas, especialidades_disponibles)
+

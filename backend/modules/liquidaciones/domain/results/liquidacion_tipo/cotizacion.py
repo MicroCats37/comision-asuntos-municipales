@@ -35,9 +35,6 @@ class CotizacionPorcentajeObraDetalleResult(BaseModel):
     especialidad_id: str
     porcentaje_aplicado: Decimal
     subtotal: Decimal
-    igv: Decimal
-    uit: Decimal
-    total: Decimal
 
 
 class CotizacionPorcentajeObraResult(BaseModel):

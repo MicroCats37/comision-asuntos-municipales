@@ -41,6 +41,7 @@ from modules.liquidaciones.presentation.controllers.liquidacion_delegado_control
 )
 from modules.liquidaciones.presentation.controllers.inspector_controller import (
     InspectorController,
+    LiquidacionInspectorController,
 )
 from modules.liquidaciones.presentation.controllers.tarifas_historicas_controller import (
     TarifasHistoricasController,
@@ -119,6 +120,7 @@ api.register_controllers(LiquidacionDelegadoController)
 
 # ── Inspectores Controllers ─
 api.register_controllers(InspectorController)
+api.register_controllers(LiquidacionInspectorController)
 
 # ── Tarifas y Derechos Históricos ─
 api.register_controllers(TarifasHistoricasController)

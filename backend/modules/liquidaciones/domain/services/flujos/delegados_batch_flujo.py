@@ -54,10 +54,17 @@ class DelegadosBatchFlujo:
     ) -> BatchProcessResult:
         def create_fn(body: LiquidacionDelegadoCreateIn):
             delegado = self.core_service.get_delegado_by_id(body.delegado_id)
+            # La especialidad ahora se resuelve desde la operación vigente del delegado
+            # para la municipalidad + tipo de la liquidación.
+            operacion = self.core_service.get_operacion_vigente_para_liquidacion(
+                delegado=delegado,
+                liquidacion=liquidacion,
+            )
+            especialidad_revision = operacion.especialidad_revision if operacion else None
             return self.core_service.crear_liquidacion_delegado(
                 liquidacion=liquidacion,
                 delegado=delegado,
-                especialidad_revision=delegado.especialidad_revision,
+                especialidad_revision=especialidad_revision,
             )
 
         def update_fn(id_: UUID, body: LiquidacionDelegadoUpdateIn):

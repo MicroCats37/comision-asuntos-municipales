@@ -92,8 +92,12 @@ const recibosGroup = {
   icon: Receipt,
   children: [
     {
-      title: "Recibos de Honorario",
-      href: "/liquidaciones/recibos-honorario",
+      title: "Recibos Delegados",
+      href: "/liquidaciones/recibos-delegados",
+    },
+    {
+      title: "Recibos Inspectores",
+      href: "/liquidaciones/recibos-inspectores",
     },
   ],
 };

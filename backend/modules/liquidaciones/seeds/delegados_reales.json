@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "periodo": "SEPTIEMBRE 2025 A AGOSTO 2026",
-  "fuente": "docs/desarrollo/delegados_todos.csv",
+  "fuente": "data/comisiones_tecnicas_cam_sep2025_ago2026_consolidado.csv",
   "municipalidades": [
     {
       "nombre": "CERCADO DE LIMA",
@@ -100,7 +100,7 @@
       "distrito": null
     },
     {
-      "nombre": "LURIGANCHO - CHOSICA",
+      "nombre": "LURIGANCHO – CHOSICA",
       "codigo": "MUN0017",
       "provincia": null,
       "distrito": null
@@ -514,7 +514,7 @@
       "distrito": null
     },
     {
-      "nombre": "SANTA MARIA",
+      "nombre": "STA MARIA",
       "codigo": "MUN0086",
       "provincia": null,
       "distrito": null
@@ -568,13 +568,13 @@
       "distrito": null
     },
     {
-      "nombre": "LURIGANCHO-CHOSICA",
+      "nombre": "PROVINCIAL DE HUAURA",
       "codigo": "MUN0095",
       "provincia": null,
       "distrito": null
     },
     {
-      "nombre": "PROVINCIAL DE HUAURA",
+      "nombre": "SANTA MARIA",
       "codigo": "MUN0096",
       "provincia": null,
       "distrito": null
@@ -590,18 +590,6 @@
       "codigo": "MUN0098",
       "provincia": null,
       "distrito": null
-    },
-    {
-      "nombre": "STA MARIA",
-      "codigo": "MUN0099",
-      "provincia": null,
-      "distrito": null
-    },
-    {
-      "nombre": "QUILMAΝΑ",
-      "codigo": "MUN0100",
-      "provincia": null,
-      "distrito": null
     }
   ],
   "delegados": [
@@ -611,184 +599,9 @@
       "especialidad": "Ingeniería Sanitaria - Edificaciones"
     },
     {
-      "cip": "008097",
-      "nombre_completo": "ROMERO SOTELO JORGE ANDRES",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
       "cip": "008311",
       "nombre_completo": "RAMOS SAAVEDRA JOSE UBALDO",
       "especialidad": "Ingeniería Sanitaria - Edificaciones"
-    },
-    {
-      "cip": "008833",
-      "nombre_completo": "ESPINOZA GARCIA ISIDRO ROSENDO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "012050",
-      "nombre_completo": "ICAZA ANDRADE RICARDO EMILIANO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "013213",
-      "nombre_completo": "AQUINO MELENDEZ ARTURO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "014386",
-      "nombre_completo": "CARDENAS ASPAJO MANUEL EXALTACION",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "015492",
-      "nombre_completo": "LEON JERI VICTOR TEODOSIO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "016748",
-      "nombre_completo": "PRADO MEZA JESUS MANUEL",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "016932",
-      "nombre_completo": "ESTEBAN PALOMINO YONEL CLEVER",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones"
-    },
-    {
-      "cip": "017893",
-      "nombre_completo": "RUIZ DILLON KUOWENG",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "018356",
-      "nombre_completo": "LAZO MAYORCA LUIS ENRIQUE",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
-    },
-    {
-      "cip": "018554",
-      "nombre_completo": "ALEGRE MERINO CESAR JOSE",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "021758",
-      "nombre_completo": "CEPERO FELIPE WALTER ERICH",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "022414",
-      "nombre_completo": "RODRIGUEZ MONTANI MARTHA ELENA",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
-    },
-    {
-      "cip": "023593",
-      "nombre_completo": "CORNEJO ALVARADO JORGE FRANCISCO",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones"
-    },
-    {
-      "cip": "024657",
-      "nombre_completo": "ULLOA LLERENA BEDER FELIPE",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
-    },
-    {
-      "cip": "028219",
-      "nombre_completo": "ROSADO AGUIRRE ESTANISLAO UBALDO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "028365",
-      "nombre_completo": "TAY WO CHONG TANG JULIO",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones"
-    },
-    {
-      "cip": "031156",
-      "nombre_completo": "ARIAS ORTIZ ROBERTO JESUS",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "031816",
-      "nombre_completo": "LOVERA MARTINEZ LUIS GUILLERMO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "032452",
-      "nombre_completo": "RAMIREZ LI JOSE RICARDO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "035106",
-      "nombre_completo": "JIMENEZ PEÑA GUSTAVO GABRIEL",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "036721",
-      "nombre_completo": "MORENO GUTIERREZ SEGUNDO ANTERO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "036992",
-      "nombre_completo": "CORPUS VERGARA RONALD ERIK",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "038003",
-      "nombre_completo": "MIRANDA VEGA JOSE",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "038222",
-      "nombre_completo": "FERREYRA CAYO ISAAC HILARIO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "038225",
-      "nombre_completo": "SANDOVAL CUCHO CARLOS ROLANDO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "038284",
-      "nombre_completo": "VIDAL VALENZUELA ERNESTO ABELARDO",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones"
-    },
-    {
-      "cip": "041426",
-      "nombre_completo": "HURTADO PANUERA ANA BASILIA",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "042568",
-      "nombre_completo": "SIERRA SERRANO TIMOTEO ALEJANDRO",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones"
-    },
-    {
-      "cip": "043995",
-      "nombre_completo": "SANCHEZ SANTUR LUIS",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "044963",
-      "nombre_completo": "CACCHA HUAMANI ORLANDO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "047691",
-      "nombre_completo": "FERNANDEZ VALDERRAMA GONZALO EMILIO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "050393",
-      "nombre_completo": "ΜANSILLA GARAYAR JAVIER",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "051921",
-      "nombre_completo": "MARTINEZ CARRASCO JAIME HIPOLITO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "052942",
-      "nombre_completo": "ALVARADO ARELLANO ALBERTO DANTE",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
     },
     {
       "cip": "053133",
@@ -796,129 +609,9 @@
       "especialidad": "Ingeniería Sanitaria - Edificaciones"
     },
     {
-      "cip": "057281",
-      "nombre_completo": "OVIEDO ANASTACIO GERMAN MARCELINO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "057599",
-      "nombre_completo": "ARDILES MARCOS IBAÑEZ JOSE ANTONIO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "057822",
-      "nombre_completo": "MENDOZA GUIDO JOSE RAFAEL",
+      "cip": "028365",
+      "nombre_completo": "TAY WO CHONG TANG JULIO",
       "especialidad": "Ingeniería Sanitaria - Edificaciones"
-    },
-    {
-      "cip": "057838",
-      "nombre_completo": "ALCANTARA GABRIEL ROSA ZULEMA",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "058751",
-      "nombre_completo": "MONTES ALVAREZ RICARDO NICANOR",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "058975",
-      "nombre_completo": "CARDENAS SANCHEZ NESTOR RAUL",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "059197",
-      "nombre_completo": "BABILONIA AREVALO OTTO",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
-    },
-    {
-      "cip": "060441",
-      "nombre_completo": "ALBUJAR ESCUDERO SOCIMO TOMAS",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones"
-    },
-    {
-      "cip": "061947",
-      "nombre_completo": "ALCAYHUAMAN GUZMAN GIOVANNA",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "062895",
-      "nombre_completo": "LAZO MUÑOZ ELIZABETH LUZMILA",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "063108",
-      "nombre_completo": "RISCO ZEVALLOS MARCO AΝΤΟΝΙΟ",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "063112",
-      "nombre_completo": "VALEGA ROSAS RAUL BENJAMIN",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "063147",
-      "nombre_completo": "SOTO EVANGELISTA RICHARD AMADEO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "063986",
-      "nombre_completo": "MEJIA AZAÑERO JESSICA LUCILA",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "063992",
-      "nombre_completo": "MOREYRA VIZCARRA YUBAL",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "064438",
-      "nombre_completo": "URIBE LAYSECA CARLOS IGNACIO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "066213",
-      "nombre_completo": "PALOMINO ESCALANTE HUGO ENRIQUE",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "069692",
-      "nombre_completo": "ACOSTA QUINECHE MIGUEL ANGEL",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
-    },
-    {
-      "cip": "070258",
-      "nombre_completo": "PAREDES MACEDO LUIS ENRIQUE",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "072389",
-      "nombre_completo": "CASTILLO CHAVEZ JORGE LUIS",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones"
-    },
-    {
-      "cip": "072900",
-      "nombre_completo": "CASTAÑEDA AMES VIVIANA PAOLA",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "073223",
-      "nombre_completo": "ROMERO MEGO JORGE MARIANO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "073932",
-      "nombre_completo": "TALLA CONDEZO ROBERTO EDGARDO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "074281",
-      "nombre_completo": "LOPEZ REAL GABRIEL ROBERTO",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones"
-    },
-    {
-      "cip": "075157",
-      "nombre_completo": "BAUTISTA CEPEDA RICARDO AUGUSTO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
     },
     {
       "cip": "077632",
@@ -926,53 +619,18 @@
       "especialidad": "Ingeniería Sanitaria - Edificaciones"
     },
     {
-      "cip": "079976",
-      "nombre_completo": "TOLEDO GONZALEZ RICARDO ALEX",
-      "especialidad": "Ingeniería Civil - Edificaciones"
+      "cip": "141145",
+      "nombre_completo": "DE LA CRUZ ALIAGA CARMEN JULIA",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones"
     },
     {
-      "cip": "082702",
-      "nombre_completo": "DIAZ SILVA CARLOS DAVID",
-      "especialidad": "Ingeniería Civil - Edificaciones"
+      "cip": "016932",
+      "nombre_completo": "ESTEBAN PALOMINO YONEL CLEVER",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones"
     },
     {
-      "cip": "083398",
-      "nombre_completo": "ARANDA TOLEDO ANDRES ULISES",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "085381",
-      "nombre_completo": "NUÑEZ SALCEDO LUIS MIGUEL",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "090713",
-      "nombre_completo": "RODAS CONDE DOMINGO CHRISTIAN",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "091616",
-      "nombre_completo": "LAZO MUÑOZ JULIO CESAR",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "092116",
-      "nombre_completo": "CHAVEZ CAJAHUANCA RENATO",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
-    },
-    {
-      "cip": "094591",
-      "nombre_completo": "ALVARADO BARZOLA JOSE RODRIGO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "100268",
-      "nombre_completo": "DIAZ MACHUCA EVER",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "100721",
-      "nombre_completo": "PERCCA ALAMO MANUEL ANGEL",
+      "cip": "042568",
+      "nombre_completo": "SIERRA SERRANO TIMOTEO ALEJANDRO",
       "especialidad": "Ingeniería Sanitaria - Edificaciones"
     },
     {
@@ -981,14 +639,59 @@
       "especialidad": "Ingeniería Sanitaria - Edificaciones"
     },
     {
-      "cip": "111665",
-      "nombre_completo": "TORRES SOTO LUIS DAVID",
+      "cip": "060441",
+      "nombre_completo": "ALBUJAR ESCUDERO SOCIMO TOMAS",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones"
+    },
+    {
+      "cip": "115447",
+      "nombre_completo": "PADILLA MISAJEL ROMULO ALBERTO",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones"
+    },
+    {
+      "cip": "100721",
+      "nombre_completo": "PERCCA ALAMO MANUEL ANGEL",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones"
+    },
+    {
+      "cip": "183026",
+      "nombre_completo": "MATOS HUAMAN RONEL DAVID",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones"
+    },
+    {
+      "cip": "057822",
+      "nombre_completo": "MENDOZA GUIDO JOSE RAFAEL",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones"
+    },
+    {
+      "cip": "038284",
+      "nombre_completo": "VIDAL VALENZUELA ERNESTO ABELARDO",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones"
+    },
+    {
+      "cip": "023593",
+      "nombre_completo": "CORNEJO ALVARADO JORGE FRANCISCO",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones"
+    },
+    {
+      "cip": "072389",
+      "nombre_completo": "CASTILLO CHAVEZ JORGE LUIS",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones"
+    },
+    {
+      "cip": "074281",
+      "nombre_completo": "LOPEZ REAL GABRIEL ROBERTO",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones"
+    },
+    {
+      "cip": "018554",
+      "nombre_completo": "ALEGRE MERINO CESAR JOSE",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
     },
     {
-      "cip": "111717",
-      "nombre_completo": "SILVA MATOS JULIO LEONID",
-      "especialidad": "Ingeniería Civil - Edificaciones"
+      "cip": "050393",
+      "nombre_completo": "MANSILLA GARAYAR JAVIER",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
     },
     {
       "cip": "114633",
@@ -997,62 +700,72 @@
     },
     {
       "cip": "114939",
-      "nombre_completo": "RODRIGUEZ FLORES LUIS ANΤΟΝΙΟ",
+      "nombre_completo": "RODRIGUEZ FLORES LUIS ANTONIO",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
     },
     {
-      "cip": "115447",
-      "nombre_completo": "PADILLA MISAJEL ROMULO ALBERTO",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones"
-    },
-    {
-      "cip": "116177",
-      "nombre_completo": "SAMANIEGO QUICHICA JOSE LUIS",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "118318",
-      "nombre_completo": "TARAZONA ESTRADA LUIS ALBERTO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "124694",
-      "nombre_completo": "MOREYRA VIZCARRA PORFIDIO LUIS",
+      "cip": "052942",
+      "nombre_completo": "ALVARADO ARELLANO ALBERTO DANTE",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
     },
     {
-      "cip": "125641",
-      "nombre_completo": "JURADO HUAMANI PEÑAFORT TOLEDO",
+      "cip": "202264",
+      "nombre_completo": "HEREDIA ZEVALLOS JUAN CARLOS",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
     },
     {
-      "cip": "137201",
-      "nombre_completo": "GRANADOS SAENZ RODOLFO VALENTINO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
-    },
-    {
-      "cip": "138328",
-      "nombre_completo": "BRINGAS ENCISO FEIDER PAVEL",
+      "cip": "036721",
+      "nombre_completo": "MORENO GUTIERREZ SEGUNDO ANTERO",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
     },
     {
-      "cip": "141145",
-      "nombre_completo": "DE LA CRUZ ALIAGA CARMEN JULIA",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones"
-    },
-    {
-      "cip": "151817",
-      "nombre_completo": "WHARTON CRUZ MARIA ELIZABETH",
+      "cip": "028219",
+      "nombre_completo": "ROSADO AGUIRRE ESTANISLAO UBALDO",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
     },
     {
-      "cip": "152605",
-      "nombre_completo": "FALCONI LLANOS CESAR GONZALO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
+      "cip": "066213",
+      "nombre_completo": "PALOMINO ESCALANTE HUGO ENRIQUE",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
     },
     {
-      "cip": "155883",
-      "nombre_completo": "QUISPEALAYA HERNANDEZ MARIO FELIX",
+      "cip": "051921",
+      "nombre_completo": "MARTINEZ CARRASCO JAIME HIPOLITO",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "021758",
+      "nombre_completo": "CEPERO FELIPE WALTER ERICH",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "070258",
+      "nombre_completo": "PAREDES MACEDO LUIS ENRIQUE",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "044963",
+      "nombre_completo": "CACCHA HUAMANI ORLANDO",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "038222",
+      "nombre_completo": "FERREYRA CAYO ISAAC HILARIO",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "092116",
+      "nombre_completo": "CHAVEZ CAJAHUANCA RENATO",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "063147",
+      "nombre_completo": "SOTO EVANGELISTA RICHARD AMADEO",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "047691",
+      "nombre_completo": "FERNANDEZ VALDERRAMA GONZALO EMILIO",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
     },
     {
@@ -1061,2314 +774,148 @@
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
     },
     {
+      "cip": "031156",
+      "nombre_completo": "ARIAS ORTIZ ROBERTO JESUS",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "058751",
+      "nombre_completo": "MONTES ALVAREZ RICARDO NICANOR",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "155883",
+      "nombre_completo": "QUISPEALAYA HERNANDEZ MARIO FELIX",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "017893",
+      "nombre_completo": "RUIZ DILLON KUOWENG",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "038225",
+      "nombre_completo": "SANDOVAL CUCHO CARLOS ROLANDO",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "038003",
+      "nombre_completo": "MIRANDA VEGA JOSE",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "125641",
+      "nombre_completo": "JURADO HUAMANI PEÑAFORT TOLEDO",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "041426",
+      "nombre_completo": "HURTADO PANUERA ANA BASILIA",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "073932",
+      "nombre_completo": "TALLA CONDEZO ROBERTO EDGARDO",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "057838",
+      "nombre_completo": "ALCANTARA GABRIEL ROSA ZULEMA",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "124694",
+      "nombre_completo": "MOREYRA VIZCARRA PORFIDIO LUIS",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "151817",
+      "nombre_completo": "WHARTON CRUZ MARIA ELIZABETH",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "138328",
+      "nombre_completo": "BRINGAS ENCISO FEIDER PAVEL",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "032452",
+      "nombre_completo": "RAMIREZ LI JOSE RICARDO",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "015492",
+      "nombre_completo": "LEON JERI VICTOR TEODOSIO",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "111665",
+      "nombre_completo": "TORRES SOTO LUIS DAVID",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
+      "cip": "057281",
+      "nombre_completo": "OVIEDO ANASTACIO GERMAN MARCELINO",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+    },
+    {
       "cip": "163222",
       "nombre_completo": "VARGAS MENDIVIL DIEGO ARTURO",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
     },
     {
-      "cip": "167972",
-      "nombre_completo": "ROMERO MEGO ANDRES OSWALDO",
-      "especialidad": "Ingeniería Civil - Edificaciones"
+      "cip": "091616",
+      "nombre_completo": "LAZO MUÑOZ JULIO CESAR",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
     },
     {
-      "cip": "183026",
-      "nombre_completo": "MATOS HUAMAN RONEL DAVID",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones"
+      "cip": "069692",
+      "nombre_completo": "ACOSTA QUINECHE MIGUEL ANGEL",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
     },
     {
-      "cip": "202264",
-      "nombre_completo": "HEREDIA ZEVALLOS JUAN CARLOS",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones"
+      "cip": "118318",
+      "nombre_completo": "TARAZONA ESTRADA LUIS ALBERTO",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
+    },
+    {
+      "cip": "063986",
+      "nombre_completo": "MEJIA AZAÑERO JESSICA LUCILA",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
+    },
+    {
+      "cip": "018356",
+      "nombre_completo": "LAZO MAYORCA LUIS ENRIQUE",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
+    },
+    {
+      "cip": "022414",
+      "nombre_completo": "RODRIGUEZ MONTANI MARTHA ELENA",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
+    },
+    {
+      "cip": "062895",
+      "nombre_completo": "LAZO MUÑOZ ELIZABETH LUZMILA",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
+    },
+    {
+      "cip": "059197",
+      "nombre_completo": "BABILONIA AREVALO OTTO",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
+    },
+    {
+      "cip": "082702",
+      "nombre_completo": "DIAZ SILVA CARLOS DAVID",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
+    },
+    {
+      "cip": "024657",
+      "nombre_completo": "ULLOA LLERENA BEDER FELIPE",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas"
     }
   ],
   "asignaciones": [
     {
-      "cip": "063112",
-      "municipalidad_codigo": "MUN0001",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0001",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "075157",
-      "municipalidad_codigo": "MUN0002",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "057599",
-      "municipalidad_codigo": "MUN0002",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "090713",
-      "municipalidad_codigo": "MUN0003",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "008833",
-      "municipalidad_codigo": "MUN0003",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063112",
-      "municipalidad_codigo": "MUN0004",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0004",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0005",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "061947",
-      "municipalidad_codigo": "MUN0005",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "061947",
-      "municipalidad_codigo": "MUN0006",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0006",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "013213",
-      "municipalidad_codigo": "MUN0007",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0007",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0008",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "116177",
-      "municipalidad_codigo": "MUN0008",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "100268",
-      "municipalidad_codigo": "MUN0009",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "094591",
-      "municipalidad_codigo": "MUN0009",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "116177",
-      "municipalidad_codigo": "MUN0010",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063112",
-      "municipalidad_codigo": "MUN0010",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0011",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "111717",
-      "municipalidad_codigo": "MUN0011",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "008833",
-      "municipalidad_codigo": "MUN0012",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "013213",
-      "municipalidad_codigo": "MUN0012",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "083398",
-      "municipalidad_codigo": "MUN0013",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "137201",
-      "municipalidad_codigo": "MUN0013",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "008097",
-      "municipalidad_codigo": "MUN0014",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0014",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "058975",
-      "municipalidad_codigo": "MUN0015",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063112",
-      "municipalidad_codigo": "MUN0015",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0016",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "083398",
-      "municipalidad_codigo": "MUN0016",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "152605",
-      "municipalidad_codigo": "MUN0017",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063112",
-      "municipalidad_codigo": "MUN0017",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "079976",
-      "municipalidad_codigo": "MUN0018",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0018",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063108",
-      "municipalidad_codigo": "MUN0019",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "075157",
-      "municipalidad_codigo": "MUN0019",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "079976",
-      "municipalidad_codigo": "MUN0020",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "014386",
-      "municipalidad_codigo": "MUN0020",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063108",
-      "municipalidad_codigo": "MUN0021",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "137201",
-      "municipalidad_codigo": "MUN0021",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "036992",
-      "municipalidad_codigo": "MUN0021",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "111717",
-      "municipalidad_codigo": "MUN0022",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "100268",
-      "municipalidad_codigo": "MUN0022",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "057599",
-      "municipalidad_codigo": "MUN0023",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "061947",
-      "municipalidad_codigo": "MUN0023",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "057599",
-      "municipalidad_codigo": "MUN0024",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0024",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0025",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0025",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "061947",
-      "municipalidad_codigo": "MUN0026",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "072900",
-      "municipalidad_codigo": "MUN0026",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "083398",
-      "municipalidad_codigo": "MUN0027",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "085381",
-      "municipalidad_codigo": "MUN0027",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "085381",
-      "municipalidad_codigo": "MUN0028",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0028",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "058975",
-      "municipalidad_codigo": "MUN0029",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "090713",
-      "municipalidad_codigo": "MUN0029",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063108",
-      "municipalidad_codigo": "MUN0029",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "016748",
-      "municipalidad_codigo": "MUN0030",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0030",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "152605",
-      "municipalidad_codigo": "MUN0031",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0031",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063992",
-      "municipalidad_codigo": "MUN0032",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "043995",
-      "municipalidad_codigo": "MUN0032",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "072900",
-      "municipalidad_codigo": "MUN0033",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "008097",
-      "municipalidad_codigo": "MUN0033",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "043995",
-      "municipalidad_codigo": "MUN0034",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "079976",
-      "municipalidad_codigo": "MUN0034",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "014386",
-      "municipalidad_codigo": "MUN0035",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "111717",
-      "municipalidad_codigo": "MUN0035",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "079976",
-      "municipalidad_codigo": "MUN0035",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "036992",
-      "municipalidad_codigo": "MUN0036",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "090713",
-      "municipalidad_codigo": "MUN0036",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0036",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "116177",
-      "municipalidad_codigo": "MUN0037",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "058975",
-      "municipalidad_codigo": "MUN0037",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "137201",
-      "municipalidad_codigo": "MUN0038",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0038",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0039",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "058975",
-      "municipalidad_codigo": "MUN0039",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "075157",
-      "municipalidad_codigo": "MUN0040",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "090713",
-      "municipalidad_codigo": "MUN0040",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063112",
-      "municipalidad_codigo": "MUN0041",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "075157",
-      "municipalidad_codigo": "MUN0041",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0042",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "152605",
-      "municipalidad_codigo": "MUN0042",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "014386",
-      "municipalidad_codigo": "MUN0043",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "016748",
-      "municipalidad_codigo": "MUN0043",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "064438",
-      "municipalidad_codigo": "MUN0043",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0044",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063108",
-      "municipalidad_codigo": "MUN0044",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "064438",
-      "municipalidad_codigo": "MUN0045",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "152605",
-      "municipalidad_codigo": "MUN0045",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "094591",
-      "municipalidad_codigo": "MUN0046",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0046",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0047",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0047",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0048",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0048",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0049",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0049",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0050",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0050",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0051",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0051",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0052",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0052",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0053",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0053",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0054",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0054",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0055",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0055",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0056",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0056",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0057",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0057",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0058",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0058",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0059",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0059",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0060",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0060",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0061",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0061",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "073223",
-      "municipalidad_codigo": "MUN0062",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "167972",
-      "municipalidad_codigo": "MUN0062",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0063",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "012050",
-      "municipalidad_codigo": "MUN0063",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0064",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "012050",
-      "municipalidad_codigo": "MUN0064",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0065",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "012050",
-      "municipalidad_codigo": "MUN0065",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0066",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "012050",
-      "municipalidad_codigo": "MUN0066",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0067",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "012050",
-      "municipalidad_codigo": "MUN0067",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0068",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "012050",
-      "municipalidad_codigo": "MUN0068",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0069",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "012050",
-      "municipalidad_codigo": "MUN0069",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0070",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "012050",
-      "municipalidad_codigo": "MUN0070",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0071",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "012050",
-      "municipalidad_codigo": "MUN0071",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0072",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "012050",
-      "municipalidad_codigo": "MUN0072",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "031816",
-      "municipalidad_codigo": "MUN0073",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "012050",
-      "municipalidad_codigo": "MUN0073",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "012050",
-      "municipalidad_codigo": "MUN0074",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063992",
-      "municipalidad_codigo": "MUN0074",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0075",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0075",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0076",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0076",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0077",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0077",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0078",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0078",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0079",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0079",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0080",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0080",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0081",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0081",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0082",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0082",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0083",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0083",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0084",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0084",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0085",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0085",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0086",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0086",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0087",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0087",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0088",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0088",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0089",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0089",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0090",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0090",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "035106",
-      "municipalidad_codigo": "MUN0091",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0091",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0092",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0092",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0093",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0093",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0094",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "titular"
-    },
-    {
-      "cip": "116177",
-      "municipalidad_codigo": "MUN0094",
-      "especialidad": "Ingeniería Civil - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0001",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0001",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0002",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0002",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0003",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0003",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0004",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0004",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0005",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0005",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0006",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0006",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0007",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0007",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0008",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0008",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0009",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0009",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0010",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0010",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0011",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0011",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0012",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0012",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0013",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0013",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0014",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0014",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0015",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0015",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0016",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0016",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0095",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0095",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0018",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0018",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0019",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0019",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0020",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0020",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0021",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0021",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0022",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0022",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0023",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0023",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0024",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0024",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0025",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0025",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0026",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0026",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0027",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0027",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0028",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0028",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0029",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0029",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0030",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0030",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0031",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0031",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0032",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0032",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0033",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0033",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0034",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0034",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0035",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0035",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0036",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0036",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0037",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0037",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0038",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0038",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0039",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0039",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0040",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0040",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0041",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0041",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0042",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0042",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0043",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0043",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0044",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0044",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0045",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0045",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0046",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0046",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0047",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0047",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0048",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0048",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0049",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0049",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0050",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0050",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0051",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0051",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0052",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0052",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0053",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0053",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0054",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0054",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0055",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0055",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0056",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0056",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0057",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0057",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0058",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0058",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0059",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0059",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0060",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0060",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0061",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0061",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0062",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0062",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0063",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0063",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0074",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0074",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0064",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0064",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0065",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0065",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0066",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0066",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0067",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0067",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0068",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0068",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0069",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "024657",
-      "municipalidad_codigo": "MUN0069",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0070",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "022414",
-      "municipalidad_codigo": "MUN0070",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0071",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0071",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0072",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0072",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0073",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0073",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0096",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0096",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0076",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0076",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0077",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0077",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0078",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0078",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0079",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0079",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0080",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0080",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0081",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "082702",
-      "municipalidad_codigo": "MUN0081",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0082",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0082",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0083",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0083",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "163222",
-      "municipalidad_codigo": "MUN0084",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0084",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0085",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "069692",
-      "municipalidad_codigo": "MUN0085",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0086",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0086",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0097",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0097",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0088",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "063986",
-      "municipalidad_codigo": "MUN0088",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0089",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "059197",
-      "municipalidad_codigo": "MUN0089",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0090",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0090",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0091",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0091",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "118318",
-      "municipalidad_codigo": "MUN0098",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0098",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0093",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "091616",
-      "municipalidad_codigo": "MUN0093",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "062895",
-      "municipalidad_codigo": "MUN0094",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "titular"
-    },
-    {
-      "cip": "018356",
-      "municipalidad_codigo": "MUN0094",
-      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
-      "tipo": "alterno"
-    },
-    {
       "cip": "006502",
       "municipalidad_codigo": "MUN0001",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
@@ -3790,18 +1337,18 @@
     },
     {
       "cip": "028365",
-      "municipalidad_codigo": "MUN0034",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones",
-      "tipo": "alterno"
-    },
-    {
-      "cip": "100721",
       "municipalidad_codigo": "MUN0035",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
-      "tipo": "alterno"
+      "tipo": "titular"
     },
     {
       "cip": "057822",
+      "municipalidad_codigo": "MUN0035",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones",
+      "tipo": "titular"
+    },
+    {
+      "cip": "100721",
       "municipalidad_codigo": "MUN0035",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
@@ -3903,16 +1450,16 @@
       "tipo": "titular"
     },
     {
-      "cip": "183026",
-      "municipalidad_codigo": "MUN0043",
-      "especialidad": "Ingeniería Sanitaria - Edificaciones",
-      "tipo": "titular"
-    },
-    {
       "cip": "074281",
       "municipalidad_codigo": "MUN0043",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
+    },
+    {
+      "cip": "183026",
+      "municipalidad_codigo": "MUN0044",
+      "especialidad": "Ingeniería Sanitaria - Edificaciones",
+      "tipo": "titular"
     },
     {
       "cip": "053133",
@@ -4420,13 +1967,13 @@
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0099",
+      "municipalidad_codigo": "MUN0086",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0099",
+      "municipalidad_codigo": "MUN0086",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
@@ -4959,16 +2506,16 @@
       "tipo": "titular"
     },
     {
-      "cip": "032452",
-      "municipalidad_codigo": "MUN0035",
-      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
-      "tipo": "titular"
-    },
-    {
       "cip": "073932",
       "municipalidad_codigo": "MUN0035",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
+    },
+    {
+      "cip": "032452",
+      "municipalidad_codigo": "MUN0036",
+      "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
+      "tipo": "titular"
     },
     {
       "cip": "038003",
@@ -5266,13 +2813,13 @@
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0100",
+      "municipalidad_codigo": "MUN0060",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0100",
+      "municipalidad_codigo": "MUN0060",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
@@ -5578,13 +3125,13 @@
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0099",
+      "municipalidad_codigo": "MUN0086",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0099",
+      "municipalidad_codigo": "MUN0086",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
@@ -5682,6 +3229,1134 @@
       "cip": "138328",
       "municipalidad_codigo": "MUN0094",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0001",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0001",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0002",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0002",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0003",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0003",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0004",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0004",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0005",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0005",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0006",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0006",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0007",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0007",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0008",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0008",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0009",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0009",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0010",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0010",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0011",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0011",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0012",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0012",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0013",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0013",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0014",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0014",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0015",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0015",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0016",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0016",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0017",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0017",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0018",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0018",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0019",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0019",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0020",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0020",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0021",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0021",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0022",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0022",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0023",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0023",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0024",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0024",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0025",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0025",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0026",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0026",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0027",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0027",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0028",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0028",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0029",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0029",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0030",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0030",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0031",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0031",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0032",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0032",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0033",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0033",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0034",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0034",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0035",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0035",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0036",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0036",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0037",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0037",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0038",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0038",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0039",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0039",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0040",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0040",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0041",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0041",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0042",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0042",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0043",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0043",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0044",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0044",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0045",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0045",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0046",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0046",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0047",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0047",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0048",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0048",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0049",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0049",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0050",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0050",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0051",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0051",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0052",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0052",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0053",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0053",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0054",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0054",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0055",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0055",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0056",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0056",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0057",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0057",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0058",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0058",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0059",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0059",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0060",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0060",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0061",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0061",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0062",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0062",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0063",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0063",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0074",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0074",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0064",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0064",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0065",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0065",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0066",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0066",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0067",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0067",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0068",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0068",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0069",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "024657",
+      "municipalidad_codigo": "MUN0069",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0070",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "022414",
+      "municipalidad_codigo": "MUN0070",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0071",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0071",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0072",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0072",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0073",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0073",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0095",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0095",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0076",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0076",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0077",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0077",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0078",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0078",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0079",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0079",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0080",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0080",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0081",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "082702",
+      "municipalidad_codigo": "MUN0081",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0082",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0082",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0083",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0083",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "163222",
+      "municipalidad_codigo": "MUN0084",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0084",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0085",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "069692",
+      "municipalidad_codigo": "MUN0085",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0096",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0096",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0097",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0097",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0088",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "063986",
+      "municipalidad_codigo": "MUN0088",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0089",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "059197",
+      "municipalidad_codigo": "MUN0089",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0090",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0090",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0091",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0091",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "118318",
+      "municipalidad_codigo": "MUN0098",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0098",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0093",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "091616",
+      "municipalidad_codigo": "MUN0093",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "alterno"
+    },
+    {
+      "cip": "062895",
+      "municipalidad_codigo": "MUN0094",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
+      "tipo": "titular"
+    },
+    {
+      "cip": "018356",
+      "municipalidad_codigo": "MUN0094",
+      "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     }
   ]

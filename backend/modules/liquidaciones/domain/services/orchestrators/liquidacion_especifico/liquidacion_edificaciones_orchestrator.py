@@ -305,9 +305,6 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                     especialidad_id=d.tarifa_aplicada.especialidad_id,
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
-                    igv=d.igv,
-                    uit=d.uit,
-                    total=d.total,
                 )
                 for d in cotizacion.detalles
             ],
@@ -419,9 +416,6 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                     especialidad_id=str(d.especialidad_id),
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
-                    igv=d.igv or Decimal("0"),
-                    uit=d.uit or Decimal("0"),
-                    total=d.total or Decimal("0"),
                 )
                 for d in lpo.detalles.all()
             ],
@@ -612,6 +606,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         page_size: int,
         razon_social: str = None,
         numero_documento: str = None,
+        numero: int = None,
         fecha_desde=None,
         fecha_hasta=None,
     ) -> tuple[List[EdificacionesPrimeraRevisionResult], int]:
@@ -635,6 +630,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             page_size=page_size,
             razon_social=razon_social,
             numero_documento=numero_documento,
+            numero=numero,
             fecha_desde=fecha_desde,
             fecha_hasta=fecha_hasta,
         )
@@ -645,3 +641,5 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             domain_results.append(self._build_edificaciones_result(lg))
 
         return domain_results, total
+
+

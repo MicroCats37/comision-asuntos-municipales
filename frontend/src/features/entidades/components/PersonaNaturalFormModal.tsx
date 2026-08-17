@@ -6,7 +6,7 @@ import { GenericInput } from "@/components/genericForm/GenericInput";
 import { Button } from "@/components/ui/button";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { notify } from "@/errors";
-import { useReniecLookup } from "@/features/entidades/hooks/useConsultaExterna";
+import { useDocumentoLookup } from "@/features/entidades/hooks/useConsultaExterna";
 import { useDistritos } from "@/features/entidades/hooks/useDistritos";
 import { usePersonaNaturalUpsert } from "@/features/entidades/hooks/useEntidad";
 import type { EntidadResult } from "@/features/entidades/types/entidad";
@@ -31,12 +31,12 @@ export function PersonaNaturalFormModal({
   onSaved,
 }: PersonaNaturalFormModalProps) {
   const mutation = usePersonaNaturalUpsert();
-  const reniecLookup = useReniecLookup();
+  const documentoLookup = useDocumentoLookup();
   const { data: distritosData, isLoading: isLoadingDistritos } = useDistritos();
 
   const distritoOptions = distritosData
     ? distritosData.map((d) => ({
-        label: `${d.nombre} (${d.provincia.departamento.nombre} - ${d.provincia.nombre})`,
+        label: `${d.nombre} (${d.departamento.nombre} - ${d.provincia.nombre})`,
         value: d.id,
       }))
     : [];
@@ -105,15 +105,15 @@ export function PersonaNaturalFormModal({
         } = methods;
         const dniValue = watch("numero_documento") || "";
 
-        const handleReniecLookup = async () => {
+        const handleDocumentoLookup = async () => {
           if (dniValue.length !== 8) {
             return;
           }
 
           try {
-            const result = await reniecLookup.mutateAsync(dniValue);
+            const result = await documentoLookup.mutateAsync(dniValue);
             if (result) {
-              // razãon_social = "APELLIDOS, NOMBRES" for DNI
+              // razon_social = "APELLIDOS, NOMBRES" para DNI
               const parts = result.razon_social.split(", ");
               if (parts.length === 2) {
                 setValue("apellidos", parts[0], { shouldValidate: true });
@@ -157,8 +157,8 @@ export function PersonaNaturalFormModal({
                     variant="outline"
                     size="icon"
                     className="h-10 w-10 rounded-lg"
-                    onClick={handleReniecLookup}
-                    disabled={reniecLookup.isPending || dniValue.length !== 8}
+                    onClick={handleDocumentoLookup}
+                    disabled={documentoLookup.isPending || dniValue.length !== 8}
                     title="Buscar en RENIEC"
                     aria-label="Buscar en RENIEC"
                   >

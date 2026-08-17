@@ -1,10 +1,13 @@
 /**
  * Hook para detalle de liquidación de Edificaciones.
  * Endpoint: GET /liquidaciones/edificaciones/{id}
+ * Devuelve el detalle 3-wrappers (liquidacion_general/liquidacion_especifica/liquidacion_tipo).
  */
 import { useApiQuery } from "@/hooks";
-import type { LiquidacionEdificacionOut } from "../types/liquidacion-edificaciones.types";
-import { liquidacionEdificacionOutResponseSchema } from "../schemas/liquidacion-detail.schemas";
+import {
+  liquidacionEdificacionOutResponseSchema,
+  type LiquidacionEdificacionOut,
+} from "../schemas/liquidacion-detail.schemas";
 
 interface UseLiquidacionDetalleEdificacionProps {
   id: string;
@@ -21,8 +24,7 @@ export function useLiquidacionDetalleEdificacion({
     schema: liquidacionEdificacionOutResponseSchema,
     queryOptions: {
       select: (response): LiquidacionEdificacionOut | null => {
-        const apiResponse = response as { success: boolean; data: LiquidacionEdificacionOut };
-        return apiResponse?.data ?? null;
+        return response.data ?? null;
       },
       enabled: !!id,
     },

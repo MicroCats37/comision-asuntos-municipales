@@ -70,8 +70,8 @@ class IngenieroHabilitadoPresenter:
 
         return IngenieroHabilitadoOut(
             cip=result.cip,
-            nombres=self._build_nombres(result.nombre1, result.nombre2),
-            apellidos=self._build_apellidos(result.paterno, result.materno),
+            nombres=IngenieroHabilitadoPresenter._build_nombres(result.nombre1, result.nombre2),
+            apellidos=IngenieroHabilitadoPresenter._build_apellidos(result.paterno, result.materno),
             habilitado=result.habilitado,
             capitulo=capitulo_desc,
         )

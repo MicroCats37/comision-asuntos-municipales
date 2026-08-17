@@ -1,13 +1,12 @@
 /**
- * Hook para obtener inspectores vigentes/elegibles para una liquidación de Inspección de Obra.
+ * Hook para obtener inspectores seleccionables/elegibles para una liquidación de Inspección de Obra.
  *
- * Tres modos de uso:
- * - Por liquidacion existente: GET /{liquidacion_id}/inspectores/vigentes
- *   (excluye inspectores ya asociados a esa liquidacion)
- * - Por liquidacion previa: GET /inspectores/vigentes?liquidacion_previa_id=
- *   (deriva el tipo de la liquidacion previa, para formularios de creación)
- * - Por tipo de liquidacion: GET /inspectores/vigentes?tipo_liquidacion=
- *   (para formularios de creación, sin exclusion)
+ * Endpoint: GET /liquidaciones/inspectores/seleccionables
+ * Filtros: tipo_liquidacion (requerido, el de la previa), categoria (opcional), q (búsqueda nombre/CIP).
+ * Sin paginación.
+ *
+ * La búsqueda es BAJO DEMANDA: solo consulta cuando `enabled` se vuelve true
+ * (el botón "Buscar" del smart field lo activa cuando ya hay tipo_liquidacion).
  */
 
 import type { z } from "zod";
@@ -17,46 +16,45 @@ import {
 } from "@/features/inspectores/schemas/inspector-vigente.schema";
 import { useApiQuery } from "@/hooks";
 
-/** Wrapper schema para inspectores vigentes API response */
+/** Wrapper schema para inspectores seleccionables API response */
 export const inspectoresVigentesResponseSchema =
   InspectoresVigentesResponseSchema;
 
 /**
- * Hook para obtener inspectores vigentes/elegibles.
+ * Hook para obtener inspectores seleccionables/elegibles.
  *
- * @param liquidacionId - ID de liquidación existente (para post-create, excluye ya asociados)
- * @param tipoLiquidacion - Tipo de liquidación (EDIFICACION o HABILITACION_URBANA)
- * @param liquidacionPreviaId - ID de la liquidación previa (para pre-create, deriva el tipo automáticamente)
+ * @param tipoLiquidacion - Tipo de liquidación de la previa (EDIFICACION o HABILITACION_URBANA)
+ * @param categoria - Categoría opcional para filtrar
+ * @param q - Búsqueda por nombre/CIP (opcional)
+ * @param enabled - Controla si se consulta (el botón "Buscar" del form lo activa)
  */
 export function useInspectoresVigentes(
-  liquidacionId: string | null,
-  tipoLiquidacion?: string,
-  liquidacionPreviaId?: string | null,
+  tipoLiquidacion?: string | null,
+  categoria?: string | null,
+  q?: string,
+  enabled = false,
 ) {
-  // liquidacionPreviaId takes precedence for creation forms
   const query = useApiQuery<
     z.infer<typeof InspectoresVigentesResponseSchema>,
     z.infer<typeof InspectorVigenteSchema>[]
   >({
     queryKey: [
       "liquidaciones",
-      "inspectores-vigentes",
-      liquidacionId ?? tipoLiquidacion ?? liquidacionPreviaId,
+      "inspectores-seleccionables",
+      tipoLiquidacion ?? "",
+      categoria ?? "",
+      q ?? "",
     ],
-    url: liquidacionId
-      ? `/liquidaciones/${liquidacionId}/inspectores/vigentes`
-      : `/liquidaciones/inspectores/vigentes`,
-    params: liquidacionId
-      ? undefined
-      : liquidacionPreviaId
-        ? { liquidacion_previa_id: liquidacionPreviaId }
-        : tipoLiquidacion
-          ? { tipo_liquidacion: tipoLiquidacion }
-          : undefined,
+    url: "/liquidaciones/inspectores/seleccionables",
+    params: {
+      tipo_liquidacion: tipoLiquidacion ?? "",
+      ...(categoria ? { categoria } : {}),
+      ...(q ? { q } : {}),
+    },
     schema: inspectoresVigentesResponseSchema,
     queryOptions: {
-      enabled: !!(liquidacionId ?? tipoLiquidacion ?? liquidacionPreviaId),
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      enabled,
+      staleTime: 0,
       select: (data) => {
         if (!data.data) {
           return [] as z.infer<typeof InspectorVigenteSchema>[];

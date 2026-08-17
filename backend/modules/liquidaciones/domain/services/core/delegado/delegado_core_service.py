@@ -10,8 +10,8 @@ from django.db.models import Q
 
 from modules.liquidaciones.domain.models.delegado import (
     Delegado,
-    DelegadoMunicipalidad,
-    DelegadoMunicipalidadPeriodo,
+    DelegadoOperacion,
+    DelegadoOperacionPeriodo,
     LiquidacionDelegado,
 )
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
@@ -81,11 +81,11 @@ class DelegadoCoreService:
         delegado_id: uuid.UUID,
     ) -> list:
         """
-        Returns all DelegadoMunicipalidad records for a delegado,
+        Returns all DelegadoOperacion records for a delegado,
         with their current periodo vigentes.
         """
         return list(
-            DelegadoMunicipalidad.objects.filter(
+            DelegadoOperacion.objects.filter(
                 delegado_id=delegado_id
             ).select_related(
                 'delegado__perfil_ingeniero',
@@ -95,16 +95,16 @@ class DelegadoCoreService:
             )
         )
 
-    def _is_vigente(self, periodo: DelegadoMunicipalidadPeriodo, today: date) -> bool:
+    def _is_vigente(self, periodo: DelegadoOperacionPeriodo, today: date) -> bool:
         """Check if a periodo is vigente (active on given date)."""
         return periodo.periodo_inicio <= today and (
             periodo.periodo_fin is None or periodo.periodo_fin >= today
         )
 
     def _get_current_periodo(
-        self, municipalidad: DelegadoMunicipalidad, today: date
-    ) -> Optional[DelegadoMunicipalidadPeriodo]:
-        """Returns the current vigente periodo for a DelegadoMunicipalidad, or None."""
+        self, municipalidad: DelegadoOperacion, today: date
+    ) -> Optional[DelegadoOperacionPeriodo]:
+        """Returns the current vigente periodo for a DelegadoOperacion, or None."""
         periodos = list(municipalidad.periodos.all())
         for periodo in periodos:
             if self._is_vigente(periodo, today):
@@ -119,12 +119,12 @@ class DelegadoCoreService:
         page_size: int = 10,
     ) -> tuple:
         """
-        Returns all DelegadoMunicipalidad records for a municipalidad.
+        Returns all DelegadoOperacion records for a municipalidad.
         If vigente=True, filters to only current periods (periodo_inicio <= today AND
         (periodo_fin IS NULL OR periodo_fin >= today)).
-        Returns (list[DelegadoMunicipalidad], total).
+        Returns (list[DelegadoOperacion], total).
         """
-        qs = DelegadoMunicipalidad.objects.filter(
+        qs = DelegadoOperacion.objects.filter(
             municipalidad_id=municipalidad_id
         ).select_related(
             'delegado__perfil_ingeniero',
@@ -190,23 +190,23 @@ class DelegadoCoreService:
         fecha: date,
     ) -> list:
         """
-        Returns DelegadoMunicipalidad candidates matching a liquidación tipo.
+        Returns DelegadoOperacion candidates matching a liquidación tipo.
 
         Match:
-        1. DelegadoMunicipalidad with municipalidad_id AND
+        1. DelegadoOperacion with municipalidad_id AND
            (liquidacion_revision IS NULL OR liquidacion_revision.codigo == tipo_codigo)
-        2. delegado.especialidad_revision IN especialidades vigentes del tipo
+        2. operacion.especialidad_revision IN especialidades vigentes del tipo
         3. periodo municipal vigente (inicio <= fecha AND fin IS NULL OR >= fecha)
         """
         especialidad_ids = self.list_especialidad_ids_vigentes_para_tipo(tipo_codigo, fecha)
         return list(
-            DelegadoMunicipalidad.objects.filter(
+            DelegadoOperacion.objects.filter(
                 municipalidad_id=municipalidad_id,
             ).filter(
                 Q(liquidacion_revision__isnull=True)
                 | Q(liquidacion_revision__codigo=tipo_codigo)
             ).filter(
-                delegado__especialidad_revision_id__in=especialidad_ids,
+                especialidad_revision_id__in=especialidad_ids,
             ).filter(
                 Q(
                     periodos__periodo_inicio__lte=fecha,
@@ -218,7 +218,7 @@ class DelegadoCoreService:
                 )
             ).select_related(
                 "delegado__perfil_ingeniero",
-                "delegado__especialidad_revision",
+                "especialidad_revision",
             ).prefetch_related(
                 "periodos",
             ).distinct().order_by(
@@ -233,13 +233,13 @@ class DelegadoCoreService:
         delegado_id: uuid.UUID,
         municipalidad_id: uuid.UUID,
         fecha: date,
-    ) -> Optional[DelegadoMunicipalidad]:
+    ) -> Optional[DelegadoOperacion]:
         """
-        Returns the DelegadoMunicipalidad for (delegado, municipalidad) with a
+        Returns the DelegadoOperacion for (delegado, municipalidad) with a
         vigente periodo on the given date, or None.
         """
         return (
-            DelegadoMunicipalidad.objects.filter(
+            DelegadoOperacion.objects.filter(
                 delegado_id=delegado_id,
                 municipalidad_id=municipalidad_id,
             ).filter(
@@ -267,6 +267,43 @@ class DelegadoCoreService:
             delegado=delegado,
             especialidad_revision=especialidad_revision,
             **kwargs,
+        )
+
+    def get_operacion_vigente_para_liquidacion(
+        self,
+        delegado,
+        liquidacion,
+        fecha=None,
+    ) -> Optional[DelegadoOperacion]:
+        """
+        Returns the vigente DelegadoOperacion for (delegado, municipalidad, tipo)
+        matching the liquidacion, or None.
+
+        La especialidad_revision ahora vive en la operación — este método resuelve
+        cuál aplicar según la municipalidad + tipo_liquidacion de la liquidación.
+        """
+        if fecha is None:
+            from django.utils import timezone
+            fecha = timezone.localdate()
+        return (
+            DelegadoOperacion.objects.filter(
+                delegado=delegado,
+                municipalidad_id=liquidacion.municipalidad_id,
+            ).filter(
+                Q(liquidacion_revision__isnull=True)
+                | Q(liquidacion_revision_id=liquidacion.tipo_liquidacion_id)
+            ).filter(
+                Q(
+                    periodos__periodo_inicio__lte=fecha,
+                    periodos__periodo_fin__isnull=True,
+                )
+                | Q(
+                    periodos__periodo_inicio__lte=fecha,
+                    periodos__periodo_fin__gte=fecha,
+                )
+            ).select_related(
+                "especialidad_revision",
+            ).distinct().first()
         )
 
     def actualizar_liquidacion_delegado(

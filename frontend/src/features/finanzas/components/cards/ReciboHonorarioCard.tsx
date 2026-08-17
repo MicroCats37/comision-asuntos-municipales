@@ -19,6 +19,8 @@ export function ReciboHonorarioCard({ item }: ReciboHonorarioCardProps) {
   const lg = item.liquidacion_general;
   const del = item.delegado;
   const esp = item.especialidad;
+  const calc = item.calculo;
+  const liqEsp = item.liquidacion_especifica;
 
   return (
     <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
@@ -89,9 +91,9 @@ export function ReciboHonorarioCard({ item }: ReciboHonorarioCardProps) {
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">Revisión</p>
+              <p className="text-[10px] text-muted-foreground">Revisión / Liq</p>
               <p className="text-sm font-medium">
-                N° {lg?.numero_revision ?? "—"}
+                N° {lg?.numero_revision ?? "—"} / #{liqEsp?.numero ?? "—"}
               </p>
             </div>
             <div>
@@ -127,7 +129,7 @@ export function ReciboHonorarioCard({ item }: ReciboHonorarioCardProps) {
             <div>
               <p className="text-[10px] text-muted-foreground">Importe Bruto</p>
               <p className="text-sm font-semibold">
-                {formatCurrency(item.imp_bruto)}
+                {formatCurrency(calc.imp_bruto)}
               </p>
             </div>
             <div>
@@ -135,7 +137,7 @@ export function ReciboHonorarioCard({ item }: ReciboHonorarioCardProps) {
                 Renta CIP (25%)
               </p>
               <p className="text-sm font-semibold text-destructive/80">
-                -{formatCurrency(item.renta_cip)}
+                -{formatCurrency(calc.renta_cip)}
               </p>
             </div>
             <div>
@@ -143,7 +145,7 @@ export function ReciboHonorarioCard({ item }: ReciboHonorarioCardProps) {
                 Aporte CODEMU (5%)
               </p>
               <p className="text-sm font-semibold text-destructive/80">
-                -{formatCurrency(item.aporte_codemu)}
+                -{formatCurrency(calc.aporte_codemu)}
               </p>
             </div>
             <div>
@@ -151,7 +153,7 @@ export function ReciboHonorarioCard({ item }: ReciboHonorarioCardProps) {
                 Fondo Común (10%)
               </p>
               <p className="text-sm font-semibold text-destructive/80">
-                -{formatCurrency(item.fondo_comun)}
+                -{formatCurrency(calc.fondo_comun)}
               </p>
             </div>
             <div className="col-span-2 sm:col-span-1">
@@ -159,7 +161,7 @@ export function ReciboHonorarioCard({ item }: ReciboHonorarioCardProps) {
                 Neto Honorario
               </p>
               <p className="text-base font-bold text-primary">
-                {formatCurrency(item.neto_honorario)}
+                {formatCurrency(calc.neto_honorario)}
               </p>
             </div>
           </div>

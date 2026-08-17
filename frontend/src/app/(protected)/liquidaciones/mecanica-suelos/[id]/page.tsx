@@ -1,12 +1,9 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
 import { Mountain } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { LiquidacionDetalleCompleta } from "@/features/liquidaciones/components/LiquidacionDetalleCompleta";
 import { useLiquidacionDetalleMecanicaSuelos } from "@/features/liquidaciones/hooks/useLiquidacionDetalleMecanicaSuelos";
-import {
-  LiquidacionDetalleCompleta,
-  type LiquidacionCardBase,
-} from "@/features/liquidaciones/components/LiquidacionDetalleCompleta";
 
 const KIND_LABEL = "Mecánica de Suelos";
 
@@ -15,7 +12,11 @@ export default function LiquidacionDetalleMecanicaSuelosPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const { data: item, isLoading, isError } = useLiquidacionDetalleMecanicaSuelos({ id });
+  const {
+    data: item,
+    isLoading,
+    isError,
+  } = useLiquidacionDetalleMecanicaSuelos({ id });
 
   const handleBack = () => {
     router.back();
@@ -25,7 +26,7 @@ export default function LiquidacionDetalleMecanicaSuelosPage() {
     <div className="page-section">
       <div className="space-y-6">
         <LiquidacionDetalleCompleta
-          item={item as unknown as LiquidacionCardBase | null}
+          item={item}
           isLoading={isLoading}
           isError={isError}
           onBack={handleBack}

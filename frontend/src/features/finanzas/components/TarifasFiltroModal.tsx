@@ -8,9 +8,9 @@ import { Calendar as CalendarIcon, Filter } from "lucide-react";
  * Usa AppFormModal como shell (mismo patrón que LiquidacionFiltroModal).
  *
  * Filtros:
- *   tipo        → tipo de liquidación (edificaciones, habilitacion-urbana, ...)
  *   fechaDesde  → inicio del rango (opcional → histórico por rango)
  *   fechaHasta  → fin del rango (opcional)
+ * Ya NO se filtra por tipo — la vista muestra TODAS las tarifas.
  */
 import { useCallback, useRef } from "react";
 import type { UseFormReturn } from "react-hook-form";
@@ -23,30 +23,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import type { TarifasFiltros } from "../types/finanzas.types";
-import { tipoTarifaSchema } from "../types/finanzas.types";
-
-// ── Tipo options (rutas reales del backend) ─────────────────────────────
-
-export const TIPO_OPTIONS: { value: string; label: string }[] = [
-  { value: "edificaciones", label: "Edificaciones" },
-  { value: "habilitacion-urbana", label: "Habilitación Urbana" },
-  { value: "mecanica-suelos", label: "Mecánica de Suelos" },
-  { value: "impacto-vial", label: "Impacto Vial" },
-  { value: "taludes", label: "Taludes" },
-  { value: "inspeccion-obra", label: "Inspección de Obra" },
-];
 
 const filtroSchema = z.object({
-  tipo: tipoTarifaSchema,
   fechaDesde: z.string().optional(),
   fechaHasta: z.string().optional(),
 });
@@ -54,7 +34,6 @@ const filtroSchema = z.object({
 type FiltroFormData = z.infer<typeof filtroSchema>;
 
 const DEFAULT_FILTROS: FiltroFormData = {
-  tipo: "edificaciones",
   fechaDesde: "",
   fechaHasta: "",
 };
@@ -117,7 +96,6 @@ export function TarifasFiltroModal({
   const methodsRef = useRef<UseFormReturn<FiltroFormData> | null>(null);
 
   const initialData: FiltroFormData = {
-    tipo: initialFiltros?.tipo ?? "edificaciones",
     fechaDesde: initialFiltros?.fechaDesde ?? "",
     fechaHasta: initialFiltros?.fechaHasta ?? "",
   };
@@ -129,7 +107,6 @@ export function TarifasFiltroModal({
   const handleSubmit = useCallback(
     async (data: FiltroFormData) => {
       const filtros: TarifasFiltros = {
-        tipo: data.tipo,
         fechaDesde: data.fechaDesde || undefined,
         fechaHasta: data.fechaHasta || undefined,
       };
@@ -143,7 +120,7 @@ export function TarifasFiltroModal({
       open={open}
       onOpenChange={onOpenChange}
       title="Filtrar Tarifas"
-      description="Filtra por tipo de liquidación y rango de fechas. Sin fechas se muestran solo las tarifas vigentes; con fechas, el histórico por rango."
+      description="Filtra por rango de fechas. Sin fechas se muestran solo las tarifas vigentes; con fechas, el histórico por rango."
       eyebrow="Tarifario"
       icon={<Filter className="h-5 w-5 text-primary" />}
       primaryLabel="Aplicar"
@@ -162,29 +139,7 @@ export function TarifasFiltroModal({
         methodsRef.current = methods;
         return (
           <div className="space-y-4">
-            {/* Fila 1: Tipo de liquidación */}
-            <div className="space-y-2">
-              <Label htmlFor="filtro-tipo">Tipo de Liquidación</Label>
-              <Select
-                value={methods.watch("tipo") || ""}
-                onValueChange={(v) =>
-                  methods.setValue("tipo", v as FiltroFormData["tipo"])
-                }
-              >
-                <SelectTrigger id="filtro-tipo" className="h-10 w-full">
-                  <SelectValue placeholder="Seleccionar tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIPO_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Fila 2: Fechas */}
+            {/* Fechas */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <CampoFecha
                 label="Fecha Desde"

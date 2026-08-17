@@ -1,6 +1,7 @@
 /**
- * Hooks para consulta externa SUNAT/RENIEC unificado.
+ * Hook para consulta externa de documentos (DNI o RUC).
  *
+ * Servicio externo genérico — NO es SUNAT ni RENIEC.
  * Hook único: useDocumentoLookup — auto-detecta DNI (8) vs RUC (11).
  */
 import { useMutation } from "@tanstack/react-query";
@@ -29,44 +30,6 @@ export function useDocumentoLookup() {
     },
     onError: (error: Error) => {
       notify.error(error.message || "Error al consultar documento");
-    },
-  });
-}
-
-/**
- * Hook para consultar datos de institución por RUC (deprecated).
- */
-export function useSunatLookup() {
-  return useMutation<DocumentoConsultaData | null, Error, string>({
-    mutationFn: async (ruc: string) => {
-      return consultarDocumento(ruc);
-    },
-    onSuccess: (data) => {
-      if (!data) {
-        notify.error("No se encontraron datos para este RUC");
-      }
-    },
-    onError: (error: Error) => {
-      notify.error(error.message || "Error al consultar SUNAT");
-    },
-  });
-}
-
-/**
- * Hook para consultar datos de persona por DNI (deprecated).
- */
-export function useReniecLookup() {
-  return useMutation<DocumentoConsultaData | null, Error, string>({
-    mutationFn: async (dni: string) => {
-      return consultarDocumento(dni);
-    },
-    onSuccess: (data) => {
-      if (!data) {
-        notify.error("No se encontraron datos para este DNI");
-      }
-    },
-    onError: (error: Error) => {
-      notify.error(error.message || "Error al consultar RENIEC");
     },
   });
 }

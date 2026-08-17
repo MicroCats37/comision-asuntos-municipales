@@ -5,9 +5,9 @@ Tests hit the real HTTP endpoints via Ninja TestClient (auth=None on all endpoin
 Tests use @pytest.mark.django_db for database access.
 
 Covers:
-- POST /finanzas/recibos-honorarios (PORCENTAJE, M2, IO types)
-- POST /finanzas/recibos-honorarios 404 for missing id
-- GET /finanzas/recibos-honorarios (pagination, filters, empty)
+- POST /finanzas/recibos-delegados (PORCENTAJE, M2, IO types)
+- POST /finanzas/recibos-delegados 404 for missing id
+- GET /finanzas/recibos-delegados (pagination, filters, empty)
 """
 import pytest
 from decimal import Decimal
@@ -91,10 +91,9 @@ def especialidad_estructuras(db):
 
 
 @pytest.fixture
-def delegado(db, perfil_ingeniero_delegado, especialidad_estructuras):
+def delegado(db, perfil_ingeniero_delegado):
     return Delegado.objects.create(
         perfil_ingeniero=perfil_ingeniero_delegado,
-        especialidad_revision=especialidad_estructuras,
     )
 
 
@@ -376,7 +375,7 @@ def liquidacion_delegado_io(
 @pytest.mark.django_db
 def test_e2e_post_recibo_porcentaje(api_client, liquidacion_delegado_porcentaje):
     """
-    POST /finanzas/recibos-honorarios with PORCENTAJE liquidacion_delegado_id.
+    POST /finanzas/recibos-delegados with PORCENTAJE liquidacion_delegado_id.
 
     imp_bruto comes from LiquidacionPorcentajeObraDetalle.subtotal (1000.00).
     Honorarios: renta_cip=250, aporte_codemu=50, fondo_comun=100, neto=600.
@@ -388,7 +387,7 @@ def test_e2e_post_recibo_porcentaje(api_client, liquidacion_delegado_porcentaje)
     expected_neto = imp_bruto - expected_renta - expected_aporte - expected_fondo
 
     response = api_client.post(
-        "/finanzas/recibos-honorarios",
+        "/finanzas/recibos-delegados",
         json={"liquidacion_delegado_id": str(liquidacion_delegado_porcentaje.id)},
     )
 
@@ -398,14 +397,14 @@ def test_e2e_post_recibo_porcentaje(api_client, liquidacion_delegado_porcentaje)
 
     recibo = data["data"]
     assert recibo["liquidacion_delegado_id"] == str(liquidacion_delegado_porcentaje.id)
-    assert Decimal(recibo["imp_bruto"]) == imp_bruto
-    assert Decimal(recibo["renta_cip"]) == expected_renta
-    assert Decimal(recibo["aporte_codemu"]) == expected_aporte
-    assert Decimal(recibo["fondo_comun"]) == expected_fondo
-    assert Decimal(recibo["neto_honorario"]) == expected_neto
-    assert Decimal(recibo["honorario"]) == expected_neto
+    assert Decimal(recibo["calculo"]["imp_bruto"]) == imp_bruto
+    assert Decimal(recibo["calculo"]["renta_cip"]) == expected_renta
+    assert Decimal(recibo["calculo"]["aporte_codemu"]) == expected_aporte
+    assert Decimal(recibo["calculo"]["fondo_comun"]) == expected_fondo
+    assert Decimal(recibo["calculo"]["neto_honorario"]) == expected_neto
+    assert Decimal(recibo["calculo"]["honorario"]) == expected_neto
     # sub_total is the LiquidacionGeneral.sub_total snapshot
-    assert Decimal(recibo["sub_total"]) == Decimal("5000.00")
+    assert Decimal(recibo["calculo"]["sub_total"]) == Decimal("5000.00")
 
     # Homogéneo con el listado: trae los anidados liquidacion_general/delegado/especialidad
     assert "id" in recibo and recibo["id"]
@@ -418,7 +417,7 @@ def test_e2e_post_recibo_porcentaje(api_client, liquidacion_delegado_porcentaje)
 @pytest.mark.django_db
 def test_e2e_post_recibo_m2(api_client, liquidacion_delegado_m2):
     """
-    POST /finanzas/recibos-honorarios with M2-type liquidacion_delegado_id.
+    POST /finanzas/recibos-delegados with M2-type liquidacion_delegado_id.
 
     imp_bruto = liquidacion.sub_total (3000.00).
     Honorarios: renta_cip=750, aporte_codemu=150, fondo_comun=300, neto=1800.
@@ -430,7 +429,7 @@ def test_e2e_post_recibo_m2(api_client, liquidacion_delegado_m2):
     expected_neto = imp_bruto - expected_renta - expected_aporte - expected_fondo
 
     response = api_client.post(
-        "/finanzas/recibos-honorarios",
+        "/finanzas/recibos-delegados",
         json={"liquidacion_delegado_id": str(liquidacion_delegado_m2.id)},
     )
 
@@ -439,18 +438,18 @@ def test_e2e_post_recibo_m2(api_client, liquidacion_delegado_m2):
     assert data["success"] is True
 
     recibo = data["data"]
-    assert Decimal(recibo["imp_bruto"]) == imp_bruto
-    assert Decimal(recibo["renta_cip"]) == expected_renta
-    assert Decimal(recibo["aporte_codemu"]) == expected_aporte
-    assert Decimal(recibo["fondo_comun"]) == expected_fondo
-    assert Decimal(recibo["neto_honorario"]) == expected_neto
-    assert Decimal(recibo["honorario"]) == expected_neto
+    assert Decimal(recibo["calculo"]["imp_bruto"]) == imp_bruto
+    assert Decimal(recibo["calculo"]["renta_cip"]) == expected_renta
+    assert Decimal(recibo["calculo"]["aporte_codemu"]) == expected_aporte
+    assert Decimal(recibo["calculo"]["fondo_comun"]) == expected_fondo
+    assert Decimal(recibo["calculo"]["neto_honorario"]) == expected_neto
+    assert Decimal(recibo["calculo"]["honorario"]) == expected_neto
 
 
 @pytest.mark.django_db
 def test_e2e_post_recibo_io_visitas(api_client, liquidacion_delegado_io):
     """
-    POST /finanzas/recibos-honorarios with INSPECCION_OBRA-type liquidacion_delegado_id.
+    POST /finanzas/recibos-delegados with INSPECCION_OBRA-type liquidacion_delegado_id.
 
     imp_bruto = liquidacion.sub_total (2000.00).
     Honorarios: renta_cip=500, aporte_codemu=100, fondo_comun=200, neto=1200.
@@ -462,7 +461,7 @@ def test_e2e_post_recibo_io_visitas(api_client, liquidacion_delegado_io):
     expected_neto = imp_bruto - expected_renta - expected_aporte - expected_fondo
 
     response = api_client.post(
-        "/finanzas/recibos-honorarios",
+        "/finanzas/recibos-delegados",
         json={"liquidacion_delegado_id": str(liquidacion_delegado_io.id)},
     )
 
@@ -471,20 +470,20 @@ def test_e2e_post_recibo_io_visitas(api_client, liquidacion_delegado_io):
     assert data["success"] is True
 
     recibo = data["data"]
-    assert Decimal(recibo["imp_bruto"]) == imp_bruto
-    assert Decimal(recibo["renta_cip"]) == expected_renta
-    assert Decimal(recibo["neto_honorario"]) == expected_neto
-    assert Decimal(recibo["honorario"]) == expected_neto
+    assert Decimal(recibo["calculo"]["imp_bruto"]) == imp_bruto
+    assert Decimal(recibo["calculo"]["renta_cip"]) == expected_renta
+    assert Decimal(recibo["calculo"]["neto_honorario"]) == expected_neto
+    assert Decimal(recibo["calculo"]["honorario"]) == expected_neto
 
 
 @pytest.mark.django_db
 def test_e2e_post_recibo_404(api_client):
     """
-    POST /finanzas/recibos-honorarios with nonexistent liquidacion_delegado_id → 404.
+    POST /finanzas/recibos-delegados with nonexistent liquidacion_delegado_id → 404.
     """
     fake_id = uuid.uuid4()
     response = api_client.post(
-        "/finanzas/recibos-honorarios",
+        "/finanzas/recibos-delegados",
         json={"liquidacion_delegado_id": str(fake_id)},
     )
 
@@ -499,18 +498,18 @@ def test_e2e_get_recibos_paginated(
     liquidacion_delegado_io,
 ):
     """
-    After creating 3 recibos via POST, GET /finanzas/recibos-honorarios?page=1&page_size=2
+    After creating 3 recibos via POST, GET /finanzas/recibos-delegados?page=1&page_size=2
     returns PaginatedData with 2 items, total=3, total_pages=2.
     """
     # Create 3 receipts
     for ld in [liquidacion_delegado_porcentaje, liquidacion_delegado_m2, liquidacion_delegado_io]:
         api_client.post(
-            "/finanzas/recibos-honorarios",
+            "/finanzas/recibos-delegados",
             json={"liquidacion_delegado_id": str(ld.id)},
         )
 
     # Paginated GET
-    response = api_client.get("/finanzas/recibos-honorarios?page=1&page_size=2")
+    response = api_client.get("/finanzas/recibos-delegados?page=1&page_size=2")
     assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
     data = response.json()
     assert data["success"] is True
@@ -523,7 +522,7 @@ def test_e2e_get_recibos_paginated(
     assert paginated["total_pages"] == 2
 
     # Page 2
-    response2 = api_client.get("/finanzas/recibos-honorarios?page=2&page_size=2")
+    response2 = api_client.get("/finanzas/recibos-delegados?page=2&page_size=2")
     data2 = response2.json()
     assert len(data2["data"]["items"]) == 1
     assert data2["data"]["total"] == 3
@@ -540,24 +539,24 @@ def test_e2e_get_recibos_filters(
     """
     # Create receipts for both liquidacion_delegados
     api_client.post(
-        "/finanzas/recibos-honorarios",
+        "/finanzas/recibos-delegados",
         json={"liquidacion_delegado_id": str(liquidacion_delegado_porcentaje.id)},
     )
     api_client.post(
-        "/finanzas/recibos-honorarios",
+        "/finanzas/recibos-delegados",
         json={"liquidacion_delegado_id": str(liquidacion_delegado_m2.id)},
     )
 
     # Filter by delegado_id
     deleg_id = liquidacion_delegado_porcentaje.delegado.id
-    response = api_client.get(f"/finanzas/recibos-honorarios?delegado_id={deleg_id}")
+    response = api_client.get(f"/finanzas/recibos-delegados?delegado_id={deleg_id}")
     assert response.status_code == 200
     items = response.json()["data"]["items"]
     assert all(str(item["delegado"]["id"]) == str(deleg_id) for item in items)
 
     # Filter by liquidacion_id
     liq_id = liquidacion_delegado_m2.liquidacion.id
-    response2 = api_client.get(f"/finanzas/recibos-honorarios?liquidacion_id={liq_id}")
+    response2 = api_client.get(f"/finanzas/recibos-delegados?liquidacion_id={liq_id}")
     assert response2.status_code == 200
     items2 = response2.json()["data"]["items"]
     assert all(str(item["liquidacion_general"]["id"]) == str(liq_id) for item in items2)
@@ -566,9 +565,9 @@ def test_e2e_get_recibos_filters(
 @pytest.mark.django_db
 def test_e2e_get_recibos_empty(api_client):
     """
-    GET /finanzas/recibos-honorarios with no data → items=[], total=0.
+    GET /finanzas/recibos-delegados with no data → items=[], total=0.
     """
-    response = api_client.get("/finanzas/recibos-honorarios?page=1&page_size=10")
+    response = api_client.get("/finanzas/recibos-delegados?page=1&page_size=10")
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True

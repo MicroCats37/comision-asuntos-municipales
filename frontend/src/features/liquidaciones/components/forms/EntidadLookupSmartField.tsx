@@ -10,13 +10,9 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { notify } from "@/errors";
 import {
-  useReniecLookup,
-  useSunatLookup,
+  useDocumentoLookup,
+  type DocumentoConsultaData,
 } from "@/features/entidades/hooks/useConsultaExterna";
-import type {
-  InstitucionSunatResponse,
-  PersonaReniecResponse,
-} from "@/features/entidades/types/entidad";
 
 const TIPO_DOCUMENTO_OPTIONS = [
   { value: "RUC", label: "RUC" },
@@ -74,10 +70,9 @@ export function EntidadLookupField({
     numero_documento: "",
   });
 
-  // ── SUNAT / RENIEC hooks ──────────────────────────────────────────────────
-  const sunatLookup = useSunatLookup();
-  const reniecLookup = useReniecLookup();
-  const isConsulting = sunatLookup.isPending || reniecLookup.isPending;
+  // ── Consulta externa de documento (DNI o RUC) ─────────────────────────────
+  const documentoLookup = useDocumentoLookup();
+  const isConsulting = documentoLookup.isPending;
 
   // ── RHF controllers (useController for each form field) ──────────────────
   const tipoDocCtrl = useController({
@@ -192,20 +187,14 @@ export function EntidadLookupField({
     }
 
     try {
-      if (lookupState.tipo_documento === "RUC") {
-        const result = await sunatLookup.mutateAsync(num);
-        if (result) {
-          const data = result as unknown as InstitucionSunatResponse;
-          setAllFields("RUC", num, data.razon_social || "");
-          notify.success("Datos SUNAT cargados");
-        }
-      } else {
-        const result = await reniecLookup.mutateAsync(num);
-        if (result) {
-          const data = result as unknown as PersonaReniecResponse;
-          setAllFields("DNI", num, data.nombre_completo || "");
-          notify.success("Datos RENIEC cargados");
-        }
+      // Consulta externa genérica: GET /entidades/consulta/{documento} devuelve
+      // { tipo_documento, numero_documento, razon_social } — tanto DNI como RUC.
+      const result = await documentoLookup.mutateAsync(num);
+      if (result) {
+        const data = result as DocumentoConsultaData;
+        const tipoDoc = lookupState.tipo_documento;
+        setAllFields(tipoDoc, num, data.razon_social || "");
+        notify.success("Datos del documento cargados");
       }
     } catch {
       // Error handled by mutation hooks

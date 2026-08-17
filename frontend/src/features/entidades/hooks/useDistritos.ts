@@ -32,11 +32,13 @@ export function useDistritos({
 
   return useApiQuery<DistritosResponse, DistritoOption[]>({
     queryKey,
-    url: "/entidades/ubigeo/distritos",
+    // Cache-buster: evita servir la respuesta vieja cacheada con max-age=1 año.
+    url: "/entidades/ubigeo/distritos?v=2",
     schema: DistritosResponseSchema,
     params: Object.keys(params).length > 0 ? params : undefined,
     queryOptions: {
       enabled,
+      staleTime: 1000 * 60 * 1,
       select: (data) => {
         if (!data.data?.items) return [];
         return data.data.items;

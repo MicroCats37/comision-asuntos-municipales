@@ -1,9 +1,13 @@
 /**
  * Hook para detalle de liquidación de Taludes.
  * Endpoint: GET /liquidaciones/taludes/{id}
+ * Devuelve el detalle 3-wrappers tipado por liquidacionTaludesDetailResponseSchema.
  */
 import { useApiQuery } from "@/hooks";
-import { liquidacionTaludesDetailResponseSchema } from "../schemas/liquidacion-detail.schemas";
+import {
+  liquidacionTaludesDetailResponseSchema,
+  type LiquidacionDetalleItem,
+} from "../schemas/liquidacion-detail.schemas";
 
 interface UseLiquidacionDetalleTaludesProps {
   id: string;
@@ -19,7 +23,7 @@ export function useLiquidacionDetalleTaludes({
     url: id ? `/liquidaciones/taludes/${id}` : null,
     schema: liquidacionTaludesDetailResponseSchema,
     queryOptions: {
-      select: (data) => data.data ?? null,
+      select: (data): LiquidacionDetalleItem | null => data.data ?? null,
       enabled: !!id,
     },
   });

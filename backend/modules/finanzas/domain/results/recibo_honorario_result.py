@@ -62,6 +62,23 @@ class EspecialidadMinimal(BaseModel):
     nombre: str
 
 
+class ReciboHonorarioCalculoResult(BaseModel):
+    """Agrupa los montos y resultados matemáticos del recibo."""
+    sub_total: Decimal
+    imp_bruto: Decimal
+    renta_cip: Decimal
+    aporte_codemu: Decimal
+    fondo_comun: Decimal
+    neto_honorario: Decimal
+    honorario: Decimal
+
+
+class LiquidacionEspecificaMinimalResult(BaseModel):
+    """LiquidacionEspecifica (Edificacion, HabilitacionUrbana, etc) minimal."""
+    id: str
+    numero: int
+
+
 class ReciboHonorarioDelegadoResult(BaseModel):
     """
     Resultado de dominio para un ReciboHonorarioDelegado en lista paginada.
@@ -71,14 +88,48 @@ class ReciboHonorarioDelegadoResult(BaseModel):
     """
     id: str
     liquidacion_delegado_id: str  # UUID string
-    sub_total: Decimal
-    imp_bruto: Decimal
-    renta_cip: Decimal
-    aporte_codemu: Decimal
-    fondo_comun: Decimal
-    neto_honorario: Decimal
-    honorario: Decimal
+    calculo: ReciboHonorarioCalculoResult
     created_at: datetime
     liquidacion_general: LiquidacionGeneralMinimal
+    liquidacion_especifica: LiquidacionEspecificaMinimalResult
     delegado: DelegadoMinimal
+    especialidad: EspecialidadMinimal
+
+
+class InspectorMinimal(BaseModel):
+    """Inspector + PerfilIngeniero minimal for list item."""
+    id: str
+    cip: str
+    dni: str
+    nombre_completo: str
+
+
+class ReciboHonorarioInspectorCalculoResult(BaseModel):
+    """Agrupa los montos y resultados matemáticos del recibo del inspector."""
+    inspecciones_programadas: int
+    costo_por_inspeccion: Decimal
+    inspecciones_mes: int
+    monto_bruto: Decimal
+    inspecciones_pagadas: int
+    saldo_inspecciones: int
+    sub_total: Decimal
+    tasa_descuento_aplicada: Decimal
+    descuento: Decimal
+    honorarios: Decimal
+
+
+class ReciboHonorarioInspectorResult(BaseModel):
+    """
+    Resultado de dominio para un ReciboHonorarioInspector en lista paginada.
+
+    Incluye montos del recibo + resúmenes anidados de liquidacion_general,
+    inspector y especialidad — sin dependencias ORM.
+    """
+    id: str
+    liquidacion_inspector_id: str  # UUID string
+    calculo: ReciboHonorarioInspectorCalculoResult
+    created_at: datetime
+    liquidacion_general: LiquidacionGeneralMinimal
+    liquidacion_especifica: LiquidacionEspecificaMinimalResult
+    inspector: InspectorMinimal
     especialidad: EspecialidadMinimal

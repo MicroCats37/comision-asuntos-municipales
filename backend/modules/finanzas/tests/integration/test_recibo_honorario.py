@@ -122,13 +122,12 @@ def especialidad_revision(db):
 
 
 @pytest.fixture
-def delegado(db, perfil_ingeniero_delegado, especialidad_revision):
+def delegado(db, perfil_ingeniero_delegado):
     """Create a Delegado for testing."""
     from modules.liquidaciones.domain.models.delegado import Delegado
 
     return Delegado.objects.create(
         perfil_ingeniero=perfil_ingeniero_delegado,
-        especialidad_revision=especialidad_revision,
     )
 
 
@@ -515,7 +514,7 @@ class TestOrchestratorImpBrutoResolution:
 
 @pytest.mark.django_db
 class TestListarRecibosPagination:
-    """Tests for GET /finanzas/recibos-honorarios paginated endpoint.
+    """Tests for GET /finanzas/recibos-delegados paginated endpoint.
 
     These tests validate presenter + pagination math using mock domain results,
     avoiding SQLite async locking issues.
@@ -531,18 +530,26 @@ class TestListarRecibosPagination:
             LiquidacionGeneralMinimal,
             DelegadoMinimal,
             EspecialidadMinimal,
+            ReciboHonorarioCalculoResult,
+            LiquidacionEspecificaMinimalResult,
         )
 
         return ReciboHonorarioDelegadoResult(
             id=str(uuid4()),
             liquidacion_delegado_id=str(uuid4()),
-            sub_total=Decimal("5000.00"),
-            imp_bruto=Decimal("1000.00"),
-            renta_cip=Decimal("250.00"),
-            aporte_codemu=Decimal("50.00"),
-            fondo_comun=Decimal("100.00"),
-            neto_honorario=Decimal("600.00"),
-            honorario=Decimal("600.00"),
+            calculo=ReciboHonorarioCalculoResult(
+                sub_total=Decimal("5000.00"),
+                imp_bruto=Decimal("1000.00"),
+                renta_cip=Decimal("250.00"),
+                aporte_codemu=Decimal("50.00"),
+                fondo_comun=Decimal("100.00"),
+                neto_honorario=Decimal("600.00"),
+                honorario=Decimal("600.00"),
+            ),
+            liquidacion_especifica=LiquidacionEspecificaMinimalResult(
+                id=str(uuid4()),
+                numero=100 + idx,
+            ),
             created_at=datetime(2026, 1, idx + 1),
             liquidacion_general=LiquidacionGeneralMinimal(
                 id=str(uuid4()),
@@ -643,13 +650,13 @@ class TestListarRecibosPagination:
         # Top-level fields
         assert item.id is not None
         assert item.liquidacion_delegado_id is not None
-        assert item.sub_total is not None
-        assert item.imp_bruto is not None
-        assert item.renta_cip is not None
-        assert item.aporte_codemu is not None
-        assert item.fondo_comun is not None
-        assert item.neto_honorario is not None
-        assert item.honorario is not None
+        assert item.calculo.sub_total is not None
+        assert item.calculo.imp_bruto is not None
+        assert item.calculo.renta_cip is not None
+        assert item.calculo.aporte_codemu is not None
+        assert item.calculo.fondo_comun is not None
+        assert item.calculo.neto_honorario is not None
+        assert item.calculo.honorario is not None
         assert item.created_at is not None
 
         # Nested liquidacion_general

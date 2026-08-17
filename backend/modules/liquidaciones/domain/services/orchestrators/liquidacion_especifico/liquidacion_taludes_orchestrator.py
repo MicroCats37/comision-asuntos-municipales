@@ -284,9 +284,6 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
                     especialidad_id=d.tarifa_aplicada.especialidad_id,
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
-                    igv=d.igv,
-                    uit=d.uit,
-                    total=d.total,
                 )
                 for d in cotizacion.detalles
             ],
@@ -385,9 +382,6 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
                     especialidad_id=str(d.especialidad_id),
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
-                    igv=d.igv or Decimal("0"),
-                    uit=d.uit or Decimal("0"),
-                    total=d.total or Decimal("0"),
                 )
                 for d in lpo.detalles.all()
             ],
@@ -409,3 +403,5 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
             return self._build_taludes_result(lg)
         except ObjectDoesNotExist:
             raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")
+
+

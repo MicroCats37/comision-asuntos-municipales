@@ -217,6 +217,14 @@ function renderSpecificByMotor(
     if (lt.categoria) {
       appendReceiptRow(specificFields, "CATEGORIA", lt.categoria);
     }
+    const inspector = lt.inspectores?.[0];
+    const perfil = inspector?.perfil_ingeniero;
+    if (perfil?.nombre_completo) {
+      appendReceiptRow(specificFields, "INSPECTOR", perfil.nombre_completo);
+    }
+    if (perfil?.cip) {
+      appendReceiptRow(specificFields, "CIP", perfil.cip);
+    }
     return;
   }
 
@@ -261,13 +269,16 @@ export function renderDetalle(
   const lg = item.liquidacion_general;
   const subTotal = lg.sub_total ?? 0;
   const total = lg.total ?? 0;
-  const igvTasa = lg.igv?.valor ?? 0;
-  // IGV = subtotal × tasa (ej 0.18 → 18%)
-  const igvMonto = subTotal * igvTasa;
+  // IGV solo se muestra si subtotal y total difieren (hay IGV aplicado).
+  // Si subtotal === total → no hay IGV → se omite la línea (visual solamente).
+  const igvMonto = total - subTotal;
+  const tieneIgv = total !== subTotal && igvMonto > 0;
 
   const totals = append(lowerBody, "div", pdfTheme.totals);
   appendTotalLine(totals, "SUBTOTAL S/.", sinMoneda(formatCurrency(subTotal)));
-  appendTotalLine(totals, "I.G.V. S/.", sinMoneda(formatCurrency(igvMonto)));
+  if (tieneIgv) {
+    appendTotalLine(totals, "I.G.V. S/.", sinMoneda(formatCurrency(igvMonto)));
+  }
   const totalBox = append(totals, "div", pdfTheme.totalBox);
   appendText(totalBox, "span", "TOTAL S/.", {
     fontWeight: "700",

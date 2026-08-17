@@ -3,7 +3,6 @@
 import {
   AlertCircle,
   ArrowLeft,
-  Building2,
   FileDown,
   Home,
   type LucideIcon,
@@ -13,17 +12,15 @@ import {
   User,
 } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type {
-  ContactoCardData as ContactoListItem,
-  DelegadoCardData as DelegadoListItem,
-  LiquidacionCardBase,
-  RevisionCardData as RevisionListItem,
-  ValoresCardData as ValoresListItem,
-} from "../schemas/liquidacion-card.schema";
-
-export type { LiquidacionCardBase };
+  ContactoOutput,
+  LiquidacionDelegadoOutput,
+  LiquidacionGeneralOutput,
+  LiquidacionTipoOutput,
+} from "../schemas/liquidacion-base.schema";
+import type { LiquidacionDetalleItem } from "../schemas/liquidacion-detail.schemas";
+import { formatPublicId } from "../utils/formatPublicId";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -148,10 +145,8 @@ function EmptyState({
 
 function RevisionesSection({
   revisiones,
-  tipoLiquidacion,
 }: {
-  revisiones: RevisionListItem[];
-  tipoLiquidacion: string;
+  revisiones: LiquidacionGeneralOutput["revisiones_previas"];
 }) {
   if (revisiones.length === 0) {
     return (
@@ -162,208 +157,40 @@ function RevisionesSection({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Specialty chips */}
-      <div className="flex flex-wrap gap-2">
-        {(() => {
-          const seen = new Set<string>();
-          const uniqueEspecialidades = revisiones.flatMap((rev) =>
-            rev.especialidades.filter((esp) => {
-              if (seen.has(esp.id)) return false;
-              seen.add(esp.id);
-              return true;
-            }),
-          );
-          return uniqueEspecialidades.map((esp) => (
-            <div
-              key={esp.id}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/40 border border-border/60"
-            >
-              <Building2 className="h-3 w-3 text-primary shrink-0" />
-              <span className="text-xs font-medium text-foreground">
-                {esp.nombre}
-              </span>
-            </div>
-          ));
-        })()}
-      </div>
-
-      {/* Tariff data per revision */}
-      <div className="space-y-3">
-        {revisiones.map((rev, idx) => (
-          <div
-            key={rev.id}
-            className="rounded-lg border border-border/40 bg-muted/20 p-3"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-                Revisión {rev.numero_revision ?? idx + 1}
-              </span>
-              {rev.tarifa?.categoria && (
-                <Badge variant="outline" className="text-[9px] h-4 px-1.5">
-                  {rev.tarifa.categoria}
-                </Badge>
-              )}
-            </div>
-
-            <div className="grid grid-auto-fill-sm gap-3">
-              {/* Edificacion: porcentaje_liquidacion + derecho min/max */}
-              {tipoLiquidacion === "edificacion" && rev.tarifa && (
-                <>
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      % Liquidación
-                    </span>
-                    <span className="text-xs font-medium text-foreground">
-                      {rev.tarifa.porcentaje_liquidacion != null
-                        ? `${(Number(rev.tarifa.porcentaje_liquidacion) * 100).toFixed(2)}%`
-                        : "—"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Derecho Mín.
-                    </span>
-                    <span className="text-xs font-medium text-foreground">
-                      {rev.tarifa.derecho_minimo != null
-                        ? formatCurrency(rev.tarifa.derecho_minimo)
-                        : "—"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Derecho Máx.
-                    </span>
-                    <span className="text-xs font-medium text-foreground">
-                      {rev.tarifa.derecho_maximo != null
-                        ? formatCurrency(rev.tarifa.derecho_maximo)
-                        : "—"}
-                    </span>
-                  </div>
-                </>
-              )}
-
-              {/* Inspeccion Obra: costo_por_visita + cantidad_visitas + categoria */}
-              {tipoLiquidacion === "inspeccion-obra" && rev.tarifa && (
-                <>
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Costo/Visita
-                    </span>
-                    <span className="text-xs font-medium text-foreground">
-                      {rev.tarifa.costo_por_visita != null
-                        ? formatCurrency(rev.tarifa.costo_por_visita)
-                        : "—"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Visitas Solicitadas
-                    </span>
-                    <span className="text-xs font-medium text-foreground">
-                      {rev.tarifa.cantidad_visitas ?? "—"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Categoría
-                    </span>
-                    <span className="text-xs font-medium text-foreground">
-                      {rev.tarifa.categoria ?? "—"}
-                    </span>
-                  </div>
-                </>
-              )}
-
-              {/* Impacto Vial & Taludes: Edificaciones-style percentage display */}
-              {["impacto-vial", "taludes"].includes(tipoLiquidacion) &&
-                rev.tarifa && (
-                  <>
-                    <div className="flex flex-col">
-                      <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        % Liquidación
-                      </span>
-                      <span className="text-xs font-medium text-foreground">
-                        {rev.tarifa.porcentaje_liquidacion != null
-                          ? `${(Number(rev.tarifa.porcentaje_liquidacion) * 100).toFixed(2)}%`
-                          : "—"}
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Derecho Mín.
-                      </span>
-                      <span className="text-xs font-medium text-foreground">
-                        {rev.tarifa.derecho_minimo != null
-                          ? formatCurrency(rev.tarifa.derecho_minimo)
-                          : "—"}
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Derecho Máx.
-                      </span>
-                      <span className="text-xs font-medium text-foreground">
-                        {rev.tarifa.derecho_maximo != null
-                          ? formatCurrency(rev.tarifa.derecho_maximo)
-                          : "—"}
-                      </span>
-                    </div>
-                  </>
-                )}
-
-              {/* M2 types (HU, MS): costo_por_m2 + derecho min/max */}
-              {![
-                "edificacion",
-                "inspeccion-obra",
-                "impacto-vial",
-                "taludes",
-              ].includes(tipoLiquidacion) &&
-                rev.tarifa && (
-                  <>
-                    <div className="flex flex-col">
-                      <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Costo/m²
-                      </span>
-                      <span className="text-xs font-medium text-foreground">
-                        {rev.tarifa.costo_por_m2 != null
-                          ? formatCurrency(rev.tarifa.costo_por_m2)
-                          : "—"}
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Derecho Mín.
-                      </span>
-                      <span className="text-xs font-medium text-foreground">
-                        {rev.tarifa.derecho_minimo != null
-                          ? formatCurrency(rev.tarifa.derecho_minimo)
-                          : "—"}
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Derecho Máx.
-                      </span>
-                      <span className="text-xs font-medium text-foreground">
-                        {rev.tarifa.derecho_maximo != null
-                          ? formatCurrency(rev.tarifa.derecho_maximo)
-                          : "—"}
-                      </span>
-                    </div>
-                  </>
-                )}
-            </div>
+    <div className="space-y-3">
+      {revisiones.map((rev) => (
+        <div
+          key={rev.id}
+          className="rounded-lg border border-border/40 bg-muted/20 p-3"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
+              Revisión {rev.numero_revision}
+            </span>
           </div>
-        ))}
-      </div>
+          {rev.expediente && (
+            <div className="flex flex-col">
+              <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Expediente
+              </span>
+              <span className="text-xs font-medium text-foreground">
+                {rev.expediente}
+              </span>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
 
 // ── Delegados Section ───────────────────────────────────────────────────────────
 
-function DelegadosSection({ delegados }: { delegados: DelegadoListItem[] }) {
+function DelegadosSection({
+  delegados,
+}: {
+  delegados: LiquidacionDelegadoOutput[];
+}) {
   if (delegados.length === 0) {
     return (
       <p className="text-xs text-muted-foreground/60 italic">
@@ -384,19 +211,17 @@ function DelegadosSection({ delegados }: { delegados: DelegadoListItem[] }) {
           </div>
           <div className="flex flex-col">
             <span className="text-xs font-bold text-foreground">
-              {[d.perfil_ingeniero_nombres, d.perfil_ingeniero_apellidos]
-                .filter(Boolean)
-                .join(" ") || "—"}
+              {d.delegado?.nombre_completo || "—"}
             </span>
             <div className="flex items-center gap-2">
-              {d.perfil_ingeniero_cip && (
+              {d.delegado?.cip && (
                 <span className="text-[10px] text-muted-foreground">
-                  CIP: {d.perfil_ingeniero_cip}
+                  CIP: {d.delegado.cip}
                 </span>
               )}
-              {d.especialidad_nombre && (
+              {d.especialidad_revision.nombre && (
                 <span className="text-[10px] text-primary/70">
-                  • {d.especialidad_nombre}
+                  • {d.especialidad_revision.nombre}
                 </span>
               )}
             </div>
@@ -409,8 +234,12 @@ function DelegadosSection({ delegados }: { delegados: DelegadoListItem[] }) {
 
 // ── Contactos Section ───────────────────────────────────────────────────────────
 
-function ContactosSection({ contactos }: { contactos: ContactoListItem[] }) {
-  if (contactos.length === 0) {
+function ContactosSection({
+  contacto,
+}: {
+  contacto: ContactoOutput | null | undefined;
+}) {
+  if (!contacto) {
     return (
       <p className="text-xs text-muted-foreground/60 italic">
         Sin contactos registrados
@@ -420,37 +249,35 @@ function ContactosSection({ contactos }: { contactos: ContactoListItem[] }) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      {contactos.map((c) => (
-        <div
-          key={c.id}
-          className="inline-flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60 min-w-[200px]"
-        >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-            <User className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-bold text-foreground">
-              {[c.nombres, c.apellidos].filter(Boolean).join(" ") || "—"}
+      <div className="inline-flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60 min-w-[200px]">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+          <User className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-bold text-foreground">
+            {[contacto.nombres, contacto.apellidos].filter(Boolean).join(" ") ||
+              "—"}
+          </span>
+          {contacto.dni && (
+            <span className="text-[10px] text-muted-foreground">
+              DNI: {contacto.dni}
             </span>
-            {c.dni && (
-              <span className="text-[10px] text-muted-foreground">
-                DNI: {c.dni}
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {(contacto.telefono || contacto.celular) && (
+              <span className="text-[10px] text-primary/70 flex items-center gap-1">
+                <Phone className="h-2.5 w-2.5" />
+                {contacto.telefono || contacto.celular}
               </span>
             )}
-            <div className="flex flex-wrap items-center gap-2">
-              {c.telefono && (
-                <span className="text-[10px] text-primary/70 flex items-center gap-1">
-                  <Phone className="h-2.5 w-2.5" />
-                  {c.telefono}
-                </span>
-              )}
-              {c.email && (
-                <span className="text-[10px] text-primary/70">{c.email}</span>
-              )}
-            </div>
+            {contacto.email && (
+              <span className="text-[10px] text-primary/70">
+                {contacto.email}
+              </span>
+            )}
           </div>
         </div>
-      ))}
+      </div>
     </div>
   );
 }
@@ -458,7 +285,7 @@ function ContactosSection({ contactos }: { contactos: ContactoListItem[] }) {
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 interface LiquidacionDetalleCompletaProps {
-  item: LiquidacionCardBase | null;
+  item: LiquidacionDetalleItem | null;
   isLoading?: boolean;
   isError?: boolean;
   onBack?: () => void;
@@ -486,9 +313,9 @@ export function LiquidacionDetalleCompleta({
 }: LiquidacionDetalleCompletaProps) {
   const [delegadosModalOpen, setDelegadosModalOpen] = useState(false);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
-  const tipoLiquidacion = item?.tipo_liquidacion || "edificacion";
-  const hasIgv =
-    item?.valores && "igv" in item.valores && item.valores.igv != null;
+  const tipoLiquidacion =
+    item?.liquidacion_general?.tipo_liquidacion?.codigo || "edificacion";
+  const hasIgv = item?.liquidacion_general?.igv?.valor != null;
 
   if (isLoading) return <LoadingSkeleton />;
   if (isError) return <ErrorState />;
@@ -519,24 +346,22 @@ export function LiquidacionDetalleCompleta({
                   {typeLabel}
                 </h1>
                 <p className="text-sm text-muted-foreground font-mono">
-                  {item.public_id}
+                  {formatPublicId(
+                    tipoLiquidacion,
+                    item.liquidacion_general.fecha_registro,
+                    item.liquidacion_especifica.numero,
+                  )}
                 </p>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <Badge
-              variant={item.estado === "APROBADO" ? "default" : "secondary"}
-              className="text-xs"
-            >
-              {item.estado}
-            </Badge>
             <span className="text-xs text-muted-foreground">
-              N° {item.numero_revision}
+              N° {item.liquidacion_general.numero_revision}
             </span>
             <span className="text-xs text-muted-foreground">·</span>
             <span className="text-xs text-muted-foreground">
-              {formatDate(item.fecha_registro)}
+              {formatDate(item.liquidacion_general.fecha_registro)}
             </span>
             {showPdfButton && (
               <span
@@ -582,7 +407,7 @@ export function LiquidacionDetalleCompleta({
               Código
             </span>
             <span className="text-sm font-medium text-foreground font-mono ml-2">
-              {item.proyecto.public_id}
+              {item.liquidacion_general.proyecto.id}
             </span>
           </div>
           <div>
@@ -590,49 +415,41 @@ export function LiquidacionDetalleCompleta({
               Nombre
             </span>
             <span className="text-sm font-medium text-foreground ml-2">
-              {item.proyecto.nombre}
+              {item.liquidacion_general.proyecto.denominacion}
             </span>
           </div>
-          {item.proyecto.direccion && (
+          {item.liquidacion_general.proyecto.direccion && (
             <div className="flex items-start gap-1.5">
               <MapPin className="h-3 w-3 shrink-0 mt-0.5 text-muted-foreground" />
               <span className="text-sm text-muted-foreground leading-relaxed">
-                {item.proyecto.direccion}
+                {item.liquidacion_general.proyecto.direccion}
               </span>
             </div>
           )}
-          {item.proyecto.entidad && (
+          {item.liquidacion_general.proyecto.entidad && (
             <>
               <div>
                 <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                   Entidad
                 </span>
                 <span className="text-sm font-medium text-foreground ml-2">
-                  {item.proyecto.entidad.nombre ?? "—"}
+                  {item.liquidacion_general.proyecto.entidad.razon_social ??
+                    "—"}
                 </span>
               </div>
-              {item.proyecto.entidad.ruc && (
+              {item.liquidacion_general.proyecto.entidad.numero_documento && (
                 <div>
                   <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                     RUC
                   </span>
                   <span className="text-sm font-medium text-foreground ml-2">
-                    {item.proyecto.entidad.tipo ?? ""}{" "}
-                    {item.proyecto.entidad.ruc}
+                    {item.liquidacion_general.proyecto.entidad
+                      .tipo_documento ?? ""}{" "}
+                    {item.liquidacion_general.proyecto.entidad.numero_documento}
                   </span>
                 </div>
               )}
             </>
-          )}
-          {item.proyecto.valor_proyecto != null && (
-            <div>
-              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Valor Proyecto
-              </span>
-              <span className="text-sm font-medium text-foreground ml-2">
-                {formatCurrency(item.proyecto.valor_proyecto)}
-              </span>
-            </div>
           )}
         </div>
       </PageSection>
@@ -648,36 +465,36 @@ export function LiquidacionDetalleCompleta({
               Nombre
             </span>
             <span className="text-sm font-medium text-foreground ml-2">
-              {item.municipalidad.nombre || "—"}
+              {item.liquidacion_general.municipalidad?.nombre || "—"}
             </span>
           </div>
-          {item.municipalidad.codigo && (
+          {item.liquidacion_general.municipalidad?.codigo && (
             <div>
               <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Código
               </span>
               <span className="text-sm font-medium text-foreground ml-2">
-                {item.municipalidad.codigo}
+                {item.liquidacion_general.municipalidad.codigo}
               </span>
             </div>
           )}
-          {item.municipalidad.distrito && (
+          {item.liquidacion_general.proyecto.distrito && (
             <div>
               <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Distrito
               </span>
               <span className="text-sm font-medium text-foreground ml-2">
-                {item.municipalidad.distrito.nombre}
+                {item.liquidacion_general.proyecto.distrito.nombre}
               </span>
             </div>
           )}
-          {item.municipalidad.distrito?.provincia && (
+          {item.liquidacion_general.proyecto.distrito?.provincia && (
             <div>
               <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Provincia
               </span>
               <span className="text-sm font-medium text-foreground ml-2">
-                {item.municipalidad.distrito.provincia.nombre}
+                {item.liquidacion_general.proyecto.distrito.provincia.nombre}
               </span>
             </div>
           )}
@@ -695,7 +512,7 @@ export function LiquidacionDetalleCompleta({
               Subtotal
             </span>
             <span className="text-sm font-medium text-foreground ml-2">
-              {formatCurrency(item.valores.subtotal)}
+              {formatCurrency(item.liquidacion_general.sub_total)}
             </span>
           </div>
           {hasIgv && (
@@ -704,27 +521,29 @@ export function LiquidacionDetalleCompleta({
                 IGV
               </span>
               <span className="text-sm font-medium text-foreground ml-2">
-                {formatCurrency((item.valores as ValoresListItem).igv)}
+                {formatCurrency(
+                  item.liquidacion_general.total -
+                    item.liquidacion_general.sub_total,
+                )}
               </span>
             </div>
           )}
-          {"total" in item.valores &&
-            (item.valores as ValoresListItem).total != null && (
-              <div>
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Total
-                </span>
-                <span className="text-sm font-medium text-foreground ml-2">
-                  {formatCurrency((item.valores as ValoresListItem).total)}
-                </span>
-              </div>
-            )}
+          {hasIgv && (
+            <div>
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Total
+              </span>
+              <span className="text-sm font-medium text-foreground ml-2">
+                {formatCurrency(item.liquidacion_general.total)}
+              </span>
+            </div>
+          )}
           <div>
             <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
               Total a Pagar
             </span>
             <span className="text-lg font-black text-primary ml-2">
-              {formatCurrency(item.valores.total_a_pagar)}
+              {formatCurrency(item.liquidacion_general.total)}
             </span>
           </div>
         </div>
@@ -737,16 +556,18 @@ export function LiquidacionDetalleCompleta({
         <div className="flex items-center gap-2 mb-3">
           <SectionLabel>Revisiones</SectionLabel>
           <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary/10 text-xs font-bold text-primary">
-            {item.revisiones.length}
+            {item.liquidacion_general.revisiones_previas.length}
           </span>
           <span className="text-xs text-muted-foreground">
-            ({item.revisiones.length}{" "}
-            {item.revisiones.length === 1 ? "revisión" : "revisiones"})
+            ({item.liquidacion_general.revisiones_previas.length}{" "}
+            {item.liquidacion_general.revisiones_previas.length === 1
+              ? "revisión"
+              : "revisiones"}
+            )
           </span>
         </div>
         <RevisionesSection
-          revisiones={item.revisiones}
-          tipoLiquidacion={tipoLiquidacion}
+          revisiones={item.liquidacion_general.revisiones_previas}
         />
       </PageSection>
 
@@ -756,13 +577,13 @@ export function LiquidacionDetalleCompleta({
       <PageSection className="py-4">
         <div className="flex items-center gap-2 mb-2">
           <SectionLabel>Delegados</SectionLabel>
-          {item.delegados.length > 0 && (
+          {item.liquidacion_general.delegados.length > 0 && (
             <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-[9px] font-bold text-muted-foreground">
-              {item.delegados.length}
+              {item.liquidacion_general.delegados.length}
             </span>
           )}
         </div>
-        <DelegadosSection delegados={item.delegados} />
+        <DelegadosSection delegados={item.liquidacion_general.delegados} />
       </PageSection>
 
       <hr className="border-border" />
@@ -771,17 +592,17 @@ export function LiquidacionDetalleCompleta({
       <PageSection className="py-4">
         <div className="flex items-center gap-2 mb-2">
           <SectionLabel>Contactos</SectionLabel>
-          {item.contactos.length > 0 && (
+          {item.liquidacion_general.contacto && (
             <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-[9px] font-bold text-muted-foreground">
-              {item.contactos.length}
+              1
             </span>
           )}
         </div>
-        <ContactosSection contactos={item.contactos} />
+        <ContactosSection contacto={item.liquidacion_general.contacto} />
       </PageSection>
 
       {/* ── Observación ────────────────────────────────────────────────────── */}
-      {item.observacion && (
+      {item.liquidacion_general.observacion && (
         <>
           <hr className="border-border" />
           <PageSection className="py-4">
@@ -792,7 +613,7 @@ export function LiquidacionDetalleCompleta({
                   Observación
                 </span>
                 <p className="text-sm text-amber-700/90 font-medium leading-relaxed mt-0.5">
-                  {item.observacion}
+                  {item.liquidacion_general.observacion}
                 </p>
               </div>
             </div>
@@ -801,13 +622,13 @@ export function LiquidacionDetalleCompleta({
       )}
 
       {/* ── Expediente (if present) ───────────────────────────────────────── */}
-      {item.expediente && (
+      {item.liquidacion_general.expediente && (
         <>
           <hr className="border-border" />
           <PageSection className="py-4">
             <SectionLabel>Expediente</SectionLabel>
             <span className="text-sm font-medium text-foreground">
-              {item.expediente}
+              {item.liquidacion_general.expediente}
             </span>
           </PageSection>
         </>

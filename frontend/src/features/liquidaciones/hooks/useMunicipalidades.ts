@@ -11,7 +11,8 @@ import {
 export function useMunicipalidades() {
   return useApiQuery<MunicipalidadesResponse, MunicipalidadData[]>({
     queryKey: ["entidades", "municipalidades"],
-    url: "/entidades/municipalidades",
+    // Cache-buster: evita servir la respuesta vieja (IDs de antes del reseed).
+    url: "/entidades/municipalidades?v=2",
     schema: MunicipalidadesResponseSchema,
     queryOptions: {
       staleTime: 1000 * 60 * 1,

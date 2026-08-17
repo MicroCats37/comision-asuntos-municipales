@@ -271,24 +271,7 @@ export function LiquidacionEdificacionesCard({
                       {formatDecimalPercent(detalle.porcentaje_aplicado)}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Subtotal</span>
-                      <span className="text-sm font-bold">{formatCurrency(detalle.subtotal)}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Total</span>
-                      <span className="text-sm font-medium">{formatCurrency(detalle.total)}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">IGV</span>
-                      <span className="text-sm font-medium">{formatCurrency(detalle.igv)}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">UIT</span>
-                      <span className="text-sm font-medium">{formatCurrency(detalle.uit)}</span>
-                    </div>
-                  </div>
+                  <div className="grid grid-cols-1 gap-2"><div className="flex flex-col"><span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Subtotal Parcial</span><span className="text-sm font-bold">{formatCurrency(detalle.subtotal)}</span></div></div>
                 </div>
               ))}
             </div>
@@ -320,3 +303,4 @@ export function LiquidacionEdificacionesCard({
     </>
   );
 }
+

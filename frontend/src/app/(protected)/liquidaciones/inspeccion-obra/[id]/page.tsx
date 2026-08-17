@@ -1,12 +1,9 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
 import { ClipboardCheck } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { LiquidacionDetalleCompleta } from "@/features/liquidaciones/components/LiquidacionDetalleCompleta";
 import { useLiquidacionDetalleInspeccionObra } from "@/features/liquidaciones/hooks/useLiquidacionDetalleInspeccionObra";
-import {
-  LiquidacionDetalleCompleta,
-  type LiquidacionCardBase,
-} from "@/features/liquidaciones/components/LiquidacionDetalleCompleta";
 
 const KIND_LABEL = "Inspección de Obra";
 
@@ -15,7 +12,11 @@ export default function LiquidacionDetalleInspeccionObraPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const { data: item, isLoading, isError } = useLiquidacionDetalleInspeccionObra({ id });
+  const {
+    data: item,
+    isLoading,
+    isError,
+  } = useLiquidacionDetalleInspeccionObra({ id });
 
   const handleBack = () => {
     router.back();
@@ -25,7 +26,7 @@ export default function LiquidacionDetalleInspeccionObraPage() {
     <div className="page-section">
       <div className="space-y-6">
         <LiquidacionDetalleCompleta
-          item={item as unknown as LiquidacionCardBase | null}
+          item={item}
           isLoading={isLoading}
           isError={isError}
           onBack={handleBack}

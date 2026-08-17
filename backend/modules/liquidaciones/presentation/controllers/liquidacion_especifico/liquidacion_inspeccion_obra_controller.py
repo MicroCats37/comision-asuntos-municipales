@@ -14,7 +14,6 @@ from modules.liquidaciones.domain.services.core.auth.auth_core_service import (
     AuthCoreService,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_inspeccion_obra_schemas import (
-    LiquidacionInspeccionObraInput,
     LiquidacionInspeccionObraOutput,
     LiquidacionInspeccionObraNuevaRevisionInput,
 )
@@ -143,25 +142,7 @@ class LiquidacionInspeccionObraController:
         return success_response(self.visitas_presenter.present_cotizacion(result))
 
     @route.post(
-        "/nueva-liquidacion/primera-revision",
-        response={200: ApiResponse[LiquidacionInspeccionObraOutput]},
-    )
-    def crear_primera_revision(self, request, payload: LiquidacionInspeccionObraInput):
-        """
-        Crea la Inspeccion de Obra integrando General y Visitas.
-        """
-        usuario_id = self.auth_core_service.get_authenticated_user_id(request)
-
-        domain_result = self.orchestrator.crear_primera_revision_proceso(
-            usuario_id=usuario_id,
-            payload_in=payload,
-        )
-
-        result = self.presenter.present_primera_revision(domain_result)
-        return success_response(result)
-
-    @route.post(
-        "/nueva-liquidacion/primera-revision-desde-previa",
+        "/nueva-liquidacion",
         response={200: ApiResponse[LiquidacionInspeccionObraOutput]},
     )
     def crear_primera_revision_desde_previa(self, request, payload: LiquidacionInspeccionObraNuevaRevisionInput):

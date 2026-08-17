@@ -1,5 +1,6 @@
 """
-Integration tests for the Inspeccion Obra /nueva-liquidacion/primera-revision endpoint.
+Integration tests for the Inspeccion Obra /nueva-liquidacion endpoint
+(IO desde una liquidación previa — el único flujo de creación de IO).
 
 Tests use Ninja's TestClient (not Django's Client) for proper async handling.
 All tests use @pytest.mark.django_db for database access.
@@ -19,7 +20,12 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     TarifaLiquidacionBase,
     TarifaPorCategoriaVisitas,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
+from modules.liquidaciones.domain.constants import TipoLiquidacion, EstadoLiquidacion
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
+    LiquidacionGeneral,
+)
+from modules.liquidaciones.domain.models.inspector import Inspector
+from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero
 
 
 @pytest.fixture
@@ -132,24 +138,56 @@ def valid_distrito_id(ubigeo_distrito):
 
 
 @pytest.fixture
-def valid_payload(valid_municipalidad_id, valid_tarifa_visitas_id, valid_distrito_id, uit_vigente, igv_vigente):
+def liquidacion_previa(db, municipalidad, create_user, tipo_edificacion, proyecto):
+    """Crea una liquidación previa (Edificación) para heredar proyecto/entidad."""
+    return LiquidacionGeneral.objects.create(
+        proyecto=proyecto,
+        municipalidad=municipalidad,
+        tipo_liquidacion=tipo_edificacion,
+        numero_revision=1,
+        estado=EstadoLiquidacion.PENDIENTE,
+        expediente="EXP-PREVIA-IO-2024-001",
+        sub_total=0,
+        total=0,
+        usuario_creador=create_user,
+    )
+
+
+@pytest.fixture
+def inspector(db, tipo_edificacion):
+    """Crea un inspector con operación y especialidad para asignar a la IO.
+
+    La operación usa el tipo de la PREVIA (EDIFICACION) — los inspectores se
+    registran con el tipo del trámite que revisan, no con INSPECCION_OBRA.
+    """
+    from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
+    from modules.liquidaciones.domain.models.inspector import InspectorOperacion
+
+    perfil = PerfilIngeniero.objects.create(
+        cip="112233",
+        dni="11223344",
+        nombres="Inspector",
+        apellido_paterno="IO",
+        apellido_materno="Test",
+        correo_personal="inspector_io_test@example.com",
+    )
+    inspector = Inspector.objects.create(perfil_ingeniero=perfil)
+    esp_rev = EspecialidadRevision.objects.create(
+        codigo="03", slug="electrica", nombre="Eléctrica/Mecánica"
+    )
+    InspectorOperacion.objects.create(
+        inspector=inspector,
+        tipo_liquidacion=tipo_edificacion,
+        categoria="1",
+        especialidad_revision=esp_rev,
+    )
+    return inspector
+
+
+@pytest.fixture
+def valid_payload(liquidacion_previa, valid_tarifa_visitas_id, inspector):
     return {
-        "liquidacion_general": {
-            "municipalidad_id": valid_municipalidad_id,
-            "expediente": "EXP-2024-IO-001",
-            "observacion": "Primera revisión Inspección Obra.",
-            "proyecto": {
-                "denominacion": "Proyecto IO Test",
-                "nombre_propietario": "Juan Perez IO",
-                "direccion": "Av. IO 123",
-                "distrito_id": valid_distrito_id,
-                "entidad": {
-                    "tipo_documento": "RUC",
-                    "numero_documento": "20123456789",
-                    "razon_social": "Constructora IO SAC"
-                }
-            }
-        },
+        "liquidacion_previa_id": str(liquidacion_previa.id),
         "liquidacion_especifica": {
             "datos": {
                 "cantidad_visitas": 3,
@@ -157,18 +195,21 @@ def valid_payload(valid_municipalidad_id, valid_tarifa_visitas_id, valid_distrit
             },
             "tarifa": {
                 "tarifa_visitas_id": valid_tarifa_visitas_id
-            }
+            },
+            "inspector_id": str(inspector.id),
         }
     }
 
 
 @pytest.mark.django_db
-def test_io_crear_primera_revision_success(auth_client, valid_payload):
+def test_io_crear_primera_revision_success(
+    auth_client, valid_payload, liquidacion_previa, uit_vigente, igv_vigente
+):
     """
-    Test successful creation of a LiquidacionInspeccionObra (primera-revision).
+    Test successful creation of a LiquidacionInspeccionObra desde una previa.
     """
     response = auth_client.post(
-        "/liquidaciones/inspeccion-obra/nueva-liquidacion/primera-revision",
+        "/liquidaciones/inspeccion-obra/nueva-liquidacion",
         json=valid_payload
     )
 
@@ -178,11 +219,10 @@ def test_io_crear_primera_revision_success(auth_client, valid_payload):
 
     result = data["data"]
 
-    # Verify General Structure
+    # Verify General Structure (hereda expediente de la previa)
     general = result["liquidacion_general"]
-    assert general["expediente"] == valid_payload["liquidacion_general"]["expediente"]
-    assert general["observacion"] == valid_payload["liquidacion_general"]["observacion"]
-    assert general["proyecto"]["denominacion"] == valid_payload["liquidacion_general"]["proyecto"]["denominacion"]
+    assert general["expediente"] == liquidacion_previa.expediente
+    assert general["proyecto"]["denominacion"] == liquidacion_previa.proyecto.denominacion
 
     # Verify Specific Structure (identity wrapper after semantic fix)
     especifica = result["liquidacion_especifica"]
@@ -194,6 +234,11 @@ def test_io_crear_primera_revision_success(auth_client, valid_payload):
     assert tipo["cantidad_visitas"] == valid_payload["liquidacion_especifica"]["datos"]["cantidad_visitas"]
     assert tipo["categoria"] == valid_payload["liquidacion_especifica"]["datos"]["categoria"]
 
+    # El inspector sale dentro de liquidacion_tipo, con su especialidad_revision
+    assert len(tipo["inspectores"]) == 1
+    assert tipo["inspectores"][0]["perfil_ingeniero"]["cip"] == "112233"
+    assert tipo["inspectores"][0]["especialidad_revision"]["nombre"] == "Eléctrica/Mecánica"
+
     # Verify Calculation
     # UIT = 5150.00
     # Porcentaje UIT = 0.05
@@ -202,21 +247,20 @@ def test_io_crear_primera_revision_success(auth_client, valid_payload):
     # Subtotal = 3 * 257.50 = 772.50
     # IGV = 18% = 0.18
     # Total = 772.50 * 1.18 = 911.55
-    
+
     assert general["sub_total"] == 772.50
     assert general["total"] == 911.55
 
 
-
 @pytest.mark.django_db
-def test_io_crear_primera_revision_invalid_tarifa(auth_client, valid_payload):
+def test_io_crear_primera_revision_invalid_tarifa(auth_client, valid_payload, uit_vigente, igv_vigente):
     """
     Test creation with an invalid Tarifa Visitas ID.
     """
     valid_payload["liquidacion_especifica"]["tarifa"]["tarifa_visitas_id"] = str(uuid.uuid4())
 
     response = auth_client.post(
-        "/liquidaciones/inspeccion-obra/nueva-liquidacion/primera-revision",
+        "/liquidaciones/inspeccion-obra/nueva-liquidacion",
         json=valid_payload
     )
 

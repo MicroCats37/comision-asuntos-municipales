@@ -6,7 +6,6 @@ import { useLiquidacionDetalleEdificacion } from "@/features/liquidaciones/hooks
 import {
   LiquidacionDetalleCompleta,
   kindLabel,
-  type LiquidacionCardBase,
 } from "@/features/liquidaciones/components/LiquidacionDetalleCompleta";
 
 const KIND_LABEL = "Edificación";
@@ -26,11 +25,14 @@ export default function LiquidacionDetalleEdificacionPage() {
     <div className="page-section">
       <div className="space-y-6">
         <LiquidacionDetalleCompleta
-          item={item as unknown as LiquidacionCardBase | null}
+          item={item}
           isLoading={isLoading}
           isError={isError}
           onBack={handleBack}
-          kindLabel={kindLabel(item?.tipo_liquidacion) ?? KIND_LABEL}
+          kindLabel={
+            kindLabel(item?.liquidacion_general?.tipo_liquidacion?.codigo) ??
+            KIND_LABEL
+          }
           kindIcon={FileText}
         />
       </div>

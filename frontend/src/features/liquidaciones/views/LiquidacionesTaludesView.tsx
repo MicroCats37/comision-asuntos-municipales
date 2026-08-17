@@ -15,8 +15,8 @@ import { Pagination } from "@/components/genericPagination/Pagination";
 import { LiquidacionTaludesCard } from "../components/cards/LiquidacionTaludesCard";
 import { TaludesFormModal } from "../components/forms/TaludesFormModal";
 import { LiquidacionFiltroModal } from "../components/forms/LiquidacionFiltroModal";
+import { ConsultarIngenieroButton } from "../components/forms/ConsultarIngenieroButton";
 import { useLiquidacionesTaludes, type LiquidacionFiltros } from "../hooks";
-import type { LiquidacionTaludesListItem } from "../schemas/liquidacion-taludes.schema";
 
 const KIND_ICON: LucideIcon = Mountain;
 
@@ -51,8 +51,16 @@ export function LiquidacionesTaludesView() {
           actionNodes={
             <>
               <Button
+                className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+                onClick={() => setFormModalOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Nueva Liquidación
+              </Button>
+              <ConsultarIngenieroButton />
+              <Button
                 variant={activeFilterCount > 0 ? "default" : "outline"}
-                className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+                className="gap-2 h-11 rounded-xl font-semibold shrink-0 ml-auto"
                 onClick={() => setFiltroModalOpen(true)}
               >
                 <Filter className="h-4 w-4" />
@@ -62,13 +70,6 @@ export function LiquidacionesTaludesView() {
                     {activeFilterCount}
                   </span>
                 )}
-              </Button>
-              <Button
-                className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-                onClick={() => setFormModalOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Nueva Liquidación
               </Button>
             </>
           }
@@ -151,7 +152,7 @@ export function LiquidacionesTaludesView() {
             <>
               <div className="flex flex-col gap-4">
                 {items.map((item) => (
-                  <LiquidacionTaludesCard key={item.liquidacion_general.id} item={item as unknown as LiquidacionTaludesListItem} />
+                  <LiquidacionTaludesCard key={item.liquidacion_general.id} item={item} />
                 ))}
               </div>
               {/* Pagination */}

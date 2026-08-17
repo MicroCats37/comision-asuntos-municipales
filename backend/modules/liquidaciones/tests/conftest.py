@@ -42,6 +42,12 @@ from modules.liquidaciones.tests.fixtures.tarifas_po_fixtures import (
     tarifa_porcentaje_obra_installaciones,
     especialidades_disponibles_edificacion,
     derecho_porcentaje_vigente,
+    tarifa_liquidacion_base_taludes,
+    especialidad_taludes,
+    tarifa_porcentaje_obra_taludes,
+    tarifa_liquidacion_base_iv,
+    especialidad_impacto_vial,
+    tarifa_porcentaje_obra_iv,
 )
 from modules.liquidaciones.tests.fixtures.tarifas_m2_fixtures import (
     tarifa_liquidacion_base_hu,

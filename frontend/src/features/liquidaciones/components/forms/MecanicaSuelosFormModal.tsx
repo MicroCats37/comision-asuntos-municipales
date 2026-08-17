@@ -1,35 +1,37 @@
 "use client";
 
+import { FileText } from "lucide-react";
 /**
  * MecanicaSuelosFormModal — Form delgado para Mecánica de Suelos (motor M2).
  * Reutiliza LiquidacionFormBodyBase (general) + Smart Fields M2.
  */
 import { useCallback, useState } from "react";
+import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { notify } from "@/errors";
-import { FileText } from "lucide-react";
 import { useCrearMecanicaSuelos } from "../../hooks/useCrearMecanicaSuelos";
-import { mecanicaSuelosFormSchema, type MecanicaSuelosFormData } from "../../schemas/liquidacion-mecanica-suelos-form.schema";
+import type { PdfLiquidacionItem } from "../../pdf/buildLiquidacionPdfElement";
+import { printLiquidacion } from "../../pdf/printLiquidacion";
 import type { ContactoInline } from "../../schemas/liquidacion-form-base.schema";
+import {
+  type MecanicaSuelosFormData,
+  mecanicaSuelosFormSchema,
+} from "../../schemas/liquidacion-mecanica-suelos-form.schema";
+import { ContactoFormModal } from "./ContactoFormModal";
+import { CotizacionM2SmartField } from "./CotizacionM2SmartField";
 import { LiquidacionFormBodyBase } from "./LiquidacionFormBodyBase";
 import { TarifasM2SmartField } from "./TarifasM2SmartField";
-import { CotizacionM2SmartField } from "./CotizacionM2SmartField";
-import { ContactoFormModal } from "./ContactoFormModal";
 
 interface MecanicaSuelosFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
-  onCreated?: () => void;
 }
 
 export function MecanicaSuelosFormModal({
   open,
   onOpenChange,
   onSuccess,
-  onCreated,
 }: MecanicaSuelosFormModalProps) {
   const crearMutation = useCrearMecanicaSuelos();
   const [contacto, setContacto] = useState<ContactoInline | null>(null);
@@ -43,16 +45,25 @@ export function MecanicaSuelosFormModal({
   const handleSubmit = useCallback(
     async (data: MecanicaSuelosFormData) => {
       try {
-        await crearMutation.mutateAsync({ ...data, contacto: contacto ?? undefined });
+        const result = await crearMutation.mutateAsync({
+          ...data,
+          contacto: contacto ?? undefined,
+        });
         notify.success("Liquidación creada correctamente");
         setContacto(null);
+        // Mismo window de impresión que el botón PDF de las cards
+        const created = (result as { data?: PdfLiquidacionItem })?.data as
+          | PdfLiquidacionItem
+          | undefined;
+        if (created) {
+          printLiquidacion(created, "mecanica-suelos");
+        }
         onSuccess?.();
-        onCreated?.();
       } catch {
         // Error handled by mutation
       }
     },
-    [crearMutation, contacto, onSuccess, onCreated],
+    [crearMutation, contacto, onSuccess],
   );
 
   return (
@@ -79,23 +90,23 @@ export function MecanicaSuelosFormModal({
             onAddContacto={() => setContactoModalOpen(true)}
             onRemoveContacto={() => setContacto(null)}
             tramiteField={
-              <div className="space-y-2">
-                <Label htmlFor="area_solicitada">Área Solicitada (m²) <span className="text-destructive">*</span></Label>
-                <Input
-                  id="area_solicitada"
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  placeholder="0.00"
-                  className="w-full"
-                  {...methods.register("area_solicitada", { valueAsNumber: true })}
-                />
-              </div>
+              <MoneyInput
+                name="area_solicitada"
+                label="Área Solicitada (m²)"
+                required
+                control={methods.control}
+                min={0}
+                defaultValue={0}
+                className="w-full"
+              />
             }
             motorSection={
               <div className="space-y-3">
                 <TarifasM2SmartField methods={methods} tipo="mecanica-suelos" />
-                <CotizacionM2SmartField methods={methods} tipo="mecanica-suelos" />
+                <CotizacionM2SmartField
+                  methods={methods}
+                  tipo="mecanica-suelos"
+                />
               </div>
             }
           />

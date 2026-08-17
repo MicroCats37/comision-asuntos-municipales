@@ -23,11 +23,20 @@ from modules.liquidaciones.domain.models.inspector import (
     InspectorAsignacionPeriodo,
     InspectorTipoLiquidacion,
 )
-from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero
+from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero, EspecialidadRevision
 from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
+
+@pytest.fixture
+def especialidad_revision_civil(db):
+    """Create an EspecialidadRevision for testing."""
+    return EspecialidadRevision.objects.create(
+        codigo="01",
+        slug="civil",
+        nombre="Ingeniería Civil",
+    )
 
 @pytest.fixture
 def perfil_ingeniero_inspector(db):
@@ -56,7 +65,7 @@ def perfil_ingeniero_inspector_2(db):
 
 
 @pytest.fixture
-def inspector_edificacion(db, perfil_ingeniero_inspector, tipo_edificacion):
+def inspector_edificacion(db, perfil_ingeniero_inspector, tipo_edificacion, especialidad_revision_civil):
     """Create an Inspector for Edificacion testing."""
     inspector = Inspector.objects.create(
         perfil_ingeniero=perfil_ingeniero_inspector,
@@ -64,15 +73,14 @@ def inspector_edificacion(db, perfil_ingeniero_inspector, tipo_edificacion):
     InspectorTipoLiquidacion.objects.create(
         inspector=inspector,
         tipo_liquidacion=tipo_edificacion,
-        numero_registro="REG-001-EDIF",
-        telefono="999888777",
-        email="juan.perez@test.com",
+        categoria="1",
+        especialidad_revision=especialidad_revision_civil,
     )
     return inspector
 
 
 @pytest.fixture
-def inspector_habilitacion_urbana(db, perfil_ingeniero_inspector_2, tipo_habilitacion_urbana):
+def inspector_habilitacion_urbana(db, perfil_ingeniero_inspector_2, tipo_habilitacion_urbana, especialidad_revision_civil):
     """Create an Inspector for Habilitacion Urbana testing."""
     inspector = Inspector.objects.create(
         perfil_ingeniero=perfil_ingeniero_inspector_2,
@@ -80,9 +88,8 @@ def inspector_habilitacion_urbana(db, perfil_ingeniero_inspector_2, tipo_habilit
     InspectorTipoLiquidacion.objects.create(
         inspector=inspector,
         tipo_liquidacion=tipo_habilitacion_urbana,
-        numero_registro="REG-002-HU",
-        telefono="999888666",
-        email="maria.lopez@test.com",
+        categoria="2",
+        especialidad_revision=especialidad_revision_civil,
     )
     return inspector
 
@@ -423,3 +430,122 @@ def test_list_inspectores_vigentes_pagination_params_work(
 
     assert result["page"] == 1
     assert result["page_size"] == 1
+
+
+# ── Tests: GET /liquidaciones/inspectores/seleccionables ──────────────────────
+
+@pytest.mark.django_db
+def test_inspectores_seleccionables_retorna_vigentes(
+    auth_client,
+    inspector_edificacion,
+    inspector_periodo_vigente,
+    especialidad_revision_civil,
+    tipo_edificacion,
+):
+    """
+    GET /liquidaciones/inspectores/seleccionables?tipo_liquidacion=EDIFICACION
+    devuelve inspectores vigentes con el shape del form (sin paginación).
+    """
+    response = auth_client.get(
+        "/liquidaciones/inspectores/seleccionables"
+        f"?tipo_liquidacion={TipoLiquidacion.EDIFICACION}"
+    )
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+    result = response.json()["data"]
+    assert "inspectores" in result
+
+    assert len(result["inspectores"]) == 1
+    insp = result["inspectores"][0]
+    assert insp["id"] == str(inspector_edificacion.id)
+    assert insp["nombre_completo"] == inspector_edificacion.perfil_ingeniero.nombre_completo
+    assert insp["cip"] == "12345"
+    assert insp["tipo_liquidacion"] == TipoLiquidacion.EDIFICACION
+    assert insp["categoria"] == "1"
+    assert insp["numero_registro"]
+    assert insp["especialidad"] == {
+        "id": str(especialidad_revision_civil.id),
+        "nombre": especialidad_revision_civil.nombre,
+    }
+    # periodo vigente con periodo_fin=None → vigencia null
+    assert insp["vigencia"] is None
+
+
+@pytest.mark.django_db
+def test_inspectores_seleccionables_excluye_no_vigentes(
+    auth_client,
+    inspector_habilitacion_urbana,
+    inspector_periodo_pasado,
+    tipo_habilitacion_urbana,
+):
+    """
+    Un inspector con periodo pasado NO debe aparecer en seleccionables.
+    """
+    response = auth_client.get(
+        "/liquidaciones/inspectores/seleccionables"
+        f"?tipo_liquidacion={TipoLiquidacion.HABILITACION_URBANA}"
+    )
+
+    assert response.status_code == 200
+    result = response.json()["data"]
+    assert result["inspectores"] == []
+
+
+@pytest.mark.django_db
+def test_inspectores_seleccionables_filtro_categoria(
+    auth_client,
+    inspector_edificacion,
+    inspector_periodo_vigente,
+):
+    """
+    Filtro por categoria devuelve solo inspectores de esa categoría.
+    """
+    response = auth_client.get(
+        "/liquidaciones/inspectores/seleccionables"
+        f"?tipo_liquidacion={TipoLiquidacion.EDIFICACION}&categoria=1"
+    )
+
+    assert response.status_code == 200
+    result = response.json()["data"]
+    assert len(result["inspectores"]) == 1
+
+    # Categoría 9 (no existe) → vacío
+    response_vacia = auth_client.get(
+        "/liquidaciones/inspectores/seleccionables"
+        f"?tipo_liquidacion={TipoLiquidacion.EDIFICACION}&categoria=9"
+    )
+    assert response_vacia.json()["data"]["inspectores"] == []
+
+
+@pytest.mark.django_db
+def test_inspectores_seleccionables_filtro_q_por_nombre(
+    auth_client,
+    inspector_edificacion,
+    inspector_periodo_vigente,
+):
+    """
+    Filtro q busca por nombre/CIP.
+    """
+    response = auth_client.get(
+        "/liquidaciones/inspectores/seleccionables"
+        f"?tipo_liquidacion={TipoLiquidacion.EDIFICACION}&q=Perez"
+    )
+
+    assert response.status_code == 200
+    result = response.json()["data"]
+    assert len(result["inspectores"]) == 1
+
+    response_sin_match = auth_client.get(
+        "/liquidaciones/inspectores/seleccionables"
+        f"?tipo_liquidacion={TipoLiquidacion.EDIFICACION}&q=ZZZZ"
+    )
+    assert response_sin_match.json()["data"]["inspectores"] == []
+
+
+@pytest.mark.django_db
+def test_inspectores_seleccionables_sin_tipo_400(auth_client):
+    """
+    Sin tipo_liquidacion → 400.
+    """
+    response = auth_client.get("/liquidaciones/inspectores/seleccionables")
+    assert response.status_code == 400

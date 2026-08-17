@@ -26,15 +26,6 @@ class Delegado(BaseModel):
         help_text="Perfil que contiene los datos de identidad del ingeniero.",
     )
 
-    especialidad_revision = models.ForeignKey(
-        "usuarios.EspecialidadRevision",
-        on_delete=models.PROTECT,
-        related_name="delegados",
-        verbose_name="Especialidad",
-        null=True,
-        blank=True,
-    )
-
     class Meta:
         verbose_name = "Delegado"
         verbose_name_plural = "Delegados"
@@ -45,7 +36,7 @@ class Delegado(BaseModel):
         ]
 
 
-class DelegadoMunicipalidad(BaseModel):
+class DelegadoOperacion(BaseModel):
     """
     Modelo para asignar distritos específicos a un delegado.
     Un delegado puede tener múltiples distritos asignados.
@@ -63,14 +54,14 @@ class DelegadoMunicipalidad(BaseModel):
     municipalidad = models.ForeignKey(
         "entidades.Municipalidad",
         on_delete=models.PROTECT,
-        related_name="delegados",
+        related_name="delegados_operacion",
         verbose_name="Municipalidad",
     )
 
     liquidacion_revision = models.ForeignKey(
         "liquidaciones.TipoLiquidacion",
         on_delete=models.PROTECT,
-        related_name="delegados_municipalidad",
+        related_name="delegados_operacion",
         verbose_name="Tipo de Liquidación",
         null=True,
         blank=True,
@@ -83,9 +74,24 @@ class DelegadoMunicipalidad(BaseModel):
         verbose_name="Tipo de Delegado",
     )
 
+    especialidad_revision = models.ForeignKey(
+        "usuarios.EspecialidadRevision",
+        on_delete=models.PROTECT,
+        related_name="delegados_operacion",
+        verbose_name="Especialidad",
+    )
+
+    @property
+    def email(self):
+        return self.delegado.perfil_ingeniero.correo_personal
+
+    @property
+    def telefono(self):
+        return self.delegado.perfil_ingeniero.celular
+
     class Meta:
-        verbose_name = "Municipalidad del Delegado"
-        verbose_name_plural = "Municipalidades de los Delegados"
+        verbose_name = "Delegado de Operación"
+        verbose_name_plural = "Delegados de Operaciones"
         unique_together = ("delegado", "municipalidad", "liquidacion_revision")
         ordering = [
             "delegado__perfil_ingeniero__apellido_paterno",
@@ -97,25 +103,64 @@ class DelegadoMunicipalidad(BaseModel):
         return f"{self.delegado.perfil_ingeniero.nombre_completo} - {self.municipalidad.nombre}"
 
 
-class DelegadoMunicipalidadPeriodo(BaseModel, VigenciaModel):
+class DelegadoOperacionPeriodo(BaseModel, VigenciaModel):
     history = HistoricalRecords()
 
     delegado_municipalidad = models.ForeignKey(
-        "DelegadoMunicipalidad",
+        "DelegadoOperacion",
         on_delete=models.CASCADE,
         related_name="periodos",
-        verbose_name="Delegado Municipalidad",
+        verbose_name="Delegado Operación",
     )
 
     class Meta:
-        verbose_name = "Periodo de Municipalidad del Delegado"
-        verbose_name_plural = "Periodos de Municipalidades de Delegados"
+        verbose_name = "Periodo de Delegación de Operación"
+        verbose_name_plural = "Periodos de Delegación de Operaciones"
         ordering = ["delegado_municipalidad", "-periodo_inicio"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["delegado_municipalidad"],
+                condition=models.Q(periodo_fin__isnull=True),
+                name="unique_delegado_operacion_vigente",
+            ),
+        ]
 
     def __str__(self):
         return (
             f"{self.delegado_municipalidad} "
             f"({self.periodo_inicio} - {self.periodo_fin or 'vigente'})"
+        )
+
+    def save(self, *args, **kwargs):
+        if self.periodo_fin is None:
+            existe_abierto = (
+                DelegadoOperacionPeriodo.objects
+                .filter(delegado_municipalidad=self.delegado_municipalidad, periodo_fin__isnull=True)
+                .exclude(pk=self.pk)
+                .exists()
+            )
+            if existe_abierto:
+                raise ValueError(
+                    f"Ya existe un periodo abierto para este {self.delegado_municipalidad}. "
+                    "Cierre el periodo actual antes de abrir uno nuevo."
+                )
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def close_current_and_open_new(cls, delegado_municipalidad, fecha_inicio):
+        """Cierra el periodo abierto (periodo_fin = fecha_inicio - 1 día) y crea uno nuevo."""
+        from datetime import timedelta
+
+        hoy = fecha_inicio - timedelta(days=1)
+        cls.objects.filter(
+            delegado_municipalidad=delegado_municipalidad,
+            periodo_fin__isnull=True,
+        ).update(periodo_fin=hoy)
+
+        return cls.objects.create(
+            delegado_municipalidad=delegado_municipalidad,
+            periodo_inicio=fecha_inicio,
+            periodo_fin=None,
         )
 
 
@@ -179,3 +224,8 @@ class LiquidacionDelegado(BaseModel):
 
     def __str__(self):
         return f"{self.delegado} @ {self.liquidacion}"
+
+
+# ── Backward-compatible aliases (to support existing service/orchestrator code during transition) ──
+DelegadoMunicipalidad = DelegadoOperacion
+DelegadoMunicipalidadPeriodo = DelegadoOperacionPeriodo

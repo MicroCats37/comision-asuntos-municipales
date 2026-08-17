@@ -21,6 +21,24 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  scraper:
+    build:
+      context: .
+      dockerfile: worker/scraper/Dockerfile
+    container_name: cam_scraper
+    environment:
+      PYTHONUNBUFFERED: "1"
+    ports:
+      # Puerto externo (host): ${SCRAPER_PORT:-7002} → interno 8001
+      - "${SCRAPER_PORT:-7002}:8001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   backend:
     build:
       context: .
@@ -33,6 +51,8 @@ services:
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.production}
     depends_on:
       db:
+        condition: service_healthy
+      scraper:
         condition: service_healthy
     ports:
       # Puerto externo (host): ${BACKEND_PORT:-7001} → interno 8000

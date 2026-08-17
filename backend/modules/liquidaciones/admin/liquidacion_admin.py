@@ -54,14 +54,6 @@ class LiquidacionDelegadoInline(admin.TabularInline):
     readonly_fields = ["created_at", "updated_at"]
 
 
-class LiquidacionInspectorInline(admin.TabularInline):
-    """Inline for LiquidacionInspector (inspector assigned to this liquidation)."""
-
-    model = LiquidacionInspector
-    extra = 1
-    readonly_fields = ["created_at", "updated_at"]
-
-
 class LiquidacionProyectistaInline(admin.TabularInline):
     """Inline for LiquidacionProyectista (proyectista on this liquidation)."""
 
@@ -177,7 +169,6 @@ class LiquidacionPorcentajeObraDetalleInline(admin.TabularInline):
 
 ALL_INLINES = [
     LiquidacionDelegadoInline,
-    LiquidacionInspectorInline,
     LiquidacionProyectistaInline,
     LiquidacionContactoInline,
     LiquidacionDocumentosInline,
@@ -267,4 +258,22 @@ class LiquidacionCodigoAdmin(admin.ModelAdmin):
     list_display = ["tipo_liquidacion", "codigo_cta"]
     search_fields = ["tipo_liquidacion__nombre", "codigo_cta"]
     list_filter = ["tipo_liquidacion"]
+    readonly_fields = ["created_at", "updated_at"]
+
+
+@admin.register(LiquidacionInspector)
+class LiquidacionInspectorAdmin(admin.ModelAdmin):
+    """Admin for LiquidacionInspector (inspector asociado a una IO).
+
+    La IO es una liquidación especial: el inspector se asocia al tipo
+    (LiquidacionInspeccionObra), no a la LiquidacionGeneral.
+    """
+
+    list_display = ["liquidacion", "inspector", "dictamen_revision", "created_at"]
+    search_fields = [
+        "liquidacion__liquidacion__expediente",
+        "inspector__perfil_ingeniero__nombres",
+        "inspector__perfil_ingeniero__apellido_paterno",
+    ]
+    list_filter = ["dictamen_revision"]
     readonly_fields = ["created_at", "updated_at"]

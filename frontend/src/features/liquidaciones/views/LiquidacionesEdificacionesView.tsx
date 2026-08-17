@@ -6,22 +6,23 @@
  */
 "use client";
 
-import { Building2, Filter, Plus, RefreshCw, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Building2, Filter, Plus, RefreshCw, X } from "lucide-react";
 import { useState } from "react";
+import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
-import { Pagination } from "@/components/genericPagination/Pagination";
 import { LiquidacionEdificacionesCard } from "../components/cards/LiquidacionEdificacionesCard";
 import { EdificacionesFormModal } from "../components/forms/EdificacionesFormModal";
 import { LiquidacionFiltroModal } from "../components/forms/LiquidacionFiltroModal";
-import { SeleccionarUltimaRevisionModal } from "../components/forms/SeleccionarUltimaRevisionModal";
+import { ConsultarIngenieroButton } from "../components/forms/ConsultarIngenieroButton";
 import { NuevaRevisionEdificacionesFormModal } from "../components/forms/NuevaRevisionEdificacionesFormModal";
-import { LiquidacionPDFModal } from "../components/forms/LiquidacionPDFModal";
-import { useLiquidacionesEdificaciones, type LiquidacionFiltros } from "../hooks";
+import { SeleccionarUltimaRevisionModal } from "../components/forms/SeleccionarUltimaRevisionModal";
+import {
+  type LiquidacionFiltros,
+  useLiquidacionesEdificaciones,
+} from "../hooks";
 import type { UltimaRevisionItem } from "../hooks/useUltimaRevisionEdificaciones";
-import type { PdfLiquidacionItem } from "../pdf/buildLiquidacionPdfElement";
-import type { LiquidacionEdificacionesListItem } from "../schemas/liquidacion-edificaciones.schema";
 
 const KIND_ICON: LucideIcon = Building2;
 
@@ -32,7 +33,6 @@ export function LiquidacionesEdificacionesView() {
   const [selectPreviaOpen, setSelectPreviaOpen] = useState(false);
   const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
   const [previa, setPrevia] = useState<UltimaRevisionItem | null>(null);
-  const [pdfItem, setPdfItem] = useState<PdfLiquidacionItem | null>(null);
 
   const {
     items,
@@ -59,8 +59,24 @@ export function LiquidacionesEdificacionesView() {
           actionNodes={
             <>
               <Button
-                variant={activeFilterCount > 0 ? "default" : "outline"}
+                className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+                onClick={() => setFormModalOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Nueva Liquidación
+              </Button>
+              <ConsultarIngenieroButton />
+              <Button
+                variant="outline"
                 className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+                onClick={() => setSelectPreviaOpen(true)}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Nueva Revisión
+              </Button>
+              <Button
+                variant={activeFilterCount > 0 ? "default" : "outline"}
+                className="gap-2 h-11 rounded-xl font-semibold shrink-0 ml-auto"
                 onClick={() => setFiltroModalOpen(true)}
               >
                 <Filter className="h-4 w-4" />
@@ -71,21 +87,6 @@ export function LiquidacionesEdificacionesView() {
                   </span>
                 )}
               </Button>
-              <Button
-                variant="outline"
-                className="gap-2 h-11 rounded-xl font-semibold shrink-0"
-                onClick={() => setSelectPreviaOpen(true)}
-              >
-                <RefreshCw className="h-4 w-4" />
-                Nueva Revisión
-              </Button>
-              <Button
-                className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-                onClick={() => setFormModalOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Nueva Liquidación
-              </Button>
             </>
           }
         />
@@ -93,7 +94,9 @@ export function LiquidacionesEdificacionesView() {
         {/* Filtros activos */}
         {activeFilterCount > 0 && (
           <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/20 rounded-xl border border-border/60">
-            <span className="text-xs font-semibold text-muted-foreground">Filtros activos:</span>
+            <span className="text-xs font-semibold text-muted-foreground">
+              Filtros activos:
+            </span>
             {filtros.propietario && (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
                 Propietario: {filtros.propietario}
@@ -167,7 +170,9 @@ export function LiquidacionesEdificacionesView() {
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-xl">
               <KIND_ICON className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No hay liquidaciones registradas</p>
+              <p className="text-muted-foreground">
+                No hay liquidaciones registradas
+              </p>
             </div>
           ) : (
             <>
@@ -175,7 +180,7 @@ export function LiquidacionesEdificacionesView() {
                 {items.map((item) => (
                   <LiquidacionEdificacionesCard
                     key={item.liquidacion_general.id}
-                    item={item as unknown as LiquidacionEdificacionesListItem}
+                    item={item}
                   />
                 ))}
               </div>
@@ -196,10 +201,6 @@ export function LiquidacionesEdificacionesView() {
       <EdificacionesFormModal
         open={formModalOpen}
         onOpenChange={setFormModalOpen}
-        onCreated={(item) => {
-          setFormModalOpen(false);
-          setPdfItem(item);
-        }}
         onSuccess={() => {
           setFormModalOpen(false);
           refetch();
@@ -240,16 +241,6 @@ export function LiquidacionesEdificacionesView() {
           refetch();
         }}
       />
-
-      {/* PDF de la liquidación creada */}
-      {pdfItem && (
-        <LiquidacionPDFModal
-          open={!!pdfItem}
-          onOpenChange={(o) => !o && setPdfItem(null)}
-          item={pdfItem}
-          tipo="edificacion"
-        />
-      )}
     </div>
   );
 }

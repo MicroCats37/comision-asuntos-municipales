@@ -30,7 +30,7 @@ from modules.liquidaciones.domain.models.delegado import (
     DelegadoMunicipalidad,
     DelegadoMunicipalidadPeriodo,
 )
-from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero
+from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero, EspecialidadRevision
 
 
 def normalize(name: str) -> str:
@@ -55,6 +55,29 @@ class Command(BaseCommand):
             default=None,
             help="Ruta alternativa al JSON de delegados.",
         )
+
+    def _resolver_especialidad_revision(self, asign):
+        """
+        Resuelve la EspecialidadRevision desde el campo `especialidad` de la
+        asignación (formato 'Ingeniería Civil - Edificaciones').
+
+        Extrae el nombre de la especialidad antes del ' - ' y lo busca en
+        EspecialidadRevision. Retorna None si no se puede resolver.
+        """
+        raw = str(asign.get("especialidad", "") or "").strip()
+        if not raw:
+            return None
+        # "Ingeniería Civil - Edificaciones" → "Ingeniería Civil"
+        nombre_esp = raw.split(" - ")[0].strip()
+        esp = EspecialidadRevision.objects.filter(nombre__iexact=nombre_esp).first()
+        if esp:
+            return esp
+        # Fallback: comparar normalizado (sin acentos)
+        norm = normalize(nombre_esp)
+        for cand in EspecialidadRevision.objects.all():
+            if normalize(cand.nombre) == norm:
+                return cand
+        return None
 
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
@@ -128,11 +151,21 @@ class Command(BaseCommand):
                 self.stdout.write(f"[DRY] Asignación {cip} -> {municipio.nombre} ({tipo})")
                 continue
 
+            esp_rev = self._resolver_especialidad_revision(asign)
+            if esp_rev is None:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"    Sin especialidad_revision para {cip} -> {asign.get('municipalidad_codigo')}, saltando"
+                    )
+                )
+                continue
+
             dm, _ = DelegadoMunicipalidad.objects.get_or_create(
                 delegado=delegado,
                 municipalidad=municipio,
                 defaults={
                     "tipo": tipo,
+                    "especialidad_revision": esp_rev,
                 },
             )
             asignaciones_creadas += 1

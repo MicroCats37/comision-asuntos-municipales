@@ -11,7 +11,7 @@
 import { z } from "zod";
 import { useApiQuery } from "@/hooks";
 import { apiResponseSchema } from "@/types/api.types";
-import type { DelegadoVigente } from "../types/liquidacion-edificaciones.types";
+import type { DelegadoVigente } from "../schemas/delegado-vigente.schema";
 
 /** Data payload schema for delegado vigente */
 const especialidadBasicaDelegadoSchema = z.object({

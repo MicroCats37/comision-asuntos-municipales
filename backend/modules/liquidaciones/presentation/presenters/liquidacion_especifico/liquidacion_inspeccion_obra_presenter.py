@@ -25,11 +25,49 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas im
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.visitas_schemas import (
     LiquidacionPorCategoriaVisitasDatosOut,
+    LiquidacionInspectorOut,
+)
+from modules.liquidaciones.presentation.presenters.inspector_presenter import (
+    InspectorPresenter,
 )
 from core.pagination import PaginatedData
 
 
 class LiquidacionInspeccionObraPresenter:
+    @staticmethod
+    def _map_inspectores(result) -> list[LiquidacionInspectorOut]:
+        """
+        Mapea los LiquidacionInspectorResult → LiquidacionInspectorOut.
+        Reutiliza InspectorPresenter._map_perfil_ingeniero (sin duplicar el perfil).
+        """
+        from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+            EspecialidadRevisionOut,
+        )
+
+        return [
+            LiquidacionInspectorOut(
+                id=uuid.UUID(insp.id),
+                inspector_id=uuid.UUID(insp.inspector_id),
+                perfil_ingeniero=InspectorPresenter._map_perfil_ingeniero(
+                    insp.perfil_ingeniero
+                ),
+                especialidad_revision=(
+                    EspecialidadRevisionOut(
+                        id=uuid.UUID(insp.especialidad_revision.id),
+                        nombre=insp.especialidad_revision.nombre,
+                    )
+                    if insp.especialidad_revision
+                    else None
+                ),
+                numero_registro=insp.numero_registro,
+                categoria=insp.categoria,
+                dictamen_revision=insp.dictamen_revision,
+                fecha_presentacion=insp.fecha_presentacion,
+                fecha_revision=insp.fecha_revision,
+            )
+            for insp in (result.inspectores or [])
+        ]
+
     @staticmethod
     def present_primera_revision(
         result: InspeccionObraPrimeraRevisionResult,
@@ -52,6 +90,7 @@ class LiquidacionInspeccionObraPresenter:
             porcentaje_uit=tipo.porcentaje_uit,
             categoria=tipo.categoria,
             tarifa_aplicada_id=uuid.UUID(tipo.tarifa_aplicada_id),
+            inspectores=LiquidacionInspeccionObraPresenter._map_inspectores(tipo),
         )
 
         return LiquidacionInspeccionObraOutput(

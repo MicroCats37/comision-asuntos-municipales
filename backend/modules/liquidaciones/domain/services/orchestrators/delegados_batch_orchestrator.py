@@ -16,7 +16,10 @@ from core.services.related_batch import (
     BatchProcessResult,
     BatchUpdateItem,
 )
-from modules.liquidaciones.domain.constants import normalizar_tipo_liquidacion
+from modules.liquidaciones.domain.constants import (
+    TipoLiquidacion,
+    normalizar_tipo_liquidacion,
+)
 from modules.liquidaciones.domain.results.delegado.delegado_result import (
     DelegadoVigenteResult,
     DelegadosVigentesResult,
@@ -88,7 +91,7 @@ class DelegadosBatchOrchestrator:
         delegados: list[DelegadoVigenteResult] = []
         for asignacion in asignaciones:
             delegado = asignacion.delegado
-            especialidad = delegado.especialidad_revision
+            especialidad = asignacion.especialidad_revision
             delegados.append(
                 DelegadoVigenteResult(
                     id=str(delegado.id),
@@ -112,10 +115,10 @@ class DelegadosBatchOrchestrator:
         """
         Validates the batch payload and delegates atomic execution to the Flujo.
 
-        Validations:
+         Validations:
         1. Liquidación existe (404)
         2. Delegado existe (404)
-        3. especialidad_revision del delegado ∈ especialidades vigentes del tipo (400)
+        3. especialidad_revision de la operación vigente ∈ especialidades vigentes del tipo (400)
         4. Asignación municipal vigente para la municipalidad de la liquidación (400)
         5. No duplicar asociación existente (400)
         6. Sin delegado_id duplicado dentro del payload (400)
@@ -125,8 +128,17 @@ class DelegadosBatchOrchestrator:
         if not liquidacion:
             raise HttpError(404, f"Liquidación '{liquidacion_id}' no encontrada")
 
-        today = date.today()
         tipo_codigo = liquidacion.tipo_liquidacion.codigo
+        # Las liquidaciones de Inspección de Obra NO admiten delegados (el
+        # inspector se asocia al tipo IO). Bloquear cualquier batch.
+        if tipo_codigo == TipoLiquidacion.INSPECCION_OBRA:
+            raise HttpError(
+                400,
+                "Las liquidaciones de Inspección de Obra no admiten delegados. "
+                "Usa el gestor de inspectores.",
+            )
+
+        today = date.today()
         especialidad_ids = set(
             self.core_service.list_especialidad_ids_vigentes_para_tipo(
                 tipo_codigo, today
@@ -140,9 +152,15 @@ class DelegadosBatchOrchestrator:
             delegado = self.core_service.get_delegado_by_id(item.delegado_id)
             if not delegado:
                 raise HttpError(404, f"Delegado '{item.delegado_id}' no encontrado")
+            operacion = self.core_service.get_operacion_vigente_para_liquidacion(
+                delegado=delegado,
+                liquidacion=liquidacion,
+                fecha=today,
+            )
             if (
-                delegado.especialidad_revision_id is None
-                or str(delegado.especialidad_revision_id) not in especialidad_ids
+                not operacion
+                or operacion.especialidad_revision_id is None
+                or str(operacion.especialidad_revision_id) not in especialidad_ids
             ):
                 raise HttpError(
                     400,

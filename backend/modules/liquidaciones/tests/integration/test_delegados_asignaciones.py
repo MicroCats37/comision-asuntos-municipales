@@ -69,30 +69,29 @@ def especialidad_revision_asignacion(db):
 
 
 @pytest.fixture
-def delegado_asignacion(db, perfil_ingeniero_asignacion, especialidad_revision_asignacion):
+def delegado_asignacion(db, perfil_ingeniero_asignacion):
     """Create a Delegado for LiquidacionDelegado test."""
     return Delegado.objects.create(
         perfil_ingeniero=perfil_ingeniero_asignacion,
-        especialidad_revision=especialidad_revision_asignacion,
     )
 
 
 @pytest.fixture
-def delegado_asignacion_2(db, perfil_ingeniero_asignacion_2, especialidad_revision_asignacion):
+def delegado_asignacion_2(db, perfil_ingeniero_asignacion_2):
     """Create a second Delegado for filter test."""
     return Delegado.objects.create(
         perfil_ingeniero=perfil_ingeniero_asignacion_2,
-        especialidad_revision=especialidad_revision_asignacion,
     )
 
 
 @pytest.fixture
-def municipalidad_delegado_asignacion(db, municipalidad, delegado_asignacion):
+def municipalidad_delegado_asignacion(db, municipalidad, delegado_asignacion, especialidad_revision_asignacion):
     """Delegado-Municipalidad assignment for the first delegado."""
     dm = DelegadoMunicipalidad.objects.create(
         delegado=delegado_asignacion,
         municipalidad=municipalidad,
         tipo="TITULAR",
+        especialidad_revision=especialidad_revision_asignacion,
     )
     DelegadoMunicipalidadPeriodo.objects.create(
         delegado_municipalidad=dm,
@@ -103,12 +102,13 @@ def municipalidad_delegado_asignacion(db, municipalidad, delegado_asignacion):
 
 
 @pytest.fixture
-def municipalidad_delegado_asignacion_2(db, municipalidad, delegado_asignacion_2):
+def municipalidad_delegado_asignacion_2(db, municipalidad, delegado_asignacion_2, especialidad_revision_asignacion):
     """Delegado-Municipalidad assignment for the second delegado."""
     dm = DelegadoMunicipalidad.objects.create(
         delegado=delegado_asignacion_2,
         municipalidad=municipalidad,
         tipo="ALTERNO",
+        especialidad_revision=especialidad_revision_asignacion,
     )
     DelegadoMunicipalidadPeriodo.objects.create(
         delegado_municipalidad=dm,

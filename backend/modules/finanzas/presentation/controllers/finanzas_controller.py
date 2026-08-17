@@ -14,8 +14,10 @@ from core.responses import ApiResponse, success_response
 from core.pagination import PaginatedData
 from modules.finanzas.presentation.schemas.finanzas_schemas import (
     VariablesFinancierasOut,
-    ReciboHonorarioCrearIn,
+    ReciboHonorarioDelegadoCrearIn,
     ReciboHonorarioDelegadoOut,
+    ReciboHonorarioInspectorCrearIn,
+    ReciboHonorarioInspectorOut,
 )
 from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
 from modules.finanzas.presentation.presenters.finanzas_presenter import FinanzasPresenter
@@ -28,8 +30,10 @@ class FinanzasController:
 
     Endpoints:
     - GET /variables/vigentes: Obtiene IGV y UIT vigentes para mostrar en formulario
-    - POST /recibos-honorarios: Crea ReciboHonorarioDelegado para una LiquidacionDelegado
-    - GET /recibos-honorarios: Lista recibos con paginación y filtros por delegado/liquidacion
+    - POST /recibos-delegados: Crea ReciboHonorarioDelegado para una LiquidacionDelegado
+    - GET /recibos-delegados: Lista recibos con paginación y filtros por delegado/liquidacion
+    - POST /recibos-inspectores: Crea ReciboHonorarioInspector para una LiquidacionInspector
+    - GET /recibos-inspectores: Lista recibos de inspectores con paginación y filtros
     """
 
     @inject
@@ -49,11 +53,11 @@ class FinanzasController:
         return success_response(presented)
 
     @route.post(
-        "/recibos-honorarios",
+        "/recibos-delegados",
         response={200: ApiResponse[ReciboHonorarioDelegadoOut]},
         auth=None,
     )
-    def crear_recibo_honorario(self, request, payload: ReciboHonorarioCrearIn):
+    def crear_recibo_honorario(self, request, payload: ReciboHonorarioDelegadoCrearIn):
         """
         Crea o actualiza un ReciboHonorarioDelegado para una LiquidacionDelegado.
 
@@ -67,7 +71,7 @@ class FinanzasController:
         return success_response(presented)
 
     @route.get(
-        "/recibos-honorarios",
+        "/recibos-delegados",
         response={200: ApiResponse[PaginatedData[ReciboHonorarioDelegadoOut]]},
         auth=None,
     )
@@ -92,6 +96,57 @@ class FinanzasController:
             liquidacion_id=liquidacion_id,
         )
         presented = FinanzasPresenter.present_recibos_list(
+            domain_results, total, page, page_size
+        )
+        return success_response(presented)
+
+    @route.post(
+        "/recibos-inspectores",
+        response={200: ApiResponse[ReciboHonorarioInspectorOut]},
+        auth=None,
+    )
+    def crear_recibo_inspector(
+        self, request, payload: ReciboHonorarioInspectorCrearIn
+    ):
+        """
+        Crea un ReciboHonorarioInspector para una LiquidacionInspector.
+
+        Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
+        retorna success_response formateado por presenter.
+        """
+        domain_result = self.orchestrator.crear_recibo_inspector_proceso(
+            liquidacion_inspector_id=payload.liquidacion_inspector_id,
+            inspecciones_mes=payload.inspecciones_mes,
+        )
+        presented = FinanzasPresenter.present_recibo_inspector(domain_result)
+        return success_response(presented)
+
+    @route.get(
+        "/recibos-inspectores",
+        response={200: ApiResponse[PaginatedData[ReciboHonorarioInspectorOut]]},
+        auth=None,
+    )
+    def listar_recibos_inspectores(
+        self,
+        request,
+        page: int = Query(1, ge=1),
+        page_size: int = Query(10, ge=1, le=100),
+        inspector_id: uuid.UUID | None = None,
+        liquidacion_id: uuid.UUID | None = None,
+    ):
+        """
+        Lista recibos de honorarios de inspectores con paginación.
+
+        Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
+        retorna success_response formateado por presenter.
+        """
+        domain_results, total = self.orchestrator.listar_recibos_inspectores_proceso(
+            page=page,
+            page_size=page_size,
+            inspector_id=inspector_id,
+            liquidacion_id=liquidacion_id,
+        )
+        presented = FinanzasPresenter.present_recibos_inspectores_list(
             domain_results, total, page, page_size
         )
         return success_response(presented)

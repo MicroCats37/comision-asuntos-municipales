@@ -60,9 +60,6 @@ class LiquidacionImpactoVialCotizarDetalleOut(BaseSchema):
     especialidad_id: uuid.UUID
     porcentaje_aplicado: Decimal
     subtotal: Decimal
-    igv: Decimal
-    uit: Decimal
-    total: Decimal
 
 
 class LiquidacionImpactoVialCotizarOutput(BaseSchema):
@@ -76,3 +73,4 @@ class LiquidacionImpactoVialCotizarOutput(BaseSchema):
     detalles: List[LiquidacionImpactoVialCotizarDetalleOut]
     total_subtotal: Decimal
     total: Decimal
+

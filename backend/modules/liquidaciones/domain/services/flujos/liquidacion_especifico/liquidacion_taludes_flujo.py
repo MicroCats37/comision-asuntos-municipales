@@ -190,11 +190,9 @@ class LiquidacionTaludesFlujo:
                         especialidad_id=str(d.especialidad_id),
                         porcentaje_aplicado=d.porcentaje_aplicado,
                         subtotal=d.subtotal,
-                        igv=d.igv,
-                        uit=d.uit,
-                        total=d.total,
                     )
                     for d in liquidacion_po.detalles.all()
                 ],
             ),
         )
+

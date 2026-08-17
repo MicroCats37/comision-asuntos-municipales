@@ -10,7 +10,7 @@ import { useDistritos } from "@/features/entidades/hooks/useDistritos";
 import { useInstitucionUpsert } from "@/features/entidades/hooks/useEntidad";
 import type { EntidadResult } from "@/features/entidades/types/entidad";
 import type { InstitucionFormModalProps } from "@/features/liquidaciones/types/liquidacion-edificaciones-form.types";
-import { useSunatLookup } from "../hooks/useConsultaExterna";
+import { useDocumentoLookup } from "../hooks/useConsultaExterna";
 
 const schema = z.object({
   numero_documento: z
@@ -31,12 +31,12 @@ export function InstitucionFormModal({
   onSaved,
 }: InstitucionFormModalProps) {
   const mutation = useInstitucionUpsert();
-  const sunatLookup = useSunatLookup();
+  const documentoLookup = useDocumentoLookup();
   const { data: distritosData, isLoading: isLoadingDistritos } = useDistritos();
 
   const distritoOptions = distritosData
     ? distritosData.map((d) => ({
-        label: `${d.nombre} (${d.provincia.departamento.nombre} - ${d.provincia.nombre})`,
+        label: `${d.nombre} (${d.departamento.nombre} - ${d.provincia.nombre})`,
         value: d.id,
       }))
     : [];
@@ -105,13 +105,13 @@ export function InstitucionFormModal({
         } = methods;
         const rucValue = watch("numero_documento") || "";
 
-        const handleSunatLookup = async () => {
+        const handleDocumentoLookup = async () => {
           if (rucValue.length !== 11) {
             return;
           }
 
           try {
-            const result = await sunatLookup.mutateAsync(rucValue);
+            const result = await documentoLookup.mutateAsync(rucValue);
             if (result) {
               setValue("razon_social", result.razon_social, {
                 shouldValidate: true,
@@ -154,8 +154,8 @@ export function InstitucionFormModal({
                     variant="outline"
                     size="icon"
                     className="h-10 w-10 rounded-lg"
-                    onClick={handleSunatLookup}
-                    disabled={sunatLookup.isPending || rucValue.length !== 11}
+                    onClick={handleDocumentoLookup}
+                    disabled={documentoLookup.isPending || rucValue.length !== 11}
                     title="Buscar en SUNAT"
                     aria-label="Buscar en SUNAT"
                   >

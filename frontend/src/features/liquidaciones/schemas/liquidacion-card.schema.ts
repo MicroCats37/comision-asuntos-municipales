@@ -17,7 +17,7 @@ export const ProyectoCardSchema = z.object({
   public_id: z.string(),
   nombre: z.string(),
   direccion: z.string().nullable(),
-  valor_proyecto: z.number(),
+  valor_proyecto: z.union([z.number(), z.string()]),
   entidad: EntidadCardSchema.nullable(),
 });
 export type ProyectoCardData = z.infer<typeof ProyectoCardSchema>;
@@ -46,16 +46,16 @@ export type MunicipalidadCardData = z.infer<typeof MunicipalidadCardSchema>;
 
 /** Valores para dominios M2 (solo subtotal + total a pagar en el detalle). */
 export const ValoresM2CardSchema = z.object({
-  subtotal: z.number(),
-  total_a_pagar: z.number(),
+  subtotal: z.union([z.number(), z.string()]),
+  total_a_pagar: z.union([z.number(), z.string()]),
 });
 export type ValoresM2CardData = z.infer<typeof ValoresM2CardSchema>;
 
 export const ValoresCardSchema = z.object({
-  subtotal: z.number(),
-  igv: z.number(),
-  total: z.number(),
-  total_a_pagar: z.number(),
+  subtotal: z.union([z.number(), z.string()]),
+  igv: z.union([z.number(), z.string()]),
+  total: z.union([z.number(), z.string()]),
+  total_a_pagar: z.union([z.number(), z.string()]),
 });
 export type ValoresCardData = z.infer<typeof ValoresCardSchema>;
 

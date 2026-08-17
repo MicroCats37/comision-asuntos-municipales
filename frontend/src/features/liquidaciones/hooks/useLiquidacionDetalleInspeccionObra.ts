@@ -1,9 +1,13 @@
 /**
  * Hook para detalle de liquidación de Inspección de Obra.
  * Endpoint: GET /liquidaciones/inspeccion-obra/{id}
+ * Devuelve el detalle 3-wrappers tipado por liquidacionInspeccionObraDetailResponseSchema.
  */
 import { useApiQuery } from "@/hooks";
-import { liquidacionInspeccionObraDetailResponseSchema } from "../schemas/liquidacion-detail.schemas";
+import {
+  liquidacionInspeccionObraDetailResponseSchema,
+  type LiquidacionDetalleItem,
+} from "../schemas/liquidacion-detail.schemas";
 
 interface UseLiquidacionDetalleInspeccionObraProps {
   id: string;
@@ -19,7 +23,7 @@ export function useLiquidacionDetalleInspeccionObra({
     url: id ? `/liquidaciones/inspeccion-obra/${id}` : null,
     schema: liquidacionInspeccionObraDetailResponseSchema,
     queryOptions: {
-      select: (data) => data.data ?? null,
+      select: (data): LiquidacionDetalleItem | null => data.data ?? null,
       enabled: !!id,
     },
   });

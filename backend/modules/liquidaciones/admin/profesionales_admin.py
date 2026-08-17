@@ -4,11 +4,11 @@ from django.contrib import admin
 
 from modules.liquidaciones.domain.models import (
     Delegado,
-    DelegadoMunicipalidad,
-    DelegadoMunicipalidadPeriodo,
+    DelegadoOperacion,
+    DelegadoOperacionPeriodo,
     Inspector,
-    InspectorTipoLiquidacion,
-    InspectorAsignacionPeriodo,
+    InspectorOperacion,
+    InspectorOperacionPeriodo,
     Proyectista,
 )
 
@@ -16,18 +16,18 @@ from modules.liquidaciones.domain.models import (
 # ── Inlines for Delegado ────────────────────────────────────────
 
 
-class DelegadoMunicipalidadInline(admin.TabularInline):
-    """Inline for DelegadoMunicipalidad (assigned districts to a delegate)."""
+class DelegadoOperacionInline(admin.TabularInline):
+    """Inline for DelegadoOperacion (assigned districts to a delegate)."""
 
-    model = DelegadoMunicipalidad
+    model = DelegadoOperacion
     extra = 1
     readonly_fields = ["created_at", "updated_at"]
 
 
-class DelegadoMunicipalidadPeriodoInline(admin.TabularInline):
-    """Inline for DelegadoMunicipalidadPeriodo (validity periods)."""
+class DelegadoOperacionPeriodoInline(admin.TabularInline):
+    """Inline for DelegadoOperacionPeriodo (validity periods)."""
 
-    model = DelegadoMunicipalidadPeriodo
+    model = DelegadoOperacionPeriodo
     extra = 1
     readonly_fields = ["created_at", "updated_at"]
 
@@ -35,18 +35,18 @@ class DelegadoMunicipalidadPeriodoInline(admin.TabularInline):
 # ── Inlines for Inspector ───────────────────────────────────────
 
 
-class InspectorTipoLiquidacionInline(admin.TabularInline):
-    """Inline for InspectorTipoLiquidacion (inspector type assignments)."""
+class InspectorOperacionInline(admin.TabularInline):
+    """Inline for InspectorOperacion (inspector type assignments)."""
 
-    model = InspectorTipoLiquidacion
+    model = InspectorOperacion
     extra = 1
     readonly_fields = ["created_at", "updated_at"]
 
 
-class InspectorAsignacionPeriodoInline(admin.TabularInline):
-    """Inline for InspectorAsignacionPeriodo (validity periods)."""
+class InspectorOperacionPeriodoInline(admin.TabularInline):
+    """Inline for InspectorOperacionPeriodo (validity periods)."""
 
-    model = InspectorAsignacionPeriodo
+    model = InspectorOperacionPeriodo
     extra = 1
     readonly_fields = ["created_at", "updated_at"]
 
@@ -58,20 +58,19 @@ class InspectorAsignacionPeriodoInline(admin.TabularInline):
 class DelegadoAdmin(admin.ModelAdmin):
     """Admin for Delegado (delegate engineer) with nested inlines."""
 
-    list_display = ["perfil_ingeniero", "especialidad_revision"]
+    list_display = ["perfil_ingeniero"]
     search_fields = [
         "perfil_ingeniero__nombres",
         "perfil_ingeniero__apellido_paterno",
         "perfil_ingeniero__cip",
     ]
-    list_filter = ["especialidad_revision"]
     readonly_fields = ["created_at", "updated_at"]
-    inlines = [DelegadoMunicipalidadInline]
+    inlines = [DelegadoOperacionInline]
 
 
-@admin.register(DelegadoMunicipalidad)
-class DelegadoMunicipalidadAdmin(admin.ModelAdmin):
-    """Standalone admin for DelegadoMunicipalidad (not typically needed separately)."""
+@admin.register(DelegadoOperacion)
+class DelegadoOperacionAdmin(admin.ModelAdmin):
+    """Standalone admin for DelegadoOperacion (not typically needed separately)."""
 
     list_display = ["delegado", "municipalidad", "liquidacion_revision", "tipo"]
     search_fields = [
@@ -81,27 +80,26 @@ class DelegadoMunicipalidadAdmin(admin.ModelAdmin):
     ]
     list_filter = ["tipo", "liquidacion_revision"]
     readonly_fields = ["created_at", "updated_at"]
-    inlines = [DelegadoMunicipalidadPeriodoInline]
+    inlines = [DelegadoOperacionPeriodoInline]
 
 
 @admin.register(Inspector)
 class InspectorAdmin(admin.ModelAdmin):
     """Admin for Inspector with nested inlines."""
 
-    list_display = ["perfil_ingeniero", "especialidad_revision"]
+    list_display = ["perfil_ingeniero"]
     search_fields = [
         "perfil_ingeniero__nombres",
         "perfil_ingeniero__apellido_paterno",
         "perfil_ingeniero__cip",
     ]
-    list_filter = ["especialidad_revision"]
     readonly_fields = ["created_at", "updated_at"]
-    inlines = [InspectorTipoLiquidacionInline]
+    inlines = [InspectorOperacionInline]
 
 
-@admin.register(InspectorTipoLiquidacion)
-class InspectorTipoLiquidacionAdmin(admin.ModelAdmin):
-    """Standalone admin for InspectorTipoLiquidacion."""
+@admin.register(InspectorOperacion)
+class InspectorOperacionAdmin(admin.ModelAdmin):
+    """Standalone admin for InspectorOperacion."""
 
     list_display = ["inspector", "tipo_liquidacion", "numero_registro", "categoria"]
     search_fields = [
@@ -111,7 +109,7 @@ class InspectorTipoLiquidacionAdmin(admin.ModelAdmin):
     ]
     list_filter = ["tipo_liquidacion", "categoria"]
     readonly_fields = ["created_at", "updated_at"]
-    inlines = [InspectorAsignacionPeriodoInline]
+    inlines = [InspectorOperacionPeriodoInline]
 
 
 @admin.register(Proyectista)

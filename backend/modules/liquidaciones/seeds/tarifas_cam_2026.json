@@ -69,30 +69,29 @@
       "tipo_liquidacion": "INSPECCION_OBRA",
       "periodo_inicio": "2026-01-01",
       "periodo_fin": null,
-      "categoria_visitas": "A",
+      "categoria_visitas": "1",
       "porcentaje_uit": "0.032"
     },
     {
       "tipo_liquidacion": "INSPECCION_OBRA",
       "periodo_inicio": "2026-01-01",
       "periodo_fin": null,
-      "categoria_visitas": "B",
+      "categoria_visitas": "2",
       "porcentaje_uit": "0.037"
     },
     {
       "tipo_liquidacion": "INSPECCION_OBRA",
       "periodo_inicio": "2026-01-01",
       "periodo_fin": null,
-      "categoria_visitas": "C",
+      "categoria_visitas": "3",
       "porcentaje_uit": "0.042"
     },
     {
       "tipo_liquidacion": "INSPECCION_OBRA",
       "periodo_inicio": "2026-01-01",
       "periodo_fin": null,
-      "categoria_visitas": "D",
+      "categoria_visitas": "4",
       "porcentaje_uit": "0.088"
     }
   ]
 }
-

@@ -248,33 +248,7 @@ export function LiquidacionImpactoVialCard({
                           {formatCurrency(detalle.subtotal)}
                         </span>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
-                          Total (S/)
-                        </span>
-                        <span className="text-sm font-medium text-foreground">
-                          {formatCurrency(detalle.total)}
-                        </span>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div className="flex flex-col">
-                        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
-                          IGV (S/)
-                        </span>
-                        <span className="text-sm font-medium text-foreground">
-                          {formatCurrency(detalle.igv)}
-                        </span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
-                          UIT (S/)
-                        </span>
-                        <span className="text-sm font-medium text-foreground">
-                          {formatCurrency(detalle.uit)}
-                        </span>
-                      </div>
-                    </div>
                   </div>
                 ))}
               </div>
@@ -320,3 +294,5 @@ export function LiquidacionImpactoVialCard({
     </>
   );
 }
+
+

@@ -1,6 +1,13 @@
 """Domain models — re-exported from domain/models/."""
 
-from .delegado import Delegado, DelegadoMunicipalidad, DelegadoMunicipalidadPeriodo
+from .delegado import (
+    Delegado,
+    DelegadoOperacion,
+    DelegadoOperacionPeriodo,
+    # Backward-compatible aliases
+    DelegadoMunicipalidad,
+    DelegadoMunicipalidadPeriodo,
+)
 from .tipo_liquidacion import TipoLiquidacion
 from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadIngeniero, EspecialidadRevision
 from .liquidacion.liquidacion_general.liquidacion import (
@@ -39,13 +46,19 @@ from .proyecto import (
 from .delegado import LiquidacionDelegado
 from .inspector import (
     Inspector,
+    InspectorOperacion,
+    InspectorOperacionPeriodo,
+    LiquidacionInspector,
+    # Backward-compatible aliases
     InspectorTipoLiquidacion,
     InspectorAsignacionPeriodo,
-    LiquidacionInspector,
 )
 
 __all__ = [
     "Delegado",
+    "DelegadoOperacion",
+    "DelegadoOperacionPeriodo",
+    # Backward-compatible aliases (for existing service/orchestrator code)
     "DelegadoMunicipalidad",
     "DelegadoMunicipalidadPeriodo",
     "TipoLiquidacion",
@@ -80,7 +93,10 @@ __all__ = [
     "ProyectoPersonaNatural",
     "LiquidacionDelegado",
     "Inspector",
+    "InspectorOperacion",
+    "InspectorOperacionPeriodo",
+    "LiquidacionInspector",
+    # Backward-compatible aliases (for existing service/orchestrator code)
     "InspectorTipoLiquidacion",
     "InspectorAsignacionPeriodo",
-    "LiquidacionInspector",
 ]

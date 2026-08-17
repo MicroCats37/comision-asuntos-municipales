@@ -8,9 +8,6 @@ export const CotizacionDetalleSchema = z.object({
   especialidad_id: z.string(),
   porcentaje_aplicado: num(),
   subtotal: num(),
-  igv: num(),
-  uit: num(),
-  total: num(),
 });
 export type CotizacionDetalle = z.infer<typeof CotizacionDetalleSchema>;
 

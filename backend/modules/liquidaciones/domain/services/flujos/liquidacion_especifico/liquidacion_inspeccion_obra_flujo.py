@@ -12,7 +12,6 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
     LiquidacionPorCategoriaVisitasCoreService,
 )
 from modules.liquidaciones.domain.schemas.liquidacion_especifico.inspeccion_obra_primera_revision_data import (
-    InspeccionObraPrimeraRevisionData,
     InspeccionObraNuevaRevisionData,
 )
 from modules.liquidaciones.domain.results.liquidacion_especifico.inspeccion_obra_primera_revision_result import (
@@ -45,101 +44,6 @@ class LiquidacionInspeccionObraFlujo:
     ):
         self.general_core = general_core
         self.visitas_core = visitas_core
-
-    @transaction.atomic()
-    def ejecutar_primera_revision(
-        self,
-        usuario_id: int,
-        data: InspeccionObraPrimeraRevisionData,
-    ) -> InspeccionObraPrimeraRevisionResult:
-        # 1. Traer tarifa, UIT y calcular (validation moved to Orchestrator)
-        tarifa = self.visitas_core.get_tarifa_por_id(data.liquidacion_especifica.tarifa.tarifa_visitas_id)
-
-        uit_vigente = self.general_core.get_uit_vigente()
-
-        subtotal = self.visitas_core.calcular_subtotal_visitas(
-            cantidad_visitas=data.liquidacion_especifica.datos.cantidad_visitas,
-            tarifa=tarifa,
-            uit_vigente=uit_vigente,
-        )
-
-        igv_vigente = self.general_core.get_igv_vigente()
-
-        # 2. Crear Entidad y Proyecto
-        gen_data = data.liquidacion_general
-        entidad = self.general_core.create_entidad(
-            tipo_documento=gen_data.proyecto.entidad.tipo_documento,
-            numero_documento=gen_data.proyecto.entidad.numero_documento,
-        )
-
-        proyecto_data = {
-            "denominacion": gen_data.proyecto.denominacion,
-            "nombre_propietario": gen_data.proyecto.nombre_propietario,
-            "direccion": gen_data.proyecto.direccion,
-            "distrito_id": gen_data.proyecto.distrito_id,
-            "urbanizacion": None,
-            "entidad_razon_social": gen_data.proyecto.entidad_razon_social,
-            "entidad_tipo_documento": gen_data.proyecto.entidad.tipo_documento,
-            "entidad_numero_documento": gen_data.proyecto.entidad.numero_documento,
-        }
-        proyecto = self.general_core.create_proyecto(proyecto_data, entidad)
-
-        # 3. Crear General
-        from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
-        liquidacion_general = self.general_core.create_liquidacion_general(
-            municipalidad_id=gen_data.municipalidad_id,
-            expediente=gen_data.expediente,
-            observacion=gen_data.observacion,
-            proyecto=proyecto,
-            tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.INSPECCION_OBRA),
-            numero_revision=1,
-        )
-        
-        # Aplicar totales con IGV manualmente, y asignar FKs de impuestos
-        liquidacion_general.sub_total = subtotal
-        liquidacion_general.total = subtotal * (1 + igv_vigente.valor)
-        liquidacion_general.igv_id = igv_vigente
-        liquidacion_general.uit_id = uit_vigente
-        liquidacion_general.usuario_creador_id = usuario_id
-        liquidacion_general.save()
-
-        # 3. Crear Tipo: LiquidacionPorCategoriaVisitas
-        liquidacion_visitas = self.visitas_core.crear_liquidacion_tipo_visitas(
-            liquidacion_general=liquidacion_general,
-            data=data.liquidacion_especifica,
-        )
-
-        # 4. Crear Específico: LiquidacionInspeccionObra
-        liquidacion_io = LiquidacionInspeccionObra.objects.create(
-            liquidacion=liquidacion_general,
-        )
-
-        # 5. Mapear a Result puro (Cero dicts)
-        # Delegates common ORM→Result mapping to core
-        general_result = self.general_core.build_general_result(
-            liquidacion_general=liquidacion_general,
-            usuario_id=usuario_id,
-            fecha_registro=str(liquidacion_general.fecha_registro) if liquidacion_general.fecha_registro else "",
-        )
-
-        tipo_result = LiquidacionVisitasResult(
-            id=str(liquidacion_visitas.id),
-            cantidad_visitas=liquidacion_visitas.cantidad_visitas,
-            porcentaje_uit=float(liquidacion_visitas.porcentaje_uit),
-            categoria=liquidacion_visitas.categoria,
-            tarifa_aplicada_id=str(liquidacion_visitas.tarifa_aplicada_id),
-        )
-
-        especifico_result = LiquidacionEspecificaInspeccionObraResult(
-            id=str(liquidacion_io.id),
-            numero=liquidacion_io.numero,
-        )
-
-        return InspeccionObraPrimeraRevisionResult(
-            liquidacion_general=general_result,
-            liquidacion_tipo=tipo_result,
-            liquidacion_especifica=especifico_result,
-        )
 
     @transaction.atomic()
     def ejecutar_primera_revision_desde_previa(
@@ -176,7 +80,7 @@ class LiquidacionInspeccionObraFlujo:
 
         # 3. Crear LiquidacionGeneral con tipo_liquidacion=INSPECCION_OBRA y numero_revision=1
         from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
-        from modules.liquidaciones.domain.models.liquidacion.liquidacion_general import LiquidacionGeneral
+        from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
         from modules.liquidaciones.domain.models.inspector import LiquidacionInspector
 
         liquidacion_general = self.general_core.create_liquidacion_general(
@@ -208,10 +112,34 @@ class LiquidacionInspeccionObraFlujo:
             liquidacion=liquidacion_general,
         )
 
-        # 6. Crear LiquidacionInspector (asocia el inspector a la liquidación)
+        # 6. Crear LiquidacionInspector (asocia el inspector a la IO)
+        # La especialidad_revision se resuelve desde la operación del inspector
+        # para el TIPO DE LA LIQUIDACIÓN PREVIA (EDIFICACION/HABILITACION_URBANA).
+        # Los inspectores NO se registran con tipo INSPECCION_OBRA — se registran
+        # con el tipo del trámite que pueden revisar (el de la previa).
+        from modules.liquidaciones.domain.models.inspector import InspectorOperacion
+        from ninja.errors import HttpError
+
+        tipo_previa = liquidacion_previa.tipo_liquidacion.codigo
+        especialidad_revision = (
+            InspectorOperacion.objects
+            .filter(
+                inspector=inspector,
+                tipo_liquidacion__codigo=tipo_previa,
+            )
+            .values_list("especialidad_revision_id", flat=True)
+            .first()
+        )
+        if not especialidad_revision:
+            raise HttpError(
+                400,
+                f"El inspector no tiene una operación vigente con especialidad "
+                f"para el tipo '{tipo_previa}' de la liquidación previa.",
+            )
         LiquidacionInspector.objects.create(
-            liquidacion=liquidacion_general,
+            liquidacion=liquidacion_visitas,
             inspector=inspector,
+            especialidad_revision_id=especialidad_revision,
         )
 
         # 7. Mapear a Result puro (reutiliza la lógica de mapeo de ejecutar_primera_revision)
@@ -250,6 +178,7 @@ class LiquidacionInspeccionObraFlujo:
             porcentaje_uit=float(liquidacion_visitas.porcentaje_uit),
             categoria=liquidacion_visitas.categoria,
             tarifa_aplicada_id=str(liquidacion_visitas.tarifa_aplicada_id),
+            inspectores=self._build_inspectores_result(liquidacion_visitas),
         )
 
         especifico_result = LiquidacionEspecificaInspeccionObraResult(
@@ -262,3 +191,64 @@ class LiquidacionInspeccionObraFlujo:
             liquidacion_tipo=tipo_result,
             liquidacion_especifica=especifico_result,
         )
+
+    @staticmethod
+    def _build_inspectores_result(liquidacion_visitas) -> list:
+        """
+        Construye los LiquidacionInspectorResult de la IO (asociados al tipo
+        LiquidacionPorCategoriaVisitas, no a la general). Retorna [] si no hay.
+
+        Reutiliza PerfilIngenieroResult (dominio de inspector) en lugar de
+        duplicar los campos del perfil de ingeniero.
+        """
+        from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_visitas_result import (
+            LiquidacionInspectorResult,
+            EspecialidadRevisionResult,
+        )
+        from modules.liquidaciones.domain.results.inspector.inspector_result import (
+            PerfilIngenieroResult,
+        )
+        from modules.liquidaciones.domain.models.inspector import LiquidacionInspector
+
+        inspectores = (
+            LiquidacionInspector.objects
+            .filter(liquidacion=liquidacion_visitas)
+            .select_related(
+                "inspector__perfil_ingeniero",
+                "especialidad_revision",
+            )
+            .order_by("created_at")
+        )
+
+        resultados = []
+        for li in inspectores:
+            perfil = li.inspector.perfil_ingeniero
+            resultados.append(
+                LiquidacionInspectorResult(
+                    id=str(li.id),
+                    inspector_id=str(li.inspector_id),
+                    perfil_ingeniero=PerfilIngenieroResult(
+                        id=str(perfil.id),
+                        cip=perfil.cip,
+                        dni=perfil.dni,
+                        nombres=perfil.nombres,
+                        apellido_paterno=perfil.apellido_paterno,
+                        apellido_materno=perfil.apellido_materno,
+                        nombre_completo=perfil.nombre_completo,
+                        correo_personal=perfil.correo_personal,
+                        correo_institucional=perfil.correo_institucional,
+                    ),
+                    especialidad_revision=(
+                        EspecialidadRevisionResult(
+                            id=str(li.especialidad_revision.id),
+                            nombre=li.especialidad_revision.nombre,
+                        )
+                        if li.especialidad_revision
+                        else None
+                    ),
+                    dictamen_revision=li.dictamen_revision,
+                    fecha_presentacion=str(li.fecha_presentacion) if li.fecha_presentacion else None,
+                    fecha_revision=str(li.fecha_revision) if li.fecha_revision else None,
+                )
+            )
+        return resultados

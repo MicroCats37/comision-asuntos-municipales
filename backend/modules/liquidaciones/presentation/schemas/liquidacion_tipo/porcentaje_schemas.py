@@ -39,15 +39,12 @@ class LiquidacionPorcentajeObraIn(BaseSchema):
 
 
 class LiquidacionPorcentajeObraDetalleOut(BaseSchema):
-    """Detalle de cálculo (uno por especialidad)."""
+    """Detalle de una liquidación porcentual aplicada a una especialidad."""
     id: uuid.UUID
     tarifa_aplicada_id: uuid.UUID
     especialidad_id: uuid.UUID
     porcentaje_aplicado: Decimal
     subtotal: Decimal
-    igv: Decimal
-    uit: Decimal
-    total: Decimal
 
 
 class LiquidacionPorcentajeObraDatosOut(BaseSchema):

@@ -7,7 +7,7 @@ from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
 from core_application.models import VigenciaModel
-from modules.liquidaciones.domain.constants import DictamenRevision
+from modules.liquidaciones.domain.constants import DictamenRevision, CategoriaIO
 
 
 class Inspector(BaseModel):
@@ -19,19 +19,9 @@ class Inspector(BaseModel):
         verbose_name="Perfil de Ingeniero",
     )
     
-    especialidad_revision = models.ForeignKey(
-        "usuarios.EspecialidadRevision",
-        on_delete=models.PROTECT,
-        related_name="inspectores",
-        verbose_name="Especialidad",
-        null=True,
-        blank=True,
-    )
-    
     class Meta:
         verbose_name = "Inspector"
         verbose_name_plural = "Inspectores"
-        unique_together = ("perfil_ingeniero", "especialidad_revision")
         ordering = [
             "perfil_ingeniero__apellido_paterno",
             "perfil_ingeniero__apellido_materno",
@@ -42,7 +32,7 @@ class Inspector(BaseModel):
         return f"{self.perfil_ingeniero.nombre_completo} (CIP: {self.perfil_ingeniero.cip})"
 
 
-class InspectorTipoLiquidacion(BaseModel):
+class InspectorOperacion(BaseModel):
     """Catalogo de registros de inspectores por tipo de liquidacion."""
 
     history = HistoricalRecords()
@@ -57,36 +47,48 @@ class InspectorTipoLiquidacion(BaseModel):
     tipo_liquidacion = models.ForeignKey(
         "TipoLiquidacion",
         on_delete=models.PROTECT,
-        related_name="inspectores",
+        related_name="inspectores_operacion",
         verbose_name="Tipo de Liquidación",
     )
 
     categoria = models.CharField(
         max_length=1,
-        verbose_name="Numero de Registro",
+        choices=CategoriaIO.choices,
+        verbose_name="Categoría",
     )
 
     numero_registro = models.CharField(
         max_length=50,
-        verbose_name="Numero de Registro",
+        verbose_name="Número de Registro",
     )
 
-    telefono = models.CharField(
-        max_length=20,
-        verbose_name="Telefono",
-        blank=True,
-        null=True,
+    especialidad_revision = models.ForeignKey(
+        "usuarios.EspecialidadRevision",
+        on_delete=models.PROTECT,
+        related_name="inspectores_operacion",
+        verbose_name="Especialidad",
     )
-    email = models.EmailField(
-        max_length=100,
-        verbose_name="Correo Electronico",
-        blank=True,
-        null=True,
-    )
+
+    @property
+    def cip_sin_ceros(self):
+        return self.inspector.perfil_ingeniero.cip_sin_ceros
+
+    @property
+    def email(self):
+        return self.inspector.perfil_ingeniero.correo_personal
+
+    @property
+    def telefono(self):
+        return self.inspector.perfil_ingeniero.celular
+
+    def save(self, *args, **kwargs):
+        # Keep numero_registro in sync with cip_sin_ceros and categoria
+        self.numero_registro = f"CAM{self.cip_sin_ceros}{self.categoria}"
+        super().save(*args, **kwargs)
 
     class Meta:
-        verbose_name = "Inspector"
-        verbose_name_plural = "Inspectores"
+        verbose_name = "Inspector de Operación"
+        verbose_name_plural = "Inspectores de Operaciones"
         ordering = [
             "inspector__perfil_ingeniero__apellido_paterno",
             "inspector__perfil_ingeniero__apellido_materno",
@@ -94,7 +96,7 @@ class InspectorTipoLiquidacion(BaseModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["inspector", "tipo_liquidacion", "numero_registro"],
-                name="unique_inspector_registro",
+                name="unique_inspector_operacion_registro",
             ),
         ]
 
@@ -102,34 +104,89 @@ class InspectorTipoLiquidacion(BaseModel):
         return f"{self.inspector.perfil_ingeniero.nombre_completo} ({self.tipo_liquidacion})"
 
 
-class InspectorAsignacionPeriodo(BaseModel, VigenciaModel):
-    """Vigencia periods for an Inspector assignment."""
+class InspectorOperacionPeriodo(BaseModel, VigenciaModel):
+    """Vigencia periods for an Inspector operation assignment."""
 
     history = HistoricalRecords()
 
     inspector_tipo_liquidacion = models.ForeignKey(
-        "InspectorTipoLiquidacion",
+        "InspectorOperacion",
         on_delete=models.PROTECT,
         related_name="periodos",
         verbose_name="Inspector - Tipo de Liquidación",
     )
 
+    class Meta:
+        verbose_name = "Periodo de Inspector de Operación"
+        verbose_name_plural = "Periodos de Inspector de Operaciones"
+        ordering = ["inspector_tipo_liquidacion", "-periodo_inicio"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["inspector_tipo_liquidacion"],
+                condition=models.Q(periodo_fin__isnull=True),
+                name="unique_inspector_operacion_vigente",
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.periodo_fin is None:
+            existe_abierto = (
+                InspectorOperacionPeriodo.objects
+                .filter(inspector_tipo_liquidacion=self.inspector_tipo_liquidacion, periodo_fin__isnull=True)
+                .exclude(pk=self.pk)
+                .exists()
+            )
+            if existe_abierto:
+                raise ValueError(
+                    f"Ya existe un periodo abierto para este {self.inspector_tipo_liquidacion}. "
+                    "Cierre el periodo actual antes de abrir uno nuevo."
+                )
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def close_current_and_open_new(cls, inspector_tipo_liquidacion, fecha_inicio):
+        """Cierra el periodo abierto (periodo_fin = fecha_inicio - 1 día) y crea uno nuevo."""
+        from datetime import timedelta
+
+        hoy = fecha_inicio - timedelta(days=1)
+        cls.objects.filter(
+            inspector_tipo_liquidacion=inspector_tipo_liquidacion,
+            periodo_fin__isnull=True,
+        ).update(periodo_fin=hoy)
+
+        return cls.objects.create(
+            inspector_tipo_liquidacion=inspector_tipo_liquidacion,
+            periodo_inicio=fecha_inicio,
+            periodo_fin=None,
+        )
+
 
 class LiquidacionInspector(BaseModel):
-    """Relacion muchos-a-muchos entre LiquidacionGeneral e Inspector."""
+    """Relacion muchos-a-muchos entre LiquidacionPorCategoriaVisitas e Inspector.
+
+    La IO es una liquidación especial: el inspector se asocia a la liquidación
+    de TIPO (LiquidacionPorCategoriaVisitas — el cálculo por categoría de visitas),
+    no a la LiquidacionGeneral.
+    """
 
     history = HistoricalRecords()
     liquidacion = models.ForeignKey(
-        "LiquidacionGeneral",
+        "LiquidacionPorCategoriaVisitas",
         on_delete=models.CASCADE,
-        related_name="liquidacion_inspectores",
-        verbose_name="Liquidacion",
+        related_name="inspectores",
+        verbose_name="Liquidación por Categoría de Visitas",
     )
     inspector = models.ForeignKey(
         "Inspector",
         on_delete=models.PROTECT,
         related_name="liquidacion_inspectores",
         verbose_name="Inspector",
+    )
+    especialidad_revision = models.ForeignKey(
+        "usuarios.EspecialidadRevision",
+        on_delete=models.PROTECT,
+        related_name="liquidacion_inspectores",
+        verbose_name="Especialidad de Revisión",
     )
     periodo = models.CharField(
         max_length=100, blank=True, null=True, verbose_name="Periodo"
@@ -152,8 +209,8 @@ class LiquidacionInspector(BaseModel):
     )
 
     class Meta:
-        verbose_name = "Inspector de Liquidacion"
-        verbose_name_plural = "Inspectores de liquidaciones"
+        verbose_name = "Inspector de Liquidación de Inspección de Obra"
+        verbose_name_plural = "Inspectores de liquidaciones de Inspección de Obra"
         ordering = ["liquidacion", "inspector"]
         constraints = [
             models.UniqueConstraint(
@@ -162,4 +219,9 @@ class LiquidacionInspector(BaseModel):
         ]
 
     def __str__(self):
-        return f"{self.inspector} @ Liquidacion {self.liquidacion.id}"
+        return f"{self.inspector} @ IO {self.liquidacion.id}"
+
+
+# ── Backward-compatible aliases (to support existing service/orchestrator code during transition) ──
+InspectorTipoLiquidacion = InspectorOperacion
+InspectorAsignacionPeriodo = InspectorOperacionPeriodo

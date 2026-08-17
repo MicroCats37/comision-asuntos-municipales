@@ -7,10 +7,16 @@ que use el mismo tipo de cálculo (ej. Inspección de Obra).
 from core.types import BaseSchema
 from ninja import Field
 import uuid
-
+from typing import Optional
 
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
     VariablesFinancierasBasicasOut,
+)
+from modules.liquidaciones.presentation.schemas.inspector.inspector_schemas import (
+    PerfilIngenieroOut,
+)
+from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+    EspecialidadRevisionOut,
 )
 
 # =============================================================================
@@ -31,6 +37,23 @@ class LiquidacionPorCategoriaVisitasIn(BaseSchema):
     tarifa: LiquidacionPorCategoriaVisitasTarifaIn
 
 
+class LiquidacionInspectorOut(BaseSchema):
+    """Inspector asociado a una IO (sale dentro de liquidacion_tipo).
+
+    Reutiliza PerfilIngenieroOut (schema de inspector) en lugar de duplicar
+    los campos del perfil de ingeniero.
+    """
+    id: uuid.UUID
+    inspector_id: uuid.UUID
+    perfil_ingeniero: PerfilIngenieroOut
+    especialidad_revision: Optional[EspecialidadRevisionOut] = None
+    numero_registro: Optional[str] = None
+    categoria: Optional[str] = None
+    dictamen_revision: Optional[str] = None
+    fecha_presentacion: Optional[str] = None
+    fecha_revision: Optional[str] = None
+
+
 class LiquidacionPorCategoriaVisitasDatosOut(BaseSchema):
     """Esquema de salida que representa la tabla LiquidacionPorCategoriaVisitas."""
     id: uuid.UUID
@@ -38,6 +61,7 @@ class LiquidacionPorCategoriaVisitasDatosOut(BaseSchema):
     porcentaje_uit: float
     categoria: str
     tarifa_aplicada_id: uuid.UUID
+    inspectores: list[LiquidacionInspectorOut] = []
 
 
 # =============================================================================

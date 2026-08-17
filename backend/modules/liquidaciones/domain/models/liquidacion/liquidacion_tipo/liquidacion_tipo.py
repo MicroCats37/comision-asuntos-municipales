@@ -243,8 +243,10 @@ class LiquidacionPorcentajeObraDetalle(BaseModel):
     """
     Detalle del cálculo porcentual de una liquidación de obra por especialidad.
 
-    Almacena el breakdown por especialidad: porcentaje aplicado, subtotal,
-    IGV y total correspondiente a cada especialidad involucrada.
+    Almacena el breakdown por especialidad: porcentaje aplicado y subtotal
+    parcial correspondiente a cada especialidad involucrada.
+    El IGV y el Total se calculan a nivel GLOBAL (en LiquidacionGeneral),
+    NO por tarifa — por eso el detalle solo guarda el subtotal parcial.
     """
 
     history = HistoricalRecords()
@@ -280,37 +282,11 @@ class LiquidacionPorcentajeObraDetalle(BaseModel):
     subtotal = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        verbose_name="Subtotal",
-        help_text="Monto subtotal antes de IGV.",
+        verbose_name="Subtotal Parcial",
+        help_text="Monto subtotal parcial de esta especialidad (antes de IGV). "
+        "El IGV y el total se calculan a nivel global en LiquidacionGeneral.",
     )
 
-    igv = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        verbose_name="IGV",
-        help_text="Monto del Impuesto General a las Ventas.",
-    )
-    
-    uit = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        verbose_name="UIT",
-        help_text="Monto de la Unidad Impositiva Tributaria (UIT) correspondiente.",
-    )
-
-    total = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        verbose_name="Total",
-        help_text="Monto total incluyendo IGV.",
-    )
-    
     class Meta:
         verbose_name = "Detalle de Liquidación Porcentual de Obra"
         verbose_name_plural = "Detalles de Liquidaciones Porcentuales de Obra"

@@ -78,3 +78,27 @@ class FinanzasFlujo:
             neto_honorario=neto_honorario,
             honorario=honorario,
         )
+
+    def _proceso_crear_recibo_inspector(
+        self,
+        liquidacion_inspector_id,
+        inspecciones_mes: int,
+    ):
+        """
+        Flujo para crear un ReciboHonorarioInspector.
+
+        El @transaction.atomic vive en el ReciboHonorarioInspectorFlujo.
+
+        Args:
+            liquidacion_inspector_id: FK a LiquidacionInspector.
+            inspecciones_mes: Inspecciones liquidadas en el mes.
+        """
+        from modules.finanzas.domain.services.recibo_honorario_flujo import (
+            ReciboHonorarioInspectorFlujo,
+        )
+
+        flujo = ReciboHonorarioInspectorFlujo(core_service=self.core)
+        return flujo.crear_recibo_inspector(
+            liquidacion_inspector_id=liquidacion_inspector_id,
+            inspecciones_mes=inspecciones_mes,
+        )

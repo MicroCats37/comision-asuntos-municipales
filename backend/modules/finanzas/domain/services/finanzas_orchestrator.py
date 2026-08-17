@@ -12,6 +12,7 @@ from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreS
 from modules.finanzas.domain.schemas import VariablesVigentesResult
 from modules.finanzas.domain.results.recibo_honorario_result import (
     ReciboHonorarioDelegadoResult,
+    ReciboHonorarioInspectorResult,
 )
 
 
@@ -173,6 +174,8 @@ class FinanzasOrchestrator:
             TipoLiquidacionMinimal,
             DelegadoMinimal,
             EspecialidadMinimal,
+            ReciboHonorarioCalculoResult,
+            LiquidacionEspecificaMinimalResult,
         )
 
         ld = recibo.liquidacion_delegado
@@ -180,16 +183,27 @@ class FinanzasOrchestrator:
 
         tipo_liq = lg.tipo_liquidacion
 
+        esp_id, esp_numero = str(lg.id), 0
+        for rel_name in ["edificaciones", "habilitaciones_urbanas", "inspecciones_obra", "mecanicas_suelos", "impactos_viales", "taludes_muros"]:
+            if hasattr(lg, rel_name):
+                esp = getattr(lg, rel_name)
+                if esp:
+                    esp_id = str(esp.id)
+                    esp_numero = getattr(esp, "numero", 0)
+                    break
+
         return ReciboHonorarioDelegadoResult(
             id=str(recibo.id),
             liquidacion_delegado_id=str(ld.id),
-            sub_total=recibo.sub_total,
-            imp_bruto=recibo.imp_bruto,
-            renta_cip=recibo.renta_cip,
-            aporte_codemu=recibo.aporte_codemu,
-            fondo_comun=recibo.fondo_comun,
-            neto_honorario=recibo.neto_honorario,
-            honorario=recibo.honorario,
+            calculo=ReciboHonorarioCalculoResult(
+                sub_total=recibo.sub_total,
+                imp_bruto=recibo.imp_bruto,
+                renta_cip=recibo.renta_cip,
+                aporte_codemu=recibo.aporte_codemu,
+                fondo_comun=recibo.fondo_comun,
+                neto_honorario=recibo.neto_honorario,
+                honorario=recibo.honorario,
+            ),
             created_at=recibo.created_at,
             liquidacion_general=LiquidacionGeneralMinimal(
                 id=str(lg.id),
@@ -204,6 +218,10 @@ class FinanzasOrchestrator:
                 ),
                 municipalidad_nombre=lg.municipalidad.nombre,
                 proyecto_denominacion=lg.proyecto.denominacion,
+            ),
+            liquidacion_especifica=LiquidacionEspecificaMinimalResult(
+                id=esp_id,
+                numero=esp_numero,
             ),
             delegado=DelegadoMinimal(
                 id=str(ld.delegado.id),
@@ -284,5 +302,148 @@ class FinanzasOrchestrator:
 
         else:
             return sub_total, sub_total
+
+    # ── ReciboHonorarioInspector ────────────────────────────────────────────────
+
+    def crear_recibo_inspector_proceso(
+        self,
+        liquidacion_inspector_id: uuid.UUID,
+        inspecciones_mes: int,
+    ) -> ReciboHonorarioInspectorResult:
+        """
+        Crea un ReciboHonorarioInspector para una LiquidacionInspector.
+
+        Flujo:
+        1. Delega al FinanzasFlujo el cálculo y la creación transaccional.
+        2. Recarga el recibo con relaciones (select_related).
+        3. Construye ReciboHonorarioInspectorResult (con anidados) y lo retorna.
+
+        Args:
+            liquidacion_inspector_id: UUID de LiquidacionInspector.
+            inspecciones_mes: Inspecciones liquidadas en el mes.
+
+        Returns:
+            ReciboHonorarioInspectorResult con todos los campos (homogéneo al listado).
+
+        Raises:
+            HttpError(404): LiquidacionInspector no encontrada.
+            HttpError(400): Sin visitas programadas, sin escala o sin rango.
+        """
+        recibo = self.flujo._proceso_crear_recibo_inspector(
+            liquidacion_inspector_id=liquidacion_inspector_id,
+            inspecciones_mes=inspecciones_mes,
+        )
+
+        recibo_full = self.core.get_recibo_inspector_by_id(recibo.id)
+        return self._build_recibo_inspector_result(recibo_full)
+
+    def listar_recibos_inspectores_proceso(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        inspector_id: uuid.UUID | None = None,
+        liquidacion_id: uuid.UUID | None = None,
+    ) -> tuple[list[ReciboHonorarioInspectorResult], int]:
+        """
+        Lista recibos de honorarios de inspectores con paginación.
+
+        Aplica defaults y llama al Core para obtener QuerySet filtrado + total.
+
+        Args:
+            page: Número de página (1-indexed).
+            page_size: Elementos por página.
+            inspector_id: Filter by liquidacion_inspector.inspector_id.
+            liquidacion_id: Filter by liquidacion_general id.
+
+        Returns:
+            Tuple (list of ReciboHonorarioInspectorResult, total count).
+        """
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))
+
+        ORM_objects, total = self.core.list_recibos_inspectores_paginated(
+            page=page,
+            page_size=page_size,
+            inspector_id=inspector_id,
+            liquidacion_id=liquidacion_id,
+        )
+
+        results: list[ReciboHonorarioInspectorResult] = [
+            self._build_recibo_inspector_result(r) for r in ORM_objects
+        ]
+        return results, total
+
+    def _build_recibo_inspector_result(
+        self, recibo
+    ) -> ReciboHonorarioInspectorResult:
+        """
+        Build ReciboHonorarioInspectorResult from ORM object.
+
+        Mapea liquidacion_general summary + inspector summary + especialidad + montos.
+        La liquidacion_especifica es la LiquidacionInspeccionObra (vía
+        liquidacion_general.inspeccion_obra) — no se itera como con delegados.
+        """
+        from modules.finanzas.domain.results.recibo_honorario_result import (
+            LiquidacionGeneralMinimal,
+            TipoLiquidacionMinimal,
+            InspectorMinimal,
+            EspecialidadMinimal,
+            ReciboHonorarioInspectorCalculoResult,
+            LiquidacionEspecificaMinimalResult,
+        )
+
+        li = recibo.liquidacion_inspector
+        lg = li.liquidacion.liquidacion_general
+        io = lg.inspeccion_obra
+        perfil = li.inspector.perfil_ingeniero
+
+        tipo_liq = lg.tipo_liquidacion
+
+        return ReciboHonorarioInspectorResult(
+            id=str(recibo.id),
+            liquidacion_inspector_id=str(li.id),
+            calculo=ReciboHonorarioInspectorCalculoResult(
+                inspecciones_programadas=recibo.inspecciones_programadas,
+                costo_por_inspeccion=recibo.costo_por_inspeccion,
+                inspecciones_mes=recibo.inspecciones_mes,
+                monto_bruto=recibo.monto_bruto,
+                inspecciones_pagadas=recibo.inspecciones_pagadas,
+                saldo_inspecciones=recibo.saldo_inspecciones,
+                sub_total=recibo.sub_total,
+                tasa_descuento_aplicada=recibo.tasa_descuento_aplicada,
+                descuento=recibo.descuento,
+                honorarios=recibo.honorarios,
+            ),
+            created_at=recibo.created_at,
+            liquidacion_general=LiquidacionGeneralMinimal(
+                id=str(lg.id),
+                expediente=lg.expediente or "",
+                numero_revision=lg.numero_revision,
+                sub_total=lg.sub_total,
+                total=lg.total,
+                fecha_registro=lg.fecha_registro.isoformat() if lg.fecha_registro else "",
+                tipo_liquidacion=TipoLiquidacionMinimal(
+                    codigo=tipo_liq.codigo,
+                    nombre=tipo_liq.nombre,
+                ),
+                municipalidad_nombre=lg.municipalidad.nombre,
+                proyecto_denominacion=lg.proyecto.denominacion,
+            ),
+            liquidacion_especifica=LiquidacionEspecificaMinimalResult(
+                id=str(io.id),
+                numero=io.numero,
+            ),
+            inspector=InspectorMinimal(
+                id=str(li.inspector.id),
+                nombre_completo=perfil.nombre_completo,
+                cip=perfil.cip or "",
+                dni=perfil.dni or "",
+            ),
+            especialidad=EspecialidadMinimal(
+                id=str(li.especialidad_revision.id),
+                codigo=li.especialidad_revision.codigo,
+                nombre=li.especialidad_revision.nombre,
+            ),
+        )
 
 

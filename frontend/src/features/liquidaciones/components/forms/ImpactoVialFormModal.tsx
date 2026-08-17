@@ -1,34 +1,37 @@
 "use client";
 
+import { FileText } from "lucide-react";
 /**
  * ImpactoVialFormModal — Form delgado para Impacto Vial (motor PorcentajeObra).
  * Reutiliza LiquidacionFormBodyBase (general) + Smart Fields específicos del motor.
  */
 import { useCallback, useState } from "react";
+import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { notify } from "@/errors";
-import { FileText } from "lucide-react";
 import { useCrearImpactoVial } from "../../hooks/useCrearImpactoVial";
-import { impactoVialFormSchema, type ImpactoVialFormData } from "../../schemas/liquidacion-impacto-vial-form.schema";
+import type { PdfLiquidacionItem } from "../../pdf/buildLiquidacionPdfElement";
+import { printLiquidacion } from "../../pdf/printLiquidacion";
 import type { ContactoInline } from "../../schemas/liquidacion-form-base.schema";
+import {
+  type ImpactoVialFormData,
+  impactoVialFormSchema,
+} from "../../schemas/liquidacion-impacto-vial-form.schema";
+import { ContactoFormModal } from "./ContactoFormModal";
+import { CotizacionPorcentajeSmartField } from "./CotizacionPorcentajeSmartField";
 import { LiquidacionFormBodyBase } from "./LiquidacionFormBodyBase";
 import { PrimeraRevisionTarifasSmartField } from "./PrimeraRevisionTarifasSmartField";
-import { CotizacionPorcentajeSmartField } from "./CotizacionPorcentajeSmartField";
-import { ContactoFormModal } from "./ContactoFormModal";
-import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
 
 interface ImpactoVialFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
-  onCreated?: () => void;
 }
 
 export function ImpactoVialFormModal({
   open,
   onOpenChange,
   onSuccess,
-  onCreated,
 }: ImpactoVialFormModalProps) {
   const crearMutation = useCrearImpactoVial();
   const [contacto, setContacto] = useState<ContactoInline | null>(null);
@@ -42,16 +45,25 @@ export function ImpactoVialFormModal({
   const handleSubmit = useCallback(
     async (data: ImpactoVialFormData) => {
       try {
-        await crearMutation.mutateAsync({ ...data, contacto: contacto ?? undefined });
+        const result = await crearMutation.mutateAsync({
+          ...data,
+          contacto: contacto ?? undefined,
+        });
         notify.success("Liquidación creada correctamente");
         setContacto(null);
+        // Mismo window de impresión que el botón PDF de las cards
+        const created = (result as { data?: PdfLiquidacionItem })?.data as
+          | PdfLiquidacionItem
+          | undefined;
+        if (created) {
+          printLiquidacion(created, "impacto-vial");
+        }
         onSuccess?.();
-        onCreated?.();
       } catch {
         // Error handled by mutation
       }
     },
-    [crearMutation, contacto, onSuccess, onCreated],
+    [crearMutation, contacto, onSuccess],
   );
 
   return (
@@ -89,7 +101,10 @@ export function ImpactoVialFormModal({
             }
             motorSection={
               <div className="space-y-3">
-                <PrimeraRevisionTarifasSmartField methods={methods} tipo="impacto-vial" />
+                <PrimeraRevisionTarifasSmartField
+                  methods={methods}
+                  tipo="impacto-vial"
+                />
                 <CotizacionPorcentajeSmartField methods={methods} />
               </div>
             }

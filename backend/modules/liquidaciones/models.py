@@ -2,8 +2,8 @@
 
 from .domain.models import (
     Delegado,
-    DelegadoMunicipalidad,
-    DelegadoMunicipalidadPeriodo,
+    DelegadoOperacion,
+    DelegadoOperacionPeriodo,
     EspecialidadIngeniero,
     EspecialidadRevision,
     LiquidacionGeneral,
@@ -25,15 +25,15 @@ from .domain.models import (
     TarifaPorMetroCuadrado,
     TarifaPorCategoriaVisitas,
     Inspector,
-    InspectorTipoLiquidacion,
-    InspectorAsignacionPeriodo,
+    InspectorOperacion,
+    InspectorOperacionPeriodo,
     LiquidacionInspector,
 )
 
 __all__ = [
     "Delegado",
-    "DelegadoMunicipalidad",
-    "DelegadoMunicipalidadPeriodo",
+    "DelegadoOperacion",
+    "DelegadoOperacionPeriodo",
     "EspecialidadIngeniero",
     "EspecialidadRevision",
     "LiquidacionGeneral",
@@ -55,7 +55,7 @@ __all__ = [
     "TarifaPorMetroCuadrado",
     "TarifaPorCategoriaVisitas",
     "Inspector",
-    "InspectorTipoLiquidacion",
-    "InspectorAsignacionPeriodo",
+    "InspectorOperacion",
+    "InspectorOperacionPeriodo",
     "LiquidacionInspector",
 ]

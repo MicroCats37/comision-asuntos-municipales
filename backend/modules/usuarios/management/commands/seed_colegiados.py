@@ -96,6 +96,7 @@ class Command(BaseCommand):
                 "genero": item.get("genero", ""),
                 "correo_personal": item.get("correo_personal") or None,
                 "correo_institucional": item.get("correo_institucional") or None,
+                "celular": item.get("celular") or None,
                 "direccion": item.get("direccion") or None,
                 "ubigeo": item.get("ubigeo") or None,
                 "especialidad": especialidad,

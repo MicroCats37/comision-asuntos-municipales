@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { Asignacion } from "../schemas/asignacion-delegado.schema";
-import type { DelegadoVigente } from "../types/liquidacion-edificaciones.types";
+import type { DelegadoVigente } from "../schemas/delegado-vigente.schema";
 
 export type { Asignacion };
 

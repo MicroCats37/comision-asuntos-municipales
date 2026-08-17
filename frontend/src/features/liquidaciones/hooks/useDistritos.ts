@@ -13,7 +13,9 @@ import {
 export function useDistritos(search?: string) {
   return useApiQuery<DistritosResponse, DistritoOption[]>({
     queryKey: ["entidades", "distritos", search || ""],
-    url: "/entidades/ubigeo/distritos",
+    // Cache-buster: fuerza re-fetch al navegador (evita servir la respuesta vieja
+    // cacheada con max-age=1 año cuando el middleware aún lo emitía).
+    url: "/entidades/ubigeo/distritos?v=2",
     schema: DistritosResponseSchema,
     params: search ? { search } : undefined,
     queryOptions: {

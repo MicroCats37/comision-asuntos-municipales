@@ -166,6 +166,7 @@ class LiquidacionEdificacionesController:
         page_size: int = Query(default=10, ge=1, le=100, description="Items per page"),
         razon_social: str = Query(default=None, description="Filter by entidad razon_social (icontains)"),
         numero_documento: str = Query(default=None, description="Filter by entidad numero_documento"),
+        numero: int = Query(default=None, description="Filter by edificacion numero (exact)"),
         fecha_desde: date = Query(default=None, description="Filter by fecha_registro >= date"),
         fecha_hasta: date = Query(default=None, description="Filter by fecha_registro <= date"),
     ):
@@ -178,6 +179,7 @@ class LiquidacionEdificacionesController:
             page_size=page_size,
             razon_social=razon_social,
             numero_documento=numero_documento,
+            numero=numero,
             fecha_desde=fecha_desde,
             fecha_hasta=fecha_hasta,
         )

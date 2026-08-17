@@ -63,9 +63,6 @@ class LiquidacionEdificacionesCotizarDetalleOut(BaseSchema):
     especialidad_id: uuid.UUID
     porcentaje_aplicado: Decimal
     subtotal: Decimal
-    igv: Decimal
-    uit: Decimal
-    total: Decimal
 
 
 class LiquidacionGeneralNuevaRevisionIn(BaseSchema):
@@ -106,3 +103,4 @@ class LiquidacionEdificacionesCotizarOutput(BaseSchema):
     detalles: List[LiquidacionEdificacionesCotizarDetalleOut]
     total_subtotal: Decimal
     total: Decimal
+

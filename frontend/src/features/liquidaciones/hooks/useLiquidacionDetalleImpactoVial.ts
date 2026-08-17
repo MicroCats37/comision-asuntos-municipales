@@ -1,9 +1,13 @@
 /**
  * Hook para detalle de liquidación de Impacto Vial.
  * Endpoint: GET /liquidaciones/impacto-vial/{id}
+ * Devuelve el detalle 3-wrappers tipado por liquidacionImpactoVialDetailResponseSchema.
  */
 import { useApiQuery } from "@/hooks";
-import { liquidacionImpactoVialDetailResponseSchema } from "../schemas/liquidacion-detail.schemas";
+import {
+  liquidacionImpactoVialDetailResponseSchema,
+  type LiquidacionDetalleItem,
+} from "../schemas/liquidacion-detail.schemas";
 
 interface UseLiquidacionDetalleImpactoVialProps {
   id: string;
@@ -19,7 +23,7 @@ export function useLiquidacionDetalleImpactoVial({
     url: id ? `/liquidaciones/impacto-vial/${id}` : null,
     schema: liquidacionImpactoVialDetailResponseSchema,
     queryOptions: {
-      select: (data) => data.data ?? null,
+      select: (data): LiquidacionDetalleItem | null => data.data ?? null,
       enabled: !!id,
     },
   });

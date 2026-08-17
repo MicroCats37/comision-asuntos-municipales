@@ -58,6 +58,14 @@ export interface PdfLiquidacionItem {
     categoria?: string;
     derecho_minimo?: number;
     derecho_maximo?: number;
+    inspectores?: {
+      id?: string;
+      inspector_id?: string;
+      perfil_ingeniero?: {
+        cip?: string;
+        nombre_completo?: string;
+      };
+    }[];
     detalles?: {
       subtotal?: number;
       igv?: number;

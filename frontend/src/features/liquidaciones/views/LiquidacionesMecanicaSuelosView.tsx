@@ -15,8 +15,8 @@ import { Pagination } from "@/components/genericPagination/Pagination";
 import { LiquidacionMecanicaSuelosCard } from "../components/cards/LiquidacionMecanicaSuelosCard";
 import { MecanicaSuelosFormModal } from "../components/forms/MecanicaSuelosFormModal";
 import { LiquidacionFiltroModal } from "../components/forms/LiquidacionFiltroModal";
+import { ConsultarIngenieroButton } from "../components/forms/ConsultarIngenieroButton";
 import { useLiquidacionesMecanicaSuelos, type LiquidacionFiltros } from "../hooks";
-import type { LiquidacionMecanicaSuelosListItem } from "../schemas/liquidacion-mecanica-suelos.schema";
 
 const KIND_ICON: LucideIcon = AlertTriangle;
 
@@ -51,8 +51,16 @@ export function LiquidacionesMecanicaSuelosView() {
           actionNodes={
             <>
               <Button
+                className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+                onClick={() => setFormModalOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Nueva Liquidación
+              </Button>
+              <ConsultarIngenieroButton />
+              <Button
                 variant={activeFilterCount > 0 ? "default" : "outline"}
-                className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+                className="gap-2 h-11 rounded-xl font-semibold shrink-0 ml-auto"
                 onClick={() => setFiltroModalOpen(true)}
               >
                 <Filter className="h-4 w-4" />
@@ -62,13 +70,6 @@ export function LiquidacionesMecanicaSuelosView() {
                     {activeFilterCount}
                   </span>
                 )}
-              </Button>
-              <Button
-                className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-                onClick={() => setFormModalOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Nueva Liquidación
               </Button>
             </>
           }
@@ -153,7 +154,7 @@ export function LiquidacionesMecanicaSuelosView() {
             <>
               <div className="flex flex-col gap-4">
                 {items.map((item) => (
-                  <LiquidacionMecanicaSuelosCard key={item.liquidacion_general.id} item={item as unknown as LiquidacionMecanicaSuelosListItem} />
+                  <LiquidacionMecanicaSuelosCard key={item.liquidacion_general.id} item={item} />
                 ))}
               </div>
               <Pagination
