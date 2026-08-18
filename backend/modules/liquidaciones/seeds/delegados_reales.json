@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "periodo": "SEPTIEMBRE 2025 A AGOSTO 2026",
-  "fuente": "data/comisiones_tecnicas_cam_sep2025_ago2026_consolidado.csv",
+  "fuente": "data\\comisiones_tecnicas_cam_sep2025_ago2026_consolidado.csv",
   "municipalidades": [
     {
       "nombre": "CERCADO DE LIMA",
