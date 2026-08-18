@@ -90,10 +90,13 @@ class Command(BaseCommand):
         with open(seed_file, encoding="utf-8") as f:
             data = json.load(f)
 
-        # Mapa de municipalidades por nombre normalizado
+        # Mapa de municipalidades por código y por nombre normalizado
+        municipios_por_codigo = {}
         municipios = {}
         for m in Municipalidad.objects.all():
             municipios[normalize(m.nombre)] = m
+            if m.codigo:
+                municipios_por_codigo[m.codigo] = m
 
         delegados_creados = 0
         asignaciones_creadas = 0
@@ -128,20 +131,38 @@ class Command(BaseCommand):
             if not delegado:
                 continue
 
-            # Resolver municipalidad por nombre normalizado
-            nombre_mun = normalize(asign.get("municipalidad_nombre", ""))
-            if not nombre_mun and asign.get("municipalidad_codigo"):
-                # Fallback: buscar por nombre en el seed municipalidades
-                mun_seed = next(
-                    (m for m in data.get("municipalidades", [])
-                     if m.get("codigo") == asign.get("municipalidad_codigo")),
-                    None,
-                )
-                nombre_mun = normalize((mun_seed or {}).get("nombre", ""))
+            # Resolver municipalidad: primero por código L, luego por nombre normalizado
+            codigo_seed = str(asign.get("municipalidad_codigo", "")).strip()
+            municipio = municipios_por_codigo.get(codigo_seed)
 
-            municipio = municipios.get(nombre_mun)
+            if municipio is None:
+                # Resolver por nombre en el seed municipalidades
+                nombre_mun = normalize(asign.get("municipalidad_nombre", ""))
+                if not nombre_mun and codigo_seed:
+                    mun_seed = next(
+                        (m for m in data.get("municipalidades", [])
+                         if m.get("codigo") == codigo_seed),
+                        None,
+                    )
+                    nombre_mun = normalize((mun_seed or {}).get("nombre", ""))
+                municipio = municipios.get(nombre_mun)
+
+            # Si no existe, crearla (incluye códigos L-FALTANTE N)
+            if municipio is None and not dry_run and codigo_seed:
+                nombre_seed = next(
+                    (m.get("nombre") for m in data.get("municipalidades", [])
+                     if m.get("codigo") == codigo_seed),
+                    codigo_seed,
+                )
+                municipio, _ = Municipalidad.objects.get_or_create(
+                    codigo=codigo_seed,
+                    defaults={"nombre": nombre_seed},
+                )
+                municipios[normalize(nombre_seed)] = municipio
+                municipios_por_codigo[codigo_seed] = municipio
+
             if not municipio:
-                sin_municipio.append(f"{cip} -> {asign.get('municipalidad_codigo')}")
+                sin_municipio.append(f"{cip} -> {codigo_seed or asign.get('municipalidad_nombre')}")
                 continue
 
             tipo_str = str(asign.get("tipo", "")).upper()

@@ -5,589 +5,589 @@
   "municipalidades": [
     {
       "nombre": "CERCADO DE LIMA",
-      "codigo": "MUN0001",
+      "codigo": "L1",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "CENTRO HISTORICO",
-      "codigo": "MUN0002",
+      "codigo": "L1-2",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "COMISION AD HOC",
-      "codigo": "MUN0003",
+      "codigo": "L1-1",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "ANCON",
-      "codigo": "MUN0004",
+      "codigo": "L2",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "ATE VITARTE",
-      "codigo": "MUN0005",
+      "codigo": "L3",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "BARRANCO",
-      "codigo": "MUN0006",
+      "codigo": "L4",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "BREÑA",
-      "codigo": "MUN0007",
+      "codigo": "L5",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "CARABAYLLO",
-      "codigo": "MUN0008",
+      "codigo": "L6",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "COMAS",
-      "codigo": "MUN0009",
+      "codigo": "L7",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "CHACLACAYO",
-      "codigo": "MUN0010",
+      "codigo": "L8",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "CHORRILLOS",
-      "codigo": "MUN0011",
+      "codigo": "L9",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "EL AGUSTINO",
-      "codigo": "MUN0012",
+      "codigo": "L10",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "JESUS MARIA",
-      "codigo": "MUN0013",
+      "codigo": "L11",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "LA MOLINA",
-      "codigo": "MUN0014",
+      "codigo": "L12",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "LA VICTORIA",
-      "codigo": "MUN0015",
+      "codigo": "L13",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "LINCE",
-      "codigo": "MUN0016",
+      "codigo": "L14",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "LURIGANCHO – CHOSICA",
-      "codigo": "MUN0017",
+      "codigo": "L15",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SANTA MARIA DE HUACHIPA",
-      "codigo": "MUN0018",
+      "codigo": "L15-1",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "LURIN",
-      "codigo": "MUN0019",
+      "codigo": "L16",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "MAGDALENA DEL MAR",
-      "codigo": "MUN0020",
+      "codigo": "L17",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "MIRAFLORES",
-      "codigo": "MUN0021",
+      "codigo": "L18",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PACHACAMAC",
-      "codigo": "MUN0022",
+      "codigo": "L19",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PUCUSANA",
-      "codigo": "MUN0023",
+      "codigo": "L20",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PUEBLO LIBRE",
-      "codigo": "MUN0024",
+      "codigo": "L21",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PUENTE PIEDRA",
-      "codigo": "MUN0025",
+      "codigo": "L22",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PUNTA NEGRA",
-      "codigo": "MUN0026",
+      "codigo": "L23",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PUNTA HERMOSA",
-      "codigo": "MUN0027",
+      "codigo": "L24",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "RIMAC",
-      "codigo": "MUN0028",
+      "codigo": "L25",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAN BARTOLO",
-      "codigo": "MUN0029",
+      "codigo": "L26",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAN ISIDRO",
-      "codigo": "MUN0030",
+      "codigo": "L27",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "INDEPENDENCIA",
-      "codigo": "MUN0031",
+      "codigo": "L28",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAN JUAN DE MIRAFLORES",
-      "codigo": "MUN0032",
+      "codigo": "L29",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAN LUIS",
-      "codigo": "MUN0033",
+      "codigo": "L30",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAN MARTIN DE PORRES",
-      "codigo": "MUN0034",
+      "codigo": "L31",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAN MIGUEL",
-      "codigo": "MUN0035",
+      "codigo": "L32",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SANTIAGO DE SURCO",
-      "codigo": "MUN0036",
+      "codigo": "L33",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SURQUILLO",
-      "codigo": "MUN0037",
+      "codigo": "L34",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "VILLA MARIA DEL TRIUNFO",
-      "codigo": "MUN0038",
+      "codigo": "L35",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAN JUAN DE LURIGANCHO",
-      "codigo": "MUN0039",
+      "codigo": "L36",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SANTA MARIA DEL MAR",
-      "codigo": "MUN0040",
+      "codigo": "L37",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SANTA ROSA",
-      "codigo": "MUN0041",
+      "codigo": "L38",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "LOS OLIVOS",
-      "codigo": "MUN0042",
+      "codigo": "L39",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "CIENEGUILLA",
-      "codigo": "MUN0043",
+      "codigo": "L40",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAN BORJA",
-      "codigo": "MUN0044",
+      "codigo": "L41",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "VILLA EL SALVADOR",
-      "codigo": "MUN0045",
+      "codigo": "L42",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SANTA ANITA",
-      "codigo": "MUN0046",
+      "codigo": "L43",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PROVINCIAL DE CAÑETE",
-      "codigo": "MUN0047",
+      "codigo": "L44",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAN ANTONIO DE CAÑETE",
-      "codigo": "MUN0048",
+      "codigo": "L44-1",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "ASIA",
-      "codigo": "MUN0049",
+      "codigo": "L44-2",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "CERRO AZUL",
-      "codigo": "MUN0050",
+      "codigo": "L44-3",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "LUNAHUANA",
-      "codigo": "MUN0051",
+      "codigo": "L44-4",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "MALA",
-      "codigo": "MUN0052",
+      "codigo": "L44-5",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "CHILCA",
-      "codigo": "MUN0053",
+      "codigo": "L44-6",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "IMPERIAL",
-      "codigo": "MUN0054",
+      "codigo": "L44-7",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "NUEVO IMPERIAL",
-      "codigo": "MUN0055",
+      "codigo": "L44-8",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAN LUIS DE CAÑETE",
-      "codigo": "MUN0056",
+      "codigo": "L44-9",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "CALANGO",
-      "codigo": "MUN0057",
+      "codigo": "L44-10",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "COAYLLO",
-      "codigo": "MUN0058",
+      "codigo": "L44-11",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PACARAN",
-      "codigo": "MUN0059",
+      "codigo": "L44-12",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "QUILMANA",
-      "codigo": "MUN0060",
+      "codigo": "L44-13",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SANTA CRUZ DE FLORES",
-      "codigo": "MUN0061",
+      "codigo": "L44-14",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "ZUÑIGA",
-      "codigo": "MUN0062",
+      "codigo": "L44-15",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "HUARAL",
-      "codigo": "MUN0063",
+      "codigo": "L50",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "IHUARI",
-      "codigo": "MUN0064",
+      "codigo": "L50-3",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SUMBILCA",
-      "codigo": "MUN0065",
+      "codigo": "L50-4",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PACARAOS",
-      "codigo": "MUN0066",
+      "codigo": "L50-5",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "LAMPIAN",
-      "codigo": "MUN0067",
+      "codigo": "L50-6",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "ATAVILLOS ALTO",
-      "codigo": "MUN0068",
+      "codigo": "L-FALTANTE 1",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "ATAVILLOS BAJO",
-      "codigo": "MUN0069",
+      "codigo": "L-FALTANTE 2",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAN MIGUEL DE ACOS",
-      "codigo": "MUN0070",
+      "codigo": "L50-10",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SANTA CRUZ DE ANDAMARCA",
-      "codigo": "MUN0071",
+      "codigo": "L50-11",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "AUCALLAMA",
-      "codigo": "MUN0072",
+      "codigo": "L50-12",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "27 DE NOVIEMBRE",
-      "codigo": "MUN0073",
+      "codigo": "L-FALTANTE 3",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "CHANCAY",
-      "codigo": "MUN0074",
+      "codigo": "L50-1",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "HUAURA",
-      "codigo": "MUN0075",
+      "codigo": "L60",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "CALETA DE CARQUIN",
-      "codigo": "MUN0076",
+      "codigo": "L60-1",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "HUACHO",
-      "codigo": "MUN0077",
+      "codigo": "L60-2",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAYAN",
-      "codigo": "MUN0078",
+      "codigo": "L60-3",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "VEGUETA",
-      "codigo": "MUN0079",
+      "codigo": "L60-4",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "AMBAR",
-      "codigo": "MUN0080",
+      "codigo": "L-FALTANTE 4",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "CHECRAS",
-      "codigo": "MUN0081",
+      "codigo": "L60-6",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "LEONCIO PRADO",
-      "codigo": "MUN0082",
+      "codigo": "L60-7",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SANTA LEONOR",
-      "codigo": "MUN0083",
+      "codigo": "L60-8",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PACCHO",
-      "codigo": "MUN0084",
+      "codigo": "L60-9",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "HUALMAY",
-      "codigo": "MUN0085",
+      "codigo": "L60-10",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "STA MARIA",
-      "codigo": "MUN0086",
+      "codigo": "L60-11",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "BARRANCA",
-      "codigo": "MUN0087",
+      "codigo": "L70",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SUPE",
-      "codigo": "MUN0088",
+      "codigo": "L70-1",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SUPE PUERTO",
-      "codigo": "MUN0089",
+      "codigo": "L70-2",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PARAMONGA",
-      "codigo": "MUN0090",
+      "codigo": "L70-3",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PATIVILCA",
-      "codigo": "MUN0091",
+      "codigo": "L70-4",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "HUAROCHIRI",
-      "codigo": "MUN0092",
+      "codigo": "L-80",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SAN ANTONIO DE HUAROCHIRI",
-      "codigo": "MUN0093",
+      "codigo": "L80-1",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PROVINCIA CANTA",
-      "codigo": "MUN0094",
+      "codigo": "L-FALTANTE 5",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PROVINCIAL DE HUAURA",
-      "codigo": "MUN0095",
+      "codigo": "L60",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "SANTA MARIA",
-      "codigo": "MUN0096",
+      "codigo": "L60-11",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PROVINCIAL DE BARRANCA",
-      "codigo": "MUN0097",
+      "codigo": "L70",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "PROVINCIA DE HUAROCHIRI",
-      "codigo": "MUN0098",
+      "codigo": "L-80",
       "provincia": null,
       "distrito": null
     }
@@ -917,3445 +917,3445 @@
   "asignaciones": [
     {
       "cip": "006502",
-      "municipalidad_codigo": "MUN0001",
+      "municipalidad_codigo": "L1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "008311",
-      "municipalidad_codigo": "MUN0001",
+      "municipalidad_codigo": "L1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "008311",
-      "municipalidad_codigo": "MUN0002",
+      "municipalidad_codigo": "L1-2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "053133",
-      "municipalidad_codigo": "MUN0002",
+      "municipalidad_codigo": "L1-2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "053133",
-      "municipalidad_codigo": "MUN0003",
+      "municipalidad_codigo": "L1-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "028365",
-      "municipalidad_codigo": "MUN0003",
+      "municipalidad_codigo": "L1-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "008311",
-      "municipalidad_codigo": "MUN0004",
+      "municipalidad_codigo": "L2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "077632",
-      "municipalidad_codigo": "MUN0004",
+      "municipalidad_codigo": "L2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "141145",
-      "municipalidad_codigo": "MUN0005",
+      "municipalidad_codigo": "L3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0005",
+      "municipalidad_codigo": "L3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "042568",
-      "municipalidad_codigo": "MUN0006",
+      "municipalidad_codigo": "L4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "102986",
-      "municipalidad_codigo": "MUN0006",
+      "municipalidad_codigo": "L4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0007",
+      "municipalidad_codigo": "L5",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "141145",
-      "municipalidad_codigo": "MUN0007",
+      "municipalidad_codigo": "L5",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "028365",
-      "municipalidad_codigo": "MUN0008",
+      "municipalidad_codigo": "L6",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0008",
+      "municipalidad_codigo": "L6",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "028365",
-      "municipalidad_codigo": "MUN0009",
+      "municipalidad_codigo": "L7",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "077632",
-      "municipalidad_codigo": "MUN0009",
+      "municipalidad_codigo": "L7",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "028365",
-      "municipalidad_codigo": "MUN0010",
+      "municipalidad_codigo": "L8",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "042568",
-      "municipalidad_codigo": "MUN0010",
+      "municipalidad_codigo": "L8",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "077632",
-      "municipalidad_codigo": "MUN0011",
+      "municipalidad_codigo": "L9",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "115447",
-      "municipalidad_codigo": "MUN0011",
+      "municipalidad_codigo": "L9",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "141145",
-      "municipalidad_codigo": "MUN0012",
+      "municipalidad_codigo": "L10",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "100721",
-      "municipalidad_codigo": "MUN0012",
+      "municipalidad_codigo": "L10",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "102986",
-      "municipalidad_codigo": "MUN0013",
+      "municipalidad_codigo": "L11",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "008311",
-      "municipalidad_codigo": "MUN0013",
+      "municipalidad_codigo": "L11",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0014",
+      "municipalidad_codigo": "L12",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "100721",
-      "municipalidad_codigo": "MUN0014",
+      "municipalidad_codigo": "L12",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "057822",
-      "municipalidad_codigo": "MUN0015",
+      "municipalidad_codigo": "L13",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038284",
-      "municipalidad_codigo": "MUN0015",
+      "municipalidad_codigo": "L13",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "102986",
-      "municipalidad_codigo": "MUN0016",
+      "municipalidad_codigo": "L14",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "077632",
-      "municipalidad_codigo": "MUN0016",
+      "municipalidad_codigo": "L14",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0017",
+      "municipalidad_codigo": "L15",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "042568",
-      "municipalidad_codigo": "MUN0017",
+      "municipalidad_codigo": "L15",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "141145",
-      "municipalidad_codigo": "MUN0018",
+      "municipalidad_codigo": "L15-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0018",
+      "municipalidad_codigo": "L15-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "141145",
-      "municipalidad_codigo": "MUN0019",
+      "municipalidad_codigo": "L16",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "028365",
-      "municipalidad_codigo": "MUN0019",
+      "municipalidad_codigo": "L16",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0020",
+      "municipalidad_codigo": "L17",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "102986",
-      "municipalidad_codigo": "MUN0020",
+      "municipalidad_codigo": "L17",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "115447",
-      "municipalidad_codigo": "MUN0021",
+      "municipalidad_codigo": "L18",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038284",
-      "municipalidad_codigo": "MUN0021",
+      "municipalidad_codigo": "L18",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0021",
+      "municipalidad_codigo": "L18",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "053133",
-      "municipalidad_codigo": "MUN0022",
+      "municipalidad_codigo": "L19",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "141145",
-      "municipalidad_codigo": "MUN0022",
+      "municipalidad_codigo": "L19",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0023",
+      "municipalidad_codigo": "L20",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0023",
+      "municipalidad_codigo": "L20",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "057822",
-      "municipalidad_codigo": "MUN0024",
+      "municipalidad_codigo": "L21",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0024",
+      "municipalidad_codigo": "L21",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "077632",
-      "municipalidad_codigo": "MUN0025",
+      "municipalidad_codigo": "L22",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "042568",
-      "municipalidad_codigo": "MUN0025",
+      "municipalidad_codigo": "L22",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "100721",
-      "municipalidad_codigo": "MUN0026",
+      "municipalidad_codigo": "L23",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0026",
+      "municipalidad_codigo": "L23",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0027",
+      "municipalidad_codigo": "L24",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "141145",
-      "municipalidad_codigo": "MUN0027",
+      "municipalidad_codigo": "L24",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "042568",
-      "municipalidad_codigo": "MUN0028",
+      "municipalidad_codigo": "L25",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "028365",
-      "municipalidad_codigo": "MUN0028",
+      "municipalidad_codigo": "L25",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "008311",
-      "municipalidad_codigo": "MUN0029",
+      "municipalidad_codigo": "L26",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "100721",
-      "municipalidad_codigo": "MUN0029",
+      "municipalidad_codigo": "L26",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "038284",
-      "municipalidad_codigo": "MUN0030",
+      "municipalidad_codigo": "L27",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "077632",
-      "municipalidad_codigo": "MUN0030",
+      "municipalidad_codigo": "L27",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "100721",
-      "municipalidad_codigo": "MUN0030",
+      "municipalidad_codigo": "L27",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0031",
+      "municipalidad_codigo": "L28",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "008311",
-      "municipalidad_codigo": "MUN0031",
+      "municipalidad_codigo": "L28",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "115447",
-      "municipalidad_codigo": "MUN0032",
+      "municipalidad_codigo": "L29",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0032",
+      "municipalidad_codigo": "L29",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "115447",
-      "municipalidad_codigo": "MUN0033",
+      "municipalidad_codigo": "L30",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "102986",
-      "municipalidad_codigo": "MUN0033",
+      "municipalidad_codigo": "L30",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0034",
+      "municipalidad_codigo": "L31",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "008311",
-      "municipalidad_codigo": "MUN0034",
+      "municipalidad_codigo": "L31",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "028365",
-      "municipalidad_codigo": "MUN0035",
+      "municipalidad_codigo": "L32",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "057822",
-      "municipalidad_codigo": "MUN0035",
+      "municipalidad_codigo": "L32",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "100721",
-      "municipalidad_codigo": "MUN0035",
+      "municipalidad_codigo": "L32",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0036",
+      "municipalidad_codigo": "L33",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038284",
-      "municipalidad_codigo": "MUN0036",
+      "municipalidad_codigo": "L33",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "100721",
-      "municipalidad_codigo": "MUN0036",
+      "municipalidad_codigo": "L33",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "053133",
-      "municipalidad_codigo": "MUN0037",
+      "municipalidad_codigo": "L34",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "006502",
-      "municipalidad_codigo": "MUN0037",
+      "municipalidad_codigo": "L34",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "042568",
-      "municipalidad_codigo": "MUN0038",
+      "municipalidad_codigo": "L35",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "077632",
-      "municipalidad_codigo": "MUN0038",
+      "municipalidad_codigo": "L35",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "077632",
-      "municipalidad_codigo": "MUN0039",
+      "municipalidad_codigo": "L36",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0039",
+      "municipalidad_codigo": "L36",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0040",
+      "municipalidad_codigo": "L37",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0040",
+      "municipalidad_codigo": "L37",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "042568",
-      "municipalidad_codigo": "MUN0041",
+      "municipalidad_codigo": "L38",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "053133",
-      "municipalidad_codigo": "MUN0041",
+      "municipalidad_codigo": "L38",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0042",
+      "municipalidad_codigo": "L39",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "028365",
-      "municipalidad_codigo": "MUN0042",
+      "municipalidad_codigo": "L39",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0043",
+      "municipalidad_codigo": "L40",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0043",
+      "municipalidad_codigo": "L40",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0044",
+      "municipalidad_codigo": "L41",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "053133",
-      "municipalidad_codigo": "MUN0044",
+      "municipalidad_codigo": "L41",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "057822",
-      "municipalidad_codigo": "MUN0044",
+      "municipalidad_codigo": "L41",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0045",
+      "municipalidad_codigo": "L42",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "042568",
-      "municipalidad_codigo": "MUN0045",
+      "municipalidad_codigo": "L42",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0046",
+      "municipalidad_codigo": "L43",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "141145",
-      "municipalidad_codigo": "MUN0046",
+      "municipalidad_codigo": "L43",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0047",
+      "municipalidad_codigo": "L44",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0047",
+      "municipalidad_codigo": "L44",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0048",
+      "municipalidad_codigo": "L44-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0048",
+      "municipalidad_codigo": "L44-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0049",
+      "municipalidad_codigo": "L44-2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0049",
+      "municipalidad_codigo": "L44-2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0050",
+      "municipalidad_codigo": "L44-3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0050",
+      "municipalidad_codigo": "L44-3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0051",
+      "municipalidad_codigo": "L44-4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0051",
+      "municipalidad_codigo": "L44-4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0052",
+      "municipalidad_codigo": "L44-5",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0052",
+      "municipalidad_codigo": "L44-5",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0053",
+      "municipalidad_codigo": "L44-6",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0053",
+      "municipalidad_codigo": "L44-6",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0054",
+      "municipalidad_codigo": "L44-7",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0054",
+      "municipalidad_codigo": "L44-7",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0055",
+      "municipalidad_codigo": "L44-8",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0055",
+      "municipalidad_codigo": "L44-8",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0056",
+      "municipalidad_codigo": "L44-9",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0056",
+      "municipalidad_codigo": "L44-9",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0057",
+      "municipalidad_codigo": "L44-10",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0057",
+      "municipalidad_codigo": "L44-10",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0058",
+      "municipalidad_codigo": "L44-11",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0058",
+      "municipalidad_codigo": "L44-11",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0059",
+      "municipalidad_codigo": "L44-12",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0059",
+      "municipalidad_codigo": "L44-12",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0060",
+      "municipalidad_codigo": "L44-13",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0060",
+      "municipalidad_codigo": "L44-13",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0061",
+      "municipalidad_codigo": "L44-14",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0061",
+      "municipalidad_codigo": "L44-14",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "074281",
-      "municipalidad_codigo": "MUN0062",
+      "municipalidad_codigo": "L44-15",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "072389",
-      "municipalidad_codigo": "MUN0062",
+      "municipalidad_codigo": "L44-15",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0063",
+      "municipalidad_codigo": "L50",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0063",
+      "municipalidad_codigo": "L50",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0064",
+      "municipalidad_codigo": "L50-3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0064",
+      "municipalidad_codigo": "L50-3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0065",
+      "municipalidad_codigo": "L50-4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0065",
+      "municipalidad_codigo": "L50-4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0066",
+      "municipalidad_codigo": "L50-5",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0066",
+      "municipalidad_codigo": "L50-5",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0067",
+      "municipalidad_codigo": "L50-6",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0067",
+      "municipalidad_codigo": "L50-6",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0068",
+      "municipalidad_codigo": "L-FALTANTE 1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0068",
+      "municipalidad_codigo": "L-FALTANTE 1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0069",
+      "municipalidad_codigo": "L-FALTANTE 2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0069",
+      "municipalidad_codigo": "L-FALTANTE 2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0070",
+      "municipalidad_codigo": "L50-10",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0070",
+      "municipalidad_codigo": "L50-10",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0071",
+      "municipalidad_codigo": "L50-11",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0071",
+      "municipalidad_codigo": "L50-11",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0072",
+      "municipalidad_codigo": "L50-12",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0072",
+      "municipalidad_codigo": "L50-12",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0073",
+      "municipalidad_codigo": "L-FALTANTE 3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0073",
+      "municipalidad_codigo": "L-FALTANTE 3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0074",
+      "municipalidad_codigo": "L50-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "077632",
-      "municipalidad_codigo": "MUN0074",
+      "municipalidad_codigo": "L50-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0075",
+      "municipalidad_codigo": "L60",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0075",
+      "municipalidad_codigo": "L60",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0076",
+      "municipalidad_codigo": "L60-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0076",
+      "municipalidad_codigo": "L60-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0077",
+      "municipalidad_codigo": "L60-2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0077",
+      "municipalidad_codigo": "L60-2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0078",
+      "municipalidad_codigo": "L60-3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0078",
+      "municipalidad_codigo": "L60-3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0079",
+      "municipalidad_codigo": "L60-4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0079",
+      "municipalidad_codigo": "L60-4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0080",
+      "municipalidad_codigo": "L-FALTANTE 4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0080",
+      "municipalidad_codigo": "L-FALTANTE 4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0081",
+      "municipalidad_codigo": "L60-6",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0081",
+      "municipalidad_codigo": "L60-6",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0082",
+      "municipalidad_codigo": "L60-7",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0082",
+      "municipalidad_codigo": "L60-7",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0083",
+      "municipalidad_codigo": "L60-8",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0083",
+      "municipalidad_codigo": "L60-8",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0084",
+      "municipalidad_codigo": "L60-9",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0084",
+      "municipalidad_codigo": "L60-9",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0085",
+      "municipalidad_codigo": "L60-10",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0085",
+      "municipalidad_codigo": "L60-10",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "MUN0086",
+      "municipalidad_codigo": "L60-11",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "MUN0086",
+      "municipalidad_codigo": "L60-11",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0087",
+      "municipalidad_codigo": "L70",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0087",
+      "municipalidad_codigo": "L70",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0088",
+      "municipalidad_codigo": "L70-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0088",
+      "municipalidad_codigo": "L70-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0089",
+      "municipalidad_codigo": "L70-2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0089",
+      "municipalidad_codigo": "L70-2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0090",
+      "municipalidad_codigo": "L70-3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0090",
+      "municipalidad_codigo": "L70-3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "183026",
-      "municipalidad_codigo": "MUN0091",
+      "municipalidad_codigo": "L70-4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0091",
+      "municipalidad_codigo": "L70-4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0092",
+      "municipalidad_codigo": "L-80",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "053133",
-      "municipalidad_codigo": "MUN0092",
+      "municipalidad_codigo": "L-80",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "MUN0093",
+      "municipalidad_codigo": "L80-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "053133",
-      "municipalidad_codigo": "MUN0093",
+      "municipalidad_codigo": "L80-1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "077632",
-      "municipalidad_codigo": "MUN0094",
+      "municipalidad_codigo": "L-FALTANTE 5",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "053133",
-      "municipalidad_codigo": "MUN0094",
+      "municipalidad_codigo": "L-FALTANTE 5",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "018554",
-      "municipalidad_codigo": "MUN0001",
+      "municipalidad_codigo": "L1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "050393",
-      "municipalidad_codigo": "MUN0001",
+      "municipalidad_codigo": "L1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "114633",
-      "municipalidad_codigo": "MUN0002",
+      "municipalidad_codigo": "L1-2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "114939",
-      "municipalidad_codigo": "MUN0002",
+      "municipalidad_codigo": "L1-2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0003",
+      "municipalidad_codigo": "L1-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "202264",
-      "municipalidad_codigo": "MUN0003",
+      "municipalidad_codigo": "L1-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "036721",
-      "municipalidad_codigo": "MUN0004",
+      "municipalidad_codigo": "L2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "028219",
-      "municipalidad_codigo": "MUN0004",
+      "municipalidad_codigo": "L2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "036721",
-      "municipalidad_codigo": "MUN0005",
+      "municipalidad_codigo": "L3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0005",
+      "municipalidad_codigo": "L3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "051921",
-      "municipalidad_codigo": "MUN0006",
+      "municipalidad_codigo": "L4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "021758",
-      "municipalidad_codigo": "MUN0006",
+      "municipalidad_codigo": "L4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "070258",
-      "municipalidad_codigo": "MUN0007",
+      "municipalidad_codigo": "L5",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "018554",
-      "municipalidad_codigo": "MUN0007",
+      "municipalidad_codigo": "L5",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "044963",
-      "municipalidad_codigo": "MUN0008",
+      "municipalidad_codigo": "L6",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038222",
-      "municipalidad_codigo": "MUN0008",
+      "municipalidad_codigo": "L6",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "MUN0009",
+      "municipalidad_codigo": "L7",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "063147",
-      "municipalidad_codigo": "MUN0009",
+      "municipalidad_codigo": "L7",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "114939",
-      "municipalidad_codigo": "MUN0010",
+      "municipalidad_codigo": "L8",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "047691",
-      "municipalidad_codigo": "MUN0010",
+      "municipalidad_codigo": "L8",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "202264",
-      "municipalidad_codigo": "MUN0011",
+      "municipalidad_codigo": "L9",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "158119",
-      "municipalidad_codigo": "MUN0011",
+      "municipalidad_codigo": "L9",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "038222",
-      "municipalidad_codigo": "MUN0012",
+      "municipalidad_codigo": "L10",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "031156",
-      "municipalidad_codigo": "MUN0012",
+      "municipalidad_codigo": "L10",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "058751",
-      "municipalidad_codigo": "MUN0013",
+      "municipalidad_codigo": "L11",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0013",
+      "municipalidad_codigo": "L11",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "017893",
-      "municipalidad_codigo": "MUN0014",
+      "municipalidad_codigo": "L12",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "047691",
-      "municipalidad_codigo": "MUN0014",
+      "municipalidad_codigo": "L12",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "114939",
-      "municipalidad_codigo": "MUN0015",
+      "municipalidad_codigo": "L13",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "051921",
-      "municipalidad_codigo": "MUN0015",
+      "municipalidad_codigo": "L13",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "063147",
-      "municipalidad_codigo": "MUN0016",
+      "municipalidad_codigo": "L14",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0016",
+      "municipalidad_codigo": "L14",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "058751",
-      "municipalidad_codigo": "MUN0017",
+      "municipalidad_codigo": "L15",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038225",
-      "municipalidad_codigo": "MUN0017",
+      "municipalidad_codigo": "L15",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0018",
+      "municipalidad_codigo": "L15-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038222",
-      "municipalidad_codigo": "MUN0018",
+      "municipalidad_codigo": "L15-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "125641",
-      "municipalidad_codigo": "MUN0019",
+      "municipalidad_codigo": "L16",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "041426",
-      "municipalidad_codigo": "MUN0019",
+      "municipalidad_codigo": "L16",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "073932",
-      "municipalidad_codigo": "MUN0020",
+      "municipalidad_codigo": "L17",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "031156",
-      "municipalidad_codigo": "MUN0020",
+      "municipalidad_codigo": "L17",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "057838",
-      "municipalidad_codigo": "MUN0021",
+      "municipalidad_codigo": "L18",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "051921",
-      "municipalidad_codigo": "MUN0021",
+      "municipalidad_codigo": "L18",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0021",
+      "municipalidad_codigo": "L18",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "021758",
-      "municipalidad_codigo": "MUN0022",
+      "municipalidad_codigo": "L19",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "017893",
-      "municipalidad_codigo": "MUN0022",
+      "municipalidad_codigo": "L19",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "038225",
-      "municipalidad_codigo": "MUN0023",
+      "municipalidad_codigo": "L20",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "070258",
-      "municipalidad_codigo": "MUN0023",
+      "municipalidad_codigo": "L20",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "041426",
-      "municipalidad_codigo": "MUN0024",
+      "municipalidad_codigo": "L21",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "058751",
-      "municipalidad_codigo": "MUN0024",
+      "municipalidad_codigo": "L21",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "057838",
-      "municipalidad_codigo": "MUN0025",
+      "municipalidad_codigo": "L22",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "114633",
-      "municipalidad_codigo": "MUN0025",
+      "municipalidad_codigo": "L22",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "070258",
-      "municipalidad_codigo": "MUN0026",
+      "municipalidad_codigo": "L23",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "158119",
-      "municipalidad_codigo": "MUN0026",
+      "municipalidad_codigo": "L23",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "017893",
-      "municipalidad_codigo": "MUN0027",
+      "municipalidad_codigo": "L24",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "124694",
-      "municipalidad_codigo": "MUN0027",
+      "municipalidad_codigo": "L24",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "021758",
-      "municipalidad_codigo": "MUN0028",
+      "municipalidad_codigo": "L25",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "044963",
-      "municipalidad_codigo": "MUN0028",
+      "municipalidad_codigo": "L25",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "073932",
-      "municipalidad_codigo": "MUN0029",
+      "municipalidad_codigo": "L26",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0029",
+      "municipalidad_codigo": "L26",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0030",
+      "municipalidad_codigo": "L27",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "047691",
-      "municipalidad_codigo": "MUN0030",
+      "municipalidad_codigo": "L27",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "057838",
-      "municipalidad_codigo": "MUN0030",
+      "municipalidad_codigo": "L27",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "028219",
-      "municipalidad_codigo": "MUN0031",
+      "municipalidad_codigo": "L28",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038225",
-      "municipalidad_codigo": "MUN0031",
+      "municipalidad_codigo": "L28",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "050393",
-      "municipalidad_codigo": "MUN0032",
+      "municipalidad_codigo": "L29",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "018554",
-      "municipalidad_codigo": "MUN0032",
+      "municipalidad_codigo": "L29",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "151817",
-      "municipalidad_codigo": "MUN0033",
+      "municipalidad_codigo": "L30",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "017893",
-      "municipalidad_codigo": "MUN0033",
+      "municipalidad_codigo": "L30",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0034",
+      "municipalidad_codigo": "L31",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "036721",
-      "municipalidad_codigo": "MUN0034",
+      "municipalidad_codigo": "L31",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0035",
+      "municipalidad_codigo": "L32",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "031156",
-      "municipalidad_codigo": "MUN0035",
+      "municipalidad_codigo": "L32",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "073932",
-      "municipalidad_codigo": "MUN0035",
+      "municipalidad_codigo": "L32",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "032452",
-      "municipalidad_codigo": "MUN0036",
+      "municipalidad_codigo": "L33",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0036",
+      "municipalidad_codigo": "L33",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "151817",
-      "municipalidad_codigo": "MUN0036",
+      "municipalidad_codigo": "L33",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "158119",
-      "municipalidad_codigo": "MUN0037",
+      "municipalidad_codigo": "L34",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "015492",
-      "municipalidad_codigo": "MUN0037",
+      "municipalidad_codigo": "L34",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "111665",
-      "municipalidad_codigo": "MUN0038",
+      "municipalidad_codigo": "L35",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "073932",
-      "municipalidad_codigo": "MUN0038",
+      "municipalidad_codigo": "L35",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "038225",
-      "municipalidad_codigo": "MUN0039",
+      "municipalidad_codigo": "L36",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "057281",
-      "municipalidad_codigo": "MUN0039",
+      "municipalidad_codigo": "L36",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "124694",
-      "municipalidad_codigo": "MUN0040",
+      "municipalidad_codigo": "L37",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0040",
+      "municipalidad_codigo": "L37",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "063147",
-      "municipalidad_codigo": "MUN0041",
+      "municipalidad_codigo": "L38",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "111665",
-      "municipalidad_codigo": "MUN0041",
+      "municipalidad_codigo": "L38",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0042",
+      "municipalidad_codigo": "L39",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "070258",
-      "municipalidad_codigo": "MUN0042",
+      "municipalidad_codigo": "L39",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "047691",
-      "municipalidad_codigo": "MUN0043",
+      "municipalidad_codigo": "L40",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "058751",
-      "municipalidad_codigo": "MUN0043",
+      "municipalidad_codigo": "L40",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "038222",
-      "municipalidad_codigo": "MUN0044",
+      "municipalidad_codigo": "L41",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "057281",
-      "municipalidad_codigo": "MUN0044",
+      "municipalidad_codigo": "L41",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "032452",
-      "municipalidad_codigo": "MUN0044",
+      "municipalidad_codigo": "L41",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "158119",
-      "municipalidad_codigo": "MUN0045",
+      "municipalidad_codigo": "L42",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "125641",
-      "municipalidad_codigo": "MUN0045",
+      "municipalidad_codigo": "L42",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "015492",
-      "municipalidad_codigo": "MUN0046",
+      "municipalidad_codigo": "L43",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "041426",
-      "municipalidad_codigo": "MUN0046",
+      "municipalidad_codigo": "L43",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0047",
+      "municipalidad_codigo": "L44",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0047",
+      "municipalidad_codigo": "L44",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0048",
+      "municipalidad_codigo": "L44-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0048",
+      "municipalidad_codigo": "L44-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0049",
+      "municipalidad_codigo": "L44-2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0049",
+      "municipalidad_codigo": "L44-2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0050",
+      "municipalidad_codigo": "L44-3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0050",
+      "municipalidad_codigo": "L44-3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0051",
+      "municipalidad_codigo": "L44-4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0051",
+      "municipalidad_codigo": "L44-4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0052",
+      "municipalidad_codigo": "L44-5",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0052",
+      "municipalidad_codigo": "L44-5",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0053",
+      "municipalidad_codigo": "L44-6",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0053",
+      "municipalidad_codigo": "L44-6",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0054",
+      "municipalidad_codigo": "L44-7",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0054",
+      "municipalidad_codigo": "L44-7",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0055",
+      "municipalidad_codigo": "L44-8",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0055",
+      "municipalidad_codigo": "L44-8",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0056",
+      "municipalidad_codigo": "L44-9",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0056",
+      "municipalidad_codigo": "L44-9",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0057",
+      "municipalidad_codigo": "L44-10",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0057",
+      "municipalidad_codigo": "L44-10",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0058",
+      "municipalidad_codigo": "L44-11",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0058",
+      "municipalidad_codigo": "L44-11",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0059",
+      "municipalidad_codigo": "L44-12",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0059",
+      "municipalidad_codigo": "L44-12",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0060",
+      "municipalidad_codigo": "L44-13",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0060",
+      "municipalidad_codigo": "L44-13",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0061",
+      "municipalidad_codigo": "L44-14",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0061",
+      "municipalidad_codigo": "L44-14",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "155883",
-      "municipalidad_codigo": "MUN0062",
+      "municipalidad_codigo": "L44-15",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "052942",
-      "municipalidad_codigo": "MUN0062",
+      "municipalidad_codigo": "L44-15",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0063",
+      "municipalidad_codigo": "L50",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "MUN0063",
+      "municipalidad_codigo": "L50",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0064",
+      "municipalidad_codigo": "L50-3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "MUN0064",
+      "municipalidad_codigo": "L50-3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0065",
+      "municipalidad_codigo": "L50-4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "MUN0065",
+      "municipalidad_codigo": "L50-4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0066",
+      "municipalidad_codigo": "L50-5",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "MUN0066",
+      "municipalidad_codigo": "L50-5",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0067",
+      "municipalidad_codigo": "L50-6",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "MUN0067",
+      "municipalidad_codigo": "L50-6",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0068",
+      "municipalidad_codigo": "L-FALTANTE 1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "MUN0068",
+      "municipalidad_codigo": "L-FALTANTE 1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0069",
+      "municipalidad_codigo": "L-FALTANTE 2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "MUN0069",
+      "municipalidad_codigo": "L-FALTANTE 2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0070",
+      "municipalidad_codigo": "L50-10",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "MUN0070",
+      "municipalidad_codigo": "L50-10",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0071",
+      "municipalidad_codigo": "L50-11",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "MUN0071",
+      "municipalidad_codigo": "L50-11",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0072",
+      "municipalidad_codigo": "L50-12",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "MUN0072",
+      "municipalidad_codigo": "L50-12",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "MUN0073",
+      "municipalidad_codigo": "L-FALTANTE 3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "MUN0073",
+      "municipalidad_codigo": "L-FALTANTE 3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "041426",
-      "municipalidad_codigo": "MUN0074",
+      "municipalidad_codigo": "L50-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "057838",
-      "municipalidad_codigo": "MUN0074",
+      "municipalidad_codigo": "L50-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0075",
+      "municipalidad_codigo": "L60",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0075",
+      "municipalidad_codigo": "L60",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0076",
+      "municipalidad_codigo": "L60-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0076",
+      "municipalidad_codigo": "L60-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0077",
+      "municipalidad_codigo": "L60-2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0077",
+      "municipalidad_codigo": "L60-2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0078",
+      "municipalidad_codigo": "L60-3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0078",
+      "municipalidad_codigo": "L60-3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0079",
+      "municipalidad_codigo": "L60-4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0079",
+      "municipalidad_codigo": "L60-4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0080",
+      "municipalidad_codigo": "L-FALTANTE 4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0080",
+      "municipalidad_codigo": "L-FALTANTE 4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0081",
+      "municipalidad_codigo": "L60-6",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0081",
+      "municipalidad_codigo": "L60-6",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0082",
+      "municipalidad_codigo": "L60-7",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0082",
+      "municipalidad_codigo": "L60-7",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0083",
+      "municipalidad_codigo": "L60-8",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0083",
+      "municipalidad_codigo": "L60-8",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0084",
+      "municipalidad_codigo": "L60-9",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0084",
+      "municipalidad_codigo": "L60-9",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0085",
+      "municipalidad_codigo": "L60-10",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0085",
+      "municipalidad_codigo": "L60-10",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0086",
+      "municipalidad_codigo": "L60-11",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "MUN0086",
+      "municipalidad_codigo": "L60-11",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "057281",
-      "municipalidad_codigo": "MUN0087",
+      "municipalidad_codigo": "L70",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "063147",
-      "municipalidad_codigo": "MUN0087",
+      "municipalidad_codigo": "L70",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "057281",
-      "municipalidad_codigo": "MUN0088",
+      "municipalidad_codigo": "L70-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "063147",
-      "municipalidad_codigo": "MUN0088",
+      "municipalidad_codigo": "L70-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "057281",
-      "municipalidad_codigo": "MUN0089",
+      "municipalidad_codigo": "L70-2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "063147",
-      "municipalidad_codigo": "MUN0089",
+      "municipalidad_codigo": "L70-2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "057281",
-      "municipalidad_codigo": "MUN0090",
+      "municipalidad_codigo": "L70-3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "063147",
-      "municipalidad_codigo": "MUN0090",
+      "municipalidad_codigo": "L70-3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "057281",
-      "municipalidad_codigo": "MUN0091",
+      "municipalidad_codigo": "L70-4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "063147",
-      "municipalidad_codigo": "MUN0091",
+      "municipalidad_codigo": "L70-4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "031156",
-      "municipalidad_codigo": "MUN0092",
+      "municipalidad_codigo": "L-80",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "036721",
-      "municipalidad_codigo": "MUN0092",
+      "municipalidad_codigo": "L-80",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "031156",
-      "municipalidad_codigo": "MUN0093",
+      "municipalidad_codigo": "L80-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "036721",
-      "municipalidad_codigo": "MUN0093",
+      "municipalidad_codigo": "L80-1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "018554",
-      "municipalidad_codigo": "MUN0094",
+      "municipalidad_codigo": "L-FALTANTE 5",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "MUN0094",
+      "municipalidad_codigo": "L-FALTANTE 5",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0001",
+      "municipalidad_codigo": "L1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0001",
+      "municipalidad_codigo": "L1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0002",
+      "municipalidad_codigo": "L1-2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0002",
+      "municipalidad_codigo": "L1-2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0003",
+      "municipalidad_codigo": "L1-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0003",
+      "municipalidad_codigo": "L1-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0004",
+      "municipalidad_codigo": "L2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0004",
+      "municipalidad_codigo": "L2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0005",
+      "municipalidad_codigo": "L3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0005",
+      "municipalidad_codigo": "L3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0006",
+      "municipalidad_codigo": "L4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0006",
+      "municipalidad_codigo": "L4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0007",
+      "municipalidad_codigo": "L5",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0007",
+      "municipalidad_codigo": "L5",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0008",
+      "municipalidad_codigo": "L6",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0008",
+      "municipalidad_codigo": "L6",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0009",
+      "municipalidad_codigo": "L7",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0009",
+      "municipalidad_codigo": "L7",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0010",
+      "municipalidad_codigo": "L8",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0010",
+      "municipalidad_codigo": "L8",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0011",
+      "municipalidad_codigo": "L9",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0011",
+      "municipalidad_codigo": "L9",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0012",
+      "municipalidad_codigo": "L10",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0012",
+      "municipalidad_codigo": "L10",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0013",
+      "municipalidad_codigo": "L11",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0013",
+      "municipalidad_codigo": "L11",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0014",
+      "municipalidad_codigo": "L12",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0014",
+      "municipalidad_codigo": "L12",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0015",
+      "municipalidad_codigo": "L13",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0015",
+      "municipalidad_codigo": "L13",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0016",
+      "municipalidad_codigo": "L14",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0016",
+      "municipalidad_codigo": "L14",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0017",
+      "municipalidad_codigo": "L15",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0017",
+      "municipalidad_codigo": "L15",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0018",
+      "municipalidad_codigo": "L15-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0018",
+      "municipalidad_codigo": "L15-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0019",
+      "municipalidad_codigo": "L16",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0019",
+      "municipalidad_codigo": "L16",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0020",
+      "municipalidad_codigo": "L17",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0020",
+      "municipalidad_codigo": "L17",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0021",
+      "municipalidad_codigo": "L18",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0021",
+      "municipalidad_codigo": "L18",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0022",
+      "municipalidad_codigo": "L19",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0022",
+      "municipalidad_codigo": "L19",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0023",
+      "municipalidad_codigo": "L20",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0023",
+      "municipalidad_codigo": "L20",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0024",
+      "municipalidad_codigo": "L21",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0024",
+      "municipalidad_codigo": "L21",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0025",
+      "municipalidad_codigo": "L22",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0025",
+      "municipalidad_codigo": "L22",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0026",
+      "municipalidad_codigo": "L23",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0026",
+      "municipalidad_codigo": "L23",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0027",
+      "municipalidad_codigo": "L24",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0027",
+      "municipalidad_codigo": "L24",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0028",
+      "municipalidad_codigo": "L25",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0028",
+      "municipalidad_codigo": "L25",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0029",
+      "municipalidad_codigo": "L26",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0029",
+      "municipalidad_codigo": "L26",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0030",
+      "municipalidad_codigo": "L27",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0030",
+      "municipalidad_codigo": "L27",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0031",
+      "municipalidad_codigo": "L28",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0031",
+      "municipalidad_codigo": "L28",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0032",
+      "municipalidad_codigo": "L29",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0032",
+      "municipalidad_codigo": "L29",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0033",
+      "municipalidad_codigo": "L30",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0033",
+      "municipalidad_codigo": "L30",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0034",
+      "municipalidad_codigo": "L31",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0034",
+      "municipalidad_codigo": "L31",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0035",
+      "municipalidad_codigo": "L32",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0035",
+      "municipalidad_codigo": "L32",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0036",
+      "municipalidad_codigo": "L33",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0036",
+      "municipalidad_codigo": "L33",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0037",
+      "municipalidad_codigo": "L34",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0037",
+      "municipalidad_codigo": "L34",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0038",
+      "municipalidad_codigo": "L35",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0038",
+      "municipalidad_codigo": "L35",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0039",
+      "municipalidad_codigo": "L36",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0039",
+      "municipalidad_codigo": "L36",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0040",
+      "municipalidad_codigo": "L37",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0040",
+      "municipalidad_codigo": "L37",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0041",
+      "municipalidad_codigo": "L38",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0041",
+      "municipalidad_codigo": "L38",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0042",
+      "municipalidad_codigo": "L39",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0042",
+      "municipalidad_codigo": "L39",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0043",
+      "municipalidad_codigo": "L40",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0043",
+      "municipalidad_codigo": "L40",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0044",
+      "municipalidad_codigo": "L41",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0044",
+      "municipalidad_codigo": "L41",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0045",
+      "municipalidad_codigo": "L42",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0045",
+      "municipalidad_codigo": "L42",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0046",
+      "municipalidad_codigo": "L43",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0046",
+      "municipalidad_codigo": "L43",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0047",
+      "municipalidad_codigo": "L44",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0047",
+      "municipalidad_codigo": "L44",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0048",
+      "municipalidad_codigo": "L44-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0048",
+      "municipalidad_codigo": "L44-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0049",
+      "municipalidad_codigo": "L44-2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0049",
+      "municipalidad_codigo": "L44-2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0050",
+      "municipalidad_codigo": "L44-3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0050",
+      "municipalidad_codigo": "L44-3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0051",
+      "municipalidad_codigo": "L44-4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0051",
+      "municipalidad_codigo": "L44-4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0052",
+      "municipalidad_codigo": "L44-5",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0052",
+      "municipalidad_codigo": "L44-5",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0053",
+      "municipalidad_codigo": "L44-6",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0053",
+      "municipalidad_codigo": "L44-6",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0054",
+      "municipalidad_codigo": "L44-7",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0054",
+      "municipalidad_codigo": "L44-7",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0055",
+      "municipalidad_codigo": "L44-8",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0055",
+      "municipalidad_codigo": "L44-8",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0056",
+      "municipalidad_codigo": "L44-9",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0056",
+      "municipalidad_codigo": "L44-9",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0057",
+      "municipalidad_codigo": "L44-10",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0057",
+      "municipalidad_codigo": "L44-10",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0058",
+      "municipalidad_codigo": "L44-11",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0058",
+      "municipalidad_codigo": "L44-11",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0059",
+      "municipalidad_codigo": "L44-12",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0059",
+      "municipalidad_codigo": "L44-12",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0060",
+      "municipalidad_codigo": "L44-13",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0060",
+      "municipalidad_codigo": "L44-13",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0061",
+      "municipalidad_codigo": "L44-14",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0061",
+      "municipalidad_codigo": "L44-14",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0062",
+      "municipalidad_codigo": "L44-15",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0062",
+      "municipalidad_codigo": "L44-15",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0063",
+      "municipalidad_codigo": "L50",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0063",
+      "municipalidad_codigo": "L50",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0074",
+      "municipalidad_codigo": "L50-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0074",
+      "municipalidad_codigo": "L50-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0064",
+      "municipalidad_codigo": "L50-3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0064",
+      "municipalidad_codigo": "L50-3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0065",
+      "municipalidad_codigo": "L50-4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0065",
+      "municipalidad_codigo": "L50-4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0066",
+      "municipalidad_codigo": "L50-5",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0066",
+      "municipalidad_codigo": "L50-5",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0067",
+      "municipalidad_codigo": "L50-6",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0067",
+      "municipalidad_codigo": "L50-6",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0068",
+      "municipalidad_codigo": "L-FALTANTE 1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0068",
+      "municipalidad_codigo": "L-FALTANTE 1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0069",
+      "municipalidad_codigo": "L-FALTANTE 2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "MUN0069",
+      "municipalidad_codigo": "L-FALTANTE 2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0070",
+      "municipalidad_codigo": "L50-10",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "022414",
-      "municipalidad_codigo": "MUN0070",
+      "municipalidad_codigo": "L50-10",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0071",
+      "municipalidad_codigo": "L50-11",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0071",
+      "municipalidad_codigo": "L50-11",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0072",
+      "municipalidad_codigo": "L50-12",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0072",
+      "municipalidad_codigo": "L50-12",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0073",
+      "municipalidad_codigo": "L-FALTANTE 3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0073",
+      "municipalidad_codigo": "L-FALTANTE 3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0095",
+      "municipalidad_codigo": "L60",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0095",
+      "municipalidad_codigo": "L60",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0076",
+      "municipalidad_codigo": "L60-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0076",
+      "municipalidad_codigo": "L60-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0077",
+      "municipalidad_codigo": "L60-2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0077",
+      "municipalidad_codigo": "L60-2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0078",
+      "municipalidad_codigo": "L60-3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0078",
+      "municipalidad_codigo": "L60-3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0079",
+      "municipalidad_codigo": "L60-4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0079",
+      "municipalidad_codigo": "L60-4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0080",
+      "municipalidad_codigo": "L-FALTANTE 4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0080",
+      "municipalidad_codigo": "L-FALTANTE 4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0081",
+      "municipalidad_codigo": "L60-6",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "MUN0081",
+      "municipalidad_codigo": "L60-6",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0082",
+      "municipalidad_codigo": "L60-7",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0082",
+      "municipalidad_codigo": "L60-7",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0083",
+      "municipalidad_codigo": "L60-8",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0083",
+      "municipalidad_codigo": "L60-8",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "MUN0084",
+      "municipalidad_codigo": "L60-9",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0084",
+      "municipalidad_codigo": "L60-9",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0085",
+      "municipalidad_codigo": "L60-10",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "069692",
-      "municipalidad_codigo": "MUN0085",
+      "municipalidad_codigo": "L60-10",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0096",
+      "municipalidad_codigo": "L60-11",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0096",
+      "municipalidad_codigo": "L60-11",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0097",
+      "municipalidad_codigo": "L70",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0097",
+      "municipalidad_codigo": "L70",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0088",
+      "municipalidad_codigo": "L70-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "063986",
-      "municipalidad_codigo": "MUN0088",
+      "municipalidad_codigo": "L70-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0089",
+      "municipalidad_codigo": "L70-2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "MUN0089",
+      "municipalidad_codigo": "L70-2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0090",
+      "municipalidad_codigo": "L70-3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0090",
+      "municipalidad_codigo": "L70-3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0091",
+      "municipalidad_codigo": "L70-4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0091",
+      "municipalidad_codigo": "L70-4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "118318",
-      "municipalidad_codigo": "MUN0098",
+      "municipalidad_codigo": "L-80",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0098",
+      "municipalidad_codigo": "L-80",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0093",
+      "municipalidad_codigo": "L80-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "MUN0093",
+      "municipalidad_codigo": "L80-1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "MUN0094",
+      "municipalidad_codigo": "L-FALTANTE 5",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "MUN0094",
+      "municipalidad_codigo": "L-FALTANTE 5",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     }
