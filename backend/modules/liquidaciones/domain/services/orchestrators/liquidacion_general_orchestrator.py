@@ -148,6 +148,9 @@ class LiquidacionGeneralOrchestrator:
                 expediente=prev_lg.expediente or None,
             ))
 
+        # Build delegados (FK adjunta liquidacion_delegados)
+        delegados = self.general_core_service.build_delegados_result(lg)
+
         return LiquidacionGeneralResult(
             id=str(lg.id),
             municipalidad=MunicipalidadResult(
@@ -214,6 +217,7 @@ class LiquidacionGeneralOrchestrator:
                 else None
             ),
             revisiones_previas=revisiones_previas,
+            delegados=delegados,
         )
 
     def listar_ultimas_liquidaciones_generales(
