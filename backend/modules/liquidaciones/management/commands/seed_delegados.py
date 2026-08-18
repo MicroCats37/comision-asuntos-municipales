@@ -72,6 +72,17 @@ class Command(BaseCommand):
         esp = EspecialidadRevision.objects.filter(nombre__iexact=nombre_esp).first()
         if esp:
             return esp
+        # Sinónimos: el CSV/seed usa nombres largos, la BD usa nombres cortos.
+        SINONIMOS_ESP = {
+            "Ingeniería Eléctrica y Mecánica Eléctrica": "Eléctrica/Mecánica",
+            "Ingenieria Electrica y Mecanica Electrica": "Eléctrica/Mecánica",
+            "Ingeniería Eléctrica": "Eléctrica/Mecánica",
+        }
+        sinonimo = SINONIMOS_ESP.get(nombre_esp)
+        if sinonimo:
+            esp = EspecialidadRevision.objects.filter(nombre__iexact=sinonimo).first()
+            if esp:
+                return esp
         # Fallback: comparar normalizado (sin acentos)
         norm = normalize(nombre_esp)
         for cand in EspecialidadRevision.objects.all():
