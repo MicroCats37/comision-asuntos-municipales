@@ -1244,6 +1244,11 @@ class LiquidacionGeneralCoreService:
         entidad_result = self._build_entidad_result(liquidacion_general.proyecto)
         proyecto_result = self._build_proyecto_result(liquidacion_general.proyecto, entidad_result)
 
+        # Si no se proveyeron delegados explícitamente, construirlos desde la
+        # relación liquidacion_delegados (comportamiento por defecto centralizado).
+        if delegados is None:
+            delegados = self.build_delegados_result(liquidacion_general)
+
         return LiquidacionGeneralResult(
             id=str(liquidacion_general.id),
             municipalidad=MunicipalidadResult(

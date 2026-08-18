@@ -402,13 +402,14 @@ class LiquidacionEdificacionesFlujo:
                 email=contacto.email,
             )
 
-        # Core: builds LiquidacionGeneralResult (delegados=[] for primera revision)
+        # Core: builds LiquidacionGeneralResult (delegados para primera revision)
+        delegados = self.general_core.build_delegados_result(liquidacion_general)
         general_result = self.general_core.build_general_result(
             liquidacion_general=liquidacion_general,
             usuario_id=usuario_id,
             contacto_result=contacto_result,
             revisiones_previas=None,
-            delegados=None,
+            delegados=delegados,
         )
 
         return EdificacionesPrimeraRevisionResult(
