@@ -407,13 +407,13 @@
     },
     {
       "nombre": "ATAVILLOS ALTO",
-      "codigo": "L-FALTANTE 1",
+      "codigo": "LFALTN1",
       "provincia": null,
       "distrito": null
     },
     {
       "nombre": "ATAVILLOS BAJO",
-      "codigo": "L-FALTANTE 2",
+      "codigo": "LFALTN2",
       "provincia": null,
       "distrito": null
     },
@@ -437,7 +437,7 @@
     },
     {
       "nombre": "27 DE NOVIEMBRE",
-      "codigo": "L-FALTANTE 3",
+      "codigo": "LFALTN3",
       "provincia": null,
       "distrito": null
     },
@@ -479,7 +479,7 @@
     },
     {
       "nombre": "AMBAR",
-      "codigo": "L-FALTANTE 4",
+      "codigo": "LFALTN4",
       "provincia": null,
       "distrito": null
     },
@@ -563,7 +563,7 @@
     },
     {
       "nombre": "PROVINCIA CANTA",
-      "codigo": "L-FALTANTE 5",
+      "codigo": "LFALTN5",
       "provincia": null,
       "distrito": null
     },
@@ -1751,25 +1751,25 @@
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "L-FALTANTE 1",
+      "municipalidad_codigo": "LFALTN1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "L-FALTANTE 1",
+      "municipalidad_codigo": "LFALTN1",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "L-FALTANTE 2",
+      "municipalidad_codigo": "LFALTN2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "L-FALTANTE 2",
+      "municipalidad_codigo": "LFALTN2",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
@@ -1811,13 +1811,13 @@
     },
     {
       "cip": "023593",
-      "municipalidad_codigo": "L-FALTANTE 3",
+      "municipalidad_codigo": "LFALTN3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "L-FALTANTE 3",
+      "municipalidad_codigo": "LFALTN3",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
@@ -1895,13 +1895,13 @@
     },
     {
       "cip": "016932",
-      "municipalidad_codigo": "L-FALTANTE 4",
+      "municipalidad_codigo": "LFALTN4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "060441",
-      "municipalidad_codigo": "L-FALTANTE 4",
+      "municipalidad_codigo": "LFALTN4",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
@@ -2063,13 +2063,13 @@
     },
     {
       "cip": "077632",
-      "municipalidad_codigo": "L-FALTANTE 5",
+      "municipalidad_codigo": "LFALTN5",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "053133",
-      "municipalidad_codigo": "L-FALTANTE 5",
+      "municipalidad_codigo": "LFALTN5",
       "especialidad": "Ingeniería Sanitaria - Edificaciones",
       "tipo": "alterno"
     },
@@ -2909,25 +2909,25 @@
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "L-FALTANTE 1",
+      "municipalidad_codigo": "LFALTN1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "L-FALTANTE 1",
+      "municipalidad_codigo": "LFALTN1",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "L-FALTANTE 2",
+      "municipalidad_codigo": "LFALTN2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "L-FALTANTE 2",
+      "municipalidad_codigo": "LFALTN2",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
@@ -2969,13 +2969,13 @@
     },
     {
       "cip": "066213",
-      "municipalidad_codigo": "L-FALTANTE 3",
+      "municipalidad_codigo": "LFALTN3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "092116",
-      "municipalidad_codigo": "L-FALTANTE 3",
+      "municipalidad_codigo": "LFALTN3",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
@@ -3053,13 +3053,13 @@
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "L-FALTANTE 4",
+      "municipalidad_codigo": "LFALTN4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "038003",
-      "municipalidad_codigo": "L-FALTANTE 4",
+      "municipalidad_codigo": "LFALTN4",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
@@ -3221,13 +3221,13 @@
     },
     {
       "cip": "018554",
-      "municipalidad_codigo": "L-FALTANTE 5",
+      "municipalidad_codigo": "LFALTN5",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "titular"
     },
     {
       "cip": "138328",
-      "municipalidad_codigo": "L-FALTANTE 5",
+      "municipalidad_codigo": "LFALTN5",
       "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica - Edificaciones",
       "tipo": "alterno"
     },
@@ -4049,25 +4049,25 @@
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "L-FALTANTE 1",
+      "municipalidad_codigo": "LFALTN1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "059197",
-      "municipalidad_codigo": "L-FALTANTE 1",
+      "municipalidad_codigo": "LFALTN1",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "L-FALTANTE 2",
+      "municipalidad_codigo": "LFALTN2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "024657",
-      "municipalidad_codigo": "L-FALTANTE 2",
+      "municipalidad_codigo": "LFALTN2",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
@@ -4109,13 +4109,13 @@
     },
     {
       "cip": "082702",
-      "municipalidad_codigo": "L-FALTANTE 3",
+      "municipalidad_codigo": "LFALTN3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "L-FALTANTE 3",
+      "municipalidad_codigo": "LFALTN3",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
@@ -4181,13 +4181,13 @@
     },
     {
       "cip": "091616",
-      "municipalidad_codigo": "L-FALTANTE 4",
+      "municipalidad_codigo": "LFALTN4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "163222",
-      "municipalidad_codigo": "L-FALTANTE 4",
+      "municipalidad_codigo": "LFALTN4",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     },
@@ -4349,13 +4349,13 @@
     },
     {
       "cip": "062895",
-      "municipalidad_codigo": "L-FALTANTE 5",
+      "municipalidad_codigo": "LFALTN5",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "titular"
     },
     {
       "cip": "018356",
-      "municipalidad_codigo": "L-FALTANTE 5",
+      "municipalidad_codigo": "LFALTN5",
       "especialidad": "Ingeniería Civil - Habilitaciones Urbanas",
       "tipo": "alterno"
     }

@@ -88,17 +88,18 @@ def resolve_codigo(nombre_csv: str, bd_codigos: dict) -> str | None:
     return None
 
 
-# Códigos asignados a municipalidades que no existen en la BD (se crearán al seedear)
+# Códigos asignados a municipalidades que no existen en la BD (se crearán al seedear).
+# El campo codigo de Municipalidad es max_length=10, así que usamos códigos cortos.
 FALTANTE_COUNT = {"n": 0}
 
 
 def resolve_codigo_o_faltante(nombre_csv: str, bd_codigos: dict) -> str:
-    """Resuelve código L; si no existe en BD, asigna L-FALTANTE N (se creará al seedear)."""
+    """Resuelve código L; si no existe en BD, asigna LFALTN (se creará al seedear)."""
     codigo = resolve_codigo(nombre_csv, bd_codigos)
     if codigo:
         return codigo
     FALTANTE_COUNT["n"] += 1
-    return f"L-FALTANTE {FALTANTE_COUNT['n']}"
+    return f"LFALTN{FALTANTE_COUNT['n']}"
 
 
 def main() -> None:
