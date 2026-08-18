@@ -15,7 +15,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type {
   ContactoOutput,
-  LiquidacionDelegadoOutput,
+  DelegadoOperativoMinOutput,
   LiquidacionGeneralOutput,
   LiquidacionTipoOutput,
 } from "../schemas/liquidacion-base.schema";
@@ -189,7 +189,7 @@ function RevisionesSection({
 function DelegadosSection({
   delegados,
 }: {
-  delegados: LiquidacionDelegadoOutput[];
+  delegados: DelegadoOperativoMinOutput[];
 }) {
   if (delegados.length === 0) {
     return (
@@ -211,17 +211,17 @@ function DelegadosSection({
           </div>
           <div className="flex flex-col">
             <span className="text-xs font-bold text-foreground">
-              {d.delegado?.nombre_completo || "—"}
+              {d.colegiado.nombre_completo || "—"}
             </span>
             <div className="flex items-center gap-2">
-              {d.delegado?.cip && (
+              {d.colegiado.cip && (
                 <span className="text-[10px] text-muted-foreground">
-                  CIP: {d.delegado.cip}
+                  CIP: {d.colegiado.cip}
                 </span>
               )}
-              {d.especialidad_revision.nombre && (
+              {d.colegiado.especialidad?.nombre && (
                 <span className="text-[10px] text-primary/70">
-                  • {d.especialidad_revision.nombre}
+                  • {d.colegiado.especialidad.nombre}
                 </span>
               )}
             </div>

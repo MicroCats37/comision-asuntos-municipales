@@ -45,6 +45,22 @@ class MunicipalidadBasicOut(BaseSchema):
     nombre: str
 
 
+class ColegiadoMinOut(BaseSchema):
+    """Colegiado (ingeniero) reducido — solo identidad del ingeniero, sin datos de liquidación."""
+    id: uuid.UUID
+    cip: str
+    dni: str
+    nombre_completo: str
+    especialidad: Optional[EspecialidadOut] = None
+    capitulo: Optional[CapituloOut] = None
+
+
+class DelegadoOperativoMinOut(BaseSchema):
+    """Delegado operativo reducido — devuelve el delegado elegido como objeto colegiado (el ingeniero)."""
+    id: uuid.UUID
+    colegiado: ColegiadoMinOut
+
+
 class DelegadoOut(BaseSchema):
     """Output schema for a Delegado (list item) con municipalidades y estado."""
     id: uuid.UUID

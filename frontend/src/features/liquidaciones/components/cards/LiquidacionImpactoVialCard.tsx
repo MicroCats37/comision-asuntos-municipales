@@ -288,7 +288,7 @@ export function LiquidacionImpactoVialCard({
         municipalidadId={lg.municipalidad?.id ?? ""}
         tipoLiquidacion="impacto_vial"
         delegadosActuales={(lg.delegados ?? []).map((d) => ({
-          id: d.delegado_id,
+          id: d.id,
         }))}
       />
     </>

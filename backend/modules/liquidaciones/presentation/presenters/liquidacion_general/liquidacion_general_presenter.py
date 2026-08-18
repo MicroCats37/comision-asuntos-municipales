@@ -38,10 +38,10 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     LiquidacionPreviaOutput,
     ContactoOutput,
 )
-from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
-    LiquidacionDelegadoOut,
-    EspecialidadRevisionOut,
-    LiquidacionDelegadoDelegadoOut,
+from modules.liquidaciones.presentation.schemas.delegado.delegado_schemas import (
+    DelegadoOperativoMinOut,
+    ColegiadoMinOut,
+    EspecialidadOut,
 )
 from core.pagination import PaginatedData
 
@@ -188,31 +188,27 @@ class LiquidacionGeneralPresenter:
         )
 
     @staticmethod
-    def _map_delegados(general: LiquidacionGeneralResult) -> List[LiquidacionDelegadoOut]:
+    def _map_delegados(general: LiquidacionGeneralResult) -> List[DelegadoOperativoMinOut]:
         """
         Maps the 'delegados' flat-join fields from LiquidacionGeneralResult
-        into a list of LiquidacionDelegadoOut schema objects.
+        into a list of DelegadoOperativoMinOut (objeto colegiado = el ingeniero).
         Returns [] if general.delegados is empty or None.
         """
         return [
-            LiquidacionDelegadoOut(
-                id=uuid.UUID(d.id),
-                liquidacion_id=uuid.UUID(d.liquidacion_id),
-                delegado_id=uuid.UUID(d.delegado_id),
-                especialidad_revision=EspecialidadRevisionOut(
-                    id=uuid.UUID(d.especialidad_revision_id),
-                    nombre=d.especialidad_revision_nombre,
-                ),
-                delegado=LiquidacionDelegadoDelegadoOut(
+            DelegadoOperativoMinOut(
+                id=uuid.UUID(d.delegado_id),
+                colegiado=ColegiadoMinOut(
                     id=uuid.UUID(d.delegado_id),
                     cip=d.delegado_cip,
                     dni=d.delegado_dni,
                     nombre_completo=d.delegado_nombre_completo,
+                    especialidad=EspecialidadOut(
+                        id=uuid.UUID(d.especialidad_revision_id),
+                        codigo="",
+                        nombre=d.especialidad_revision_nombre,
+                    ) if d.especialidad_revision_id else None,
+                    capitulo=None,
                 ),
-                periodo=d.periodo,
-                dictamen_revision=d.dictamen_revision,
-                fecha_presentacion=d.fecha_presentacion,
-                fecha_revision=d.fecha_revision,
             )
             for d in (general.delegados or [])
         ]

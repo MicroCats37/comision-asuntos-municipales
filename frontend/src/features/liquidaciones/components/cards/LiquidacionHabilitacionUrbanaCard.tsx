@@ -156,7 +156,7 @@ export function LiquidacionHabilitacionUrbanaCard({
         liquidacionId={lg.id}
         municipalidadId={lg.municipalidad?.id ?? ""}
         tipoLiquidacion="habilitacion_urbana"
-        delegadosActuales={(lg.delegados ?? []).map((d) => ({ id: d.delegado_id }))}
+        delegadosActuales={(lg.delegados ?? []).map((d) => ({ id: d.id }))}
       />
     </>
   );

@@ -97,29 +97,31 @@ export const TipoLiquidacionOutputSchema = z.object({
   nombre: z.string().nullish(),
 });
 
-// ── Delegados asociados a la liquidación (LiquidacionDelegadoOut) ──────────────
+// ── Delegados asociados a la liquidación (DelegadoOperativoMinOut) ────────────
 export const EspecialidadRevisionOutputSchema = z.object({
   id: uuid(),
   nombre: z.string(),
 });
 
-export const LiquidacionDelegadoDelegadoOutputSchema = z.object({
+export const ColegiadoMinOutputSchema = z.object({
   id: uuid(),
   cip: z.string(),
   dni: z.string(),
   nombre_completo: z.string(),
+  especialidad: EspecialidadRevisionOutputSchema.nullish(),
+  capitulo: z
+    .object({
+      id: uuid(),
+      registro_id: z.string().nullish(),
+      abreviacion: z.string().nullish(),
+      nombre: z.string().nullish(),
+    })
+    .nullish(),
 });
 
-export const LiquidacionDelegadoOutputSchema = z.object({
+export const DelegadoOperativoMinOutputSchema = z.object({
   id: uuid(),
-  liquidacion_id: uuid().nullish(),
-  delegado_id: uuid(),
-  especialidad_revision: EspecialidadRevisionOutputSchema,
-  delegado: LiquidacionDelegadoDelegadoOutputSchema.nullish(),
-  periodo: z.string().nullish(),
-  dictamen_revision: z.string().nullish(),
-  fecha_presentacion: z.string().nullish(),
-  fecha_revision: z.string().nullish(),
+  colegiado: ColegiadoMinOutputSchema,
 });
 
 // LiquidacionGeneralOutput — matches backend EXACTLY (rich fields), tolerant to nulls/strings
@@ -146,7 +148,7 @@ export const LiquidacionGeneralOutputSchema = z.object({
       expediente: z.string().nullish(),
     }),
   ).default([]),
-  delegados: z.array(LiquidacionDelegadoOutputSchema).default([]),
+  delegados: z.array(DelegadoOperativoMinOutputSchema).default([]),
 });
 
 // Paginated response helper (items directly, without ApiResponse wrapper)
@@ -173,6 +175,6 @@ export type ProvinciaOutput = z.infer<typeof ProvinciaOutputSchema>;
 export type DistritoOutput = z.infer<typeof DistritoOutputSchema>;
 export type LiquidacionTipoOutput = z.infer<typeof LiquidacionTipoOutputSchema>;
 export type LiquidacionGeneralOutput = z.infer<typeof LiquidacionGeneralOutputSchema>;
-export type LiquidacionDelegadoOutput = z.infer<typeof LiquidacionDelegadoOutputSchema>;
-export type LiquidacionDelegadoDelegadoOutput = z.infer<typeof LiquidacionDelegadoDelegadoOutputSchema>;
+export type DelegadoOperativoMinOutput = z.infer<typeof DelegadoOperativoMinOutputSchema>;
+export type ColegiadoMinOutput = z.infer<typeof ColegiadoMinOutputSchema>;
 export type EspecialidadRevisionOutput = z.infer<typeof EspecialidadRevisionOutputSchema>;

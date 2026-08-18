@@ -284,7 +284,7 @@ export function LiquidacionTaludesCard({ item }: LiquidacionTaludesCardProps) {
         municipalidadId={lg.municipalidad?.id ?? ""}
         tipoLiquidacion="taludes"
         delegadosActuales={(lg.delegados ?? []).map((d) => ({
-          id: d.delegado_id,
+          id: d.id,
         }))}
       />
     </>
