@@ -67,11 +67,12 @@ class EntidadesOrchestrator:
             Lista de distritos que cumplen los filtros
         """
         # Llama al método sync del core envuelto en sync_to_async
-        return await sync_to_async(self.flujo.core._obtener_distritos)(
+        distritos = await sync_to_async(self.flujo.core._obtener_distritos)(
             search=search,
             provincia_id=provincia_id,
             departamento_id=departamento_id,
         )
+        return distritos
 
     async def obtener_municipalidades(self):
         """Obtiene todas las municipalidades activas."""

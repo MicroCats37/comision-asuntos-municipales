@@ -258,6 +258,11 @@ class InspectorOrchestrator:
         Shape alineado con el alpha (InspectorVigenteResult) y el schema del
         frontend (inspector-vigente.schema.ts).
         """
+        from ninja.errors import HttpError
+
+        if not tipo_liquidacion:
+            raise HttpError(400, "El parámetro tipo_liquidacion es requerido")
+
         today = date.today()
 
         operaciones = self.core_service.list_inspectores_vigentes_para_tipo(

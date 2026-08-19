@@ -135,10 +135,6 @@ class LiquidacionInspectorController:
         sin paginación. Filtra por tipo (de la previa) y categoría, con
         búsqueda opcional por nombre/CIP (q).
         """
-        if not tipo_liquidacion:
-            from ninja.errors import HttpError
-            raise HttpError(400, "El parámetro tipo_liquidacion es requerido")
-
         domain_result = self.orchestrator.listar_inspectores_seleccionables_proceso(
             tipo_liquidacion=tipo_liquidacion,
             categoria=categoria,

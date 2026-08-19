@@ -1,7 +1,7 @@
 """
 AuthPresenter — transforma LoginTokenResult a esquema HTTP LoginTokenOut.
 """
-from ..schemas.auth_schemas import LoginTokenOut, AuthUserOut
+from modules.usuarios.presentation.schemas.auth_schemas import LoginTokenOut, AuthUserOut
 
 
 class AuthPresenter:
