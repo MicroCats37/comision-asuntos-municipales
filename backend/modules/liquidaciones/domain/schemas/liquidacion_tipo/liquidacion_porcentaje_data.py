@@ -6,16 +6,17 @@ del cálculo porcentual (un Detalle por tarifa aplicada).
 """
 from decimal import Decimal
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import Field
+from core.types import BaseSchema
 from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
-class DatosPorcentajeObra(BaseModel):
+class DatosPorcentajeObra(BaseSchema):
     """Datos básicos de entrada para cálculo porcentual."""
     valor_declarado: Decimal = Field(..., description="Valor total del proyecto")
 
 
-class TarifaPorcentajeObraAplicada(BaseModel):
+class TarifaPorcentajeObraAplicada(BaseSchema):
     """
     Tarifa aplicada (resuelta por FK).
 
@@ -29,7 +30,7 @@ class TarifaPorcentajeObraAplicada(BaseModel):
     especialidad_nombre: Optional[str] = None
 
 
-class LiquidacionPorcentajeObraData(BaseModel):
+class LiquidacionPorcentajeObraData(BaseSchema):
     """Datos completos para crear un cálculo porcentual."""
     datos: DatosPorcentajeObra
     tarifas: List[TarifaPorcentajeObraAplicada] = Field(
@@ -39,14 +40,14 @@ class LiquidacionPorcentajeObraData(BaseModel):
     tipo_tramite: Optional[str] = None  # FUTURE: activar cuando el frontend lo envíe
 
 
-class DetallePorcentajeObraData(BaseModel):
+class DetallePorcentajeObraData(BaseSchema):
     """Cálculo de un detalle individual (uno por tarifa/especialidad)."""
     tarifa_aplicada: TarifaPorcentajeObraAplicada
     porcentaje_aplicado: Decimal
     subtotal: Decimal
 
 
-class CotizacionPorcentajeObraData(BaseModel):
+class CotizacionPorcentajeObraData(BaseSchema):
     """Resultado completo del cálculo (antes de persistir)."""
     valor_declarado: Decimal
     porcentaje_liquidacion: Decimal  # SUM de tarifas

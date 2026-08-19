@@ -32,11 +32,11 @@ from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_porcentaj
     LiquidacionPorcentajeObraData,
     TarifaPorcentajeObraAplicada,
 )
-from modules.liquidaciones.domain.schemas.liquidacion_especifico.taludes_primera_revision_data import (
-    TaludesPrimeraRevisionData,
+from modules.liquidaciones.domain.schemas.liquidacion_especifico.primera_revision_data import (
+    LiquidacionEspecificaPrimeraRevisionData,
 )
-from modules.liquidaciones.domain.results.liquidacion_especifico.taludes_primera_revision_result import (
-    TaludesPrimeraRevisionResult,
+from modules.liquidaciones.domain.results.liquidacion_especifico.primera_revision_result import (
+    LiquidacionEspecificaPrimeraRevisionResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import (
     CotizacionPorcentajeObraResult,
@@ -73,7 +73,7 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
         self,
         usuario_id: int,
         payload_in,
-    ) -> TaludesPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
         Validates input, resolves tarifas (hybrid), calculates, delegates to Flujo.
 
@@ -145,7 +145,7 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
                 for esp in especialidades
             ]
 
-        domain_data = TaludesPrimeraRevisionData(
+        domain_data = LiquidacionEspecificaPrimeraRevisionData(
             liquidacion_general=LiquidacionGeneralData(
                 municipalidad_id=str(payload_in.liquidacion_general.municipalidad_id),
                 expediente=payload_in.liquidacion_general.expediente,
@@ -301,11 +301,11 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
         fecha_hasta=None,
         numero=None,
         numero_revision=None,
-    ) -> tuple[List[TaludesPrimeraRevisionResult], int]:
+    ) -> tuple[List[LiquidacionEspecificaPrimeraRevisionResult], int]:
         """
-        Returns paginated TaludesPrimeraRevisionResult list.
+        Returns paginated LiquidacionEspecificaPrimeraRevisionResult list.
         Applies pagination defaults/boundaries, iterates ORM objects to build domain DTOs.
-        Returns (List[TaludesPrimeraRevisionResult], total_count).
+        Returns (List[LiquidacionEspecificaPrimeraRevisionResult], total_count).
         """
         # Pagination boundary defaults
         if page < 1:
@@ -328,22 +328,22 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
             numero_revision=numero_revision,
         )
 
-        # Build TaludesPrimeraRevisionResult domain DTOs from ORM objects
-        domain_results: List[TaludesPrimeraRevisionResult] = []
+        # Build LiquidacionEspecificaPrimeraRevisionResult domain DTOs from ORM objects
+        domain_results: List[LiquidacionEspecificaPrimeraRevisionResult] = []
         for lg in orm_objects:
             domain_results.append(self._build_taludes_result(lg))
 
         return domain_results, total
 
-    def _build_taludes_result(self, lg) -> TaludesPrimeraRevisionResult:
+    def _build_taludes_result(self, lg) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
-        Maps a LiquidacionGeneral ORM object to TaludesPrimeraRevisionResult domain DTO.
+        Maps a LiquidacionGeneral ORM object to LiquidacionEspecificaPrimeraRevisionResult domain DTO.
 
         Delegates LiquidacionGeneralResult construction to general_core.build_general_result().
         Only the type-specific fields (taludes, liquidacion_porcentaje_obra) are built here.
         """
-        from modules.liquidaciones.domain.results.liquidacion_especifico.taludes_primera_revision_result import (
-            LiquidacionEspecificaTaludesResult,
+        from modules.liquidaciones.domain.results.liquidacion_especifico.primera_revision_result import (
+            LiquidacionEspecificaResult,
         )
         from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
             LiquidacionPorcentajeObraResult,
@@ -359,7 +359,7 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
 
         # Type-specific: Taludes
         taludes = lg.taludes
-        especifica_result = LiquidacionEspecificaTaludesResult(
+        especifica_result = LiquidacionEspecificaResult(
             id=str(taludes.id),
             numero=taludes.numero,
         )
@@ -387,15 +387,15 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
             ],
         )
 
-        return TaludesPrimeraRevisionResult(
+        return LiquidacionEspecificaPrimeraRevisionResult(
             liquidacion_general=general_result,
             liquidacion_especifica=especifica_result,
             liquidacion_tipo=tipo_result,
         )
 
-    def obtener_liquidacion(self, liquidacion_id: uuid.UUID) -> TaludesPrimeraRevisionResult:
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
-        Returns a single TaludesPrimeraRevisionResult for Taludes by UUID.
+        Returns a single LiquidacionEspecificaPrimeraRevisionResult for Taludes by UUID.
         Raises LiquidacionNotFoundError if not found.
         """
         try:

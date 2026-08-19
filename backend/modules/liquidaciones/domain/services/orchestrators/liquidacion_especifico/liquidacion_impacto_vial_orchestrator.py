@@ -33,11 +33,11 @@ from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_porcentaj
     LiquidacionPorcentajeObraData,
     TarifaPorcentajeObraAplicada,
 )
-from modules.liquidaciones.domain.schemas.liquidacion_especifico.impacto_vial_primera_revision_data import (
-    ImpactoVialPrimeraRevisionData,
+from modules.liquidaciones.domain.schemas.liquidacion_especifico.primera_revision_data import (
+    LiquidacionEspecificaPrimeraRevisionData,
 )
-from modules.liquidaciones.domain.results.liquidacion_especifico.impacto_vial_primera_revision_result import (
-    ImpactoVialPrimeraRevisionResult,
+from modules.liquidaciones.domain.results.liquidacion_especifico.primera_revision_result import (
+    LiquidacionEspecificaPrimeraRevisionResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import (
     CotizacionPorcentajeObraResult,
@@ -73,7 +73,7 @@ class LiquidacionImpactoVialOrchestrator(LiquidacionPOValidationMixin):
         self,
         usuario_id: int,
         payload_in,
-    ) -> ImpactoVialPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
         Validates input, resolves tarifas (hybrid), calculates, delegates to Flujo.
 
@@ -145,7 +145,7 @@ class LiquidacionImpactoVialOrchestrator(LiquidacionPOValidationMixin):
                 for esp in especialidades
             ]
 
-        domain_data = ImpactoVialPrimeraRevisionData(
+        domain_data = LiquidacionEspecificaPrimeraRevisionData(
             liquidacion_general=LiquidacionGeneralData(
                 municipalidad_id=str(payload_in.liquidacion_general.municipalidad_id),
                 expediente=payload_in.liquidacion_general.expediente,
@@ -301,11 +301,11 @@ class LiquidacionImpactoVialOrchestrator(LiquidacionPOValidationMixin):
         fecha_hasta=None,
         numero=None,
         numero_revision=None,
-    ) -> tuple[List[ImpactoVialPrimeraRevisionResult], int]:
+    ) -> tuple[List[LiquidacionEspecificaPrimeraRevisionResult], int]:
         """
-        Returns paginated ImpactoVialPrimeraRevisionResult list.
+        Returns paginated LiquidacionEspecificaPrimeraRevisionResult list.
         Applies pagination defaults/boundaries, iterates ORM objects to build domain DTOs.
-        Returns (List[ImpactoVialPrimeraRevisionResult], total_count).
+        Returns (List[LiquidacionEspecificaPrimeraRevisionResult], total_count).
         """
         # Pagination boundary defaults
         if page < 1:
@@ -328,22 +328,22 @@ class LiquidacionImpactoVialOrchestrator(LiquidacionPOValidationMixin):
             numero_revision=numero_revision,
         )
 
-        # Build ImpactoVialPrimeraRevisionResult domain DTOs from ORM objects
-        domain_results: List[ImpactoVialPrimeraRevisionResult] = []
+        # Build LiquidacionEspecificaPrimeraRevisionResult domain DTOs from ORM objects
+        domain_results: List[LiquidacionEspecificaPrimeraRevisionResult] = []
         for lg in orm_objects:
             domain_results.append(self._build_iv_result(lg))
 
         return domain_results, total
 
-    def _build_iv_result(self, lg) -> ImpactoVialPrimeraRevisionResult:
+    def _build_iv_result(self, lg) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
-        Maps a LiquidacionGeneral ORM object to ImpactoVialPrimeraRevisionResult domain DTO.
+        Maps a LiquidacionGeneral ORM object to LiquidacionEspecificaPrimeraRevisionResult domain DTO.
 
         Delegates LiquidacionGeneralResult construction to general_core.build_general_result().
         Only the type-specific fields (impacto_vial, liquidacion_porcentaje_obra) are built here.
         """
-        from modules.liquidaciones.domain.results.liquidacion_especifico.impacto_vial_primera_revision_result import (
-            LiquidacionEspecificaImpactoVialResult,
+        from modules.liquidaciones.domain.results.liquidacion_especifico.primera_revision_result import (
+            LiquidacionEspecificaResult,
         )
         from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
             LiquidacionPorcentajeObraResult,
@@ -359,7 +359,7 @@ class LiquidacionImpactoVialOrchestrator(LiquidacionPOValidationMixin):
 
         # Type-specific: Impacto Vial
         impacto_vial = lg.impacto_vial
-        especifica_result = LiquidacionEspecificaImpactoVialResult(
+        especifica_result = LiquidacionEspecificaResult(
             id=str(impacto_vial.id),
             numero=impacto_vial.numero,
         )
@@ -387,15 +387,15 @@ class LiquidacionImpactoVialOrchestrator(LiquidacionPOValidationMixin):
             ],
         )
 
-        return ImpactoVialPrimeraRevisionResult(
+        return LiquidacionEspecificaPrimeraRevisionResult(
             liquidacion_general=general_result,
             liquidacion_especifica=especifica_result,
             liquidacion_tipo=tipo_result,
         )
 
-    def obtener_liquidacion(self, liquidacion_id: uuid.UUID) -> ImpactoVialPrimeraRevisionResult:
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
-        Returns a single ImpactoVialPrimeraRevisionResult for Impacto Vial by UUID.
+        Returns a single LiquidacionEspecificaPrimeraRevisionResult for Impacto Vial by UUID.
         Raises LiquidacionNotFoundError if not found.
         """
         try:

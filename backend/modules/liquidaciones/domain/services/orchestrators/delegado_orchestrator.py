@@ -79,31 +79,12 @@ class DelegadoOrchestrator:
 
     def _build_municipalidad_asignada_result(self, dm, today: date) -> MunicipalidadesAsignadasResult:
         """Builds MunicipalidadesAsignadasResult from a DelegadoMunicipalidad ORM object."""
-        current_periodo = None
-        for periodo in dm.periodos.all():
-            if periodo.periodo_inicio <= today and (
-                periodo.periodo_fin is None or periodo.periodo_fin >= today
-            ):
-                current_periodo = periodo
-                break
-
-        return MunicipalidadesAsignadasResult(
-            id=str(dm.id),
-            municipalidad=MunicipalidadBasicResult(
-                id=str(dm.municipalidad.id),
-                codigo=dm.municipalidad.codigo,
-                nombre=dm.municipalidad.nombre,
-            ),
-            tipo=dm.tipo or "",
-            periodo_inicio=current_periodo.periodo_inicio if current_periodo else None,
-            periodo_fin=current_periodo.periodo_fin if current_periodo else None,
-            es_vigente=current_periodo is not None,
-        )
+        return self.core_service.build_municipalidad_asignada_result(dm, today)
 
     def _build_delegado_result(self, delegado, today: date) -> DelegadoResult:
         """Builds DelegadoResult from ORM object, incluyendo municipalidades y estado."""
         municipalidades = [
-            self._build_municipalidad_asignada_result(dm, today)
+            self.core_service.build_municipalidad_asignada_result(dm, today)
             for dm in delegado.municipalidades_asignadas.all()
         ]
 
@@ -228,27 +209,8 @@ class DelegadoOrchestrator:
         items: list[DelegadoForMunicipalidadResult] = []
 
         for dm in dm_list:
-            current_periodo = None
-            for periodo in dm.periodos.all():
-                if periodo.periodo_inicio <= today and (
-                    periodo.periodo_fin is None or periodo.periodo_fin >= today
-                ):
-                    current_periodo = periodo
-                    break
-
-            es_vigente = current_periodo is not None
-            periodo_inicio = current_periodo.periodo_inicio if current_periodo else None
-            periodo_fin = current_periodo.periodo_fin if current_periodo else None
-
             items.append(
-                DelegadoForMunicipalidadResult(
-                    id=str(dm.delegado.id),
-                    perfil_ingeniero=self._build_perfil_ingeniero_result(dm.delegado.perfil_ingeniero),
-                    tipo=dm.tipo or "",
-                    periodo_inicio=periodo_inicio,
-                    periodo_fin=periodo_fin,
-                    es_vigente=es_vigente,
-                )
+                self.core_service.build_delegado_for_municipalidad_result(dm, today)
             )
 
         total_pages = math.ceil(total / page_size) if page_size > 0 else 0

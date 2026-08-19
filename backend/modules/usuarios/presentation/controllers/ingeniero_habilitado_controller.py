@@ -46,5 +46,5 @@ class IngenieroHabilitadoController:
         result = await self.orchestrator.obtener_ingeniero_habilitado(cip=cip)
         # Presenter transforma explícitamente el result del dominio al schema HTTP
         # (incluye conversión de fechaNacimiento: date → str YYYY-MM-DD)
-        presented = IngenieroHabilitadoPresenter().present(result)
+        presented = IngenieroHabilitadoPresenter.present(result)
         return success_response(presented)

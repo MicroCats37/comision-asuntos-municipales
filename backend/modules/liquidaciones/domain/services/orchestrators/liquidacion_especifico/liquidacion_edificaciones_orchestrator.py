@@ -9,6 +9,7 @@ Architecture: Orchestrator owns business rules (clamping). No @transaction.atomi
 from decimal import Decimal
 from typing import List
 import uuid
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from injector import inject
 from ninja.errors import HttpError
@@ -33,11 +34,11 @@ from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_porcentaj
     LiquidacionPorcentajeObraData,
     TarifaPorcentajeObraAplicada,
 )
-from modules.liquidaciones.domain.schemas.liquidacion_especifico.edificaciones_primera_revision_data import (
-    EdificacionesPrimeraRevisionData,
+from modules.liquidaciones.domain.schemas.liquidacion_especifico.primera_revision_data import (
+    LiquidacionEspecificaPrimeraRevisionData,
 )
-from modules.liquidaciones.domain.results.liquidacion_especifico.edificaciones_primera_revision_result import (
-    EdificacionesPrimeraRevisionResult,
+from modules.liquidaciones.domain.results.liquidacion_especifico.primera_revision_result import (
+    LiquidacionEspecificaPrimeraRevisionResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import (
     CotizacionPorcentajeObraResult,
@@ -76,7 +77,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         self,
         usuario_id: int,
         payload_in,
-    ) -> EdificacionesPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
         Validates input, resolves tarifas (hybrid), calculates, delegates to Flujo.
         
@@ -151,7 +152,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                 for esp in especialidades
             ]
         
-        domain_data = EdificacionesPrimeraRevisionData(
+        domain_data = LiquidacionEspecificaPrimeraRevisionData(
             liquidacion_general=LiquidacionGeneralData(
                   municipalidad_id=str(payload_in.liquidacion_general.municipalidad_id),
                   expediente=payload_in.liquidacion_general.expediente,
@@ -322,11 +323,11 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         fecha_hasta=None,
         numero=None,
         numero_revision=None,
-    ) -> tuple[List[EdificacionesPrimeraRevisionResult], int]:
+    ) -> tuple[List[LiquidacionEspecificaPrimeraRevisionResult], int]:
         """
-        Returns paginated EdificacionesPrimeraRevisionResult list.
+        Returns paginated LiquidacionEspecificaPrimeraRevisionResult list.
         Applies pagination defaults/boundaries, iterates ORM objects to build domain DTOs.
-        Returns (List[EdificacionesPrimeraRevisionResult], total_count).
+        Returns (List[LiquidacionEspecificaPrimeraRevisionResult], total_count).
         """
         # Pagination boundary defaults
         if page < 1:
@@ -350,22 +351,22 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             numero_revision=numero_revision,
         )
 
-        # Build EdificacionesPrimeraRevisionResult domain DTOs from ORM objects
-        domain_results: List[EdificacionesPrimeraRevisionResult] = []
+        # Build LiquidacionEspecificaPrimeraRevisionResult domain DTOs from ORM objects
+        domain_results: List[LiquidacionEspecificaPrimeraRevisionResult] = []
         for lg in orm_objects:
             domain_results.append(self._build_edificaciones_result(lg))
 
         return domain_results, total
 
-    def _build_edificaciones_result(self, lg) -> EdificacionesPrimeraRevisionResult:
+    def _build_edificaciones_result(self, lg) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
-        Maps a LiquidacionGeneral ORM object to EdificacionesPrimeraRevisionResult domain DTO.
+        Maps a LiquidacionGeneral ORM object to LiquidacionEspecificaPrimeraRevisionResult domain DTO.
 
         Delegates LiquidacionGeneralResult construction to general_core.build_general_result().
         Only the type-specific fields (edificaciones, liquidacion_porcentaje_obra) are built here.
         """
-        from modules.liquidaciones.domain.results.liquidacion_especifico.edificaciones_primera_revision_result import (
-            LiquidacionEspecificaEdificacionesResult,
+        from modules.liquidaciones.domain.results.liquidacion_especifico.primera_revision_result import (
+            LiquidacionEspecificaResult,
             LiquidacionPreviaResult,
         )
         from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
@@ -393,7 +394,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
 
         # Type-specific: Edificaciones
         edificacion = lg.edificaciones
-        especifica_result = LiquidacionEspecificaEdificacionesResult(
+        especifica_result = LiquidacionEspecificaResult(
             id=str(edificacion.id),
             numero=edificacion.numero,
         )
@@ -421,16 +422,16 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             ],
         )
 
-        return EdificacionesPrimeraRevisionResult(
+        return LiquidacionEspecificaPrimeraRevisionResult(
             liquidacion_general=general_result,
             liquidacion_especifica=especifica_result,
             liquidacion_tipo=tipo_result,
             revisiones_previas=revisiones_previas,
         )
 
-    def obtener_liquidacion(self, liquidacion_id: uuid.UUID) -> EdificacionesPrimeraRevisionResult:
+    def obtener_liquidacion(self, liquidacion_id: uuid.UUID) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
-        Returns a single EdificacionesPrimeraRevisionResult for Edificaciones by UUID.
+        Returns a single LiquidacionEspecificaPrimeraRevisionResult for Edificaciones by UUID.
         Raises LiquidacionNotFoundError if not found.
         """
         try:
@@ -444,7 +445,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         usuario_id: int,
         payload_in,
         liquidacion_previa_id: uuid.UUID,
-    ) -> EdificacionesPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
         Validates and creates a new revision (3 or 5) for an existing Edificaciones liquidacion.
 
@@ -552,7 +553,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             for t in input_tarifas
         ]
 
-        domain_data = EdificacionesPrimeraRevisionData(
+        domain_data = LiquidacionEspecificaPrimeraRevisionData(
             liquidacion_general=LiquidacionGeneralData(
                 municipalidad_id=str(previa.municipalidad_id),
                 expediente=payload_in.liquidacion_general.expediente or previa.expediente,
@@ -609,12 +610,12 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         numero: int = None,
         fecha_desde=None,
         fecha_hasta=None,
-    ) -> tuple[List[EdificacionesPrimeraRevisionResult], int]:
+    ) -> tuple[List[LiquidacionEspecificaPrimeraRevisionResult], int]:
         """
         Returns a paginated list of the latest revision per project for Edificaciones.
         Applies optional filters and returns only the liquidacion with the highest
         numero_revision for each proyecto.
-        Returns (List[EdificacionesPrimeraRevisionResult], total_count).
+        Returns (List[LiquidacionEspecificaPrimeraRevisionResult], total_count).
         """
         # Pagination boundary defaults
         if page < 1:
@@ -635,8 +636,8 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             fecha_hasta=fecha_hasta,
         )
 
-        # Build EdificacionesPrimeraRevisionResult domain DTOs from ORM objects
-        domain_results: List[EdificacionesPrimeraRevisionResult] = []
+        # Build LiquidacionEspecificaPrimeraRevisionResult domain DTOs from ORM objects
+        domain_results: List[LiquidacionEspecificaPrimeraRevisionResult] = []
         for lg in orm_objects:
             domain_results.append(self._build_edificaciones_result(lg))
 

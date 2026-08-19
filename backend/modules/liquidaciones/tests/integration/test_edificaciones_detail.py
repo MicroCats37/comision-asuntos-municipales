@@ -88,9 +88,6 @@ def liquidacion_edificacion_detail(
         especialidad=especialidad_estructuras,
         porcentaje_aplicado=Decimal("0.0010"),
         subtotal=Decimal("1000.00"),
-        igv=Decimal("180.00"),
-        uit=Decimal("515.00"),
-        total=Decimal("1180.00"),
     )
 
     return lg
@@ -232,9 +229,6 @@ def test_detail_detalles_have_required_fields(
     assert "especialidad_id" in detalle
     assert "porcentaje_aplicado" in detalle
     assert "subtotal" in detalle
-    assert "igv" in detalle
-    assert "uit" in detalle
-    assert "total" in detalle
 
 
 @pytest.mark.django_db
@@ -309,3 +303,4 @@ def test_detail_id_matches_output_liquidacion_general_id(
 
     # The ID returned should match the requested ID
     assert str(lg_id_in_response) == str(liquidacion_id)
+

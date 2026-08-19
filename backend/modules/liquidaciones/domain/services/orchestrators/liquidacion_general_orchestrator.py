@@ -140,13 +140,7 @@ class LiquidacionGeneralOrchestrator:
             )
 
         # Build revisions previas
-        revisiones_previas: List[LiquidacionPreviaResult] = []
-        for prev_lg in lg.liquidaciones_previas.all():
-            revisiones_previas.append(LiquidacionPreviaResult(
-                id=str(prev_lg.id),
-                numero_revision=prev_lg.numero_revision,
-                expediente=prev_lg.expediente or None,
-            ))
+        revisiones_previas = self.general_core_service.build_revisiones_previas_result(lg)
 
         # Build delegados (FK adjunta liquidacion_delegados)
         delegados = self.general_core_service.build_delegados_result(lg)

@@ -43,8 +43,8 @@ from modules.liquidaciones.domain.constants import TipoLiquidacion as TipoLiquid
 from modules.finanzas.domain.models.descuento_inspector import (
     EscalaDescuentoInspector,
     RangoDescuentoInspector,
-    ReciboHonorarioInspector,
 )
+from modules.finanzas.domain.models.recibo_honorario_inspector import ReciboHonorarioInspector
 from django.contrib.auth import get_user_model
 
 

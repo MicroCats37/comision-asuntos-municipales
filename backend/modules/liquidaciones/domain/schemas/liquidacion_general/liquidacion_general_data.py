@@ -1,13 +1,13 @@
-from pydantic import BaseModel
+from core.types import BaseSchema
 from typing import Optional
 
 
-class EntidadData(BaseModel):
+class EntidadData(BaseSchema):
     tipo_documento: str
     numero_documento: str
 
 
-class ProyectoData(BaseModel):
+class ProyectoData(BaseSchema):
     denominacion: str
     nombre_propietario: str
     direccion: str
@@ -16,7 +16,7 @@ class ProyectoData(BaseModel):
     entidad: EntidadData
 
 
-class ContactoData(BaseModel):
+class ContactoData(BaseSchema):
     """Contacto principal de la liquidación (se crea inline)."""
     nombres: Optional[str] = None
     apellidos: Optional[str] = None
@@ -27,7 +27,7 @@ class ContactoData(BaseModel):
     email: Optional[str] = None
 
 
-class LiquidacionGeneralData(BaseModel):
+class LiquidacionGeneralData(BaseSchema):
     municipalidad_id: str
     expediente: str
     observacion: Optional[str] = None

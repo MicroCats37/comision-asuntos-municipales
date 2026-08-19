@@ -92,9 +92,6 @@ def liquidacion_edificacion_created(
         especialidad=especialidad_estructuras,
         porcentaje_aplicado=Decimal("0.0010"),
         subtotal=Decimal("1000.00"),
-        igv=Decimal("180.00"),
-        uit=Decimal("515.00"),
-        total=Decimal("1180.00"),
     )
 
     return lg
@@ -287,6 +284,4 @@ def test_list_detalles_have_required_fields(
     assert "especialidad_id" in detalle
     assert "porcentaje_aplicado" in detalle
     assert "subtotal" in detalle
-    assert "igv" in detalle
-    assert "uit" in detalle
-    assert "total" in detalle
+

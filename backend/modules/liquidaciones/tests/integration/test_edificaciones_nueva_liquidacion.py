@@ -453,9 +453,6 @@ def test_liquidacion_tipo_has_detalles(
         assert "especialidad_id" in detalle
         assert "porcentaje_aplicado" in detalle
         assert "subtotal" in detalle
-        assert "igv" in detalle
-        assert "uit" in detalle
-        assert "total" in detalle
 
 
 @pytest.mark.django_db

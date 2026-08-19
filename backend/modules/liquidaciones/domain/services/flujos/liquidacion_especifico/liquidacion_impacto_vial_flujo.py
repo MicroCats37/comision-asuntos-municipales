@@ -16,12 +16,12 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
 )
-from modules.liquidaciones.domain.schemas.liquidacion_especifico.impacto_vial_primera_revision_data import (
-    ImpactoVialPrimeraRevisionData,
+from modules.liquidaciones.domain.schemas.liquidacion_especifico.primera_revision_data import (
+    LiquidacionEspecificaPrimeraRevisionData,
 )
-from modules.liquidaciones.domain.results.liquidacion_especifico.impacto_vial_primera_revision_result import (
-    LiquidacionEspecificaImpactoVialResult,
-    ImpactoVialPrimeraRevisionResult,
+from modules.liquidaciones.domain.results.liquidacion_especifico.primera_revision_result import (
+    LiquidacionEspecificaResult,
+    LiquidacionEspecificaPrimeraRevisionResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
     LiquidacionGeneralResult,
@@ -59,22 +59,22 @@ class LiquidacionImpactoVialFlujo:
     def ejecutar_primera_revision(
         self,
         usuario_id: int,
-        data: ImpactoVialPrimeraRevisionData,
+        data: LiquidacionEspecificaPrimeraRevisionData,
         igv_porcentaje: Decimal,
         derecho,
         uit_valor: Decimal,
-    ) -> ImpactoVialPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         return self._ejecutar_primera_revision_sync(usuario_id, data, igv_porcentaje, derecho, uit_valor)
 
     @transaction.atomic()
     def _ejecutar_primera_revision_sync(
         self,
         usuario_id: int,
-        data: ImpactoVialPrimeraRevisionData,
+        data: LiquidacionEspecificaPrimeraRevisionData,
         igv_porcentaje: Decimal,
         derecho,
         uit_valor: Decimal,
-    ) -> ImpactoVialPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         gen_data = data.liquidacion_general
         po_data = data.liquidacion_especifica
 
@@ -157,7 +157,7 @@ class LiquidacionImpactoVialFlujo:
         impacto_vial,
         liquidacion_po,
         usuario_id: int,
-    ) -> ImpactoVialPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """Maps ORM objects to domain Result. Delegates common mapping to core."""
         liquidacion_general.refresh_from_db()
 
@@ -167,9 +167,9 @@ class LiquidacionImpactoVialFlujo:
             usuario_id=usuario_id,
         )
 
-        return ImpactoVialPrimeraRevisionResult(
+        return LiquidacionEspecificaPrimeraRevisionResult(
             liquidacion_general=general_result,
-            liquidacion_especifica=LiquidacionEspecificaImpactoVialResult(
+            liquidacion_especifica=LiquidacionEspecificaResult(
                 id=str(impacto_vial.id),
                 numero=impacto_vial.numero,
             ),

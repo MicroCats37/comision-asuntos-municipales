@@ -18,6 +18,11 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquida
     LiquidacionGeneral,
     LiquidacionEspecialidadDisponibles,
 )
+from modules.liquidaciones.domain.results.delegado.delegado_result import (
+    MunicipalidadesAsignadasResult,
+    MunicipalidadBasicResult,
+    DelegadoForMunicipalidadResult,
+)
 
 
 class DelegadoCoreService:
@@ -110,6 +115,81 @@ class DelegadoCoreService:
             if self._is_vigente(periodo, today):
                 return periodo
         return None
+
+    def build_municipalidad_asignada_result(
+        self, dm: DelegadoOperacion, today: date
+    ) -> MunicipalidadesAsignadasResult:
+        """
+        Builds MunicipalidadesAsignadasResult from a DelegadoOperacion ORM object.
+        Encapsulates iteration over dm.periodos.all() to find the current periodo.
+        """
+        current_periodo = self._get_current_periodo(dm, today)
+        return MunicipalidadesAsignadasResult(
+            id=str(dm.id),
+            municipalidad=MunicipalidadBasicResult(
+                id=str(dm.municipalidad.id),
+                codigo=dm.municipalidad.codigo,
+                nombre=dm.municipalidad.nombre,
+            ),
+            tipo=dm.tipo or "",
+            periodo_inicio=current_periodo.periodo_inicio if current_periodo else None,
+            periodo_fin=current_periodo.periodo_fin if current_periodo else None,
+            es_vigente=current_periodo is not None,
+        )
+
+    def build_delegado_for_municipalidad_result(
+        self, dm: DelegadoOperacion, today: date
+    ) -> DelegadoForMunicipalidadResult:
+        """
+        Builds DelegadoForMunicipalidadResult from a DelegadoOperacion ORM object.
+        Encapsulates iteration over dm.periodos.all() to find the current periodo.
+        """
+        from modules.liquidaciones.domain.results.delegado.delegado_result import PerfilIngenieroResult
+        
+        current_periodo = self._get_current_periodo(dm, today)
+        
+        # Build perfil_ingeniero result
+        perfil = dm.delegado.perfil_ingeniero
+        especialidad_result = None
+        if getattr(perfil, "especialidad", None):
+            from modules.liquidaciones.domain.results.delegado.delegado_result import EspecialidadResult
+            especialidad_result = EspecialidadResult(
+                id=str(perfil.especialidad.id),
+                codigo=perfil.especialidad.codigo,
+                nombre=perfil.especialidad.nombre,
+            )
+        capitulo_result = None
+        if getattr(perfil, "capitulo", None):
+            from modules.liquidaciones.domain.results.delegado.delegado_result import CapituloResult
+            capitulo_result = CapituloResult(
+                id=str(perfil.capitulo.id),
+                registro_id=perfil.capitulo.registro_id,
+                abreviacion=perfil.capitulo.abreviacion,
+                nombre=perfil.capitulo.nombre,
+            )
+        
+        perfil_result = PerfilIngenieroResult(
+            id=str(perfil.id),
+            cip=perfil.cip or "",
+            dni=perfil.dni or "",
+            nombres=perfil.nombres or "",
+            apellido_paterno=perfil.apellido_paterno or "",
+            apellido_materno=perfil.apellido_materno or "",
+            nombre_completo=perfil.nombre_completo,
+            correo_personal=perfil.correo_personal,
+            correo_institucional=perfil.correo_institucional,
+            especialidad=especialidad_result,
+            capitulo=capitulo_result,
+        )
+        
+        return DelegadoForMunicipalidadResult(
+            id=str(dm.delegado.id),
+            perfil_ingeniero=perfil_result,
+            tipo=dm.tipo or "",
+            periodo_inicio=current_periodo.periodo_inicio if current_periodo else None,
+            periodo_fin=current_periodo.periodo_fin if current_periodo else None,
+            es_vigente=current_periodo is not None,
+        )
 
     def get_delegados_for_municipalidad(
         self,

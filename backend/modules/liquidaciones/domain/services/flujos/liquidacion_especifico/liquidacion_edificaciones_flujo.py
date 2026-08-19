@@ -16,12 +16,12 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
 )
-from modules.liquidaciones.domain.schemas.liquidacion_especifico.edificaciones_primera_revision_data import (
-    EdificacionesPrimeraRevisionData,
+from modules.liquidaciones.domain.schemas.liquidacion_especifico.primera_revision_data import (
+    LiquidacionEspecificaPrimeraRevisionData,
 )
-from modules.liquidaciones.domain.results.liquidacion_especifico.edificaciones_primera_revision_result import (
-    LiquidacionEspecificaEdificacionesResult,
-    EdificacionesPrimeraRevisionResult,
+from modules.liquidaciones.domain.results.liquidacion_especifico.primera_revision_result import (
+    LiquidacionEspecificaResult,
+    LiquidacionEspecificaPrimeraRevisionResult,
     LiquidacionPreviaResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
@@ -73,22 +73,22 @@ class LiquidacionEdificacionesFlujo:
     def ejecutar_primera_revision(
         self,
         usuario_id: int,
-        data: EdificacionesPrimeraRevisionData,
+        data: LiquidacionEspecificaPrimeraRevisionData,
         igv_porcentaje: Decimal,
         derecho,
         uit_valor: Decimal,
-    ) -> EdificacionesPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         return self._ejecutar_primera_revision_sync(usuario_id, data, igv_porcentaje, derecho, uit_valor)
     
     @transaction.atomic()
     def _ejecutar_primera_revision_sync(
         self,
         usuario_id: int,
-        data: EdificacionesPrimeraRevisionData,
+        data: LiquidacionEspecificaPrimeraRevisionData,
         igv_porcentaje: Decimal,
         derecho,
         uit_valor: Decimal,
-    ) -> EdificacionesPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         gen_data = data.liquidacion_general
         po_data = data.liquidacion_especifica
         
@@ -177,12 +177,12 @@ class LiquidacionEdificacionesFlujo:
     def ejecutar_nueva_revision(
         self,
         usuario_id: int,
-        data: EdificacionesPrimeraRevisionData,
+        data: LiquidacionEspecificaPrimeraRevisionData,
         igv_porcentaje: Decimal,
         derecho,
         uit_valor: Decimal,
         liquidacion_previa,
-    ) -> EdificacionesPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
         Creates a new revision (3 or 5) for an existing Edificaciones liquidacion.
 
@@ -209,12 +209,12 @@ class LiquidacionEdificacionesFlujo:
     def _ejecutar_nueva_revision_sync(
         self,
         usuario_id: int,
-        data: EdificacionesPrimeraRevisionData,
+        data: LiquidacionEspecificaPrimeraRevisionData,
         igv_porcentaje: Decimal,
         derecho,
         uit_valor: Decimal,
         liquidacion_previa,
-    ) -> EdificacionesPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         gen_data = data.liquidacion_general
         po_data = data.liquidacion_especifica
 
@@ -303,7 +303,7 @@ class LiquidacionEdificacionesFlujo:
         edificacion,
         liquidacion_po,
         usuario_id: int,
-    ) -> EdificacionesPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
         Maps ORM objects to domain Result including revisiones_previas.
         Delegates common ORM→Result mapping to LiquidacionGeneralCoreService.
@@ -347,9 +347,9 @@ class LiquidacionEdificacionesFlujo:
             delegados=delegados,
         )
 
-        return EdificacionesPrimeraRevisionResult(
+        return LiquidacionEspecificaPrimeraRevisionResult(
             liquidacion_general=general_result,
-            liquidacion_especifica=LiquidacionEspecificaEdificacionesResult(
+            liquidacion_especifica=LiquidacionEspecificaResult(
                 id=str(edificacion.id),
                 numero=edificacion.numero,
             ),
@@ -383,7 +383,7 @@ class LiquidacionEdificacionesFlujo:
         edificacion,
         liquidacion_po,
         usuario_id: int,
-    ) -> EdificacionesPrimeraRevisionResult:
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """Maps ORM objects to domain Result. Delegates common mapping to core."""
         liquidacion_general.refresh_from_db()
 
@@ -412,9 +412,9 @@ class LiquidacionEdificacionesFlujo:
             delegados=delegados,
         )
 
-        return EdificacionesPrimeraRevisionResult(
+        return LiquidacionEspecificaPrimeraRevisionResult(
             liquidacion_general=general_result,
-            liquidacion_especifica=LiquidacionEspecificaEdificacionesResult(
+            liquidacion_especifica=LiquidacionEspecificaResult(
                 id=str(edificacion.id),
                 numero=edificacion.numero,
             ),

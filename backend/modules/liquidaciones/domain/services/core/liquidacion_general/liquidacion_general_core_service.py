@@ -1401,3 +1401,21 @@ class LiquidacionGeneralCoreService:
             )
             for ld in getattr(liquidacion_general, "liquidacion_delegados", []).all()
         ]
+
+    def build_revisiones_previas_result(self, liquidacion_general) -> list:
+        """
+        Builds a list of LiquidacionPreviaResult from liquidaciones_previas prefetch.
+        Encapsulates iteration over lg.liquidaciones_previas.all().
+        Returns [] if no previas are present.
+        """
+        from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
+            LiquidacionPreviaResult,
+        )
+        return [
+            LiquidacionPreviaResult(
+                id=str(prev_lg.id),
+                numero_revision=prev_lg.numero_revision,
+                expediente=prev_lg.expediente or None,
+            )
+            for prev_lg in getattr(liquidacion_general, "liquidaciones_previas", []).all()
+        ]
