@@ -67,6 +67,7 @@ def test_happy_path_auto_fill_mode(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
     tarifa_porcentaje_obra_installaciones,
+    especialidades_disponibles_edificacion,
 ):
     """
     Auto-fill: empty tarifas[] → backend picks all vigentes.
@@ -336,6 +337,7 @@ def test_tarifa_not_vigente_returns_400(
 def test_response_has_three_wrappers(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
 ):
     """
     Response structure: liquidacion_general + especifica + tipo.
@@ -375,6 +377,7 @@ def test_response_has_three_wrappers(
 def test_liquidacion_especifica_is_identity(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
 ):
     """
     liquidacion_especifica wrapper has only id + numero.
@@ -416,6 +419,7 @@ def test_liquidacion_tipo_has_detalles(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
     tarifa_porcentaje_obra_installaciones,
+    especialidades_disponibles_edificacion,
 ):
     """
     liquidacion_tipo.detalles has N entries (one per tarifa).
@@ -460,6 +464,7 @@ def test_subtotal_is_sum_of_detalles(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
     tarifa_porcentaje_obra_installaciones,
+    especialidades_disponibles_edificacion,
 ):
     """
     LiquidacionGeneral.sub_total = SUM(detalles.subtotal).
@@ -498,6 +503,7 @@ def test_subtotal_is_sum_of_detalles(
 def test_total_calculation_with_igv(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
 ):
     """
     LiquidacionGeneral.total = sub_total + IGV.
@@ -542,6 +548,7 @@ def test_total_calculation_with_igv(
 def test_tipo_tramite_is_null(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
 ):
     """
     tipo_tramite field is None in response.
@@ -663,6 +670,7 @@ def test_porcentaje_liquidacion_is_sum(
 def test_snapshot_igv_uit_assigned(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
 ):
     """
     igv_id and uit_id are populated in LiquidacionGeneral.
@@ -711,6 +719,7 @@ def test_snapshot_igv_uit_assigned(
 def test_crear_liquidacion_con_contacto_inline(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
 ):
     """Crea una liquidacion con contacto inline y verifica que el output lo incluya anidado."""
     payload = make_payload_po(
@@ -748,6 +757,7 @@ def test_crear_liquidacion_con_contacto_inline(
 def test_crear_liquidacion_sin_contacto(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
 ):
     """Sin contacto en el input, el output debe traer contacto=None."""
     payload = make_payload_po(

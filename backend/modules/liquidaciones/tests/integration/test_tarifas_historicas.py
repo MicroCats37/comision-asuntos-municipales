@@ -106,6 +106,7 @@ def test_tarifas_historicas_edificaciones(
     especialidad_arquitectura,
     tarifa_porcentaje_obra_estructuras,
     tarifa_porcentaje_obra_arquitectura,
+    especialidades_disponibles_edificacion,
 ):
     """
     GET /liquidaciones/edificacion/tarifas/historicas returns periods with tarifas.
@@ -128,8 +129,8 @@ def test_tarifas_historicas_edificaciones(
 
     periodo = items[0]
     assert periodo["tipo_liquidacion"] == "EDIFICACION"
-    assert len(periodo["tarifas_porcentaje"]) == 2, \
-        f"Expected 2 tarifas_porcentaje, got {len(periodo['tarifas_porcentaje'])}"
+    assert len(periodo["tarifas_porcentaje"]) == 6, \
+        f"Expected 6 tarifas_porcentaje (2 tarifas × 3 especialidades), got {len(periodo['tarifas_porcentaje'])}"
 
 
 @pytest.mark.django_db
