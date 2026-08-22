@@ -17,6 +17,25 @@ from modules.finanzas.domain.models.descuento_inspector import (
 from modules.finanzas.domain.models.recibo_honorario_inspector import (
     ReciboHonorarioInspector,
 )
+from modules.finanzas.domain.models.recibo_honorario_inspector_mensual import (
+    ReciboHonorarioInspectorMensual,
+)
+from modules.finanzas.domain.models.detalle_honorario_inspector import (
+    DetalleHonorarioInspector,
+)
+from modules.finanzas.domain.models.registro_pago_inspector import (
+    RegistroPagoInspector,
+)
+from modules.liquidaciones.domain.models.inspector import (
+    Inspector,
+    LiquidacionInspector,
+)
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
+    LiquidacionGeneral,
+)
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacion_tipo import (
+    LiquidacionPorCategoriaVisitas,
+)
 
 
 class FinanzasCoreService:
@@ -354,3 +373,213 @@ class FinanzasCoreService:
         offset = (page - 1) * page_size
         objects = list(qs[offset:offset + page_size])
         return objects, total
+
+    # ── RH Inspector Mensual ───────────────────────────────────────────────────────
+
+    def get_inspector_by_cip(self, cip: str) -> Optional[Inspector]:
+        """
+        Get an Inspector by CIP from the related perfil_ingeniero.
+
+        Args:
+            cip: CIP code from the engineer's profile.
+
+        Returns:
+            Inspector instance or None if not found.
+        """
+        return (
+            Inspector.objects
+            .select_related("perfil_ingeniero")
+            .filter(perfil_ingeniero__cip=cip)
+            .first()
+        )
+
+    def get_liquidacion_por_expediente(
+        self, expediente: str
+    ) -> Optional[LiquidacionGeneral]:
+        """
+        Get a LiquidacionGeneral by expediente.
+
+        Args:
+            expediente: Expediente identifier.
+
+        Returns:
+            LiquidacionGeneral instance or None if not found.
+        """
+        return (
+            LiquidacionGeneral.objects
+            .select_related("tipo_liquidacion")
+            .filter(expediente=expediente)
+            .first()
+        )
+
+    def get_liquidacion_categoria_visitas(
+        self, liquidacion_general_id: int
+    ) -> Optional[LiquidacionPorCategoriaVisitas]:
+        """
+        Get the LiquidacionPorCategoriaVisitas for a given LiquidacionGeneral.
+
+        Args:
+            liquidacion_general_id: PK of the LiquidacionGeneral.
+
+        Returns:
+            LiquidacionPorCategoriaVisitas instance or None if not found.
+        """
+        return (
+            LiquidacionPorCategoriaVisitas.objects
+            .filter(liquidacion_general_id=liquidacion_general_id)
+            .first()
+        )
+
+    def get_liquidacion_inspector(
+        self,
+        liquidacion_categoria_visitas_id: int,
+        inspector_id: int,
+    ) -> Optional[LiquidacionInspector]:
+        """
+        Get a LiquidacionInspector for a specific (IO, inspector) pair.
+
+        Args:
+            liquidacion_categoria_visitas_id: PK of the LiquidacionPorCategoriaVisitas.
+            inspector_id: PK of the Inspector.
+
+        Returns:
+            LiquidacionInspector instance or None if not found.
+        """
+        return (
+            LiquidacionInspector.objects
+            .filter(
+                liquidacion_id=liquidacion_categoria_visitas_id,
+                inspector_id=inspector_id,
+            )
+            .first()
+        )
+
+    def get_registro_pago(
+        self,
+        liquidacion_categoria_visitas_id: int,
+        periodo: str,
+    ) -> Optional[RegistroPagoInspector]:
+        """
+        Get a RegistroPagoInspector for a specific (IO, periodo) pair.
+
+        Args:
+            liquidacion_categoria_visitas_id: PK of the LiquidacionPorCategoriaVisitas.
+            periodo: Period string in YYYY-MM format.
+
+        Returns:
+            RegistroPagoInspector instance or None if not found.
+        """
+        return (
+            RegistroPagoInspector.objects
+            .filter(
+                liquidacion_por_categoria_visitas_id=liquidacion_categoria_visitas_id,
+                periodo=periodo,
+            )
+            .first()
+        )
+
+    def upsert_registro_pago(
+        self,
+        liquidacion_categoria_visitas_id: int | str,
+        periodo: str,
+        inspecciones_pagadas: int,
+    ) -> RegistroPagoInspector:
+        """
+        Create or update a RegistroPagoInspector, accumulating inspecciones_pagadas.
+
+        Args:
+            liquidacion_categoria_visitas_id: PK of the LiquidacionPorCategoriaVisitas.
+            periodo: Period string in YYYY-MM format.
+            inspecciones_pagadas: Number of inspections to add to the accumulated total.
+
+        Returns:
+            RegistroPagoInspector instance (created or updated).
+        """
+        registro, created = RegistroPagoInspector.objects.get_or_create(
+            liquidacion_por_categoria_visitas_id=liquidacion_categoria_visitas_id,
+            periodo=periodo,
+            defaults={"inspecciones_pagadas": inspecciones_pagadas},
+        )
+        if not created:
+            registro.inspecciones_pagadas += inspecciones_pagadas
+            registro.save()
+        return registro
+
+    def crear_rh_inspector_mensual(
+        self,
+        inspector_id: int | str,
+        periodo: str,
+        escala_id: int | str,
+        sub_total: Decimal,
+        descuento: Decimal,
+        honorarios: Decimal,
+    ) -> tuple[ReciboHonorarioInspectorMensual, bool]:
+        """
+        Create or retrieve a ReciboHonorarioInspectorMensual for (inspector, periodo).
+
+        Args:
+            inspector_id: FK to Inspector.
+            periodo: Period string in YYYY-MM format.
+            escala_id: FK to EscalaDescuentoInspector.
+            sub_total: Subtotal for the month.
+            descuento: Discount amount.
+            honorarios: Net honorarios to pay.
+
+        Returns:
+            Tuple of (ReciboHonorarioInspectorMensual, created: bool).
+        """
+        return ReciboHonorarioInspectorMensual.objects.get_or_create(
+            inspector_id=inspector_id,
+            periodo=periodo,
+            defaults={
+                "escala_descuento_id": escala_id,
+                "sub_total": sub_total,
+                "descuento": descuento,
+                "honorarios": honorarios,
+            },
+        )
+
+    def crear_detalle_honorario(
+        self,
+        recibo_mensual_id: int | str,
+        liquidacion_categoria_visitas_id: int | str,
+        inspecciones_liquidadas: int,
+        costo_por_inspeccion: Decimal,
+        monto_contribuido: Decimal,
+    ) -> DetalleHonorarioInspector:
+        """
+        Create a DetalleHonorarioInspector record.
+
+        Args:
+            recibo_mensual_id: FK to ReciboHonorarioInspectorMensual.
+            liquidacion_categoria_visitas_id: FK to LiquidacionPorCategoriaVisitas.
+            inspecciones_liquidadas: Number of inspections liquidated in this detail.
+            costo_por_inspeccion: Cost per inspection for this liquidacion.
+            monto_contribuido: Monetary contribution from this liquidacion.
+
+        Returns:
+            DetalleHonorarioInspector instance.
+        """
+        return DetalleHonorarioInspector.objects.create(
+            recibo_mensual_id=recibo_mensual_id,
+            liquidacion_por_categoria_visitas_id=liquidacion_categoria_visitas_id,
+            inspecciones_liquidadas=inspecciones_liquidadas,
+            costo_por_inspeccion=costo_por_inspeccion,
+            monto_contribuido=monto_contribuido,
+        )
+
+    def get_detalles_de_recibo(
+        self, recibo_mensual_id: int
+    ) -> list[DetalleHonorarioInspector]:
+        """
+        Get all DetalleHonorarioInspector records for a given ReciboHonorarioInspectorMensual.
+
+        Args:
+            recibo_mensual_id: PK of the ReciboHonorarioInspectorMensual.
+
+        Returns:
+            List of DetalleHonorarioInspector instances.
+        """
+        return list(
+            DetalleHonorarioInspector.objects.filter(recibo_mensual_id=recibo_mensual_id)
+        )

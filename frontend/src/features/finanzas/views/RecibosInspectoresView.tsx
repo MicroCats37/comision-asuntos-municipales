@@ -7,19 +7,21 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { HardHat, Plus, RefreshCw } from "lucide-react";
+import { FileSpreadsheet, HardHat, Plus, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { ReciboInspectorCard } from "@/features/finanzas/components/cards/ReciboInspectorCard";
 import { CrearReciboInspectorModal } from "@/features/finanzas/components/modals/CrearReciboInspectorModal";
+import { RhInspectorMensualModal } from "@/features/finanzas/components/modals/RhInspectorMensualModal";
 import { useRecibosInspectores } from "@/features/finanzas/hooks/useRecibosInspectores";
 
 const KIND_ICON: LucideIcon = HardHat;
 
 export function RecibosInspectoresView() {
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const [rhModalOpen, setRhModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -37,13 +39,23 @@ export function RecibosInspectoresView() {
           description="Listado de recibos de honorarios de inspectores"
           icon={KIND_ICON}
           actionNodes={
-            <Button
-              className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-              onClick={() => setFormModalOpen(true)}
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo Recibo
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                className="gap-2 h-11 rounded-xl font-bold shrink-0"
+                onClick={() => setRhModalOpen(true)}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Importar RH Mensual
+              </Button>
+              <Button
+                className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+                onClick={() => setFormModalOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Nuevo Recibo
+              </Button>
+            </>
           }
         />
 
@@ -110,6 +122,15 @@ export function RecibosInspectoresView() {
         onOpenChange={setFormModalOpen}
         onSuccess={() => {
           setFormModalOpen(false);
+          refetch();
+        }}
+      />
+
+      <RhInspectorMensualModal
+        open={rhModalOpen}
+        onOpenChange={setRhModalOpen}
+        onSuccess={() => {
+          setRhModalOpen(false);
           refetch();
         }}
       />

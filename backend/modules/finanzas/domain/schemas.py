@@ -35,3 +35,21 @@ class VariablesVigentesResult(BaseModel):
             uit_valor=float(uit.valor) if uit else 0.0,
             uit_periodo_inicio=uit.periodo_inicio if uit else date.min,
         )
+
+# ---------------------------------------------------------------------------
+# RH Inspector Mensual — contratos de entrada (BaseSchema)
+# ---------------------------------------------------------------------------
+from core.types import BaseSchema as _BaseSchema
+
+
+class RHInspectorCotizarItemIn(_BaseSchema):
+    """Item individual para la cotización del RH mensual del inspector."""
+    exp_liqui: str
+    cantidad_visitas: int
+
+
+class RHInspectorCotizarIn(_BaseSchema):
+    """Payload de entrada para cotizar/crear el RH mensual del inspector."""
+    cip: str
+    periodo: str  # "YYYY-MM"
+    items: list[RHInspectorCotizarItemIn]

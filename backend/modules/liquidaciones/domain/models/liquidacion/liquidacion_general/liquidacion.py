@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from simple_history.models import HistoricalRecords
 from core.models import BaseModel
 from core_application.models import VigenciaModel
@@ -45,7 +46,7 @@ class LiquidacionGeneral(BaseModel):
     )
 
     fecha_registro = models.DateTimeField(
-        auto_now_add=True,
+        default=timezone.now,
         verbose_name="Fecha de Registro",
         help_text="Fecha y hora en que se registró la liquidación en el sistema.",
     )

@@ -6,6 +6,9 @@ from .domain.models import (
     EscalaDescuentoInspector,
     RangoDescuentoInspector,
     ReciboHonorarioInspector,
+    ReciboHonorarioInspectorMensual,
+    DetalleHonorarioInspector,
+    RegistroPagoInspector,
 )
 
 __all__ = [
@@ -15,4 +18,7 @@ __all__ = [
     "EscalaDescuentoInspector",
     "RangoDescuentoInspector",
     "ReciboHonorarioInspector",
+    "ReciboHonorarioInspectorMensual",
+    "DetalleHonorarioInspector",
+    "RegistroPagoInspector",
 ]

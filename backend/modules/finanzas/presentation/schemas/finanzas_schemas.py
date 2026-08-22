@@ -152,3 +152,36 @@ class ReciboHonorarioInspectorOut(BaseSchema):
     especialidad: EspecialidadMinimalOut
     calculo: ReciboHonorarioInspectorCalculoOut
     created_at: datetime
+
+
+# ── RH Inspector Mensual (Cotización/Creación) ─────────────────────────────────
+
+class RHInspectorCotizarItemOut(BaseSchema):
+    """Item individual en la cotización del RH mensual del inspector."""
+    exp_liqui: str = Field(..., description="Expediente de la liquidación")
+    liquidacion_categoria_visitas_id: uuid.UUID = Field(..., description="ID de la IO (LiquidacionPorCategoriaVisitas)")
+    inspecciones_programadas: int = Field(..., description="Visitas programadas en la IO")
+    inspecciones_liquidadas: int = Field(..., description="Inspecciones liquidadas en este RH")
+    costo_por_inspeccion: float = Field(..., description="Costo por inspección")
+    monto_contribuido: float = Field(..., description="Monto contribuido de esta IO")
+    saldo_disponible: int = Field(..., description="Saldo de visitas disponibles (no pagar doble)")
+
+
+class RHInspectorTotalesOut(BaseSchema):
+    """Totales calculados para la cotización del RH mensual."""
+    sub_total: float = Field(..., description="Sub total del mes (suma de montos)")
+    descuento: float = Field(..., description="Descuento sobre el total")
+    honorarios: float = Field(..., description="Honorarios a pagar")
+    tasa_descuento_aplicada: float = Field(..., description="Tasa de descuento aplicada (ej 0.20)")
+
+
+class RHInspectorCotizarOut(BaseSchema):
+    """Schema de salida para la cotización/creación del RH mensual del inspector."""
+    inspector_id: uuid.UUID = Field(..., description="ID del inspector")
+    inspector_nombre: str = Field(..., description="Nombre del inspector")
+    inspector_cip: str = Field(..., description="CIP del inspector")
+    periodo: str = Field(..., description="Periodo (YYYY-MM)")
+    items: list[RHInspectorCotizarItemOut] = Field(default_factory=list, description="Detalle por liquidación")
+    totales: RHInspectorTotalesOut
+    escala_descuento_id: uuid.UUID = Field(..., description="Escala de descuento aplicada")
+

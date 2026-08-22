@@ -1,0 +1,178 @@
+"""
+Legacy Orchestrator for Mecánica de Suelos (PorMetroCuadrado) primera-revision.
+
+100% additive — no existing orchestrator modified.
+
+Uses legacy core services (T1) for tariff/derecho resolution by fecha_registro.
+Cotization is calculated in-orchestrator using legacy tariff/derecho (no vigente lookup).
+Delegates to LiquidacionMecanicaSuelosFlujo.ejecutar_legacy(...) (T4).
+"""
+from datetime import date
+from decimal import Decimal
+
+from injector import inject
+from ninja.errors import HttpError
+
+from modules.liquidaciones.domain.constants import TipoLiquidacion
+from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_legacy_por_m2_core_service import (
+    LiquidacionLegacyPorM2CoreService,
+)
+from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_legacy_por_visitas_core_service import (
+    LiquidacionLegacyPorVisitasCoreService,
+)
+from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
+    LiquidacionGeneralCoreService,
+)
+from modules.liquidaciones.domain.services.flujos.liquidacion_especifico.liquidacion_mecanica_suelos_flujo import (
+    LiquidacionMecanicaSuelosFlujo,
+)
+from modules.liquidaciones.domain.schemas.liquidacion_general.liquidacion_general_data import (
+    EntidadData,
+    LiquidacionGeneralData,
+    ProyectoData,
+)
+from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_m2_data import (
+    DatosM2,
+    TarifaM2,
+)
+from modules.liquidaciones.domain.schemas.liquidacion_especifico.mecanica_suelos_primera_revision_data import (
+    MecanicaSuelosPrimeraRevisionData,
+    LiquidacionEspecificaMecanicaSuelosData,
+)
+from modules.liquidaciones.domain.results.liquidacion_especifico.mecanica_suelos_primera_revision_result import (
+    MecanicaSuelosPrimeraRevisionResult,
+)
+from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import CotizacionM2Result
+
+
+class LiquidacionMecanicaSuelosLegacyOrchestrator:
+    """
+    Legacy orchestrator for Mecánica de Suelos (PorMetroCuadrado).
+
+    Mirrors LiquidacionMecanicaSuelosOrchestrator but:
+    - Resolves tariff and derecho by fecha_registro (not vigente)
+    - IGV/UIT resolved by fecha_registro via legacy core service
+    - Cotization calculated in-orchestrator using legacy tariff/derecho
+    - Delegates to LiquidacionMecanicaSuelosFlujo.ejecutar_legacy(...) (T4)
+    """
+
+    @inject
+    def __init__(
+        self,
+        legacy_m2_core: LiquidacionLegacyPorM2CoreService,
+        legacy_visitas_core: LiquidacionLegacyPorVisitasCoreService,
+        general_core: LiquidacionGeneralCoreService,
+        flujo: LiquidacionMecanicaSuelosFlujo,
+    ):
+        self.legacy_m2_core = legacy_m2_core
+        self.legacy_visitas_core = legacy_visitas_core
+        self.general_core = general_core
+        self.flujo = flujo
+
+    def crear_legacy_proceso(
+        self,
+        usuario_id: int,
+        payload,
+    ) -> MecanicaSuelosPrimeraRevisionResult:
+        """
+        Creates a Mecánica de Suelos liquidacion using historical tariffs by fecha_registro.
+
+        Steps:
+        1. Extract fecha_registro (default today)
+        2. Validate area_solicitada > 0
+        3. Resolve tariff and derecho by fecha_registro via legacy core
+        4. Resolve IGV/UIT by fecha_registro via legacy core
+        5. Calculate cotization in-orchestrator with clamping
+        6. Build domain DTO
+        7. Delegate to Flujo.ejecutar_legacy(...)
+        """
+        # Step 1: fecha_registro
+        fecha_registro = (
+            payload.liquidacion_general.fecha_registro
+            if hasattr(payload.liquidacion_general, "fecha_registro")
+            and payload.liquidacion_general.fecha_registro
+            else date.today()
+        )
+
+        # Step 2: Validation
+        area = payload.liquidacion_especifica.datos.area_solicitada
+        if area <= 0:
+            raise HttpError(400, "area_solicitada debe ser mayor a 0")
+
+        # Step 3: Resolve tariff and derecho by fecha_registro
+        tarifa = self.legacy_m2_core.get_tarifa_m2_por_fecha(
+            TipoLiquidacion.MECANICA_SUELOS, fecha_registro
+        )
+        if not tarifa:
+            raise HttpError(400, "No hay tarifa M2 vigente para mecánica de suelos en la fecha indicada")
+
+        derecho = self.legacy_m2_core.get_derecho_m2_por_fecha(fecha_registro)
+        if not derecho:
+            raise HttpError(400, "No hay derecho M2 vigente para la fecha indicada")
+
+        # Step 4: Resolve IGV/UIT by fecha_registro
+        igv = self.legacy_visitas_core.get_igv_por_fecha(fecha_registro)
+        uit = self.legacy_visitas_core.get_uit_por_fecha(fecha_registro)
+        if not igv or not uit:
+            raise HttpError(400, "No hay IGV o UIT vigente para la fecha indicada")
+
+        # Step 5: Calculate cotization (mirrors LiquidacionPorMetroCuadradoCoreService.calcular_cotizacion_m2)
+        monto_bruto = Decimal(str(area)) * Decimal(str(tarifa.costo_por_m2))
+        subtotal = monto_bruto
+
+        cotizacion = CotizacionM2Result(
+            area_m2=float(area),
+            costo_por_m2=float(tarifa.costo_por_m2),
+            tarifa_id=str(tarifa.id),
+            derecho_id=str(derecho.id) if derecho else None,
+            minimo=float(derecho.derecho_minimo) if derecho else None,
+            maximo=float(derecho.derecho_maximo) if derecho and derecho.derecho_maximo is not None else None,
+            monto_bruto=float(monto_bruto),
+            subtotal=float(subtotal),
+            total=float(subtotal),
+        )
+
+        # Apply min/max clamping (Orchestrator owns clamping logic)
+        if cotizacion.subtotal < cotizacion.minimo:
+            cotizacion.subtotal = cotizacion.minimo
+            cotizacion.total = cotizacion.minimo
+        elif cotizacion.maximo is not None and cotizacion.subtotal > cotizacion.maximo:
+            cotizacion.subtotal = cotizacion.maximo
+            cotizacion.total = cotizacion.maximo
+
+        # Step 6: Build domain DTO
+        domain_data = MecanicaSuelosPrimeraRevisionData(
+            liquidacion_general=LiquidacionGeneralData(
+                municipalidad_id=str(payload.liquidacion_general.municipalidad_id),
+                expediente=payload.liquidacion_general.expediente,
+                observacion=payload.liquidacion_general.observacion,
+                proyecto=ProyectoData(
+                    denominacion=payload.liquidacion_general.proyecto.denominacion,
+                    nombre_propietario=payload.liquidacion_general.proyecto.nombre_propietario,
+                    direccion=payload.liquidacion_general.proyecto.direccion,
+                    distrito_id=str(payload.liquidacion_general.proyecto.distrito_id),
+                    entidad_razon_social=payload.liquidacion_general.proyecto.entidad.razon_social,
+                    entidad=EntidadData(
+                        tipo_documento=payload.liquidacion_general.proyecto.entidad.tipo_documento,
+                        numero_documento=payload.liquidacion_general.proyecto.entidad.numero_documento,
+                    ),
+                ),
+            ),
+            liquidacion_especifica=LiquidacionEspecificaMecanicaSuelosData(
+                datos=DatosM2(area_solicitada=area),
+                tarifa=TarifaM2(tarifa_m2_id=str(payload.liquidacion_especifica.tarifa.tarifa_m2_id)),
+            ),
+            cotizacion=cotizacion,
+        )
+
+        numero_revision = getattr(payload, "numero_revision", 1) or 1
+
+        # Step 7: Delegate to Flujo.ejecutar_legacy (T4)
+        return self.flujo.ejecutar_legacy(
+            usuario_id=usuario_id,
+            data=domain_data,
+            igv=igv,
+            uit=uit,
+            numero_revision=numero_revision,
+            fecha_registro=fecha_registro,
+        )

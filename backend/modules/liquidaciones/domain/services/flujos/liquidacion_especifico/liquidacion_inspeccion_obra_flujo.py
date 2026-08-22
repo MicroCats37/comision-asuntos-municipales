@@ -1,6 +1,7 @@
 """
 Flujo para Inspección de Obra (Transaccional).
 """
+from datetime import date
 from django.db import transaction
 from injector import inject
 import uuid
@@ -252,3 +253,110 @@ class LiquidacionInspeccionObraFlujo:
                 )
             )
         return resultados
+
+    @transaction.atomic()
+    def ejecutar_legacy_desde_previa(
+        self,
+        usuario_id: int,
+        data: InspeccionObraNuevaRevisionData,
+        liquidacion_previa,
+        inspector,
+        igv,
+        uit,
+        numero_revision: int,
+        fecha_registro: date,
+    ) -> InspeccionObraPrimeraRevisionResult:
+        """
+        Legacy first revision for Inspección de Obra using historical fecha_registro.
+
+        Mirrors ejecutar_primera_revision_desde_previa but:
+        - Uses passed igv/uit ORM objects for FKs on liquidacion_general (not vigente lookup)
+        - Sets explicit fecha_registro after create_liquidacion_general
+        - Sets numero_revision from parameter (not hardcoded to 1)
+        - Sets usuario_creador_id
+        """
+        # 1. Traer tarifa, UIT y calcular
+        tarifa = self.visitas_core.get_tarifa_por_id(data.liquidacion_especifica.tarifa.tarifa_visitas_id)
+
+        subtotal = self.visitas_core.calcular_subtotal_visitas(
+            cantidad_visitas=data.liquidacion_especifica.datos.cantidad_visitas,
+            tarifa=tarifa,
+            uit_vigente=uit,
+        )
+
+        # 2. Entidad y Proyecto ya existen — obtenerlos de la liquidación previa
+        proyecto = liquidacion_previa.proyecto
+        entidad = proyecto.entidad if hasattr(proyecto, 'entidad') and proyecto.entidad else None
+
+        # 3. Crear LiquidacionGeneral con tipo_liquidacion=INSPECCION_OBRA y numero_revision=1
+        from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
+        from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
+        from modules.liquidaciones.domain.models.inspector import LiquidacionInspector
+
+        liquidacion_general = self.general_core.create_liquidacion_general(
+            municipalidad_id=str(liquidacion_previa.municipalidad_id),
+            expediente=liquidacion_previa.expediente,
+            observacion=liquidacion_previa.observacion,
+            retencion=liquidacion_previa.retencion,
+            proyecto=proyecto,
+            tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.INSPECCION_OBRA),
+            numero_revision=numero_revision,
+        )
+
+        # Set historical fecha_registro (override default=timezone.now from model)
+        liquidacion_general.fecha_registro = fecha_registro
+
+        # Aplicar totales con IGV y asignar FKs de impuestos
+        liquidacion_general.sub_total = subtotal
+        liquidacion_general.total = subtotal * (1 + igv.valor)
+        liquidacion_general.igv_id = igv
+        liquidacion_general.uit_id = uit
+        liquidacion_general.usuario_creador_id = usuario_id
+        liquidacion_general.save()
+
+        # 4. Crear Tipo: LiquidacionPorCategoriaVisitas
+        liquidacion_visitas = self.visitas_core.crear_liquidacion_tipo_visitas(
+            liquidacion_general=liquidacion_general,
+            data=data.liquidacion_especifica,
+        )
+
+        # 5. Crear Específico: LiquidacionInspeccionObra
+        liquidacion_io = LiquidacionInspeccionObra.objects.create(
+            liquidacion=liquidacion_general,
+        )
+
+        # 6. Crear LiquidacionInspector (asocia el inspector a la IO)
+        from modules.liquidaciones.domain.models.inspector import InspectorOperacion
+        from ninja.errors import HttpError
+
+        tipo_previa = liquidacion_previa.tipo_liquidacion.codigo
+        especialidad_revision = (
+            InspectorOperacion.objects
+            .filter(
+                inspector=inspector,
+                tipo_liquidacion__codigo=tipo_previa,
+            )
+            .values_list("especialidad_revision_id", flat=True)
+            .first()
+        )
+        if not especialidad_revision:
+            raise HttpError(
+                400,
+                f"El inspector no tiene una operación vigente con especialidad "
+                f"para el tipo '{tipo_previa}' de la liquidación previa.",
+            )
+        LiquidacionInspector.objects.create(
+            liquidacion=liquidacion_visitas,
+            inspector=inspector,
+            especialidad_revision_id=especialidad_revision,
+        )
+
+        # 7. Mapear a Result puro
+        return self._build_result_from_orm(
+            liquidacion_general=liquidacion_general,
+            liquidacion_io=liquidacion_io,
+            liquidacion_visitas=liquidacion_visitas,
+            proyecto=proyecto,
+            entidad=entidad,
+            usuario_id=usuario_id,
+        )

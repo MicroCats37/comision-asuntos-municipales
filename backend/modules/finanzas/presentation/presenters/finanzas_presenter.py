@@ -15,6 +15,9 @@ from modules.finanzas.domain.results.recibo_honorario_result import (
     ReciboHonorarioDelegadoResult,
     ReciboHonorarioInspectorResult,
 )
+from modules.finanzas.domain.results.rh_inspector_mensual_result import (
+    RHInspectorCotizarResult,
+)
 from modules.finanzas.presentation.schemas.finanzas_schemas import (
     VariablesFinancierasOut,
     ReciboHonorarioDelegadoOut,
@@ -27,6 +30,9 @@ from modules.finanzas.presentation.schemas.finanzas_schemas import (
     ReciboHonorarioCalculoOut,
     ReciboHonorarioInspectorCalculoOut,
     LiquidacionEspecificaMinimalOut,
+    RHInspectorCotizarItemOut,
+    RHInspectorTotalesOut,
+    RHInspectorCotizarOut,
 )
 
 
@@ -262,4 +268,45 @@ class FinanzasPresenter:
             page=page,
             page_size=page_size,
             total_pages=total_pages,
+        )
+
+    # ── RH Inspector Mensual ─────────────────────────────────────────────────────
+
+    @staticmethod
+    def present_rh_inspector_mensual(
+        result: RHInspectorCotizarResult,
+    ) -> RHInspectorCotizarOut:
+        """
+        Transforma un RHInspectorCotizarResult → RHInspectorCotizarOut.
+
+        Args:
+            result: Result del orchestrator con detalle de cotización mensual.
+
+        Returns:
+            RHInspectorCotizarOut listo para success_response().
+        """
+        return RHInspectorCotizarOut(
+            inspector_id=uuid.UUID(result.inspector_id),
+            inspector_nombre=result.inspector_nombre,
+            inspector_cip=result.inspector_cip,
+            periodo=result.periodo,
+            items=[
+                RHInspectorCotizarItemOut(
+                    exp_liqui=i.exp_liqui,
+                    liquidacion_categoria_visitas_id=uuid.UUID(i.liquidacion_categoria_visitas_id),
+                    inspecciones_programadas=i.inspecciones_programadas,
+                    inspecciones_liquidadas=i.inspecciones_liquidadas,
+                    costo_por_inspeccion=i.costo_por_inspeccion,
+                    monto_contribuido=i.monto_contribuido,
+                    saldo_disponible=i.saldo_disponible,
+                )
+                for i in result.items
+            ],
+            totales=RHInspectorTotalesOut(
+                sub_total=result.totales.sub_total,
+                descuento=result.totales.descuento,
+                honorarios=result.totales.honorarios,
+                tasa_descuento_aplicada=result.totales.tasa_descuento_aplicada,
+            ),
+            escala_descuento_id=uuid.UUID(result.escala_descuento_id),
         )

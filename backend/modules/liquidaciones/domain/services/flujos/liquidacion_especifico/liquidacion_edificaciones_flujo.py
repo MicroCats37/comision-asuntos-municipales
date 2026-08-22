@@ -4,6 +4,7 @@ Flujo for Edificaciones (PorcentajeObra) first revision.
 @transaction.atomic coordination of DB record creation.
 NO validation, NO business logic — trusts Orchestrator.
 """
+from datetime import date
 from decimal import Decimal
 from django.db import transaction
 from injector import inject
@@ -15,6 +16,9 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
 )
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
+)
+from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_legacy_por_visitas_core_service import (
+    LiquidacionLegacyPorVisitasCoreService,
 )
 from modules.liquidaciones.domain.schemas.liquidacion_especifico.primera_revision_data import (
     LiquidacionEspecificaPrimeraRevisionData,
@@ -440,5 +444,112 @@ class LiquidacionEdificacionesFlujo:
                 ],
             ),
             revisiones_previas=[],
+        )
+
+    @transaction.atomic()
+    def ejecutar_legacy(
+        self,
+        usuario_id: int,
+        data: LiquidacionEspecificaPrimeraRevisionData,
+        igv_porcentaje: Decimal,
+        derecho,
+        uit_valor: Decimal,
+        numero_revision: int,
+        fecha_registro: date,
+        legacy_visitas_core: LiquidacionLegacyPorVisitasCoreService,
+    ) -> LiquidacionEspecificaPrimeraRevisionResult:
+        """
+        Legacy first revision for Edificaciones using historical fecha_registro.
+
+        Mirrors _ejecutar_primera_revision_sync but:
+        - Uses passed igv_porcentaje/uit_valor for calculation (resolved by orchestrator)
+        - Resolves igv/uit ORM objects via legacy_visitas_core for FKs on liquidacion_general
+        - Sets explicit fecha_registro after create_liquidacion_general
+        - Sets numero_revision from parameter (not hardcoded to 1)
+        - Sets usuario_creador_id
+        """
+        gen_data = data.liquidacion_general
+        po_data = data.liquidacion_especifica
+
+        # Paso 1: Entidad
+        entidad = self.general_core.create_entidad(
+            tipo_documento=gen_data.proyecto.entidad.tipo_documento,
+            numero_documento=gen_data.proyecto.entidad.numero_documento,
+        )
+
+        # Paso 2: Proyecto
+        proyecto_data = {
+            "denominacion": gen_data.proyecto.denominacion,
+            "nombre_propietario": gen_data.proyecto.nombre_propietario,
+            "direccion": gen_data.proyecto.direccion,
+            "distrito_id": gen_data.proyecto.distrito_id,
+            "entidad_razon_social": gen_data.proyecto.entidad_razon_social,
+            "entidad_tipo_documento": gen_data.proyecto.entidad.tipo_documento,
+            "entidad_numero_documento": gen_data.proyecto.entidad.numero_documento,
+        }
+        proyecto = self.general_core.create_proyecto(proyecto_data, entidad)
+
+        # Paso 2.5: Contacto principal (inline, opcional)
+        contacto = None
+        if gen_data.contacto:
+            contacto = self.general_core.create_contacto(
+                gen_data.contacto.model_dump() if hasattr(gen_data.contacto, "model_dump") else gen_data.contacto.__dict__
+            )
+
+        # Paso 3: LiquidacionGeneral (with totals=0 initially)
+        from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
+        liquidacion_general = self.general_core.create_liquidacion_general(
+            municipalidad_id=gen_data.municipalidad_id,
+            expediente=gen_data.expediente,
+            observacion=gen_data.observacion,
+            retencion=gen_data.retencion,
+            proyecto=proyecto,
+            tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.EDIFICACION),
+            numero_revision=numero_revision,
+            contacto=contacto,
+        )
+
+        # Set historical fecha_registro (override default=timezone.now from model)
+        liquidacion_general.fecha_registro = fecha_registro
+
+        # Resolve IGV/UIT ORM objects for FK snapshot via legacy core
+        igv = legacy_visitas_core.get_igv_por_fecha(fecha_registro)
+        uit = legacy_visitas_core.get_uit_por_fecha(fecha_registro)
+        liquidacion_general.igv_id = igv
+        liquidacion_general.uit_id = uit
+        liquidacion_general.usuario_creador_id = usuario_id
+
+        # Paso 4: Calculate PorcentajeObra
+        cotizacion = self.porcentaje_core.calcular_cotizacion_po(
+            valor_declarado=po_data.datos.valor_declarado,
+            tarifas=po_data.tarifas,
+            igv_porcentaje=igv_porcentaje,
+            derecho=derecho,
+            uit_valor=uit_valor,
+        )
+
+        # Step 5: Set LiquidacionGeneral totals from cotizacion
+        liquidacion_general.sub_total = cotizacion.total_subtotal
+        liquidacion_general.total = cotizacion.total
+        liquidacion_general.save()
+
+        # Paso 6: Create LiquidacionPorcentajeObra + detalles
+        liquidacion_po = self.porcentaje_core.create_liquidacion_porcentaje_obra(
+            liquidacion_general=liquidacion_general,
+            cotizacion=cotizacion,
+            derecho=derecho,
+        )
+
+        # Paso 7: LiquidacionEdificacion (identity wrapper)
+        edificacion = LiquidacionEdificacion.objects.create(
+            liquidacion=liquidacion_general
+        )
+
+        # Build Result
+        return self._build_result(
+            liquidacion_general=liquidacion_general,
+            edificacion=edificacion,
+            liquidacion_po=liquidacion_po,
+            usuario_id=usuario_id,
         )
 

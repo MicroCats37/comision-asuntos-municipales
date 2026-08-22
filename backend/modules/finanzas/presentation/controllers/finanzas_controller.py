@@ -12,12 +12,14 @@ from injector import inject
 
 from core.responses import ApiResponse, success_response
 from core.pagination import PaginatedData
+from modules.finanzas.domain.schemas import RHInspectorCotizarIn
 from modules.finanzas.presentation.schemas.finanzas_schemas import (
     VariablesFinancierasOut,
     ReciboHonorarioDelegadoCrearIn,
     ReciboHonorarioDelegadoOut,
     ReciboHonorarioInspectorCrearIn,
     ReciboHonorarioInspectorOut,
+    RHInspectorCotizarOut,
 )
 from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
 from modules.finanzas.presentation.presenters.finanzas_presenter import FinanzasPresenter
@@ -150,3 +152,35 @@ class FinanzasController:
             domain_results, total, page, page_size
         )
         return success_response(presented)
+
+    # ── RH Inspector Mensual ─────────────────────────────────────────────────────
+
+    @route.post(
+        "/recibos-inspectores/cotizar",
+        response={200: ApiResponse[RHInspectorCotizarOut]},
+        auth=None,
+    )
+    def cotizar_rh_inspector_mensual(self, request, payload: RHInspectorCotizarIn):
+        """
+        POST /finanzas/recibos-inspectores/cotizar — calcula sin crear.
+
+        Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
+        retorna success_response formateado por presenter.
+        """
+        result = self.orchestrator.cotizar_rh_inspector_mensual_proceso(payload)
+        return success_response(FinanzasPresenter.present_rh_inspector_mensual(result))
+
+    @route.post(
+        "/recibos-inspectores/crear",
+        response={200: ApiResponse[RHInspectorCotizarOut]},
+        auth=None,
+    )
+    def crear_rh_inspector_mensual(self, request, payload: RHInspectorCotizarIn):
+        """
+        POST /finanzas/recibos-inspectores/crear — crea la maestra + detalles.
+
+        Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
+        retorna success_response formateado por presenter.
+        """
+        result = self.orchestrator.crear_rh_inspector_mensual_proceso(payload)
+        return success_response(FinanzasPresenter.present_rh_inspector_mensual(result))

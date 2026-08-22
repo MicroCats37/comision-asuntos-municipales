@@ -97,6 +97,33 @@ from modules.liquidaciones.presentation.presenters.tarifas_historicas_presenter 
     TarifasHistoricasPresenter,
     DerechosHistoricosPresenter,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_legacy_por_porcentaje_core_service import (
+    LiquidacionLegacyPorPorcentajeCoreService,
+)
+from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_legacy_por_m2_core_service import (
+    LiquidacionLegacyPorM2CoreService,
+)
+from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_legacy_por_visitas_core_service import (
+    LiquidacionLegacyPorVisitasCoreService,
+)
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_legacy.liquidacion_edificaciones_legacy_orchestrator import (
+    LiquidacionEdificacionesLegacyOrchestrator,
+)
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_legacy.liquidacion_taludes_legacy_orchestrator import (
+    LiquidacionTaludesLegacyOrchestrator,
+)
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_legacy.liquidacion_impacto_vial_legacy_orchestrator import (
+    LiquidacionImpactoVialLegacyOrchestrator,
+)
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_legacy.liquidacion_habilitacion_urbana_legacy_orchestrator import (
+    LiquidacionHabilitacionUrbanaLegacyOrchestrator,
+)
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_legacy.liquidacion_mecanica_suelos_legacy_orchestrator import (
+    LiquidacionMecanicaSuelosLegacyOrchestrator,
+)
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_legacy.liquidacion_inspeccion_obra_legacy_orchestrator import (
+    LiquidacionInspeccionObraLegacyOrchestrator,
+)
 
 
 class LiquidacionesModule(Module):
@@ -194,3 +221,16 @@ class LiquidacionesModule(Module):
         # Presenters — Tarifas Historicas
         binder.bind(TarifasHistoricasPresenter, to=TarifasHistoricasPresenter)
         binder.bind(DerechosHistoricosPresenter, to=DerechosHistoricosPresenter)
+
+        # Core — Legacy (T1)
+        binder.bind(LiquidacionLegacyPorPorcentajeCoreService, to=LiquidacionLegacyPorPorcentajeCoreService)
+        binder.bind(LiquidacionLegacyPorM2CoreService, to=LiquidacionLegacyPorM2CoreService)
+        binder.bind(LiquidacionLegacyPorVisitasCoreService, to=LiquidacionLegacyPorVisitasCoreService)
+
+        # Orchestrators — Legacy (T3)
+        binder.bind(LiquidacionEdificacionesLegacyOrchestrator, to=LiquidacionEdificacionesLegacyOrchestrator)
+        binder.bind(LiquidacionTaludesLegacyOrchestrator, to=LiquidacionTaludesLegacyOrchestrator)
+        binder.bind(LiquidacionImpactoVialLegacyOrchestrator, to=LiquidacionImpactoVialLegacyOrchestrator)
+        binder.bind(LiquidacionHabilitacionUrbanaLegacyOrchestrator, to=LiquidacionHabilitacionUrbanaLegacyOrchestrator)
+        binder.bind(LiquidacionMecanicaSuelosLegacyOrchestrator, to=LiquidacionMecanicaSuelosLegacyOrchestrator)
+        binder.bind(LiquidacionInspeccionObraLegacyOrchestrator, to=LiquidacionInspeccionObraLegacyOrchestrator)

@@ -9,10 +9,18 @@ from ninja.errors import HttpError
 
 from modules.finanzas.domain.services.flujos.finanzas_flujo import FinanzasFlujo
 from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreService
+from modules.finanzas.domain.services.rh_inspector_mensual_flujo import (
+    RHInspectorMensualCotizarFlujo,
+    RHInspectorMensualCrearFlujo,
+)
 from modules.finanzas.domain.schemas import VariablesVigentesResult
+from modules.finanzas.domain.schemas import RHInspectorCotizarIn
 from modules.finanzas.domain.results.recibo_honorario_result import (
     ReciboHonorarioDelegadoResult,
     ReciboHonorarioInspectorResult,
+)
+from modules.finanzas.domain.results.rh_inspector_mensual_result import (
+    RHInspectorCotizarResult,
 )
 
 
@@ -24,9 +32,17 @@ class FinanzasOrchestrator:
     """
 
     @inject
-    def __init__(self, flujo: FinanzasFlujo, core: FinanzasCoreService):
+    def __init__(
+        self,
+        flujo: FinanzasFlujo,
+        core: FinanzasCoreService,
+        rh_mensual_cotizar_flujo: RHInspectorMensualCotizarFlujo | None = None,
+        rh_mensual_crear_flujo: RHInspectorMensualCrearFlujo | None = None,
+    ):
         self.flujo = flujo
         self.core = core
+        self.rh_mensual_cotizar_flujo = rh_mensual_cotizar_flujo
+        self.rh_mensual_crear_flujo = rh_mensual_crear_flujo
 
     def obtener_variables_vigentes(self) -> VariablesVigentesResult:
         """
@@ -445,5 +461,41 @@ class FinanzasOrchestrator:
                 nombre=li.especialidad_revision.nombre,
             ),
         )
+
+    # ── RH Inspector Mensual ─────────────────────────────────────────────────────
+
+    def cotizar_rh_inspector_mensual_proceso(
+        self, payload: RHInspectorCotizarIn
+    ) -> RHInspectorCotizarResult:
+        """
+        Cotiza el RH mensual del inspector (sin persistir).
+
+        Delega al RHInspectorMensualCotizarFlujo.
+
+        Args:
+            payload: Datos de cotización con CIP, periodo e items.
+
+        Returns:
+            RHInspectorCotizarResult con el detalle de cálculos.
+        """
+        resultado = self.rh_mensual_cotizar_flujo.cotizar(payload)
+        return resultado
+
+    def crear_rh_inspector_mensual_proceso(
+        self, payload: RHInspectorCotizarIn
+    ) -> RHInspectorCotizarResult:
+        """
+        Crea el RH mensual del inspector (persiste maestra + detalles + registro pago).
+
+        Delega al RHInspectorMensualCrearFlujo.
+
+        Args:
+            payload: Datos de cotización con CIP, periodo e items.
+
+        Returns:
+            RHInspectorCotizarResult con los datos persistidos.
+        """
+        resultado = self.rh_mensual_crear_flujo.crear(payload)
+        return resultado
 
 
