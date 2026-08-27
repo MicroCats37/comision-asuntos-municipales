@@ -49,6 +49,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_sche
 )
 from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 from modules.liquidaciones.domain.services.orchestrators._shared import LiquidacionPOValidationMixin
+from modules.liquidaciones.domain.services.orchestrators._shared.vigencia_validation import validar_tarifa_unica_por_base
 
 class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
     """
@@ -210,6 +211,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         no longer carries an especialidad FK.
         """
         tarifas = self.porcentaje_core.get_tarifas_porcentaje_vigentes(TipoLiquidacion.EDIFICACION)
+        validar_tarifa_unica_por_base(tarifas, TipoLiquidacion.EDIFICACION)
         especialidades = self._obtener_especialidades_vigentes_para_tipo(TipoLiquidacion.EDIFICACION)
         return tarifas, especialidades
 

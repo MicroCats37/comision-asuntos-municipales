@@ -43,6 +43,9 @@ from modules.liquidaciones.domain.results.liquidacion_especifico.habilitacion_ur
     HabilitacionUrbanaPrimeraRevisionResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import CotizacionM2Result
+from modules.liquidaciones.domain.services.orchestrators._shared.vigencia_validation import (
+    validar_sin_solapamiento,
+)
 
 
 class LiquidacionHabilitacionUrbanaLegacyOrchestrator:
@@ -68,6 +71,81 @@ class LiquidacionHabilitacionUrbanaLegacyOrchestrator:
         self.legacy_visitas_core = legacy_visitas_core
         self.general_core = general_core
         self.flujo = flujo
+
+    def cotizar_legacy_proceso(
+        self,
+        payload,
+    ) -> CotizacionM2Result:
+        """
+        Calculates the Habilitación Urbana cotizacion using historical tariffs by fecha_registro,
+        WITHOUT persisting anything.
+
+        Mirrors the resolution steps of crear_legacy_proceso (steps 1-5: fecha_registro,
+        validate area > 0, resolve tarifa/derecho by fecha, resolve IGV/UIT by fecha,
+        calculate + apply clamping), but STOPS before building the domain DTO and
+        does NOT call the flujo. Returns the clamped CotizacionM2Result.
+        """
+        # Step 1: fecha_registro
+        fecha_registro = (
+            payload.liquidacion_general.fecha_registro
+            if hasattr(payload.liquidacion_general, "fecha_registro")
+            and payload.liquidacion_general.fecha_registro
+            else date.today()
+        )
+
+        # Step 2: Validation
+        area = payload.liquidacion_especifica.datos.area_solicitada
+        if area <= 0:
+            raise HttpError(400, "area_solicitada debe ser mayor a 0")
+
+        # Step 3: Resolve tariff and derecho by fecha_registro
+        tarifa_bases = self.legacy_m2_core.get_tarifas_base_list(
+            TipoLiquidacion.HABILITACION_URBANA, fecha_registro
+        )
+        validar_sin_solapamiento(tarifa_bases, f"TarifaLiquidacionBase tipo={TipoLiquidacion.HABILITACION_URBANA}")
+        tarifa = self.legacy_m2_core.get_tarifa_m2_por_fecha(
+            TipoLiquidacion.HABILITACION_URBANA, fecha_registro
+        )
+        if not tarifa:
+            raise HttpError(400, "No hay tarifa M2 vigente para habilitación urbana en la fecha indicada")
+
+        derechos = self.legacy_m2_core.get_derechos_m2_list(fecha_registro)
+        validar_sin_solapamiento(derechos, "DerechoPorMetroCuadrado")
+        derecho = self.legacy_m2_core.get_derecho_m2_por_fecha(fecha_registro)
+        if not derecho:
+            raise HttpError(400, "No hay derecho M2 vigente para la fecha indicada")
+
+        # Step 4: Resolve IGV/UIT by fecha_registro
+        igv = self.legacy_visitas_core.get_igv_por_fecha(fecha_registro)
+        uit = self.legacy_visitas_core.get_uit_por_fecha(fecha_registro)
+        if not igv or not uit:
+            raise HttpError(400, "No hay IGV o UIT vigente para la fecha indicada")
+
+        # Step 5: Calculate cotization (mirrors LiquidacionPorMetroCuadradoCoreService.calcular_cotizacion_m2)
+        monto_bruto = Decimal(str(area)) * Decimal(str(tarifa.costo_por_m2))
+        subtotal = monto_bruto
+
+        cotizacion = CotizacionM2Result(
+            area_m2=float(area),
+            costo_por_m2=float(tarifa.costo_por_m2),
+            tarifa_id=str(tarifa.id),
+            derecho_id=str(derecho.id) if derecho else None,
+            minimo=float(derecho.derecho_minimo) if derecho else None,
+            maximo=float(derecho.derecho_maximo) if derecho and derecho.derecho_maximo is not None else None,
+            monto_bruto=float(monto_bruto),
+            subtotal=float(subtotal),
+            total=float(subtotal),
+        )
+
+        # Apply min/max clamping (Orchestrator owns clamping logic)
+        if cotizacion.subtotal < cotizacion.minimo:
+            cotizacion.subtotal = cotizacion.minimo
+            cotizacion.total = cotizacion.minimo
+        elif cotizacion.maximo is not None and cotizacion.subtotal > cotizacion.maximo:
+            cotizacion.subtotal = cotizacion.maximo
+            cotizacion.total = cotizacion.maximo
+
+        return cotizacion
 
     def crear_legacy_proceso(
         self,
@@ -100,12 +178,18 @@ class LiquidacionHabilitacionUrbanaLegacyOrchestrator:
             raise HttpError(400, "area_solicitada debe ser mayor a 0")
 
         # Step 3: Resolve tariff and derecho by fecha_registro
+        tarifa_bases = self.legacy_m2_core.get_tarifas_base_list(
+            TipoLiquidacion.HABILITACION_URBANA, fecha_registro
+        )
+        validar_sin_solapamiento(tarifa_bases, f"TarifaLiquidacionBase tipo={TipoLiquidacion.HABILITACION_URBANA}")
         tarifa = self.legacy_m2_core.get_tarifa_m2_por_fecha(
             TipoLiquidacion.HABILITACION_URBANA, fecha_registro
         )
         if not tarifa:
             raise HttpError(400, "No hay tarifa M2 vigente para habilitación urbana en la fecha indicada")
 
+        derechos = self.legacy_m2_core.get_derechos_m2_list(fecha_registro)
+        validar_sin_solapamiento(derechos, "DerechoPorMetroCuadrado")
         derecho = self.legacy_m2_core.get_derecho_m2_por_fecha(fecha_registro)
         if not derecho:
             raise HttpError(400, "No hay derecho M2 vigente para la fecha indicada")
@@ -156,6 +240,12 @@ class LiquidacionHabilitacionUrbanaLegacyOrchestrator:
                         tipo_documento=payload.liquidacion_general.proyecto.entidad.tipo_documento,
                         numero_documento=payload.liquidacion_general.proyecto.entidad.numero_documento,
                     ),
+                ),
+                denominacion_de_proyecto_liquidacion=getattr(
+                    payload.liquidacion_general, "denominacion_de_proyecto_liquidacion", None
+                ),
+                descripcion_legacy=getattr(
+                    payload.liquidacion_general, "descripcion_legacy", None
                 ),
             ),
             liquidacion_especifica=LiquidacionEspecificaHabilitacionUrbanaData(

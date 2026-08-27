@@ -107,19 +107,19 @@ def tarifa_liquidacion_base_iv(db, tipo_impacto_vial):
 
 @pytest.fixture
 def especialidad_iv_transito(db):
-    """Create an Especialidad for Impacto Vial testing - Transito."""
+    """Create an EspecialidadRevision for Impacto Vial testing - Transito."""
     return Especialidad.objects.get_or_create(
-        codigo="T01",
-        defaults={"slug": "transito", "nombre": "Tránsito"},
+        slug="transito",
+        defaults={"nombre": "Tránsito"},
     )[0]
 
 
 @pytest.fixture
 def especialidad_iv_urbanismo(db):
-    """Create an Especialidad for Impacto Vial testing - Urbanismo."""
+    """Create an EspecialidadRevision for Impacto Vial testing - Urbanismo."""
     return Especialidad.objects.get_or_create(
-        codigo="U01",
-        defaults={"slug": "urbanismo", "nombre": "Urbanismo"},
+        slug="urbanismo",
+        defaults={"nombre": "Urbanismo"},
     )[0]
 
 

@@ -8,6 +8,7 @@ import uuid
 from decimal import Decimal
 from typing import Optional, List
 from core.types import BaseSchema
+from ninja import Field
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
     LiquidacionGeneralOutput,
     LiquidacionGeneralRevisionIn,
@@ -22,7 +23,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_sche
 class LiquidacionTipoOutput(BaseSchema):
     """Output de identidad: solo id + numero."""
     id: uuid.UUID
-    numero: int
+    numero: Optional[int] = Field(None, description="Número secuencial correlativo de la especialidad")
 
 
 class LiquidacionTaludesInput(BaseSchema):

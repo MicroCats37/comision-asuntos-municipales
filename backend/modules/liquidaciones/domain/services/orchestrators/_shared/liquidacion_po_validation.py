@@ -50,24 +50,27 @@ class LiquidacionPOValidationMixin:
         if tarifa.tarifa_base.tipo_liquidacion.codigo != tipo_liquidacion:
             raise HttpError(400, f"Tarifa {tarifa.id} no es del tipo esperado")
 
-    def _obtener_especialidades_vigentes_para_tipo(self, tipo_liquidacion: str):
+    def _obtener_especialidades_vigentes_para_tipo(
+        self, tipo_liquidacion: str, fecha: "date | None" = None
+    ):
         """
         Fetches vigentes LiquidacionEspecialidadDisponibles for the given tipo_liquidacion.
         Returns list of LiquidacionEspecialidadDisponibles ORM objects.
 
         Args:
             tipo_liquidacion: TipoLiquidacion constant string (e.g. 'EDIFICACION')
+            fecha: Date to use for period filter. Defaults to timezone.now().date() if None.
 
         Returns:
             List of LiquidacionEspecialidadDisponibles objects
         """
-        today = timezone.now().date()
+        fecha = fecha if fecha is not None else timezone.now().date()
         return list(
             LiquidacionEspecialidadDisponibles.objects.filter(
                 tipo_liquidacion__codigo=tipo_liquidacion,
                 activo=True,
-                periodo_inicio__lte=today,
+                periodo_inicio__lte=fecha,
             ).filter(
-                models.Q(periodo_fin__isnull=True) | models.Q(periodo_fin__gte=today)
+                models.Q(periodo_fin__isnull=True) | models.Q(periodo_fin__gte=fecha)
             ).select_related("especialidad")
         )

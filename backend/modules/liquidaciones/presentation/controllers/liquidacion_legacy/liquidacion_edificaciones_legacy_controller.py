@@ -4,7 +4,7 @@ HTTP Controller for Edificaciones (PorcentajeObra) legacy endpoint.
 100% additive — no existing controller modified.
 
 Endpoints:
-- POST /api/liquidaciones/edificaciones/legacy/nueva-liquidacion/primera-revision
+- POST /api/liquidaciones/edificaciones/legacy/nueva-liquidacion
 
 Thin controller — only delegates, no logic.
 """
@@ -30,7 +30,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
 @api_controller("/liquidaciones/edificaciones", tags=["Edificaciones Legacy"], permissions=[AllowAny])
 class LiquidacionEdificacionesLegacyController:
     """
-    Legacy controller for Edificaciones (PorcentajeObra) primera-revision with historical fecha_registro.
+    Legacy controller for Edificaciones (PorcentajeObra) with historical fecha_registro (supports any numero_revision).
     """
 
     @inject
@@ -43,7 +43,7 @@ class LiquidacionEdificacionesLegacyController:
         self.presenter = presenter
 
     @route.post(
-        "/legacy/nueva-liquidacion/primera-revision",
+        "/legacy/nueva-liquidacion",
         response={200: ApiResponse[LiquidacionEdificacionesOutput]},
     )
     def crear_legacy(self, request, payload: LiquidacionEdificacionesLegacyIn):

@@ -48,6 +48,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_sche
 from django.core.exceptions import ObjectDoesNotExist
 from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 from modules.liquidaciones.domain.services.orchestrators._shared import LiquidacionPOValidationMixin
+from modules.liquidaciones.domain.services.orchestrators._shared.vigencia_validation import validar_tarifa_unica_por_base
 
 
 class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
@@ -188,6 +189,7 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
         no longer carries an especialidad FK.
         """
         tarifas = self.porcentaje_core.get_tarifas_porcentaje_vigentes(TipoLiquidacion.TALUDES)
+        validar_tarifa_unica_por_base(tarifas, TipoLiquidacion.TALUDES)
         especialidades = self._obtener_especialidades_vigentes_para_tipo(TipoLiquidacion.TALUDES)
         return tarifas, especialidades
 

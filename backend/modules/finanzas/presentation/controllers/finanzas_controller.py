@@ -13,6 +13,7 @@ from injector import inject
 from core.responses import ApiResponse, success_response
 from core.pagination import PaginatedData
 from modules.finanzas.domain.schemas import RHInspectorCotizarIn
+from modules.finanzas.domain.schemas import RHDelegadoCotizarIn
 from modules.finanzas.presentation.schemas.finanzas_schemas import (
     VariablesFinancierasOut,
     ReciboHonorarioDelegadoCrearIn,
@@ -20,6 +21,10 @@ from modules.finanzas.presentation.schemas.finanzas_schemas import (
     ReciboHonorarioInspectorCrearIn,
     ReciboHonorarioInspectorOut,
     RHInspectorCotizarOut,
+    InspectorCandidatosOut,
+    RHDelegadoCotizarOut,
+    RHDelegadoMensualListItemOut,
+    RHInspectorMensualListItemOut,
 )
 from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
 from modules.finanzas.presentation.presenters.finanzas_presenter import FinanzasPresenter
@@ -74,7 +79,7 @@ class FinanzasController:
 
     @route.get(
         "/recibos-delegados",
-        response={200: ApiResponse[PaginatedData[ReciboHonorarioDelegadoOut]]},
+        response={200: ApiResponse[PaginatedData[RHDelegadoMensualListItemOut]]},
         auth=None,
     )
     def listar_recibos(
@@ -83,21 +88,19 @@ class FinanzasController:
         page: int = Query(1, ge=1),
         page_size: int = Query(10, ge=1, le=100),
         delegado_id: uuid.UUID | None = None,
-        liquidacion_id: uuid.UUID | None = None,
     ):
         """
-        Lista recibos de honorarios con paginación.
+        Lista RecibosHonorariosDelegadoMensuales con paginación.
 
         Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
         retorna success_response formateado por presenter.
         """
-        domain_results, total = self.orchestrator.listar_recibos_proceso(
+        domain_results, total = self.orchestrator.listar_rh_mensual_delegados_proceso(
             page=page,
             page_size=page_size,
             delegado_id=delegado_id,
-            liquidacion_id=liquidacion_id,
         )
-        presented = FinanzasPresenter.present_recibos_list(
+        presented = FinanzasPresenter.present_rh_mensuales_delegado_list(
             domain_results, total, page, page_size
         )
         return success_response(presented)
@@ -125,7 +128,7 @@ class FinanzasController:
 
     @route.get(
         "/recibos-inspectores",
-        response={200: ApiResponse[PaginatedData[ReciboHonorarioInspectorOut]]},
+        response={200: ApiResponse[PaginatedData[RHInspectorMensualListItemOut]]},
         auth=None,
     )
     def listar_recibos_inspectores(
@@ -134,21 +137,22 @@ class FinanzasController:
         page: int = Query(1, ge=1),
         page_size: int = Query(10, ge=1, le=100),
         inspector_id: uuid.UUID | None = None,
-        liquidacion_id: uuid.UUID | None = None,
     ):
         """
-        Lista recibos de honorarios de inspectores con paginación.
+        Lista RecibosHonorariosInspectorMensuales con paginación.
+
+        Agrupa por periodo (YYYY-MM) + inspector, mostrando totales y detalles.
+        Reemplaza el antiguo listado de recibos individuales por LiquidacionInspector.
 
         Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
         retorna success_response formateado por presenter.
         """
-        domain_results, total = self.orchestrator.listar_recibos_inspectores_proceso(
+        domain_results, total = self.orchestrator.listar_rh_mensual_inspectores_proceso(
             page=page,
             page_size=page_size,
             inspector_id=inspector_id,
-            liquidacion_id=liquidacion_id,
         )
-        presented = FinanzasPresenter.present_recibos_inspectores_list(
+        presented = FinanzasPresenter.present_rh_mensuales_inspector_list(
             domain_results, total, page, page_size
         )
         return success_response(presented)
@@ -184,3 +188,62 @@ class FinanzasController:
         """
         result = self.orchestrator.crear_rh_inspector_mensual_proceso(payload)
         return success_response(FinanzasPresenter.present_rh_inspector_mensual(result))
+
+    @route.get(
+        "/recibos-inspectores/candidatos",
+        response={200: ApiResponse[InspectorCandidatosOut]},
+        auth=None,
+    )
+    def listar_candidatas_inspector(
+        self,
+        cip: str,
+        periodo: str | None = Query(default=None),
+    ):
+        """
+        GET /finanzas/recibos-inspectores/candidatos?cip=...&periodo=...
+
+        Lista las IOs candidatas (con saldo disponible) para el RH mensual del inspector.
+        Las candidatas son las LiquidacionInspector asignadas al inspector que tienen
+        saldo_disponible > 0 para el periodo dado.
+
+        Si periodo se proporciona, calcula inspecciones pagadas acumuladas de todos los
+        periodos estrictamente anteriores. Si no se proporciona, suma todos los periodos
+        históricamente (saldo total disponible).
+
+        Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
+        retorna success_response formateado por presenter.
+        """
+        result = self.orchestrator.list_candidatos_inspector_proceso(cip, periodo)
+        return success_response(FinanzasPresenter.present_inspector_candidatos(result))
+
+    # ── RH Delegado Mensual ─────────────────────────────────────────────────────
+
+    @route.post(
+        "/recibos-delegados/cotizar",
+        response={200: ApiResponse[RHDelegadoCotizarOut]},
+        auth=None,
+    )
+    def cotizar_rh_delegado_mensual(self, request, payload: RHDelegadoCotizarIn):
+        """
+        POST /finanzas/recibos-delegados/cotizar — calcula sin crear.
+
+        Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
+        retorna success_response formateado por presenter.
+        """
+        result = self.orchestrator.cotizar_rh_delegado_mensual_proceso(payload)
+        return success_response(FinanzasPresenter.present_rh_delegado_mensual(result))
+
+    @route.post(
+        "/recibos-delegados/crear",
+        response={200: ApiResponse[RHDelegadoCotizarOut]},
+        auth=None,
+    )
+    def crear_rh_delegado_mensual(self, request, payload: RHDelegadoCotizarIn):
+        """
+        POST /finanzas/recibos-delegados/crear — crea la maestra + detalles.
+
+        Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
+        retorna success_response formateado por presenter.
+        """
+        result = self.orchestrator.crear_rh_delegado_mensual_proceso(payload)
+        return success_response(FinanzasPresenter.present_rh_delegado_mensual(result))

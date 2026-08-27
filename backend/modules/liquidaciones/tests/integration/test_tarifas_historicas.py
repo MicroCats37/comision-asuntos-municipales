@@ -33,7 +33,6 @@ def api_client(db):
 def especialidad_estructuras(db):
     """Create an EspecialidadRevision for Edificaciones testing."""
     return Especialidad.objects.create(
-        codigo="E01",
         slug="estructuras",
         nombre="Estructuras",
     )
@@ -43,7 +42,6 @@ def especialidad_estructuras(db):
 def especialidad_arquitectura(db):
     """Create an EspecialidadRevision for Edificaciones testing."""
     return Especialidad.objects.create(
-        codigo="A01",
         slug="arquitectura",
         nombre="Arquitectura",
     )

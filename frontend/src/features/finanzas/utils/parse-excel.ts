@@ -24,5 +24,6 @@ export async function parseExcelFile(
   const cip = rows.length > 0 ? String(rows[0].CIP ?? "").trim() : "";
   const periodo = ""; // se completa en el modal
 
-  return { cip, periodo, items };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return { cip, periodo, items: items as any };
 }

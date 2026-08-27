@@ -117,7 +117,7 @@ class LiquidacionPorcentajeObraCoreService:
         if not tarifas:
             # NOTE: Validación de entrada; idealmente vive en el Orquestador/Flujo,
             # pero no existe excepción de dominio específica y se mantiene como guard aquí.
-            raise HttpError(400, "At least one tarifa is required")
+            raise HttpError(400, "Se requiere al menos una tarifa")
 
         # Paso 1-2: subtotal bruto agregado (NO por tarifa)
         porcentaje_total = sum(
@@ -188,7 +188,7 @@ class LiquidacionPorcentajeObraCoreService:
         return CotizacionPorcentajeObraData(
             valor_declarado=valor_declarado,
             porcentaje_liquidacion=porcentaje_liquidacion,
-            tipo_tramite=None,  # FUTURE: activate
+            tipo_tramite=None,  # tipo_tramite se pasa directamente a create_liquidacion_porcentaje_obra
             derecho_minimo=derecho.derecho_minimo or derecho_minimo_calculado,
             derecho_maximo=derecho.derecho_maximo,
             porcentaje_minimo_uit=derecho.porcentaje_minimo_uit,
@@ -204,7 +204,7 @@ class LiquidacionPorcentajeObraCoreService:
         liquidacion_general,
         cotizacion: CotizacionPorcentajeObraData,
         derecho: DerechoPorcentajeObra,
-        # FUTURE: tipo_tramite: Optional[str] = None,
+        tipo_tramite: Optional[str] = None,
     ) -> LiquidacionPorcentajeObra:
         """
         Creates LiquidacionPorcentajeObra + all Detalles in DB.
@@ -215,7 +215,7 @@ class LiquidacionPorcentajeObraCoreService:
         """
         liquidacion_po = LiquidacionPorcentajeObra.objects.create(
             liquidacion_general=liquidacion_general,
-            tipo_tramite=None,  # FUTURE: activate when frontend sends it
+            tipo_tramite=tipo_tramite,
             valor_declarado=cotizacion.valor_declarado,
             porcentaje_liquidacion=cotizacion.porcentaje_liquidacion,
             derecho_minimo=cotizacion.derecho_minimo,

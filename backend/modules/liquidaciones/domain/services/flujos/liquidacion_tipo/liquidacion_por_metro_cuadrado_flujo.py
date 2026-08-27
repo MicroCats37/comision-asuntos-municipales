@@ -41,7 +41,7 @@ class LiquidacionPorMetroCuadradoFlujo:
         usuario_id: int,
         tipo_liquidacion: str,
         municipalidad_id: str,
-        expediente: str,
+        expediente: str | None,
         observacion: str | None,
         proyecto_data: dict,
         area_solicitada: float,

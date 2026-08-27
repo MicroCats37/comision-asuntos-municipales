@@ -37,7 +37,7 @@ export function useCrearNuevaRevisionEdificaciones() {
     () => ({
       ...mutation,
       mutate: (payload: NuevaRevisionEdificacionesFormData) => {
-        const { tarifa_unica_id, especialidades_seleccionadas, liquidacion_previa_id, ...rest } = payload;
+        const { tarifa_unica_id, especialidades_seleccionadas, liquidacion_previa_id, tipo_tramite, ...rest } = payload;
         mutation.mutate({
           liquidacion_previa_id,
           liquidacion_general: {
@@ -47,6 +47,7 @@ export function useCrearNuevaRevisionEdificaciones() {
             ...(rest.contacto ? { contacto: rest.contacto } : {}),
           },
           liquidacion_especifica: {
+            tipo_tramite,
             tarifas: (especialidades_seleccionadas || []).map((espId) => ({
               tarifa_porcentaje_obra_id: tarifa_unica_id,
               especialidad_id: espId,
@@ -55,7 +56,7 @@ export function useCrearNuevaRevisionEdificaciones() {
         });
       },
       mutateAsync: async (payload: NuevaRevisionEdificacionesFormData) => {
-        const { tarifa_unica_id, especialidades_seleccionadas, liquidacion_previa_id, ...rest } = payload;
+        const { tarifa_unica_id, especialidades_seleccionadas, liquidacion_previa_id, tipo_tramite, ...rest } = payload;
         return mutation.mutateAsync({
           liquidacion_previa_id,
           liquidacion_general: {
@@ -65,6 +66,7 @@ export function useCrearNuevaRevisionEdificaciones() {
             ...(rest.contacto ? { contacto: rest.contacto } : {}),
           },
           liquidacion_especifica: {
+            tipo_tramite,
             tarifas: (especialidades_seleccionadas || []).map((espId) => ({
               tarifa_porcentaje_obra_id: tarifa_unica_id,
               especialidad_id: espId,

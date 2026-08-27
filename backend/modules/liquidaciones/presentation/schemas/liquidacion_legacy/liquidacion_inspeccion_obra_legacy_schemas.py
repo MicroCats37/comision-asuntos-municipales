@@ -13,15 +13,12 @@ NOTE: IO legacy endpoint still requires liquidacion_previa_id because IO inheren
 inherits proyecto/municipalidad/entidad from a prior liquidacion (Edificación or HU).
 """
 import uuid
-from datetime import date
-from decimal import Decimal
 from typing import Optional
+
 from core.types import BaseSchema
 from ninja import Field
-from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
-    EntidadInlineSchema,
-    ProyectoCotizarSchema,
-    ContactoInlineSchema,
+from modules.liquidaciones.presentation.schemas.liquidacion_legacy._shared import (
+    LiquidacionGeneralLegacyIn,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_inspeccion_obra_schemas import (
     LiquidacionInspeccionObraNuevaRevisionDatosIn,
@@ -30,20 +27,9 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
 )
 
 
-class LiquidacionGeneralLegacyIn(BaseSchema):
-    """Inline liquidacion_general — mirrors LiquidacionGeneralRevisionIn fields + fecha_registro."""
-    municipalidad_id: uuid.UUID = Field(..., description="ID de la municipalidad")
-    expediente: str = Field(..., description="Número de expediente")
-    observacion: Optional[str] = Field(None, description="Observación opcional")
-    retencion: Optional[bool] = Field(False, description="Indica si la liquidación tiene retención")
-    proyecto: ProyectoCotizarSchema = Field(..., description="Datos del proyecto")
-    contacto: Optional[ContactoInlineSchema] = Field(None, description="Contacto principal (se crea inline)")
-    fecha_registro: Optional[date] = Field(None, description="Fecha de registro histórica (para tarifas legacy)")
-
-
 class LiquidacionInspeccionObraLegacyIn(BaseSchema):
     """
-    Legacy input for Inspección de Obra primera-revision with historical fecha_registro.
+    Legacy input for Inspección de Obra with historical fecha_registro (supports any numero_revision).
 
     Mirrors the structure of LiquidacionInspeccionObraNuevaRevisionInput but:
     - Uses its own LiquidacionGeneralLegacyIn (inline, NOT reused from existing)

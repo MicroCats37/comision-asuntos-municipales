@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
     LiquidacionGeneralResult,
 )
@@ -9,7 +10,7 @@ from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_visitas_r
 
 class LiquidacionEspecificaInspeccionObraResult(BaseModel):
     id: str
-    numero: int
+    numero: Optional[int] = None
 
 
 class InspeccionObraPrimeraRevisionResult(BaseModel):

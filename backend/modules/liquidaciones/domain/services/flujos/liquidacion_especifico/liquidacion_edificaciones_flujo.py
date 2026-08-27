@@ -163,6 +163,7 @@ class LiquidacionEdificacionesFlujo:
             liquidacion_general=liquidacion_general,
             cotizacion=cotizacion,
             derecho=derecho,
+            tipo_tramite=po_data.tipo_tramite,
         )
         
         # Paso 7: LiquidacionEdificacion (identity wrapper)
@@ -277,6 +278,7 @@ class LiquidacionEdificacionesFlujo:
             liquidacion_general=liquidacion_general,
             cotizacion=cotizacion,
             derecho=derecho,
+            tipo_tramite=po_data.tipo_tramite,
         )
 
         # LiquidacionEdificacion (identity wrapper)
@@ -457,6 +459,7 @@ class LiquidacionEdificacionesFlujo:
         numero_revision: int,
         fecha_registro: date,
         legacy_visitas_core: LiquidacionLegacyPorVisitasCoreService,
+        numero: int | None = None,
     ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
         Legacy first revision for Edificaciones using historical fecha_registro.
@@ -507,6 +510,8 @@ class LiquidacionEdificacionesFlujo:
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.EDIFICACION),
             numero_revision=numero_revision,
             contacto=contacto,
+            denominacion_de_proyecto_liquidacion=gen_data.denominacion_de_proyecto_liquidacion,
+            descripcion_legacy=gen_data.descripcion_legacy,
         )
 
         # Set historical fecha_registro (override default=timezone.now from model)
@@ -538,12 +543,17 @@ class LiquidacionEdificacionesFlujo:
             liquidacion_general=liquidacion_general,
             cotizacion=cotizacion,
             derecho=derecho,
+            tipo_tramite=po_data.tipo_tramite,
         )
 
         # Paso 7: LiquidacionEdificacion (identity wrapper)
-        edificacion = LiquidacionEdificacion.objects.create(
-            liquidacion=liquidacion_general
-        )
+        edificacion = LiquidacionEdificacion(liquidacion=liquidacion_general)
+        if numero is not None:
+            edificacion.numero = numero
+        else:
+            # Legacy sin número histórico: se deja null (no autoincrementar).
+            edificacion._skip_autonumero = True
+        edificacion.save()
 
         # Build Result
         return self._build_result(

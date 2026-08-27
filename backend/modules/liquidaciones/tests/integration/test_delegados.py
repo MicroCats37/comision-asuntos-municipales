@@ -33,7 +33,6 @@ from modules.entidades.domain.models.municipalidad import Municipalidad
 def especialidad_revision_civil(db):
     """Create an EspecialidadRevision for testing."""
     return EspecialidadRevision.objects.create(
-        codigo="01",
         slug="civil",
         nombre="Ingeniería Civil",
     )

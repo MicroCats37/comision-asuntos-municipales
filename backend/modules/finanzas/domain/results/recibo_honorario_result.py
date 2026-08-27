@@ -58,7 +58,6 @@ class DelegadoMinimal(BaseModel):
 class EspecialidadMinimal(BaseModel):
     """EspecialidadRevision minimal for list item."""
     id: str
-    codigo: str
     nombre: str
 
 

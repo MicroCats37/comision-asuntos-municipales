@@ -96,6 +96,26 @@ class LiquidacionDelegadoOut(BaseSchema):
     fecha_revision: Optional[str] = None
 
 
+class CandidataOut(BaseSchema):
+    """Output schema for a candidate liquidacion."""
+    id: uuid.UUID
+    expediente: Optional[str] = None
+    numero_revision: int
+    sub_total: Optional[float] = None
+    total: Optional[float] = None
+    municipalidad_nombre: Optional[str] = None
+    proyecto_denominacion: Optional[str] = None
+    tipo_liquidacion: Optional[TipoLiquidacionMinimalOut] = None
+    especialidad_candidata: EspecialidadRevisionOut
+
+
+class DelegadoCandidatasOut(BaseSchema):
+    """Output schema for GET /delegados-candidatas."""
+    delegado: LiquidacionDelegadoDelegadoOut
+    candidatas: list[CandidataOut]
+    total: int
+
+
 class LiquidacionDelegadoBatchOut(BaseSchema):
     """Output schema agrupado para PATCH /liquidaciones/{id}/delegados."""
     created: list[LiquidacionDelegadoOut] = []

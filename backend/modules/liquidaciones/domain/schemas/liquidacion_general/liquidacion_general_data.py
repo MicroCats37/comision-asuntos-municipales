@@ -29,8 +29,10 @@ class ContactoData(BaseSchema):
 
 class LiquidacionGeneralData(BaseSchema):
     municipalidad_id: str
-    expediente: str
+    expediente: Optional[str] = None
     observacion: Optional[str] = None
     retencion: bool = False
     proyecto: ProyectoData
     contacto: Optional[ContactoData] = None
+    denominacion_de_proyecto_liquidacion: Optional[str] = None
+    descripcion_legacy: Optional[str] = None

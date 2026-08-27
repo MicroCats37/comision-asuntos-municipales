@@ -2,6 +2,7 @@
 Domain results for Mecanica Suelos primera revision.
 """
 from pydantic import BaseModel
+from typing import Optional
 
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
     LiquidacionGeneralResult,
@@ -13,7 +14,7 @@ from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_m2_result
 
 class LiquidacionEspecificaMecanicaSuelosResult(BaseModel):
     id: str
-    numero: int
+    numero: Optional[int] = None
 
 
 class MecanicaSuelosPrimeraRevisionResult(BaseModel):

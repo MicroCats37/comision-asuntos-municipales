@@ -1,24 +1,23 @@
 /**
- * Hook para listar Recibos de Honorarios con paginación.
+ * Hook para listar Recibos de Honorarios Mensuales con paginación.
  * Endpoint: GET /finanzas/recibos-delegados
- * Filtros: delegado_id, liquidacion_id
+ * Filtros: delegado_id
  */
 
 import { paginatedResponseSchema } from "@/features/liquidaciones/schemas/liquidacion-base.schema";
 import { useApiQuery } from "@/hooks";
 import { apiResponseSchema } from "@/types/api.types";
-import type { ReciboHonorarioDelegado } from "../schemas/recibo-honorario.schema";
-import { reciboHonorarioDelegadoSchema } from "../schemas/recibo-honorario.schema";
+import type { ReciboHonorarioDelegadoMensual } from "../schemas/recibo-honorario.schema";
+import { rhDelegadoMensualListItemSchema } from "../schemas/recibo-honorario.schema";
 
 const paginatedSchema = apiResponseSchema(
-  paginatedResponseSchema(reciboHonorarioDelegadoSchema),
+  paginatedResponseSchema(rhDelegadoMensualListItemSchema),
 );
 
 interface UseRecibosDelegadosProps {
   page?: number;
   pageSize?: number;
   delegadoId?: string;
-  liquidacionId?: string;
   enabled?: boolean;
 }
 
@@ -26,12 +25,10 @@ export function useRecibosDelegados({
   page = 1,
   pageSize = 10,
   delegadoId,
-  liquidacionId,
   enabled = true,
 }: UseRecibosDelegadosProps = {}) {
   const params: Record<string, string | number> = { page, page_size: pageSize };
   if (delegadoId) params.delegado_id = delegadoId;
-  if (liquidacionId) params.liquidacion_id = liquidacionId;
 
   const query = useApiQuery({
     queryKey: [
@@ -40,7 +37,6 @@ export function useRecibosDelegados({
       page,
       pageSize,
       delegadoId,
-      liquidacionId,
     ],
     url: "/finanzas/recibos-delegados",
     schema: paginatedSchema,
@@ -50,7 +46,7 @@ export function useRecibosDelegados({
       select: (data) => {
         if (!data?.data) {
           return {
-            items: [] as ReciboHonorarioDelegado[],
+            items: [] as ReciboHonorarioDelegadoMensual[],
             total: 0,
             page,
             page_size: pageSize,

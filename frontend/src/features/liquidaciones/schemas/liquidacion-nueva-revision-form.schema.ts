@@ -7,14 +7,17 @@
  */
 import { z } from "zod";
 import { contactoInlineSchema } from "./liquidacion-form-base.schema";
+import { TipoTramiteEdificacionesSchema } from "./tramite.schema";
 
 export const nuevaRevisionEdificacionesFormSchema = z.object({
   // ID de la liquidación previa (obligatorio, se usa como base)
   liquidacion_previa_id: z.string().min(1, "Falta la liquidación previa"),
   // Solo estos campos se editan de liquidacion_general
-  expediente: z.string().min(1, "Requerido"),
+  expediente: z.string().optional(),
   observacion: z.string().optional(),
   retencion: z.boolean().optional(),
+  /** Tipo de trámite de edificaciones — requerido, default OBRA_NUEVA */
+  tipo_tramite: TipoTramiteEdificacionesSchema.default("OBRA_NUEVA"),
   // Contacto principal (singular)
   contacto: contactoInlineSchema.optional(),
   // Smart Field outputs — set by Smart Fields via setValue

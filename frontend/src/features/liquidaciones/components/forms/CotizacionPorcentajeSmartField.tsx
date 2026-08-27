@@ -93,14 +93,14 @@ export function CotizacionPorcentajeSmartField({
 
   useEffect(() => {
     const v = Number(debouncedValor);
+    const espIds = (especialidadesSeleccionadas || []) as string[];
 
-    if (!v || v <= 0) {
+    // Sin especialidades seleccionadas NO se cotiza (evita auto-fill del backend)
+    if (!v || v <= 0 || espIds.length === 0) {
       setQuote(null);
       setError(null);
       return;
     }
-
-    const espIds = (especialidadesSeleccionadas || []) as string[];
 
     cotizacionMutation.mutate({
       valor_declarado: v,

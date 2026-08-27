@@ -124,17 +124,17 @@ def uit_vigente_2023(db):
 
 @pytest.fixture
 def esp_estructuras(db):
-    return EspecialidadRevision.objects.create(codigo="E01", slug="estructuras", nombre="Estructuras")
+    return EspecialidadRevision.objects.create(slug="estructuras", nombre="Estructuras")
 
 
 @pytest.fixture
 def esp_arquitectura(db):
-    return EspecialidadRevision.objects.create(codigo="A01", slug="arquitectura", nombre="Arquitectura")
+    return EspecialidadRevision.objects.create(slug="arquitectura", nombre="Arquitectura")
 
 
 @pytest.fixture
 def esp_installaciones(db):
-    return EspecialidadRevision.objects.create(codigo="I01", slug="instalaciones", nombre="Instalaciones")
+    return EspecialidadRevision.objects.create(slug="instalaciones", nombre="Instalaciones")
 
 
 @pytest.fixture
@@ -273,7 +273,7 @@ def inspector_fixture(db, tipo_edificacion):
         apellido_materno="Test", correo_personal="inspector_io_test@example.com",
     )
     inspector = Inspector.objects.create(perfil_ingeniero=perfil)
-    esp_rev = EspecialidadRevision.objects.create(codigo="03", slug="electrica", nombre="Eléctrica/Mecánica")
+    esp_rev = EspecialidadRevision.objects.create(slug="electrica", nombre="Eléctrica/Mecánica")
     from modules.liquidaciones.domain.models.inspector import InspectorOperacion
     InspectorOperacion.objects.create(
         inspector=inspector, tipo_liquidacion=tipo_edificacion, categoria="1",
@@ -396,7 +396,7 @@ def test_edificaciones_legacy_con_fecha_registro_pasada_usa_tarifa_historica(
         valor_declarado=100000.00,
     )
     response = auth_client.post(
-        "/liquidaciones/edificaciones/legacy/nueva-liquidacion/primera-revision",
+        "/liquidaciones/edificaciones/legacy/nueva-liquidacion",
         json=payload,
     )
 
@@ -440,7 +440,7 @@ def test_edificaciones_legacy_sin_fecha_registro_usa_hoy(
         valor_declarado=100000.00,
     )
     response = auth_client.post(
-        "/liquidaciones/edificaciones/legacy/nueva-liquidacion/primera-revision",
+        "/liquidaciones/edificaciones/legacy/nueva-liquidacion",
         json=payload,
     )
 
@@ -477,7 +477,7 @@ def test_edificaciones_legacy_numero_revision_se_respeta(
         valor_declarado=50000.00,
     )
     response = auth_client.post(
-        "/liquidaciones/edificaciones/legacy/nueva-liquidacion/primera-revision",
+        "/liquidaciones/edificaciones/legacy/nueva-liquidacion",
         json=payload,
     )
 
@@ -508,7 +508,7 @@ def test_hu_legacy_con_fecha_registro_pasada_usa_tarifa_m2_historica(
         area_solicitada=100.0,
     )
     response = auth_client.post(
-        "/liquidaciones/habilitacion-urbana/legacy/nueva-liquidacion/primera-revision",
+        "/liquidaciones/habilitacion-urbana/legacy/nueva-liquidacion",
         json=payload,
     )
 
@@ -548,7 +548,7 @@ def test_hu_legacy_sin_fecha_registro_usa_tarifa_vigente(
         area_solicitada=100.0,
     )
     response = auth_client.post(
-        "/liquidaciones/habilitacion-urbana/legacy/nueva-liquidacion/primera-revision",
+        "/liquidaciones/habilitacion-urbana/legacy/nueva-liquidacion",
         json=payload,
     )
 
@@ -582,7 +582,7 @@ def test_hu_legacy_numero_revision_custom(
         area_solicitada=50.0,
     )
     response = auth_client.post(
-        "/liquidaciones/habilitacion-urbana/legacy/nueva-liquidacion/primera-revision",
+        "/liquidaciones/habilitacion-urbana/legacy/nueva-liquidacion",
         json=payload,
     )
 
@@ -702,7 +702,7 @@ def test_taludes_legacy_smoke_test(
         expediente="EXP-LEG-TALUDES-001",
     )
     response = auth_client.post(
-        "/liquidaciones/taludes/legacy/nueva-liquidacion/primera-revision",
+        "/liquidaciones/taludes/legacy/nueva-liquidacion",
         json=payload,
     )
 
@@ -749,7 +749,7 @@ def test_impacto_vial_legacy_smoke_test(
         expediente="EXP-LEG-IV-001",
     )
     response = auth_client.post(
-        "/liquidaciones/impacto-vial/legacy/nueva-liquidacion/primera-revision",
+        "/liquidaciones/impacto-vial/legacy/nueva-liquidacion",
         json=payload,
     )
 
@@ -789,7 +789,7 @@ def test_mecanica_suelos_legacy_smoke_test(
         expediente="EXP-LEG-MS-001",
     )
     response = auth_client.post(
-        "/liquidaciones/mecanica-suelos/legacy/nueva-liquidacion/primera-revision",
+        "/liquidaciones/mecanica-suelos/legacy/nueva-liquidacion",
         json=payload,
     )
 
@@ -804,9 +804,9 @@ def test_mecanica_suelos_legacy_smoke_test(
 
 @pytest.fixture
 def esp_taludes(db):
-    return EspecialidadRevision.objects.create(codigo="T01", slug="taludes", nombre="Taludes")
+    return EspecialidadRevision.objects.create(slug="taludes", nombre="Taludes")
 
 
 @pytest.fixture
 def esp_iv(db):
-    return EspecialidadRevision.objects.create(codigo="IV01", slug="impacto-vial", nombre="Impacto Vial")
+    return EspecialidadRevision.objects.create(slug="impacto-vial", nombre="Impacto Vial")

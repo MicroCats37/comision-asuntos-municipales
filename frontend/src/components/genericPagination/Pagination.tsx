@@ -15,6 +15,47 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+/**
+ * Build the page list with ellipsis markers for responsive pagination.
+ * - totalPages <= 7: all pages shown, no ellipsis.
+ * - currentPage <= 4: first 5 pages + ellipsis + last 3.
+ * - currentPage >= N-3: first 3 pages + ellipsis + last 5.
+ * - middle: first 3 pages + ellipsis + (cp-1,cp,cp+1) + ellipsis + last 3.
+ */
+function getPageItems(
+  currentPage: number,
+  totalPages: number,
+): (number | "...")[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const lastThree = [totalPages - 2, totalPages - 1, totalPages];
+
+  if (currentPage <= 4) {
+    const firstFive = [1, 2, 3, 4, 5];
+    // Avoid duplicate: if 5 already appears as part of last three (when N <= 7 handled above, so here N > 7, 5 is safe)
+    return [...firstFive, "...", ...lastThree];
+  }
+
+  if (currentPage >= totalPages - 3) {
+    const firstThree = [1, 2, 3];
+    const lastFive = [
+      totalPages - 4,
+      totalPages - 3,
+      totalPages - 2,
+      totalPages - 1,
+      totalPages,
+    ];
+    return [...firstThree, "...", ...lastFive];
+  }
+
+  // Middle case: current page is between 4 and N-3
+  const firstThree = [1, 2, 3];
+  const window = [currentPage - 1, currentPage, currentPage + 1];
+  return [...firstThree, "...", ...window, "...", ...lastThree];
+}
+
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
@@ -102,9 +143,39 @@ export function Pagination({
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
-        <div className="flex items-center justify-center min-w-[32px] h-8 px-3 rounded-lg bg-primary/10 text-primary text-xs font-bold">
-          {currentPage}
-        </div>
+        {(() => {
+          let ellipsisCount = 0;
+          return getPageItems(currentPage, totalPages).map((item) => {
+            if (item === "...") {
+              const ellipsisKey = `ellipsis-${ellipsisCount++}`;
+              return (
+                <span
+                  key={ellipsisKey}
+                  className="flex items-center justify-center min-w-[32px] h-8 text-muted-foreground text-xs"
+                  aria-hidden="true"
+                >
+                  ...
+                </span>
+              );
+            }
+            return (
+              <Button
+                key={item}
+                variant="outline"
+                size="icon"
+                className={`h-8 min-w-[32px] rounded-lg text-xs font-medium ${
+                  item === currentPage
+                    ? "bg-primary/10 text-primary font-bold"
+                    : ""
+                }`}
+                onClick={() => onPageChange(item)}
+                disabled={item === currentPage}
+              >
+                {item}
+              </Button>
+            );
+          });
+        })()}
 
         <Button
           variant="outline"

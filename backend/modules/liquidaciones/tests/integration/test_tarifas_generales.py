@@ -43,7 +43,7 @@ def datos_tarifas_generales(db):
 
     # Especialidad for EDIFICACION
     esp = EspecialidadRevision.objects.get_or_create(
-        codigo="TEST01", defaults={"slug": "test", "nombre": "Test"}
+        slug="test", defaults={"nombre": "Test"}
     )[0]
 
     # Base EDIFICACION (PorcentajeObra)

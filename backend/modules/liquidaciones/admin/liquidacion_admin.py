@@ -1,6 +1,9 @@
 """LiquidacionGeneral and LiquidacionCodigo admin classes."""
 
+from datetime import date
+
 from django.contrib import admin
+from django.db.models import Q
 
 # Import from specific submodule files (not all are re-exported via domain/models/__init__.py)
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
@@ -211,6 +214,34 @@ class LiquidacionGeneralAdmin(admin.ModelAdmin):
     ]
 
     filter_horizontal = ["especialidades_revisadas", "liquidaciones_previas"]
+
+    def save_model(self, request, obj, form, change):
+        """
+        Auto-populate especialidades_revisadas from LiquidacionEspecialidadDisponibles
+        when the field is empty and tipo_liquidacion is set.
+
+        This ensures get_candidatas_for_delegado() can correctly match liquidaciones
+        to delegates without requiring manual admin intervention.
+        """
+        from datetime import date
+        from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
+            LiquidacionEspecialidadDisponibles,
+        )
+
+        super().save_model(request, obj, form, change)
+
+        # Only auto-populate on creation (not on edit), and only if empty
+        if not change and not obj.especialidades_revisadas.exists() and obj.tipo_liquidacion_id:
+            today = date.today()
+            disponibles = LiquidacionEspecialidadDisponibles.objects.filter(
+                tipo_liquidacion=obj.tipo_liquidacion_id,
+                activo=True,
+                periodo_inicio__lte=today,
+            ).filter(
+                Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=today)
+            )
+            for disp in disponibles:
+                obj.especialidades_revisadas.add(disp.especialidad)
 
     def get_inlines(self, request, obj):
         """

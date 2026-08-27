@@ -25,6 +25,11 @@ from modules.liquidaciones.domain.results.delegado.delegado_result import (
     EspecialidadResult,
     CapituloResult,
     MunicipalidadBasicResult,
+    DelegadoCandidatasResult,
+    CandidataResult,
+    LiquidacionDelegadoDelegadoMinimal,
+    TipoLiquidacionMinimalResult,
+    EspecialidadRevisionResult,
 )
 
 
@@ -226,3 +231,54 @@ class DelegadoOrchestrator:
             page_size=page_size,
             total_pages=total_pages,
         )
+
+    def list_candidatas_delegado_proceso(self, cip: str) -> DelegadoCandidatasResult:
+        """
+        Returns DelegadoCandidatasResult (domain DTO) of candidate liquidaciones for the given delegado.
+        Raises 404 if delegado with cip not found.
+        """
+        from modules.liquidaciones.domain.models.delegado import Delegado
+        
+        delegado = Delegado.objects.select_related(
+            "perfil_ingeniero"
+        ).filter(perfil_ingeniero__cip=cip).first()
+        
+        if not delegado:
+            raise HttpError(404, f"Delegado con CIP '{cip}' no encontrado")
+            
+        today = date.today()
+        candidatas_tuples = self.core_service.get_candidatas_for_delegado(delegado, today)
+        
+        delegado_dto = LiquidacionDelegadoDelegadoMinimal(
+            id=str(delegado.id),
+            cip=delegado.perfil_ingeniero.cip or "",
+            dni=delegado.perfil_ingeniero.dni or "",
+            nombre_completo=delegado.perfil_ingeniero.nombre_completo,
+        )
+        
+        candidatas_list = []
+        for liq, especialidad in candidatas_tuples:
+            candidatas_list.append(CandidataResult(
+                id=str(liq.id),
+                expediente=getattr(liq, "expediente", None),
+                numero_revision=getattr(liq, "numero_revision", 1),
+                sub_total=float(liq.sub_total) if getattr(liq, "sub_total", None) else None,
+                total=float(liq.total) if getattr(liq, "total", None) else None,
+                municipalidad_nombre=liq.municipalidad.nombre if liq.municipalidad else None,
+                proyecto_denominacion=getattr(getattr(liq, "proyecto", None), "denominacion", None),
+                tipo_liquidacion=TipoLiquidacionMinimalResult(
+                    codigo=liq.tipo_liquidacion.codigo,
+                    nombre=liq.tipo_liquidacion.nombre,
+                ) if liq.tipo_liquidacion else None,
+                especialidad_candidata=EspecialidadRevisionResult(
+                    id=str(especialidad.id),
+                    nombre=especialidad.nombre,
+                )
+            ))
+            
+        return DelegadoCandidatasResult(
+            delegado=delegado_dto,
+            candidatas=candidatas_list,
+            total=len(candidatas_list)
+        )
+

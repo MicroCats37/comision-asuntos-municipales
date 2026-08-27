@@ -13,6 +13,7 @@ from core.types import BaseSchema
 class LiquidacionPorcentajeObraDatosIn(BaseSchema):
     """Datos básicos de entrada."""
     valor_declarado: Decimal
+    tipo_tramite: Optional[str] = None
 
 
 class LiquidacionPorcentajeObraTarifaIn(BaseSchema):

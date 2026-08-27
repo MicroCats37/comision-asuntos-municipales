@@ -11,6 +11,10 @@ from modules.finanzas.domain.services.rh_inspector_mensual_flujo import (
     RHInspectorMensualCotizarFlujo,
     RHInspectorMensualCrearFlujo,
 )
+from modules.finanzas.domain.services.flujos.rh_delegado_mensual_flujo import (
+    RHDelegadoMensualCotizarFlujo,
+    RHDelegadoMensualCrearFlujo,
+)
 from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
 
 
@@ -22,6 +26,7 @@ class FinanzasModule(Module):
     - FinanzasCoreService - ORM queries for IGV/UIT
     - FinanzasFlujo - flujos async (envuelve el Core en sync_to_async)
     - RHInspectorMensualCotizarFlujo / RHInspectorMensualCrearFlujo - RH mensual inspector
+    - RHDelegadoMensualCotizarFlujo / RHDelegadoMensualCrearFlujo - RH mensual delegado
     - FinanzasOrchestrator - fachada para obtener variables vigentes
 
     Todos los servicios son de ámbito singleton.
@@ -32,4 +37,6 @@ class FinanzasModule(Module):
         binder.bind(FinanzasFlujo, to=FinanzasFlujo, scope=singleton)
         binder.bind(RHInspectorMensualCotizarFlujo, to=RHInspectorMensualCotizarFlujo, scope=singleton)
         binder.bind(RHInspectorMensualCrearFlujo, to=RHInspectorMensualCrearFlujo, scope=singleton)
+        binder.bind(RHDelegadoMensualCotizarFlujo, to=RHDelegadoMensualCotizarFlujo, scope=singleton)
+        binder.bind(RHDelegadoMensualCrearFlujo, to=RHDelegadoMensualCrearFlujo, scope=singleton)
         binder.bind(FinanzasOrchestrator, to=FinanzasOrchestrator, scope=singleton)

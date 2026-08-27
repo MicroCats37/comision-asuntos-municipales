@@ -9,14 +9,12 @@ Estructura:
 """
 
 import importlib.util
+import os
 
-# Explicitly load the legacy domain/schemas.py module (file, not package)
-# to avoid circular import when re-exporting its types.
-# Using spec_from_file_location because 'schemas' is also a package/directory,
-# so import_module would load the __init__.py instead of the .py file.
+_schemas_file = os.path.join(os.path.dirname(__file__), "..", "schemas.py")
 _schemas_spec = importlib.util.spec_from_file_location(
     "liquidaciones_domain_schemas_file",
-    "modules/liquidaciones/domain/schemas.py"
+    _schemas_file
 )
 _schemas_module = importlib.util.module_from_spec(_schemas_spec)
 _schemas_spec.loader.exec_module(_schemas_module)

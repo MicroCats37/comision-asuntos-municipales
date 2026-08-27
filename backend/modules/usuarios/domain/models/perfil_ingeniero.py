@@ -97,11 +97,6 @@ class EspecialidadRevision(BaseModel):
     """
     history = HistoricalRecords()
 
-    codigo = models.CharField(
-        max_length=4,
-        verbose_name="Código de Especialidad",
-    )
-
     slug = models.CharField(
         max_length=50,
         unique=True,

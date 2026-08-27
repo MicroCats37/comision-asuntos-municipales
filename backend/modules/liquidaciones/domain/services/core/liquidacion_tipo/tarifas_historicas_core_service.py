@@ -3,10 +3,10 @@ TarifasHistoricasCoreService — ORM queries for historical tariffs.
 
 Pure ORM. No business logic.
 """
-from typing import List, Optional, Tuple
 from datetime import date
+from typing import List, Optional, Tuple
 
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
@@ -128,16 +128,18 @@ class TarifasHistoricasCoreService:
 
     def get_derechos_porcentaje_vigentes(self, fecha: date = None) -> List[DerechoPorcentajeObra]:
         """Derechos PORCENTAJE vigentes en la fecha dada (default hoy)."""
-        return list(DerechoPorcentajeObra.objects.vigentes(fecha=fecha).order_by("periodo_inicio"))
+        qs = DerechoPorcentajeObra.objects.vigentes(fecha=fecha).order_by("-periodo_inicio")
+        return list(qs)
 
     def get_derechos_m2_vigentes(self, fecha: date = None) -> List[DerechoPorMetroCuadrado]:
         """Derechos M2 vigentes en la fecha dada (default hoy)."""
-        return list(DerechoPorMetroCuadrado.objects.vigentes(fecha=fecha).order_by("periodo_inicio"))
+        qs = DerechoPorMetroCuadrado.objects.vigentes(fecha=fecha).order_by("-periodo_inicio")
+        return list(qs)
 
     def get_tarifas_vigentes(self, tipo_liquidacion: str, fecha: date = None) -> List[TarifaLiquidacionBase]:
         """Bases de tarifa vigentes en la fecha dada (default hoy) para un tipo."""
         qs = TarifaLiquidacionBase.objects.filter(tipo_liquidacion__codigo=tipo_liquidacion)
-        return list(qs.vigentes(fecha=fecha).order_by("periodo_inicio"))
+        return list(qs.vigentes(fecha=fecha).order_by("-periodo_inicio"))
 
     # ── General (all tipos) ───────────────────────────────────────────────────
 

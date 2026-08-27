@@ -107,19 +107,19 @@ def tarifa_liquidacion_base_ta(db, tipo_taludes):
 
 @pytest.fixture
 def especialidad_ta_geotecnia(db):
-    """Create an Especialidad for Taludes testing - Geotecnia."""
+    """Create an EspecialidadRevision for Taludes testing - Geotecnia."""
     return Especialidad.objects.get_or_create(
         slug="geotecnia",
-        defaults={"codigo": "G01", "nombre": "Geotecnia"},
+        defaults={"nombre": "Geotecnia"},
     )[0]
 
 
 @pytest.fixture
 def especialidad_ta_civil(db):
-    """Create an Especialidad for Taludes testing - Civil."""
+    """Create an EspecialidadRevision for Taludes testing - Civil."""
     return Especialidad.objects.get_or_create(
         slug="civil",
-        defaults={"codigo": "C01", "nombre": "Civil"},
+        defaults={"nombre": "Civil"},
     )[0]
 
 

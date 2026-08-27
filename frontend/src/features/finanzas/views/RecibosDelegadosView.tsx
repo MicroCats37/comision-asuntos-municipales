@@ -7,19 +7,21 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Plus, RefreshCw, User } from "lucide-react";
+import { FileSpreadsheet, Plus, RefreshCw, User } from "lucide-react";
 import { useState } from "react";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
-import { ReciboHonorarioCard } from "@/features/finanzas/components/cards/ReciboHonorarioCard";
+import { ReciboHonorarioDelegadoMensualCard } from "@/features/finanzas/components/cards/ReciboHonorarioDelegadoMensualCard";
 import { ReciboHonorarioFormModal } from "@/features/finanzas/components/modals/ReciboHonorarioFormModal";
+import { RhDelegadoMensualModal } from "@/features/finanzas/components/modals/RhDelegadoMensualModal";
 import { useRecibosDelegados } from "@/features/finanzas/hooks/useRecibosDelegados";
 
 const KIND_ICON: LucideIcon = User;
 
 export function RecibosDelegadosView() {
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const [rhModalOpen, setRhModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -37,13 +39,23 @@ export function RecibosDelegadosView() {
           description="Listado de recibos de honorarios de delegados"
           icon={KIND_ICON}
           actionNodes={
-            <Button
-              className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-              onClick={() => setFormModalOpen(true)}
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo Recibo
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                className="gap-2 h-11 rounded-xl font-bold shrink-0"
+                onClick={() => setRhModalOpen(true)}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Importar RH Mensual
+              </Button>
+              <Button
+                className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
+                onClick={() => setFormModalOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Nuevo Recibo
+              </Button>
+            </>
           }
         />
 
@@ -88,7 +100,7 @@ export function RecibosDelegadosView() {
             <>
               <div className="flex flex-col gap-4">
                 {items.map((item) => (
-                  <ReciboHonorarioCard key={item.id} item={item} />
+                  <ReciboHonorarioDelegadoMensualCard key={item.id} item={item} />
                 ))}
               </div>
               {/* Pagination */}
@@ -110,6 +122,15 @@ export function RecibosDelegadosView() {
         onOpenChange={setFormModalOpen}
         onSuccess={() => {
           setFormModalOpen(false);
+          refetch();
+        }}
+      />
+
+      <RhDelegadoMensualModal
+        open={rhModalOpen}
+        onOpenChange={setRhModalOpen}
+        onSuccess={() => {
+          setRhModalOpen(false);
           refetch();
         }}
       />

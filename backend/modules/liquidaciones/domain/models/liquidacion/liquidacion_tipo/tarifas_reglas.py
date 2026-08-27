@@ -72,7 +72,7 @@ class TarifaPorMetroCuadrado(BaseModel):
         ordering = ["tarifa_base__tipo_liquidacion", "costo_por_m2"]
 
     def __str__(self):
-        return f"Tarifa M2 {self.costo_por_m2}/m2 (area min: {self.area_m2})"
+        return f"Tarifa M2 - {self.tarifa_base}"
 
 
 class TarifaPorCategoriaVisitas(BaseModel):
@@ -160,9 +160,7 @@ class TarifaPorcentajeObra(BaseModel):
         ordering = ["tarifa_base__tipo_liquidacion", "porcentaje_liquidacion"]
 
     def __str__(self):
-        return (
-            f"Tarifa {self.porcentaje_liquidacion * 100}% (min: {self.derecho_minimo})"
-        )
+        return f"Tarifa % Obra - {self.tarifa_base}"
 
 
 class DerechoPorcentajeObra(BaseModel, VigenciaModel):

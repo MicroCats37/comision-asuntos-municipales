@@ -72,6 +72,8 @@ class AutoNumeroModel(models.Model):
     numero = models.PositiveIntegerField(
         verbose_name="Numero",
         help_text="Numero asignado automaticamente por el sistema.",
+        null=True,
+        blank=True,
     )
 
     class Meta:
@@ -79,7 +81,11 @@ class AutoNumeroModel(models.Model):
 
     def save(self, *args, **kwargs):
         """Auto-increment `numero` to the next sequential value on first save."""
-        if self._state.adding and getattr(self, "numero", None) is None:
+        if (
+            self._state.adding
+            and getattr(self, "numero", None) is None
+            and not getattr(self, "_skip_autonumero", False)
+        ):
             last = (
                 self.__class__.objects.all()
                 .order_by("numero")

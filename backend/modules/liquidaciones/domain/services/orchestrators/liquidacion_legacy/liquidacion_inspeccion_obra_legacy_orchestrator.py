@@ -11,6 +11,7 @@ The legacy schema includes liquidacion_previa_id for this purpose.
 """
 import uuid
 from datetime import date
+from decimal import Decimal
 
 from django.core.exceptions import ObjectDoesNotExist
 from injector import inject
@@ -42,7 +43,11 @@ from modules.liquidaciones.domain.schemas.liquidacion_especifico.inspeccion_obra
 from modules.liquidaciones.domain.results.liquidacion_especifico.inspeccion_obra_primera_revision_result import (
     InspeccionObraPrimeraRevisionResult,
 )
+from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import CotizacionVisitasResult
 from modules.liquidaciones.domain.models.inspector import Inspector
+from modules.liquidaciones.domain.services.orchestrators._shared.vigencia_validation import (
+    validar_sin_solapamiento,
+)
 
 
 class LiquidacionInspeccionObraLegacyOrchestrator:
@@ -65,6 +70,73 @@ class LiquidacionInspeccionObraLegacyOrchestrator:
         self.legacy_visitas_core = legacy_visitas_core
         self.general_core = general_core
         self.flujo = flujo
+
+    def cotizar_legacy_proceso(
+        self,
+        payload,
+    ) -> CotizacionVisitasResult:
+        """
+        Calculates the Inspección de Obra cotizacion using historical tariffs by fecha_registro,
+        WITHOUT persisting anything.
+
+        Mirrors the resolution steps of crear_legacy_proceso (steps 1, 3, 4, 5:
+        fecha_registro, validate cantidad_visitas > 0, resolve tarifa by fecha,
+        resolve IGV/UIT by fecha, calculate subtotal), but STOPS before building
+        the domain DTO and does NOT call the flujo. Returns CotizacionVisitasResult.
+
+        Formula: subtotal = cantidad_visitas * (porcentaje_uit * uit_valor)
+                 total = subtotal * (1 + igv_valor)
+        """
+        # Step 1: fecha_registro
+        fecha_registro = (
+            payload.liquidacion_general.fecha_registro
+            if hasattr(payload.liquidacion_general, "fecha_registro")
+            and payload.liquidacion_general.fecha_registro
+            else date.today()
+        )
+
+        # Step 2: Validate cantidad_visitas > 0 (same as crear_legacy_proceso step 3)
+        cantidad_visitas = payload.liquidacion_especifica.datos.cantidad_visitas
+        if cantidad_visitas <= 0:
+            raise HttpError(400, "cantidad_visitas debe ser mayor a 0")
+
+        # Step 3: Resolve tariff by fecha_registro (same as crear_legacy_proceso step 4)
+        tarifas = self.legacy_visitas_core.get_tarifa_visitas_por_fecha(
+            TipoLiquidacion.INSPECCION_OBRA, fecha_registro
+        )
+        if not tarifas:
+            raise HttpError(400, "No hay tarifas vigentes para inspección de obra en la fecha indicada")
+
+        tarifa_id_str = str(payload.liquidacion_especifica.tarifa.tarifa_visitas_id)
+        tarifa = next((t for t in tarifas if str(t.id) == tarifa_id_str), None)
+        if not tarifa:
+            raise HttpError(404, f"No se encontró tarifa válida para ID {tarifa_id_str}")
+
+        # Step 4: Resolve IGV/UIT by fecha_registro (same as crear_legacy_proceso step 5)
+        igv = self.legacy_visitas_core.get_igv_por_fecha(fecha_registro)
+        uit = self.legacy_visitas_core.get_uit_por_fecha(fecha_registro)
+        if not igv:
+            raise HttpError(404, "No hay IGV vigente para la fecha indicada")
+        if not uit:
+            raise HttpError(404, "No hay UIT vigente para la fecha indicada")
+
+        # Calculate: subtotal = cantidad_visitas * (porcentaje_uit * uit_valor)
+        costo_por_visita = float(tarifa.porcentaje_uit) * float(uit.valor)
+        subtotal = Decimal(str(cantidad_visitas)) * Decimal(str(costo_por_visita))
+        igv_valor = float(igv.valor)
+        total = float(subtotal) * (1 + igv_valor)
+
+        return CotizacionVisitasResult(
+            cantidad_visitas=cantidad_visitas,
+            categoria=tarifa.categoria_visitas,
+            costo_por_visita=costo_por_visita,
+            tarifa_id=str(tarifa.id),
+            monto_bruto=float(subtotal),
+            subtotal=float(subtotal),
+            total=total,
+            uit={"id": str(uit.id), "valor": float(uit.valor)},
+            igv={"id": str(igv.id), "valor": float(igv.valor)},
+        )
 
     def crear_legacy_proceso(
         self,
@@ -113,6 +185,10 @@ class LiquidacionInspeccionObraLegacyOrchestrator:
             raise HttpError(400, "cantidad_visitas debe ser mayor a 0")
 
         # Step 4: Resolve tariff by fecha_registro
+        tarifa_bases = self.legacy_visitas_core.get_tarifas_base_list(
+            TipoLiquidacion.INSPECCION_OBRA, fecha_registro
+        )
+        validar_sin_solapamiento(tarifa_bases, f"TarifaLiquidacionBase tipo={TipoLiquidacion.INSPECCION_OBRA}")
         tarifas = self.legacy_visitas_core.get_tarifa_visitas_por_fecha(
             TipoLiquidacion.INSPECCION_OBRA, fecha_registro
         )
@@ -167,6 +243,12 @@ class LiquidacionInspeccionObraLegacyOrchestrator:
                         tipo_documento=getattr(previa.proyecto, "entidad_tipo_documento", None) or "",
                         numero_documento=getattr(previa.proyecto, "entidad_numero_documento", None) or "",
                     ),
+                ),
+                denominacion_de_proyecto_liquidacion=getattr(
+                    payload.liquidacion_general, "denominacion_de_proyecto_liquidacion", None
+                ),
+                descripcion_legacy=getattr(
+                    payload.liquidacion_general, "descripcion_legacy", None
                 ),
             ),
             liquidacion_especifica=visitas_data,

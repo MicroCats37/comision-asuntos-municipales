@@ -23,6 +23,7 @@ from modules.liquidaciones.domain.results.delegado.delegado_result import (
     LiquidacionDelegadoLiquidacionMinimal,
     LiquidacionDelegadoDelegadoMinimal,
     TipoLiquidacionMinimalResult,
+    DelegadoCandidatasResult,
 )
 from modules.liquidaciones.presentation.schemas.delegado.delegado_schemas import (
     PerfilIngenieroOut,
@@ -333,4 +334,40 @@ class DelegadoPresenter:
             page=page,
             page_size=page_size,
             total_pages=total_pages,
+        )
+
+    @staticmethod
+    def present_candidatas(
+        domain_result: "DelegadoCandidatasResult",
+    ) -> "DelegadoCandidatasOut":
+        """Maps DelegadoCandidatasResult to DelegadoCandidatasOut."""
+        from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+            DelegadoCandidatasOut,
+            CandidataOut,
+        )
+        candidatas = [
+            CandidataOut(
+                id=uuid.UUID(c.id),
+                expediente=c.expediente,
+                numero_revision=c.numero_revision,
+                sub_total=c.sub_total,
+                total=c.total,
+                municipalidad_nombre=c.municipalidad_nombre,
+                proyecto_denominacion=c.proyecto_denominacion,
+                tipo_liquidacion=(
+                    DelegadoPresenter._map_tipo_liquidacion_minimal(c.tipo_liquidacion)
+                    if c.tipo_liquidacion
+                    else None
+                ),
+                especialidad_candidata=DelegadoPresenter._map_especialidad_revision(
+                    c.especialidad_candidata
+                ),
+            )
+            for c in domain_result.candidatas
+        ]
+        
+        return DelegadoCandidatasOut(
+            delegado=DelegadoPresenter._map_liquidacion_delegado_delegado(domain_result.delegado),
+            candidatas=candidatas,
+            total=domain_result.total,
         )

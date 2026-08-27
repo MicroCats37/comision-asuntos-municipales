@@ -107,28 +107,28 @@ def tarifa_liquidacion_base_edificacion(db, tipo_edificacion):
 
 @pytest.fixture
 def especialidad_estructuras(db):
-    """Create an Especialidad for Edificaciones testing - Civil/Estructuras."""
+    """Create an EspecialidadRevision for Edificaciones testing - Civil/Estructuras."""
     return Especialidad.objects.get_or_create(
         slug="estructuras",
-        defaults={"codigo": "E01", "nombre": "Estructuras"},
+        defaults={"nombre": "Estructuras"},
     )[0]
 
 
 @pytest.fixture
 def especialidad_sanitaria(db):
-    """Create an Especialidad for Edificaciones testing - Sanitaria."""
+    """Create an EspecialidadRevision for Edificaciones testing - Sanitaria."""
     return Especialidad.objects.get_or_create(
         slug="sanitaria",
-        defaults={"codigo": "S01", "nombre": "Sanitaria"},
+        defaults={"nombre": "Sanitaria"},
     )[0]
 
 
 @pytest.fixture
 def especialidad_electrica(db):
-    """Create an Especialidad for Edificaciones testing - Electrica."""
+    """Create an EspecialidadRevision for Edificaciones testing - Electrica."""
     return Especialidad.objects.get_or_create(
         slug="electrica",
-        defaults={"codigo": "EL01", "nombre": "Electrica"},
+        defaults={"nombre": "Electrica"},
     )[0]
 
 

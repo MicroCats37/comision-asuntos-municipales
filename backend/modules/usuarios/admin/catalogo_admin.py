@@ -33,8 +33,8 @@ class EspecialidadIngenieroAdmin(admin.ModelAdmin):
 class EspecialidadRevisionAdmin(admin.ModelAdmin):
     """Admin for EspecialidadRevision (calculation specialty for tariffs)."""
 
-    list_display = ["codigo", "slug", "nombre"]
-    search_fields = ["codigo", "slug", "nombre"]
+    list_display = ["slug", "nombre"]
+    search_fields = ["slug", "nombre"]
     readonly_fields = ["created_at", "updated_at"]
 
 

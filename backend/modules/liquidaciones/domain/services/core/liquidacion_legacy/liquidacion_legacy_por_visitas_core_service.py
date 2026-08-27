@@ -8,15 +8,15 @@ Used by legacy flows for inspección de obra (visitas by category).
 IGV and UIT require manual date filtering because their managers' vigente()
 methods ignore the fecha parameter.
 """
-from typing import List, Optional
 from datetime import date
 
 from django.db import models
+from injector import inject
 
+from modules.finanzas.domain.models.impuestos import IGV, UIT
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaPorCategoriaVisitas,
 )
-from modules.finanzas.domain.models.impuestos import IGV, UIT
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.tarifas_historicas_core_service import (
     TarifasHistoricasCoreService,
 )
@@ -29,14 +29,15 @@ class LiquidacionLegacyPorVisitasCoreService:
     All methods are pure ORM — no business logic, no conditionals.
     """
 
-    def __init__(self) -> None:
-        self._tarifas_service = TarifasHistoricasCoreService()
+    @inject
+    def __init__(self, tarifas_service: TarifasHistoricasCoreService) -> None:
+        self._tarifas_service = tarifas_service
 
     def get_tarifa_visitas_por_fecha(
         self,
         tipo_liquidacion: str,
         fecha: date,
-    ) -> List[TarifaPorCategoriaVisitas]:
+    ) -> list[TarifaPorCategoriaVisitas]:
         """
         Get all TarifaPorCategoriaVisitas records vigentes at the given fecha for a tipo_liquidacion.
 
@@ -53,7 +54,7 @@ class LiquidacionLegacyPorVisitasCoreService:
             [tb.id for tb in tarifas_base]
         )
 
-    def get_igv_por_fecha(self, fecha: date) -> Optional[IGV]:
+    def get_igv_por_fecha(self, fecha: date) -> IGV | None:
         """
         Get the IGV vigente at the given fecha.
 
@@ -74,7 +75,14 @@ class LiquidacionLegacyPorVisitasCoreService:
             .first()
         )
 
-    def get_uit_por_fecha(self, fecha: date) -> Optional[UIT]:
+    def get_tarifas_base_list(self, tipo_liquidacion: str, fecha: date) -> list:
+        """
+        Returns the raw list of TarifaLiquidacionBase vigentes at fecha for a tipo.
+        Used by legacy orchestrators for overlap validation.
+        """
+        return self._tarifas_service.get_tarifas_vigentes(tipo_liquidacion, fecha)
+
+    def get_uit_por_fecha(self, fecha: date) -> UIT | None:
         """
         Get the UIT vigente at the given fecha.
 

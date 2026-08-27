@@ -4,7 +4,7 @@ HTTP Controller for Habilitación Urbana (PorMetroCuadrado) legacy endpoint.
 100% additive — no existing controller modified.
 
 Endpoints:
-- POST /api/liquidaciones/habilitacion-urbana/legacy/nueva-liquidacion/primera-revision
+- POST /api/liquidaciones/habilitacion-urbana/legacy/nueva-liquidacion
 
 Thin controller — only delegates, no logic.
 """
@@ -30,7 +30,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
 @api_controller("/liquidaciones/habilitacion-urbana", tags=["Habilitación Urbana Legacy"], permissions=[AllowAny])
 class LiquidacionHabilitacionUrbanaLegacyController:
     """
-    Legacy controller for Habilitación Urbana (PorMetroCuadrado) primera-revision with historical fecha_registro.
+    Legacy controller for Habilitación Urbana (PorMetroCuadrado) with historical fecha_registro (supports any numero_revision).
     """
 
     @inject
@@ -43,7 +43,7 @@ class LiquidacionHabilitacionUrbanaLegacyController:
         self.presenter = presenter
 
     @route.post(
-        "/legacy/nueva-liquidacion/primera-revision",
+        "/legacy/nueva-liquidacion",
         response={200: ApiResponse[LiquidacionHabilitacionUrbanaOutput]},
     )
     def crear_legacy(self, request, payload: LiquidacionHabilitacionUrbanaLegacyIn):

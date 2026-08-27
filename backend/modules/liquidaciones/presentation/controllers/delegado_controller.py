@@ -25,6 +25,9 @@ from modules.liquidaciones.presentation.schemas.delegado.delegado_schemas import
     DelegadoForMunicipalidadOut,
     DelegadosPorMunicipalidadOut,
 )
+from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+    DelegadoCandidatasOut,
+)
 
 
 @api_controller("/delegados", tags=["Delegados"], permissions=[AllowAny])
@@ -113,3 +116,18 @@ class DelegadoController:
             page_size=page_size,
         )
         return success_response(self.presenter.present_delegados_por_municipalidad(domain_result))
+
+    @route.get(
+        "/candidatas",
+        response={200: ApiResponse[DelegadoCandidatasOut]},
+        auth=None,
+    )
+    def list_candidatas(self, cip: str):
+        """
+        GET /delegados/candidatas?cip= - Get candidate liquidaciones for a delegado
+        (for RH Mensual).
+        Returns liquidaciones in their TITULAR municipalidades that do NOT yet have
+        a LiquidacionDelegado assignment for their specialty.
+        """
+        domain_result = self.orchestrator.list_candidatas_delegado_proceso(cip)
+        return success_response(self.presenter.present_candidatas(domain_result))

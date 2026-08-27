@@ -41,7 +41,6 @@ def tarifa_liquidacion_base_edificacion(db, tipo_edificacion):
 def especialidad_estructuras(db):
     """Create an EspecialidadRevision for Edificaciones testing."""
     return EspecialidadRevision.objects.create(
-        codigo="E01",
         slug="estructuras",
         nombre="Estructuras",
     )
@@ -51,7 +50,6 @@ def especialidad_estructuras(db):
 def especialidad_arquitectura(db):
     """Create an EspecialidadRevision for Edificaciones testing."""
     return EspecialidadRevision.objects.create(
-        codigo="A01",
         slug="arquitectura",
         nombre="Arquitectura",
     )
@@ -61,7 +59,6 @@ def especialidad_arquitectura(db):
 def especialidad_installaciones(db):
     """Create an EspecialidadRevision for Edificaciones testing."""
     return EspecialidadRevision.objects.create(
-        codigo="I01",
         slug="instalaciones",
         nombre="Instalaciones",
     )
@@ -146,7 +143,6 @@ def tarifa_liquidacion_base_taludes(db, tipo_taludes):
 def especialidad_taludes(db):
     """Create an EspecialidadRevision for Taludes testing."""
     return EspecialidadRevision.objects.create(
-        codigo="T01",
         slug="taludes",
         nombre="Taludes",
     )
@@ -177,7 +173,6 @@ def tarifa_liquidacion_base_iv(db, tipo_impacto_vial):
 def especialidad_impacto_vial(db):
     """Create an EspecialidadRevision for Impacto Vial testing."""
     return EspecialidadRevision.objects.create(
-        codigo="IV01",
         slug="impacto-vial",
         nombre="Impacto Vial",
     )

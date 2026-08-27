@@ -16,7 +16,7 @@ class EntidadInlineSchema(BaseSchema):
     razon_social: str = Field(..., description="Razón social o nombres")
 
 class ProyectoCotizarSchema(BaseSchema):
-    denominacion: str = Field(..., description="Denominación del proyecto")
+    denominacion: Optional[str] = Field(None, description="Denominación del proyecto (opcional)")
     nombre_propietario: str = Field(..., description="Nombre del propietario")
     direccion: str = Field(..., description="Dirección del proyecto")
     distrito_id: uuid.UUID = Field(..., description="ID del distrito")
@@ -45,7 +45,7 @@ class DistritoOutput(BaseSchema):
 
 class ProyectoOutput(BaseSchema):
     id: uuid.UUID = Field(..., description="ID del proyecto")
-    denominacion: str = Field(..., description="Denominación del proyecto")
+    denominacion: Optional[str] = Field(None, description="Denominación del proyecto")
     nombre_propietario: str = Field(..., description="Nombre del propietario")
     direccion: str = Field(..., description="Dirección del proyecto")
     distrito: Optional[DistritoOutput] = Field(None, description="Distrito del proyecto")
@@ -92,7 +92,7 @@ class VariablesFinancierasBasicasOut(BaseSchema):
 # --- Liquidacion General (Cabecera base) ---
 class LiquidacionGeneralRevisionIn(BaseSchema):
     municipalidad_id: uuid.UUID = Field(..., description="ID de la municipalidad")
-    expediente: str = Field(..., description="Número de expediente")
+    expediente: Optional[str] = Field(None, description="Número de expediente")
     observacion: Optional[str] = Field(None, description="Observación opcional")
     retencion: Optional[bool] = Field(False, description="Indica si la liquidación tiene retención")
     proyecto: ProyectoCotizarSchema = Field(..., description="Datos del proyecto")
@@ -140,7 +140,7 @@ class LiquidacionGeneralOutput(BaseSchema):
     municipalidad: MunicipalidadOutput = Field(..., description="Municipalidad de la liquidación")
     usuario_creador: UsuarioCreadorOutput = Field(..., description="Usuario creador")
     fecha_registro: str = Field(..., description="Fecha de registro")
-    expediente: str = Field(..., description="Número de expediente")
+    expediente: Optional[str] = Field(None, description="Número de expediente")
     observacion: Optional[str] = Field(None, description="Observación")
     numero_revision: int = Field(..., description="Número de revisión")
     sub_total: float = Field(..., description="Subtotal")

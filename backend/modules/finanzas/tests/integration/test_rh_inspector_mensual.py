@@ -164,7 +164,7 @@ def inspector(db, perfil_ingeniero_inspector):
 @pytest.fixture
 def especialidad_revision(db):
     return EspecialidadRevision.objects.create(
-        codigo="E01", slug="estructuras", nombre="Estructuras",
+        slug="estructuras", nombre="Estructuras",
     )
 
 
@@ -309,8 +309,8 @@ def test_cotizar_con_cip_valido_inspector_asociado(
         )
     )
 
-    assert result.inspector_id == str(inspector.id)
-    assert result.inspector_cip == perfil_ingeniero_inspector.cip
+    assert result.inspector.id == str(inspector.id)
+    assert result.inspector.cip == perfil_ingeniero_inspector.cip
     assert result.periodo == "2026-01"
     assert len(result.items) == 1
 
@@ -320,7 +320,8 @@ def test_cotizar_con_cip_valido_inspector_asociado(
     assert item.inspecciones_liquidadas == 4
     assert Decimal(str(item.costo_por_inspeccion)) == Decimal("100.00")
     assert Decimal(str(item.monto_contribuido)) == Decimal("400.00")
-    assert item.saldo_disponible == 10  # sin pagos previos
+    assert item.saldo_disponible == 10  # available before this quote (no prior payments)
+    assert item.saldo_restante == 6  # remaining after this quote: 10 - 0 - 4
 
     assert Decimal(str(result.totales.sub_total)) == Decimal("400.00")
     assert Decimal(str(result.totales.tasa_descuento_aplicada)) == Decimal("0.15")
@@ -329,6 +330,45 @@ def test_cotizar_con_cip_valido_inspector_asociado(
 
     # Cotizar NO crea nada en BD
     assert ReciboHonorarioInspectorMensual.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_cotizar_saldo_restante_refleja_quoted(
+    cotizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    saldo_restante muestra el saldo DESPUÉS de cotizar, no el disponible antes.
+
+    Escenario: programadas=10, pagadas_historicas=3, cantidad_visitas=3
+        → saldo_disponible=7 (antes), saldo_restante=4 (después)
+    """
+    # Simular 3 inspecciones ya pagadas en periodo anterior
+    RegistroPagoInspector.objects.create(
+        liquidacion_por_categoria_visitas=liquidacion_visitas,
+        periodo="2025-12",  # mes anterior
+        inspecciones_pagadas=3,
+    )
+
+    result = cotizar_flujo.cotizar(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo="2026-01",
+            items=[{"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 3}],
+        )
+    )
+
+    item = result.items[0]
+    assert item.inspecciones_programadas == 10
+    assert item.inspecciones_pagadas_hasta_mes_anterior == 3
+    assert item.inspecciones_liquidadas == 3
+    assert item.saldo_disponible == 7  # 10 - 3 (antes de esta cotización)
+    assert item.saldo_restante == 4  # 10 - 3 - 3 (después de esta cotización)
 
 
 @pytest.mark.django_db
@@ -615,7 +655,7 @@ def test_no_pagar_doble(
             items=[{"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 6}],
         )
     )
-    assert result.items[0].saldo_disponible == 6
+    assert result.items[0].saldo_restante == 0  # 10 - 4 (pagadas) - 6 (this quote) = 0
 
 
 @pytest.mark.django_db
@@ -778,3 +818,189 @@ def test_crear_actualiza_registro_pago_acumulativo(
     rh = ReciboHonorarioInspectorMensual.objects.get(periodo="2026-03")
     # Dos detalles (uno por cada creación)
     assert rh.detalles.count() == 2
+
+
+# ── Inspector Candidatas Tests ────────────────────────────────────────────────────
+
+@pytest.mark.django_db
+def test_list_candidatas_inspector_returns_candidatas_con_saldo(
+    db,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    El candidates endpoint retorna las IOs con saldo_disponible > 0.
+    """
+    from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreService
+    from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
+
+    core = FinanzasCoreService()
+    orchestrator = FinanzasOrchestrator(
+        flujo=None,
+        core=core,
+        rh_mensual_cotizar_flujo=None,
+        rh_mensual_crear_flujo=None,
+        rh_delegado_mensual_cotizar_flujo=None,
+        rh_delegado_mensual_crear_flujo=None,
+    )
+
+    result = orchestrator.list_candidatos_inspector_proceso(
+        cip=perfil_ingeniero_inspector.cip,
+        periodo="2026-01",
+    )
+
+    assert result.total == 1
+    assert result.inspector_cip == perfil_ingeniero_inspector.cip
+    candidata = result.candidatos[0]
+    assert candidata.expediente == liquidacion_general_io.expediente
+    assert candidata.cantidad_visitas == liquidacion_visitas.cantidad_visitas
+    assert candidata.inspecciones_pagadas == 0
+    assert candidata.saldo_disponible == liquidacion_visitas.cantidad_visitas
+    assert candidata.liquidacion_inspector_id == str(liquidacion_inspector.id)
+    assert candidata.liquidacion_categoria_visitas_id == str(liquidacion_visitas.id)
+
+
+@pytest.mark.django_db
+def test_list_candidatas_inspector_404_cip_no_existe(
+    db,
+    escala_descuento_15,
+):
+    """
+    Candidates endpoint con CIP inexistente → 404.
+    """
+    from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreService
+    from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
+    from ninja.errors import HttpError
+
+    core = FinanzasCoreService()
+    orchestrator = FinanzasOrchestrator(
+        flujo=None,
+        core=core,
+        rh_mensual_cotizar_flujo=None,
+        rh_mensual_crear_flujo=None,
+        rh_delegado_mensual_cotizar_flujo=None,
+        rh_delegado_mensual_crear_flujo=None,
+    )
+
+    with pytest.raises(HttpError) as excinfo:
+        orchestrator.list_candidatos_inspector_proceso(
+            cip="CIP-INEXISTENTE",
+            periodo="2026-01",
+        )
+    assert excinfo.value.status_code == 404
+
+
+@pytest.mark.django_db
+def test_list_candidatas_inspector_saldo_excedido_no_retorna(
+    db,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    Cuando saldo_disponible = 0 (todas las visitas pagadas), no se retorna como candidata.
+    """
+    from modules.finanzas.domain.models.registro_pago_inspector import RegistroPagoInspector
+    from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreService
+    from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
+
+    # Simular que ya se pagaron todas las visitas
+    RegistroPagoInspector.objects.create(
+        liquidacion_por_categoria_visitas=liquidacion_visitas,
+        periodo="2026-01",
+        inspecciones_pagadas=liquidacion_visitas.cantidad_visitas,
+    )
+
+    core = FinanzasCoreService()
+    orchestrator = FinanzasOrchestrator(
+        flujo=None,
+        core=core,
+        rh_mensual_cotizar_flujo=None,
+        rh_mensual_crear_flujo=None,
+        rh_delegado_mensual_cotizar_flujo=None,
+        rh_delegado_mensual_crear_flujo=None,
+    )
+
+    result = orchestrator.list_candidatos_inspector_proceso(
+        cip=perfil_ingeniero_inspector.cip,
+        periodo="2026-01",
+    )
+
+    assert result.total == 0
+
+
+@pytest.mark.django_db
+def test_cotizar_con_liquidacion_categoria_visitas_id(
+    cotizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    Cotizar usando liquidacion_categoria_visitas_id (flujo por candidatas) en lugar de exp_liqui.
+    """
+    from modules.finanzas.domain.schemas import RHInspectorCotizarIn, RHInspectorCotizarItemIn
+
+    payload = RHInspectorCotizarIn(
+        cip=perfil_ingeniero_inspector.cip,
+        periodo="2026-01",
+        items=[
+            RHInspectorCotizarItemIn(
+                liquidacion_categoria_visitas_id=str(liquidacion_visitas.id),
+                cantidad_visitas=3,
+            )
+        ],
+    )
+
+    result = cotizar_flujo.cotizar(payload)
+
+    assert len(result.items) == 1
+    item = result.items[0]
+    assert item.exp_liqui == liquidacion_general_io.expediente
+    assert item.liquidacion_inspector_id == str(liquidacion_inspector.id)
+    assert item.liquidacion_categoria_visitas_id == str(liquidacion_visitas.id)
+    assert item.inspecciones_liquidadas == 3
+
+
+@pytest.mark.django_db
+def test_cotizar_result_tiene_liquidacion_inspector_id(
+    cotizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    El resultado de cotizar incluye liquidacion_inspector_id en cada item.
+    """
+    from modules.finanzas.domain.schemas import RHInspectorCotizarIn, RHInspectorCotizarItemIn
+
+    payload = RHInspectorCotizarIn(
+        cip=perfil_ingeniero_inspector.cip,
+        periodo="2026-01",
+        items=[
+            RHInspectorCotizarItemIn(
+                exp_liqui=liquidacion_general_io.expediente,
+                cantidad_visitas=2,
+            )
+        ],
+    )
+
+    result = cotizar_flujo.cotizar(payload)
+
+    assert len(result.items) == 1
+    item = result.items[0]
+    assert item.liquidacion_inspector_id == str(liquidacion_inspector.id)
+    assert item.liquidacion_categoria_visitas_id == str(liquidacion_visitas.id)

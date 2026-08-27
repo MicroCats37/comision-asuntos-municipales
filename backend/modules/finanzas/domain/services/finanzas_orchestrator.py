@@ -13,14 +13,34 @@ from modules.finanzas.domain.services.rh_inspector_mensual_flujo import (
     RHInspectorMensualCotizarFlujo,
     RHInspectorMensualCrearFlujo,
 )
+from modules.finanzas.domain.services.flujos.rh_delegado_mensual_flujo import (
+    RHDelegadoMensualCotizarFlujo,
+    RHDelegadoMensualCrearFlujo,
+)
 from modules.finanzas.domain.schemas import VariablesVigentesResult
 from modules.finanzas.domain.schemas import RHInspectorCotizarIn
+from modules.finanzas.domain.schemas import RHDelegadoCotizarIn
 from modules.finanzas.domain.results.recibo_honorario_result import (
     ReciboHonorarioDelegadoResult,
     ReciboHonorarioInspectorResult,
 )
 from modules.finanzas.domain.results.rh_inspector_mensual_result import (
     RHInspectorCotizarResult,
+    RHInspectorMensualListItemResult,
+    RHInspectorMensualDetalleResult,
+    RHInspectorMensualTotalesResult,
+    InspectorRHMinimalResult,
+)
+from modules.finanzas.domain.results.rh_inspector_candidatos_result import (
+    InspectorCandidatosResult,
+    InspectorCandidataItemResult,
+)
+from modules.finanzas.domain.results.rh_delegado_mensual_result import (
+    DelegadoRHMinimalResult,
+    RHDelegadoCotizarResult,
+    RHDelegadoMensualListItemResult,
+    RHDelegadoMensualDetalleResult,
+    RHDelegadoMensualTotalesResult,
 )
 
 
@@ -38,11 +58,15 @@ class FinanzasOrchestrator:
         core: FinanzasCoreService,
         rh_mensual_cotizar_flujo: RHInspectorMensualCotizarFlujo | None = None,
         rh_mensual_crear_flujo: RHInspectorMensualCrearFlujo | None = None,
+        rh_delegado_mensual_cotizar_flujo: RHDelegadoMensualCotizarFlujo | None = None,
+        rh_delegado_mensual_crear_flujo: RHDelegadoMensualCrearFlujo | None = None,
     ):
         self.flujo = flujo
         self.core = core
         self.rh_mensual_cotizar_flujo = rh_mensual_cotizar_flujo
         self.rh_mensual_crear_flujo = rh_mensual_crear_flujo
+        self.rh_delegado_mensual_cotizar_flujo = rh_delegado_mensual_cotizar_flujo
+        self.rh_delegado_mensual_crear_flujo = rh_delegado_mensual_crear_flujo
 
     def obtener_variables_vigentes(self) -> VariablesVigentesResult:
         """
@@ -111,7 +135,13 @@ class FinanzasOrchestrator:
         from modules.finanzas.domain.models.recibo_honorario import (
             ReciboHonorarioDelegado,
         )
-        calc_result = ReciboHonorarioDelegado._calcular_honorarios(imp_bruto)
+
+        # Resolve vigente tasas from DB
+        tasas = self.core.get_tasa_delegado_vigente()
+        if not tasas:
+            raise HttpError(400, "No hay tasas de delegado vigentes")
+
+        calc_result = ReciboHonorarioDelegado._calcular_honorarios(imp_bruto, tasas=tasas)
 
         recibo = self.flujo._proceso_crear_recibo(
             liquidacion_delegado_id=int(liquidacion_delegado_id),
@@ -247,7 +277,6 @@ class FinanzasOrchestrator:
             ),
             especialidad=EspecialidadMinimal(
                 id=str(ld.especialidad_revision.id),
-                codigo=ld.especialidad_revision.codigo,
                 nombre=ld.especialidad_revision.nombre,
             ),
         )
@@ -457,7 +486,6 @@ class FinanzasOrchestrator:
             ),
             especialidad=EspecialidadMinimal(
                 id=str(li.especialidad_revision.id),
-                codigo=li.especialidad_revision.codigo,
                 nombre=li.especialidad_revision.nombre,
             ),
         )
@@ -498,4 +526,292 @@ class FinanzasOrchestrator:
         resultado = self.rh_mensual_crear_flujo.crear(payload)
         return resultado
 
+    def list_candidatos_inspector_proceso(
+        self, cip: str, periodo: str | None = None
+    ) -> InspectorCandidatosResult:
+        """
+        Lista las IOs candidatas (con saldo disponible) para el RH mensual del inspector.
+
+        Args:
+            cip: CIP del inspector.
+            periodo: Optional periodo en formato YYYY-MM.
+                Si se proporciona, calcula inspecciones pagadas acumuladas de todos
+                los periodos STRICTLY anteriores a este. Si es None, suma todos
+                los periodos históricamente.
+
+        Returns:
+            InspectorCandidatosResult con la lista de candidatas.
+
+        Raises:
+            HttpError(404): Inspector con CIP no encontrado.
+        """
+        inspector = self.core.get_inspector_by_cip(cip)
+        if not inspector:
+            raise HttpError(404, f"Inspector con CIP '{cip}' no encontrado")
+
+        candidatos_data = self.core.list_liquidaciones_inspector_candidatas(
+            inspector_id=int(inspector.id),
+            periodo=periodo,
+        )
+
+        perfil = inspector.perfil_ingeniero
+        candidatos = [
+            InspectorCandidataItemResult(**data) for data in candidatos_data
+        ]
+
+        return InspectorCandidatosResult(
+            inspector_id=str(inspector.id),
+            inspector_nombre=perfil.nombre_completo if perfil else "",
+            inspector_cip=perfil.cip if perfil else "",
+            inspector_dni=perfil.dni if perfil else "",
+            periodo=periodo or "",
+            candidatos=candidatos,
+            total=len(candidatos),
+        )
+
+    # ── RH Delegado Mensual ─────────────────────────────────────────────────────
+
+    def cotizar_rh_delegado_mensual_proceso(
+        self, payload: RHDelegadoCotizarIn
+    ) -> RHDelegadoCotizarResult:
+        """
+        Cotiza el RH mensual del delegado (sin persistir).
+
+        Delega al RHDelegadoMensualCotizarFlujo.
+
+        Args:
+            payload: Datos de cotización con CIP, periodo e items.
+
+        Returns:
+            RHDelegadoCotizarResult con el detalle de cálculos.
+        """
+        resultado = self.rh_delegado_mensual_cotizar_flujo.cotizar(payload)
+        return resultado
+
+    def crear_rh_delegado_mensual_proceso(
+        self, payload: RHDelegadoCotizarIn
+    ) -> RHDelegadoCotizarResult:
+        """
+        Crea el RH mensual del delegado (persiste maestra + detalles).
+
+        Delega al RHDelegadoMensualCrearFlujo.
+
+        Args:
+            payload: Datos de cotización con CIP, periodo e items.
+
+        Returns:
+            RHDelegadoCotizarResult con los datos persistidos.
+        """
+        resultado = self.rh_delegado_mensual_crear_flujo.crear(payload)
+        return resultado
+
+    def listar_rh_mensual_delegados_proceso(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        delegado_id: uuid.UUID | None = None,
+    ) -> tuple[list[RHDelegadoMensualListItemResult], int]:
+        """
+        Lista RecibosHonorariosDelegadoMensuales con paginación.
+
+        Args:
+            page: Número de página (1-indexed).
+            page_size: Elementos por página.
+            delegado_id: Filter by delegado_id.
+
+        Returns:
+            Tuple (list of RHDelegadoMensualListItemResult, total count).
+        """
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))
+
+        ORM_objects, total = self.core.list_rh_mensuales_delegados_paginated(
+            page=page,
+            page_size=page_size,
+            delegado_id=int(delegado_id) if delegado_id is not None else None,
+        )
+
+        results: list[RHDelegadoMensualListItemResult] = [
+            self._build_rh_mensual_delegado_result(r) for r in ORM_objects
+        ]
+        return results, total
+
+    def _build_rh_mensual_delegado_result(
+        self, recibo_mensual
+    ) -> RHDelegadoMensualListItemResult:
+        """
+        Build RHDelegadoMensualListItemResult from ORM object.
+
+        Maps: id, periodo, fecha_registro, delegado, totales, detalles.
+        Los detalles incluyen expediente (de liquidacion_general) e imp_bruto.
+        """
+        delegado_perfil = recibo_mensual.delegado.perfil_ingeniero
+
+        detalles: list[RHDelegadoMensualDetalleResult] = []
+        for d in recibo_mensual.detalles.all():
+            ld = d.liquidacion_delegado
+            expediente = getattr(ld.liquidacion, "expediente", "") or ""
+            detalles.append(
+                RHDelegadoMensualDetalleResult(
+                    expediente=expediente,
+                    imp_bruto=float(d.imp_bruto),
+                )
+            )
+
+        return RHDelegadoMensualListItemResult(
+            id=str(recibo_mensual.id),
+            periodo=recibo_mensual.periodo,
+            fecha_registro=recibo_mensual.fecha_registro.isoformat() if recibo_mensual.fecha_registro else "",
+            delegado=DelegadoRHMinimalResult(
+                id=str(recibo_mensual.delegado.id),
+                nombre_completo=delegado_perfil.nombre_completo,
+                cip=delegado_perfil.cip or "",
+                dni=delegado_perfil.dni or "",
+            ),
+            totales=RHDelegadoMensualTotalesResult(
+                sub_total=float(recibo_mensual.sub_total),
+                renta_cip=float(recibo_mensual.renta_cip),
+                aporte_codemu=float(recibo_mensual.aporte_codemu),
+                fondo_comun=float(recibo_mensual.fondo_comun),
+                neto_honorario=float(recibo_mensual.neto_honorario),
+            ),
+            detalles=detalles,
+        )
+
+    # ── RH Inspector Mensual — Listado ───────────────────────────────────────────
+
+    def listar_rh_mensual_inspectores_proceso(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        inspector_id: uuid.UUID | None = None,
+    ) -> tuple[list[RHInspectorMensualListItemResult], int]:
+        """
+        Lista RecibosHonorariosInspectorMensuales con paginación.
+
+        Args:
+            page: Número de página (1-indexed).
+            page_size: Elementos por página.
+            inspector_id: Filter by inspector_id.
+
+        Returns:
+            Tuple (list of RHInspectorMensualListItemResult, total count).
+        """
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))
+
+        ORM_objects, total = self.core.list_rh_mensuales_inspectores_paginated(
+            page=page,
+            page_size=page_size,
+            inspector_id=int(inspector_id) if inspector_id is not None else None,
+        )
+
+        results: list[RHInspectorMensualListItemResult] = [
+            self._build_rh_mensual_inspector_result(r) for r in ORM_objects
+        ]
+        return results, total
+
+    def _build_rh_mensual_inspector_result(
+        self, recibo_mensual
+    ) -> RHInspectorMensualListItemResult:
+        """
+        Build RHInspectorMensualListItemResult from ORM object.
+
+        Maps: id, periodo, fecha_registro, inspector, totales, detalles.
+        Los detalles incluyen expediente, nombre_propietario, importe_bruto,
+        inspecciones_programadas, inspecciones_liquidadas, inspecciones_pagadas_hasta_mes_anterior,
+        costo_por_inspeccion, monto_contribuido, saldo_restante.
+        """
+        from modules.finanzas.domain.results.rh_inspector_mensual_result import (
+            InspectorRHMinimalResult,
+            RHInspectorMensualTotalesResult,
+            RHInspectorMensualDetalleResult,
+        )
+
+        inspector_perfil = recibo_mensual.inspector.perfil_ingeniero
+
+        # Calcular tasa de descuento aplicada: tasa = 1 - (honorarios / sub_total)
+        # Ya que: honorarios = sub_total * (1 - tasa) → tasa = 1 - (honorarios / sub_total)
+        sub_total_val = float(recibo_mensual.sub_total) if recibo_mensual.sub_total else 0.0
+        honorarios_val = float(recibo_mensual.honorarios) if recibo_mensual.honorarios else 0.0
+        if sub_total_val and sub_total_val != 0:
+            tasa_descuento = 1.0 - (honorarios_val / sub_total_val)
+        else:
+            tasa_descuento = 0.0
+
+        detalles: list[RHInspectorMensualDetalleResult] = []
+        total_inspecciones_programadas = 0
+        total_inspecciones_liquidadas = 0
+        total_inspecciones_pagadas_anterior = 0
+        total_saldo_restante = 0
+
+        for d in recibo_mensual.detalles.all():
+            lcv = d.liquidacion_por_categoria_visitas
+            lg = lcv.liquidacion_general
+
+            # Obtener inspecciones pagadas hasta el periodo anterior al actual
+            # periodo del recibo actual: YYYY-MM, queremos todas las pago anteriores a este periodo
+            # Actually for the list item, we need the cumulative paid before this RH's period
+            # For simplicity we compute from RegistroPagoInspector for this LCV before current periodo
+            from modules.finanzas.domain.models.registro_pago_inspector import (
+                RegistroPagoInspector,
+            )
+            registros_previos = RegistroPagoInspector.objects.filter(
+                liquidacion_por_categoria_visitas=lcv,
+                periodo__lt=recibo_mensual.periodo,
+            )
+            inspecciones_pagadas_hasta_mes_anterior = sum(
+                r.inspecciones_pagadas for r in registros_previos
+            )
+
+            inspecciones_programadas = lcv.cantidad_visitas or 0
+            saldo_restante = inspecciones_programadas - inspecciones_pagadas_hasta_mes_anterior - d.inspecciones_liquidadas
+
+            total_inspecciones_programadas += inspecciones_programadas
+            total_inspecciones_liquidadas += d.inspecciones_liquidadas
+            total_inspecciones_pagadas_anterior += inspecciones_pagadas_hasta_mes_anterior
+            total_saldo_restante += saldo_restante
+
+            nombre_propietario = ""
+            if lg.proyecto:
+                nombre_propietario = lg.proyecto.nombre_propietario or ""
+
+            expediente = lg.expediente or ""
+
+            detalles.append(
+                RHInspectorMensualDetalleResult(
+                    expediente=expediente,
+                    nombre_propietario=nombre_propietario,
+                    importe_bruto=float(lg.sub_total) if lg.sub_total else 0.0,
+                    inspecciones_programadas=inspecciones_programadas,
+                    inspecciones_liquidadas=d.inspecciones_liquidadas,
+                    inspecciones_pagadas_hasta_mes_anterior=inspecciones_pagadas_hasta_mes_anterior,
+                    costo_por_inspeccion=float(d.costo_por_inspeccion),
+                    monto_contribuido=float(d.monto_contribuido),
+                    saldo_restante=saldo_restante,
+                )
+            )
+
+        return RHInspectorMensualListItemResult(
+            id=str(recibo_mensual.id),
+            periodo=recibo_mensual.periodo,
+            fecha_registro=recibo_mensual.fecha_registro.isoformat() if recibo_mensual.fecha_registro else "",
+            inspector=InspectorRHMinimalResult(
+                id=str(recibo_mensual.inspector.id),
+                nombre_completo=inspector_perfil.nombre_completo,
+                cip=inspector_perfil.cip or "",
+                dni=inspector_perfil.dni or "",
+            ),
+            totales=RHInspectorMensualTotalesResult(
+                inspecciones_programadas=total_inspecciones_programadas,
+                inspecciones_liquidadas=total_inspecciones_liquidadas,
+                inspecciones_pagadas_hasta_mes_anterior=total_inspecciones_pagadas_anterior,
+                saldo_restante=total_saldo_restante,
+                sub_total=float(recibo_mensual.sub_total),
+                descuento=float(recibo_mensual.descuento),
+                honorarios=float(recibo_mensual.honorarios),
+                tasa_descuento_aplicada=tasa_descuento,
+            ),
+            detalles=detalles,
+        )
 

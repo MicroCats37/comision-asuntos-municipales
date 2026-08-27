@@ -150,7 +150,6 @@ def perfil_ingeniero_inspector(db, usuario_test):
 @pytest.fixture
 def especialidad_revision(db):
     return EspecialidadRevision.objects.create(
-        codigo="E01",
         slug="estructuras",
         nombre="Estructuras",
     )
@@ -524,19 +523,55 @@ def test_e2e_post_recibo_inspector_404(api_client, escala_descuento):
 
 @pytest.mark.django_db
 def test_e2e_get_recibos_inspectores_paginated(
-    api_client, liquidacion_inspector, liquidacion_general_io, liquidacion_io,
-    escala_descuento,
+    api_client, liquidacion_visitas, liquidacion_io,
+    especialidad_revision, escala_descuento, liquidacion_general_io,
 ):
     """
-    GET /finanzas/recibos-inspectores devuelve PaginatedData.
+    GET /finanzas/recibos-inspectores devuelve PaginatedData con formato monthly.
+
+    El endpoint ahora lista RecibosHonorariosInspectorMensuales agrupados por
+    periodo + inspector. Para tener 3 receipts mensuales, se crean 3 inspectores
+    distintos y se crea un RH mensual para cada uno (mismo periodo, distintos inspectores).
     """
-    for mes in (1, 2, 3):
-        api_client.post(
-            "/finanzas/recibos-inspectores",
+    User = get_user_model()
+    cips = []
+    for i in range(3):
+        user = User.objects.create_user(
+            username=f"inspector_io_pag_{i}",
+            email=f"inspector_io_pag_{i}@test.com",
+            password="testpass123",
+            dni=f"7654321{i}",
+        )
+        perfil = PerfilIngeniero.objects.create(
+            usuario=user,
+            apellido_paterno="Quispe",
+            apellido_materno="Rojas",
+            nombres=f"María{i}",
+            cip=f"CIP-8888{i}",  # Different CIPs for monthly flow
+            dni=f"7654321{i}",
+        )
+        insp = Inspector.objects.create(perfil_ingeniero=perfil)
+        LiquidacionInspector.objects.create(
+            liquidacion=liquidacion_visitas,
+            inspector=insp,
+            especialidad_revision=especialidad_revision,
+        )
+        cips.append(f"CIP-8888{i}")
+
+    # Crear RH mensual para cada inspector (mismo periodo "2026-02")
+    for cip in cips:
+        response = api_client.post(
+            "/finanzas/recibos-inspectores/crear",
             json={
-                "liquidacion_inspector_id": str(liquidacion_inspector.id),
-                "inspecciones_mes": mes,
+                "cip": cip,
+                "periodo": "2026-02",
+                "items": [
+                    {"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 2}
+                ],
             },
+        )
+        assert response.status_code == 200, (
+            f"Expected 200, got {response.status_code}: {response.content}"
         )
 
     response = api_client.get("/finanzas/recibos-inspectores?page=1&page_size=2")
@@ -553,6 +588,13 @@ def test_e2e_get_recibos_inspectores_paginated(
     assert paginated["page_size"] == 2
     assert paginated["total_pages"] == 2
 
+    # Verify monthly structure
+    item = paginated["items"][0]
+    assert "periodo" in item
+    assert "inspector" in item
+    assert "totales" in item
+    assert "detalles" in item
+
 
 @pytest.mark.django_db
 def test_e2e_get_recibos_inspectores_filters(
@@ -560,14 +602,26 @@ def test_e2e_get_recibos_inspectores_filters(
     inspector, escala_descuento,
 ):
     """
-    GET con ?inspector_id= y ?liquidacion_id= filtra correctamente.
+    GET con ?inspector_id= filtra correctamente por inspector.
+
+    Nota: El filtro ?liquidacion_id= ya no aplica porque el endpoint ahora
+    lista RecibosHonorariosInspectorMensuales agrupados por periodo+inspector,
+    no por LiquidacionInspector individual.
     """
-    api_client.post(
-        "/finanzas/recibos-inspectores",
+    # Crear RH mensual con el inspector
+    perfil_inspector = inspector.perfil_ingeniero
+    response = api_client.post(
+        "/finanzas/recibos-inspectores/crear",
         json={
-            "liquidacion_inspector_id": str(liquidacion_inspector.id),
-            "inspecciones_mes": 2,
+            "cip": perfil_inspector.cip,
+            "periodo": "2026-03",
+            "items": [
+                {"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 2}
+            ],
         },
+    )
+    assert response.status_code == 200, (
+        f"Expected 200, got {response.status_code}: {response.content}"
     )
 
     # Filtro por inspector
@@ -576,18 +630,9 @@ def test_e2e_get_recibos_inspectores_filters(
     )
     assert response.status_code == 200
     items = response.json()["data"]["items"]
-    assert all(str(item["inspector"]["id"]) == str(inspector.id) for item in items)
-
-    # Filtro por liquidacion general
-    response2 = api_client.get(
-        f"/finanzas/recibos-inspectores?liquidacion_id={liquidacion_general_io.id}"
-    )
-    assert response2.status_code == 200
-    items2 = response2.json()["data"]["items"]
-    assert all(
-        str(item["liquidacion_general"]["id"]) == str(liquidacion_general_io.id)
-        for item in items2
-    )
+    assert len(items) == 1
+    assert str(items[0]["inspector"]["id"]) == str(inspector.id)
+    assert items[0]["periodo"] == "2026-03"
 
 
 @pytest.mark.django_db

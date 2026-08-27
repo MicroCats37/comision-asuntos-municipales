@@ -212,13 +212,21 @@ class LiquidacionDelegado(BaseModel):
         blank=True, null=True, verbose_name="Fecha de Revision"
     )
 
+    numero_rh = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="Número de Orden/RH",
+    )
+
     class Meta:
         verbose_name = "Delegado de Liquidacion"
         verbose_name_plural = "Delegados de liquidaciones"
         ordering = ["liquidacion", "delegado"]
         constraints = [
             models.UniqueConstraint(
-                fields=["liquidacion", "delegado"], name="unique_liquidacion_delegado"
+                fields=["liquidacion", "delegado", "especialidad_revision"],
+                name="unique_liquidacion_delegado_especialidad",
             ),
         ]
 

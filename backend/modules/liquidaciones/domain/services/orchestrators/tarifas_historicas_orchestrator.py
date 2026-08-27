@@ -20,6 +20,7 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     TarifaLiquidacionBase,
 )
 from modules.liquidaciones.domain.constants import TipoLiquidacion, KIND_SLUG_TO_TIPO_LIQUIDACION
+from modules.liquidaciones.domain.services.orchestrators._shared.vigencia_validation import validar_sin_solapamiento
 
 
 # Types that use PorcentajeObra (multiple tarifas per base by especialidad)
@@ -96,6 +97,7 @@ class TarifasHistoricasOrchestrator:
                 tipo_liquidacion=tipo_normalized,
                 fecha=fecha_ref,
             )
+            validar_sin_solapamiento(all_bases, f"TarifaLiquidacionBase tipo={tipo_normalized}")
             total = len(all_bases)
             offset = (page - 1) * page_size
             bases = all_bases[offset:offset + page_size]

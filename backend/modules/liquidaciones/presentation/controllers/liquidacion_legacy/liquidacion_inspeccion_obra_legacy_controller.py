@@ -33,7 +33,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
 @api_controller("/liquidaciones/inspeccion-obra", tags=["Inspección de Obra Legacy"], permissions=[AllowAny])
 class LiquidacionInspeccionObraLegacyController:
     """
-    Legacy controller for Inspección de Obra (Visitas) primera-revision with historical fecha_registro.
+    Legacy controller for Inspección de Obra (Visitas) with historical fecha_registro (supports any numero_revision).
     """
 
     @inject

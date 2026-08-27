@@ -171,7 +171,7 @@ def test_e2e_inspeccion_obra_desde_previa_con_inspector(
     from modules.liquidaciones.domain.models.inspector import InspectorOperacion
 
     esp_rev = EspecialidadRevision.objects.create(
-        codigo="02", slug="sanitaria", nombre="Ingeniería Sanitaria"
+        slug="sanitaria", nombre="Ingeniería Sanitaria"
     )
     inspector = None
 

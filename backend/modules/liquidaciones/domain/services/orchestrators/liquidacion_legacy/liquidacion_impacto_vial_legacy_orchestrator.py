@@ -17,6 +17,9 @@ from modules.liquidaciones.domain.constants import TipoLiquidacion
 from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_legacy_por_porcentaje_core_service import (
     LiquidacionLegacyPorPorcentajeCoreService,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_porcentaje_obra_core_service import (
+    LiquidacionPorcentajeObraCoreService,
+)
 from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_legacy_por_visitas_core_service import (
     LiquidacionLegacyPorVisitasCoreService,
 )
@@ -33,6 +36,7 @@ from modules.liquidaciones.domain.schemas.liquidacion_general.liquidacion_genera
     ContactoData,
 )
 from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_porcentaje_data import (
+    CotizacionPorcentajeObraData,
     DatosPorcentajeObra,
     LiquidacionPorcentajeObraData,
     TarifaPorcentajeObraAplicada,
@@ -45,6 +49,9 @@ from modules.liquidaciones.domain.results.liquidacion_especifico.primera_revisio
 )
 from modules.liquidaciones.domain.services.orchestrators._shared.liquidacion_po_validation import (
     LiquidacionPOValidationMixin,
+)
+from modules.liquidaciones.domain.services.orchestrators._shared.vigencia_validation import (
+    validar_sin_solapamiento,
 )
 
 
@@ -64,12 +71,86 @@ class LiquidacionImpactoVialLegacyOrchestrator(LiquidacionPOValidationMixin):
         legacy_po_core: LiquidacionLegacyPorPorcentajeCoreService,
         legacy_visitas_core: LiquidacionLegacyPorVisitasCoreService,
         general_core: LiquidacionGeneralCoreService,
+        porcentaje_core: LiquidacionPorcentajeObraCoreService,
         flujo: LiquidacionImpactoVialFlujo,
     ):
         self.legacy_po_core = legacy_po_core
         self.legacy_visitas_core = legacy_visitas_core
         self.general_core = general_core
+        self.porcentaje_core = porcentaje_core
         self.flujo = flujo
+
+    def cotizar_legacy_proceso(
+        self,
+        payload,
+    ) -> CotizacionPorcentajeObraData:
+        """
+        Calculates the Impacto Vial cotizacion using historical tariffs by fecha_registro,
+        WITHOUT persisting anything.
+
+        Mirrors the resolution steps of crear_legacy_proceso (steps 1-4),
+        then calls the pure calcular_cotizacion_po. Used by the legacy ingest script to
+        compare calculated vs expected values BEFORE inserting.
+
+        Returns CotizacionPorcentajeObraData with porcentaje_liquidacion, total_subtotal, total.
+        """
+        # Step 1: fecha_registro
+        fecha_registro = (
+            payload.liquidacion_general.fecha_registro
+            if hasattr(payload.liquidacion_general, "fecha_registro")
+            and payload.liquidacion_general.fecha_registro
+            else date.today()
+        )
+
+        # Step 2: Validation
+        valor_declarado = payload.liquidacion_especifica.datos.valor_declarado
+        if valor_declarado <= 0:
+            raise HttpError(400, "valor_declarado debe ser mayor a 0")
+
+        # Step 3: Resolve tarifas by fecha_registro
+        input_tarifas = payload.liquidacion_especifica.tarifas
+        tarifas = self.legacy_po_core.get_tarifa_por_fecha(
+            TipoLiquidacion.IMPACTO_VIAL, fecha_registro
+        )
+        if not tarifas:
+            raise HttpError(400, "No hay tarifas vigentes para impacto vial en la fecha indicada")
+
+        tarifa_map = {str(t.id): t for t in tarifas}
+
+        # Step 4: Resolve IGV/UIT + derecho by fecha_registro
+        igv = self.legacy_visitas_core.get_igv_por_fecha(fecha_registro)
+        uit = self.legacy_visitas_core.get_uit_por_fecha(fecha_registro)
+        if not igv or not uit:
+            raise HttpError(400, "No hay IGV o UIT vigente para la fecha indicada")
+
+        derecho = self.legacy_po_core.get_derecho_porcentaje_por_fecha(fecha_registro)
+        if not derecho:
+            raise HttpError(400, "No hay DerechoPorcentajeObra vigente para la fecha indicada")
+
+        # Build TarifaPorcentajeObraAplicada DTOs (auto-fill: tarifa x especialidades)
+        especialidades = self._obtener_especialidades_vigentes_para_tipo(
+            TipoLiquidacion.IMPACTO_VIAL, fecha=fecha_registro
+        )
+        tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas}.values())
+        tarifas_aplicadas = [
+            TarifaPorcentajeObraAplicada(
+                tarifa_id=str(t.id),
+                porcentaje_liquidacion=t.porcentaje_liquidacion,
+                especialidad_id=str(esp.especialidad_id),
+                especialidad_nombre=esp.especialidad.nombre if esp.especialidad else None,
+            )
+            for t in tarifas_dedup
+            for esp in especialidades
+        ]
+
+        # Pure calculation — no persistence
+        return self.porcentaje_core.calcular_cotizacion_po(
+            valor_declarado=valor_declarado,
+            tarifas=tarifas_aplicadas,
+            igv_porcentaje=Decimal(str(igv.valor)),
+            derecho=derecho,
+            uit_valor=Decimal(str(uit.valor)),
+        )
 
     def crear_legacy_proceso(
         self,
@@ -126,6 +207,10 @@ class LiquidacionImpactoVialLegacyOrchestrator(LiquidacionPOValidationMixin):
             raise HttpError(400, "No hay IGV o UIT vigente para la fecha indicada")
 
         derecho = self.legacy_po_core.get_derecho_porcentaje_por_fecha(fecha_registro)
+        validar_sin_solapamiento(
+            self.legacy_po_core.get_derechos_porcentaje_list(fecha_registro),
+            "DerechoPorcentajeObra",
+        )
         if not derecho:
             raise HttpError(400, "No hay DerechoPorcentajeObra vigente para la fecha indicada")
 
@@ -145,7 +230,7 @@ class LiquidacionImpactoVialLegacyOrchestrator(LiquidacionPOValidationMixin):
         else:
             # Auto-fill: combine one tarifa per base x every vigente especialidad
             especialidades = self._obtener_especialidades_vigentes_para_tipo(
-                TipoLiquidacion.IMPACTO_VIAL
+                TipoLiquidacion.IMPACTO_VIAL, fecha=fecha_registro
             )
             tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas}.values())
             tarifas_aplicadas = [
@@ -189,6 +274,12 @@ class LiquidacionImpactoVialLegacyOrchestrator(LiquidacionPOValidationMixin):
                     )
                     if payload.liquidacion_general.contacto
                     else None
+                ),
+                denominacion_de_proyecto_liquidacion=getattr(
+                    payload.liquidacion_general, "denominacion_de_proyecto_liquidacion", None
+                ),
+                descripcion_legacy=getattr(
+                    payload.liquidacion_general, "descripcion_legacy", None
                 ),
             ),
             liquidacion_especifica=LiquidacionPorcentajeObraData(

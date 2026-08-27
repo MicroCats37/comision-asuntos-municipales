@@ -7,12 +7,13 @@ Handles: TarifaPorMetroCuadrado, DerechoPorMetroCuadrado resolved by fecha_regis
 Used by legacy flows for habilitación urbana and mecánica de suelos
 (which both use square-meter tariffs).
 """
-from typing import Optional
 from datetime import date
 
+from injector import inject
+
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
-    TarifaPorMetroCuadrado,
     DerechoPorMetroCuadrado,
+    TarifaPorMetroCuadrado,
 )
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.tarifas_historicas_core_service import (
     TarifasHistoricasCoreService,
@@ -26,14 +27,15 @@ class LiquidacionLegacyPorM2CoreService:
     All methods are pure ORM — no business logic, no conditionals.
     """
 
-    def __init__(self) -> None:
-        self._tarifas_service = TarifasHistoricasCoreService()
+    @inject
+    def __init__(self, tarifas_service: TarifasHistoricasCoreService) -> None:
+        self._tarifas_service = tarifas_service
 
     def get_tarifa_m2_por_fecha(
         self,
         tipo_liquidacion: str,
         fecha: date,
-    ) -> Optional[TarifaPorMetroCuadrado]:
+    ) -> TarifaPorMetroCuadrado | None:
         """
         Get the TarifaPorMetroCuadrado vigentes at the given fecha for a tipo_liquidacion.
 
@@ -54,7 +56,7 @@ class LiquidacionLegacyPorM2CoreService:
     def get_derecho_m2_por_fecha(
         self,
         fecha: date,
-    ) -> Optional[DerechoPorMetroCuadrado]:
+    ) -> DerechoPorMetroCuadrado | None:
         """
         Get the DerechoPorMetroCuadrado vigente at the given fecha.
 
@@ -66,3 +68,17 @@ class LiquidacionLegacyPorM2CoreService:
         """
         derechos = self._tarifas_service.get_derechos_m2_vigentes(fecha)
         return derechos[0] if derechos else None
+
+    def get_derechos_m2_list(self, fecha: date) -> list[DerechoPorMetroCuadrado]:
+        """
+        Returns the raw list of DerechoPorMetroCuadrado vigentes at fecha.
+        Used by legacy orchestrators for overlap validation before [0] selection.
+        """
+        return self._tarifas_service.get_derechos_m2_vigentes(fecha)
+
+    def get_tarifas_base_list(self, tipo_liquidacion: str, fecha: date) -> list:
+        """
+        Returns the raw list of TarifaLiquidacionBase vigentes at fecha for a tipo.
+        Used by legacy orchestrators for overlap validation.
+        """
+        return self._tarifas_service.get_tarifas_vigentes(tipo_liquidacion, fecha)

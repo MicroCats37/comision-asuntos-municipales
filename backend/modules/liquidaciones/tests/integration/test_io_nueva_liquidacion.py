@@ -173,7 +173,7 @@ def inspector(db, tipo_edificacion):
     )
     inspector = Inspector.objects.create(perfil_ingeniero=perfil)
     esp_rev = EspecialidadRevision.objects.create(
-        codigo="03", slug="electrica", nombre="Eléctrica/Mecánica"
+        slug="electrica", nombre="Eléctrica/Mecánica"
     )
     InspectorOperacion.objects.create(
         inspector=inspector,

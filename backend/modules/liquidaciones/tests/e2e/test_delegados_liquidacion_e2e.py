@@ -245,7 +245,7 @@ def test_batch_create_especialidad_no_vigente_400(
     PATCH create con delegado cuya especialidad no es vigente para el tipo → 400.
     """
     especialidad_otra = EspecialidadRevision.objects.create(
-        codigo="X01", slug="otra-especialidad", nombre="Otra Especialidad"
+        slug="otra-especialidad", nombre="Otra Especialidad"
     )
     delegado = _crear_delegado("88888", "88888888")
     _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_otra)

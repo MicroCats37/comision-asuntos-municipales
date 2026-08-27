@@ -222,3 +222,34 @@ def test_uuid_not_none(
         tarifa_uuid = uuid.UUID(str(tarifa_id))
         assert isinstance(tarifa_uuid, uuid.UUID), \
             f"tarifa.id should be valid UUID, got {type(tarifa_id)}"
+
+
+@pytest.mark.django_db
+def test_multiple_tarifas_por_base_raises_error(
+    db, tipo_edificacion, api_client
+):
+    """
+    When a vigente TarifaLiquidacionBase has more than one TarifaPorcentajeObra child,
+    the endpoint raises an explicit HttpError (400) instead of silently returning wrong data.
+    """
+    # Create base with TWO child tariffs (violates tarifa-unica-especialidades invariant)
+    base = TarifaLiquidacionBase.objects.create(
+        tipo_liquidacion=tipo_edificacion,
+        periodo_inicio=date(2026, 1, 1),
+        periodo_fin=None,
+    )
+    TarifaPorcentajeObra.objects.create(
+        tarifa_base=base, porcentaje_liquidacion=Decimal("0.0005")
+    )
+    TarifaPorcentajeObra.objects.create(
+        tarifa_base=base, porcentaje_liquidacion=Decimal("0.0002")
+    )
+
+    response = api_client.get("/liquidaciones/edificaciones/tarifas/vigentes")
+
+    assert response.status_code == 400, \
+        f"Expected 400 for multiple children per base, got {response.status_code}"
+    error_details = response.json().get("error", {}).get("details", {})
+    non_field_errors = error_details.get("non_field_errors", "") if isinstance(error_details, dict) else ""
+    assert "Data inconsistency" in non_field_errors, \
+        f"Expected 'Data inconsistency' in error details, got: {error_details}"

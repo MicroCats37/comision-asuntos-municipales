@@ -4,7 +4,7 @@ HTTP Controller for Mecánica de Suelos (PorMetroCuadrado) legacy endpoint.
 100% additive — no existing controller modified.
 
 Endpoints:
-- POST /api/liquidaciones/mecanica-suelos/legacy/nueva-liquidacion/primera-revision
+- POST /api/liquidaciones/mecanica-suelos/legacy/nueva-liquidacion
 
 Thin controller — only delegates, no logic.
 """
@@ -30,7 +30,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
 @api_controller("/liquidaciones/mecanica-suelos", tags=["Mecánica de Suelos Legacy"], permissions=[AllowAny])
 class LiquidacionMecanicaSuelosLegacyController:
     """
-    Legacy controller for Mecánica de Suelos (PorMetroCuadrado) primera-revision with historical fecha_registro.
+    Legacy controller for Mecánica de Suelos (PorMetroCuadrado) with historical fecha_registro (supports any numero_revision).
     """
 
     @inject
@@ -43,7 +43,7 @@ class LiquidacionMecanicaSuelosLegacyController:
         self.presenter = presenter
 
     @route.post(
-        "/legacy/nueva-liquidacion/primera-revision",
+        "/legacy/nueva-liquidacion",
         response={200: ApiResponse[LiquidacionMecanicaSuelosOutput]},
     )
     def crear_legacy(self, request, payload: LiquidacionMecanicaSuelosLegacyIn):

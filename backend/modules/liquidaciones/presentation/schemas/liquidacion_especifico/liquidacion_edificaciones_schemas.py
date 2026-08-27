@@ -25,7 +25,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_sche
 class LiquidacionTipoOutput(BaseSchema):
     """Output de identidad: solo id + numero."""
     id: uuid.UUID
-    numero: int
+    numero: Optional[int] = Field(None, description="Número secuencial correlativo de la especialidad")
 
 
 class LiquidacionEdificacionesInput(BaseSchema):
@@ -67,7 +67,7 @@ class LiquidacionEdificacionesCotizarDetalleOut(BaseSchema):
 
 class LiquidacionGeneralNuevaRevisionIn(BaseSchema):
     """Input reducido para nueva revisión — solo campos editables (sin municipalidad/proyecto)."""
-    expediente: str = Field(..., description="Número de expediente")
+    expediente: Optional[str] = Field(None, description="Número de expediente")
     observacion: Optional[str] = Field(None, description="Observación opcional")
     retencion: bool = Field(False, description="Indica si la liquidación tiene retención")
     contacto: Optional[ContactoInlineSchema] = Field(None, description="Contacto principal (se crea inline)")

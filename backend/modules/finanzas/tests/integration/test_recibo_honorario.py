@@ -115,7 +115,6 @@ def especialidad_revision(db):
     from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 
     return EspecialidadRevision.objects.create(
-        codigo="E01",
         slug="estructuras",
         nombre="Estructuras",
     )
@@ -681,7 +680,6 @@ class TestListarRecibosPagination:
         # Nested especialidad
         e = item.especialidad
         assert e.id is not None
-        assert e.codigo is not None
         assert e.nombre is not None
 
     def test_list_recibo_filter_by_delegado_id(

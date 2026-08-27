@@ -9,10 +9,18 @@ from modules.finanzas.domain.results.rh_inspector_mensual_result import (
     RHInspectorCotizarResult,
     RHInspectorTotalesResult,
 )
+from modules.finanzas.domain.results.rh_delegado_mensual_result import (
+    RHDelegadoCotizarItemResult,
+    RHDelegadoCotizarResult,
+    RHDelegadoTotalesResult,
+)
 
 __all__ = [
     "CalculoHonorarioResult",
     "RHInspectorCotizarItemResult",
     "RHInspectorCotizarResult",
     "RHInspectorTotalesResult",
+    "RHDelegadoCotizarItemResult",
+    "RHDelegadoCotizarResult",
+    "RHDelegadoTotalesResult",
 ]

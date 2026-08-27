@@ -86,7 +86,7 @@ def perfil_ingeniero_delegado(db, usuario_delegado):
 @pytest.fixture
 def especialidad_estructuras(db):
     return EspecialidadRevision.objects.create(
-        codigo="E01", slug="estructuras", nombre="Estructuras",
+        slug="estructuras", nombre="Estructuras",
     )
 
 
@@ -134,6 +134,20 @@ def igv_vigente(db):
 @pytest.fixture
 def uit_vigente(db):
     return UIT.objects.create(valor=Decimal("5150.00"), periodo_inicio=date(2024, 1, 1), periodo_fin=None)
+
+
+@pytest.fixture
+def tasa_delegado_vigente(db):
+    """TasaDelegado vigente con tasas por defecto (vigencia desde 1900)."""
+    from modules.finanzas.domain.models.tasa_delegado import TasaDelegado
+    return TasaDelegado.objects.create(
+        nombre="Tasas Delegado (vigencia histórica)",
+        renta_cip=Decimal("0.25"),
+        aporte_codemu=Decimal("0.05"),
+        fondo_comun=Decimal("0.10"),
+        periodo_inicio=date(1900, 1, 1),
+        periodo_fin=None,
+    )
 
 
 # ── TipoLiquidacion Fixtures ────────────────────────────────────────────────────
@@ -235,9 +249,6 @@ def liquidacion_porcentaje_detalle(
         especialidad=especialidad_estructuras,
         porcentaje_aplicado=Decimal("0.0010"),
         subtotal=Decimal("1000.00"),  # imp_bruto = 1000.00
-        igv=Decimal("180.00"),
-        uit=Decimal("0.00"),
-        total=Decimal("1180.00"),
     )
 
 
@@ -373,7 +384,7 @@ def liquidacion_delegado_io(
 # ── E2E Tests ──────────────────────────────────────────────────────────────────
 
 @pytest.mark.django_db
-def test_e2e_post_recibo_porcentaje(api_client, liquidacion_delegado_porcentaje):
+def test_e2e_post_recibo_porcentaje(api_client, liquidacion_delegado_porcentaje, tasa_delegado_vigente):
     """
     POST /finanzas/recibos-delegados with PORCENTAJE liquidacion_delegado_id.
 
@@ -415,7 +426,7 @@ def test_e2e_post_recibo_porcentaje(api_client, liquidacion_delegado_porcentaje)
 
 
 @pytest.mark.django_db
-def test_e2e_post_recibo_m2(api_client, liquidacion_delegado_m2):
+def test_e2e_post_recibo_m2(api_client, liquidacion_delegado_m2, tasa_delegado_vigente):
     """
     POST /finanzas/recibos-delegados with M2-type liquidacion_delegado_id.
 
@@ -447,7 +458,7 @@ def test_e2e_post_recibo_m2(api_client, liquidacion_delegado_m2):
 
 
 @pytest.mark.django_db
-def test_e2e_post_recibo_io_visitas(api_client, liquidacion_delegado_io):
+def test_e2e_post_recibo_io_visitas(api_client, liquidacion_delegado_io, tasa_delegado_vigente):
     """
     POST /finanzas/recibos-delegados with INSPECCION_OBRA-type liquidacion_delegado_id.
 
@@ -493,19 +504,33 @@ def test_e2e_post_recibo_404(api_client):
 @pytest.mark.django_db
 def test_e2e_get_recibos_paginated(
     api_client,
-    liquidacion_delegado_porcentaje,
-    liquidacion_delegado_m2,
-    liquidacion_delegado_io,
+    delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    especialidad_estructuras,
+    tasa_delegado_vigente,
 ):
     """
-    After creating 3 recibos via POST, GET /finanzas/recibos-delegados?page=1&page_size=2
-    returns PaginatedData with 2 items, total=3, total_pages=2.
+    After creating 3 RH mensuales via POST /recibos-delegados/crear,
+    GET /finanzas/recibos-delegados?page=1&page_size=2 returns
+    PaginatedData with 2 items, total=3, total_pages=2.
     """
-    # Create 3 receipts
-    for ld in [liquidacion_delegado_porcentaje, liquidacion_delegado_m2, liquidacion_delegado_io]:
-        api_client.post(
-            "/finanzas/recibos-delegados",
-            json={"liquidacion_delegado_id": str(ld.id)},
+    for periodo in ("2026-01", "2026-02", "2026-03"):
+        response = api_client.post(
+            "/finanzas/recibos-delegados/crear",
+            json={
+                "cip": "CIP-99999",
+                "periodo": periodo,
+                "items": [
+                    {
+                        "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                        "especialidad_revision_id": str(especialidad_estructuras.id),
+                    }
+                ],
+            },
+        )
+        assert response.status_code == 200, (
+            f"Expected 200, got {response.status_code}: {response.content}"
         )
 
     # Paginated GET
@@ -531,35 +556,38 @@ def test_e2e_get_recibos_paginated(
 @pytest.mark.django_db
 def test_e2e_get_recibos_filters(
     api_client,
-    liquidacion_delegado_porcentaje,
-    liquidacion_delegado_m2,
+    delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    especialidad_estructuras,
+    tasa_delegado_vigente,
 ):
     """
-    GET with ?delegado_id= and ?liquidacion_id= returns filtered results.
+    GET with ?delegado_id= returns only the delegado's monthly RH.
     """
-    # Create receipts for both liquidacion_delegados
-    api_client.post(
-        "/finanzas/recibos-delegados",
-        json={"liquidacion_delegado_id": str(liquidacion_delegado_porcentaje.id)},
-    )
-    api_client.post(
-        "/finanzas/recibos-delegados",
-        json={"liquidacion_delegado_id": str(liquidacion_delegado_m2.id)},
-    )
+    # Create monthly RH for the delegado
+    for periodo in ("2026-01", "2026-02"):
+        api_client.post(
+            "/finanzas/recibos-delegados/crear",
+            json={
+                "cip": "CIP-99999",
+                "periodo": periodo,
+                "items": [
+                    {
+                        "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                        "especialidad_revision_id": str(especialidad_estructuras.id),
+                    }
+                ],
+            },
+        )
 
     # Filter by delegado_id
-    deleg_id = liquidacion_delegado_porcentaje.delegado.id
+    deleg_id = delegado.id
     response = api_client.get(f"/finanzas/recibos-delegados?delegado_id={deleg_id}")
     assert response.status_code == 200
     items = response.json()["data"]["items"]
+    assert len(items) == 2
     assert all(str(item["delegado"]["id"]) == str(deleg_id) for item in items)
-
-    # Filter by liquidacion_id
-    liq_id = liquidacion_delegado_m2.liquidacion.id
-    response2 = api_client.get(f"/finanzas/recibos-delegados?liquidacion_id={liq_id}")
-    assert response2.status_code == 200
-    items2 = response2.json()["data"]["items"]
-    assert all(str(item["liquidacion_general"]["id"]) == str(liq_id) for item in items2)
 
 
 @pytest.mark.django_db

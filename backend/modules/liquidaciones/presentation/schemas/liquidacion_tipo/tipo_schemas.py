@@ -7,6 +7,7 @@ reutilizables por cualquier especialidad que use el mismo tipo de cálculo.
 from core.types import BaseSchema
 from ninja import Field
 import uuid
+from typing import Optional
 
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
     VariablesFinancierasNulasOut,
@@ -17,7 +18,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
 # =============================================================================
 class LiquidacionTipoOutput(BaseSchema):
     id: uuid.UUID = Field(..., description="ID de la liquidación del tipo específico")
-    numero: int = Field(..., description="Número secuencial correlativo de la especialidad")
+    numero: Optional[int] = Field(None, description="Número secuencial correlativo de la especialidad")
 
 
 # =============================================================================

@@ -2,12 +2,24 @@
 LiquidacionMecanicaSuelosFlujo — Flujo específico transaccional para Mecánica de Suelos.
 """
 from datetime import date
-from django.db import transaction
-from injector import inject
 from decimal import Decimal
 
+from django.db import transaction
+from injector import inject
+
+from modules.liquidaciones.domain.constants import TipoLiquidacion
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_mecanica_suelos import (
     LiquidacionMecanicaSuelos,
+)
+from modules.liquidaciones.domain.results.liquidacion_especifico.mecanica_suelos_primera_revision_result import (
+    LiquidacionEspecificaMecanicaSuelosResult,
+    MecanicaSuelosPrimeraRevisionResult,
+)
+from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_m2_result import (
+    LiquidacionM2Result,
+)
+from modules.liquidaciones.domain.schemas.liquidacion_especifico.mecanica_suelos_primera_revision_data import (
+    MecanicaSuelosPrimeraRevisionData,
 )
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
@@ -15,20 +27,6 @@ from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_metro_cuadrado_core_service import (
     LiquidacionPorMetroCuadradoCoreService,
 )
-from modules.liquidaciones.domain.schemas.liquidacion_especifico.mecanica_suelos_primera_revision_data import (
-    MecanicaSuelosPrimeraRevisionData,
-)
-from modules.liquidaciones.domain.results.liquidacion_especifico.mecanica_suelos_primera_revision_result import (
-    MecanicaSuelosPrimeraRevisionResult,
-    LiquidacionEspecificaMecanicaSuelosResult,
-)
-from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
-    LiquidacionGeneralResult,
-)
-from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_m2_result import (
-    LiquidacionM2Result,
-)
-from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
 class LiquidacionMecanicaSuelosFlujo:
@@ -89,7 +87,9 @@ class LiquidacionMecanicaSuelosFlujo:
             uit_vigente = self.general_core.get_uit_vigente()
 
             # Paso 3: LiquidacionGeneral (General Core)
-            from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
+            from modules.liquidaciones.domain.models.tipo_liquidacion import (
+                TipoLiquidacion as TipoLiquidacionModel,
+            )
             liquidacion_general = self.general_core.create_liquidacion_general(
                 municipalidad_id=gen_data.municipalidad_id,
                 expediente=gen_data.expediente,
@@ -127,7 +127,6 @@ class LiquidacionMecanicaSuelosFlujo:
             general_result = self.general_core.build_general_result(
                 liquidacion_general=liquidacion_general,
                 usuario_id=usuario_id,
-                fecha_registro=str(liquidacion_general.fecha_registro) if liquidacion_general.fecha_registro else "",
             )
 
             tipo_result = LiquidacionM2Result(
@@ -200,7 +199,9 @@ class LiquidacionMecanicaSuelosFlujo:
         cotizacion = data.cotizacion
 
         # Paso 3: LiquidacionGeneral (General Core)
-        from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
+        from modules.liquidaciones.domain.models.tipo_liquidacion import (
+            TipoLiquidacion as TipoLiquidacionModel,
+        )
         liquidacion_general = self.general_core.create_liquidacion_general(
             municipalidad_id=gen_data.municipalidad_id,
             expediente=gen_data.expediente,
@@ -208,6 +209,8 @@ class LiquidacionMecanicaSuelosFlujo:
             proyecto=proyecto,
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.MECANICA_SUELOS),
             numero_revision=numero_revision,
+            denominacion_de_proyecto_liquidacion=gen_data.denominacion_de_proyecto_liquidacion,
+            descripcion_legacy=gen_data.descripcion_legacy,
         )
 
         # Set historical fecha_registro (override default=timezone.now from model)
@@ -220,13 +223,15 @@ class LiquidacionMecanicaSuelosFlujo:
         liquidacion_general.save()
 
         # Paso 4: Crear LiquidacionPorMetroCuadrado (M2 Core)
-        from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_metro_cuadrado_core_service import (
-            LiquidacionPorMetroCuadradoCoreService,
+        # Use the tariff/derecho pre-resolved by the orchestrator via legacy core
+        # (cotizacion carries the IDs resolved by fecha_registro).
+        from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
+            DerechoPorMetroCuadrado,
+            TarifaPorMetroCuadrado,
         )
-        m2_core = LiquidacionPorMetroCuadradoCoreService()
-        derecho = m2_core.get_derecho_minimo_m2_vigente()
-        tarifa = m2_core.get_tarifa_m2_vigente(TipoLiquidacion.MECANICA_SUELOS)
-        liquidacion_m2 = m2_core.create_liquidacion_por_metro_cuadrado(
+        derecho = DerechoPorMetroCuadrado.objects.get(id=cotizacion.derecho_id)
+        tarifa = TarifaPorMetroCuadrado.objects.get(id=cotizacion.tarifa_id)
+        liquidacion_m2 = self.m2_core.create_liquidacion_por_metro_cuadrado(
             liquidacion_general=liquidacion_general,
             area_solicitada=float(esp_data.datos.area_solicitada),
             tarifa_aplicada=tarifa,
@@ -244,7 +249,6 @@ class LiquidacionMecanicaSuelosFlujo:
         general_result = self.general_core.build_general_result(
             liquidacion_general=liquidacion_general,
             usuario_id=usuario_id,
-            fecha_registro=str(liquidacion_general.fecha_registro) if liquidacion_general.fecha_registro else "",
         )
 
         tipo_result = LiquidacionM2Result(

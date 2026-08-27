@@ -68,9 +68,6 @@ export function ReciboHonorarioCard({ item }: ReciboHonorarioCardProps) {
               <p className="text-sm font-semibold truncate">
                 {esp?.nombre ?? "—"}
               </p>
-              <p className="text-xs text-muted-foreground">
-                Código: {esp?.codigo ?? "—"}
-              </p>
             </div>
           </div>
         </div>

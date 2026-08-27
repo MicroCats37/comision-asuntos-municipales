@@ -5,7 +5,6 @@ import {
   FileText,
   IdCard,
   MapPin,
-  Percent,
   Phone,
   RefreshCw,
   Users,
@@ -15,9 +14,10 @@ import {
  *
  * NEW contract:
  * - GET /liquidaciones/{tipo}/tarifas/vigentes → { tarifas: [tarifa_unica], especialidades_disponibles: [...] }
- *   (via useTarifasVigentesPorcentaje)
- * - Shows ONE read-only tariff card + specialty CHECKBOXES (all selected by default)
- * - User can deselect specialties if needed
+ *   (via EspecialidadesPorTipoTramiteSmartField)
+ * - EspecialidadesPorTipoTramiteSmartField cambia de modo según tipo_tramite:
+ *   Group A (rígido, todas las especialidades) / Group B (radio, una sola).
+ * - El tipo_tramite se elige con TipoTramiteSmartField (reactivo vía useWatch).
  *
  * Layout responsivo 2 columnas como el form de primera revisión.
  * Cotización usa CotizacionNuevaRevisionSmartField (valor fijo + especialidades seleccionadas por props).
@@ -32,7 +32,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { notify } from "@/errors";
 import { useCrearNuevaRevisionEdificaciones } from "../../hooks/useCrearNuevaRevisionEdificaciones";
-import { useTarifasVigentesPorcentaje } from "../../hooks/useTarifasVigentes";
 import type { UltimaRevisionItem } from "../../hooks/useUltimaRevisionEdificaciones";
 import type { ContactoInline } from "../../schemas/liquidacion-form-base.schema";
 import {
@@ -41,45 +40,8 @@ import {
 } from "../../schemas/liquidacion-nueva-revision-form.schema";
 import { ContactoFormModal } from "./ContactoFormModal";
 import { CotizacionNuevaRevisionSmartField } from "./CotizacionNuevaRevisionSmartField";
-
-// Hook to pre-select the first especialidad (radio) when modal opens
-function usePreselectEspecialidades(open: boolean): {
-  selectedEspecialidad: string | null;
-  setSelectedEspecialidad: (id: string) => void;
-  tarifaUnicaId: string | null;
-} {
-  const [selectedEspecialidad, setSelectedEspecialidad] = useState<string | null>(null);
-  const [tarifaUnicaId, setTarifaUnicaId] = useState<string | null>(null);
-
-  const { data } = useTarifasVigentesPorcentaje("edificaciones");
-
-  useEffect(() => {
-    if (open && data) {
-      // Set the single tariff ID
-      if (data.tarifas.length > 0) {
-        setTarifaUnicaId(data.tarifas[0].id);
-      }
-      // Pre-select the FIRST especialidad (radio, una sola)
-      if (
-        data.especialidades_disponibles.length > 0 &&
-        !selectedEspecialidad
-      ) {
-        setSelectedEspecialidad(data.especialidades_disponibles[0].id);
-      }
-    }
-    if (!open) {
-      setSelectedEspecialidad(null);
-      setTarifaUnicaId(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, data]);
-
-  return {
-    selectedEspecialidad,
-    setSelectedEspecialidad,
-    tarifaUnicaId,
-  };
-}
+import { EspecialidadesPorTipoTramiteSmartField } from "./EspecialidadesPorTipoTramiteSmartField";
+import { TipoTramiteSmartField } from "./TipoTramiteSmartField";
 
 interface NuevaRevisionEdificacionesFormModalProps {
   open: boolean;
@@ -107,105 +69,6 @@ const formatDate = (value?: string | null): string => {
       });
 };
 
-/**
- * Tarifa única (read-only, siempre hay una) + ESPECIALIDADES RADIO.
- * En nueva revisión se envía UNA sola especialidad (a diferencia de
- * primera revisión donde van todas). La primera viene preseleccionada.
- */
-function EspecialidadesNuevaRevisionSelector({
-  methods,
-  selectedEspecialidad,
-  onSelectEspecialidad,
-}: {
-  methods: any;
-  selectedEspecialidad: string | null;
-  onSelectEspecialidad: (id: string) => void;
-}) {
-  const { data, isLoading } = useTarifasVigentesPorcentaje("edificaciones");
-
-  const tarifaUnica = data?.tarifas[0];
-  const especialidades = data?.especialidades_disponibles ?? [];
-
-  const totalAplicado = tarifaUnica?.porcentaje_liquidacion ?? 0;
-
-  if (isLoading) {
-    return <div className="h-32 rounded-xl border bg-card animate-pulse" />;
-  }
-
-  if (!tarifaUnica) {
-    return (
-      <p className="text-sm text-muted-foreground">No hay tarifas vigentes</p>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {/* Single tariff card (read-only) */}
-      <div className="rounded-lg border border-primary/20 bg-primary/[0.03] px-3 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Percent className="h-3.5 w-3.5 text-primary" />
-          <span className="text-sm font-medium">Tarifa Única</span>
-        </div>
-        <div className="text-right">
-          <span className="text-sm font-bold text-primary">
-            {formatPercent(totalAplicado)}
-          </span>
-          {selectedEspecialidad && (
-            <p className="text-xs text-muted-foreground">
-              {formatPercent(tarifaUnica.porcentaje_liquidacion)} × 1 esp.
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Especialidad — RADIO (una sola, primera preseleccionada) */}
-      <div className="space-y-2">
-        <Label>
-          Especialidad a aplicar <span className="text-destructive">*</span>
-        </Label>
-        <div className="flex flex-row flex-wrap gap-2" role="radiogroup" aria-label="Especialidades">
-          {especialidades.map((esp) => {
-            const isSelected = selectedEspecialidad === esp.id;
-            return (
-              <label
-                key={esp.id}
-                role="radio"
-                aria-checked={isSelected}
-                className={[
-                  "rounded-lg border bg-background px-3 py-2.5 transition-all duration-200 text-left flex-1 min-w-[160px] flex items-center gap-2 cursor-pointer",
-                  isSelected
-                    ? "border-primary ring-1 ring-primary/30 bg-primary/5"
-                    : "border-border hover:border-primary/40",
-                ].join(" ")}
-              >
-                <span
-                  className={[
-                    "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
-                    isSelected ? "border-primary" : "border-border",
-                  ].join(" ")}
-                >
-                  {isSelected && <span className="h-2 w-2 rounded-full bg-primary" />}
-                </span>
-                <span className="text-sm font-medium truncate">{esp.nombre}</span>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  ({esp.codigo})
-                </span>
-                <input
-                  type="radio"
-                  name="especialidad_nueva_rev"
-                  className="sr-only"
-                  checked={isSelected}
-                  onChange={() => onSelectEspecialidad(esp.id)}
-                />
-              </label>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function NuevaRevisionEdificacionesFormModal({
   open,
   onOpenChange,
@@ -215,11 +78,6 @@ export function NuevaRevisionEdificacionesFormModal({
   const crearMutation = useCrearNuevaRevisionEdificaciones();
   const [contacto, setContacto] = useState<ContactoInline | null>(null);
   const [contactoModalOpen, setContactoModalOpen] = useState(false);
-  const {
-    selectedEspecialidad,
-    setSelectedEspecialidad,
-    tarifaUnicaId,
-  } = usePreselectEspecialidades(open);
 
   // Prellenar contacto desde la previa cuando se abre
   useEffect(() => {
@@ -266,18 +124,13 @@ export function NuevaRevisionEdificacionesFormModal({
   );
 
   // initialData — prellenar campos editables desde la previa
+  // tipo_tramite defaults to OBRA_NUEVA via schema .default()
   const initialData: Partial<NuevaRevisionEdificacionesFormData> = {
     liquidacion_previa_id: previa?.liquidacion_general.id ?? "",
     expediente: previa?.liquidacion_general.expediente ?? "",
     observacion: previa?.liquidacion_general.observacion ?? "",
     retencion: previa?.liquidacion_general.retencion ?? false,
-    tarifa_unica_id: tarifaUnicaId ?? "",
-    especialidades_seleccionadas: selectedEspecialidad ? [selectedEspecialidad] : [],
   };
-
-  const handleSelectEspecialidad = useCallback((id: string) => {
-    setSelectedEspecialidad(id);
-  }, []);
 
   return (
     <>
@@ -300,17 +153,13 @@ export function NuevaRevisionEdificacionesFormModal({
         size="lg"
       >
         {({ methods }) => {
-          // Sync selected especialidad to form when they change
-          useEffect(() => {
-            methods.setValue("tarifa_unica_id", tarifaUnicaId ?? "", {
-              shouldValidate: false,
-            });
-            methods.setValue(
-              "especialidades_seleccionadas",
-              selectedEspecialidad ? [selectedEspecialidad] : [],
-              { shouldValidate: true },
-            );
-          }, [tarifaUnicaId, selectedEspecialidad, methods]);
+          // Smart fields setean tarifa_unica_id + especialidades_seleccionadas
+          const tarifaUnicaId =
+            (methods.watch("tarifa_unica_id") as string | undefined) ?? null;
+          const especialidadesSeleccionadas =
+            (methods.watch("especialidades_seleccionadas") as
+              | string[]
+              | undefined) ?? [];
 
           return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -488,9 +337,7 @@ export function NuevaRevisionEdificacionesFormModal({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="expediente">
-                        Expediente <span className="text-destructive">*</span>
-                      </Label>
+                      <Label htmlFor="expediente">Expediente</Label>
                       <Input
                         id="expediente"
                         placeholder="Número de expediente"
@@ -516,6 +363,9 @@ export function NuevaRevisionEdificacionesFormModal({
                         </Label>
                       </div>
                     </div>
+                    <div className="sm:col-span-2">
+                      <TipoTramiteSmartField methods={methods} />
+                    </div>
                     <div className="sm:col-span-2 space-y-2">
                       <Label htmlFor="observacion">Observación</Label>
                       <Textarea
@@ -528,20 +378,14 @@ export function NuevaRevisionEdificacionesFormModal({
                   </div>
                 </div>
 
-                {/* Tarifa única (read-only) + Especialidad — radio */}
-                <div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
-                  <EspecialidadesNuevaRevisionSelector
-                    methods={methods}
-                    selectedEspecialidad={selectedEspecialidad}
-                    onSelectEspecialidad={handleSelectEspecialidad}
-                  />
-                </div>
+                {/* Especialidades selector — behavior switches based on tipo_tramite */}
+                <EspecialidadesPorTipoTramiteSmartField methods={methods} />
 
-                {/* Cotización con valor FIJO + especialidad seleccionada (props, sin useWatch) */}
+                {/* Cotización con valor FIJO + especialidades seleccionadas */}
                 <CotizacionNuevaRevisionSmartField
                   valorDeclarado={valorDeclaradoFijo}
                   tarifaId={tarifaUnicaId}
-                  especialidadesIds={selectedEspecialidad ? [selectedEspecialidad] : []}
+                  especialidadesIds={especialidadesSeleccionadas}
                 />
 
                 {/* Contacto — prellenado desde la previa */}

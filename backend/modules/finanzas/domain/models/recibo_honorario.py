@@ -5,6 +5,8 @@ Generado desde una LiquidacionDelegado (asignación liquidación+delegado+especi
 Equivale a la tabla legacy CT46201.
 """
 
+from __future__ import annotations
+
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import models
@@ -92,21 +94,22 @@ class ReciboHonorarioDelegado(BaseModel):
         return f"ReciboHonorarioDelegado({self.liquidacion_delegado} - {self.honorario})"
 
     @staticmethod
-    def _calcular_honorarios(imp_bruto: Decimal) -> CalculoHonorarioResult:
+    def _calcular_honorarios(
+        imp_bruto: Decimal,
+        tasas: "TasaDelegado | None" = None,
+    ) -> CalculoHonorarioResult:
         """
         Helper privado que calcula los componentes del recibo de honorarios.
 
         Cumple con contrato 3B (helpers con prefijo _).
 
-        Fixed rates:
-            renta_cip     = imp_bruto × 0.25
-            aporte_codemu = imp_bruto × 0.05
-            fondo_comun   = imp_bruto × 0.10
-            neto_honorario = imp_bruto − renta_cip − aporte_codemu − fondo_comun
-            honorario     = neto_honorario
+        Si tasas es None, usa los valores por defecto (0.25, 0.05, 0.10)
+        para backward compatibility.
 
         Args:
             imp_bruto: Importe bruto (Decimal).
+            tasas: TasaDelegado instance with renta_cip, aporte_codemu, fondo_comun.
+                   If None, uses legacy default rates.
 
         Returns:
             CalculoHonorarioResult con todos los campos en Decimal (2 decimal places).
@@ -114,9 +117,18 @@ class ReciboHonorarioDelegado(BaseModel):
         """
         TWO_PLACES = Decimal("0.01")
 
-        renta_cip = (imp_bruto * TASA_RENTA_CIP).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
-        aporte_codemu = (imp_bruto * TASA_APORTE_CODEMU).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
-        fondo_comun = (imp_bruto * TASA_FONDO_COMUN).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+        if tasas is not None:
+            tasa_renta = tasas.renta_cip
+            tasa_aporte = tasas.aporte_codemu
+            tasa_fondo = tasas.fondo_comun
+        else:
+            tasa_renta = TASA_RENTA_CIP
+            tasa_aporte = TASA_APORTE_CODEMU
+            tasa_fondo = TASA_FONDO_COMUN
+
+        renta_cip = (imp_bruto * tasa_renta).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+        aporte_codemu = (imp_bruto * tasa_aporte).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+        fondo_comun = (imp_bruto * tasa_fondo).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
         neto_honorario = (imp_bruto - renta_cip - aporte_codemu - fondo_comun).quantize(
             TWO_PLACES, rounding=ROUND_HALF_UP
         )
@@ -132,18 +144,25 @@ class ReciboHonorarioDelegado(BaseModel):
         )
 
     @staticmethod
-    def calcular_honorarios(imp_bruto: Decimal) -> dict:
+    def calcular_honorarios(
+        imp_bruto: Decimal,
+        tasas: "TasaDelegado | None" = None,
+    ) -> dict:
         """
         Wrapper público para backward compatibility con tests existentes.
 
         Returns un dict SIN imp_bruto (el caller lo pasa explícitamente
         para evitar keyword duplicate en objects.create).
 
+        Args:
+            imp_bruto: Importe bruto (Decimal).
+            tasas: TasaDelegado instance. If None, uses legacy default rates.
+
         Returns:
             dict con keys: renta_cip, aporte_codemu, fondo_comun,
                            neto_honorario, honorario (all Decimal, 2 decimal places).
         """
-        result = ReciboHonorarioDelegado._calcular_honorarios(imp_bruto)
+        result = ReciboHonorarioDelegado._calcular_honorarios(imp_bruto, tasas=tasas)
         # Exclude imp_bruto from dict to avoid keyword duplicate in caller
         return {
             "renta_cip": result.renta_cip,

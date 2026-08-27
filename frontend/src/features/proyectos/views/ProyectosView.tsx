@@ -115,7 +115,7 @@ function ProyectoRow({ proyecto }: ProyectoRowProps) {
           {/* Title + meta */}
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-foreground truncate">
-              {proyecto.denominacion}
+              {proyecto.denominacion ?? "Sin denominación"}
             </h3>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-xs text-muted-foreground font-mono">

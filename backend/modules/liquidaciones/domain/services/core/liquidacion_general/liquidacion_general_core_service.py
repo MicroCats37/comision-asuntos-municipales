@@ -125,13 +125,15 @@ class LiquidacionGeneralCoreService:
     def create_liquidacion_general(
         self,
         municipalidad_id: str,
-        expediente: str,
+        expediente: Optional[str],
         observacion: Optional[str],
         proyecto: Proyecto,
         tipo_liquidacion: str,
         numero_revision: int = 1,
         contacto=None,
         retencion: bool = False,
+        denominacion_de_proyecto_liquidacion: Optional[str] = None,
+        descripcion_legacy: Optional[str] = None,
     ) -> LiquidacionGeneral:
         """
         Creates a LiquidacionGeneral base record.
@@ -153,6 +155,8 @@ class LiquidacionGeneralCoreService:
             sub_total=Decimal("0"),
             total=Decimal("0"),
             contacto=contacto,
+            denominacion_de_proyecto_liquidacion=denominacion_de_proyecto_liquidacion,
+            descripcion_legacy=descripcion_legacy,
         )
 
     # ── PREFETCH CHAINS & NUMERO FILTER FIELD MAPS ─────────────────────────────────
@@ -1222,7 +1226,6 @@ class LiquidacionGeneralCoreService:
         contacto_result: Optional[ContactoResult] = None,
         revisiones_previas: Optional[list] = None,
         delegados: Optional[list] = None,
-        fecha_registro: Optional[str] = None,
     ) -> LiquidacionGeneralResult:
         """
         Builds a complete LiquidacionGeneralResult from an ORM LiquidacionGeneral instance.
@@ -1236,10 +1239,8 @@ class LiquidacionGeneralCoreService:
             contacto_result: Optional ContactoResult; None if not provided.
             revisiones_previas: Optional list of LiquidacionPreviaResult; defaults to [].
             delegados: Optional list of LiquidacionDelegadoEnGeneralResult; defaults to [].
-            fecha_registro: Optional ISO string; if None, uses liquidacion_general.created_at.isoformat().
         """
-        if fecha_registro is None:
-            fecha_registro = liquidacion_general.created_at.isoformat()
+        fecha_registro = liquidacion_general.fecha_registro.isoformat()
 
         entidad_result = self._build_entidad_result(liquidacion_general.proyecto)
         proyecto_result = self._build_proyecto_result(liquidacion_general.proyecto, entidad_result)

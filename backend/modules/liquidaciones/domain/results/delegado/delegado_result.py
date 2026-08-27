@@ -163,3 +163,23 @@ class LiquidacionDelegadoBatchResult(BaseModel):
     created: list[LiquidacionDelegadoResult]
     updated: list[LiquidacionDelegadoResult]
     deleted: list[str]
+
+
+class CandidataResult(BaseModel):
+    """Domain DTO for a candidate liquidacion."""
+    id: str
+    expediente: Optional[str] = None
+    numero_revision: int
+    sub_total: Optional[float] = None
+    total: Optional[float] = None
+    municipalidad_nombre: Optional[str] = None
+    proyecto_denominacion: Optional[str] = None
+    tipo_liquidacion: Optional[TipoLiquidacionMinimalResult] = None
+    especialidad_candidata: EspecialidadRevisionResult
+
+
+class DelegadoCandidatasResult(BaseModel):
+    """Domain DTO for GET /delegados-candidatas."""
+    delegado: LiquidacionDelegadoDelegadoMinimal
+    candidatas: list[CandidataResult]
+    total: int

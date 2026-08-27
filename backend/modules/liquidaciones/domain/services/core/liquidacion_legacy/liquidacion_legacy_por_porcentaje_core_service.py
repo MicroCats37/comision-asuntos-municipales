@@ -7,12 +7,13 @@ Handles: TarifaPorcentajeObra, DerechoPorcentajeObra resolved by fecha_registro.
 Used by legacy flows for edificaciones, taludes, and impacto-vial
 (which all use percentage-of-construction-value tariffs).
 """
-from typing import List, Optional
 from datetime import date
 
+from injector import inject
+
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
-    TarifaPorcentajeObra,
     DerechoPorcentajeObra,
+    TarifaPorcentajeObra,
 )
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.tarifas_historicas_core_service import (
     TarifasHistoricasCoreService,
@@ -26,14 +27,15 @@ class LiquidacionLegacyPorPorcentajeCoreService:
     All methods are pure ORM — no business logic, no conditionals.
     """
 
-    def __init__(self) -> None:
-        self._tarifas_service = TarifasHistoricasCoreService()
+    @inject
+    def __init__(self, tarifas_service: TarifasHistoricasCoreService) -> None:
+        self._tarifas_service = tarifas_service
 
     def get_tarifa_por_fecha(
         self,
         tipo_liquidacion: str,
         fecha: date,
-    ) -> List[TarifaPorcentajeObra]:
+    ) -> list[TarifaPorcentajeObra]:
         """
         Get all TarifaPorcentajeObra records vigentes at the given fecha for a tipo_liquidacion.
 
@@ -53,7 +55,7 @@ class LiquidacionLegacyPorPorcentajeCoreService:
     def get_derecho_porcentaje_por_fecha(
         self,
         fecha: date,
-    ) -> Optional[DerechoPorcentajeObra]:
+    ) -> DerechoPorcentajeObra | None:
         """
         Get the DerechoPorcentajeObra vigente at the given fecha.
 
@@ -65,3 +67,10 @@ class LiquidacionLegacyPorPorcentajeCoreService:
         """
         derechos = self._tarifas_service.get_derechos_porcentaje_vigentes(fecha)
         return derechos[0] if derechos else None
+
+    def get_derechos_porcentaje_list(self, fecha: date) -> list[DerechoPorcentajeObra]:
+        """
+        Returns the raw list of DerechoPorcentajeObra vigentes at fecha.
+        Used by legacy orchestrators for overlap validation before [0] selection.
+        """
+        return self._tarifas_service.get_derechos_porcentaje_vigentes(fecha)

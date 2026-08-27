@@ -25,13 +25,12 @@ export const liquidacionGeneralMinimalSchema = z.object({
 export const delegadoMinimalSchema = z.object({
   id: uuid(),
   cip: z.string(),
-  dni: z.string(),
+  dni: z.string().nullish(),
   nombre_completo: z.string(),
 });
 
 export const especialidadMinimalSchema = z.object({
   id: uuid(),
-  codigo: z.string(),
   nombre: z.string(),
 });
 
@@ -102,4 +101,72 @@ export const reciboHonorarioInspectorSchema = z.object({
 
 export type ReciboHonorarioInspector = z.infer<
   typeof reciboHonorarioInspectorSchema
+>;
+
+// ── RH Delegado Mensual — Listado ─────────────────────────────────────────────
+
+export const rhDelegadoMensualDetalleSchema = z.object({
+  expediente: z.string(),
+  imp_bruto: num(),
+});
+
+export const rhDelegadoMensualTotalesSchema = z.object({
+  sub_total: num(),
+  renta_cip: num(),
+  aporte_codemu: num(),
+  fondo_comun: num(),
+  neto_honorario: num(),
+});
+
+/** RHDelegadoMensualListItemOut — matches backend schema exactly */
+export const rhDelegadoMensualListItemSchema = z.object({
+  id: uuid(),
+  periodo: z.string(),
+  fecha_registro: z.string(),
+  delegado: delegadoMinimalSchema,
+  totales: rhDelegadoMensualTotalesSchema,
+  detalles: z.array(rhDelegadoMensualDetalleSchema),
+});
+
+export type ReciboHonorarioDelegadoMensual = z.infer<
+  typeof rhDelegadoMensualListItemSchema
+>;
+
+// ── RH Inspector Mensual — Listado ─────────────────────────────────────────────
+
+export const rhInspectorMensualDetalleSchema = z.object({
+  expediente: z.string(),
+  nombre_propietario: z.string(),
+  importe_bruto: num(),
+  inspecciones_programadas: z.coerce.number().int(),
+  inspecciones_liquidadas: z.coerce.number().int(),
+  inspecciones_pagadas_hasta_mes_anterior: z.coerce.number().int(),
+  costo_por_inspeccion: num(),
+  monto_contribuido: num(),
+  saldo_restante: z.coerce.number().int(),
+});
+
+export const rhInspectorMensualTotalesSchema = z.object({
+  inspecciones_programadas: z.coerce.number().int(),
+  inspecciones_liquidadas: z.coerce.number().int(),
+  inspecciones_pagadas_hasta_mes_anterior: z.coerce.number().int(),
+  saldo_restante: z.coerce.number().int(),
+  sub_total: num(),
+  descuento: num(),
+  honorarios: num(),
+  tasa_descuento_aplicada: num(),
+});
+
+/** RHInspectorMensualListItemOut — matches backend schema exactly */
+export const rhInspectorMensualListItemSchema = z.object({
+  id: uuid(),
+  periodo: z.string(),
+  fecha_registro: z.string(),
+  inspector: inspectorMinimalSchema,
+  totales: rhInspectorMensualTotalesSchema,
+  detalles: z.array(rhInspectorMensualDetalleSchema),
+});
+
+export type ReciboHonorarioInspectorMensual = z.infer<
+  typeof rhInspectorMensualListItemSchema
 >;

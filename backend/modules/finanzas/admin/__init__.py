@@ -6,6 +6,7 @@ from .descuento_inspector_admin import (
     RangoDescuentoInspectorAdmin,
     ReciboHonorarioInspectorAdmin,
 )
+from .tasa_delegado_admin import TasaDelegadoAdmin
 
 __all__ = [
     "IGVAdmin",
@@ -13,4 +14,5 @@ __all__ = [
     "EscalaDescuentoInspectorAdmin",
     "RangoDescuentoInspectorAdmin",
     "ReciboHonorarioInspectorAdmin",
+    "TasaDelegadoAdmin",
 ]

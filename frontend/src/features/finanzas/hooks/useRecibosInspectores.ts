@@ -1,24 +1,25 @@
 /**
  * Hook para listar Recibos de Honorarios de Inspectores con paginación.
  * Endpoint: GET /finanzas/recibos-inspectores
- * Filtros: inspector_id, liquidacion_id
+ * Filtros: inspector_id
+ * Nota: El endpoint ahora retorna ReciboHonorarioInspectorMensual (agrupado por periodo+inspector),
+ * no ReciboHonorarioInspector (individual por LiquidacionInspector).
  */
 
 import { paginatedResponseSchema } from "@/features/liquidaciones/schemas/liquidacion-base.schema";
 import { useApiQuery } from "@/hooks";
 import { apiResponseSchema } from "@/types/api.types";
-import type { ReciboHonorarioInspector } from "../schemas/recibo-honorario.schema";
-import { reciboHonorarioInspectorSchema } from "../schemas/recibo-honorario.schema";
+import type { ReciboHonorarioInspectorMensual } from "../schemas/recibo-honorario.schema";
+import { rhInspectorMensualListItemSchema } from "../schemas/recibo-honorario.schema";
 
 const paginatedSchema = apiResponseSchema(
-  paginatedResponseSchema(reciboHonorarioInspectorSchema),
+  paginatedResponseSchema(rhInspectorMensualListItemSchema),
 );
 
 interface UseRecibosInspectoresProps {
   page?: number;
   pageSize?: number;
   inspectorId?: string;
-  liquidacionId?: string;
   enabled?: boolean;
 }
 
@@ -26,21 +27,19 @@ export function useRecibosInspectores({
   page = 1,
   pageSize = 10,
   inspectorId,
-  liquidacionId,
   enabled = true,
 }: UseRecibosInspectoresProps = {}) {
   const params: Record<string, string | number> = { page, page_size: pageSize };
   if (inspectorId) params.inspector_id = inspectorId;
-  if (liquidacionId) params.liquidacion_id = liquidacionId;
 
   const query = useApiQuery({
     queryKey: [
       "finanzas",
       "recibos-inspectores",
+      "mensual",
       page,
       pageSize,
       inspectorId,
-      liquidacionId,
     ],
     url: "/finanzas/recibos-inspectores",
     schema: paginatedSchema,
@@ -50,7 +49,7 @@ export function useRecibosInspectores({
       select: (data) => {
         if (!data?.data) {
           return {
-            items: [] as ReciboHonorarioInspector[],
+            items: [] as ReciboHonorarioInspectorMensual[],
             total: 0,
             page,
             page_size: pageSize,

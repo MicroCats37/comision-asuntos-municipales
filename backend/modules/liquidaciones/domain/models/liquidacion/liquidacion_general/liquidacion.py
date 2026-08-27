@@ -165,6 +165,23 @@ class LiquidacionGeneral(BaseModel):
         blank=True,
     )
 
+    denominacion_de_proyecto_liquidacion = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+        verbose_name="Denominación de Proyecto de Liquidación",
+    )
+
+    eliminado = models.BooleanField(
+        default=False,
+        verbose_name="Eliminado",
+    )
+
+    descripcion_legacy = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Descripción Legacy",
+    )
 
     class Meta:
         verbose_name = "Liquidación"

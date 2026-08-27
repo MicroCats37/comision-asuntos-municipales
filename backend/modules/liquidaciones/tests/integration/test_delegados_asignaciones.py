@@ -62,7 +62,6 @@ def perfil_ingeniero_asignacion_2(db):
 def especialidad_revision_asignacion(db):
     """Create an EspecialidadRevision for LiquidacionDelegado test."""
     return EspecialidadRevision.objects.create(
-        codigo="T01",
         slug="topografia",
         nombre="Topografía",
     )

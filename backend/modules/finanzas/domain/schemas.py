@@ -43,9 +43,22 @@ from core.types import BaseSchema as _BaseSchema
 
 
 class RHInspectorCotizarItemIn(_BaseSchema):
-    """Item individual para la cotización del RH mensual del inspector."""
-    exp_liqui: str
-    cantidad_visitas: int
+    """
+    Item individual para la cotización del RH mensual del inspector.
+
+    Soporta dos flujos de entrada:
+    1. Flujo manual (exp_liqui + cantidad_visitas): Para backward compatibility.
+    2. Flujo por candidatas (liquidacion_categoria_visitas_id + cantidad_visitas):
+       Permite pasar directamente el ID de la IO seleccionada desde candidates endpoint.
+
+    Se requiere exactamente uno de: exp_liqui O liquidacion_categoria_visitas_id.
+    """
+    exp_liqui: Optional[str] = Field(None, description="Expediente de la liquidación (flujo manual)")
+    liquidacion_categoria_visitas_id: Optional[str] = Field(
+        None,
+        description="ID de la LiquidacionPorCategoriaVisitas (flujo por candidatas)",
+    )
+    cantidad_visitas: int = Field(..., ge=1, description="Cantidad de inspecciones a liquidar")
 
 
 class RHInspectorCotizarIn(_BaseSchema):
@@ -53,3 +66,35 @@ class RHInspectorCotizarIn(_BaseSchema):
     cip: str
     periodo: str  # "YYYY-MM"
     items: list[RHInspectorCotizarItemIn]
+
+
+# ---------------------------------------------------------------------------
+# RH Delegado Mensual — contratos de entrada (BaseSchema)
+# ---------------------------------------------------------------------------
+
+
+class RHDelegadoCotizarItemIn(_BaseSchema):
+    """
+    Item individual para la cotización del RH mensual del delegado.
+
+    usa liquidacion_general_id + especialidad_revision_id (de la candidata)
+    para calcular imp_bruto directamente desde LiquidacionPorcentajeObraDetalle,
+    sin requerir que LiquidacionDelegado exista aún.
+
+    Los campos periodo, dictamen_revision, fecha_presentacion y fecha_revision
+    se usan en crear() para persistir en LiquidacionDelegado.
+    """
+    liquidacion_general_id: str  # UUID string de CandidataOut.id
+    especialidad_revision_id: str  # UUID string de CandidataOut.especialidad_candidata.id
+    numero_rh: Optional[str] = None  # Número de Orden/RH — se usa en LiquidacionDelegado.numero_rh
+    periodo: Optional[str] = None  # YYYY-MM — se usa en LiquidacionDelegado.periodo
+    dictamen_revision: Optional[str] = None  # se usa en LiquidacionDelegado.dictamen_revision
+    fecha_presentacion: Optional[date] = None  # se usa en LiquidacionDelegado.fecha_presentacion
+    fecha_revision: Optional[date] = None  # se usa en LiquidacionDelegado.fecha_revision
+
+
+class RHDelegadoCotizarIn(_BaseSchema):
+    """Payload de entrada para cotizar/crear el RH mensual del delegado."""
+    cip: str
+    periodo: str  # "YYYY-MM"
+    items: list[RHDelegadoCotizarItemIn]

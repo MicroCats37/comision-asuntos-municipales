@@ -170,7 +170,6 @@ class LiquidacionInspeccionObraFlujo:
         general_result = self.general_core.build_general_result(
             liquidacion_general=liquidacion_general,
             usuario_id=usuario_id,
-            fecha_registro=str(liquidacion_general.fecha_registro) if liquidacion_general.fecha_registro else "",
         )
 
         tipo_result = LiquidacionVisitasResult(
@@ -301,6 +300,8 @@ class LiquidacionInspeccionObraFlujo:
             proyecto=proyecto,
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.INSPECCION_OBRA),
             numero_revision=numero_revision,
+            denominacion_de_proyecto_liquidacion=data.liquidacion_general.denominacion_de_proyecto_liquidacion,
+            descripcion_legacy=data.liquidacion_general.descripcion_legacy,
         )
 
         # Set historical fecha_registro (override default=timezone.now from model)

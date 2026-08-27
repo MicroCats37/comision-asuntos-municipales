@@ -14,7 +14,7 @@ from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaj
 class LiquidacionEspecificaResult(BaseModel):
     """Identidad: id + numero (AutoNumeroModel)."""
     id: str
-    numero: int
+    numero: Optional[int] = None
 
 
 class LiquidacionEspecificaPrimeraRevisionResult(BaseModel):

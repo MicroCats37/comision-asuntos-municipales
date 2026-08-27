@@ -140,6 +140,7 @@ class LiquidacionImpactoVialFlujo:
             liquidacion_general=liquidacion_general,
             cotizacion=cotizacion,
             derecho=derecho,
+            tipo_tramite=po_data.tipo_tramite,
         )
 
         # Paso 7: LiquidacionImpactoVial (identity wrapper)
@@ -252,6 +253,8 @@ class LiquidacionImpactoVialFlujo:
             proyecto=proyecto,
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.IMPACTO_VIAL),
             numero_revision=numero_revision,
+            denominacion_de_proyecto_liquidacion=gen_data.denominacion_de_proyecto_liquidacion,
+            descripcion_legacy=gen_data.descripcion_legacy,
         )
 
         # Set historical fecha_registro (override default=timezone.now from model)
@@ -283,6 +286,7 @@ class LiquidacionImpactoVialFlujo:
             liquidacion_general=liquidacion_general,
             cotizacion=cotizacion,
             derecho=derecho,
+            tipo_tramite=po_data.tipo_tramite,
         )
 
         # Paso 7: LiquidacionImpactoVial (identity wrapper)

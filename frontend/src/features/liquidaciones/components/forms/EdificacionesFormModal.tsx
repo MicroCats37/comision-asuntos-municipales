@@ -19,8 +19,9 @@ import {
 import type { ContactoInline } from "../../schemas/liquidacion-form-base.schema";
 import { ContactoFormModal } from "./ContactoFormModal";
 import { CotizacionPorcentajeSmartField } from "./CotizacionPorcentajeSmartField";
+import { EspecialidadesPorTipoTramiteSmartField } from "./EspecialidadesPorTipoTramiteSmartField";
 import { LiquidacionFormBodyBase } from "./LiquidacionFormBodyBase";
-import { PrimeraRevisionTarifasSmartField } from "./PrimeraRevisionTarifasSmartField";
+import { TipoTramiteSmartField } from "./TipoTramiteSmartField";
 
 interface EdificacionesFormModalProps {
   open: boolean;
@@ -99,12 +100,10 @@ export function EdificacionesFormModal({
                 defaultValue={0}
               />
             }
+            proyectoFieldsExtra={<TipoTramiteSmartField methods={methods} />}
             motorSection={
               <div className="space-y-3">
-                <PrimeraRevisionTarifasSmartField
-                  methods={methods}
-                  tipo="edificaciones"
-                />
+                <EspecialidadesPorTipoTramiteSmartField methods={methods} />
                 <CotizacionPorcentajeSmartField methods={methods} />
               </div>
             }

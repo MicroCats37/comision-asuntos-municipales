@@ -116,7 +116,7 @@ class LiquidacionGeneralResult(BaseModel):
     municipalidad: MunicipalidadResult
     usuario_creador: UsuarioCreadorResult
     fecha_registro: str  # NEW
-    expediente: str
+    expediente: Optional[str] = None
     observacion: Optional[str] = None
     numero_revision: int
     sub_total: float

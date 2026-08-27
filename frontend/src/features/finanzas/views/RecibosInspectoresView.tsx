@@ -3,6 +3,9 @@
  * Ruta: /liquidaciones/recibos-inspectores
  *
  * Usa PageHeader + cards pattern + paginación.
+ *
+ * Nota: El endpoint GET /finanzas/recibos-inspectores ahora retorna
+ * RecibosHonorariosInspectorMensuales (agrupados por periodo+inspector).
  */
 "use client";
 
@@ -12,7 +15,7 @@ import { useState } from "react";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
-import { ReciboInspectorCard } from "@/features/finanzas/components/cards/ReciboInspectorCard";
+import { ReciboHonorarioInspectorMensualCard } from "@/features/finanzas/components/cards/ReciboHonorarioInspectorMensualCard";
 import { CrearReciboInspectorModal } from "@/features/finanzas/components/modals/CrearReciboInspectorModal";
 import { RhInspectorMensualModal } from "@/features/finanzas/components/modals/RhInspectorMensualModal";
 import { useRecibosInspectores } from "@/features/finanzas/hooks/useRecibosInspectores";
@@ -36,7 +39,7 @@ export function RecibosInspectoresView() {
       <div className="space-y-6">
         <PageHeader
           title="Recibos de Honorario - Inspectores"
-          description="Listado de recibos de honorarios de inspectores"
+          description="Listado de recibos de honorarios mensuales de inspectores"
           icon={KIND_ICON}
           actionNodes={
             <>
@@ -100,7 +103,7 @@ export function RecibosInspectoresView() {
             <>
               <div className="flex flex-col gap-4">
                 {items.map((item) => (
-                  <ReciboInspectorCard key={item.id} item={item} />
+                  <ReciboHonorarioInspectorMensualCard key={item.id} item={item} />
                 ))}
               </div>
               {/* Pagination */}
