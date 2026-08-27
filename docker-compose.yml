@@ -64,8 +64,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: frontend
+      dockerfile: Dockerfile
     container_name: cam_frontend
     env_file:
       - frontend/.env.local
