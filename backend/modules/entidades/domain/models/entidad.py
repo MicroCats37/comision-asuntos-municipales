@@ -47,7 +47,7 @@ class Entidad(BaseModel):
     history = HistoricalRecords()
 
     tipo_documento = models.CharField(
-        max_length=3,
+        max_length=20,
         choices=TIPO_DOCUMENTO_CHOICES,
         verbose_name="Tipo de Documento",
         help_text="RUC para instituciones, DNI para personas naturales.",
