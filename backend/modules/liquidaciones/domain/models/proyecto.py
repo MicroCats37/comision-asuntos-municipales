@@ -45,7 +45,7 @@ class Proyecto(BaseModel):
         help_text="Copia de entidad.razon_social al momento de crear el proyecto.",
     )
     entidad_tipo_documento = models.CharField(
-        max_length=3,
+        max_length=20,
         blank=True,
         null=True,
         verbose_name="Tipo de Documento de Entidad (snapshot)",
@@ -64,7 +64,10 @@ class Proyecto(BaseModel):
     )
     
     denominacion = models.CharField(
-        max_length=255, verbose_name="Denominación del Proyecto"
+        max_length=255,
+        verbose_name="Denominación del Proyecto",
+        null=True,
+        blank=True,
     )
     
     distrito = models.ForeignKey(
@@ -104,7 +107,7 @@ class Proyecto(BaseModel):
             raise ValidationError("La entidad debe tener tipo de documento RUC o DNI.")
 
     def __str__(self):
-        return self.denominacion
+        return self.denominacion or "Sin denominación"
 
 class ProyectoEmpresarialManager(models.Manager):
     def get_queryset(self):
@@ -150,4 +153,3 @@ class ProyectoPersonaNatural(Proyecto):
         proxy = True
         verbose_name = "Proyecto Persona Natural"
         verbose_name_plural = "Proyectos Persona Natural"
-
