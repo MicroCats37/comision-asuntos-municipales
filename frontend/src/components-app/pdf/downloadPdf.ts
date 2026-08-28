@@ -5,7 +5,10 @@
  */
 import { createPdfFrame, waitForImages } from "./pdfShell";
 
-export async function downloadHtmlAsPdf(element: HTMLElement, fileName: string) {
+export async function downloadHtmlAsPdf(
+  element: HTMLElement,
+  fileName: string,
+) {
   const [html2canvasMod, jsPDFMod] = await Promise.all([
     import("html2canvas"),
     import("jspdf"),
@@ -39,7 +42,10 @@ export async function downloadHtmlAsPdf(element: HTMLElement, fileName: string) 
     heightLeft -= pdf.internal.pageSize.getHeight();
 
     while (heightLeft > 0) {
-      position = -(pdf.internal.pageSize.getHeight() * (pdf.internal.pages.length - 1));
+      position = -(
+        pdf.internal.pageSize.getHeight() *
+        (pdf.internal.pages.length - 1)
+      );
       pdf.addPage();
       pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight);
       heightLeft -= pdf.internal.pageSize.getHeight();

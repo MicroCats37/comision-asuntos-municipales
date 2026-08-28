@@ -1,15 +1,17 @@
 // FormattedNumberInput.tsx
 "use client";
 
+import type { LucideIcon } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
-import type { LucideIcon } from "lucide-react";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import { useController } from "react-hook-form";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
-interface FormattedNumberInputProps<TFieldValues extends FieldValues = FieldValues> {
+interface FormattedNumberInputProps<
+  TFieldValues extends FieldValues = FieldValues,
+> {
   /** Field name */
   name: FieldPath<TFieldValues>;
   /** Display label */
@@ -56,7 +58,9 @@ interface FormattedNumberInputProps<TFieldValues extends FieldValues = FieldValu
  * - Configurable decimal places (0 = integer mode)
  * - Empty input → sends 0 to RHF (safe numeric contract)
  */
-export function FormattedNumberInput<TFieldValues extends FieldValues = FieldValues>({
+export function FormattedNumberInput<
+  TFieldValues extends FieldValues = FieldValues,
+>({
   name,
   label,
   icon: Icon,
@@ -102,7 +106,10 @@ export function FormattedNumberInput<TFieldValues extends FieldValues = FieldVal
       if (isNaN(num) || !isFinite(num)) return "0";
 
       // Defensive: ensure decimalPlaces is a safe number (aligns with MoneyInput pattern)
-      const dp = typeof decimalPlaces === "number" && decimalPlaces >= 0 ? decimalPlaces : 0;
+      const dp =
+        typeof decimalPlaces === "number" && decimalPlaces >= 0
+          ? decimalPlaces
+          : 0;
 
       if (dp === 0) {
         // Integer mode: space thousand separators only
@@ -125,7 +132,10 @@ export function FormattedNumberInput<TFieldValues extends FieldValues = FieldVal
       // Defensive: normalize falsy inputs (aligns with MoneyInput pattern)
       if (!raw) return 0;
       // Strip spaces and any non-numeric chars except dot and minus
-      const stripped = raw.replace(/\s/g, "").replace(/,/g, ".").replace(/[^\d.-]/g, "");
+      const stripped = raw
+        .replace(/\s/g, "")
+        .replace(/,/g, ".")
+        .replace(/[^\d.-]/g, "");
       if (stripped === "" || stripped === "-") return 0;
       const parsed = parseFloat(stripped);
       if (isNaN(parsed) || !isFinite(parsed)) return 0;
@@ -134,7 +144,10 @@ export function FormattedNumberInput<TFieldValues extends FieldValues = FieldVal
         return Math.max(Number(min) || 0, Math.round(parsed));
       }
       // Decimal mode: clamp to decimalPlaces
-      return Math.max(Number(min) || 0, Math.round(parsed * 10 ** decimalPlaces) / 10 ** decimalPlaces);
+      return Math.max(
+        Number(min) || 0,
+        Math.round(parsed * 10 ** decimalPlaces) / 10 ** decimalPlaces,
+      );
     },
     [decimalPlaces, min],
   );
@@ -162,7 +175,10 @@ export function FormattedNumberInput<TFieldValues extends FieldValues = FieldVal
       const distFromEnd = raw.length - prevCursor;
 
       // Strip to digits, dot, minus — no thousand separators, no currency
-      const stripped = raw.replace(/\s/g, "").replace(/,/g, ".").replace(/[^\d.-]/g, "");
+      const stripped = raw
+        .replace(/\s/g, "")
+        .replace(/,/g, ".")
+        .replace(/[^\d.-]/g, "");
 
       // Empty → keep numeric contract stable
       if (stripped === "") {
@@ -178,9 +194,13 @@ export function FormattedNumberInput<TFieldValues extends FieldValues = FieldVal
       }
 
       // Clamp to min and decimal places
-      const clamped = decimalPlaces === 0
-        ? Math.max(Number(min) || 0, Math.round(parsed))
-        : Math.max(Number(min) || 0, Math.round(parsed * 10 ** decimalPlaces) / 10 ** decimalPlaces);
+      const clamped =
+        decimalPlaces === 0
+          ? Math.max(Number(min) || 0, Math.round(parsed))
+          : Math.max(
+              Number(min) || 0,
+              Math.round(parsed * 10 ** decimalPlaces) / 10 ** decimalPlaces,
+            );
 
       // Update display with formatting
       const formatted = formatDisplay(clamped);

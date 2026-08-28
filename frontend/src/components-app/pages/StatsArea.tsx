@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { ShieldCheck, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface StatsAreaProps {
   familiaresCount: number;
@@ -75,11 +75,16 @@ function StatCard({
   );
 }
 
-export function StatsArea({ familiaresCount, conocidosCount, cupos }: StatsAreaProps) {
+export function StatsArea({
+  familiaresCount,
+  conocidosCount,
+  cupos,
+}: StatsAreaProps) {
   const cuposUsados = cupos?.activos ?? 0;
   const cuposTotales = cupos?.permitidos ?? 0;
   const cuposDisponibles = Math.max(0, cuposTotales - cuposUsados);
-  const cuposPorcentaje = cuposTotales > 0 ? (cuposUsados / cuposTotales) * 100 : 0;
+  const cuposPorcentaje =
+    cuposTotales > 0 ? (cuposUsados / cuposTotales) * 100 : 0;
   const beneficiariosActivos = cupos?.activos ?? 0;
 
   return (
@@ -91,7 +96,9 @@ export function StatsArea({ familiaresCount, conocidosCount, cupos }: StatsAreaP
         iconBg="bg-emerald-500"
         iconColor="text-white"
         icon={<ShieldCheck className="h-6 w-6" />}
-        decorativeIcon={<ShieldCheck className="h-20 w-20 text-secondary-foreground" />}
+        decorativeIcon={
+          <ShieldCheck className="h-20 w-20 text-secondary-foreground" />
+        }
       >
         <div>
           <h3 className="text-lg font-black text-foreground mb-1 tracking-tight">
@@ -126,7 +133,8 @@ export function StatsArea({ familiaresCount, conocidosCount, cupos }: StatsAreaP
           <h2 className="text-4xl font-black tracking-tighter text-white">
             {beneficiariosActivos}
             <span className="text-lg font-normal text-white/60">
-              {" "}de {cuposTotales}
+              {" "}
+              de {cuposTotales}
             </span>
           </h2>
           <p className="text-white/50 font-medium text-[10px] uppercase tracking-wider mt-1">

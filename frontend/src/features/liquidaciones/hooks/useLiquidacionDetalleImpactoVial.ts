@@ -5,8 +5,8 @@
  */
 import { useApiQuery } from "@/hooks";
 import {
-  liquidacionImpactoVialDetailResponseSchema,
   type LiquidacionDetalleItem,
+  liquidacionImpactoVialDetailResponseSchema,
 } from "../schemas/liquidacion-detail.schemas";
 
 interface UseLiquidacionDetalleImpactoVialProps {

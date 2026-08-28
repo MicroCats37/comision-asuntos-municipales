@@ -31,13 +31,7 @@ export function useRecibosDelegados({
   if (delegadoId) params.delegado_id = delegadoId;
 
   const query = useApiQuery({
-    queryKey: [
-      "finanzas",
-      "recibos-delegados",
-      page,
-      pageSize,
-      delegadoId,
-    ],
+    queryKey: ["finanzas", "recibos-delegados", page, pageSize, delegadoId],
     url: "/finanzas/recibos-delegados",
     schema: paginatedSchema,
     params,

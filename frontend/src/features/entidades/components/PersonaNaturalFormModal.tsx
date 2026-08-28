@@ -158,7 +158,9 @@ export function PersonaNaturalFormModal({
                     size="icon"
                     className="h-10 w-10 rounded-lg"
                     onClick={handleDocumentoLookup}
-                    disabled={documentoLookup.isPending || dniValue.length !== 8}
+                    disabled={
+                      documentoLookup.isPending || dniValue.length !== 8
+                    }
                     title="Buscar en RENIEC"
                     aria-label="Buscar en RENIEC"
                   >

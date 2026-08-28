@@ -3,8 +3,11 @@
  * Estructura idéntica a Mecanica Suelos, con nombre propio.
  */
 import { z } from "zod";
-import { generalFormSchema, proyectoFormSchema } from "./liquidacion-form-base.schema";
-import { contactoInlineSchema } from "./liquidacion-form-base.schema";
+import {
+  contactoInlineSchema,
+  generalFormSchema,
+  proyectoFormSchema,
+} from "./liquidacion-form-base.schema";
 
 export const habilitacionUrbanaFormSchema = z.object({
   ...proyectoFormSchema.shape,
@@ -17,4 +20,6 @@ export const habilitacionUrbanaFormSchema = z.object({
   contacto: contactoInlineSchema.optional(),
 });
 
-export type HabilitacionUrbanaFormData = z.infer<typeof habilitacionUrbanaFormSchema>;
+export type HabilitacionUrbanaFormData = z.infer<
+  typeof habilitacionUrbanaFormSchema
+>;

@@ -110,7 +110,9 @@ export function ModalShell({
               )}
             </div>
             {/* Spacer to mirror icon width */}
-            {icon && <div className="w-9 sm:w-11 shrink-0" aria-hidden="true" />}
+            {icon && (
+              <div className="w-9 sm:w-11 shrink-0" aria-hidden="true" />
+            )}
           </div>
         </GenericModal.Header>
 
@@ -128,7 +130,7 @@ export function ModalShell({
               onClick={onSecondary ?? (() => onOpenChange(false))}
               disabled={primaryLoading}
               className="flex-1 h-10 sm:h-11 rounded-xl font-semibold border border-border/60 hover:border-border hover:bg-background transition-all duration-200 sm:max-w-[120px] text-muted-foreground hover:text-foreground"
-  aria-label={secondaryLabel}
+              aria-label={secondaryLabel}
             >
               <X className="h-4 w-4 sm:hidden" />
               <span className="hidden sm:inline">{secondaryLabel}</span>
@@ -141,7 +143,9 @@ export function ModalShell({
               aria-label={primaryLabel}
             >
               {primaryLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {!primaryLoading && <CheckCircle2 className="h-4 w-4 sm:hidden" />}
+              {!primaryLoading && (
+                <CheckCircle2 className="h-4 w-4 sm:hidden" />
+              )}
               <span className="hidden sm:inline">
                 {primaryLoading
                   ? (primaryLoadingLabel ?? "Guardando...")

@@ -7,14 +7,14 @@
  * Orden: header → title → detalle (común + motor) → total a pagar → footer
  */
 import { applyStyles } from "@/components-app/pdf/pdfShell";
-import { pdfTheme } from "./pdfTheme";
 import {
+  renderDetalle,
+  renderFooter,
   renderHeader,
   renderTitle,
-  renderDetalle,
   renderTotalPagar,
-  renderFooter,
 } from "./pdfSections";
+import { pdfTheme } from "./pdfTheme";
 
 /** Forma mínima que necesita el recibo — datos del output del backend */
 export interface PdfLiquidacionItem {
@@ -86,7 +86,8 @@ export function getMotorByTipo(tipo: string): PdfMotor {
 
 export function getPdfTitleByTipo(tipo: string): string {
   const TITLES: Record<string, string> = {
-    edificacion: "LIQUIDACION DE DERECHOS POR CALIFICACION DE PROYECTOS DE INGENIERIA",
+    edificacion:
+      "LIQUIDACION DE DERECHOS POR CALIFICACION DE PROYECTOS DE INGENIERIA",
     "impacto-vial": "LIQUIDACION DE DERECHOS POR IMPACTO VIAL",
     taludes: "LIQUIDACION DE DERECHOS POR TALUDES",
     "habilitacion-urbana": "LIQUIDACION DE DERECHOS POR HABILITACION URBANA",

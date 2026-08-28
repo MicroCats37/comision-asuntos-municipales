@@ -6,6 +6,7 @@ Follows the 3 controller patterns from PLAN_REFACTORIZACION.md.
 """
 import uuid
 from typing import Optional
+from ninja import Query
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
@@ -122,12 +123,28 @@ class DelegadoController:
         response={200: ApiResponse[DelegadoCandidatasOut]},
         auth=None,
     )
-    def list_candidatas(self, cip: str):
+    def list_candidatas(
+        self,
+        cip: str,
+        fecha_inicio: str | None = Query(default=None, description="Filter by fecha_registro >= date (YYYY-MM-DD)"),
+        fecha_fin: str | None = Query(default=None, description="Filter by fecha_registro <= date (YYYY-MM-DD)"),
+    ):
         """
-        GET /delegados/candidatas?cip= - Get candidate liquidaciones for a delegado
-        (for RH Mensual).
+        GET /delegados/candidatas?cip=...&fecha_inicio=...&fecha_fin=... - Get candidate
+        liquidaciones for a delegado (for RH Mensual).
+
         Returns liquidaciones in their TITULAR municipalidades that do NOT yet have
         a LiquidacionDelegado assignment for their specialty.
+
+        Filtros de fecha (opcionales):
+        - fecha_inicio: fecha de registro >= fecha_inicio (inclusive)
+        - fecha_fin: fecha de registro <= fecha_fin (inclusive)
+        - Si fecha_inicio > fecha_fin: retorna 422 con error.
         """
-        domain_result = self.orchestrator.list_candidatas_delegado_proceso(cip)
+        if fecha_inicio and fecha_fin and fecha_inicio > fecha_fin:
+            from ninja.errors import HttpError
+            raise HttpError(422, "fecha_inicio no puede ser mayor que fecha_fin")
+        domain_result = self.orchestrator.list_candidatas_delegado_proceso(
+            cip, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin
+        )
         return success_response(self.presenter.present_candidatas(domain_result))

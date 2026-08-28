@@ -44,7 +44,6 @@ export const useHabilitacionUrbanaUIStore = create<HabilitacionUrbanaUIStore>()(
     openFormModal: (id) =>
       set({ isFormModalOpen: true, selectedItemId: id ?? null }),
 
-    closeFormModal: () =>
-      set({ isFormModalOpen: false, selectedItemId: null }),
+    closeFormModal: () => set({ isFormModalOpen: false, selectedItemId: null }),
   }),
 );

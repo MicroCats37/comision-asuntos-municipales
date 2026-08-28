@@ -3,6 +3,7 @@ Delegado — Ingeniero delegado que puede crear y revisar liquidaciones.
 """
 
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
@@ -192,8 +193,14 @@ class LiquidacionDelegado(BaseModel):
         verbose_name="Delegado",
     )
     
-    periodo = models.CharField(
-        max_length=100, blank=True, null=True, verbose_name="Periodo"
+    periodo = models.PositiveSmallIntegerField(
+        blank=True, null=True, verbose_name="Periodo (Año)",
+        validators=[MinValueValidator(1900), MaxValueValidator(2100)],
+    )
+    
+    mes = models.PositiveSmallIntegerField(
+        blank=True, null=True, verbose_name="Mes (1-12)",
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
     )
     
     dictamen_revision = models.CharField(
@@ -227,6 +234,10 @@ class LiquidacionDelegado(BaseModel):
             models.UniqueConstraint(
                 fields=["liquidacion", "delegado", "especialidad_revision"],
                 name="unique_liquidacion_delegado_especialidad",
+            ),
+            models.CheckConstraint(
+                check=models.Q(mes__isnull=True) | models.Q(mes__gte=1, mes__lte=12),
+                name="liquidacion_delegado_mes_valid",
             ),
         ]
 

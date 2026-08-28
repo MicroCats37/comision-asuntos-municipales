@@ -138,7 +138,8 @@ class LiquidacionInspectorAsignacionOut(BaseSchema):
     especialidad_revision: Optional[EspecialidadRevisionInspectorOut] = None
     liquidacion: Optional[LiquidacionInspectorLiquidacionOut] = None
     inspector: Optional[InspectorAsignacionInspectorOut] = None
-    periodo: Optional[str] = None
+    periodo: Optional[int] = None
+    mes: Optional[int] = None
     dictamen_revision: Optional[str] = None
     fecha_presentacion: Optional[str] = None
     fecha_revision: Optional[str] = None

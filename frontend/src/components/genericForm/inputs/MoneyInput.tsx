@@ -1,13 +1,13 @@
 // MoneyInput.tsx
 "use client";
 
+import type { LucideIcon } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
-import type { LucideIcon } from "lucide-react";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import { useController } from "react-hook-form";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface MoneyInputProps<TFieldValues extends FieldValues = FieldValues> {
   /** Field name */
@@ -92,22 +92,25 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
   const isInternalUpdate = useRef(false);
 
   // ── Format a number with S/ prefix and space-separated thousands ───────────
-  const formatDisplay = useCallback((val: number | "" | null | undefined): string => {
-    if (val === "" || val === null || val === undefined) return "S/ 0";
-    const num = Number(val);
-    if (isNaN(num) || !isFinite(num)) return "S/ 0";
+  const formatDisplay = useCallback(
+    (val: number | "" | null | undefined): string => {
+      if (val === "" || val === null || val === undefined) return "S/ 0";
+      const num = Number(val);
+      if (isNaN(num) || !isFinite(num)) return "S/ 0";
 
-    const fixed = num.toFixed(2);
-    const [intPart, decPart] = fixed.split(".");
+      const fixed = num.toFixed(2);
+      const [intPart, decPart] = fixed.split(".");
 
-    // Space as thousand separator (e.g. 1 000 000)
-    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      // Space as thousand separator (e.g. 1 000 000)
+      const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-    // Only show decimal part when non-zero
-    if (decPart === "00") return `S/ ${formattedInt}`;
-    if (decPart[1] === "0") return `S/ ${formattedInt}.${decPart[0]}`;
-    return `S/ ${formattedInt}.${decPart}`;
-  }, []);
+      // Only show decimal part when non-zero
+      if (decPart === "00") return `S/ ${formattedInt}`;
+      if (decPart[1] === "0") return `S/ ${formattedInt}.${decPart[0]}`;
+      return `S/ ${formattedInt}.${decPart}`;
+    },
+    [],
+  );
 
   // ── Sync displayValue from RHF field value (external changes: reset, defaultValues) ──
   useEffect(() => {
@@ -136,8 +139,8 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
       const stripped = raw
         .replace(/S\/\s*/g, "")
         .replace(/\s/g, "")
-        .replace(/,/g, ".")           // allow comma as decimal
-        .replace(/[^\d.]/g, "");      // keep only digits and dot (no minus)
+        .replace(/,/g, ".") // allow comma as decimal
+        .replace(/[^\d.]/g, ""); // keep only digits and dot (no minus)
 
       // Empty → keep the numeric contract stable for schemas and cotización.
       if (stripped === "") {
@@ -152,7 +155,9 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
         const intPart = stripped.slice(0, -1) || "0";
         const parsedInt = parseFloat(intPart);
         if (isNaN(parsedInt)) return;
-        const formattedInt = Math.round(parsedInt).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        const formattedInt = Math.round(parsedInt)
+          .toString()
+          .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
         isInternalUpdate.current = true;
         setDisplayValue(`S/ ${formattedInt}.`);
         return;
@@ -164,7 +169,10 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
       }
 
       // Clamp to 2 decimal places
-      const clamped = Math.max(Number(min) || 0, Math.round(parsed * 100) / 100);
+      const clamped = Math.max(
+        Number(min) || 0,
+        Math.round(parsed * 100) / 100,
+      );
 
       // Update display with formatting
       const formatted = formatDisplay(clamped);
@@ -200,7 +208,10 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
       } else {
         const parsed = parseFloat(stripped);
         if (!isNaN(parsed)) {
-          const clamped = Math.max(Number(min) || 0, Math.round(parsed * 100) / 100);
+          const clamped = Math.max(
+            Number(min) || 0,
+            Math.round(parsed * 100) / 100,
+          );
           isInternalUpdate.current = true;
           setDisplayValue(formatDisplay(clamped));
           // Also update field on blur with the clamped value

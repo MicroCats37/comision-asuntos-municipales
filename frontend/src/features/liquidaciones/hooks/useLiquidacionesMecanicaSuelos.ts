@@ -1,10 +1,13 @@
-import { useLiquidacionList, type LiquidacionFiltros } from './useLiquidacionList';
-import { liquidacionMecanicaSuelosListItemSchema } from '../schemas';
+import { liquidacionMecanicaSuelosListItemSchema } from "../schemas";
+import {
+  type LiquidacionFiltros,
+  useLiquidacionList,
+} from "./useLiquidacionList";
 
 export function useLiquidacionesMecanicaSuelos(filtros?: LiquidacionFiltros) {
   return useLiquidacionList({
-    queryKey: ['liquidaciones', 'mecanica-suelos'],
-    url: '/liquidaciones/mecanica-suelos',
+    queryKey: ["liquidaciones", "mecanica-suelos"],
+    url: "/liquidaciones/mecanica-suelos",
     schema: liquidacionMecanicaSuelosListItemSchema,
     filtros,
   });

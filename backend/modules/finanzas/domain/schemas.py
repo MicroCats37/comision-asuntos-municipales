@@ -59,6 +59,8 @@ class RHInspectorCotizarItemIn(_BaseSchema):
         description="ID de la LiquidacionPorCategoriaVisitas (flujo por candidatas)",
     )
     cantidad_visitas: int = Field(..., ge=1, description="Cantidad de inspecciones a liquidar")
+    periodo: Optional[int] = Field(None, description="Año de la LiquidacionInspector")
+    mes: Optional[int] = Field(None, ge=1, le=12, description="Mes de la LiquidacionInspector")
 
 
 class RHInspectorCotizarIn(_BaseSchema):
@@ -81,13 +83,14 @@ class RHDelegadoCotizarItemIn(_BaseSchema):
     para calcular imp_bruto directamente desde LiquidacionPorcentajeObraDetalle,
     sin requerir que LiquidacionDelegado exista aún.
 
-    Los campos periodo, dictamen_revision, fecha_presentacion y fecha_revision
+    Los campos periodo, mes, dictamen_revision, fecha_presentacion y fecha_revision
     se usan en crear() para persistir en LiquidacionDelegado.
     """
     liquidacion_general_id: str  # UUID string de CandidataOut.id
     especialidad_revision_id: str  # UUID string de CandidataOut.especialidad_candidata.id
     numero_rh: Optional[str] = None  # Número de Orden/RH — se usa en LiquidacionDelegado.numero_rh
-    periodo: Optional[str] = None  # YYYY-MM — se usa en LiquidacionDelegado.periodo
+    periodo: Optional[int] = None  # Año — se usa en LiquidacionDelegado.periodo
+    mes: Optional[int] = None  # Mes (1-12) — se usa en LiquidacionDelegado.mes
     dictamen_revision: Optional[str] = None  # se usa en LiquidacionDelegado.dictamen_revision
     fecha_presentacion: Optional[date] = None  # se usa en LiquidacionDelegado.fecha_presentacion
     fecha_revision: Optional[date] = None  # se usa en LiquidacionDelegado.fecha_revision

@@ -8,11 +8,7 @@
  * Feature adapters live under features/*[/]adapters/.
  */
 
-import type {
-  BatchAdapter,
-  BatchDiffResult,
-  BatchPayload,
-} from "./types";
+import type { BatchAdapter, BatchDiffResult, BatchPayload } from "./types";
 
 /**
  * Computes the batch diff between original and edited collections
@@ -130,7 +126,12 @@ export function buildMap<T, K extends string | number>(
  * Converts a BatchDiffResult to a BatchPayload, filtering out empty arrays.
  * Returns null if all arrays are empty.
  */
-export function toBatchPayload<TCreate, TUpdate, TDelete, TId extends string | number>(
+export function toBatchPayload<
+  TCreate,
+  TUpdate,
+  TDelete,
+  TId extends string | number,
+>(
   diff: BatchDiffResult<TCreate, TUpdate, TDelete, TId>,
 ): BatchPayload<TCreate, TUpdate, TDelete, TId> | null {
   const hasCreate = diff.create.length > 0;
@@ -170,4 +171,9 @@ export function computeBatchPayload<
 
 // ── Legacy compat exports ──────────────────────────────────────────────────────
 
-export type { BatchAdapter, BatchDiffResult, BatchPayload, BatchUpdateItem } from "./types";
+export type {
+  BatchAdapter,
+  BatchDiffResult,
+  BatchPayload,
+  BatchUpdateItem,
+} from "./types";

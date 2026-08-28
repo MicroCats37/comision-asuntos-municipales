@@ -16,7 +16,7 @@
  * See `imageField.ts` for the metadata convention.
  */
 
-import { z } from "zod";
+import type { z } from "zod";
 import { isFileKindSchema } from "./imageField";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,8 +43,16 @@ function walkSchemaShape(
       const resolved = shape();
       if (resolved && typeof resolved === "object") {
         for (const [key, fieldSchema] of Object.entries(resolved)) {
-          entries.push([prefix ? `${prefix}.${key}` : key, fieldSchema as ZodTypeAny]);
-          entries.push(...walkSchemaShape(fieldSchema as ZodTypeAny, prefix ? `${prefix}.${key}` : key));
+          entries.push([
+            prefix ? `${prefix}.${key}` : key,
+            fieldSchema as ZodTypeAny,
+          ]);
+          entries.push(
+            ...walkSchemaShape(
+              fieldSchema as ZodTypeAny,
+              prefix ? `${prefix}.${key}` : key,
+            ),
+          );
         }
       }
     } catch {
@@ -55,8 +63,16 @@ function walkSchemaShape(
 
   if (shape && typeof shape === "object") {
     for (const [key, fieldSchema] of Object.entries(shape)) {
-      entries.push([prefix ? `${prefix}.${key}` : key, fieldSchema as ZodTypeAny]);
-      entries.push(...walkSchemaShape(fieldSchema as ZodTypeAny, prefix ? `${prefix}.${key}` : key));
+      entries.push([
+        prefix ? `${prefix}.${key}` : key,
+        fieldSchema as ZodTypeAny,
+      ]);
+      entries.push(
+        ...walkSchemaShape(
+          fieldSchema as ZodTypeAny,
+          prefix ? `${prefix}.${key}` : key,
+        ),
+      );
     }
     return entries;
   }

@@ -12,8 +12,8 @@ import {
   LiquidacionGeneralOutputSchema,
   LiquidacionTipoOutputSchema,
 } from "./liquidacion-base.schema";
-import { PorcentajeObraDatosOutSchema } from "./liquidacion-porcentaje.schema";
 import { M2DatosOutSchema } from "./liquidacion-m2.schema";
+import { PorcentajeObraDatosOutSchema } from "./liquidacion-porcentaje.schema";
 import { VisitasDatosOutSchema } from "./liquidacion-visitas.schema";
 
 /** Detalle común — 3 wrappers con el motor del dominio. */
@@ -26,7 +26,9 @@ export const LiquidacionDetalleItemSchema = z.object({
     VisitasDatosOutSchema,
   ]),
 });
-export type LiquidacionDetalleItem = z.infer<typeof LiquidacionDetalleItemSchema>;
+export type LiquidacionDetalleItem = z.infer<
+  typeof LiquidacionDetalleItemSchema
+>;
 
 // ── Wrappers por tipo ─────────────────────────────────────────────────────────
 

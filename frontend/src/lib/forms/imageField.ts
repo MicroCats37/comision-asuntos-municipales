@@ -31,7 +31,10 @@ export interface ImageFieldResult {
 export function isFileKindSchema(schema: unknown): boolean {
   if (typeof schema !== "object" || schema === null) return false;
   const s = schema as Record<string | symbol, unknown>;
-  return FILE_KIND_KEY in s && (s[FILE_KIND_KEY] as { kind: string } | undefined)?.kind === "file";
+  return (
+    FILE_KIND_KEY in s &&
+    (s[FILE_KIND_KEY] as { kind: string } | undefined)?.kind === "file"
+  );
 }
 
 // ── Helper ───────────────────────────────────────────────────────────────────

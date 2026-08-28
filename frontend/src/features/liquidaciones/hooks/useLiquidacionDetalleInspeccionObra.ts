@@ -5,8 +5,8 @@
  */
 import { useApiQuery } from "@/hooks";
 import {
-  liquidacionInspeccionObraDetailResponseSchema,
   type LiquidacionDetalleItem,
+  liquidacionInspeccionObraDetailResponseSchema,
 } from "../schemas/liquidacion-detail.schemas";
 
 interface UseLiquidacionDetalleInspeccionObraProps {

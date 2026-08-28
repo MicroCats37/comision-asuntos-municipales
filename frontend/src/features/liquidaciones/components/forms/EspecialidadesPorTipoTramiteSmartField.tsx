@@ -94,7 +94,9 @@ export function EspecialidadesPorTipoTramiteSmartField({
 
   const idsSeleccionados = especialidadesSeleccionadas ?? [];
   // Group A: todas (rígido). Group B: las checkboxes marcadas; 0 → nada.
-  const countAplicado = grupoA ? especialidades.length : idsSeleccionados.length;
+  const countAplicado = grupoA
+    ? especialidades.length
+    : idsSeleccionados.length;
   const totalAplicado =
     countAplicado > 0
       ? (tarifaUnica?.porcentaje_liquidacion ?? 0) * countAplicado
@@ -192,8 +194,7 @@ export function EspecialidadesPorTipoTramiteSmartField({
         // ── Group B: checkboxes multi-selection (1, 2 o 3 especialidades) ──
         <fieldset className="space-y-2">
           <legend className="text-sm font-medium text-foreground">
-            Especialidades a aplicar{" "}
-            <span className="text-destructive">*</span>
+            Especialidades a aplicar <span className="text-destructive">*</span>
           </legend>
           <div className="flex flex-row flex-wrap gap-2">
             {especialidades.map((esp) => {
@@ -243,10 +244,8 @@ export function EspecialidadesPorTipoTramiteSmartField({
             })}
           </div>
         </fieldset>
-      ) : (
-        // Fallback: sin grupo definido — sin selector
-        null
-      )}
+      ) : // Fallback: sin grupo definido — sin selector
+      null}
     </div>
   );
 }

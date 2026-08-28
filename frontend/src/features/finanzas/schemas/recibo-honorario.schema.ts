@@ -108,6 +108,8 @@ export type ReciboHonorarioInspector = z.infer<
 export const rhDelegadoMensualDetalleSchema = z.object({
   expediente: z.string(),
   imp_bruto: num(),
+  periodo: z.number().int().nullish(),
+  mes: z.number().int().nullish(),
 });
 
 export const rhDelegadoMensualTotalesSchema = z.object({

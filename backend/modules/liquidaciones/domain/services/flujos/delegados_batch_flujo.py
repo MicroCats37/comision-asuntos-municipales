@@ -72,6 +72,8 @@ class DelegadosBatchFlujo:
             campos = {}
             if body.periodo is not None:
                 campos["periodo"] = body.periodo
+            if body.mes is not None:
+                campos["mes"] = body.mes
             if body.dictamen_revision is not None:
                 campos["dictamen_revision"] = body.dictamen_revision
             if body.fecha_presentacion is not None:

@@ -150,23 +150,23 @@ const ModalContent = ({
     <DialogContent
       overlayClassName="bg-black/50 backdrop-brightness-50"
       className={cn(
-  // 1. Estructura interna básica
-  "grid grid-rows-[auto_1fr_auto] p-0 overflow-hidden border border-border shadow-lg gap-0",
-  
-  // 2. Comportamiento en Móvil (Reseteado y forzado a pantalla completa)
-  "fixed left-4 right-4 top-4 bottom-4 w-auto h-auto translate-x-0 translate-y-0",
-  
-  // 3. Comportamiento Desktop (A partir de SM) - Centrado perfecto
-  "sm:left-1/2 sm:top-1/2 sm:right-auto sm:bottom-auto",
-  "sm:-translate-x-1/2 sm:-translate-y-1/2",
-  
-  // 4. El tamaño dinámico adaptativo (Solo en Desktop)
-  "sm:w-max sm:h-auto",
-  "sm:max-w-[calc(100vw-32px)]", 
-  "sm:max-h-[calc(100vh-32px)]", 
-  
-  className,
-)}
+        // 1. Estructura interna básica
+        "grid grid-rows-[auto_1fr_auto] p-0 overflow-hidden border border-border shadow-lg gap-0",
+
+        // 2. Comportamiento en Móvil (Reseteado y forzado a pantalla completa)
+        "fixed left-4 right-4 top-4 bottom-4 w-auto h-auto translate-x-0 translate-y-0",
+
+        // 3. Comportamiento Desktop (A partir de SM) - Centrado perfecto
+        "sm:left-1/2 sm:top-1/2 sm:right-auto sm:bottom-auto",
+        "sm:-translate-x-1/2 sm:-translate-y-1/2",
+
+        // 4. El tamaño dinámico adaptativo (Solo en Desktop)
+        "sm:w-max sm:h-auto",
+        "sm:max-w-[calc(100vw-32px)]",
+        "sm:max-h-[calc(100vh-32px)]",
+
+        className,
+      )}
       showCloseButton={false}
       onInteractOutside={(e) => {
         if (preventClose) e.preventDefault();

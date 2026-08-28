@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { getUserSession } from "@/lib/auth";
 import { TarifasView } from "@/features/finanzas/views/TarifasView";
+import { getUserSession } from "@/lib/auth";
 
 /**
  * Página de Finanzas — Tarifas Históricas.

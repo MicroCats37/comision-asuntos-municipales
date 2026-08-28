@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/card";
 
 import { handleApiError, notify } from "@/errors";
+import { buildUpdatePayload } from "@/lib/forms/buildUpdatePayload";
+import { isFileKindSchema } from "@/lib/forms/imageField";
 import {
   type FieldWrapperProps,
   type FormField,
@@ -30,8 +32,6 @@ import {
   GenericInput,
   type SectionWrapperProps,
 } from "./GenericInput";
-import { buildUpdatePayload } from "@/lib/forms/buildUpdatePayload";
-import { isFileKindSchema } from "@/lib/forms/imageField";
 
 // =====================================================================
 // DEBUG FLAG — silent Zod/RHF validation error logging
@@ -380,11 +380,7 @@ export const GenericForm = <T extends FieldValues>({
   if (children) {
     return (
       <Form {...methods}>
-        <form
-          id={formId}
-          onSubmit={onSubmitFn}
-          className={formClassName}
-        >
+        <form id={formId} onSubmit={onSubmitFn} className={formClassName}>
           {children({
             methods,
             isSubmitting: isLocked,
@@ -492,14 +488,16 @@ export const GenericForm = <T extends FieldValues>({
             </fieldset>
 
             {/* Dynamic Footer: Either custom, suppressed, or default */}
-            {skipFooter ? null : renderFooter
-              ? renderFooter({
-                  isSubmitting: isLocked,
-                  onCancel,
-                  onSubmit: onSubmitFn,
-                  methods,
-                })
-              : DefaultFooter}
+            {skipFooter
+              ? null
+              : renderFooter
+                ? renderFooter({
+                    isSubmitting: isLocked,
+                    onCancel,
+                    onSubmit: onSubmitFn,
+                    methods,
+                  })
+                : DefaultFooter}
           </form>
         </Form>
       </CardContent>

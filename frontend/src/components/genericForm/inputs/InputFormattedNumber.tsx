@@ -1,6 +1,7 @@
 // InputFormattedNumber.tsx
 "use client";
 
+import type { KeyboardEvent } from "react";
 /**
  * InputFormattedNumber — InputComponent-compatible wrapper for FormattedNumberInput.
  *
@@ -12,16 +13,12 @@
  * onKeyDown convention works for Enter-triggered cotizacion.
  */
 import type { FieldPath, FieldValues } from "react-hook-form";
-import type { KeyboardEvent } from "react";
-import type { InputComponentProps } from "./types";
 import { FormattedNumberInput } from "./FormattedNumberInput";
+import type { InputComponentProps } from "./types";
 
-export function InputFormattedNumber<TFieldValues extends FieldValues = FieldValues>({
-  field,
-  control,
-  error,
-  id: _id,
-}: InputComponentProps<TFieldValues>) {
+export function InputFormattedNumber<
+  TFieldValues extends FieldValues = FieldValues,
+>({ field, control, error, id: _id }: InputComponentProps<TFieldValues>) {
   // Bridge field.onKeyDown (Enter handler) → onEnter prop.
   // FormattedNumberInput guards on Enter before calling onEnter and calls preventDefault.
   // We wrap field.onKeyDown to satisfy the () => void contract.

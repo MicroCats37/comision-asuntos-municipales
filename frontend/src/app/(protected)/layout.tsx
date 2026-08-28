@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { getUserSession } from "@/lib/auth";
 import { ProtectedSidebar } from "@/components-app/sidebar/ProtectedSidebar";
+import { getUserSession } from "@/lib/auth";
 
 /**
  * Protected layout - wraps all authenticated routes with sidebar.

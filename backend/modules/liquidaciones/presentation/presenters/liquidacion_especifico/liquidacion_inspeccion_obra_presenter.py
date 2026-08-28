@@ -61,6 +61,8 @@ class LiquidacionInspeccionObraPresenter:
                 ),
                 numero_registro=insp.numero_registro,
                 categoria=insp.categoria,
+                periodo=insp.periodo,
+                mes=insp.mes,
                 dictamen_revision=insp.dictamen_revision,
                 fecha_presentacion=insp.fecha_presentacion,
                 fecha_revision=insp.fecha_revision,

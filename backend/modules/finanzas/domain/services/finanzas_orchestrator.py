@@ -527,7 +527,11 @@ class FinanzasOrchestrator:
         return resultado
 
     def list_candidatos_inspector_proceso(
-        self, cip: str, periodo: str | None = None
+        self,
+        cip: str,
+        periodo: str | None = None,
+        fecha_inicio: str | None = None,
+        fecha_fin: str | None = None,
     ) -> InspectorCandidatosResult:
         """
         Lista las IOs candidatas (con saldo disponible) para el RH mensual del inspector.
@@ -538,6 +542,8 @@ class FinanzasOrchestrator:
                 Si se proporciona, calcula inspecciones pagadas acumuladas de todos
                 los periodos STRICTLY anteriores a este. Si es None, suma todos
                 los periodos históricamente.
+            fecha_inicio: Optional filter — fecha_registro >= fecha_inicio (inclusive).
+            fecha_fin: Optional filter — fecha_registro <= fecha_fin (inclusive).
 
         Returns:
             InspectorCandidatosResult con la lista de candidatas.
@@ -552,6 +558,8 @@ class FinanzasOrchestrator:
         candidatos_data = self.core.list_liquidaciones_inspector_candidatas(
             inspector_id=int(inspector.id),
             periodo=periodo,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
         )
 
         perfil = inspector.perfil_ingeniero
@@ -655,6 +663,8 @@ class FinanzasOrchestrator:
                 RHDelegadoMensualDetalleResult(
                     expediente=expediente,
                     imp_bruto=float(d.imp_bruto),
+                    periodo=ld.periodo,
+                    mes=ld.mes,
                 )
             )
 

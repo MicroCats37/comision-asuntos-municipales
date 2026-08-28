@@ -1,5 +1,14 @@
 "use client";
 
+import {
+  AlertTriangle,
+  BadgeCheck,
+  CloudOff,
+  Loader2,
+  Search,
+  UserSearch,
+  X,
+} from "lucide-react";
 /**
  * ConsultarIngenieroButton — Botón + Modal reutilizable para consultar un
  * ingeniero habilitado por CIP.
@@ -15,19 +24,10 @@
  * "Nueva Liquidación".
  */
 import { useState } from "react";
-import {
-  AlertTriangle,
-  BadgeCheck,
-  CloudOff,
-  Loader2,
-  Search,
-  UserSearch,
-  X,
-} from "lucide-react";
+import { GenericModal } from "@/components/genericModal/GenericModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GenericModal } from "@/components/genericModal/GenericModal";
 import { getErrorMessage } from "@/errors";
 import { useConsultarIngeniero } from "../../hooks/useConsultarIngeniero";
 
@@ -63,9 +63,7 @@ export function ConsultarIngenieroButton({
     consulta.reset();
   };
 
-  const errorMessage = consulta.isError
-    ? getErrorMessage(consulta.error)
-    : "";
+  const errorMessage = consulta.isError ? getErrorMessage(consulta.error) : "";
 
   return (
     <>
@@ -81,7 +79,10 @@ export function ConsultarIngenieroButton({
 
       <GenericModal open={open} onOpenChange={setOpen} preventClose={false}>
         <GenericModal.Content size="md">
-          <GenericModal.Header title="" className="bg-primary/[0.03] border-b border-border px-6 py-5">
+          <GenericModal.Header
+            title=""
+            className="bg-primary/[0.03] border-b border-border px-6 py-5"
+          >
             <div className="flex items-center gap-3 w-full">
               <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shadow-sm shrink-0">
                 <UserSearch className="h-5 w-5 text-primary" />
@@ -194,7 +195,9 @@ export function ConsultarIngenieroButton({
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-3">
                     <AlertTriangle className="h-6 w-6 text-destructive" />
                   </div>
-                  <p className="text-destructive font-medium">Error al consultar</p>
+                  <p className="text-destructive font-medium">
+                    Error al consultar
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1 max-w-[260px]">
                     {errorMessage}
                   </p>
@@ -241,7 +244,9 @@ export function ConsultarIngenieroButton({
                       }
                     >
                       <BadgeCheck className="h-3.5 w-3.5" />
-                      {consulta.data.habilitado ? "Habilitado" : "No habilitado"}
+                      {consulta.data.habilitado
+                        ? "Habilitado"
+                        : "No habilitado"}
                     </span>
                   </div>
                   {consulta.data.capitulo && (

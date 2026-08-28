@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Building2,
-  FileText,
-  MapPin,
-  Phone,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { Building2, FileText, MapPin, Phone, Plus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 /**
  * LiquidacionFormBodyBase — Body GENERAL reutilizable para los 6 forms de liquidación.

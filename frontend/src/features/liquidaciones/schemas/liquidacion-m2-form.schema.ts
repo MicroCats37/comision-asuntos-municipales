@@ -3,8 +3,11 @@
  * Uses area_solicitada + tarifa_m2_id.
  */
 import { z } from "zod";
-import { generalFormSchema, proyectoFormSchema } from "./liquidacion-form-base.schema";
-import { contactoInlineSchema } from "./liquidacion-form-base.schema";
+import {
+  contactoInlineSchema,
+  generalFormSchema,
+  proyectoFormSchema,
+} from "./liquidacion-form-base.schema";
 
 export const m2FormSchema = z.object({
   ...proyectoFormSchema.shape,

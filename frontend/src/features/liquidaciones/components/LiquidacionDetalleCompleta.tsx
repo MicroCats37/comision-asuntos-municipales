@@ -443,8 +443,8 @@ export function LiquidacionDetalleCompleta({
                     RUC
                   </span>
                   <span className="text-sm font-medium text-foreground ml-2">
-                    {item.liquidacion_general.proyecto.entidad
-                      .tipo_documento ?? ""}{" "}
+                    {item.liquidacion_general.proyecto.entidad.tipo_documento ??
+                      ""}{" "}
                     {item.liquidacion_general.proyecto.entidad.numero_documento}
                   </span>
                 </div>

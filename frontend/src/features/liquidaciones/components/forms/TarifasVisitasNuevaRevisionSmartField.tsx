@@ -1,5 +1,7 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
+import { Calculator, Loader2, Minus, Plus } from "lucide-react";
 /**
  * TarifasVisitasNuevaRevisionSmartField — Smart Field de tarifas para nueva revisión de IO.
  *
@@ -16,8 +18,6 @@
  * - POST /liquidaciones/inspeccion-obra/cotizar → { datos: {...}, calculo: { monto_bruto, subtotal, total } }
  */
 import { useEffect, useMemo, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { Calculator, Loader2, Minus, Plus } from "lucide-react";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import api from "@/lib/api";
 import { useTarifasVigentesVisitas } from "../../hooks/useTarifasVigentes";
@@ -57,7 +57,8 @@ const toNumber = (value: unknown): number => {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 };
-const formatSoles = (value: unknown): string => `S/ ${toNumber(value).toFixed(2)}`;
+const formatSoles = (value: unknown): string =>
+  `S/ ${toNumber(value).toFixed(2)}`;
 
 export function TarifasVisitasNuevaRevisionSmartField({
   cantidadVisitas,
@@ -94,7 +95,9 @@ export function TarifasVisitasNuevaRevisionSmartField({
         const primeraCategoria = categorias[0];
         if (primeraCategoria) {
           onCategoriaChange(primeraCategoria);
-          const tarifaPrimera = tarifas.find((t) => t.categoria === primeraCategoria);
+          const tarifaPrimera = tarifas.find(
+            (t) => t.categoria === primeraCategoria,
+          );
           if (tarifaPrimera) onTarifaChange(tarifaPrimera.id);
         }
       } else if (!tarifaVisitasId) {
@@ -111,15 +114,18 @@ export function TarifasVisitasNuevaRevisionSmartField({
       categoria: string;
       tarifa_visitas_id: string;
     }): Promise<CotizacionVisitasOutput> => {
-      const { data } = await api.post("/liquidaciones/inspeccion-obra/cotizar", {
-        liquidacion_especifica: {
-          datos: {
-            cantidad_visitas: payload.cantidad_visitas,
-            categoria: payload.categoria,
+      const { data } = await api.post(
+        "/liquidaciones/inspeccion-obra/cotizar",
+        {
+          liquidacion_especifica: {
+            datos: {
+              cantidad_visitas: payload.cantidad_visitas,
+              categoria: payload.categoria,
+            },
+            tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
           },
-          tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
         },
-      });
+      );
       return data.data;
     },
     onSuccess: (result) => {
@@ -128,7 +134,9 @@ export function TarifasVisitasNuevaRevisionSmartField({
     },
     onError: (err) => {
       setQuote(null);
-      setError(err instanceof Error ? err.message : "Error al calcular cotización");
+      setError(
+        err instanceof Error ? err.message : "Error al calcular cotización",
+      );
     },
   });
 
@@ -162,7 +170,9 @@ export function TarifasVisitasNuevaRevisionSmartField({
         <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
           Cálculo de Visitas
         </h3>
-        {isCalculating && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+        {isCalculating && (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        )}
       </div>
 
       {/* Cantidad de visitas */}
@@ -173,7 +183,9 @@ export function TarifasVisitasNuevaRevisionSmartField({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onCantidadVisitasChange(Math.max(1, cantidadVisitas - 1))}
+            onClick={() =>
+              onCantidadVisitasChange(Math.max(1, cantidadVisitas - 1))
+            }
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background hover:border-primary/40"
             aria-label="Disminuir visitas"
           >
@@ -183,7 +195,9 @@ export function TarifasVisitasNuevaRevisionSmartField({
             type="number"
             min={1}
             value={cantidadVisitas}
-            onChange={(e) => onCantidadVisitasChange(Math.max(1, toNumber(e.target.value)))}
+            onChange={(e) =>
+              onCantidadVisitasChange(Math.max(1, toNumber(e.target.value)))
+            }
             className="h-9 w-20 rounded-lg border border-border bg-background px-3 text-center text-sm font-semibold tabular-nums focus:border-primary focus:ring-1 focus:ring-primary/30"
           />
           <button
@@ -206,9 +220,15 @@ export function TarifasVisitasNuevaRevisionSmartField({
         {isLoading ? (
           <div className="h-10 rounded-lg border bg-card animate-pulse" />
         ) : categorias.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No hay tarifas vigentes de Inspección de Obra</p>
+          <p className="text-sm text-muted-foreground">
+            No hay tarifas vigentes de Inspección de Obra
+          </p>
         ) : (
-          <div className="flex flex-row flex-wrap gap-2" role="radiogroup" aria-label="Categorías">
+          <div
+            className="flex flex-row flex-wrap gap-2"
+            role="radiogroup"
+            aria-label="Categorías"
+          >
             {categorias.map((cat) => {
               const isSelected = categoria === cat;
               return (
@@ -229,7 +249,9 @@ export function TarifasVisitasNuevaRevisionSmartField({
                       isSelected ? "border-primary" : "border-border",
                     ].join(" ")}
                   >
-                    {isSelected && <span className="h-2 w-2 rounded-full bg-primary" />}
+                    {isSelected && (
+                      <span className="h-2 w-2 rounded-full bg-primary" />
+                    )}
                   </span>
                   <span className="text-sm font-semibold">Categoría {cat}</span>
                   <input
@@ -239,9 +261,13 @@ export function TarifasVisitasNuevaRevisionSmartField({
                     checked={isSelected}
                     onChange={() => {
                       onCategoriaChange(cat);
-                      const tarifaCat = tarifasDeCategoria.length > 0 ? tarifasDeCategoria[0] : null;
+                      const tarifaCat =
+                        tarifasDeCategoria.length > 0
+                          ? tarifasDeCategoria[0]
+                          : null;
                       const primerTarifaCat =
-                        (tarifas || []).find((t) => t.categoria === cat) || tarifaCat;
+                        (tarifas || []).find((t) => t.categoria === cat) ||
+                        tarifaCat;
                       if (primerTarifaCat) onTarifaChange(primerTarifaCat.id);
                     }}
                   />
@@ -280,9 +306,13 @@ export function TarifasVisitasNuevaRevisionSmartField({
                         isSelected ? "border-primary" : "border-border",
                       ].join(" ")}
                     >
-                      {isSelected && <span className="h-2 w-2 rounded-full bg-primary" />}
+                      {isSelected && (
+                        <span className="h-2 w-2 rounded-full bg-primary" />
+                      )}
                     </span>
-                    <span className="text-sm font-medium">Cat. {tarifa.categoria}</span>
+                    <span className="text-sm font-medium">
+                      Cat. {tarifa.categoria}
+                    </span>
                   </div>
                   <span className="text-xs font-semibold text-primary pl-6">
                     {formatSoles(tarifa.costo_por_visita)}/visita
@@ -305,7 +335,9 @@ export function TarifasVisitasNuevaRevisionSmartField({
       {error && <p className="text-xs text-destructive">{error}</p>}
 
       {isCalculating && !quote && (
-        <p className="text-xs text-muted-foreground animate-pulse">Calculando cotización...</p>
+        <p className="text-xs text-muted-foreground animate-pulse">
+          Calculando cotización...
+        </p>
       )}
 
       {quote && (
@@ -313,24 +345,32 @@ export function TarifasVisitasNuevaRevisionSmartField({
           <div className="grid grid-cols-2 gap-1 text-sm">
             <span className="text-muted-foreground">Costo por visita:</span>
             <span className="font-medium text-right">
-              {formatSoles(quote.datos?.tarifa?.costo_por_visita ?? tarifaSeleccionada?.costo_por_visita)}
+              {formatSoles(
+                quote.datos?.tarifa?.costo_por_visita ??
+                  tarifaSeleccionada?.costo_por_visita,
+              )}
             </span>
             <span className="text-muted-foreground">Cantidad de visitas:</span>
             <span className="font-medium text-right tabular-nums">
               {quote.datos?.entrada?.datos?.cantidad_visitas ?? cantidadVisitas}
             </span>
             <span className="text-muted-foreground">Subtotal:</span>
-            <span className="font-medium text-right">{formatSoles(quote.calculo?.subtotal)}</span>
+            <span className="font-medium text-right">
+              {formatSoles(quote.calculo?.subtotal)}
+            </span>
             <span className="text-muted-foreground">I.G.V.:</span>
             <span className="font-medium text-right">
               {formatSoles(
-                toNumber(quote.calculo?.total) - toNumber(quote.calculo?.subtotal),
+                toNumber(quote.calculo?.total) -
+                  toNumber(quote.calculo?.subtotal),
               )}
             </span>
           </div>
           <div className="border-t border-border pt-1.5 flex justify-between font-semibold text-sm">
             <span>Total a Pagar:</span>
-            <span className="text-primary">{formatSoles(quote.calculo?.total)}</span>
+            <span className="text-primary">
+              {formatSoles(quote.calculo?.total)}
+            </span>
           </div>
         </div>
       )}

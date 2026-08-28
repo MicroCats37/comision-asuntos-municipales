@@ -3,7 +3,8 @@ import { z } from "zod";
 /** Asignación de delegado a una liquidación (metadata por delegado). */
 export const AsignacionDelegadoSchema = z.object({
   delegado_id: z.string(),
-  periodo: z.string().optional().nullable(),
+  periodo: z.number().int().optional().nullable(),
+  mes: z.number().int().optional().nullable(),
   dictamen_revision: z
     .enum(["CONFORME", "NO_CONFORME", "PENDIENTE", "AP_OB"])
     .optional()

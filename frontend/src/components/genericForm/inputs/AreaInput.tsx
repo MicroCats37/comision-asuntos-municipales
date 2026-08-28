@@ -1,13 +1,13 @@
 // AreaInput.tsx
 "use client";
 
+import type { LucideIcon } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
-import type { LucideIcon } from "lucide-react";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import { useController } from "react-hook-form";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface AreaInputProps<TFieldValues extends FieldValues = FieldValues> {
   /** Field name */
@@ -93,18 +93,21 @@ export function AreaInput<TFieldValues extends FieldValues = FieldValues>({
   const isInternalUpdate = useRef(false);
 
   // ── Format a number with space-separated thousands and m² suffix ───────────
-  const formatDisplay = useCallback((val: number | "" | null | undefined): string => {
-    if (val === "" || val === null || val === undefined) return "0 m²";
-    const num = Number(val);
-    if (isNaN(num) || !isFinite(num)) return "0 m²";
+  const formatDisplay = useCallback(
+    (val: number | "" | null | undefined): string => {
+      if (val === "" || val === null || val === undefined) return "0 m²";
+      const num = Number(val);
+      if (isNaN(num) || !isFinite(num)) return "0 m²";
 
-    const intPart = Math.round(num).toString();
+      const intPart = Math.round(num).toString();
 
-    // Space as thousand separator (e.g. 1 000 000)
-    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      // Space as thousand separator (e.g. 1 000 000)
+      const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-    return `${formattedInt} m²`;
-  }, []);
+      return `${formattedInt} m²`;
+    },
+    [],
+  );
 
   // ── Sync displayValue from RHF field value (external changes: reset, defaultValues) ──
   useEffect(() => {

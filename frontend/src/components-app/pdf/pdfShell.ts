@@ -9,7 +9,10 @@
 
 // ── Estilos ────────────────────────────────────────────────────────────
 
-export function applyStyles(element: HTMLElement, styles: Partial<CSSStyleDeclaration>) {
+export function applyStyles(
+  element: HTMLElement,
+  styles: Partial<CSSStyleDeclaration>,
+) {
   Object.assign(element.style, styles);
 }
 
@@ -39,7 +42,11 @@ export function formatDate(value?: string | null): string {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" });
+  return d.toLocaleDateString("es-PE", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 /** "24 DE JULIO DE 2026 06:30" — fecha + hora en mayúsculas para el PDF */
@@ -48,8 +55,18 @@ export function formatPrintedDateTime(isoDatetime: string): string {
   if (Number.isNaN(date.getTime())) {
     return formatDate(isoDatetime).toUpperCase();
   }
-  const dateStr = date.toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" }).toUpperCase();
-  const timeStr = date.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const dateStr = date
+    .toLocaleDateString("es-PE", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
+    .toUpperCase();
+  const timeStr = date.toLocaleTimeString("es-PE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
   return `${dateStr} ${timeStr}`;
 }
 
@@ -59,7 +76,11 @@ export function formatPrintedDateTime(isoDatetime: string): string {
  * Agrega una fila label/value al elemento details del PDF.
  * Ej: <div><span>RUC</span><span>20456789012</span></div>
  */
-export function appendReceiptRow(details: HTMLElement, label: string, value: string) {
+export function appendReceiptRow(
+  details: HTMLElement,
+  label: string,
+  value: string,
+) {
   const row = details.ownerDocument.createElement("div");
   row.style.display = "flex";
   row.style.justifyContent = "space-between";
@@ -95,7 +116,9 @@ export interface PdfFrameResult {
  * Crea un iframe aislado (off-screen) donde se construye el HTML del PDF.
  * Asegura que el CSS de la app no contamine el documento.
  */
-export function createPdfFrame(opts: { width?: string; height?: string; position?: string } = {}): PdfFrameResult {
+export function createPdfFrame(
+  opts: { width?: string; height?: string; position?: string } = {},
+): PdfFrameResult {
   const frame = document.createElement("iframe");
   applyStyles(frame, {
     position: opts.position ?? "absolute",
@@ -115,7 +138,9 @@ export function createPdfFrame(opts: { width?: string; height?: string; position
   }
 
   frameDocument.open();
-  frameDocument.write('<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#FFFFFF;"></body></html>');
+  frameDocument.write(
+    '<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#FFFFFF;"></body></html>',
+  );
   frameDocument.close();
 
   return { frame, frameWindow, frameDocument };

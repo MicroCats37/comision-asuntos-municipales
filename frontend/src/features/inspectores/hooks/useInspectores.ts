@@ -3,11 +3,12 @@
  * Usa useApiQuery genérico del proyecto.
  * Endpoint: GET /inspectores/
  */
-import { usePagination } from "@/hooks/system/usePagination";
+
 import { useApiQuery } from "@/hooks";
+import { usePagination } from "@/hooks/system/usePagination";
 import {
-  inspectoresListResponseSchema,
   type InspectorOut,
+  inspectoresListResponseSchema,
 } from "../types/inspectores.types";
 
 interface UseInspectoresProps {
@@ -18,10 +19,11 @@ interface UseInspectoresProps {
 const BASE_URL = "/inspectores";
 
 export function useInspectores(props: UseInspectoresProps = {}) {
-  const { page, pageSize, onPageChange, onPageSizeChange, paginationParams } = usePagination({
-    initialPage: props.page ?? 1,
-    initialPageSize: props.pageSize ?? 10,
-  });
+  const { page, pageSize, onPageChange, onPageSizeChange, paginationParams } =
+    usePagination({
+      initialPage: props.page ?? 1,
+      initialPageSize: props.pageSize ?? 10,
+    });
 
   const query = useApiQuery({
     queryKey: ["inspectores", page, pageSize],

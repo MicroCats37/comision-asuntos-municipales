@@ -282,6 +282,7 @@ class DelegadoPresenter:
                 else None
             ),
             periodo=result.periodo,
+            mes=result.mes,
             dictamen_revision=result.dictamen_revision,
             fecha_presentacion=(
                 result.fecha_presentacion.isoformat()

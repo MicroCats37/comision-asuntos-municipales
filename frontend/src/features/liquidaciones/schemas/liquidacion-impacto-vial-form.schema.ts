@@ -4,8 +4,11 @@
  * para que cada tipo sea independiente.
  */
 import { z } from "zod";
-import { generalFormSchema, proyectoFormSchema } from "./liquidacion-form-base.schema";
-import { contactoInlineSchema } from "./liquidacion-form-base.schema";
+import {
+  contactoInlineSchema,
+  generalFormSchema,
+  proyectoFormSchema,
+} from "./liquidacion-form-base.schema";
 
 export const impactoVialFormSchema = z.object({
   ...proyectoFormSchema.shape,

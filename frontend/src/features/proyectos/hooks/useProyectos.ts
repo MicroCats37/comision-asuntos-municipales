@@ -16,7 +16,10 @@ interface UseProyectosProps {
 
 const BASE_URL = "/proyectos";
 
-export function useProyectos({ page = 1, pageSize = 10 }: UseProyectosProps = {}) {
+export function useProyectos({
+  page = 1,
+  pageSize = 10,
+}: UseProyectosProps = {}) {
   const [currentPage, setCurrentPage] = useState(page);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
 

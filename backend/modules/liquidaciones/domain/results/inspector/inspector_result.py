@@ -132,7 +132,8 @@ class LiquidacionInspectorAsignacionResult(BaseModel):
     especialidad_revision: Optional["EspecialidadRevisionResult"] = None
     liquidacion: Optional[LiquidacionInspectorLiquidacionMinimal] = None
     inspector: Optional[InspectorAsignacionInspectorMinimal] = None
-    periodo: Optional[str] = None
+    periodo: Optional[int] = None
+    mes: Optional[int] = None
     dictamen_revision: Optional[str] = None
     fecha_presentacion: Optional[str] = None
     fecha_revision: Optional[str] = None

@@ -62,6 +62,7 @@ class RHInspectorMensualCotizarFlujo:
 
         items: list[RHInspectorCotizarItemResult] = []
         sub_total = Decimal("0")
+        header_periodo, header_mes = (int(part) for part in payload.periodo.split("-"))
 
         for item in payload.items:
             # 3a. Resolver liquidacion_categoria_visitas_id
@@ -183,6 +184,8 @@ class RHInspectorMensualCotizarFlujo:
                     monto_contribuido=float(monto_contribuido),
                     saldo_disponible=saldo_disponible,
                     saldo_restante=saldo_restante,
+                    periodo=item.periodo or header_periodo,
+                    mes=item.mes or header_mes,
                 )
             )
 
@@ -283,6 +286,11 @@ class RHInspectorMensualCrearFlujo:
                 liquidacion_categoria_visitas_id=item.liquidacion_categoria_visitas_id,
                 periodo=resultado.periodo,
                 inspecciones_pagadas=item.inspecciones_liquidadas,
+            )
+            self.core.update_liquidacion_inspector_periodo_mes(
+                liquidacion_inspector_id=item.liquidacion_inspector_id,
+                periodo=item.periodo,
+                mes=item.mes,
             )
 
         return resultado

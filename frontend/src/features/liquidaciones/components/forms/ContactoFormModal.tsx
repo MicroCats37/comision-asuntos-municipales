@@ -1,5 +1,6 @@
 "use client";
 
+import { Briefcase, Mail, Phone, User } from "lucide-react";
 /**
  * ContactoFormModal — Modal para agregar/editar el CONTACTO PRINCIPAL.
  *
@@ -10,12 +11,14 @@
 import { useCallback } from "react";
 import type { Control } from "react-hook-form";
 import { useController } from "react-hook-form";
-import { z } from "zod";
-import { AppFormModal } from "@/components-app/forms/AppFormModal";
+import type { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Briefcase, Mail, Phone, User } from "lucide-react";
-import { contactoInlineSchema, type ContactoInline } from "../../schemas/liquidacion-form-base.schema";
+import { AppFormModal } from "@/components-app/forms/AppFormModal";
+import {
+  type ContactoInline,
+  contactoInlineSchema,
+} from "../../schemas/liquidacion-form-base.schema";
 
 export type ContactoFormData = z.infer<typeof contactoInlineSchema>;
 
@@ -45,13 +48,24 @@ function CampoTexto({
   icon: Icon,
 }: {
   control: Control<ContactoFormData>;
-  name: "nombres" | "apellidos" | "dni" | "telefono" | "celular" | "email" | "cargo";
+  name:
+    | "nombres"
+    | "apellidos"
+    | "dni"
+    | "telefono"
+    | "celular"
+    | "email"
+    | "cargo";
   label: string;
   placeholder?: string;
   required?: boolean;
   icon?: React.ComponentType<{ className?: string }>;
 }) {
-  const { field, fieldState } = useController({ name, control, defaultValue: "" });
+  const { field, fieldState } = useController({
+    name,
+    control,
+    defaultValue: "",
+  });
   return (
     <div className="space-y-2">
       <Label htmlFor={name}>
@@ -140,7 +154,9 @@ export function ContactoFormModal({
           <div className="rounded-xl border border-border/50 bg-card p-4 space-y-4">
             <div className="flex items-center gap-2 border-b border-border/40 pb-2">
               <User className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold uppercase tracking-wide">Datos Personales</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wide">
+                Datos Personales
+              </h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <CampoTexto
@@ -177,7 +193,9 @@ export function ContactoFormModal({
           <div className="rounded-xl border border-border/50 bg-card p-4 space-y-4">
             <div className="flex items-center gap-2 border-b border-border/40 pb-2">
               <Phone className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold uppercase tracking-wide">Información de Contacto</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wide">
+                Información de Contacto
+              </h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <CampoTexto

@@ -198,9 +198,11 @@ class FinanzasController:
         self,
         cip: str,
         periodo: str | None = Query(default=None),
+        fecha_inicio: str | None = Query(default=None, description="Filter by fecha_registro >= date (YYYY-MM-DD)"),
+        fecha_fin: str | None = Query(default=None, description="Filter by fecha_registro <= date (YYYY-MM-DD)"),
     ):
         """
-        GET /finanzas/recibos-inspectores/candidatos?cip=...&periodo=...
+        GET /finanzas/recibos-inspectores/candidatos?cip=...&periodo=...&fecha_inicio=...&fecha_fin=...
 
         Lista las IOs candidatas (con saldo disponible) para el RH mensual del inspector.
         Las candidatas son las LiquidacionInspector asignadas al inspector que tienen
@@ -210,10 +212,20 @@ class FinanzasController:
         periodos estrictamente anteriores. Si no se proporciona, suma todos los periodos
         históricamente (saldo total disponible).
 
+        Filtros de fecha (opcionales):
+        - fecha_inicio: fecha de registro >= fecha_inicio (inclusive)
+        - fecha_fin: fecha de registro <= fecha_fin (inclusive)
+        - Si fecha_inicio > fecha_fin: retorna 422 con error.
+
         Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
         retorna success_response formateado por presenter.
         """
-        result = self.orchestrator.list_candidatos_inspector_proceso(cip, periodo)
+        if fecha_inicio and fecha_fin and fecha_inicio > fecha_fin:
+            from ninja.errors import HttpError
+            raise HttpError(422, "fecha_inicio no puede ser mayor que fecha_fin")
+        result = self.orchestrator.list_candidatos_inspector_proceso(
+            cip, periodo, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin
+        )
         return success_response(FinanzasPresenter.present_inspector_candidatos(result))
 
     # ── RH Delegado Mensual ─────────────────────────────────────────────────────

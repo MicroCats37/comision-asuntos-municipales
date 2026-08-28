@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface TaludesUIState {
   page: number;
@@ -17,13 +17,14 @@ interface TaludesUIState {
 export const useTaludesUIStore = create<TaludesUIState>((set) => ({
   page: 1,
   pageSize: 10,
-  searchQuery: '',
+  searchQuery: "",
   isFormModalOpen: false,
   selectedItemId: null,
   setPage: (page) => set({ page }),
   setPageSize: (pageSize) => set({ pageSize }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
-  openFormModal: (id?: string) => set({ isFormModalOpen: true, selectedItemId: id || null }),
+  openFormModal: (id?: string) =>
+    set({ isFormModalOpen: true, selectedItemId: id || null }),
   closeFormModal: () => set({ isFormModalOpen: false, selectedItemId: null }),
   setSelectedItemId: (selectedItemId) => set({ selectedItemId }),
 }));

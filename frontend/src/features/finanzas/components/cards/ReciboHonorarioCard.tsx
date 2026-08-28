@@ -88,7 +88,9 @@ export function ReciboHonorarioCard({ item }: ReciboHonorarioCardProps) {
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">Revisión / Liq</p>
+              <p className="text-[10px] text-muted-foreground">
+                Revisión / Liq
+              </p>
               <p className="text-sm font-medium">
                 N° {lg?.numero_revision ?? "—"} / #{liqEsp?.numero ?? "—"}
               </p>

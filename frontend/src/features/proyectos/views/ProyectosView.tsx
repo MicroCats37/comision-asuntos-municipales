@@ -1,9 +1,9 @@
 "use client";
 
-import { FolderOpen, Building2, MapPin, FileText } from "lucide-react";
-import { useProyectos } from "../hooks/useProyectos";
+import { Building2, FileText, FolderOpen, MapPin } from "lucide-react";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { Badge } from "@/components/ui/badge";
+import { useProyectos } from "../hooks/useProyectos";
 import type { ProyectoListItem } from "../types/proyecto";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -60,9 +60,7 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border rounded-xl">
       <FolderOpen className="h-10 w-10 text-muted-foreground mb-4" />
-      <p className="text-muted-foreground">
-        No hay proyectos registrados
-      </p>
+      <p className="text-muted-foreground">No hay proyectos registrados</p>
       <p className="text-xs text-muted-foreground mt-2">
         Los proyectos aparecerán aquí una vez creados
       </p>
@@ -100,7 +98,10 @@ function ProyectoRow({ proyecto }: ProyectoRowProps) {
   const totalEdificaciones = edificaciones.length;
 
   // Aggregate totals from edificaciones
-  const totalMonto = edificaciones.reduce((sum, ed) => sum + (ed.total ?? 0), 0);
+  const totalMonto = edificaciones.reduce(
+    (sum, ed) => sum + (ed.total ?? 0),
+    0,
+  );
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 space-y-3 hover:border-primary/30 transition-colors">
@@ -136,7 +137,8 @@ function ProyectoRow({ proyecto }: ProyectoRowProps) {
 
         {/* Badge */}
         <Badge variant="secondary" className="shrink-0">
-          {totalEdificaciones} {totalEdificaciones === 1 ? "edificación" : "edificaciones"}
+          {totalEdificaciones}{" "}
+          {totalEdificaciones === 1 ? "edificación" : "edificaciones"}
         </Badge>
       </div>
 
@@ -241,9 +243,7 @@ export function ProyectosView() {
             <FolderOpen className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-black tracking-tight">
-              Proyectos
-            </h1>
+            <h1 className="text-3xl font-black tracking-tight">Proyectos</h1>
             <p className="text-sm text-muted-foreground">
               Gestiona los proyectos de liquidaciones
             </p>

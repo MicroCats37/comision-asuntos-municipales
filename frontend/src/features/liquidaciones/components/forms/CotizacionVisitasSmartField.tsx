@@ -1,5 +1,7 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
+import { Calculator, CheckCircle2, Loader2, XCircle } from "lucide-react";
 /**
  * CotizacionVisitasSmartField — Smart Field for Visitas cotizacion preview.
  *
@@ -9,10 +11,8 @@
  * - "Calcular" button triggers POST /liquidaciones/inspeccion-obra/cotizar
  * - Shows result in its OWN state
  */
-import { useState, useCallback } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useCallback, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import { Calculator, CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { notify } from "@/errors";
 import api from "@/lib/api";
@@ -57,9 +57,12 @@ export function CotizacionVisitasSmartField({
       categoria: string;
       tarifas_ids: string[];
     }): Promise<CotizacionVisitasQuote> => {
-      const { data } = await api.post("/liquidaciones/inspeccion-obra/cotizar", {
-        liquidacion: payload,
-      });
+      const { data } = await api.post(
+        "/liquidaciones/inspeccion-obra/cotizar",
+        {
+          liquidacion: payload,
+        },
+      );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (data as any).data;
     },
@@ -69,7 +72,9 @@ export function CotizacionVisitasSmartField({
     },
     onError: (err) => {
       setQuote(null);
-      setError(err instanceof Error ? err.message : "Error al calcular cotización");
+      setError(
+        err instanceof Error ? err.message : "Error al calcular cotización",
+      );
       notify.error("Error al calcular la cotización");
     },
   });
@@ -150,7 +155,8 @@ export function CotizacionVisitasSmartField({
             <div className="flex justify-between">
               <span className="text-muted-foreground">Visitas:</span>
               <span className="font-medium">
-                {quote.calculo_visitas.cantidad_visitas} ({quote.calculo_visitas.categoria})
+                {quote.calculo_visitas.cantidad_visitas} (
+                {quote.calculo_visitas.categoria})
               </span>
             </div>
             <div className="flex justify-between">

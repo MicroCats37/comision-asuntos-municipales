@@ -133,6 +133,7 @@ class RHDelegadoMensualCotizarFlujo:
                     neto_honorario=float(item_neto_honorario),
                     numero_rh=item.numero_rh,
                     periodo=item.periodo,
+                    mes=item.mes,
                     dictamen_revision=item.dictamen_revision,
                     fecha_presentacion=str(item.fecha_presentacion) if item.fecha_presentacion else None,
                 )
@@ -221,15 +222,29 @@ class RHDelegadoMensualCrearFlujo:
 
         # 4. Para cada item: crear LiquidacionDelegado primero,
         #    luego DetalleHonorarioDelegado con el ID recién creado.
-        #    Usa per-item periodo/dictamen/fechas si están presentes,
+        #    Usa per-item periodo/mes/dictamen/fechas si están presentes,
         #    si no recurre al nivel RH.
         for item in resultado.items:
+            # Extraer año y mes del periodo YYYY-MM del RH header
+            item_periodo = item.periodo
+            item_mes = item.mes
+            if item_periodo is None:
+                # Fallback: parsear YYYY-MM del nivel RH
+                rh_periodo = resultado.periodo  # YYYY-MM
+                if rh_periodo and len(rh_periodo) >= 4:
+                    item_periodo = int(rh_periodo[:4])
+                    if len(rh_periodo) >= 7:
+                        try:
+                            item_mes = int(rh_periodo[5:7])
+                        except (ValueError, TypeError):
+                            item_mes = None
             liq_delegado, _ = self.core.crear_liquidacion_delegado(
                 liquidacion_id=item.liquidacion_general_id,
                 delegado_id=resultado.delegado.id,
                 especialidad_revision_id=item.especialidad_revision_id,
                 numero_rh=item.numero_rh,
-                periodo=item.periodo or resultado.periodo,
+                periodo=item_periodo,
+                mes=item_mes,
                 dictamen_revision=item.dictamen_revision,
                 fecha_presentacion=item.fecha_presentacion,
                 fecha_revision=item.fecha_revision,

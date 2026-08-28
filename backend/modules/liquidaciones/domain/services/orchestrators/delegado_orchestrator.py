@@ -232,10 +232,20 @@ class DelegadoOrchestrator:
             total_pages=total_pages,
         )
 
-    def list_candidatas_delegado_proceso(self, cip: str) -> DelegadoCandidatasResult:
+    def list_candidatas_delegado_proceso(
+        self,
+        cip: str,
+        fecha_inicio: str | None = None,
+        fecha_fin: str | None = None,
+    ) -> DelegadoCandidatasResult:
         """
         Returns DelegadoCandidatasResult (domain DTO) of candidate liquidaciones for the given delegado.
         Raises 404 if delegado with cip not found.
+
+        Args:
+            cip: CIP of the delegado.
+            fecha_inicio: Optional filter — fecha_registro >= fecha_inicio (inclusive).
+            fecha_fin: Optional filter — fecha_registro <= fecha_fin (inclusive).
         """
         from modules.liquidaciones.domain.models.delegado import Delegado
         
@@ -247,7 +257,9 @@ class DelegadoOrchestrator:
             raise HttpError(404, f"Delegado con CIP '{cip}' no encontrado")
             
         today = date.today()
-        candidatas_tuples = self.core_service.get_candidatas_for_delegado(delegado, today)
+        candidatas_tuples = self.core_service.get_candidatas_for_delegado(
+            delegado, today, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin
+        )
         
         delegado_dto = LiquidacionDelegadoDelegadoMinimal(
             id=str(delegado.id),

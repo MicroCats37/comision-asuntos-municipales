@@ -1,10 +1,10 @@
-import { z } from 'zod';
+import { z } from "zod";
 import {
   LiquidacionGeneralOutputSchema,
   LiquidacionTipoOutputSchema,
   paginatedResponseSchema,
-} from './liquidacion-base.schema';
-import { VisitasDatosOutSchema } from './liquidacion-visitas.schema';
+} from "./liquidacion-base.schema";
+import { VisitasDatosOutSchema } from "./liquidacion-visitas.schema";
 
 // Inspeccion Obra (Visitas)
 export const liquidacionInspeccionObraListItemSchema = z.object({
@@ -12,5 +12,9 @@ export const liquidacionInspeccionObraListItemSchema = z.object({
   liquidacion_especifica: LiquidacionTipoOutputSchema,
   liquidacion_tipo: VisitasDatosOutSchema,
 });
-export const liquidacionInspeccionObraPaginatedSchema = paginatedResponseSchema(liquidacionInspeccionObraListItemSchema);
-export type LiquidacionInspeccionObraListItem = z.infer<typeof liquidacionInspeccionObraListItemSchema>;
+export const liquidacionInspeccionObraPaginatedSchema = paginatedResponseSchema(
+  liquidacionInspeccionObraListItemSchema,
+);
+export type LiquidacionInspeccionObraListItem = z.infer<
+  typeof liquidacionInspeccionObraListItemSchema
+>;

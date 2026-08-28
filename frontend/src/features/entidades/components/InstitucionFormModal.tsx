@@ -155,7 +155,9 @@ export function InstitucionFormModal({
                     size="icon"
                     className="h-10 w-10 rounded-lg"
                     onClick={handleDocumentoLookup}
-                    disabled={documentoLookup.isPending || rucValue.length !== 11}
+                    disabled={
+                      documentoLookup.isPending || rucValue.length !== 11
+                    }
                     title="Buscar en SUNAT"
                     aria-label="Buscar en SUNAT"
                   >

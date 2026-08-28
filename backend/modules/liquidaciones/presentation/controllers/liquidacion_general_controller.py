@@ -86,6 +86,7 @@ class LiquidacionGeneralController:
         propietario: str = Query(default=None, description="Filter by proyecto nombre propietario (icontains)"),
         expediente: str = Query(default=None, description="Filter by expediente numero (icontains)"),
         nombre_propietario: str = Query(default=None, description="Filter by proyecto nombre propietario — equivalent to 'propietario', both filter the same field"),
+        numero: int = Query(default=None, ge=1, description="Filter by liquidacion numero (autoincremental per type, independent sequences across types)"),
     ):
         """
         Returns a paginated list of the latest liquidaciones (one per proyecto+tipo_liquidacion pair)
@@ -100,6 +101,7 @@ class LiquidacionGeneralController:
             propietario=propietario,
             expediente=expediente,
             nombre_propietario=nombre_propietario,
+            numero=numero,
         )
         result = self.presenter.present_list(
             liquidaciones=liquidaciones,

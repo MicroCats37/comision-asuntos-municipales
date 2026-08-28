@@ -5,6 +5,12 @@
  * Feature adapters live under features/*[/]adapters/.
  */
 
+export {
+  buildBatchDiff,
+  buildMap,
+  computeBatchPayload,
+  toBatchPayload,
+} from "./buildBatchDiff";
 export type {
   BatchAdapter,
   BatchDiffResult,
@@ -15,10 +21,3 @@ export type {
   TId,
   TUpdate,
 } from "./types";
-
-export {
-  buildBatchDiff,
-  buildMap,
-  computeBatchPayload,
-  toBatchPayload,
-} from "./buildBatchDiff";

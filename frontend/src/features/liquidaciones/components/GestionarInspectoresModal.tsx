@@ -1,18 +1,20 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserCheck } from "lucide-react";
-import { z } from "zod";
+import { useCallback, useMemo } from "react";
 import type { UseFormReturn } from "react-hook-form";
+import { z } from "zod";
 
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { InspectoresSection } from "./InspectoresSection";
-import api from "@/lib/api";
 import { handleApiError, notify } from "@/errors";
 import type { InspectorVigente } from "@/features/inspectores/types/inspectores.types";
-import { useInspectoresVigentes } from "../hooks/useInspectoresVigentes";
-import { inspectoresVigentesResponseSchema } from "../hooks/useInspectoresVigentes";
+import api from "@/lib/api";
+import {
+  inspectoresVigentesResponseSchema,
+  useInspectoresVigentes,
+} from "../hooks/useInspectoresVigentes";
+import { InspectoresSection } from "./InspectoresSection";
 
 interface HasId {
   id: string;
@@ -46,10 +48,9 @@ export function GestionarInspectoresModal({
     [inspectoresActuales],
   );
 
-  const {
-    data: inspectoresVigentes = [],
-    isLoading,
-  } = useInspectoresVigentes(open ? liquidacionId : null);
+  const { data: inspectoresVigentes = [], isLoading } = useInspectoresVigentes(
+    open ? liquidacionId : null,
+  );
 
   const batchMutation = useMutation({
     mutationFn: async (selectedIds: string[]) => {

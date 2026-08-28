@@ -471,6 +471,8 @@ class DelegadoCoreService:
         self,
         delegado: Delegado,
         fecha: date,
+        fecha_inicio: str | None = None,
+        fecha_fin: str | None = None,
     ) -> list:
         """
         Returns a list of tuples (LiquidacionGeneral, EspecialidadRevision) representing
@@ -479,6 +481,12 @@ class DelegadoCoreService:
         1. It belongs to a municipalidad where the delegado is TITULAR (and matches the tipo).
         2. The liquidacion requires the TITULAR operation's especialidad (in especialidades_revisadas).
         3. The liquidacion does NOT already have a LiquidacionDelegado for that especialidad.
+
+        Args:
+            delegado: The Delegado ORM object.
+            fecha: Reference date for vigencia checks.
+            fecha_inicio: Optional filter — fecha_registro >= fecha_inicio (inclusive).
+            fecha_fin: Optional filter — fecha_registro <= fecha_fin (inclusive).
         """
         from modules.liquidaciones.domain.constants import TipoDelegado
         
@@ -548,6 +556,12 @@ class DelegadoCoreService:
                 "municipalidad",
                 "proyecto",
             )
+
+            # Apply date range filter on LiquidacionGeneral.fecha_registro
+            if fecha_inicio:
+                qs = qs.filter(fecha_registro__date__gte=fecha_inicio)
+            if fecha_fin:
+                qs = qs.filter(fecha_registro__date__lte=fecha_fin)
             
             for liq in qs:
                 clave = (liq.id, op.especialidad_revision.id)

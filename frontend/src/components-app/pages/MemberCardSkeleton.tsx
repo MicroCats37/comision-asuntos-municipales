@@ -11,7 +11,10 @@ interface MemberCardSkeletonProps {
  * Skeleton that replicates the shape of a ContactCard.
  * Uses rounded-[28px] to match the legacy card border-radius.
  */
-export function MemberCardSkeleton({ count = 1, className }: MemberCardSkeletonProps) {
+export function MemberCardSkeleton({
+  count = 1,
+  className,
+}: MemberCardSkeletonProps) {
   return (
     <div className={className}>
       {Array.from({ length: count }).map((_, i) => (

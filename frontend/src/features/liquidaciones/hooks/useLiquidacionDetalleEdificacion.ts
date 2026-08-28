@@ -5,8 +5,8 @@
  */
 import { useApiQuery } from "@/hooks";
 import {
-  liquidacionEdificacionOutResponseSchema,
   type LiquidacionEdificacionOut,
+  liquidacionEdificacionOutResponseSchema,
 } from "../schemas/liquidacion-detail.schemas";
 
 interface UseLiquidacionDetalleEdificacionProps {

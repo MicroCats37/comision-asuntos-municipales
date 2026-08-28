@@ -21,11 +21,15 @@ export function InspectoresSection({
       <div className="space-y-4">
         <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
           <UserCheck className="h-4 w-4" />
-          <h3 className="text-sm font-semibold uppercase tracking-wide">Inspectores</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wide">
+            Inspectores
+          </h3>
         </div>
         <div className="flex items-center gap-2 py-2">
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Cargando inspectores...</span>
+          <span className="text-sm text-muted-foreground">
+            Cargando inspectores...
+          </span>
         </div>
       </div>
     );
@@ -36,7 +40,9 @@ export function InspectoresSection({
       <div className="space-y-4">
         <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
           <UserCheck className="h-4 w-4" />
-          <h3 className="text-sm font-semibold uppercase tracking-wide">Inspectores</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wide">
+            Inspectores
+          </h3>
         </div>
         <p className="text-sm text-muted-foreground italic py-2">
           No hay inspectores elegibles para esta inspección de obra
@@ -45,7 +51,9 @@ export function InspectoresSection({
     );
   }
 
-  const groupedByEspecialidad = inspectores.reduce<Record<string, InspectorVigente[]>>((acc, inspector) => {
+  const groupedByEspecialidad = inspectores.reduce<
+    Record<string, InspectorVigente[]>
+  >((acc, inspector) => {
     const specialtyName = inspector.especialidad?.nombre ?? "Sin especialidad";
     if (!acc[specialtyName]) acc[specialtyName] = [];
     acc[specialtyName].push(inspector);
@@ -60,9 +68,12 @@ export function InspectoresSection({
     <div className="space-y-4">
       <div className="flex items-center gap-2 -mx-4 -mt-4 px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
         <UserCheck className="h-4 w-4" />
-        <h3 className="text-sm font-semibold uppercase tracking-wide">Inspectores</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide">
+          Inspectores
+        </h3>
         <span className="ml-auto text-[10px] font-medium opacity-75">
-          ({selectedIds.length} seleccionado{selectedIds.length !== 1 ? "s" : ""})
+          ({selectedIds.length} seleccionado
+          {selectedIds.length !== 1 ? "s" : ""})
         </span>
       </div>
 
@@ -92,11 +103,15 @@ export function InspectoresSection({
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isSelected ? "bg-primary text-primary-foreground" : "bg-muted/80 text-muted-foreground"}`}>
+                      <div
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isSelected ? "bg-primary text-primary-foreground" : "bg-muted/80 text-muted-foreground"}`}
+                      >
                         <UserCheck className="h-4 w-4" />
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-bold text-foreground truncate">{inspector.nombre_completo}</span>
+                        <span className="text-sm font-bold text-foreground truncate">
+                          {inspector.nombre_completo}
+                        </span>
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground mt-1">
                           <span className="inline-flex items-center px-2 py-0.5 rounded bg-muted/70 text-foreground/80 font-medium whitespace-nowrap">
                             CIP {inspector.cip}

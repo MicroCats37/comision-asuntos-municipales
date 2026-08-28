@@ -49,7 +49,12 @@ export interface BatchUpdateItem<TId extends string | number, TUpdate> {
  * Batch payload returned by the batch engine.
  * Contains create, update, and delete operations ready for the API.
  */
-export interface BatchPayload<TCreate, TUpdate, TDelete, TId extends string | number> {
+export interface BatchPayload<
+  TCreate,
+  TUpdate,
+  TDelete,
+  TId extends string | number,
+> {
   create: TCreate[];
   update: BatchUpdateItem<TId, TUpdate>[];
   delete: TDelete[];
@@ -82,7 +87,10 @@ export interface BatchAdapter<
   /** Build a create payload from an edited item */
   buildCreate: (item: TEdited) => TCreate;
   /** Build an update body from an edited item (partial, only changed fields) */
-  buildUpdate: (original: TOriginal, edited: TEdited) => Partial<TUpdate> | null;
+  buildUpdate: (
+    original: TOriginal,
+    edited: TEdited,
+  ) => Partial<TUpdate> | null;
   /** Build a delete item from an original item */
   buildDelete: (original: TOriginal) => TDelete | null;
 }
@@ -90,7 +98,12 @@ export interface BatchAdapter<
 /**
  * Result of comparing original vs edited collections.
  */
-export interface BatchDiffResult<TCreate, TUpdate, TDelete, TId extends string | number> {
+export interface BatchDiffResult<
+  TCreate,
+  TUpdate,
+  TDelete,
+  TId extends string | number,
+> {
   create: TCreate[];
   update: BatchUpdateItem<TId, TUpdate>[];
   delete: TDelete[];

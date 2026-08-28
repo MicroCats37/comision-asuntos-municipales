@@ -225,6 +225,7 @@ class InspectorPresenter:
                         else None
                     ),
                     periodo=r.periodo,
+                    mes=r.mes,
                     dictamen_revision=r.dictamen_revision,
                     fecha_presentacion=r.fecha_presentacion,
                     fecha_revision=r.fecha_revision,

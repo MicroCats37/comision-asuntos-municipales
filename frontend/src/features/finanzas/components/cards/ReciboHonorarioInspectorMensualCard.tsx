@@ -140,16 +140,16 @@ export function ReciboHonorarioInspectorMensualCard({
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">Pagadas Anter.</p>
+              <p className="text-[10px] text-muted-foreground">
+                Pagadas Anter.
+              </p>
               <p className="text-sm font-semibold text-muted-foreground">
                 {totales.inspecciones_pagadas_hasta_mes_anterior}
               </p>
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground">Saldo Rest.</p>
-              <p className="text-sm font-semibold">
-                {totales.saldo_restante}
-              </p>
+              <p className="text-sm font-semibold">{totales.saldo_restante}</p>
             </div>
           </div>
         </div>
@@ -178,9 +178,7 @@ export function ReciboHonorarioInspectorMensualCard({
               </p>
             </div>
             <div className="col-span-2 sm:col-span-2">
-              <p className="text-[10px] text-muted-foreground">
-                Neto a Pagar
-              </p>
+              <p className="text-[10px] text-muted-foreground">Neto a Pagar</p>
               <p className="text-base font-bold text-primary">
                 {formatCurrency(totales.honorarios)}
               </p>

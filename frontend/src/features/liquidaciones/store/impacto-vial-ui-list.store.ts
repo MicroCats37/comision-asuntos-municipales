@@ -42,6 +42,5 @@ export const useImpactoVialUIStore = create<ImpactoVialUIStore>()((set) => ({
   openFormModal: (id) =>
     set({ isFormModalOpen: true, selectedItemId: id ?? null }),
 
-  closeFormModal: () =>
-    set({ isFormModalOpen: false, selectedItemId: null }),
+  closeFormModal: () => set({ isFormModalOpen: false, selectedItemId: null }),
 }));

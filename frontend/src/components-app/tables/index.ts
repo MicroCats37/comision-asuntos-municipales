@@ -1,1 +1,5 @@
-export { AppDataTable, type AppDataTableProps, getAvatarInitials } from "./AppDataTable";
+export {
+  AppDataTable,
+  type AppDataTableProps,
+  getAvatarInitials,
+} from "./AppDataTable";

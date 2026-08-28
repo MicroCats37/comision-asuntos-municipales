@@ -67,7 +67,9 @@ export const tarifaHistoricaPeriodoSchema = z.object({
   tarifa_m2: tarifaM2Schema.nullable().optional(),
   tarifas_visitas: z.array(tarifaVisitaSchema),
 });
-export type TarifaHistoricaPeriodo = z.infer<typeof tarifaHistoricaPeriodoSchema>;
+export type TarifaHistoricaPeriodo = z.infer<
+  typeof tarifaHistoricaPeriodoSchema
+>;
 
 // ── Derechos Historicos ───────────────────────────────────────────────────────
 

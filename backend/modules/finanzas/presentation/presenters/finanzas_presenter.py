@@ -326,6 +326,8 @@ class FinanzasPresenter:
                     monto_contribuido=i.monto_contribuido,
                     saldo_disponible=i.saldo_disponible,
                     saldo_restante=i.saldo_restante,
+                    periodo=i.periodo,
+                    mes=i.mes,
                 )
                 for i in result.items
             ],

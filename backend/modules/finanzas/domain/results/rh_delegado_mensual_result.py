@@ -24,7 +24,8 @@ class RHDelegadoCotizarItemResult(BaseModel):
     fondo_comun: float | None = None  # 10% — per item
     neto_honorario: float | None = None  # per item
     numero_rh: str | None = None
-    periodo: str | None = None
+    periodo: int | None = None
+    mes: int | None = None
     dictamen_revision: str | None = None
     fecha_presentacion: str | None = None  # ISO date string
 
@@ -69,6 +70,8 @@ class RHDelegadoMensualDetalleResult(BaseModel):
     """
     expediente: str
     imp_bruto: float
+    periodo: int | None = None
+    mes: int | None = None
 
 
 class RHDelegadoMensualTotalesResult(BaseModel):

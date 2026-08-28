@@ -105,7 +105,8 @@ class LiquidacionDelegadoEnGeneralResult(BaseModel):
     delegado_cip: str
     delegado_dni: str
     delegado_nombre_completo: str
-    periodo: Optional[str] = None
+    periodo: Optional[int] = None
+    mes: Optional[int] = None
     dictamen_revision: Optional[str] = None
     fecha_presentacion: Optional[str] = None
     fecha_revision: Optional[str] = None

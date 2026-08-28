@@ -389,6 +389,7 @@ class InspectorOrchestrator:
                 nombre_completo=perfil.nombre_completo,
             ),
             periodo=li.periodo,
+            mes=li.mes,
             dictamen_revision=li.dictamen_revision,
             fecha_presentacion=(
                 str(li.fecha_presentacion) if li.fecha_presentacion else None

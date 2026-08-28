@@ -1,5 +1,6 @@
 "use client";
 
+import { Building2, FileText, MapPin, User } from "lucide-react";
 /**
  * ProyectoSmartField — Smart Field for proyecto section.
  *
@@ -10,7 +11,6 @@
  * - Uses GenericInput internally
  */
 import type { UseFormReturn } from "react-hook-form";
-import { Building2, FileText, MapPin, User } from "lucide-react";
 import { GenericInput } from "@/components/genericForm/GenericInput";
 import type { EdificacionesFormData } from "../../schemas/liquidacion-edificaciones-form.schema";
 

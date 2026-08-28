@@ -244,7 +244,7 @@ export function LiquidacionTaludesCard({ item }: LiquidacionTaludesCardProps) {
                           {formatCurrency(detalle.subtotal)}
                         </span>
                       </div>
-                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -290,5 +290,3 @@ export function LiquidacionTaludesCard({ item }: LiquidacionTaludesCardProps) {
     </>
   );
 }
-
-

@@ -81,7 +81,8 @@ export function ReciboHonorarioDelegadoMensualCard({
               Liquidaciones incluidas
             </span>
             <span className="ml-auto text-xs font-semibold text-primary">
-              {liquidacionesCount} {liquidacionesCount === 1 ? "liquidación" : "liquidaciones"}
+              {liquidacionesCount}{" "}
+              {liquidacionesCount === 1 ? "liquidación" : "liquidaciones"}
             </span>
           </div>
           {detalles.length > 0 ? (
@@ -152,9 +153,7 @@ export function ReciboHonorarioDelegadoMensualCard({
               </p>
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <p className="text-[10px] text-muted-foreground">
-                Neto a Pagar
-              </p>
+              <p className="text-[10px] text-muted-foreground">Neto a Pagar</p>
               <p className="text-base font-bold text-primary">
                 {formatCurrency(totales.neto_honorario)}
               </p>

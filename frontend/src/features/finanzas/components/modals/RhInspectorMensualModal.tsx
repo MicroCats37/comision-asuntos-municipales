@@ -15,6 +15,7 @@
  */
 import { FileSpreadsheet, Loader2, Receipt, Search, X } from "lucide-react";
 import { useCallback, useState } from "react";
+import * as XLSX from "xlsx";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,11 +23,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { notify } from "@/errors";
+import { useCandidatasInspector } from "@/features/finanzas/hooks/useCandidatasInspector";
 import {
   useCotizarRHInspector,
   useCrearRHInspector,
 } from "@/features/finanzas/hooks/useRHInspectorMensual";
-import { useCandidatasInspector } from "@/features/finanzas/hooks/useCandidatasInspector";
 import type {
   InspectorCandidataItem,
   RHInspectorCotizar,
@@ -41,20 +42,50 @@ interface RhInspectorMensualModalProps {
 
 type Step = 1 | 2 | 3 | 4;
 
-/** Per-candidate selection: cantidad_visitas chosen by the user */
+const getCurrentPeriodParts = () => {
+  const today = new Date();
+  const year = String(today.getFullYear());
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  return { year, month, rhPeriod: `${year}-${month}` };
+};
+
+const isValidPeriodo = (value: string) => /^\d{4}$/.test(value);
+const isValidMes = (value: string) => {
+  const month = Number(value);
+  return /^\d{1,2}$/.test(value) && month >= 1 && month <= 12;
+};
+
+const formatCurrency = (value?: number | null) =>
+  value == null ? "—" : `S/ ${value.toFixed(2)}`;
+
+const safeFilePart = (value: string) => value.replace(/[^a-zA-Z0-9-]/g, "-");
+
+/** Per-candidate selection: cantidad_visitas and period chosen by the user */
 export interface InspectorCandidateSelection {
   cantidad_visitas: number;
+  periodo: string;
+  mes: string;
 }
+
+type BuildItemsResult = {
+  headerPeriodo: string;
+  items: RHInspectorCotizarIn["items"];
+};
 
 export function RhInspectorMensualModal({
   open,
   onOpenChange,
   onSuccess,
 }: RhInspectorMensualModalProps) {
+  const currentPeriod = getCurrentPeriodParts();
   const [step, setStep] = useState<Step>(1);
   const [cip, setCip] = useState("");
-  const [periodo, setPeriodo] = useState("");
-  const [cotizarResult, setCotizarResult] = useState<RHInspectorCotizar | null>(null);
+  const [periodo, setPeriodo] = useState(currentPeriod.rhPeriod);
+  const [fechaInicio, setFechaInicio] = useState("");
+  const [fechaFin, setFechaFin] = useState("");
+  const [cotizarResult, setCotizarResult] = useState<RHInspectorCotizar | null>(
+    null,
+  );
 
   /**
    * Map of InspectorCandidataItem.liquidacion_categoria_visitas_id → selection.
@@ -75,6 +106,8 @@ export function RhInspectorMensualModal({
   } = useCandidatasInspector({
     cip,
     periodo,
+    fecha_inicio: fechaInicio || undefined,
+    fecha_fin: fechaFin || undefined,
     enabled: false,
   });
 
@@ -91,7 +124,9 @@ export function RhInspectorMensualModal({
   const resetForm = useCallback(() => {
     setStep(1);
     setCip("");
-    setPeriodo("");
+    setPeriodo(getCurrentPeriodParts().rhPeriod);
+    setFechaInicio("");
+    setFechaFin("");
     setCotizarResult(null);
     setSelectedRows({});
   }, []);
@@ -112,6 +147,11 @@ export function RhInspectorMensualModal({
       notify.error("El periodo debe tener formato YYYY-MM");
       return;
     }
+    // Validar rango de fechas si ambas están presentes
+    if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
+      notify.error("La fecha de inicio no puede ser mayor que la fecha fin");
+      return;
+    }
     setSelectedRows({});
     setCotizarResult(null);
     try {
@@ -120,7 +160,7 @@ export function RhInspectorMensualModal({
     } catch {
       notify.error("No se pudieron buscar las candidatas");
     }
-  }, [cip, periodo, refetchCandidatos]);
+  }, [cip, periodo, fechaInicio, fechaFin, refetchCandidatos]);
 
   // ── Toggle row selection ────────────────────────────────────────────────
   const isSelected = useCallback(
@@ -132,10 +172,13 @@ export function RhInspectorMensualModal({
     (c: InspectorCandidataItem, checked: boolean) => {
       setSelectedRows((prev) => {
         if (checked) {
+          const rowPeriod = getCurrentPeriodParts();
           return {
             ...prev,
             [c.liquidacion_categoria_visitas_id]: {
               cantidad_visitas: Math.min(1, c.saldo_disponible),
+              periodo: rowPeriod.year,
+              mes: rowPeriod.month,
             },
           };
         } else {
@@ -148,35 +191,44 @@ export function RhInspectorMensualModal({
     [],
   );
 
-  const updateCantidadVisitas = useCallback(
-    (id: string, value: number) => {
-      setSelectedRows((prev) => ({
-        ...prev,
-        [id]: { cantidad_visitas: value },
-      }));
-    },
-    [],
-  );
+  const updateCantidadVisitas = useCallback((id: string, value: number) => {
+    setSelectedRows((prev) => ({
+      ...prev,
+      [id]: { ...prev[id]!, cantidad_visitas: value },
+    }));
+  }, []);
 
-  // ── Paso 2 → 3: cotizar ──────────────────────────────────────────────
-  const handleCotizar = useCallback(async () => {
+  const updatePeriodo = useCallback((id: string, value: string) => {
+    setSelectedRows((prev) => ({
+      ...prev,
+      [id]: { ...prev[id]!, periodo: value },
+    }));
+  }, []);
+
+  const updateMes = useCallback((id: string, value: string) => {
+    setSelectedRows((prev) => ({
+      ...prev,
+      [id]: { ...prev[id]!, mes: value },
+    }));
+  }, []);
+
+  const buildItems = useCallback((): BuildItemsResult | null => {
     const selectedIds = Object.keys(selectedRows);
     if (selectedIds.length === 0) {
       notify.error("Selecciona al menos una candidata");
-      return;
+      return null;
     }
 
-    // Periodo es requerido para cotizar
-    if (!periodo.trim()) {
-      notify.error("Ingresa el periodo (YYYY-MM) antes de cotizar");
-      return;
+    const firstSelected = selectedRows[selectedIds[0]];
+    const headerPeriodo = /^\d{4}-\d{2}$/.test(periodo.trim())
+      ? periodo.trim()
+      : `${firstSelected.periodo}-${firstSelected.mes.padStart(2, "0")}`;
+    if (!/^\d{4}-\d{2}$/.test(headerPeriodo)) {
+      notify.error("El periodo de cabecera debe tener formato YYYY-MM");
+      return null;
     }
-    if (!/^\d{4}-\d{2}$/.test(periodo.trim())) {
-      notify.error("El periodo debe tener formato YYYY-MM");
-      return;
-    }
+    setPeriodo(headerPeriodo);
 
-    // Validate cantidad_visitas per row
     for (const c of candidatos) {
       const sel = selectedRows[c.liquidacion_categoria_visitas_id];
       if (!sel) continue;
@@ -184,62 +236,153 @@ export function RhInspectorMensualModal({
         notify.error(
           `Cantidad visitas debe ser mayor a 0 para expediente ${c.expediente}`,
         );
-        return;
+        return null;
       }
       if (sel.cantidad_visitas > c.saldo_disponible) {
         notify.error(
           `Cantidad visitas excede saldo disponible (${c.saldo_disponible}) para expediente ${c.expediente}`,
         );
-        return;
+        return null;
+      }
+      if (!isValidPeriodo(sel.periodo)) {
+        notify.error(
+          `Periodo debe tener formato YYYY para expediente ${c.expediente}`,
+        );
+        return null;
+      }
+      if (!isValidMes(sel.mes)) {
+        notify.error(
+          `Mes debe estar entre 1 y 12 para expediente ${c.expediente}`,
+        );
+        return null;
       }
     }
 
-    const items: RHInspectorCotizarIn["items"] = candidatos
+    const items = candidatos
       .filter((c) => selectedIds.includes(c.liquidacion_categoria_visitas_id))
-      .map((c) => ({
-        liquidacion_categoria_visitas_id: c.liquidacion_categoria_visitas_id,
-        cantidad_visitas: selectedRows[c.liquidacion_categoria_visitas_id].cantidad_visitas,
-      }));
+      .map((c) => {
+        const sel = selectedRows[c.liquidacion_categoria_visitas_id];
+        return {
+          liquidacion_categoria_visitas_id: c.liquidacion_categoria_visitas_id,
+          cantidad_visitas: sel.cantidad_visitas,
+          periodo: Number(sel.periodo),
+          mes: Number(sel.mes),
+        };
+      });
+
+    return { headerPeriodo, items };
+  }, [selectedRows, periodo, candidatos]);
+
+  // ── Paso 2 → 3: cotizar ──────────────────────────────────────────────
+  const handleCotizar = useCallback(async () => {
+    const result = buildItems();
+    if (!result) return;
 
     try {
-      const result = await cotizarMutation.cotizar({
+      const cotizacion = await cotizarMutation.cotizar({
         cip,
-        periodo,
-        items,
+        periodo: result.headerPeriodo,
+        items: result.items,
       });
-      setCotizarResult(result.data);
+      setCotizarResult(cotizacion.data);
       setStep(3);
     } catch {
       // Error handled by mutation
     }
-  }, [selectedRows, candidatos, cip, periodo, cotizarMutation]);
+  }, [buildItems, cip, cotizarMutation]);
 
   // ── Paso 3 → 4: confirmar ────────────────────────────────────────────
   const handleConfirmar = useCallback(() => {
     setStep(4);
   }, []);
 
+  const handleExportExcel = useCallback(() => {
+    if (!cotizarResult) return;
+
+    const rows: Array<Record<string, string | number>> =
+      cotizarResult.items.map((item, index) => ({
+        Item: index + 1,
+        Inspector: cotizarResult.inspector.nombre_completo,
+        CIP: cotizarResult.inspector.cip,
+        DNI: cotizarResult.inspector.dni,
+        Periodo: cotizarResult.periodo,
+        Expediente: item.exp_liqui,
+        Administrado: item.nombre_propietario,
+        "Inspecciones programadas": item.inspecciones_programadas,
+        "Pagadas hasta mes anterior":
+          item.inspecciones_pagadas_hasta_mes_anterior,
+        "Inspecciones liquidadas": item.inspecciones_liquidadas,
+        "Periodo item": item.periodo ?? "",
+        "Mes item": item.mes ?? "",
+        "Saldo restante": item.saldo_restante,
+        "Importe bruto": item.importe_bruto,
+        "Costo por inspeccion": item.costo_por_inspeccion,
+        "Monto contribuido": item.monto_contribuido,
+      }));
+
+    rows.push({
+      Item: "",
+      Inspector: "TOTALES",
+      CIP: cotizarResult.inspector.cip,
+      DNI: cotizarResult.inspector.dni,
+      Periodo: cotizarResult.periodo,
+      Expediente: "",
+      Administrado: "",
+      "Inspecciones programadas": cotizarResult.items.reduce(
+        (sum, item) => sum + item.inspecciones_programadas,
+        0,
+      ),
+      "Pagadas hasta mes anterior": cotizarResult.items.reduce(
+        (sum, item) => sum + item.inspecciones_pagadas_hasta_mes_anterior,
+        0,
+      ),
+      "Inspecciones liquidadas": cotizarResult.items.reduce(
+        (sum, item) => sum + item.inspecciones_liquidadas,
+        0,
+      ),
+      "Periodo item": "",
+      "Mes item": "",
+      "Saldo restante": cotizarResult.items.reduce(
+        (sum, item) => sum + item.saldo_restante,
+        0,
+      ),
+      "Importe bruto": cotizarResult.items.reduce(
+        (sum, item) => sum + item.importe_bruto,
+        0,
+      ),
+      "Costo por inspeccion": "",
+      "Monto contribuido": cotizarResult.totales.sub_total,
+    });
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Resumen RH");
+    XLSX.writeFile(
+      workbook,
+      `rh-inspector-${safeFilePart(cotizarResult.inspector.cip)}-${safeFilePart(cotizarResult.periodo)}.xlsx`,
+    );
+  }, [cotizarResult]);
+
   // ── Paso 4: crear ───────────────────────────────────────────────────
   const handleCrear = useCallback(async () => {
     if (!cotizarResult) return;
 
-    const selectedIds = Object.keys(selectedRows);
-    const items: RHInspectorCotizarIn["items"] = candidatos
-      .filter((c) => selectedIds.includes(c.liquidacion_categoria_visitas_id))
-      .map((c) => ({
-        liquidacion_categoria_visitas_id: c.liquidacion_categoria_visitas_id,
-        cantidad_visitas: selectedRows[c.liquidacion_categoria_visitas_id].cantidad_visitas,
-      }));
+    const result = buildItems();
+    if (!result) return;
 
     try {
-      await crearMutation.crear({ cip, periodo, items });
+      await crearMutation.crear({
+        cip,
+        periodo: result.headerPeriodo,
+        items: result.items,
+      });
       notify.success("RH Mensual de inspector creado correctamente");
       handleClose();
       onSuccess?.();
     } catch {
       // Error handled by mutation
     }
-  }, [cotizarResult, selectedRows, candidatos, cip, periodo, crearMutation, handleClose, onSuccess]);
+  }, [cotizarResult, buildItems, cip, crearMutation, handleClose, onSuccess]);
 
   const isPending = cotizarMutation.isPending || crearMutation.isPending;
   const selectedCount = Object.keys(selectedRows).length;
@@ -264,7 +407,8 @@ export function RhInspectorMensualModal({
               </h2>
               <p className="hidden sm:block text-sm text-muted-foreground leading-relaxed">
                 {step === 1 && "Ingresa el CIP del inspector"}
-                {step === 2 && "Selecciona las candidatas e ingresa la cantidad de visitas por item"}
+                {step === 2 &&
+                  "Selecciona las candidatas e ingresa la cantidad de visitas por item"}
                 {step === 3 && "Revisa la previsualización antes de confirmar"}
                 {step === 4 && "Confirma los datos y genera el RH mensual"}
               </p>
@@ -317,6 +461,32 @@ export function RhInspectorMensualModal({
                     }}
                   />
                 </div>
+                <div className="space-y-2 mt-3">
+                  <Label htmlFor="fecha-inicio">Fecha Inicio</Label>
+                  <Input
+                    id="fecha-inicio"
+                    type="date"
+                    value={fechaInicio}
+                    onChange={(e) => setFechaInicio(e.target.value)}
+                    className="h-10 rounded-xl font-semibold"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void handleBuscar();
+                    }}
+                  />
+                </div>
+                <div className="space-y-2 mt-3">
+                  <Label htmlFor="fecha-fin">Fecha Fin</Label>
+                  <Input
+                    id="fecha-fin"
+                    type="date"
+                    value={fechaFin}
+                    onChange={(e) => setFechaFin(e.target.value)}
+                    className="h-10 rounded-xl font-semibold"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void handleBuscar();
+                    }}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -351,6 +521,7 @@ export function RhInspectorMensualModal({
                     </span>
                     <Input
                       id="periodo-step2"
+                      type="month"
                       value={periodo}
                       onChange={(e) => setPeriodo(e.target.value)}
                       placeholder="YYYY-MM"
@@ -386,19 +557,29 @@ export function RhInspectorMensualModal({
                     <div className="w-16 shrink-0 text-right">Liq.</div>
                     <div className="w-16 shrink-0 text-right">Saldo</div>
                     <div className="w-20 shrink-0 text-right">Costo/Und.</div>
+                    <div className="w-20 shrink-0">Periodo</div>
+                    <div className="w-16 shrink-0">Mes</div>
                     <div className="w-20 shrink-0">Cant. Visitas</div>
                   </div>
                   <div className="border border-t-0 border-border rounded-b-lg overflow-hidden">
                     {candidatos.map((c) => {
-                      const selected = isSelected(c.liquidacion_categoria_visitas_id);
-                      const cantidad = selectedRows[c.liquidacion_categoria_visitas_id]?.cantidad_visitas ?? 0;
+                      const selected = isSelected(
+                        c.liquidacion_categoria_visitas_id,
+                      );
+                      const cantidad =
+                        selectedRows[c.liquidacion_categoria_visitas_id]
+                          ?.cantidad_visitas ?? 0;
+                      const rowPeriodo =
+                        selectedRows[c.liquidacion_categoria_visitas_id]
+                          ?.periodo ?? currentPeriod.year;
+                      const rowMes =
+                        selectedRows[c.liquidacion_categoria_visitas_id]?.mes ??
+                        currentPeriod.month;
                       return (
                         <div
                           key={c.liquidacion_categoria_visitas_id}
                           className={`flex items-center gap-3 px-3 py-2 border-b border-border/50 last:border-b-0 transition-all duration-150 ${
-                            selected
-                              ? "bg-primary/[0.04]"
-                              : "hover:bg-muted/30"
+                            selected ? "bg-primary/[0.04]" : "hover:bg-muted/30"
                           }`}
                         >
                           {/* Checkbox */}
@@ -454,11 +635,13 @@ export function RhInspectorMensualModal({
                             className="w-16 shrink-0 text-right cursor-pointer"
                             onClick={() => toggleRow(c, !selected)}
                           >
-                            <p className={`text-xs font-semibold ${
-                              c.saldo_disponible === 0
-                                ? "text-muted-foreground"
-                                : "text-foreground"
-                            }`}>
+                            <p
+                              className={`text-xs font-semibold ${
+                                c.saldo_disponible === 0
+                                  ? "text-muted-foreground"
+                                  : "text-foreground"
+                              }`}
+                            >
                               {c.saldo_disponible}
                             </p>
                           </div>
@@ -474,6 +657,40 @@ export function RhInspectorMensualModal({
                                 : "—"}
                             </p>
                           </div>
+
+                          <Input
+                            id={`periodo-${c.liquidacion_categoria_visitas_id}`}
+                            type="number"
+                            min={1900}
+                            max={9999}
+                            value={rowPeriodo}
+                            onChange={(e) =>
+                              updatePeriodo(
+                                c.liquidacion_categoria_visitas_id,
+                                e.target.value,
+                              )
+                            }
+                            disabled={!selected}
+                            placeholder="YYYY"
+                            className="w-20 shrink-0 h-7 text-xs rounded border border-input bg-background disabled:opacity-40 disabled:cursor-not-allowed"
+                          />
+
+                          <Input
+                            id={`mes-${c.liquidacion_categoria_visitas_id}`}
+                            type="number"
+                            min={1}
+                            max={12}
+                            value={rowMes}
+                            onChange={(e) =>
+                              updateMes(
+                                c.liquidacion_categoria_visitas_id,
+                                e.target.value,
+                              )
+                            }
+                            disabled={!selected}
+                            placeholder="1-12"
+                            className="w-16 shrink-0 h-7 text-xs rounded border border-input bg-background disabled:opacity-40 disabled:cursor-not-allowed"
+                          />
 
                           {/* Cantidad visitas (inline number input) */}
                           <Input
@@ -510,9 +727,87 @@ export function RhInspectorMensualModal({
             </div>
           )}
 
-          {/* ── Paso 3: Previsualización — Tabla de Liquidación ── */}
-          {step === 3 && cotizarResult && (
+          {/* ── Paso 3/4: Previsualización y confirmación ── */}
+          {(step === 3 || step === 4) && cotizarResult && (
             <div className="space-y-4">
+              {step === 4 && (
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+                  <div>
+                    <h3 className="text-sm font-black uppercase tracking-wide text-primary">
+                      Resumen de confirmación
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Verifica estos datos antes de crear el RH mensual.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Inspector
+                      </p>
+                      <p className="font-semibold truncate">
+                        {cotizarResult.inspector.nombre_completo}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        CIP
+                      </p>
+                      <p className="font-semibold">
+                        {cotizarResult.inspector.cip}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Periodo
+                      </p>
+                      <p className="font-semibold">{cotizarResult.periodo}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Items
+                      </p>
+                      <p className="font-semibold">
+                        {cotizarResult.items.length}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm border-t border-primary/20 pt-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Sub total
+                      </p>
+                      <p className="font-semibold">
+                        {formatCurrency(cotizarResult.totales.sub_total)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Descuento
+                      </p>
+                      <p className="font-semibold text-destructive">
+                        - {formatCurrency(cotizarResult.totales.descuento)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Tasa descuento
+                      </p>
+                      <p className="font-semibold">
+                        {cotizarResult.totales.tasa_descuento_aplicada}%
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Honorarios
+                      </p>
+                      <p className="font-black text-primary">
+                        {formatCurrency(cotizarResult.totales.honorarios)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {/* Header info */}
               <div className="rounded-xl border border-border/60 bg-muted/10 p-4 space-y-2">
                 <div className="flex justify-between text-sm">
@@ -527,7 +822,9 @@ export function RhInspectorMensualModal({
                   <span className="text-muted-foreground font-semibold">
                     CIP:
                   </span>
-                  <span className="font-bold">{cotizarResult.inspector.cip}</span>
+                  <span className="font-bold">
+                    {cotizarResult.inspector.cip}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground font-semibold">
@@ -556,6 +853,12 @@ export function RhInspectorMensualModal({
                       </th>
                       <th className="text-right px-3 py-2 font-semibold text-muted-foreground">
                         Liq.
+                      </th>
+                      <th className="text-right px-3 py-2 font-semibold text-muted-foreground">
+                        Periodo
+                      </th>
+                      <th className="text-right px-3 py-2 font-semibold text-muted-foreground">
+                        Mes
                       </th>
                       <th className="text-right px-3 py-2 font-semibold text-muted-foreground">
                         Saldo
@@ -590,6 +893,12 @@ export function RhInspectorMensualModal({
                           {item.inspecciones_liquidadas}
                         </td>
                         <td className="px-3 py-2 text-right">
+                          {item.periodo ?? "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {item.mes ?? "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right">
                           {item.saldo_restante}
                         </td>
                         <td className="px-3 py-2 text-right">
@@ -607,7 +916,10 @@ export function RhInspectorMensualModal({
                   {/* Footer con totales — alineado con las columnas de la tabla */}
                   <tfoot className="bg-muted/30 border-t-2 border-border">
                     <tr>
-                      <td colSpan={8} className="px-3 py-2 text-right font-semibold text-muted-foreground">
+                      <td
+                        colSpan={10}
+                        className="px-3 py-2 text-right font-semibold text-muted-foreground"
+                      >
                         Sub Total:
                       </td>
                       <td className="px-3 py-2 text-right font-bold">
@@ -615,15 +927,22 @@ export function RhInspectorMensualModal({
                       </td>
                     </tr>
                     <tr>
-                      <td colSpan={8} className="px-3 py-1.5 text-right text-muted-foreground">
-                        Descuento ({cotizarResult.totales.tasa_descuento_aplicada}%):
+                      <td
+                        colSpan={10}
+                        className="px-3 py-1.5 text-right text-muted-foreground"
+                      >
+                        Descuento (
+                        {cotizarResult.totales.tasa_descuento_aplicada}%):
                       </td>
                       <td className="px-3 py-1.5 text-right font-bold text-destructive">
                         - S/ {cotizarResult.totales.descuento.toFixed(2)}
                       </td>
                     </tr>
                     <tr className="border-t border-border">
-                      <td colSpan={8} className="px-3 py-2 text-right font-bold text-foreground">
+                      <td
+                        colSpan={10}
+                        className="px-3 py-2 text-right font-bold text-foreground"
+                      >
                         Honorarios:
                       </td>
                       <td className="px-3 py-2 text-right font-black text-primary text-sm">
@@ -646,9 +965,7 @@ export function RhInspectorMensualModal({
                 if (step === 1) {
                   handleClose();
                 } else {
-                  setStep((s) =>
-                    (s === 4 ? 3 : s === 3 ? 2 : 1) as Step,
-                  );
+                  setStep((s) => (s === 4 ? 3 : s === 3 ? 2 : 1) as Step);
                 }
               }}
               disabled={isPending}
@@ -693,18 +1010,30 @@ export function RhInspectorMensualModal({
             )}
 
             {step === 4 && (
-              <Button
-                type="button"
-                onClick={handleCrear}
-                disabled={crearMutation.isPending}
-                className="h-10 rounded-xl font-bold gap-1.5"
-              >
-                {crearMutation.isPending && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-                <Receipt className="h-4 w-4" />
-                Crear RH
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleExportExcel}
+                  disabled={!cotizarResult || crearMutation.isPending}
+                  className="h-10 rounded-xl font-semibold gap-1.5"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Exportar Excel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleCrear}
+                  disabled={crearMutation.isPending}
+                  className="h-10 rounded-xl font-bold gap-1.5"
+                >
+                  {crearMutation.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  <Receipt className="h-4 w-4" />
+                  Crear RH
+                </Button>
+              </>
             )}
           </div>
         </GenericModal.Footer>

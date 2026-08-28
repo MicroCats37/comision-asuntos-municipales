@@ -3,17 +3,25 @@
  * Endpoint: GET /liquidaciones/generales/
  * Devuelve PaginatedData[LiquidacionGeneralOutput] con tipo_liquidacion.
  */
+
+import type { z } from "zod";
 import { useApiQuery } from "@/hooks";
 import { apiResponseSchema } from "@/types/api.types";
-import { paginatedResponseSchema, LiquidacionGeneralOutputSchema } from "../schemas/liquidacion-base.schema";
-import { z } from "zod";
+import {
+  LiquidacionGeneralOutputSchema,
+  paginatedResponseSchema,
+} from "../schemas/liquidacion-base.schema";
 
 export const liquidacionGeneralItemSchema = LiquidacionGeneralOutputSchema;
 
 /** Item de liquidación general — inferido del schema real del backend */
-export type LiquidacionGeneralItem = z.infer<typeof liquidacionGeneralItemSchema>;
+export type LiquidacionGeneralItem = z.infer<
+  typeof liquidacionGeneralItemSchema
+>;
 
-const paginatedSchema = apiResponseSchema(paginatedResponseSchema(liquidacionGeneralItemSchema));
+const paginatedSchema = apiResponseSchema(
+  paginatedResponseSchema(liquidacionGeneralItemSchema),
+);
 
 interface UseLiquidacionesGeneralesProps {
   page?: number;
@@ -22,6 +30,8 @@ interface UseLiquidacionesGeneralesProps {
   documento?: string;
   razonSocial?: string;
   propietario?: string;
+  /** Filter by liquidacion numero (autoincremental per type, independent sequences across types) */
+  numero?: number;
   enabled?: boolean;
   /** true → usa GET /ultimas-revisiones (solo la última revisión por proyecto+tipo) */
   soloUltimasRevisiones?: boolean;
@@ -34,6 +44,7 @@ export function useLiquidacionesGenerales({
   documento,
   razonSocial,
   propietario,
+  numero,
   enabled = true,
   soloUltimasRevisiones = false,
 }: UseLiquidacionesGeneralesProps = {}) {
@@ -42,6 +53,7 @@ export function useLiquidacionesGenerales({
   if (documento) params.documento = documento;
   if (razonSocial) params.razon_social = razonSocial;
   if (propietario) params.propietario = propietario;
+  if (numero !== undefined) params.numero = numero;
 
   const query = useApiQuery({
     queryKey: [
@@ -54,8 +66,11 @@ export function useLiquidacionesGenerales({
       documento,
       razonSocial,
       propietario,
+      numero,
     ],
-    url: soloUltimasRevisiones ? "/liquidaciones/generales/ultimas-revisiones" : "/liquidaciones/generales",
+    url: soloUltimasRevisiones
+      ? "/liquidaciones/generales/ultimas-revisiones"
+      : "/liquidaciones/generales",
     schema: paginatedSchema,
     params,
     queryOptions: {

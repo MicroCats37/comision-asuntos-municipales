@@ -24,7 +24,11 @@ export const nuevaRevisionEdificacionesFormSchema = z.object({
   /** ID de la única tarifa vigente de porcentaje de obra */
   tarifa_unica_id: z.string().optional(),
   /** IDs de especialidades seleccionadas — al menos una */
-  especialidades_seleccionadas: z.array(z.string()).min(1, "Selecciona al menos una especialidad"),
+  especialidades_seleccionadas: z
+    .array(z.string())
+    .min(1, "Selecciona al menos una especialidad"),
 });
 
-export type NuevaRevisionEdificacionesFormData = z.infer<typeof nuevaRevisionEdificacionesFormSchema>;
+export type NuevaRevisionEdificacionesFormData = z.infer<
+  typeof nuevaRevisionEdificacionesFormSchema
+>;

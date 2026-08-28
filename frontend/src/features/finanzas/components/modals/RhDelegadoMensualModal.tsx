@@ -13,8 +13,9 @@
  *   POST /finanzas/recibos-delegados/cotizar
  *   POST /finanzas/recibos-delegados/crear
  */
-import { FileSpreadsheet, Loader2, Receipt, Search, X } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { FileSpreadsheet, Loader2, Receipt, Search } from "lucide-react";
+import { useCallback, useState } from "react";
+import * as XLSX from "xlsx";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,15 +23,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { notify } from "@/errors";
+import { useCandidatasDelegado } from "@/features/finanzas/hooks/useCandidatasDelegado";
 import {
   useCotizarRHDelegado,
   useCrearRHDelegado,
 } from "@/features/finanzas/hooks/useRHDelegadoMensual";
-import { useCandidatasDelegado } from "@/features/finanzas/hooks/useCandidatasDelegado";
 import type {
   CandidataDelegado,
-  RHDelegadoCotizarIn,
   RHDelegadoCotizar,
+  RHDelegadoCotizarIn,
 } from "@/features/finanzas/schemas/rh-delegado-mensual.schema";
 
 interface RhDelegadoMensualModalProps {
@@ -45,6 +46,7 @@ type Step = 1 | 2 | 3 | 4;
 export interface CandidataCardFields {
   numero_rh: string;
   periodo: string;
+  mes: string;
   dictamen_revision: string;
   fecha_presentacion: string;
   fecha_revision: string;
@@ -58,6 +60,29 @@ const DICTAMEN_OPTIONS = [
   { value: "PENDIENTE", label: "Pendiente" },
 ];
 
+const getCurrentPeriodParts = () => {
+  const now = new Date();
+  return {
+    periodo: String(now.getFullYear()),
+    mes: String(now.getMonth() + 1),
+  };
+};
+
+const buildRhPeriodo = (periodo: string, mes: string) =>
+  `${periodo}-${String(Number(mes)).padStart(2, "0")}`;
+
+const isValidPeriodo = (value: string) => /^\d{4}$/.test(value);
+
+const isValidMes = (value: string) => {
+  const mes = Number(value);
+  return Number.isInteger(mes) && mes >= 1 && mes <= 12;
+};
+
+const formatCurrency = (value?: number | null) =>
+  value == null ? "—" : `S/ ${value.toFixed(2)}`;
+
+const safeFilePart = (value: string) => value.replace(/[^a-zA-Z0-9-]/g, "-");
+
 export function RhDelegadoMensualModal({
   open,
   onOpenChange,
@@ -65,8 +90,11 @@ export function RhDelegadoMensualModal({
 }: RhDelegadoMensualModalProps) {
   const [step, setStep] = useState<Step>(1);
   const [cip, setCip] = useState("");
-  const [periodo, setPeriodo] = useState("");
-  const [cotizarResult, setCotizarResult] = useState<RHDelegadoCotizar | null>(null);
+  const [fechaInicio, setFechaInicio] = useState("");
+  const [fechaFin, setFechaFin] = useState("");
+  const [cotizarResult, setCotizarResult] = useState<RHDelegadoCotizar | null>(
+    null,
+  );
 
   /**
    * Map of CandidataDelegado.id → per-item fields.
@@ -86,6 +114,8 @@ export function RhDelegadoMensualModal({
     refetch: refetchCandidatas,
   } = useCandidatasDelegado({
     cip,
+    fecha_inicio: fechaInicio || undefined,
+    fecha_fin: fechaFin || undefined,
     enabled: false,
   });
 
@@ -95,7 +125,8 @@ export function RhDelegadoMensualModal({
   const resetForm = useCallback(() => {
     setStep(1);
     setCip("");
-    setPeriodo("");
+    setFechaInicio("");
+    setFechaFin("");
     setCotizarResult(null);
     setSelectedCardFields({});
   }, []);
@@ -107,8 +138,15 @@ export function RhDelegadoMensualModal({
 
   // ── Paso 1 → 2: buscar candidatas ────────────────────────────────────
   const handleBuscar = useCallback(async () => {
+
     if (!cip.trim()) {
       notify.error("Ingresa el CIP del delegado");
+      return;
+    }
+    if (
+      fechaInicio && fechaFin && fechaInicio > fechaFin
+    ) {
+      notify.error("La fecha de inicio no puede ser mayor que la fecha fin");
       return;
     }
     setSelectedCardFields({});
@@ -119,9 +157,7 @@ export function RhDelegadoMensualModal({
     } catch {
       notify.error("No se pudieron buscar las candidatas");
     }
-  }, [cip, refetchCandidatas]);
-
-  // ── Toggle card selection ──────────────────────────────────────────────
+  }, [fechaInicio, fechaFin, cip, refetchCandidatas]);
   const isSelected = useCallback(
     (id: string) => id in selectedCardFields,
     [selectedCardFields],
@@ -131,11 +167,13 @@ export function RhDelegadoMensualModal({
     (c: CandidataDelegado, checked: boolean) => {
       setSelectedCardFields((prev) => {
         if (checked) {
+          const current = getCurrentPeriodParts();
           return {
             ...prev,
             [c.id]: {
               numero_rh: "",
-              periodo: periodo || "",
+              periodo: current.periodo,
+              mes: current.mes,
               dictamen_revision: "",
               fecha_presentacion: "",
               fecha_revision: "",
@@ -148,15 +186,14 @@ export function RhDelegadoMensualModal({
         }
       });
     },
-    [periodo],
+    [],
   );
 
   const updateCardField = useCallback(
     (id: string, field: keyof CandidataCardFields, value: string) => {
-      setSelectedCardFields((prev) => ({
-        ...prev,
-        [id]: { ...prev[id], [field]: value },
-      }));
+      setSelectedCardFields((prev) => {
+        return { ...prev, [id]: { ...prev[id], [field]: value } };
+      });
     },
     [],
   );
@@ -169,6 +206,25 @@ export function RhDelegadoMensualModal({
       return;
     }
 
+    const invalidPeriodo = selectedIds.some(
+      (id) => !isValidPeriodo(selectedCardFields[id]?.periodo ?? ""),
+    );
+    if (invalidPeriodo) {
+      notify.error("Ingresa un periodo válido (YYYY) para cada candidata seleccionada");
+      return;
+    }
+
+    const invalidMes = selectedIds.some(
+      (id) => !isValidMes(selectedCardFields[id]?.mes ?? ""),
+    );
+    if (invalidMes) {
+      notify.error("Ingresa un mes válido (1-12) para cada candidata seleccionada");
+      return;
+    }
+
+    const firstFields = selectedCardFields[selectedIds[0]];
+    const rhPeriodo = buildRhPeriodo(firstFields.periodo, firstFields.mes);
+
     const items: RHDelegadoCotizarIn["items"] = candidatas
       .filter((c) => selectedIds.includes(c.id))
       .map((c) => {
@@ -177,7 +233,8 @@ export function RhDelegadoMensualModal({
           liquidacion_general_id: c.id,
           especialidad_revision_id: c.especialidad_candidata.id,
           numero_rh: fields.numero_rh || undefined,
-          periodo: fields.periodo || periodo,
+          periodo: Number(fields.periodo),
+          mes: Number(fields.mes),
           dictamen_revision: fields.dictamen_revision || undefined,
           fecha_presentacion: fields.fecha_presentacion || undefined,
           fecha_revision: fields.fecha_revision || undefined,
@@ -187,7 +244,7 @@ export function RhDelegadoMensualModal({
     try {
       const result = await cotizarMutation.cotizar({
         cip,
-        periodo,
+        periodo: rhPeriodo,
         items,
       });
       setCotizarResult(result.data);
@@ -195,18 +252,99 @@ export function RhDelegadoMensualModal({
     } catch {
       // Error handled by mutation
     }
-  }, [selectedCardFields, candidatas, cip, periodo, cotizarMutation]);
+  }, [selectedCardFields, candidatas, cip, cotizarMutation]);
 
   // ── Paso 3 → 4: confirmar ───────────────────────────────────────────
   const handleConfirmar = useCallback(() => {
     setStep(4);
   }, []);
 
+  const handleExportExcel = useCallback(() => {
+    if (!cotizarResult) return;
+
+    const rows: Array<Record<string, string | number>> = cotizarResult.items.map((item, index) => ({
+      Item: index + 1,
+      Delegado: cotizarResult.delegado.nombre_completo,
+      CIP: cotizarResult.delegado.cip,
+      Periodo: cotizarResult.periodo,
+      Expediente: item.exp_liqui,
+      "Nro revision": item.numero_revision ?? "",
+      "Fecha revision": item.fecha_revision ?? "",
+      "Nro RH": item.numero_rh ?? "",
+      "Periodo item": item.periodo ?? "",
+      "Mes item": item.mes ?? "",
+      Dictamen: item.dictamen_revision ?? "",
+      "Fecha presentacion": item.fecha_presentacion ?? "",
+      "Total liquidacion": item.total_liquidacion ?? 0,
+      "Sub total liquidacion": item.sub_total_liquidacion ?? 0,
+      "Importe bruto": item.imp_bruto,
+      "Renta CIP": item.renta_cip ?? 0,
+      "Aporte Codemu": item.aporte_codemu ?? 0,
+      "Fondo comun": item.fondo_comun ?? 0,
+      "Neto honorario": item.neto_honorario ?? 0,
+    }));
+
+    rows.push({
+      Item: "",
+      Delegado: "TOTALES",
+      CIP: cotizarResult.delegado.cip,
+      Periodo: cotizarResult.periodo,
+      Expediente: "",
+      "Nro revision": "",
+      "Fecha revision": "",
+      "Nro RH": "",
+      "Periodo item": "",
+      "Mes item": "",
+      Dictamen: "",
+      "Fecha presentacion": "",
+      "Total liquidacion": cotizarResult.items.reduce(
+        (sum, item) => sum + (item.total_liquidacion ?? 0),
+        0,
+      ),
+      "Sub total liquidacion": cotizarResult.items.reduce(
+        (sum, item) => sum + (item.sub_total_liquidacion ?? 0),
+        0,
+      ),
+      "Importe bruto": cotizarResult.totales.sub_total,
+      "Renta CIP": cotizarResult.totales.renta_cip,
+      "Aporte Codemu": cotizarResult.totales.aporte_codemu,
+      "Fondo comun": cotizarResult.totales.fondo_comun,
+      "Neto honorario": cotizarResult.totales.neto_honorario,
+    });
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Resumen RH");
+    XLSX.writeFile(
+      workbook,
+      `rh-delegado-${safeFilePart(cotizarResult.delegado.cip)}-${safeFilePart(cotizarResult.periodo)}.xlsx`,
+    );
+  }, [cotizarResult]);
+
   // ── Paso 4: crear ───────────────────────────────────────────────────
   const handleCrear = useCallback(async () => {
     if (!cotizarResult) return;
 
     const selectedIds = Object.keys(selectedCardFields);
+    const invalidPeriodo = selectedIds.some(
+      (id) => !isValidPeriodo(selectedCardFields[id]?.periodo ?? ""),
+    );
+    if (invalidPeriodo) {
+      notify.error("Ingresa un periodo válido (YYYY) para cada candidata seleccionada");
+      return;
+    }
+
+    const invalidMes = selectedIds.some(
+      (id) => !isValidMes(selectedCardFields[id]?.mes ?? ""),
+    );
+    if (invalidMes) {
+      notify.error("Ingresa un mes válido (1-12) para cada candidata seleccionada");
+      return;
+    }
+
+    const firstFields = selectedCardFields[selectedIds[0]];
+    const rhPeriodo = buildRhPeriodo(firstFields.periodo, firstFields.mes);
+
     const items: RHDelegadoCotizarIn["items"] = candidatas
       .filter((c) => selectedIds.includes(c.id))
       .map((c) => {
@@ -215,7 +353,8 @@ export function RhDelegadoMensualModal({
           liquidacion_general_id: c.id,
           especialidad_revision_id: c.especialidad_candidata.id,
           numero_rh: fields.numero_rh || undefined,
-          periodo: fields.periodo || periodo,
+          periodo: Number(fields.periodo),
+          mes: Number(fields.mes),
           dictamen_revision: fields.dictamen_revision || undefined,
           fecha_presentacion: fields.fecha_presentacion || undefined,
           fecha_revision: fields.fecha_revision || undefined,
@@ -223,14 +362,22 @@ export function RhDelegadoMensualModal({
       });
 
     try {
-      await crearMutation.crear({ cip, periodo, items });
+      await crearMutation.crear({ cip, periodo: rhPeriodo, items });
       notify.success("RH Mensual de delegado creado correctamente");
       handleClose();
       onSuccess?.();
     } catch {
       // Error handled by mutation
     }
-  }, [cotizarResult, selectedCardFields, candidatas, cip, periodo, crearMutation, handleClose, onSuccess]);
+  }, [
+    cotizarResult,
+    selectedCardFields,
+    candidatas,
+    cip,
+    crearMutation,
+    handleClose,
+    onSuccess,
+  ]);
 
   const isPending = cotizarMutation.isPending || crearMutation.isPending;
   const selectedCount = Object.keys(selectedCardFields).length;
@@ -254,8 +401,10 @@ export function RhDelegadoMensualModal({
                 RH Mensual — Importar Candidatas
               </h2>
               <p className="hidden sm:block text-sm text-muted-foreground leading-relaxed">
-                {step === 1 && "Ingresa el CIP del delegado para buscar candidatas"}
-                {step === 2 && "Selecciona las liquidaciones candidatas e ingresa los datos por item"}
+                {step === 1 &&
+                  "Ingresa el CIP del delegado para buscar candidatas"}
+                {step === 2 &&
+                  "Selecciona las liquidaciones candidatas e ingresa los datos por item"}
                 {step === 3 && "Revisa la previsualización antes de confirmar"}
                 {step === 4 && "Confirma los datos y genera el RH mensual"}
               </p>
@@ -307,18 +456,33 @@ export function RhDelegadoMensualModal({
                   }}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="periodo">Periodo (YYYY-MM)</Label>
-                <Input
-                  id="periodo"
-                  value={periodo}
-                  onChange={(e) => setPeriodo(e.target.value)}
-                  placeholder="Ej. 2025-06"
-                  className="h-10 rounded-xl font-semibold"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") void handleBuscar();
-                  }}
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="fecha-inicio">Fecha Inicio</Label>
+                  <Input
+                    id="fecha-inicio"
+                    type="date"
+                    value={fechaInicio}
+                    onChange={(e) => setFechaInicio(e.target.value)}
+                    className="h-10 rounded-xl font-semibold"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void handleBuscar();
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fecha-fin">Fecha Fin</Label>
+                  <Input
+                    id="fecha-fin"
+                    type="date"
+                    value={fechaFin}
+                    onChange={(e) => setFechaFin(e.target.value)}
+                    className="h-10 rounded-xl font-semibold"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void handleBuscar();
+                    }}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -333,19 +497,15 @@ export function RhDelegadoMensualModal({
                     <span className="text-muted-foreground font-semibold">
                       Delegado:
                     </span>
-                    <span className="font-bold">{delegado.nombre_completo}</span>
+                    <span className="font-bold">
+                      {delegado.nombre_completo}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground font-semibold">
                       CIP:
                     </span>
                     <span className="font-bold">{delegado.cip}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground font-semibold">
-                      Periodo:
-                    </span>
-                    <span className="font-bold">{periodo}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground font-semibold">
@@ -374,7 +534,8 @@ export function RhDelegadoMensualModal({
                     <div className="w-24 shrink-0">Expediente</div>
                     <div className="flex-1 min-w-0">Especialidad</div>
                     <div className="w-20 shrink-0 text-right">Monto</div>
-                    <div className="w-24 shrink-0">Periodo</div>
+                    <div className="w-20 shrink-0">Periodo</div>
+                    <div className="w-20 shrink-0">Mes</div>
                     <div className="w-28 shrink-0">Dictamen</div>
                     <div className="w-28 shrink-0">F. Pres.</div>
                     <div className="w-28 shrink-0">F. Rev.</div>
@@ -386,9 +547,7 @@ export function RhDelegadoMensualModal({
                         <div
                           key={c.id}
                           className={`flex items-center gap-3 px-3 py-2 border-b border-border/50 last:border-b-0 transition-all duration-150 ${
-                            selected
-                              ? "bg-primary/[0.04]"
-                              : "hover:bg-muted/30"
+                            selected ? "bg-primary/[0.04]" : "hover:bg-muted/30"
                           }`}
                         >
                           {/* Checkbox */}
@@ -432,7 +591,8 @@ export function RhDelegadoMensualModal({
                             </p>
                             <p className="text-[10px] text-muted-foreground truncate">
                               {c.tipo_liquidacion?.nombre ?? "—"}
-                              {c.municipalidad_nombre && ` · ${c.municipalidad_nombre}`}
+                              {c.municipalidad_nombre &&
+                                ` · ${c.municipalidad_nombre}`}
                             </p>
                           </div>
 
@@ -448,17 +608,32 @@ export function RhDelegadoMensualModal({
                             </p>
                           </div>
 
-                          {/* Periodo (inline input) */}
+                          {/* Periodo / Año (inline input) */}
                           <input
                             id={`periodo-${c.id}`}
-                            type="text"
+                            type="number"
                             value={selectedCardFields[c.id]?.periodo ?? ""}
                             onChange={(e) =>
                               updateCardField(c.id, "periodo", e.target.value)
                             }
-                            placeholder={periodo || "YYYY-MM"}
+                            placeholder="Año"
                             disabled={!selected}
-                            className="w-24 shrink-0 h-7 px-2 rounded border border-input bg-background text-xs disabled:opacity-40 disabled:cursor-not-allowed ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            className="w-20 shrink-0 h-7 px-2 rounded border border-input bg-background text-xs disabled:opacity-40 disabled:cursor-not-allowed ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          />
+
+                          {/* Mes (inline input) */}
+                          <input
+                            id={`mes-${c.id}`}
+                            type="number"
+                            min={1}
+                            max={12}
+                            value={selectedCardFields[c.id]?.mes ?? ""}
+                            onChange={(e) =>
+                              updateCardField(c.id, "mes", e.target.value)
+                            }
+                            placeholder="Mes"
+                            disabled={!selected}
+                            className="w-20 shrink-0 h-7 px-2 rounded border border-input bg-background text-xs disabled:opacity-40 disabled:cursor-not-allowed ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                           />
 
                           {/* Dictamen (inline select) */}
@@ -537,9 +712,83 @@ export function RhDelegadoMensualModal({
             </div>
           )}
 
-          {/* ── Paso 3: Previsualización — Tabla de Liquidación ── */}
-          {step === 3 && cotizarResult && (
+          {/* ── Paso 3/4: Previsualización y confirmación ── */}
+          {(step === 3 || step === 4) && cotizarResult && (
             <div className="space-y-4">
+              {step === 4 && (
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+                  <div>
+                    <h3 className="text-sm font-black uppercase tracking-wide text-primary">
+                      Resumen de confirmación
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Verifica estos datos antes de crear el RH mensual.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Delegado
+                      </p>
+                      <p className="font-semibold truncate">
+                        {cotizarResult.delegado.nombre_completo}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        CIP
+                      </p>
+                      <p className="font-semibold">{cotizarResult.delegado.cip}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Periodo
+                      </p>
+                      <p className="font-semibold">{cotizarResult.periodo}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Items
+                      </p>
+                      <p className="font-semibold">{cotizarResult.items.length}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm border-t border-primary/20 pt-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Importe bruto
+                      </p>
+                      <p className="font-semibold">
+                        {formatCurrency(cotizarResult.totales.sub_total)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Renta CIP
+                      </p>
+                      <p className="font-semibold text-destructive">
+                        - {formatCurrency(cotizarResult.totales.renta_cip)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Aporte Codemu
+                      </p>
+                      <p className="font-semibold text-destructive">
+                        - {formatCurrency(cotizarResult.totales.aporte_codemu)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Neto honorario
+                      </p>
+                      <p className="font-black text-primary">
+                        {formatCurrency(cotizarResult.totales.neto_honorario)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {/* Header info */}
               <div className="rounded-xl border border-border/60 bg-muted/10 p-4 space-y-2">
                 <div className="flex justify-between text-sm">
@@ -554,7 +803,9 @@ export function RhDelegadoMensualModal({
                   <span className="text-muted-foreground font-semibold">
                     CIP:
                   </span>
-                  <span className="font-bold">{cotizarResult.delegado.cip}</span>
+                  <span className="font-bold">
+                    {cotizarResult.delegado.cip}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground font-semibold">
@@ -615,7 +866,10 @@ export function RhDelegadoMensualModal({
                     </thead>
                     <tbody>
                       {cotizarResult.items.map((item, index) => (
-                        <tr key={item.liquidacion_delegado_id ?? index} className="hover:bg-muted/30">
+                        <tr
+                          key={item.liquidacion_delegado_id ?? index}
+                          className="hover:bg-muted/30"
+                        >
                           <td className="border border-border px-1 py-1.5 text-center">
                             {index + 1}
                           </td>
@@ -677,16 +931,20 @@ export function RhDelegadoMensualModal({
                           Totales
                         </td>
                         <td className="border border-border px-1 py-1.5 text-right">
-                          {cotizarResult.items.reduce(
-                            (sum, i) => sum + (i.total_liquidacion ?? 0),
-                            0,
-                          ).toFixed(2)}
+                          {cotizarResult.items
+                            .reduce(
+                              (sum, i) => sum + (i.total_liquidacion ?? 0),
+                              0,
+                            )
+                            .toFixed(2)}
                         </td>
                         <td className="border border-border px-1 py-1.5 text-right">
-                          {cotizarResult.items.reduce(
-                            (sum, i) => sum + (i.sub_total_liquidacion ?? 0),
-                            0,
-                          ).toFixed(2)}
+                          {cotizarResult.items
+                            .reduce(
+                              (sum, i) => sum + (i.sub_total_liquidacion ?? 0),
+                              0,
+                            )
+                            .toFixed(2)}
                         </td>
                         <td className="border border-border px-1 py-1.5 text-right">
                           {cotizarResult.totales.sub_total.toFixed(2)}
@@ -766,18 +1024,30 @@ export function RhDelegadoMensualModal({
             )}
 
             {step === 4 && (
-              <Button
-                type="button"
-                onClick={handleCrear}
-                disabled={crearMutation.isPending}
-                className="h-10 rounded-xl font-bold gap-1.5"
-              >
-                {crearMutation.isPending && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-                <Receipt className="h-4 w-4" />
-                Crear RH
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleExportExcel}
+                  disabled={!cotizarResult || crearMutation.isPending}
+                  className="h-10 rounded-xl font-semibold gap-1.5"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Exportar Excel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleCrear}
+                  disabled={crearMutation.isPending}
+                  className="h-10 rounded-xl font-bold gap-1.5"
+                >
+                  {crearMutation.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  <Receipt className="h-4 w-4" />
+                  Crear RH
+                </Button>
+              </>
             )}
           </div>
         </GenericModal.Footer>

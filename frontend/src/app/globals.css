@@ -300,7 +300,8 @@ button {
 
 /* === LOGIN ANIMATED BACKGROUND — Deep Wine with Pulsing Golden Orbs === */
 @keyframes login-orb-1 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
     opacity: 0.3;
   }
@@ -319,7 +320,8 @@ button {
 }
 
 @keyframes login-orb-2 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
     opacity: 0.25;
   }
@@ -585,7 +587,8 @@ button {
 
 /* Sun ray pulse — soft glowing patches that breathe */
 @keyframes sun-ray-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.4;
     transform: scale(1);
   }
@@ -623,7 +626,8 @@ button {
 
 /* Twinkling fireflies — opacity pulse + subtle float + glow scale */
 @keyframes firefly-glow {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.2;
     transform: translate(0, 0) scale(1);
   }

@@ -26,7 +26,8 @@ export function useCrearImpactoVial() {
     () => ({
       ...mutation,
       mutate: (payload: ImpactoVialFormData) => {
-        const { tarifa_unica_id, especialidades_seleccionadas, ...rest } = payload;
+        const { tarifa_unica_id, especialidades_seleccionadas, ...rest } =
+          payload;
         mutation.mutate({
           liquidacion_general: {
             municipalidad_id: rest.municipalidad_id,
@@ -56,7 +57,8 @@ export function useCrearImpactoVial() {
         });
       },
       mutateAsync: async (payload: ImpactoVialFormData) => {
-        const { tarifa_unica_id, especialidades_seleccionadas, ...rest } = payload;
+        const { tarifa_unica_id, especialidades_seleccionadas, ...rest } =
+          payload;
         return mutation.mutateAsync({
           liquidacion_general: {
             municipalidad_id: rest.municipalidad_id,

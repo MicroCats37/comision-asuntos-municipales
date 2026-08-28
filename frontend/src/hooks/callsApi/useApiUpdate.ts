@@ -1,6 +1,6 @@
 import {
-  type UseMutationOptions,
   type UseMutateFunction,
+  type UseMutationOptions,
   type UseMutationResult,
   useMutation,
 } from "@tanstack/react-query";
@@ -88,11 +88,18 @@ export function useApiUpdate<TData, TVariables>(
   // ------------------------------------------------------------------
   // Detect mode: 'url' key present means direct mode
   // ------------------------------------------------------------------
-  const isDirectMode = "url" in props && (props as UseApiUpdateDirectProps<TData, TVariables>).url !== undefined;
+  const isDirectMode =
+    "url" in props &&
+    (props as UseApiUpdateDirectProps<TData, TVariables>).url !== undefined;
 
   if (isDirectMode) {
-    const { url, schema, method = "PUT", showToast = true, options } =
-      props as UseApiUpdateDirectProps<TData, TVariables>;
+    const {
+      url,
+      schema,
+      method = "PUT",
+      showToast = true,
+      options,
+    } = props as UseApiUpdateDirectProps<TData, TVariables>;
 
     return useMutation<TData, AxiosError, DirectVariables<TVariables>>({
       mutationFn: async (variables) => {

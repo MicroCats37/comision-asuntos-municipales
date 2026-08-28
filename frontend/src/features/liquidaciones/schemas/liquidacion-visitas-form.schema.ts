@@ -3,13 +3,19 @@
  * Uses cantidad_visitas + categoria + tarifa_visitas_id.
  */
 import { z } from "zod";
-import { generalFormSchema, proyectoFormSchema } from "./liquidacion-form-base.schema";
+import {
+  generalFormSchema,
+  proyectoFormSchema,
+} from "./liquidacion-form-base.schema";
 
 export const visitasFormSchema = z.object({
   ...proyectoFormSchema.shape,
   ...generalFormSchema.shape,
   // Especifica fields
-  cantidad_visitas: z.number().int().positive("La cantidad de visitas debe ser positiva"),
+  cantidad_visitas: z
+    .number()
+    .int()
+    .positive("La cantidad de visitas debe ser positiva"),
   categoria: z.enum(["C1", "C2", "C3", "C4"], {
     message: "Categoría es requerida",
   }),

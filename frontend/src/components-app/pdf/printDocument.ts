@@ -8,7 +8,10 @@ import { applyStyles, createPdfFrame, waitForImages } from "./pdfShell";
  * Imprime el elemento dado. El elemento se clona dentro de un iframe aislado
  * (position fixed, 0x0) para que la impresión sea limpia.
  */
-export async function printHtmlElement(element: HTMLElement, title = "Documento") {
+export async function printHtmlElement(
+  element: HTMLElement,
+  title = "Documento",
+) {
   const frame = document.createElement("iframe");
   applyStyles(frame, {
     position: "fixed",
@@ -29,7 +32,9 @@ export async function printHtmlElement(element: HTMLElement, title = "Documento"
     }
 
     frameDocument.open();
-    frameDocument.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body style="margin:0;background:#FFFFFF;"></body></html>`);
+    frameDocument.write(
+      `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body style="margin:0;background:#FFFFFF;"></body></html>`,
+    );
     frameDocument.close();
 
     // Clonar el elemento al documento del iframe

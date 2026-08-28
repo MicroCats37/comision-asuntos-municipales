@@ -7,8 +7,9 @@ import api from "@/lib/api";
  * Classic style: caller provides id (number | string).
  * Custom style: caller provides full payload with optional baseUrl override.
  */
-type DeleteVariables<TPayload = never> =
-  | (TPayload extends never ? number | string : TPayload & { baseUrl?: string });
+type DeleteVariables<TPayload = never> = TPayload extends never
+  ? number | string
+  : TPayload & { baseUrl?: string };
 
 interface UseApiDeleteProps<TData, TPayload = never> {
   baseUrl?: string;

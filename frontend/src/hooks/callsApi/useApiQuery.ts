@@ -68,6 +68,9 @@ export function useApiQuery<T, TData = T>({
     enabled: isEnabled,
     // Type assertion needed: queryOptions uses Error type for compatibility,
     // but runtime behavior is correct since ApiQueryError extends Error
-    ...(queryOptions as Omit<UseQueryOptions<T, ApiQueryError, TData>, "queryKey" | "queryFn">),
+    ...(queryOptions as Omit<
+      UseQueryOptions<T, ApiQueryError, TData>,
+      "queryKey" | "queryFn"
+    >),
   });
 }

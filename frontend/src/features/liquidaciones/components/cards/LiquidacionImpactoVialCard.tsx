@@ -248,7 +248,7 @@ export function LiquidacionImpactoVialCard({
                           {formatCurrency(detalle.subtotal)}
                         </span>
                       </div>
-                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -294,5 +294,3 @@ export function LiquidacionImpactoVialCard({
     </>
   );
 }
-
-

@@ -11,8 +11,6 @@ import type { ApiError, ErrorParser } from "./types";
  * Format: { detail: [{ loc: ["body", "field"], msg: "...", type: "..." }] }
  */
 
-
-
 /**
  * Generic REST fallback
  * Format: { message: "..." } or { detail: "..." } or { error: { message, details } }
@@ -29,7 +27,9 @@ const genericRestParser: ErrorParser = (_status, data: any) => {
         .filter(([, v]) => typeof v === "string" && v.length > 0)
         .map(([k, v]) => {
           // Format key as readable label: non_field_errors -> Non field errors
-          const label = k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+          const label = k
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase());
           return `${label}: ${v}`;
         });
       if (detailMessages.length > 0) {
@@ -61,9 +61,7 @@ const genericRestParser: ErrorParser = (_status, data: any) => {
 // PARSER CHAIN
 // =====================================================================
 
-const parsers: ErrorParser[] = [
-  genericRestParser,
-];
+const parsers: ErrorParser[] = [genericRestParser];
 
 /**
  * Add a custom error parser to the chain.

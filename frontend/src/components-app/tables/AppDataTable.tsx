@@ -1,14 +1,14 @@
 "use client";
 
-import type { ReactNode } from "react";
 import {
   type ColumnDef,
-  type PaginationState,
   getCoreRowModel,
   getPaginationRowModel,
+  type PaginationState,
   useReactTable,
 } from "@tanstack/react-table";
 import { AlertCircle, Inbox, RefreshCw } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -106,7 +106,10 @@ export function AppDataTable<TData>({
   onRowClick,
   className,
 }: AppDataTableProps<TData>) {
-  const paginationState: PaginationState = pagination ?? { pageIndex: 0, pageSize: 10 };
+  const paginationState: PaginationState = pagination ?? {
+    pageIndex: 0,
+    pageSize: 10,
+  };
 
   const table = useReactTable({
     data,
@@ -119,28 +122,34 @@ export function AppDataTable<TData>({
     onPaginationChange: showPagination
       ? (updater) => {
           const next =
-            typeof updater === "function"
-              ? updater(paginationState)
-              : updater;
+            typeof updater === "function" ? updater(paginationState) : updater;
           onPaginationChange?.(next);
         }
       : undefined,
     manualPagination: !showPagination,
-    pageCount: showPagination && rowCount !== undefined
-      ? Math.ceil(rowCount / paginationState.pageSize)
-      : undefined,
+    pageCount:
+      showPagination && rowCount !== undefined
+        ? Math.ceil(rowCount / paginationState.pageSize)
+        : undefined,
   });
 
   const skeletonCellCount = columns.length;
 
   // Build cells for a row — passes onRowAction down via row.original
-  const getRowProps = (row: ReturnType<typeof table.getRowModel>["rows"][number]) => {
+  const getRowProps = (
+    row: ReturnType<typeof table.getRowModel>["rows"][number],
+  ) => {
     // Row-level action handler — cells can call this via row.original.__action
     return {};
   };
 
   return (
-    <div className={cn("animate-in fade-in slide-in-from-bottom-4 duration-700", className)}>
+    <div
+      className={cn(
+        "animate-in fade-in slide-in-from-bottom-4 duration-700",
+        className,
+      )}
+    >
       {/* Outer container — rounded card with decorative background */}
       <div className="relative bg-card rounded-[28px] border border-border/50 shadow-sm overflow-hidden">
         {/* Decorative background blob — purely decorative, behind content */}
@@ -154,7 +163,10 @@ export function AppDataTable<TData>({
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="bg-muted/30 border-b border-border">
+                <TableRow
+                  key={headerGroup.id}
+                  className="bg-muted/30 border-b border-border"
+                >
                   {headerGroup.headers.map((header) => (
                     <TableHead
                       key={header.id}
@@ -218,50 +230,57 @@ export function AppDataTable<TData>({
               )}
 
               {/* Empty state */}
-              {!isLoading && !isError && table.getRowModel().rows.length === 0 && (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell
-                    colSpan={skeletonCellCount}
-                    className="h-48 text-center"
-                  >
-                    <div className="flex flex-col items-center gap-3 animate-in fade-in duration-500">
-                      <div className="bg-muted/30 border border-border/50 rounded-2xl p-4">
-                        {emptyIcon ? (
-                          <div className="text-muted-foreground">{emptyIcon}</div>
-                        ) : (
-                          <Inbox className="h-10 w-10 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-foreground">
-                          {emptyMessage}
-                        </p>
-                        {emptyDescription && (
-                          <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
-                            {emptyDescription}
+              {!isLoading &&
+                !isError &&
+                table.getRowModel().rows.length === 0 && (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell
+                      colSpan={skeletonCellCount}
+                      className="h-48 text-center"
+                    >
+                      <div className="flex flex-col items-center gap-3 animate-in fade-in duration-500">
+                        <div className="bg-muted/30 border border-border/50 rounded-2xl p-4">
+                          {emptyIcon ? (
+                            <div className="text-muted-foreground">
+                              {emptyIcon}
+                            </div>
+                          ) : (
+                            <Inbox className="h-10 w-10 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-foreground">
+                            {emptyMessage}
                           </p>
+                          {emptyDescription && (
+                            <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                              {emptyDescription}
+                            </p>
+                          )}
+                        </div>
+                        {emptyAction && emptyActionLabel && (
+                          <Button
+                            size="sm"
+                            onClick={emptyAction}
+                            className="mt-2 gap-2"
+                          >
+                            {emptyActionLabel}
+                          </Button>
                         )}
                       </div>
-                      {emptyAction && emptyActionLabel && (
-                        <Button
-                          size="sm"
-                          onClick={emptyAction}
-                          className="mt-2 gap-2"
-                        >
-                          {emptyActionLabel}
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
+                    </TableCell>
+                  </TableRow>
+                )}
 
               {/* Data rows */}
-              {!isLoading && !isError &&
+              {!isLoading &&
+                !isError &&
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                    onClick={
+                      onRowClick ? () => onRowClick(row.original) : undefined
+                    }
                     className={cn(
                       "hover:bg-muted/30 transition-colors",
                       onRowClick && "cursor-pointer hover:bg-muted/50",

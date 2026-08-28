@@ -38,7 +38,8 @@ class LiquidacionDelegadoCreateIn(BaseSchema):
 class LiquidacionDelegadoUpdateIn(BaseSchema):
     """Input item para actualizar metadata extra de una LiquidacionDelegado."""
     delegado_id: uuid.UUID
-    periodo: Optional[str] = None
+    periodo: Optional[int] = None
+    mes: Optional[int] = None
     dictamen_revision: Optional[str] = None
     fecha_presentacion: Optional[date] = None
     fecha_revision: Optional[date] = None
@@ -90,7 +91,8 @@ class LiquidacionDelegadoOut(BaseSchema):
     especialidad_revision: EspecialidadRevisionOut
     liquidacion: Optional[LiquidacionDelegadoLiquidacionOut] = None
     delegado: Optional[LiquidacionDelegadoDelegadoOut] = None
-    periodo: Optional[str] = None
+    periodo: Optional[int] = None
+    mes: Optional[int] = None
     dictamen_revision: Optional[str] = None
     fecha_presentacion: Optional[str] = None
     fecha_revision: Optional[str] = None

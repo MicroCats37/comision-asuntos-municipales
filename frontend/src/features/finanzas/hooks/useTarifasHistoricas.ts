@@ -6,8 +6,9 @@
  * - CON fechas (desde/hasta): devuelve el histórico por rango.
  * La consulta está SIEMPRE habilitada; los params de fecha se agregan solo si existen.
  */
-import { usePagination } from "@/hooks/system/usePagination";
+
 import { useApiQuery } from "@/hooks";
+import { usePagination } from "@/hooks/system/usePagination";
 import {
   paginatedTarifaHistoricaResponseSchema,
   type TarifaHistoricaPeriodo,
@@ -25,16 +26,11 @@ export function useTarifasHistoricas({
   fechaDesde,
   fechaHasta,
 }: UseTarifasHistoricasProps) {
-  const {
-    page,
-    pageSize,
-    onPageChange,
-    onPageSizeChange,
-    paginationParams,
-  } = usePagination({
-    initialPage: 1,
-    initialPageSize: 10,
-  });
+  const { page, pageSize, onPageChange, onPageSizeChange, paginationParams } =
+    usePagination({
+      initialPage: 1,
+      initialPageSize: 10,
+    });
 
   // Build query params
   const params: Record<string, string | number> = {

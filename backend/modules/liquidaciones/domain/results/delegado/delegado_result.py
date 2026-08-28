@@ -152,7 +152,8 @@ class LiquidacionDelegadoResult(BaseModel):
     especialidad_revision: EspecialidadRevisionResult
     liquidacion: Optional[LiquidacionDelegadoLiquidacionMinimal] = None
     delegado: Optional[LiquidacionDelegadoDelegadoMinimal] = None
-    periodo: Optional[str] = None
+    periodo: Optional[int] = None
+    mes: Optional[int] = None
     dictamen_revision: Optional[str] = None
     fecha_presentacion: Optional[date] = None
     fecha_revision: Optional[date] = None

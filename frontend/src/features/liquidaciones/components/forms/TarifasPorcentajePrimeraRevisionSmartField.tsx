@@ -29,11 +29,18 @@ export function TarifasPorcentajePrimeraRevisionSmartField({
 
   // Auto-select ALL especialidades on first load
   useEffect(() => {
-    if (data?.especialidades_disponibles && data.especialidades_disponibles.length > 0) {
-      const current = methods.getValues("especialidades_seleccionadas") as string[] | undefined;
+    if (
+      data?.especialidades_disponibles &&
+      data.especialidades_disponibles.length > 0
+    ) {
+      const current = methods.getValues("especialidades_seleccionadas") as
+        | string[]
+        | undefined;
       if (!current || current.length === 0) {
         const allIds = data.especialidades_disponibles.map((e) => e.id);
-        methods.setValue("especialidades_seleccionadas", allIds, { shouldValidate: true });
+        methods.setValue("especialidades_seleccionadas", allIds, {
+          shouldValidate: true,
+        });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

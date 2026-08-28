@@ -305,7 +305,12 @@ def test_cotizar_con_cip_valido_inspector_asociado(
         _payload(
             cip=perfil_ingeniero_inspector.cip,
             periodo="2026-01",
-            items=[{"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 4}],
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+                "periodo": 2027,
+                "mes": 3,
+            }],
         )
     )
 
@@ -327,6 +332,9 @@ def test_cotizar_con_cip_valido_inspector_asociado(
     assert Decimal(str(result.totales.tasa_descuento_aplicada)) == Decimal("0.15")
     assert Decimal(str(result.totales.descuento)) == Decimal("60.00")
     assert Decimal(str(result.totales.honorarios)) == Decimal("340.00")
+    assert result.items[0].liquidacion_inspector_id == str(liquidacion_inspector.id)
+    assert result.items[0].periodo == 2027
+    assert result.items[0].mes == 3
 
     # Cotizar NO crea nada en BD
     assert ReciboHonorarioInspectorMensual.objects.count() == 0
@@ -535,7 +543,12 @@ def test_crear_rh_inspector_mensual(
         _payload(
             cip=perfil_ingeniero_inspector.cip,
             periodo="2026-01",
-            items=[{"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 4}],
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+                "periodo": 2027,
+                "mes": 3,
+            }],
         )
     )
 
@@ -543,6 +556,9 @@ def test_crear_rh_inspector_mensual(
     assert Decimal(str(result.totales.tasa_descuento_aplicada)) == Decimal("0.15")
     assert Decimal(str(result.totales.descuento)) == Decimal("60.00")
     assert Decimal(str(result.totales.honorarios)) == Decimal("340.00")
+    assert result.items[0].liquidacion_inspector_id == str(liquidacion_inspector.id)
+    assert result.items[0].periodo == 2027
+    assert result.items[0].mes == 3
 
     # Verify BD records
     assert ReciboHonorarioInspectorMensual.objects.count() == 1
@@ -560,6 +576,10 @@ def test_crear_rh_inspector_mensual(
     assert detalle.inspecciones_liquidadas == 4
     assert detalle.costo_por_inspeccion == Decimal("100.00")
     assert detalle.monto_contribuido == Decimal("400.00")
+
+    liquidacion_inspector.refresh_from_db()
+    assert liquidacion_inspector.periodo == 2027
+    assert liquidacion_inspector.mes == 3
 
     # RegistroPago
     registro = RegistroPagoInspector.objects.get(

@@ -20,4 +20,6 @@ export const nuevaRevisionInspeccionObraFormSchema = z.object({
   inspector_id: z.string().min(1, "Selecciona un inspector"),
 });
 
-export type NuevaRevisionInspeccionObraFormData = z.infer<typeof nuevaRevisionInspeccionObraFormSchema>;
+export type NuevaRevisionInspeccionObraFormData = z.infer<
+  typeof nuevaRevisionInspeccionObraFormSchema
+>;

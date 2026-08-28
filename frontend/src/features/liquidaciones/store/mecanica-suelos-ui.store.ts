@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface MecanicaSuelosUIState {
   page: number;
@@ -14,16 +14,19 @@ interface MecanicaSuelosUIState {
   setSelectedItemId: (id: string | null) => void;
 }
 
-export const useMecanicaSuelosUIStore = create<MecanicaSuelosUIState>((set) => ({
-  page: 1,
-  pageSize: 10,
-  searchQuery: '',
-  isFormModalOpen: false,
-  selectedItemId: null,
-  setPage: (page) => set({ page }),
-  setPageSize: (pageSize) => set({ pageSize }),
-  setSearchQuery: (searchQuery) => set({ searchQuery }),
-  openFormModal: (id?: string) => set({ isFormModalOpen: true, selectedItemId: id || null }),
-  closeFormModal: () => set({ isFormModalOpen: false, selectedItemId: null }),
-  setSelectedItemId: (selectedItemId) => set({ selectedItemId }),
-}));
+export const useMecanicaSuelosUIStore = create<MecanicaSuelosUIState>(
+  (set) => ({
+    page: 1,
+    pageSize: 10,
+    searchQuery: "",
+    isFormModalOpen: false,
+    selectedItemId: null,
+    setPage: (page) => set({ page }),
+    setPageSize: (pageSize) => set({ pageSize }),
+    setSearchQuery: (searchQuery) => set({ searchQuery }),
+    openFormModal: (id?: string) =>
+      set({ isFormModalOpen: true, selectedItemId: id || null }),
+    closeFormModal: () => set({ isFormModalOpen: false, selectedItemId: null }),
+    setSelectedItemId: (selectedItemId) => set({ selectedItemId }),
+  }),
+);

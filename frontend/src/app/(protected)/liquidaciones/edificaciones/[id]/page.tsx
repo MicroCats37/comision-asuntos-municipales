@@ -1,12 +1,12 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
-import { useLiquidacionDetalleEdificacion } from "@/features/liquidaciones/hooks/useLiquidacionDetalleEdificacion";
+import { useParams, useRouter } from "next/navigation";
 import {
-  LiquidacionDetalleCompleta,
   kindLabel,
+  LiquidacionDetalleCompleta,
 } from "@/features/liquidaciones/components/LiquidacionDetalleCompleta";
+import { useLiquidacionDetalleEdificacion } from "@/features/liquidaciones/hooks/useLiquidacionDetalleEdificacion";
 
 const KIND_LABEL = "Edificación";
 
@@ -15,7 +15,11 @@ export default function LiquidacionDetalleEdificacionPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const { data: item, isLoading, isError } = useLiquidacionDetalleEdificacion({ id });
+  const {
+    data: item,
+    isLoading,
+    isError,
+  } = useLiquidacionDetalleEdificacion({ id });
 
   const handleBack = () => {
     router.back();

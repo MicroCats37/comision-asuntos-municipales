@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Coerce helper: backend may send Decimal as string ("123.45") or number
 const num = () => z.coerce.number();
@@ -141,13 +141,15 @@ export const LiquidacionGeneralOutputSchema = z.object({
   proyecto: ProyectoOutputSchema,
   contacto: ContactoOutputSchema.nullish(),
   tipo_liquidacion: TipoLiquidacionOutputSchema.nullish(),
-  revisiones_previas: z.array(
-    z.object({
-      id: uuid(),
-      numero_revision: z.coerce.number().int(),
-      expediente: z.string().nullish(),
-    }),
-  ).default([]),
+  revisiones_previas: z
+    .array(
+      z.object({
+        id: uuid(),
+        numero_revision: z.coerce.number().int(),
+        expediente: z.string().nullish(),
+      }),
+    )
+    .default([]),
   delegados: z.array(DelegadoOperativoMinOutputSchema).default([]),
 });
 
@@ -174,7 +176,13 @@ export type DepartamentoOutput = z.infer<typeof DepartamentoOutputSchema>;
 export type ProvinciaOutput = z.infer<typeof ProvinciaOutputSchema>;
 export type DistritoOutput = z.infer<typeof DistritoOutputSchema>;
 export type LiquidacionTipoOutput = z.infer<typeof LiquidacionTipoOutputSchema>;
-export type LiquidacionGeneralOutput = z.infer<typeof LiquidacionGeneralOutputSchema>;
-export type DelegadoOperativoMinOutput = z.infer<typeof DelegadoOperativoMinOutputSchema>;
+export type LiquidacionGeneralOutput = z.infer<
+  typeof LiquidacionGeneralOutputSchema
+>;
+export type DelegadoOperativoMinOutput = z.infer<
+  typeof DelegadoOperativoMinOutputSchema
+>;
 export type ColegiadoMinOutput = z.infer<typeof ColegiadoMinOutputSchema>;
-export type EspecialidadRevisionOutput = z.infer<typeof EspecialidadRevisionOutputSchema>;
+export type EspecialidadRevisionOutput = z.infer<
+  typeof EspecialidadRevisionOutputSchema
+>;

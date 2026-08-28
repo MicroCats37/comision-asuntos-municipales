@@ -1065,6 +1065,7 @@ class LiquidacionGeneralCoreService:
         propietario=None,
         expediente=None,
         nombre_propietario=None,
+        numero=None,
         **kwargs
     ) -> tuple:
         """
@@ -1077,7 +1078,7 @@ class LiquidacionGeneralCoreService:
         Uses conditional prefetch based on tipo filter (same strategy as list_liquidaciones_generales_paginated).
         Returns (queryset, total_count).
         """
-        from django.db.models import Max, OuterRef, Subquery
+        from django.db.models import Max, OuterRef, Q, Subquery
 
         # Base queryset
         qs = LiquidacionGeneral.objects.all().select_related(
@@ -1202,6 +1203,20 @@ class LiquidacionGeneralCoreService:
         # nombre_propietario: explicit alias for 'propietario' — both filter proyecto__nombre_propietario__icontains
         if nombre_propietario:
             qs = qs.filter(proyecto__nombre_propietario__icontains=nombre_propietario)
+
+        # numero filter: applies to type-specific numero field(s)
+        # Each Liquidacion<tipo> subclass has its own independent numero sequence (AutoNumeroModel).
+        # If tipo is provided: filter by the specific mapped field.
+        # If tipo is omitted: OR across all 6 type-specific numero fields so that the same
+        #   numero value existing in multiple types returns the latest revision of each.
+        if numero is not None:
+            if tipo is not None:
+                qs = qs.filter(**{self._NUMERO_FILTER_FIELD_MAP[tipo]: numero})
+            else:
+                numero_q = Q()
+                for field in self._NUMERO_FILTER_FIELD_MAP.values():
+                    numero_q |= Q(**{field: numero})
+                qs = qs.filter(numero_q)
 
         # Subquery to get max numero_revision per (proyecto_id, tipo_liquidacion__codigo)
         max_rev_subquery = LiquidacionGeneral.objects.filter(
@@ -1392,6 +1407,7 @@ class LiquidacionGeneralCoreService:
                 delegado_dni=ld.delegado.perfil_ingeniero.dni,
                 delegado_nombre_completo=ld.delegado.perfil_ingeniero.nombre_completo,
                 periodo=ld.periodo,
+                mes=ld.mes,
                 dictamen_revision=ld.dictamen_revision,
                 fecha_presentacion=(
                     ld.fecha_presentacion.isoformat() if ld.fecha_presentacion else None

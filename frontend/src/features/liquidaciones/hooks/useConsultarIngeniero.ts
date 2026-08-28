@@ -7,8 +7,7 @@
  */
 import { useMutation } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
-import { notify } from "@/errors";
-import { getErrorMessage } from "@/errors";
+import { getErrorMessage, notify } from "@/errors";
 import {
   consultarIngeniero,
   type IngenieroHabilitado,

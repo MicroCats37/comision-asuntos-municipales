@@ -3,6 +3,7 @@ Inspector — registro de inspector elegible para inspecciones de obra.
 """
 
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
@@ -188,8 +189,14 @@ class LiquidacionInspector(BaseModel):
         related_name="liquidacion_inspectores",
         verbose_name="Especialidad de Revisión",
     )
-    periodo = models.CharField(
-        max_length=100, blank=True, null=True, verbose_name="Periodo"
+    periodo = models.PositiveSmallIntegerField(
+        blank=True, null=True, verbose_name="Periodo (Año)",
+        validators=[MinValueValidator(1900), MaxValueValidator(2100)],
+    )
+    
+    mes = models.PositiveSmallIntegerField(
+        blank=True, null=True, verbose_name="Mes (1-12)",
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
     )
     
     dictamen_revision = models.CharField(
@@ -215,6 +222,10 @@ class LiquidacionInspector(BaseModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["liquidacion", "inspector"], name="unique_liquidacion_inspector"
+            ),
+            models.CheckConstraint(
+                check=models.Q(mes__isnull=True) | models.Q(mes__gte=1, mes__lte=12),
+                name="liquidacion_inspector_mes_valid",
             ),
         ]
 

@@ -5,9 +5,9 @@
  */
 import { useApiQuery } from "@/hooks";
 import {
-  delegadosListResponseSchema,
   type DelegadoFiltros,
   type DelegadoOut,
+  delegadosListResponseSchema,
 } from "../types/delegados.types";
 
 interface UseDelegadosProps {
@@ -18,16 +18,22 @@ interface UseDelegadosProps {
 
 const BASE_URL = "/delegados";
 
-export function useDelegados({ page = 1, pageSize = 10, filtros }: UseDelegadosProps = {}) {
+export function useDelegados({
+  page = 1,
+  pageSize = 10,
+  filtros,
+}: UseDelegadosProps = {}) {
   // Merge pagination + filters into query params
   const params: Record<string, string | number> = {
     page,
     page_size: pageSize,
   };
   if (filtros?.cip) params.cip = filtros.cip;
-  if (filtros?.municipalidad_id) params.municipalidad_id = filtros.municipalidad_id;
+  if (filtros?.municipalidad_id)
+    params.municipalidad_id = filtros.municipalidad_id;
   if (filtros?.capitulo_id) params.capitulo_id = filtros.capitulo_id;
-  if (filtros?.especialidad_id) params.especialidad_id = filtros.especialidad_id;
+  if (filtros?.especialidad_id)
+    params.especialidad_id = filtros.especialidad_id;
   if (filtros?.estado) params.estado = filtros.estado;
 
   const query = useApiQuery({

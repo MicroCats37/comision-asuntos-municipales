@@ -23,6 +23,8 @@ class RHInspectorCotizarItemResult(BaseModel):
     monto_contribuido: float
     saldo_disponible: int  # available BEFORE this quote: programdas - pagadas_historicas
     saldo_restante: int  # remaining AFTER this quote: programadas - pagadas_historicas - cantidad_visitas
+    periodo: int | None = None
+    mes: int | None = None
 
 
 class RHInspectorTotalesResult(BaseModel):

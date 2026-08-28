@@ -224,6 +224,7 @@ class LiquidacionGeneralOrchestrator:
         propietario=None,
         expediente=None,
         nombre_propietario=None,
+        numero=None,
     ) -> tuple[List[LiquidacionGeneralResult], int]:
         """
         Returns paginated LiquidacionGeneralResult list containing only the latest revision
@@ -248,6 +249,7 @@ class LiquidacionGeneralOrchestrator:
             propietario=propietario,
             expediente=expediente,
             nombre_propietario=nombre_propietario,
+            numero=numero,
         )
 
         # Build LiquidacionGeneralResult domain DTOs from ORM objects

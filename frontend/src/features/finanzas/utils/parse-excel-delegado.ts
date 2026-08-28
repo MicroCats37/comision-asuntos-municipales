@@ -9,9 +9,7 @@
  */
 import * as XLSX from "xlsx";
 
-export async function parseExcelFileDelegado(
-  file: File,
-): Promise<string[]> {
+export async function parseExcelFileDelegado(file: File): Promise<string[]> {
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array" });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];

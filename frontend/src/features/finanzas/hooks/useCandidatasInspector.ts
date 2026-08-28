@@ -12,6 +12,8 @@ import { InspectorCandidatosResponseSchema } from "../schemas/rh-inspector-mensu
 interface UseCandidatasInspectorProps {
   cip: string;
   periodo?: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
   enabled?: boolean;
 }
 
@@ -28,13 +30,28 @@ interface CandidatasInspectorResult {
 export function useCandidatasInspector({
   cip,
   periodo,
+  fecha_inicio,
+  fecha_fin,
   enabled = true,
 }: UseCandidatasInspectorProps) {
+  const params: Record<string, string> = { cip };
+  if (periodo) params.periodo = periodo;
+  if (fecha_inicio) params.fecha_inicio = fecha_inicio;
+  if (fecha_fin) params.fecha_fin = fecha_fin;
+
   const query = useApiQuery({
-    queryKey: ["finanzas", "recibos-inspectores", "candidatos", cip, periodo ?? "all"],
+    queryKey: [
+      "finanzas",
+      "recibos-inspectores",
+      "candidatos",
+      cip,
+      periodo ?? "all",
+      fecha_inicio ?? "no-inicio",
+      fecha_fin ?? "no-fin",
+    ],
     url: "/finanzas/recibos-inspectores/candidatos",
     schema: InspectorCandidatosResponseSchema,
-    params: periodo ? { cip, periodo } : { cip },
+    params,
     queryOptions: {
       enabled: enabled && cip.length > 0,
       retry: false,

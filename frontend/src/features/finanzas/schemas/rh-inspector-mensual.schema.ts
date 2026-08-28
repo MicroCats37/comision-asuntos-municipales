@@ -21,6 +21,8 @@ export const RHInspectorCotizarItemSchema = z.object({
   monto_contribuido: z.number(),
   saldo_disponible: z.number(),
   saldo_restante: z.number(),
+  periodo: z.number().nullable().optional(),
+  mes: z.number().nullable().optional(),
 });
 
 export const RHInspectorTotalesSchema = z.object({
@@ -54,6 +56,8 @@ export const RHInspectorCotizarItemInSchema = z.object({
   /** Stable UUID — preferred over exp_liqui for candidate selection */
   liquidacion_categoria_visitas_id: z.string(),
   cantidad_visitas: z.number().int().min(1),
+  periodo: z.number().int().optional(),
+  mes: z.number().int().min(1).max(12).optional(),
 });
 
 export const RHInspectorCotizarInSchema = z.object({
@@ -108,5 +112,7 @@ export const InspectorCandidatosResponseSchema = apiResponseSchema(
   InspectorCandidatosSchema,
 );
 
-export type InspectorCandidataItem = z.infer<typeof InspectorCandidataItemSchema>;
+export type InspectorCandidataItem = z.infer<
+  typeof InspectorCandidataItemSchema
+>;
 export type InspectorCandidatos = z.infer<typeof InspectorCandidatosSchema>;

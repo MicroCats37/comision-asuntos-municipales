@@ -1,10 +1,10 @@
 "use client";
 
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import {
-  Collapsible,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
-import { LiquidacionCardHeader, type LiquidacionCardHeaderData } from "../LiquidacionCardHeader";
+  LiquidacionCardHeader,
+  type LiquidacionCardHeaderData,
+} from "../LiquidacionCardHeader";
 
 interface LiquidacionBaseCardProps {
   data: LiquidacionCardHeaderData;

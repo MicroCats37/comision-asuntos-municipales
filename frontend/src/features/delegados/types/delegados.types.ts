@@ -46,11 +46,13 @@ export type PerfilIngenieroOut = z.infer<typeof perfilIngenieroSchema>;
 
 export const municipalidadAsignadaSchema = z.object({
   id: z.string(),
-  municipalidad: z.object({
-    id: z.string(),
-    codigo: z.string().nullish(),
-    nombre: z.string(),
-  }).nullish(),
+  municipalidad: z
+    .object({
+      id: z.string(),
+      codigo: z.string().nullish(),
+      nombre: z.string(),
+    })
+    .nullish(),
   tipo: z.string().nullish(),
   categoria: z.string().nullish(),
   periodo_inicio: z.string().nullish(),
@@ -80,7 +82,9 @@ export const delegadosListPayloadSchema = z.object({
 });
 export type DelegadoListOut = z.infer<typeof delegadosListPayloadSchema>;
 
-export const delegadosListResponseSchema = apiResponseSchema(delegadosListPayloadSchema);
+export const delegadosListResponseSchema = apiResponseSchema(
+  delegadosListPayloadSchema,
+);
 
 export type DelegadosListResponse = z.infer<typeof delegadosListPayloadSchema>;
 

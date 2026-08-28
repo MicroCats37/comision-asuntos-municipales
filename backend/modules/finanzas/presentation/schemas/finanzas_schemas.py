@@ -169,6 +169,8 @@ class RHInspectorCotizarItemOut(BaseSchema):
     monto_contribuido: float = Field(..., description="Monto contribuido de esta IO")
     saldo_disponible: int = Field(..., description="Saldo de visitas disponibles antes de esta cotización (programadas - pagadas_historicas)")
     saldo_restante: int = Field(..., description="Saldo restante después de esta cotización (programadas - pagadas_historicas - cantidad_visitas)")
+    periodo: Optional[int] = Field(None, description="Año de la LiquidacionInspector")
+    mes: Optional[int] = Field(None, description="Mes de la LiquidacionInspector")
 
 
 class RHInspectorTotalesOut(BaseSchema):
@@ -336,4 +338,3 @@ class RHInspectorMensualListItemOut(BaseSchema):
     detalles: list[RHInspectorMensualDetalleOut] = Field(
         default_factory=list, description="Lista de detalles por IO"
     )
-

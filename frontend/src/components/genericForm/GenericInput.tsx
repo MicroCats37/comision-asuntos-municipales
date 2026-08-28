@@ -1,7 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import type { ComponentType, FC, ReactNode, KeyboardEvent } from "react";
+import type { ComponentType, FC, KeyboardEvent, ReactNode } from "react";
 import type {
   Control,
   FieldErrors,
@@ -55,7 +55,10 @@ export const DefaultFieldWrapper: FC<FieldWrapperProps> = ({
   return (
     <div className={`space-y-2 ${field.containerClassName || "col-span-12"}`}>
       {!field.hidden && (
-        <Label htmlFor={labelId} className={cn("text-sm font-medium", field.labelClassName)}>
+        <Label
+          htmlFor={labelId}
+          className={cn("text-sm font-medium", field.labelClassName)}
+        >
           {field.label}
           {field.required && <span className="text-destructive ml-1">*</span>}
         </Label>

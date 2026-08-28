@@ -127,21 +127,35 @@ class LiquidacionEdificacionesLegacyOrchestrator(LiquidacionPOValidationMixin):
         if not derecho:
             raise HttpError(400, "No hay DerechoPorcentajeObra vigente para la fecha indicada")
 
-        # Build TarifaPorcentajeObraAplicada DTOs (auto-fill: tarifa x especialidades)
-        especialidades = self._obtener_especialidades_vigentes_para_tipo(
-            TipoLiquidacion.EDIFICACION, fecha=fecha_registro
-        )
-        tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas}.values())
-        tarifas_aplicadas = [
-            TarifaPorcentajeObraAplicada(
-                tarifa_id=str(t.id),
-                porcentaje_liquidacion=t.porcentaje_liquidacion,
-                especialidad_id=str(esp.especialidad_id),
-                especialidad_nombre=esp.especialidad.nombre if esp.especialidad else None,
+        # Build TarifaPorcentajeObraAplicada DTOs (explicit tarifas or auto-fill)
+        if input_tarifas:
+            tarifas_aplicadas = [
+                TarifaPorcentajeObraAplicada(
+                    tarifa_id=str(t.tarifa_porcentaje_obra_id),
+                    porcentaje_liquidacion=tarifa_map[
+                        str(t.tarifa_porcentaje_obra_id)
+                    ].porcentaje_liquidacion,
+                    especialidad_id=str(t.especialidad_id),
+                    especialidad_nombre=None,
+                )
+                for t in input_tarifas
+            ]
+        else:
+            # Auto-fill: combine one tarifa per base x every vigente especialidad
+            especialidades = self._obtener_especialidades_vigentes_para_tipo(
+                TipoLiquidacion.EDIFICACION, fecha=fecha_registro
             )
-            for t in tarifas_dedup
-            for esp in especialidades
-        ]
+            tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas}.values())
+            tarifas_aplicadas = [
+                TarifaPorcentajeObraAplicada(
+                    tarifa_id=str(t.id),
+                    porcentaje_liquidacion=t.porcentaje_liquidacion,
+                    especialidad_id=str(esp.especialidad_id),
+                    especialidad_nombre=esp.especialidad.nombre if esp.especialidad else None,
+                )
+                for t in tarifas_dedup
+                for esp in especialidades
+            ]
 
         # Pure calculation — no persistence
         return self.porcentaje_core.calcular_cotizacion_po(

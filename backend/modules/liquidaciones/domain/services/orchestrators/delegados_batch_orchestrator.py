@@ -317,6 +317,7 @@ class DelegadosBatchOrchestrator:
             liquidacion=liquidacion_nested,
             delegado=liquidacion_delegado_delegado,
             periodo=ld.periodo,
+            mes=ld.mes,
             dictamen_revision=ld.dictamen_revision,
             fecha_presentacion=ld.fecha_presentacion,
             fecha_revision=ld.fecha_revision,

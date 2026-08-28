@@ -26,7 +26,8 @@ export function useCrearTaludes() {
     () => ({
       ...mutation,
       mutate: (payload: TaludesFormData) => {
-        const { tarifa_unica_id, especialidades_seleccionadas, ...rest } = payload;
+        const { tarifa_unica_id, especialidades_seleccionadas, ...rest } =
+          payload;
         mutation.mutate({
           liquidacion_general: {
             municipalidad_id: rest.municipalidad_id,
@@ -59,7 +60,8 @@ export function useCrearTaludes() {
         });
       },
       mutateAsync: async (payload: TaludesFormData) => {
-        const { tarifa_unica_id, especialidades_seleccionadas, ...rest } = payload;
+        const { tarifa_unica_id, especialidades_seleccionadas, ...rest } =
+          payload;
         return mutation.mutateAsync({
           liquidacion_general: {
             municipalidad_id: rest.municipalidad_id,

@@ -1,5 +1,16 @@
 "use client";
 
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import {
+  Building2,
+  Calendar as CalendarIcon,
+  Filter,
+  Hash,
+  IdCard,
+  User,
+  UserRound,
+} from "lucide-react";
 /**
  * LiquidacionFiltroModal — Modal de filtros para listas de liquidaciones.
  * Usa AppFormModal como shell.
@@ -10,17 +21,15 @@
  */
 import { useCallback } from "react";
 import { z } from "zod";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Building2, Calendar as CalendarIcon, Filter, Hash, IdCard, User, UserRound } from "lucide-react";
-import { useMunicipalidades } from "../../hooks/useMunicipalidades";
-import type { LiquidacionFiltros } from "../../hooks/useLiquidacionList";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -28,6 +37,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AppFormModal } from "@/components-app/forms/AppFormModal";
+import type { LiquidacionFiltros } from "../../hooks/useLiquidacionList";
+import { useMunicipalidades } from "../../hooks/useMunicipalidades";
 
 const filtroSchema = z.object({
   entidad_id: z.string().optional(),
@@ -110,7 +122,9 @@ function CampoFecha({
           <Calendar
             mode="single"
             selected={value ? new Date(value) : undefined}
-            onSelect={(date) => onChange(date ? format(date, "yyyy-MM-dd") : "")}
+            onSelect={(date) =>
+              onChange(date ? format(date, "yyyy-MM-dd") : "")
+            }
             locale={es}
             initialFocus
           />
@@ -126,7 +140,8 @@ export function LiquidacionFiltroModal({
   initialFiltros,
   onApply,
 }: LiquidacionFiltroModalProps) {
-  const { data: municipalidades, isLoading: isLoadingMunicipalidades } = useMunicipalidades();
+  const { data: municipalidades, isLoading: isLoadingMunicipalidades } =
+    useMunicipalidades();
 
   const initialData: FiltroFormData = {
     entidad_id: initialFiltros?.entidad_id ?? "",
@@ -136,7 +151,9 @@ export function LiquidacionFiltroModal({
     numero: initialFiltros?.numero ? String(initialFiltros.numero) : "",
     razon_social: initialFiltros?.razon_social ?? "",
     creado_por: initialFiltros?.creado_por ?? "",
-    numero_revisiones: initialFiltros?.numero_revisiones ? String(initialFiltros.numero_revisiones) : "",
+    numero_revisiones: initialFiltros?.numero_revisiones
+      ? String(initialFiltros.numero_revisiones)
+      : "",
   };
 
   const handleSubmit = useCallback(
@@ -149,7 +166,8 @@ export function LiquidacionFiltroModal({
       if (data.numero) filtros.numero = Number(data.numero);
       if (data.razon_social) filtros.razon_social = data.razon_social;
       if (data.creado_por) filtros.creado_por = data.creado_por;
-      if (data.numero_revisiones) filtros.numero_revisiones = Number(data.numero_revisiones);
+      if (data.numero_revisiones)
+        filtros.numero_revisiones = Number(data.numero_revisiones);
       onApply(filtros);
     },
     [onApply],
@@ -185,13 +203,23 @@ export function LiquidacionFiltroModal({
                   value={methods.watch("entidad_id") || ""}
                   onValueChange={(v) => methods.setValue("entidad_id", v)}
                 >
-                  <SelectTrigger id="filtro-entidad" className="pl-10 h-10 w-full">
-                    <SelectValue placeholder={isLoadingMunicipalidades ? "Cargando..." : "Seleccionar municipalidad"} />
+                  <SelectTrigger
+                    id="filtro-entidad"
+                    className="pl-10 h-10 w-full"
+                  >
+                    <SelectValue
+                      placeholder={
+                        isLoadingMunicipalidades
+                          ? "Cargando..."
+                          : "Seleccionar municipalidad"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {(municipalidades || []).map((m) => (
                       <SelectItem key={m.id} value={m.id}>
-                        {m.codigo ? `${m.codigo} - ` : ""}{m.nombre}
+                        {m.codigo ? `${m.codigo} - ` : ""}
+                        {m.nombre}
                       </SelectItem>
                     ))}
                   </SelectContent>

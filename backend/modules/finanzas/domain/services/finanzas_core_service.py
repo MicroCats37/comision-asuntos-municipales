@@ -523,6 +523,20 @@ class FinanzasCoreService:
             .first()
         )
 
+    def update_liquidacion_inspector_periodo_mes(
+        self,
+        liquidacion_inspector_id: int | str,
+        periodo: int,
+        mes: int,
+    ) -> None:
+        """Update period fields for an existing LiquidacionInspector row."""
+        liquidacion_inspector = LiquidacionInspector.objects.get(
+            pk=liquidacion_inspector_id,
+        )
+        liquidacion_inspector.periodo = periodo
+        liquidacion_inspector.mes = mes
+        liquidacion_inspector.save(update_fields=["periodo", "mes", "updated_at"])
+
     def get_registro_pago(
         self,
         liquidacion_categoria_visitas_id: int,
@@ -659,6 +673,8 @@ class FinanzasCoreService:
         self,
         inspector_id: int,
         periodo: str | None = None,
+        fecha_inicio: str | None = None,
+        fecha_fin: str | None = None,
     ) -> list[dict]:
         """
         Get candidatas (LiquidacionInspector with remaining saldo) for an inspector.
@@ -675,6 +691,8 @@ class FinanzasCoreService:
             periodo: Optional period string in YYYY-MM format.
                 If provided, accumulates inspections paid in ALL periods strictly
                 before this periodo. If None, accumulates all periods historically.
+            fecha_inicio: Optional filter — fecha_registro >= fecha_inicio (inclusive).
+            fecha_fin: Optional filter — fecha_registro <= fecha_fin (inclusive).
 
         Returns:
             List of dicts with all fields needed for InspectorCandidataItemResult.
@@ -689,6 +707,16 @@ class FinanzasCoreService:
             "inspector__perfil_ingeniero",
             "especialidad_revision",
         )
+
+        # Apply date range filter on LiquidacionGeneral.fecha_registro
+        if fecha_inicio:
+            liquidaciones_inspector = liquidaciones_inspector.filter(
+                liquidacion__liquidacion_general__fecha_registro__date__gte=fecha_inicio
+            )
+        if fecha_fin:
+            liquidaciones_inspector = liquidaciones_inspector.filter(
+                liquidacion__liquidacion_general__fecha_registro__date__lte=fecha_fin
+            )
 
         candidates = []
         for li in liquidaciones_inspector:
@@ -876,7 +904,8 @@ class FinanzasCoreService:
         delegado_id,
         especialidad_revision_id,
         numero_rh: str | None = None,
-        periodo: str | None = None,
+        periodo: int | None = None,
+        mes: int | None = None,
         dictamen_revision: str | None = None,
         fecha_presentacion=None,
         fecha_revision=None,
@@ -893,7 +922,8 @@ class FinanzasCoreService:
             delegado_id: FK to Delegado.
             especialidad_revision_id: FK to EspecialidadRevision.
             numero_rh: Optional número de orden/RH.
-            periodo: Optional periodo string.
+            periodo: Optional año (PositiveSmallInteger).
+            mes: Optional mes (1-12).
             dictamen_revision: Optional dictamen.
             fecha_presentacion: Optional date.
             fecha_revision: Optional date.
@@ -908,6 +938,7 @@ class FinanzasCoreService:
             defaults={
                 "numero_rh": numero_rh,
                 "periodo": periodo,
+                "mes": mes,
                 "dictamen_revision": dictamen_revision,
                 "fecha_presentacion": fecha_presentacion,
                 "fecha_revision": fecha_revision,

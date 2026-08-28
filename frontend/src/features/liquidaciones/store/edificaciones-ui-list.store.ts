@@ -22,7 +22,8 @@ interface EdificacionesUIActions {
   closeFormModal: () => void;
 }
 
-export type EdificacionesUIStore = EdificacionesUIState & EdificacionesUIActions;
+export type EdificacionesUIStore = EdificacionesUIState &
+  EdificacionesUIActions;
 
 const initialState: EdificacionesUIState = {
   page: 1,
@@ -32,16 +33,17 @@ const initialState: EdificacionesUIState = {
   selectedItemId: null,
 };
 
-export const useEdificacionesUIStore = create<EdificacionesUIStore>()((set) => ({
-  ...initialState,
+export const useEdificacionesUIStore = create<EdificacionesUIStore>()(
+  (set) => ({
+    ...initialState,
 
-  setPage: (page) => set({ page }),
+    setPage: (page) => set({ page }),
 
-  setSearchQuery: (searchQuery) => set({ searchQuery, page: 1 }),
+    setSearchQuery: (searchQuery) => set({ searchQuery, page: 1 }),
 
-  openFormModal: (id) =>
-    set({ isFormModalOpen: true, selectedItemId: id ?? null }),
+    openFormModal: (id) =>
+      set({ isFormModalOpen: true, selectedItemId: id ?? null }),
 
-  closeFormModal: () =>
-    set({ isFormModalOpen: false, selectedItemId: null }),
-}));
+    closeFormModal: () => set({ isFormModalOpen: false, selectedItemId: null }),
+  }),
+);

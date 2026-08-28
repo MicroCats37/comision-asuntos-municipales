@@ -1,5 +1,6 @@
 "use client";
 
+import { Banknote, CircleCheck, MapPin, Square } from "lucide-react";
 /**
  * TarifasM2SmartField — Smart Field para selección de tarifa M2 (HU, MS).
  *
@@ -12,7 +13,6 @@
  */
 import { useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import { Banknote, CircleCheck, MapPin, Square } from "lucide-react";
 import { useTarifasVigentesM2 } from "../../hooks/useTarifasVigentes";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,7 +84,9 @@ export function TarifasM2SmartField({
         onClick={() => {
           const next = isSelected ? null : (tarifa.id ?? null);
           setSelectedId(next);
-          methods.setValue("tarifa_m2_id", next ?? undefined, { shouldValidate: true });
+          methods.setValue("tarifa_m2_id", next ?? undefined, {
+            shouldValidate: true,
+          });
         }}
         className={[
           "rounded-lg border bg-card px-3 py-2 transition-all duration-200 text-left w-full flex flex-col gap-2 cursor-pointer",
@@ -119,17 +121,23 @@ export function TarifasM2SmartField({
           <div className="inline-flex items-center gap-1.5">
             <MapPin className="h-3 w-3 text-primary/60 shrink-0" />
             <span>Costo/m²</span>
-            <span className="font-medium text-foreground">{formatSoles(tarifa.costo_por_m2)}</span>
+            <span className="font-medium text-foreground">
+              {formatSoles(tarifa.costo_por_m2)}
+            </span>
           </div>
           <div className="inline-flex items-center gap-1.5">
             <Banknote className="h-3 w-3 text-primary/60 shrink-0" />
             <span>Der. mín.</span>
-            <span className="font-medium text-foreground">{formatSoles(derecho?.derecho_minimo)}</span>
+            <span className="font-medium text-foreground">
+              {formatSoles(derecho?.derecho_minimo)}
+            </span>
           </div>
           <div className="inline-flex items-center gap-1.5">
             <Banknote className="h-3 w-3 text-primary/60 shrink-0" />
             <span>Der. máx.</span>
-            <span className="font-medium text-foreground">{formatSoles(derecho?.derecho_maximo)}</span>
+            <span className="font-medium text-foreground">
+              {formatSoles(derecho?.derecho_maximo)}
+            </span>
           </div>
         </div>
       </button>

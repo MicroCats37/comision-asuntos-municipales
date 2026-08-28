@@ -1,5 +1,6 @@
 "use client";
 
+import { Building2, Hash, Loader2, RefreshCw, Search, X } from "lucide-react";
 /**
  * SeleccionarUltimaRevisionModal — Modal para seleccionar la liquidación previa
  * (última revisión por proyecto) antes de crear una NUEVA REVISIÓN.
@@ -9,14 +10,13 @@
  * Validación: DNI 8 dígitos, RUC 11 dígitos o N° de liquidación para activar el botón.
  */
 import { useCallback, useState } from "react";
+import { GenericModal } from "@/components/genericModal/GenericModal";
+import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, Hash, Loader2, RefreshCw, Search, X } from "lucide-react";
-import { GenericModal } from "@/components/genericModal/GenericModal";
 import { useUltimaRevisionEdificaciones } from "../../hooks/useUltimaRevisionEdificaciones";
 import { formatPublicId } from "../../utils/formatPublicId";
-import { Pagination } from "@/components/genericPagination/Pagination";
 
 interface SeleccionarUltimaRevisionModalProps {
   open: boolean;
@@ -57,16 +57,18 @@ export function SeleccionarUltimaRevisionModal({
   const [searched, setSearched] = useState(false);
   const [page, setPage] = useState(1);
 
-  const isDocumentoValid = documento.trim().length === 8 || documento.trim().length === 11;
+  const isDocumentoValid =
+    documento.trim().length === 8 || documento.trim().length === 11;
   const canSearch = isDocumentoValid || numero.trim() !== "";
 
-  const { items, total, totalPages, pageSize, isLoading, isError, refetch } = useUltimaRevisionEdificaciones({
-    page,
-    pageSize: 10,
-    numeroDocumento: documento || undefined,
-    numero: numero ? Number(numero) : undefined,
-    enabled: searched && open,
-  });
+  const { items, total, totalPages, pageSize, isLoading, isError, refetch } =
+    useUltimaRevisionEdificaciones({
+      page,
+      pageSize: 10,
+      numeroDocumento: documento || undefined,
+      numero: numero ? Number(numero) : undefined,
+      enabled: searched && open,
+    });
 
   const handleSearch = useCallback(() => {
     if (!canSearch) return;
@@ -85,7 +87,10 @@ export function SeleccionarUltimaRevisionModal({
   return (
     <GenericModal open={open} onOpenChange={onOpenChange} preventClose={false}>
       <GenericModal.Content size="lg">
-        <GenericModal.Header title="" className="bg-primary/[0.03] border-b border-border px-6 py-5">
+        <GenericModal.Header
+          title=""
+          className="bg-primary/[0.03] border-b border-border px-6 py-5"
+        >
           <div className="flex items-center gap-3 w-full">
             <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shadow-sm shrink-0">
               <RefreshCw className="h-5 w-5 text-primary" />
@@ -94,7 +99,9 @@ export function SeleccionarUltimaRevisionModal({
               <span className="hidden sm:block text-[10px] font-bold uppercase tracking-widest text-primary leading-none">
                 Edificaciones
               </span>
-              <h2 className="text-2xl font-black tracking-tight text-foreground leading-tight">Nueva Revisión</h2>
+              <h2 className="text-2xl font-black tracking-tight text-foreground leading-tight">
+                Nueva Revisión
+              </h2>
               <p className="hidden sm:block text-sm text-muted-foreground leading-relaxed">
                 Busca la liquidación previa para crear una nueva revisión
               </p>
@@ -107,7 +114,10 @@ export function SeleccionarUltimaRevisionModal({
           {/* ── Búsqueda (sección separada) ── */}
           <div className="p-4 rounded-xl border border-border/60 bg-muted/10 space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="buscar-documento" className="text-sm font-semibold">
+              <Label
+                htmlFor="buscar-documento"
+                className="text-sm font-semibold"
+              >
                 N° Documento (RUC/DNI)
               </Label>
               <div className="flex gap-2">
@@ -121,7 +131,9 @@ export function SeleccionarUltimaRevisionModal({
                     setDocumento(val);
                     setSearched(false);
                   }}
-                  onKeyDown={(e) => e.key === "Enter" && canSearch && handleSearch()}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && canSearch && handleSearch()
+                  }
                   className="w-full h-10 font-mono"
                 />
                 <Button
@@ -158,7 +170,9 @@ export function SeleccionarUltimaRevisionModal({
                     setNumero(val);
                     setSearched(false);
                   }}
-                  onKeyDown={(e) => e.key === "Enter" && canSearch && handleSearch()}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && canSearch && handleSearch()
+                  }
                   className="w-full h-10 font-mono pl-9"
                 />
               </div>
@@ -183,15 +197,24 @@ export function SeleccionarUltimaRevisionModal({
               <SmoothLoader />
             ) : isError ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <p className="text-destructive font-medium">Error al cargar las revisiones</p>
-                <Button variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
+                <p className="text-destructive font-medium">
+                  Error al cargar las revisiones
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => refetch()}
+                >
                   Reintentar
                 </Button>
               </div>
             ) : items.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
                 <Building2 className="h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-muted-foreground text-sm">No se encontraron liquidaciones previas</p>
+                <p className="text-muted-foreground text-sm">
+                  No se encontraron liquidaciones previas
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -214,7 +237,9 @@ export function SeleccionarUltimaRevisionModal({
                               <Building2 className="h-4 w-4 text-primary" />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold truncate">{lg.proyecto.denominacion}</p>
+                              <p className="text-sm font-semibold truncate">
+                                {lg.proyecto.denominacion}
+                              </p>
                               <p className="text-xs text-muted-foreground truncate">
                                 {lg.expediente || "Sin expediente"}
                               </p>
@@ -225,7 +250,11 @@ export function SeleccionarUltimaRevisionModal({
                               Rev. {lg.numero_revision}
                             </span>
                             <span className="text-[11px] font-mono text-muted-foreground">
-                              {formatPublicId("edificacion", lg.fecha_registro, item.liquidacion_especifica.numero)}
+                              {formatPublicId(
+                                "edificacion",
+                                lg.fecha_registro,
+                                item.liquidacion_especifica.numero,
+                              )}
                             </span>
                           </div>
                         </div>
@@ -252,12 +281,23 @@ export function SeleccionarUltimaRevisionModal({
         <GenericModal.Footer className="px-6 py-4 bg-muted/30 border-t border-border">
           <div className="flex items-center justify-end gap-2">
             {searched && (
-              <Button type="button" variant="ghost" size="sm" onClick={handleReset} className="h-10 gap-1 text-xs text-muted-foreground">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleReset}
+                className="h-10 gap-1 text-xs text-muted-foreground"
+              >
                 <X className="h-3 w-3" />
                 Limpiar
               </Button>
             )}
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="h-10 rounded-xl font-semibold">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="h-10 rounded-xl font-semibold"
+            >
               Cancelar
             </Button>
           </div>

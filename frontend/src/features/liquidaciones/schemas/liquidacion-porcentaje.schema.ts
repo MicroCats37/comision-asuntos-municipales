@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Coerce helper: backend may send Decimal as string ("123.45") or number
 const num = () => z.coerce.number();
@@ -27,5 +27,9 @@ export const PorcentajeObraDatosOutSchema = z.object({
   detalles: z.array(PorcentajeObraDetalleOutSchema),
 });
 
-export type PorcentajeObraDetalleOut = z.infer<typeof PorcentajeObraDetalleOutSchema>;
-export type PorcentajeObraDatosOut = z.infer<typeof PorcentajeObraDatosOutSchema>;
+export type PorcentajeObraDetalleOut = z.infer<
+  typeof PorcentajeObraDetalleOutSchema
+>;
+export type PorcentajeObraDatosOut = z.infer<
+  typeof PorcentajeObraDatosOutSchema
+>;

@@ -26,7 +26,8 @@ export function useCrearInspeccionObra() {
     () => ({
       ...mutation,
       mutate: (payload: VisitasFormData) => {
-        const { tarifa_visitas_id, cantidad_visitas, categoria, ...rest } = payload;
+        const { tarifa_visitas_id, cantidad_visitas, categoria, ...rest } =
+          payload;
         mutation.mutate({
           liquidacion_general: {
             municipalidad_id: rest.municipalidad_id,
@@ -54,7 +55,8 @@ export function useCrearInspeccionObra() {
         });
       },
       mutateAsync: async (payload: VisitasFormData) => {
-        const { tarifa_visitas_id, cantidad_visitas, categoria, ...rest } = payload;
+        const { tarifa_visitas_id, cantidad_visitas, categoria, ...rest } =
+          payload;
         return mutation.mutateAsync({
           liquidacion_general: {
             municipalidad_id: rest.municipalidad_id,

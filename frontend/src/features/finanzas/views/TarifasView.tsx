@@ -117,8 +117,7 @@ function TarifaPeriodoCard({ item }: { item: TarifaHistoricaPeriodo }) {
         <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0">
           {esPorcentaje && (
             <span className="inline-flex items-center rounded-full bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 text-[10px] font-bold text-purple-600 uppercase tracking-wider">
-              <Percent className="h-3 w-3 mr-1" />
-              % Obra
+              <Percent className="h-3 w-3 mr-1" />% Obra
             </span>
           )}
           {esM2 && (
@@ -190,7 +189,8 @@ function TarifaPeriodoCard({ item }: { item: TarifaHistoricaPeriodo }) {
               ))}
             </div>
             <p className="text-[11px] text-muted-foreground/70">
-              El costo por visita se calcula como {`porcentaje_uit`} × UIT vigente al momento de liquidar.
+              El costo por visita se calcula como {`porcentaje_uit`} × UIT
+              vigente al momento de liquidar.
             </p>
           </div>
         )}

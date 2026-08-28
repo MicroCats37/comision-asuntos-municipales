@@ -50,6 +50,7 @@ import csv
 import io
 import logging
 import re
+import unicodedata
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -63,6 +64,7 @@ from ninja.errors import HttpError
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.entidades.domain.models.ubigeo import UbigeoDistrito
 from modules.liquidaciones.di import LiquidacionesModule
+from modules.liquidaciones.domain.constants import TipoLiquidacion
 from modules.liquidaciones.domain.services.orchestrators.liquidacion_legacy.liquidacion_edificaciones_legacy_orchestrator import (
     LiquidacionEdificacionesLegacyOrchestrator,
 )
@@ -77,8 +79,10 @@ from modules.liquidaciones.presentation.schemas.liquidacion_legacy.liquidacion_e
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraDatosIn,
     LiquidacionPorcentajeObraIn,
+    LiquidacionPorcentajeObraTarifaIn,
 )
 from modules.usuarios.di import UsuariosModule
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 from modules.usuarios.domain.models.usuario import Usuario
 
 logger = logging.getLogger(__name__)
@@ -188,6 +192,42 @@ def _build_orchestrator() -> LiquidacionEdificacionesLegacyOrchestrator:
     return injector.get(LiquidacionEdificacionesLegacyOrchestrator)
 
 
+# Mapeo ESPECIALIDAD (Excel) -> EspecialidadRevision.nombre
+# NOTA: los nombres deben coincidir EXACTAMENTE con los de la BD local.
+_ESPECIALIDAD_REVISION_MAP = {
+    "Estructuras": "Ingeniería Civil",
+    "Inst. Sanitarias": "Ingeniería Sanitaria",
+    "Inst. Mecánico Eléctricas": "Eléctrica/Mecánica",
+}
+
+
+def _normalize_specialty(value: str) -> str:
+    """Normaliza acentos/case para lookup robusto de ESPECIALIDAD."""
+    normalized = unicodedata.normalize("NFKD", value)
+    normalized = "".join(c for c in normalized if not unicodedata.combining(c))
+    return normalized.lower().strip()
+
+
+def _resolve_especialidad_revision(especialidad_str: str):
+    """
+    Map ESPECIALIDAD (Excel) -> EspecialidadRevision or None.
+
+    Normaliza acentos/case tanto el valor del Excel como el nombre en BD
+    (lookup en memoria), para resistir tildes y variantes de escritura.
+    """
+    if not especialidad_str:
+        return None
+    target = _normalize_specialty(especialidad_str)
+    for excel_value, revision_nombre in _ESPECIALIDAD_REVISION_MAP.items():
+        if _normalize_specialty(excel_value) == target:
+            revision_norm = _normalize_specialty(revision_nombre)
+            for esp in EspecialidadRevision.objects.all():
+                if _normalize_specialty(esp.nombre) == revision_norm:
+                    return esp
+            return None
+    return None
+
+
 def _get_or_create_system_user() -> Usuario:
     """
     Return the first active superuser, creating a 'system' user if none exist.
@@ -233,10 +273,72 @@ class Command(BaseCommand):
             default=100,
             help="Log a checkpoint every N rows (default: 100)",
         )
+        parser.add_argument(
+            "--reset",
+            action="store_true",
+            help="Eliminar TODAS las LiquidacionGeneral existentes (y registros de finanzas "
+                 "que bloquean su borrado) antes de importar",
+        )
+        parser.add_argument(
+            "--solo-reporte",
+            action="store_true",
+            help="Solo generar reporte_legacy_detallado.csv/.xlsx sin importar ni tocar la BD",
+        )
+
+    def _reset_liquidaciones(self) -> None:
+        """
+        Elimina TODAS las LiquidacionGeneral y los registros de finanzas que las
+        referencian (recibos de honorario, detalles, registros de pago), en orden
+        correcto para no violar las FKs con on_delete=PROTECT.
+        """
+        from modules.finanzas.domain.models.detalle_honorario_delegado import (
+            DetalleHonorarioDelegado,
+        )
+        from modules.finanzas.domain.models.detalle_honorario_inspector import (
+            DetalleHonorarioInspector,
+        )
+        from modules.finanzas.domain.models.recibo_honorario import (
+            ReciboHonorarioDelegado,
+        )
+        from modules.finanzas.domain.models.recibo_honorario_delegado_mensual import (
+            ReciboHonorarioDelegadoMensual,
+        )
+        from modules.finanzas.domain.models.recibo_honorario_inspector import (
+            ReciboHonorarioInspector,
+        )
+        from modules.finanzas.domain.models.recibo_honorario_inspector_mensual import (
+            ReciboHonorarioInspectorMensual,
+        )
+        from modules.finanzas.domain.models.registro_pago_inspector import (
+            RegistroPagoInspector,
+        )
+        from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
+            LiquidacionGeneral,
+        )
+
+        if self.dry_run:
+            self._log(self.style.WARNING(
+                f"  [DRY-RUN] Se eliminarían {LiquidacionGeneral.objects.count()} LiquidacionGeneral "
+                f"(y RH de finanzas asociados)"
+            ))
+            return
+
+        # Order matters: child details first, then headers, then pagos, then liquidaciones.
+        DetalleHonorarioDelegado.objects.all().delete()
+        DetalleHonorarioInspector.objects.all().delete()
+        ReciboHonorarioDelegadoMensual.objects.all().delete()
+        ReciboHonorarioInspectorMensual.objects.all().delete()
+        ReciboHonorarioDelegado.objects.all().delete()
+        ReciboHonorarioInspector.objects.all().delete()
+        RegistroPagoInspector.objects.all().delete()
+        deleted, _ = LiquidacionGeneral.objects.all().delete()
+        self._log(f"  Eliminadas {deleted} filas (LiquidacionGeneral y relacionados).")
 
     def handle(self, *args, **options):
         self.dry_run = bool(options["dry_run"])
         self.batch_size = int(options["batch_size"])
+        self.reset = bool(options.get("reset", False))
+        self.solo_reporte = bool(options.get("solo_report", False)) or bool(options.get("solo_reporte", False))
 
         data_path = Path(options["data_path"]) if options["data_path"] else DEFAULT_DATA_PATH
         if not data_path.exists():
@@ -252,15 +354,27 @@ class Command(BaseCommand):
         orchestrator = _build_orchestrator()
         self._log("  Orchestrator ready.")
 
+        # Read Excel
+        rows = self._read_excel(data_path)
+        total_rows = len(rows)
+        self._log(f"  Total rows to process: {total_rows}")
+
+        # ── Solo reporte: no toca la BD ─────────────────────────────────────
+        if self.solo_reporte:
+            self._log(self.style.WARNING("  --solo-reporte: NO se importa, solo se genera el detallado."))
+            self._generar_reporte_detallado(rows, orchestrator, data_path.parent)
+            return
+
         # Resolve system user (first superuser or create 'system')
         usuario = _get_or_create_system_user()
         usuario_id: int = usuario.id
         self._log(f"  Using usuario_id={usuario_id} ({usuario.username})")
 
-        # Read Excel
-        rows = self._read_excel(data_path)
-        total_rows = len(rows)
-        self._log(f"  Total rows to process: {total_rows}")
+        # Optional reset: wipe all existing liquidaciones before importing
+        if self.reset:
+            self._log(self.style.WARNING("  --reset: eliminando LiquidacionGeneral existentes..."))
+            self._reset_liquidaciones()
+            self._log(self.style.SUCCESS("  Reset completado."))
 
         # Open CSV for report of problematic rows (what's wrong + whether it was uploaded)
         report_csv_path = Path(__file__).resolve().parent.parent.parent.parent.parent / "reporte_ingesta_legacy.csv"
@@ -342,6 +456,10 @@ class Command(BaseCommand):
             if len(error_details) > 20:
                 self._log(f"    ... and {len(error_details) - 20} more errors")
 
+        # Always regenerate the detailed report (CSV + XLSX) after importing
+        self._log(self.style.SUCCESS("\n  Generando reporte detallado (CSV + XLSX)..."))
+        self._generar_reporte_detallado(rows, orchestrator, data_path.parent)
+
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _log(self, msg):
@@ -351,6 +469,163 @@ class Command(BaseCommand):
         except UnicodeEncodeError:
             safe = msg.encode("ascii", "replace").decode("ascii")
             self.stdout.write(safe)
+
+    def _generar_reporte_detallado(self, rows: list, orchestrator, output_dir: Path) -> Path:
+        """
+        Generate the detailed legacy report (CSV + XLSX) comparing Excel values
+        vs calculated values for EVERY row. Does NOT touch the database.
+
+        Uses the same _build_payload (with explicit tarifa for NROREV>1) so the
+        report matches what the import stores. Writes:
+            <output_dir>/reporte_legacy_detallado.csv
+            <output_dir>/reporte_legacy_detallado.xlsx
+        """
+        headers = [
+            "FILA", "NRO", "EXPEDIENTE", "FECHA_REGISTRO", "ESPECIALIDAD",
+            "RAZON_SOCIAL", "VALOR_OBRA",
+            "PORCENTAJE_EXCEL", "PORCENTAJE_CALCULADO",
+            "SUBTOTAL_EXCEL", "SUBTOTAL_CALCULADO",
+            "TOTAL_EXCEL", "TOTAL_CALCULADO",
+            "DESCRIPCION_LEGACY", "ESTADO",
+        ]
+        csv_path = output_dir / "reporte_legacy_detallado.csv"
+        xlsx_path = output_dir / "reporte_legacy_detallado.xlsx"
+
+        out_file = csv_path.open("w", newline="", encoding="utf-8")
+        writer = csv.writer(out_file)
+        writer.writerow(headers)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Detalle"
+        ws.append(headers)
+
+        counts = {"OK": 0, "AVISO": 0, "RECHAZADO": 0, "ERROR": 0}
+
+        for idx, row in enumerate(rows, start=2):
+            fila = idx
+            estado = "ERROR"
+            anomalies: list[str] = []
+
+            def col(r, n):
+                return r[n] if len(r) > n else None
+
+            nro_raw = col(row, COL_NRO)
+            try:
+                nro_val = int(float(str(nro_raw).strip())) if nro_raw is not None and str(nro_raw).strip() != "" else None
+            except (ValueError, TypeError):
+                nro_val = None
+
+            dptoprdri = col(row, COL_DPTOPRDI)
+            razon_social = col(row, COL_RAZONSOCIAL) or col(row, COL_NOMBRE) or ""
+            especialidad_str = str(col(row, COL_ESPECIALIDAD) or "").strip()
+
+            # ── RECHAZADO ──────────────────────────────────────────────
+            if nro_val == 0 or (dptoprdri is None or str(dptoprdri).strip() == ""):
+                estado = "RECHAZADO"
+                if nro_val == 0:
+                    anomalies.append("NRO == 0")
+                if dptoprdri is None or str(dptoprdri).strip() == "":
+                    anomalies.append("Distrito vacío (DPTOPRDI)")
+                row_data = [
+                    fila, nro_val if nro_val is not None else "", "", "", especialidad_str,
+                    razon_social, col(row, COL_VALOROBRA) or "",
+                    col(row, COL_PORCENTAJE) or "", "",
+                    col(row, COL_SUBTOTAL) or "", "",
+                    col(row, COL_TOTAL) or "", "",
+                    ", ".join(anomalies), estado,
+                ]
+                writer.writerow(row_data)
+                ws.append([str(v) if v is not None else "" for v in row_data])
+                counts[estado] += 1
+                continue
+
+            try:
+                payload, row_anomalies, _ = self._build_payload(row, idx, orchestrator)
+                anomalies = row_anomalies
+
+                excel_total_raw = col(row, COL_TOTAL)
+                excel_subtotal_raw = col(row, COL_SUBTOTAL)
+                excel_pct_raw = col(row, COL_PORCENTAJE)
+                excel_total = Decimal(str(excel_total_raw)) if excel_total_raw is not None else None
+                excel_subtotal = Decimal(str(excel_subtotal_raw)) if excel_subtotal_raw is not None else None
+                excel_pct = Decimal(str(excel_pct_raw)) if excel_pct_raw is not None else None
+
+                cotizacion = orchestrator.cotizar_legacy_proceso(payload)
+                pct_calculado = cotizacion.porcentaje_liquidacion * Decimal(100) if cotizacion else None
+                calc_total = cotizacion.total if cotizacion else None
+                calc_subtotal = cotizacion.total_subtotal if cotizacion else None
+
+                if cotizacion is not None:
+                    if excel_total is not None and cotizacion.total != excel_total:
+                        anomalies.append("Total no coincide con cálculo")
+                    if excel_subtotal is not None and cotizacion.total_subtotal != excel_subtotal:
+                        anomalies.append("Subtotal no coincide con cálculo")
+                    if excel_pct is not None and pct_calculado is not None and pct_calculado != excel_pct:
+                        anomalies.append("Porcentaje no coincide con cálculo")
+
+                estado = "AVISO" if anomalies else "OK"
+                counts[estado] += 1
+
+                nroexpdte = col(row, COL_NROEXPDTE)
+                expediente = str(nroexpdte).strip() if nroexpdte else f"LEGACY-{fila}"
+                if not expediente or expediente.upper() == "NULL":
+                    expediente = f"LEGACY-{fila}"
+
+                fecha_raw = col(row, COL_FECHA)
+                fecha_str = ""
+                if fecha_raw:
+                    try:
+                        fecha_str = _parse_fecha(fecha_raw).isoformat()
+                    except ValueError:
+                        anomalies.append(f"Fecha inválida: {fecha_raw}")
+
+                row_data = [
+                    fila,
+                    nro_val if nro_val is not None else "",
+                    expediente,
+                    fecha_str,
+                    especialidad_str,
+                    razon_social,
+                    col(row, COL_VALOROBRA) or "",
+                    excel_pct,
+                    pct_calculado,
+                    excel_subtotal,
+                    calc_subtotal,
+                    excel_total,
+                    calc_total,
+                    ", ".join(anomalies),
+                    estado,
+                ]
+                writer.writerow(row_data)
+                ws.append([str(v) if v is not None else "" for v in row_data])
+            except Exception as exc:  # noqa: BLE001
+                estado = "ERROR"
+                counts[estado] += 1
+                row_data = [
+                    fila,
+                    nro_val if nro_val is not None else "",
+                    "", "", especialidad_str,
+                    razon_social,
+                    col(row, COL_VALOROBRA) or "",
+                    col(row, COL_PORCENTAJE) or "", "",
+                    col(row, COL_SUBTOTAL) or "", "",
+                    col(row, COL_TOTAL) or "", "",
+                    f"ERROR: {exc}", estado,
+                ]
+                writer.writerow(row_data)
+                ws.append([str(v) if v is not None else "" for v in row_data])
+
+        out_file.close()
+        wb.save(str(xlsx_path))
+
+        self._log(f"\n=== REPORTE LEGACY DETALLADO ===")
+        self._log(f"  Total filas procesadas: {len(rows)}")
+        for k in ("OK", "AVISO", "RECHAZADO", "ERROR"):
+            self._log(f"  {k}: {counts[k]}")
+        self._log(f"  CSV: {csv_path}")
+        self._log(f"  XLSX: {xlsx_path}")
+        return csv_path
 
     def _read_excel(self, path: Path) -> list:
         """
@@ -576,9 +851,36 @@ class Command(BaseCommand):
             descripcion_legacy=None,  # Will be set after comparison
         )
 
+        # ── Tarifas explícitas para revisiones > 1 con especialidad concreta ──
+        # En legacy la tarifa NO viene en el Excel: se resuelve la vigente a
+        # fecha_registro (igual que el flujo normal) y se combina SOLO con la
+        # especialidad revisada de la fila -> porcentaje parcial de esa tarifa.
+        # NROREV == 1 o ESPECIALIDAD == TODAS -> auto-fill (tarifas=[]).
+        tarifas_explicit: list[LiquidacionPorcentajeObraTarifaIn] = []
+        if nrorev_val is not None and nrorev_val > 1:
+            if especialidad_str and especialidad_str.strip().upper() != "TODAS":
+                esp_revision = _resolve_especialidad_revision(especialidad_str)
+                if esp_revision is None:
+                    anomalies.append(f"Especialidad no encontrada: {especialidad_str}")
+                else:
+                    tarifas_vigentes = orchestrator.legacy_po_core.get_tarifa_por_fecha(
+                        TipoLiquidacion.EDIFICACION, fecha_registro
+                    )
+                    if not tarifas_vigentes:
+                        anomalies.append("No hay tarifa vigente para la fecha — se usa auto-fill")
+                    else:
+                        tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas_vigentes}.values())
+                        tarifas_explicit = [
+                            LiquidacionPorcentajeObraTarifaIn(
+                                tarifa_porcentaje_obra_id=t.id,
+                                especialidad_id=esp_revision.id,
+                            )
+                            for t in tarifas_dedup
+                        ]
+
         liquidacion_especifica = LiquidacionPorcentajeObraIn(
             datos=LiquidacionPorcentajeObraDatosIn(valor_declarado=valor_declarado),
-            tarifas=[],  # Auto-fill mode
+            tarifas=tarifas_explicit,  # Vacío = auto-fill; con entries = porcentaje parcial
         )
 
         payload = LiquidacionEdificacionesLegacyIn(

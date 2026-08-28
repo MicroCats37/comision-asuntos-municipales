@@ -1,9 +1,13 @@
 "use client";
 
 import { Calendar, ChevronDown, FileText } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { CollapsibleTrigger } from "@/components/ui/collapsible";
-import { getEstadoBadgeClass, formatDate, formatCurrency } from "./cards/../liquidacion-ui";
+import { cn } from "@/lib/utils";
+import {
+  formatCurrency,
+  formatDate,
+  getEstadoBadgeClass,
+} from "./cards/../liquidacion-ui";
 
 export interface LiquidacionCardHeaderData {
   public_id: string;
@@ -28,8 +32,20 @@ interface LiquidacionCardHeaderProps {
   displayPublicId?: string;
 }
 
-export function LiquidacionCardHeader({ data, rightSlotChildren, displayPublicId }: LiquidacionCardHeaderProps) {
-  const { public_id, estado, fecha_registro, proyectoNombre, kindBadge, expediente, total } = data;
+export function LiquidacionCardHeader({
+  data,
+  rightSlotChildren,
+  displayPublicId,
+}: LiquidacionCardHeaderProps) {
+  const {
+    public_id,
+    estado,
+    fecha_registro,
+    proyectoNombre,
+    kindBadge,
+    expediente,
+    total,
+  } = data;
 
   return (
     <CollapsibleTrigger className="w-full px-5 py-4 bg-gradient-to-r from-muted/40 via-muted/20 to-transparent border-b border-border/60 text-left hover:bg-muted/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
@@ -59,7 +75,9 @@ export function LiquidacionCardHeader({ data, rightSlotChildren, displayPublicId
                   <span className="text-xs text-muted-foreground truncate max-w-[280px]">
                     {proyectoNombre}
                   </span>
-                  <span className="text-xs text-muted-foreground/60 hidden sm:inline">•</span>
+                  <span className="text-xs text-muted-foreground/60 hidden sm:inline">
+                    •
+                  </span>
                 </>
               )}
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/60 border border-border/80 text-xs font-semibold text-secondary-foreground-foreground">

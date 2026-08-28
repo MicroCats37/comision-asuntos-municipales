@@ -3,8 +3,11 @@
  * Estructura idéntica a Habilitacion Urbana, con nombre propio.
  */
 import { z } from "zod";
-import { generalFormSchema, proyectoFormSchema } from "./liquidacion-form-base.schema";
-import { contactoInlineSchema } from "./liquidacion-form-base.schema";
+import {
+  contactoInlineSchema,
+  generalFormSchema,
+  proyectoFormSchema,
+} from "./liquidacion-form-base.schema";
 
 export const mecanicaSuelosFormSchema = z.object({
   ...proyectoFormSchema.shape,

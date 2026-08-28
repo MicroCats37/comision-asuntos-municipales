@@ -810,3 +810,107 @@ def esp_taludes(db):
 @pytest.fixture
 def esp_iv(db):
     return EspecialidadRevision.objects.create(slug="impacto-vial", nombre="Impacto Vial")
+
+
+# ── cotizar_legacy_proceso: tarifa explícita = porcentaje parcial ──────────────
+
+def _make_po_payload_dict(
+    municipalidad_id,
+    distrito_id,
+    *,
+    fecha_registro,
+    numero_revision=3,
+    tarifas=None,
+    valor_declarado=100000.00,
+):
+    payload = make_legacy_payload_po(
+        municipalidad_id,
+        distrito_id,
+        fecha_registro=fecha_registro,
+        numero_revision=numero_revision,
+        valor_declarado=valor_declarado,
+    )
+    payload["liquidacion_especifica"]["tarifas"] = tarifas or []
+    return payload
+
+
+@pytest.mark.django_db
+def test_cotizar_legacy_proceso_con_tarifa_explicita_usa_porcentaje_parcial(
+    municipalidad, ubigeo_distrito,
+    igv_vigente_2024, uit_vigente_2024,
+    derecho_po_vigente,
+    tarifa_po_historica,
+    esp_estructuras, esp_arquitectura, esp_installaciones,
+    especialidades_disponibles_po,
+    tipo_edificacion,
+):
+    """
+    Con tarifa explícita + una especialidad, cotizar_legacy_proceso devuelve
+    el porcentaje PARCIAL de esa tarifa (0.10%), no el total de las 3.
+    """
+    from modules.liquidaciones.presentation.schemas.liquidacion_legacy.liquidacion_edificaciones_legacy_schemas import (
+        LiquidacionEdificacionesLegacyIn,
+    )
+    from modules.liquidaciones.management.commands.import_legacy_edificaciones import (
+        _build_orchestrator,
+    )
+
+    payload_dict = _make_po_payload_dict(
+        municipalidad.id,
+        ubigeo_distrito.id,
+        fecha_registro=date(2024, 6, 15),
+        tarifas=[
+            {
+                "tarifa_porcentaje_obra_id": str(tarifa_po_historica.id),
+                "especialidad_id": str(esp_estructuras.id),
+            }
+        ],
+    )
+    payload = LiquidacionEdificacionesLegacyIn.model_validate(payload_dict)
+
+    orchestrator = _build_orchestrator()
+    cotizacion = orchestrator.cotizar_legacy_proceso(payload)
+
+    assert abs(cotizacion.porcentaje_liquidacion - Decimal("0.0010")) < Decimal("0.0001"), \
+        f"Expected partial 0.10% (1 specialty), got {cotizacion.porcentaje_liquidacion}"
+    assert len(cotizacion.detalles) == 1, \
+        f"Expected 1 detail for explicit tarifa, got {len(cotizacion.detalles)}"
+    assert cotizacion.detalles[0].tarifa_aplicada.especialidad_id == str(esp_estructuras.id)
+
+
+@pytest.mark.django_db
+def test_cotizar_legacy_proceso_sin_tarifas_auto_fill_todas(
+    municipalidad, ubigeo_distrito,
+    igv_vigente_2024, uit_vigente_2024,
+    derecho_po_vigente,
+    tarifa_po_historica,
+    esp_estructuras, esp_arquitectura, esp_installaciones,
+    especialidades_disponibles_po,
+    tipo_edificacion,
+):
+    """
+    Sin tarifas (tarifas=[]) cotizar_legacy_proceso auto-rellena TODAS las
+    especialidades vigentes: 3 x 0.10% = 0.30%.
+    """
+    from modules.liquidaciones.presentation.schemas.liquidacion_legacy.liquidacion_edificaciones_legacy_schemas import (
+        LiquidacionEdificacionesLegacyIn,
+    )
+    from modules.liquidaciones.management.commands.import_legacy_edificaciones import (
+        _build_orchestrator,
+    )
+
+    payload_dict = _make_po_payload_dict(
+        municipalidad.id,
+        ubigeo_distrito.id,
+        fecha_registro=date(2024, 6, 15),
+        tarifas=[],
+    )
+    payload = LiquidacionEdificacionesLegacyIn.model_validate(payload_dict)
+
+    orchestrator = _build_orchestrator()
+    cotizacion = orchestrator.cotizar_legacy_proceso(payload)
+
+    assert abs(cotizacion.porcentaje_liquidacion - Decimal("0.0030")) < Decimal("0.0001"), \
+        f"Expected total 0.30% (3 x 0.10%), got {cotizacion.porcentaje_liquidacion}"
+    assert len(cotizacion.detalles) == 3, \
+        f"Expected 3 details (auto-fill), got {len(cotizacion.detalles)}"

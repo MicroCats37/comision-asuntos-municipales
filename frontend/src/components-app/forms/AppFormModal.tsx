@@ -9,8 +9,6 @@ import type {
   UseFormReturn,
 } from "react-hook-form";
 import type { ZodType } from "zod";
-import type { GenericModalSize } from "@/components/genericModal/GenericModal";
-import { GenericModal } from "@/components/genericModal/GenericModal";
 import { GenericForm } from "@/components/genericForm/GenericForm";
 import type {
   FieldWrapperProps,
@@ -18,6 +16,8 @@ import type {
   FormSection,
   SectionWrapperProps,
 } from "@/components/genericForm/GenericInput";
+import type { GenericModalSize } from "@/components/genericModal/GenericModal";
+import { GenericModal } from "@/components/genericModal/GenericModal";
 import { Button } from "@/components/ui/button";
 
 export interface AppFormModalProps<T extends FieldValues> {
@@ -152,7 +152,9 @@ export function AppFormModal<T extends FieldValues>({
               )}
             </div>
             {/* Spacer to mirror icon width */}
-            {icon && <div className="w-9 sm:w-11 shrink-0" aria-hidden="true" />}
+            {icon && (
+              <div className="w-9 sm:w-11 shrink-0" aria-hidden="true" />
+            )}
           </div>
         </GenericModal.Header>
 
@@ -201,7 +203,9 @@ export function AppFormModal<T extends FieldValues>({
               aria-label={primaryLabel}
             >
               {primaryLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {!primaryLoading && <CheckCircle2 className="h-4 w-4 sm:hidden" />}
+              {!primaryLoading && (
+                <CheckCircle2 className="h-4 w-4 sm:hidden" />
+              )}
               <span className="hidden sm:inline">
                 {primaryLoading
                   ? (primaryLoadingLabel ?? "Guardando...")

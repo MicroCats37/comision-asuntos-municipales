@@ -103,7 +103,10 @@ export function RecibosInspectoresView() {
             <>
               <div className="flex flex-col gap-4">
                 {items.map((item) => (
-                  <ReciboHonorarioInspectorMensualCard key={item.id} item={item} />
+                  <ReciboHonorarioInspectorMensualCard
+                    key={item.id}
+                    item={item}
+                  />
                 ))}
               </div>
               {/* Pagination */}
