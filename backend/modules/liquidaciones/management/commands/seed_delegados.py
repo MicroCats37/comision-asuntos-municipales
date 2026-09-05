@@ -30,6 +30,9 @@ from modules.liquidaciones.domain.models.delegado import (
     DelegadoMunicipalidad,
     DelegadoMunicipalidadPeriodo,
 )
+from modules.liquidaciones.domain.models.tipo_liquidacion import (
+    TipoLiquidacion,
+)
 from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero, EspecialidadRevision
 
 
@@ -89,6 +92,33 @@ class Command(BaseCommand):
             if normalize(cand.nombre) == norm:
                 return cand
         return None
+
+    def _resolver_tipo_liquidacion(self, asign):
+        """
+        Resuelve TipoLiquidacion desde el campo `tipo_liquidacion` de la asignación
+        (valor canónico como 'EDIFICACION' o 'HABILITACION_URBANA').
+
+        Retorna el objeto TipoLiquidacion o None si no se encuentra.
+        Emite un warning cuando el campo está ausente para no ocultar tipos desconocidos.
+        """
+        tipo_liq = str(asign.get("tipo_liquidacion", "") or "").strip()
+        if not tipo_liq:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"    tipo_liquidacion ausente en asignación "
+                    f"CIP={asign.get('cip')} -> municipalidad={asign.get('municipalidad_codigo')}"
+                )
+            )
+            return None
+        tipo = TipoLiquidacion.objects.filter(codigo=tipo_liq).first()
+        if tipo is None:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"    TipoLiquidacion '{tipo_liq}' no encontrado en BD para "
+                    f"CIP={asign.get('cip')} -> municipalidad={asign.get('municipalidad_codigo')}"
+                )
+            )
+        return tipo
 
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
@@ -192,24 +222,119 @@ class Command(BaseCommand):
                 )
                 continue
 
-            dm, _ = DelegadoMunicipalidad.objects.get_or_create(
+            tipo_liq = self._resolver_tipo_liquidacion(asign)
+
+            # Backward compatibility: if DelegadoMunicipalidad already exists for
+            # (delegado, municipalidad) with tipo_liquidacion=NULL, update it in-place
+            # so we don't get unique-constraint violations when we now have a tipo_liq.
+            existing_null = DelegadoMunicipalidad.objects.filter(
                 delegado=delegado,
                 municipalidad=municipio,
-                defaults={
-                    "tipo": tipo,
-                    "especialidad_revision": esp_rev,
-                },
-            )
+                tipo_liquidacion__isnull=True,
+            ).first()
+
+            if existing_null is not None:
+                if tipo_liq is not None:
+                    existing_null.tipo_liquidacion = tipo_liq
+                    existing_null.save(update_fields=["tipo_liquidacion"])
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"    Actualizado tipo_liquidacion en DelegadoMunicipalidad "
+                            f"existente para {cip} -> {municipio.codigo}: "
+                            f"{tipo_liq.codigo}"
+                        )
+                    )
+                else:
+                    # Keep the existing NULL; nothing new to set
+                    pass
+                dm = existing_null
+            else:
+                dm, _ = DelegadoMunicipalidad.objects.get_or_create(
+                    delegado=delegado,
+                    municipalidad=municipio,
+                    tipo_liquidacion=tipo_liq,
+                    defaults={
+                        "tipo": tipo,
+                        "especialidad_revision": esp_rev,
+                    },
+                )
             asignaciones_creadas += 1
 
-            # Periodo de vigencia (inicio = hace 1 año, sin fin)
-            hoy = date.today()
-            DelegadoMunicipalidadPeriodo.objects.get_or_create(
-                delegado_municipalidad=dm,
-                periodo_inicio=hoy - timedelta(days=365),
-                periodo_fin=None,
-            )
-            periodo_creado += 1
+            # Periodo de vigencia
+            # Soporte nuevo: periodos[] array ( Approach A — múltiples periodos en una entrada).
+            # Cada entry: {vigencia_inicio, vigencia_fin}. Para cada uno se llama
+            # close_current_and_open_new, que cierra el abierto y abre el nuevo.
+            # Idempotencia: si el periodo cerrado ya existe (mismo periodo_inicio), se salta.
+            #
+            # Fallback legacy: si no hay periodos[], se comporta como antes:
+            # - Si vigencia_inicio presente: close_current_and_open_new(vigencia_inicio)
+            # - Si no: legacy (hoy-365, open)
+            periodos_list = asign.get("periodos")
+            vigencia_inicio_str = asign.get("vigencia_inicio")  # legacy single-field format
+            if periodos_list and isinstance(periodos_list, list) and len(periodos_list) > 0:
+                for periodo_entry in periodos_list:
+                    vigencia_inicio_str_item = periodo_entry.get("vigencia_inicio")
+                    vigencia_fin_str_item = periodo_entry.get("vigencia_fin")
+                    if not vigencia_inicio_str_item:
+                        continue
+                    try:
+                        from datetime import datetime
+
+                        vigencia_inicio = datetime.strptime(vigencia_inicio_str_item, "%Y-%m-%d").date()
+                        vigencia_fin = None
+                        if vigencia_fin_str_item:
+                            vigencia_fin = datetime.strptime(vigencia_fin_str_item, "%Y-%m-%d").date()
+
+                        DelegadoMunicipalidadPeriodo.objects.update_or_create(
+                            delegado_municipalidad=dm,
+                            periodo_inicio=vigencia_inicio,
+                            defaults={
+                                "periodo_fin": vigencia_fin
+                            }
+                        )
+                        periodo_creado += 1
+                    except Exception as e:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f"    Error creando periodo para CIP={cip} -> {municipio.codigo}: {e}"
+                            )
+                        )
+            elif vigencia_inicio_str:
+                # Legacy: single vigencia_inicio (v2.0 sin periodos[]), backward compat
+                try:
+                    from datetime import datetime
+
+                    vigencia_inicio = datetime.strptime(vigencia_inicio_str, "%Y-%m-%d").date()
+                    existing_closed = DelegadoMunicipalidadPeriodo.objects.filter(
+                        delegado_municipalidad=dm,
+                        periodo_inicio=vigencia_inicio,
+                        periodo_fin__isnull=False,
+                    ).exists()
+                    if not existing_closed:
+                        DelegadoMunicipalidadPeriodo.close_current_and_open_new(dm, vigencia_inicio)
+                        periodo_creado += 1
+                    else:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f"    Periodo vigencia_inicio={vigencia_inicio} ya existe (cerrado) "
+                                f"para CIP={cip} -> {municipio.codigo}, saltando"
+                            )
+                        )
+                except Exception as e:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"    Error creando periodo para CIP={cip} -> {municipio.codigo}: {e}"
+                        )
+                    )
+            else:
+                # Legacy behavior (backward compat con v1.0 sin vigencia_inicio ni periodos[])
+                hoy = date.today()
+                DelegadoMunicipalidadPeriodo.objects.get_or_create(
+                    delegado_municipalidad=dm,
+                    periodo_inicio=hoy - timedelta(days=365),
+                    periodo_fin=None,
+                )
+                periodo_creado += 1
 
         if dry_run:
             self.stdout.write(self.style.WARNING(f"DRY RUN: {len(data.get('delegados', []))} delegados validados."))

@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { AUTH_STORAGE_PREFIX } from "@/lib/auth/cookies";
 import type { MeResponse } from "../schemas/auth.types";
 
 /**
@@ -27,7 +28,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ user: null, isAuthenticated: false }),
     }),
     {
-      name: "auth-storage",
+      name: `${AUTH_STORAGE_PREFIX}-auth-storage`,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ user: state.user }),
     },

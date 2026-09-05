@@ -201,3 +201,75 @@ class InspectorCoreService:
         total = qs.count()
         offset = (page - 1) * page_size
         return list(qs[offset:offset + page_size]), total
+
+    def get_inspector_operacion_by_id(
+        self,
+        inspector_operacion_id: uuid.UUID,
+    ) -> Optional[InspectorOperacion]:
+        """
+        Returns a single InspectorOperacion by UUID.
+        Returns None if not found.
+        """
+        return InspectorOperacion.objects.filter(id=inspector_operacion_id).first()
+
+    def crear_liquidacion_inspector(
+        self,
+        liquidacion,
+        inspector_id: uuid.UUID,
+        inspector_operacion,
+    ) -> LiquidacionInspector:
+        """
+        Creates a LiquidacionInspector association.
+
+        The inspector_operacion FK is set directly (not derived from inspector).
+        The FK was added in migration 0033.
+        """
+        inspector = Inspector.objects.get(id=inspector_id)
+        return LiquidacionInspector.objects.create(
+            liquidacion=liquidacion,
+            inspector=inspector,
+            inspector_operacion=inspector_operacion,
+            especialidad_revision=inspector_operacion.especialidad_revision,
+        )
+
+    def get_liquidacion_inspector_by_ids(
+        self,
+        liquidacion_id: str,
+        inspector_id: str,
+    ) -> Optional[LiquidacionInspector]:
+        """
+        Returns a LiquidacionInspector by liquidacion_id and inspector_id.
+        """
+        return LiquidacionInspector.objects.filter(
+            liquidacion_id=liquidacion_id,
+            inspector_id=inspector_id,
+        ).select_related(
+            "inspector__perfil_ingeniero",
+            "especialidad_revision",
+        ).first()
+
+    def eliminar_liquidacion_inspector(
+        self,
+        liquidacion,
+        inspector_id: uuid.UUID,
+    ) -> None:
+        """
+        Deletes a LiquidacionInspector association by liquidacion and inspector_id.
+        """
+        LiquidacionInspector.objects.filter(
+            liquidacion=liquidacion,
+            inspector_id=inspector_id,
+        ).delete()
+
+    def obtener_liquidacion_inspector(
+        self,
+        liquidacion,
+        inspector,
+    ) -> Optional[LiquidacionInspector]:
+        """
+        Returns a LiquidacionInspector for the given liquidacion and inspector.
+        """
+        return LiquidacionInspector.objects.filter(
+            liquidacion=liquidacion,
+            inspector=inspector,
+        ).first()

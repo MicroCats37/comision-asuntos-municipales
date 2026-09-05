@@ -7,7 +7,7 @@ maps Presentation Schema -> Domain DTO.
 Architecture: Orchestrator owns business rules (clamping). No @transaction.atomic.
 """
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 import uuid
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
@@ -22,6 +22,9 @@ from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_
 )
 from modules.liquidaciones.domain.services.flujos.liquidacion_especifico.liquidacion_edificaciones_flujo import (
     LiquidacionEdificacionesFlujo,
+)
+from modules.liquidaciones.domain.services.orchestrators.liquidacion_general_orchestrator import (
+    LiquidacionGeneralOrchestrator,
 )
 from modules.liquidaciones.domain.schemas.liquidacion_general.liquidacion_general_data import (
     EntidadData,
@@ -40,9 +43,13 @@ from modules.liquidaciones.domain.schemas.liquidacion_especifico.primera_revisio
 from modules.liquidaciones.domain.results.liquidacion_especifico.primera_revision_result import (
     LiquidacionEspecificaPrimeraRevisionResult,
 )
+from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
+    ContactoResult,
+)
 from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import (
     CotizacionPorcentajeObraResult,
     CotizacionPorcentajeObraDetalleResult,
+    EspecialidadResult,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraTarifaIn,
@@ -62,16 +69,18 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
     
     Uses LiquidacionPOValidationMixin for shared validation helpers.
     """
-    
+
     @inject
     def __init__(
         self,
         porcentaje_core_service: LiquidacionPorcentajeObraCoreService,
         general_core_service: LiquidacionGeneralCoreService,
+        general_orchestrator: LiquidacionGeneralOrchestrator,
         flujo: LiquidacionEdificacionesFlujo,
     ):
         self.porcentaje_core = porcentaje_core_service
         self.general_core = general_core_service
+        self.general_orchestrator = general_orchestrator
         self.flujo = flujo
     
     def crear_primera_revision_proceso(
@@ -159,8 +168,8 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                   expediente=payload_in.liquidacion_general.expediente,
                   observacion=payload_in.liquidacion_general.observacion,
                   retencion=getattr(payload_in.liquidacion_general, "retencion", False),
+                  denominacion_de_proyecto=payload_in.liquidacion_general.denominacion_de_proyecto,
                 proyecto=ProyectoData(
-                    denominacion=payload_in.liquidacion_general.proyecto.denominacion,
                     nombre_propietario=payload_in.liquidacion_general.proyecto.nombre_propietario,
                     direccion=payload_in.liquidacion_general.proyecto.direccion,
                     distrito_id=str(payload_in.liquidacion_general.proyecto.distrito_id),
@@ -188,7 +197,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             liquidacion_especifica=LiquidacionPorcentajeObraData(
                 datos=DatosPorcentajeObra(valor_declarado=valor_declarado),
                 tarifas=tarifas_aplicadas,
-                tipo_tramite=None,  # FUTURE: activate when frontend sends it
+                tipo_tramite=payload_in.liquidacion_especifica.tipo_tramite,
             ),
         )
         
@@ -201,18 +210,26 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             uit_valor=Decimal(str(uit_vigente.valor)),
         )
 
-    def obtener_tarifas_vigentes_proceso(self):
+    def obtener_tarifas_vigentes_proceso(self, fecha=None):
         """
-        Fetches currently active TarifaPorcentajeObra list and available
-        LiquidacionEspecialidadDisponibles for Edificaciones.
-        
+        Fetches currently active (or historical at fecha) TarifaPorcentajeObra list
+        and available LiquidacionEspecialidadDisponibles for Edificaciones.
+
         With tarifa-unica-especialidades: returns a tuple of
         (tarifas, especialidades_disponibles) since the single tariff
         no longer carries an especialidad FK.
+
+        Args:
+            fecha: Optional date to fetch vigentes at that date. Defaults to today.
         """
-        tarifas = self.porcentaje_core.get_tarifas_porcentaje_vigentes(TipoLiquidacion.EDIFICACION)
-        validar_tarifa_unica_por_base(tarifas, TipoLiquidacion.EDIFICACION)
-        especialidades = self._obtener_especialidades_vigentes_para_tipo(TipoLiquidacion.EDIFICACION)
+        tarifas = self.porcentaje_core.get_tarifas_porcentaje_vigentes(
+            TipoLiquidacion.EDIFICACION, fecha=fecha
+        )
+        if fecha is None:
+            validar_tarifa_unica_por_base(tarifas, TipoLiquidacion.EDIFICACION)
+        especialidades = self._obtener_especialidades_vigentes_para_tipo(
+            TipoLiquidacion.EDIFICACION, fecha=fecha
+        )
         return tarifas, especialidades
 
     def cotizar_proceso(
@@ -305,7 +322,10 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             detalles=[
                 CotizacionPorcentajeObraDetalleResult(
                     tarifa_id=d.tarifa_aplicada.tarifa_id,
-                    especialidad_id=d.tarifa_aplicada.especialidad_id,
+                    especialidad=EspecialidadResult(
+                        id=d.tarifa_aplicada.especialidad_id,
+                        nombre=d.tarifa_aplicada.especialidad_nombre or "",
+                    ) if d.tarifa_aplicada.especialidad_id else None,
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
                 )
@@ -374,24 +394,35 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
             LiquidacionPorcentajeObraResult,
             DetallePorcentajeObraResult,
+            EspecialidadResult,
         )
 
-        # Build revisiones_previas (needed for both general_result and return value)
-        revisiones_previas = [
-            LiquidacionPreviaResult(
-                id=str(lp.id),
-                numero_revision=lp.numero_revision,
-                expediente=lp.expediente or "",
-            )
-            for lp in lg.liquidaciones_previas.all().order_by('numero_revision')
-        ]
+        # Build revisiones_previas using the enriched helper (includes denominacion_de_proyecto, tipo, etc.)
+        revisiones_previas = self.general_core.build_revisiones_previas_result(lg)
 
         # Delegate general result construction to core (NO more duplicate inline mapping)
         usuario_id = lg.usuario_creador.id if lg.usuario_creador else 0
+
+        # Build contacto_result from lg.contacto (same pattern as Flujo)
+        contacto_result = None
+        if lg.contacto:
+            contacto_result = ContactoResult(
+                id=str(lg.contacto.id),
+                nombres=lg.contacto.nombres,
+                apellidos=lg.contacto.apellidos,
+                dni=lg.contacto.dni,
+                cargo=lg.contacto.cargo,
+                telefono=lg.contacto.telefono,
+                celular=lg.contacto.celular,
+                email=lg.contacto.email,
+            )
+
         general_result = self.general_core.build_general_result(
             lg,
             usuario_id=usuario_id,
+            contacto_result=contacto_result,
             revisiones_previas=revisiones_previas,
+            codigo_cta=self.general_core.get_codigo_cta(lg.tipo_liquidacion),
         )
 
         # Type-specific: Edificaciones
@@ -416,7 +447,10 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                 DetallePorcentajeObraResult(
                     id=str(d.id),
                     tarifa_aplicada_id=str(d.tarifa_aplicada_id),
-                    especialidad_id=str(d.especialidad_id),
+                    especialidad=EspecialidadResult(
+                        id=str(d.especialidad_id),
+                        nombre=getattr(d.especialidad, 'nombre', '') or '',
+                    ) if d.especialidad_id else None,
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
                 )
@@ -561,8 +595,10 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                 expediente=payload_in.liquidacion_general.expediente or previa.expediente,
                 observacion=payload_in.liquidacion_general.observacion,
                 retencion=getattr(payload_in.liquidacion_general, "retencion", False),
+                denominacion_de_proyecto=payload_in.liquidacion_general.denominacion_de_proyecto
+                if payload_in.liquidacion_general.denominacion_de_proyecto is not None
+                else previa.denominacion_de_proyecto,
                 proyecto=ProyectoData(
-                    denominacion=proyecto.denominacion,
                     nombre_propietario=proyecto.nombre_propietario,
                     direccion=proyecto.direccion,
                     distrito_id=str(proyecto.distrito_id),
@@ -589,7 +625,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             liquidacion_especifica=LiquidacionPorcentajeObraData(
                 datos=DatosPorcentajeObra(valor_declarado=valor_declarado),
                 tarifas=tarifas_aplicadas,
-                tipo_tramite=None,
+                tipo_tramite=payload_in.liquidacion_especifica.tipo_tramite,
             ),
         )
 
@@ -644,5 +680,186 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             domain_results.append(self._build_edificaciones_result(lg))
 
         return domain_results, total
+
+    def recalcular_po(
+        self,
+        liquidacion_id: uuid.UUID,
+        valor_declarado=None,
+        tarifas=None,
+        liquidacion_general=None,
+        liquidacion_tipo=None,
+    ):
+        """
+        PATCH recalculation for Edificaciones (PO motor).
+
+        Supports two input formats:
+        1. Flat (legacy): valor_declarado + tarifas directly
+        2. Wrapper (current): liquidacion_general + liquidacion_tipo
+
+        If liquidacion_general is provided, calls general update orchestrator.
+        If liquidacion_tipo is provided, delegates to LiquidacionPatchPorcentajeObraService.
+        Both can be provided in one call for atomic update.
+
+        Args:
+            liquidacion_id: UUID of the LiquidacionGeneral to recalculate.
+            valor_declarado: New valor_declarado (flat format, None = preserve current).
+            tarifas: List of TarifaPatchInput (flat format, None = preserve current).
+            liquidacion_general: Optional dict with general fields (wrapper format).
+            liquidacion_tipo: Optional dict with tipo fields (wrapper format).
+
+        Returns:
+            LiquidacionEspecificaPrimeraRevisionResult with updated values.
+
+        Raises:
+            LiquidacionNotFoundError: If liquidacion not found.
+            ConflictError: If estado == PAGADA.
+        """
+        from django.db import transaction
+        from core.exceptions import ConflictError
+        from modules.liquidaciones.domain.constants import EstadoLiquidacion
+        from modules.liquidaciones.domain.services.core.liquidacion_patch_porcentaje_obra_service import (
+            LiquidacionPatchPorcentajeObraService,
+            PatchPorcentajeObraInput,
+            TarifaPatchInput,
+        )
+
+        # 1. Fetch the liquidacion
+        try:
+            lg = self.general_core.get_liquidacion_edificaciones_by_id(liquidacion_id)
+        except ObjectDoesNotExist:
+            raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")
+
+        # 2. Guard: only PENDIENTE allows updates (applies to BOTH general and tipo)
+        if lg.estado == EstadoLiquidacion.PAGADA:
+            raise ConflictError(
+                message="No se puede editar una liquidación en estado PAGADA.",
+                code="LIQUIDACION_PAGADA_NOT_EDITABLE",
+            )
+
+        # 3. Handle wrapper format: extract from liquidacion_general + liquidacion_tipo
+        tipo_tramite = None  # PO-only field
+        if liquidacion_tipo is not None:
+            # Wrapper format: extract from nested structure
+            tipo_datos = liquidacion_tipo.get("datos") or {}
+            tipo_tarifas = liquidacion_tipo.get("tarifas")
+            # Map wrapper field names to flat format
+            vd = tipo_datos.get("valor_declarado", valor_declarado)
+            tipo_tramite = tipo_datos.get("tipo_tramite")  # PO-only: preserve or update
+            # Map wrapper tarifa field names (tarifa_porcentaje_obra_id -> tarifa_id)
+            if tipo_tarifas is not None:
+                tarifas_input = [
+                    TarifaPatchInput(
+                        tarifa_id=str(t.get("tarifa_porcentaje_obra_id") or t.get("tarifa_id")),
+                        especialidad_id=str(t["especialidad_id"]),
+                    )
+                    for t in tipo_tarifas
+                ]
+            else:
+                tarifas_input = tarifas
+        else:
+            # Flat format: use params directly
+            vd = valor_declarado
+            if tarifas is not None:
+                tarifas_input = [
+                    TarifaPatchInput(tarifa_id=str(t.tarifa_id), especialidad_id=str(t.especialidad_id))
+                    for t in tarifas
+                ]
+            else:
+                tarifas_input = None
+
+        # 4. Execute updates in a single transaction
+        patch_service = LiquidacionPatchPorcentajeObraService()
+        with transaction.atomic():
+            # 4a. Update general fields if provided
+            # Pass lg directly to avoid re-fetch which creates stale reference bug
+            # when combined with tipo update (Bug #general-wrapper-bug)
+            if liquidacion_general is not None:
+                self.general_orchestrator.actualizar_liquidacion_general_proyecto_municipalidad(
+                    liquidacion=lg,
+                    expediente=liquidacion_general.get("expediente"),
+                    observacion=liquidacion_general.get("observacion"),
+                    retencion=liquidacion_general.get("retencion"),
+                    municipalidad_id=liquidacion_general.get("municipalidad_id"),
+                    proyecto_data=liquidacion_general.get("proyecto"),
+                    denominacion_de_proyecto=liquidacion_general.get("denominacion_de_proyecto"),
+                    contacto_data=liquidacion_general.get("contacto"),
+                )
+
+            # 4b. Update tipo fields if provided
+            if vd is not None or tarifas_input is not None or tipo_tramite is not None:
+                patch_input = PatchPorcentajeObraInput(
+                    valor_declarado=vd,
+                    tarifas=tarifas_input,
+                    tipo_tramite=tipo_tramite,
+                )
+                patch_service.recalcular(lg, patch_input)
+
+        # 5. Refresh and return built result
+        lg.refresh_from_db()
+        return self._build_edificaciones_result(lg)
+
+    def cotizar_edicion_proceso(
+        self,
+        liquidacion_id: uuid.UUID,
+        payload_in: "CotizarEdicionPOWrapperIn",
+    ) -> "CotizacionPorcentajeObraResult":
+        """
+        Read-only quote for editing an existing Edificaciones liquidacion.
+
+        Uses historical financial values from LiquidacionGeneral.fecha_registro.
+        Does NOT persist any changes.
+
+        Args:
+            liquidacion_id: UUID of the existing LiquidacionGeneral.
+            payload_in: Typed wrapper with liquidacion_tipo.datos and liquidacion_tipo.tarifas.
+
+        Returns:
+            CotizacionPorcentajeObraResult with the calculated quote.
+
+        Raises:
+            LiquidacionNotFoundError: If liquidacion not found.
+        """
+        from django.core.exceptions import ObjectDoesNotExist
+        from modules.liquidaciones.domain.services.core.liquidacion_cotizar_edicion_service import (
+            LiquidacionCotizarEdicionPOService,
+            CotizarEdicionPOInput,
+            CotizarEdicionPOTarifaInput,
+        )
+        from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_cotizar_edicion_schemas import (
+            CotizarEdicionPOWrapperIn,
+        )
+
+        # 1. Fetch the liquidacion
+        try:
+            lg = self.general_core.get_liquidacion_edificaciones_by_id(liquidacion_id)
+        except ObjectDoesNotExist:
+            raise LiquidacionNotFoundError(f"Liquidación {liquidacion_id} no encontrada")
+
+        # 2. Extract fields from typed wrapper
+        tipo_datos = payload_in.liquidacion_tipo.datos
+        tipo_tarifas = payload_in.liquidacion_tipo.tarifas
+
+        vd = tipo_datos.valor_declarado
+        if vd is not None and vd <= 0:
+            raise HttpError(400, "valor_declarado debe ser mayor a 0")
+
+        tarifas_input: Optional[List[CotizarEdicionPOTarifaInput]] = None
+        if tipo_tarifas:
+            tarifas_input = [
+                CotizarEdicionPOTarifaInput(
+                    tarifa_id=str(t.tarifa_porcentaje_obra_id),
+                    especialidad_id=str(t.especialidad_id),
+                )
+                for t in tipo_tarifas
+            ]
+
+        patch_input = CotizarEdicionPOInput(
+            valor_declarado=vd,
+            tarifas=tarifas_input,
+        )
+
+        # 3. Quote (read-only, no DB mutation)
+        quote_service = LiquidacionCotizarEdicionPOService()
+        return quote_service.cotizar_edicion(lg, patch_input)
 
 

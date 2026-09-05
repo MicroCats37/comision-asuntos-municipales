@@ -31,6 +31,8 @@ interface GestionarInspectoresModalProps {
   liquidacionId: string;
   /** Currently associated inspector IDs (from liquidacion list item) */
   inspectoresActuales: HasId[];
+  /** Tipo de liquidación code (e.g. "EDIFICACION", "HABILITACION_URBANA") — required for inspector query */
+  tipoLiquidacionCodigo: string;
   onSuccess?: () => void;
 }
 
@@ -39,6 +41,7 @@ export function GestionarInspectoresModal({
   onOpenChange,
   liquidacionId,
   inspectoresActuales,
+  tipoLiquidacionCodigo,
   onSuccess,
 }: GestionarInspectoresModalProps) {
   const queryClient = useQueryClient();
@@ -49,14 +52,23 @@ export function GestionarInspectoresModal({
   );
 
   const { data: inspectoresVigentes = [], isLoading } = useInspectoresVigentes(
-    open ? liquidacionId : null,
+    tipoLiquidacionCodigo,
+    null,
+    undefined,
+    open,
   );
 
   const batchMutation = useMutation({
     mutationFn: async (selectedIds: string[]) => {
       const create = selectedIds
         .filter((id) => !currentInspectorIds.has(id))
-        .map((id) => ({ inspector_id: id }));
+        .map((id) => {
+          const inspector = inspectoresVigentes.find((i) => i.id === id);
+          return {
+            inspector_id: id,
+            inspector_operacion_id: inspector?.inspector_operacion_id ?? "",
+          };
+        });
 
       const deleteItems = Array.from(currentInspectorIds)
         .filter((id) => !selectedIds.includes(id))

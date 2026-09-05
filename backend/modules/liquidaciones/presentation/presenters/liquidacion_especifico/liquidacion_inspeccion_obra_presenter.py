@@ -48,6 +48,7 @@ class LiquidacionInspeccionObraPresenter:
             LiquidacionInspectorOut(
                 id=uuid.UUID(insp.id),
                 inspector_id=uuid.UUID(insp.inspector_id),
+                inspector_operacion_id=uuid.UUID(insp.inspector_operacion_id) if insp.inspector_operacion_id else None,
                 perfil_ingeniero=InspectorPresenter._map_perfil_ingeniero(
                     insp.perfil_ingeniero
                 ),

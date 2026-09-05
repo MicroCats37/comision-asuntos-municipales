@@ -16,11 +16,20 @@
 import { FileSpreadsheet, Loader2, Receipt, Search, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import * as XLSX from "xlsx";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { notify } from "@/errors";
 import { useCandidatasInspector } from "@/features/finanzas/hooks/useCandidatasInspector";
@@ -33,6 +42,7 @@ import type {
   RHInspectorCotizar,
   RHInspectorCotizarIn,
 } from "@/features/finanzas/schemas/rh-inspector-mensual.schema";
+import { RhInspectorVariablesCalculo } from "@/features/finanzas/components/RhInspectorVariablesCalculo";
 
 interface RhInspectorMensualModalProps {
   open: boolean;
@@ -59,6 +69,50 @@ const formatCurrency = (value?: number | null) =>
   value == null ? "—" : `S/ ${value.toFixed(2)}`;
 
 const safeFilePart = (value: string) => value.replace(/[^a-zA-Z0-9-]/g, "-");
+
+/** Inline date picker using shadcn Calendar popover — preserves ISO string format */
+function CampoFecha({
+  label,
+  value,
+  onChange,
+  id,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  id?: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            variant="outline"
+            className="w-full h-10 justify-start text-left font-normal pl-9 relative"
+          >
+            <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            {value ? (
+              format(new Date(value), "PPP", { locale: es })
+            ) : (
+              <span className="text-muted-foreground">Seleccionar...</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={value ? new Date(value) : undefined}
+            onSelect={(date) => onChange(date ? format(date, "yyyy-MM-dd") : "")}
+            locale={es}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
 
 /** Per-candidate selection: cantidad_visitas and period chosen by the user */
 export interface InspectorCandidateSelection {
@@ -461,32 +515,18 @@ export function RhInspectorMensualModal({
                     }}
                   />
                 </div>
-                <div className="space-y-2 mt-3">
-                  <Label htmlFor="fecha-inicio">Fecha Inicio</Label>
-                  <Input
-                    id="fecha-inicio"
-                    type="date"
-                    value={fechaInicio}
-                    onChange={(e) => setFechaInicio(e.target.value)}
-                    className="h-10 rounded-xl font-semibold"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") void handleBuscar();
-                    }}
-                  />
-                </div>
-                <div className="space-y-2 mt-3">
-                  <Label htmlFor="fecha-fin">Fecha Fin</Label>
-                  <Input
-                    id="fecha-fin"
-                    type="date"
-                    value={fechaFin}
-                    onChange={(e) => setFechaFin(e.target.value)}
-                    className="h-10 rounded-xl font-semibold"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") void handleBuscar();
-                    }}
-                  />
-                </div>
+                <CampoFecha
+                  label="Fecha Inicio"
+                  value={fechaInicio}
+                  onChange={setFechaInicio}
+                  id="fecha-inicio"
+                />
+                <CampoFecha
+                  label="Fecha Fin"
+                  value={fechaFin}
+                  onChange={setFechaFin}
+                  id="fecha-fin"
+                />
               </div>
             </div>
           )}
@@ -781,20 +821,31 @@ export function RhInspectorMensualModal({
                         {formatCurrency(cotizarResult.totales.sub_total)}
                       </p>
                     </div>
+                    {(() => {
+                      const vc = cotizarResult.variables_calculo;
+                      const pct = vc.rango_aplicado?.porcentaje_descuento != null
+                        ? (vc.rango_aplicado.porcentaje_descuento * 100).toFixed(0)
+                        : null;
+                      return (
                     <div>
                       <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Descuento
+                        Descuento{pct != null ? ` (${pct}%)` : ""}
                       </p>
                       <p className="font-semibold text-destructive">
                         - {formatCurrency(cotizarResult.totales.descuento)}
                       </p>
                     </div>
+                      );
+                    })()}
                     <div>
                       <p className="text-[10px] font-bold uppercase text-muted-foreground">
                         Tasa descuento
                       </p>
                       <p className="font-semibold">
-                        {cotizarResult.totales.tasa_descuento_aplicada}%
+                        {cotizarResult.totales.tasa_descuento_aplicada.toFixed(
+                          2,
+                        )}
+                        %
                       </p>
                     </div>
                     <div>
@@ -806,6 +857,13 @@ export function RhInspectorMensualModal({
                       </p>
                     </div>
                   </div>
+                  {/* Escala de descuento aplicada */}
+                  <RhInspectorVariablesCalculo
+                    escala_nombre={cotizarResult.variables_calculo.escala_nombre}
+                    porcentaje_descuento={cotizarResult.variables_calculo.rango_aplicado.porcentaje_descuento}
+                    monto_minimo={cotizarResult.variables_calculo.rango_aplicado.monto_minimo ?? undefined}
+                    monto_maximo={cotizarResult.variables_calculo.rango_aplicado.monto_maximo ?? undefined}
+                  />
                 </div>
               )}
               {/* Header info */}
@@ -841,6 +899,12 @@ export function RhInspectorMensualModal({
                     <tr>
                       <th className="text-left px-3 py-2 font-semibold text-muted-foreground">
                         Expediente
+                      </th>
+                      <th className="text-center px-3 py-2 font-semibold text-muted-foreground">
+                        N° Liq.
+                      </th>
+                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">
+                        Comprobante
                       </th>
                       <th className="text-left px-3 py-2 font-semibold text-muted-foreground">
                         Administrado
@@ -880,6 +944,27 @@ export function RhInspectorMensualModal({
                         <td className="px-3 py-2 font-mono font-semibold">
                           {item.exp_liqui}
                         </td>
+                        <td className="px-3 py-2 text-center">
+                          {item.liquidacion_especifica_numero ?? "—"}
+                        </td>
+                        <td className="px-3 py-2">
+                          {item.comprobante_activo ? (
+                            <div className="text-xs">
+                              <div className="font-medium">
+                                {item.comprobante_activo.serie && item.comprobante_activo.numero
+                                  ? `${item.comprobante_activo.serie}-${item.comprobante_activo.numero}`
+                                  : "—"}
+                              </div>
+                              {(item.comprobante_activo.tipo_comprobante || item.comprobante_activo.fecha_emision) && (
+                                <div className="text-muted-foreground text-[10px]">
+                                  {[item.comprobante_activo.tipo_comprobante, item.comprobante_activo.fecha_emision].filter(Boolean).join(" · ") || "—"}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </td>
                         <td className="px-3 py-2 text-muted-foreground max-w-[160px] truncate">
                           {item.nombre_propietario || "—"}
                         </td>
@@ -917,7 +1002,7 @@ export function RhInspectorMensualModal({
                   <tfoot className="bg-muted/30 border-t-2 border-border">
                     <tr>
                       <td
-                        colSpan={10}
+                        colSpan={12}
                         className="px-3 py-2 text-right font-semibold text-muted-foreground"
                       >
                         Sub Total:
@@ -928,11 +1013,14 @@ export function RhInspectorMensualModal({
                     </tr>
                     <tr>
                       <td
-                        colSpan={10}
+                        colSpan={12}
                         className="px-3 py-1.5 text-right text-muted-foreground"
                       >
                         Descuento (
-                        {cotizarResult.totales.tasa_descuento_aplicada}%):
+                        {cotizarResult.totales.tasa_descuento_aplicada.toFixed(
+                          2,
+                        )}
+                        %):
                       </td>
                       <td className="px-3 py-1.5 text-right font-bold text-destructive">
                         - S/ {cotizarResult.totales.descuento.toFixed(2)}
@@ -940,7 +1028,7 @@ export function RhInspectorMensualModal({
                     </tr>
                     <tr className="border-t border-border">
                       <td
-                        colSpan={10}
+                        colSpan={12}
                         className="px-3 py-2 text-right font-bold text-foreground"
                       >
                         Honorarios:

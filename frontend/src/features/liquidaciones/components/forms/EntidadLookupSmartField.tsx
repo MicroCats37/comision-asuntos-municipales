@@ -24,6 +24,8 @@ interface EntidadLookupFieldProps {
   errors: FieldErrors<any>;
   onFieldChange?: (field: string, value: string) => void;
   razonSocialSideSlot?: ReactNode;
+  /** When true, all entity fields are visually disabled (for locked revisions > 1) */
+  disabled?: boolean;
   /** Configurable field names so multiple liquidation modules can share this component. */
   fieldNames?: {
     tipoDocumento: string;
@@ -34,7 +36,7 @@ interface EntidadLookupFieldProps {
 }
 
 interface LookupState {
-  tipo_documento: "RUC" | "DNI";
+  tipo_documento: "RUC" | "DNI" | "";
   numero_documento: string;
 }
 
@@ -55,6 +57,7 @@ export function EntidadLookupField({
   errors,
   onFieldChange,
   razonSocialSideSlot,
+  disabled = false,
   fieldNames: fieldNamesConfig,
 }: EntidadLookupFieldProps) {
   // Default field names — Edificaciones uses these exact names
@@ -66,7 +69,7 @@ export function EntidadLookupField({
   };
   // ── Local search UI state (independent from RHF until lookup completes) ────
   const [lookupState, setLookupState] = useState<LookupState>({
-    tipo_documento: "DNI",
+    tipo_documento: "",
     numero_documento: "",
   });
 
@@ -78,8 +81,7 @@ export function EntidadLookupField({
   const tipoDocCtrl = useController({
     name: fn.tipoDocumento,
     control,
-    defaultValue: "DNI",
-    rules: { required: "Tipo de documento es requerido" },
+    defaultValue: "",
   });
   const numDocCtrl = useController({
     name: fn.numeroDocumento,
@@ -143,8 +145,9 @@ export function EntidadLookupField({
   ]);
 
   const isLookupValid =
+    !!lookupState.tipo_documento &&
     lookupState.numero_documento.trim().length ===
-    (lookupState.tipo_documento === "DNI" ? 8 : 11);
+      (lookupState.tipo_documento === "DNI" ? 8 : 11);
 
   // ── Update all 3 RHF fields atomically after successful lookup ────────────
 
@@ -170,6 +173,10 @@ export function EntidadLookupField({
   };
 
   const handleLookup = async () => {
+    if (!lookupState.tipo_documento) {
+      notify.error("Selecciona el tipo de documento a consultar");
+      return;
+    }
     const num = lookupState.numero_documento.trim();
     if (!num) {
       notify.error("Ingresa el número de documento a consultar");
@@ -216,13 +223,17 @@ export function EntidadLookupField({
             </Label>
             <RadioGroup
               value={lookupState.tipo_documento}
-              onValueChange={(val) => {
-                const tipo = val as "DNI" | "RUC";
-                isInternalUpdate.current = true;
-                setLookupState({ tipo_documento: tipo, numero_documento: "" });
-                tipoDocCtrl.field.onChange(val);
-                onFieldChange?.(fn.tipoDocumento, val);
-              }}
+              onValueChange={
+                disabled
+                  ? undefined
+                  : (val) => {
+                      const tipo = val as "DNI" | "RUC";
+                      isInternalUpdate.current = true;
+                      setLookupState({ tipo_documento: tipo, numero_documento: "" });
+                      tipoDocCtrl.field.onChange(val);
+                      onFieldChange?.(fn.tipoDocumento, val);
+                    }
+              }
               className="flex gap-4 mt-2"
             >
               {TIPO_DOCUMENTO_OPTIONS.map((opt) => (
@@ -255,27 +266,32 @@ export function EntidadLookupField({
                 id="entidad-numero"
                 type="text"
                 value={lookupState.numero_documento}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (!/^\d*$/.test(val)) return;
-                  const maxLen = lookupState.tipo_documento === "DNI" ? 8 : 11;
-                  if (val.length > maxLen) return;
-                  setLookupState((s) => ({ ...s, numero_documento: val }));
-                  numDocCtrl.field.onChange(val);
-                  onFieldChange?.(fn.numeroDocumento, val);
-                }}
+                onChange={
+                  disabled
+                    ? undefined
+                    : (e) => {
+                        const val = e.target.value;
+                        if (!/^\d*$/.test(val)) return;
+                        const maxLen = lookupState.tipo_documento === "DNI" ? 8 : 11;
+                        if (val.length > maxLen) return;
+                        setLookupState((s) => ({ ...s, numero_documento: val }));
+                        numDocCtrl.field.onChange(val);
+                        onFieldChange?.(fn.numeroDocumento, val);
+                      }
+                }
                 placeholder={
                   lookupState.tipo_documento === "DNI"
                     ? "Ej: 87654321"
                     : "Ej: 20456789012"
                 }
                 className="min-w-0 flex-1 h-10 rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={disabled}
               />
               <Button
                 type="button"
                 size="default"
                 onClick={handleLookup}
-                disabled={isConsulting || !isLookupValid}
+                disabled={disabled || isConsulting || !isLookupValid}
                 className="h-10 rounded-xl gap-2 shrink-0"
               >
                 {isConsulting ? (
@@ -309,7 +325,7 @@ export function EntidadLookupField({
               id="entidad-razon"
               type="text"
               value={razonSocialCtrl.field.value || ""}
-              onChange={razonSocialCtrl.field.onChange}
+              onChange={disabled ? undefined : razonSocialCtrl.field.onChange}
               onBlur={razonSocialCtrl.field.onBlur}
               ref={razonSocialCtrl.field.ref}
               name={razonSocialCtrl.field.name}
@@ -319,6 +335,7 @@ export function EntidadLookupField({
                   : "Nombres y apellidos"
               }
               className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={disabled}
             />
             {razonSocialCtrl.fieldState.error && (
               <p className="text-sm text-destructive font-medium">

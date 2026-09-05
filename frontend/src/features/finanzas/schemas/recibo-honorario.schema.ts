@@ -105,11 +105,34 @@ export type ReciboHonorarioInspector = z.infer<
 
 // ── RH Delegado Mensual — Listado ─────────────────────────────────────────────
 
+/** Minimal comprobante schema — shared between RH Delegado and RH Inspector */
+const comprobanteMinimalSchema = z.object({
+  tipo_comprobante: z.string().nullish(),
+  serie: z.string().nullish(),
+  numero: z.string().nullish(),
+  fecha_emision: z.string().nullish(),
+});
+
 export const rhDelegadoMensualDetalleSchema = z.object({
+  liquidacion_delegado_id: uuid(),
   expediente: z.string(),
+  fecha_revision: z.string().nullish(),
+  numero_revision: z.number().int().nullish(),
+  total_liquidacion: num().nullish(),
+  sub_total_liquidacion: num().nullish(),
+  numero_rh: z.string().nullish(),
   imp_bruto: num(),
+  renta_cip: num().nullish(),
+  aporte_codemu: num().nullish(),
+  fondo_comun: num().nullish(),
+  neto_honorario: num().nullish(),
   periodo: z.number().int().nullish(),
   mes: z.number().int().nullish(),
+  dictamen_revision: z.string().nullish(),
+  fecha_presentacion: z.string().nullish(),
+  delegado_operacion_id: z.string().nullish(),
+  liquidacion_especifica_numero: z.number().int().nullish(),
+  comprobante_activo: comprobanteMinimalSchema.nullish(),
 });
 
 export const rhDelegadoMensualTotalesSchema = z.object({
@@ -120,6 +143,26 @@ export const rhDelegadoMensualTotalesSchema = z.object({
   neto_honorario: num(),
 });
 
+/** Variables de cálculo para el RH Delegado Mensual — tasas vigentes */
+export const rhDelegadoVariablesCalculoSchema = z.object({
+  tasa_renta_cip: z.coerce.number(),
+  tasa_aporte_codemu: z.coerce.number(),
+  tasa_fondo_comun: z.coerce.number(),
+});
+
+/** Contexto completo de la operatividad del delegado — municipalidad, tipo liq., especialidad, rol */
+export const delegadoOperacionContextSchema = z.object({
+  id: uuid(),
+  municipalidad_id: uuid(),
+  municipalidad_nombre: z.string(),
+  tipo_liquidacion_id: uuid().nullish(),
+  tipo_liquidacion_codigo: z.string().nullish(),
+  tipo_liquidacion_nombre: z.string().nullish(),
+  especialidad_id: uuid(),
+  especialidad_nombre: z.string(),
+  tipo: z.string(),
+});
+
 /** RHDelegadoMensualListItemOut — matches backend schema exactly */
 export const rhDelegadoMensualListItemSchema = z.object({
   id: uuid(),
@@ -128,6 +171,9 @@ export const rhDelegadoMensualListItemSchema = z.object({
   delegado: delegadoMinimalSchema,
   totales: rhDelegadoMensualTotalesSchema,
   detalles: z.array(rhDelegadoMensualDetalleSchema),
+  variables_calculo: rhDelegadoVariablesCalculoSchema,
+  delegado_operacion_id: z.string().nullish(),
+  delegado_operacion_context: delegadoOperacionContextSchema.nullish(),
 });
 
 export type ReciboHonorarioDelegadoMensual = z.infer<
@@ -139,6 +185,7 @@ export type ReciboHonorarioDelegadoMensual = z.infer<
 export const rhInspectorMensualDetalleSchema = z.object({
   expediente: z.string(),
   nombre_propietario: z.string(),
+  distrito: z.string().nullish(),
   importe_bruto: num(),
   inspecciones_programadas: z.coerce.number().int(),
   inspecciones_liquidadas: z.coerce.number().int(),
@@ -146,6 +193,8 @@ export const rhInspectorMensualDetalleSchema = z.object({
   costo_por_inspeccion: num(),
   monto_contribuido: num(),
   saldo_restante: z.coerce.number().int(),
+  liquidacion_especifica_numero: z.coerce.number().int().nullish(),
+  comprobante_activo: comprobanteMinimalSchema.nullish(),
 });
 
 export const rhInspectorMensualTotalesSchema = z.object({
@@ -159,6 +208,21 @@ export const rhInspectorMensualTotalesSchema = z.object({
   tasa_descuento_aplicada: num(),
 });
 
+/** Rango de descuento — mirror of backend RangoDescuentoOut */
+export const rangoDescuentoSchema = z.object({
+  monto_minimo: num(),
+  monto_maximo: num().nullish(),
+  porcentaje_descuento: num(),
+});
+
+/** Variables de cálculo para el RH Inspector Mensual — escala de descuento aplicada */
+export const rhInspectorVariablesCalculoSchema = z.object({
+  escala_id: z.string(),
+  escala_nombre: z.string(),
+  rango_aplicado: rangoDescuentoSchema,
+  rangos: z.array(rangoDescuentoSchema),
+});
+
 /** RHInspectorMensualListItemOut — matches backend schema exactly */
 export const rhInspectorMensualListItemSchema = z.object({
   id: uuid(),
@@ -167,6 +231,7 @@ export const rhInspectorMensualListItemSchema = z.object({
   inspector: inspectorMinimalSchema,
   totales: rhInspectorMensualTotalesSchema,
   detalles: z.array(rhInspectorMensualDetalleSchema),
+  variables_calculo: rhInspectorVariablesCalculoSchema,
 });
 
 export type ReciboHonorarioInspectorMensual = z.infer<

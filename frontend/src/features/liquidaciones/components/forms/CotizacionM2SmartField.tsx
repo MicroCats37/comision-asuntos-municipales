@@ -33,10 +33,12 @@ interface CotizacionM2Output {
   } | null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface CotizacionM2SmartFieldProps {
+  // biome-ignore lint/suspicious/noExplicitAny: Smart field is reused by HU/MS schemas with shared field names but distinct form types.
   methods: UseFormReturn<any>;
   tipo?: "habilitacion-urbana" | "mecanica-suelos";
+  mode?: "create" | "edit";
+  liquidacionId?: string;
 }
 
 const toNumber = (value: unknown): number => {
@@ -49,6 +51,8 @@ const formatSoles = (value: unknown): string =>
 export function CotizacionM2SmartField({
   methods,
   tipo = "habilitacion-urbana",
+  mode = "create",
+  liquidacionId,
 }: CotizacionM2SmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionM2Output | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,12 +62,24 @@ export function CotizacionM2SmartField({
       area_solicitada: number;
       tarifa_m2_id: string;
     }): Promise<CotizacionM2Output> => {
-      const { data } = await api.post(`/liquidaciones/${tipo}/cotizar`, {
-        liquidacion_especifica: {
-          datos: { area_solicitada: payload.area_solicitada },
-          tarifa: { tarifa_m2_id: payload.tarifa_m2_id },
-        },
-      });
+      const liquidacionTipo = {
+        datos: { area_solicitada: payload.area_solicitada },
+        tarifa: { tarifa_m2_id: payload.tarifa_m2_id },
+      };
+
+      const endpoint =
+        mode === "edit" && liquidacionId
+          ? `/liquidaciones/${tipo}/${liquidacionId}/cotizar-edicion`
+          : `/liquidaciones/${tipo}/cotizar`;
+
+      const body =
+        mode === "edit"
+          ? { liquidacion_tipo: liquidacionTipo }
+          : {
+              liquidacion_especifica: liquidacionTipo,
+            };
+
+      const { data } = await api.post(endpoint, body);
       return data.data;
     },
     onSuccess: (result) => {
@@ -92,7 +108,12 @@ export function CotizacionM2SmartField({
   useEffect(() => {
     const area = toNumber(debouncedArea);
 
-    if (!area || area <= 0 || !tarifaM2Id) {
+    if (
+      !area ||
+      area <= 0 ||
+      !tarifaM2Id ||
+      (mode === "edit" && !liquidacionId)
+    ) {
       setQuote(null);
       setError(null);
       return;
@@ -103,7 +124,13 @@ export function CotizacionM2SmartField({
       tarifa_m2_id: tarifaM2Id,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedArea, tarifaM2Id]);
+  }, [
+    debouncedArea,
+    tarifaM2Id,
+    mode,
+    liquidacionId,
+    cotizacionMutation.mutate,
+  ]);
 
   const isLoading = cotizacionMutation.isPending;
 
@@ -127,7 +154,7 @@ export function CotizacionM2SmartField({
         </p>
       )}
 
-      {quote && quote.calculo && (
+      {quote?.calculo && (
         <div className="space-y-2 rounded-lg border border-border bg-card p-3">
           <div className="grid grid-cols-2 gap-1 text-sm">
             <span className="text-muted-foreground">Costo/m²:</span>

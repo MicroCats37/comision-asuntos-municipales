@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Filter, IdCard, MapPin } from "lucide-react";
+import { Activity, Filter, IdCard } from "lucide-react";
 /**
  * DelegadosFiltroModal — Modal de filtros para la lista de delegados.
  * Usa AppFormModal como shell.
@@ -12,6 +12,7 @@ import { useCallback } from "react";
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Select,
   SelectContent,
@@ -107,35 +108,26 @@ export function DelegadosFiltroModal({
 
           {/* Municipalidad */}
           <div className="space-y-2">
-            <Label htmlFor="filtro-municipalidad">Municipalidad</Label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-              <Select
-                value={methods.watch("municipalidad_id") || ""}
-                onValueChange={(v) => methods.setValue("municipalidad_id", v)}
-              >
-                <SelectTrigger
-                  id="filtro-municipalidad"
-                  className="pl-10 h-10 w-full"
-                >
-                  <SelectValue
-                    placeholder={
-                      isLoadingMunicipalidades
-                        ? "Cargando..."
-                        : "Seleccionar municipalidad"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {(municipalidades || []).map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.codigo ? `${m.codigo} - ` : ""}
-                      {m.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SearchableSelect
+              id="filtro-municipalidad"
+              label="Municipalidad"
+              value={methods.watch("municipalidad_id") || null}
+              onValueChange={(v) =>
+                methods.setValue("municipalidad_id", v ?? "")
+              }
+              options={(municipalidades || []).map((m) => ({
+                value: m.id,
+                label: m.codigo ? `${m.codigo} - ${m.nombre}` : m.nombre,
+              }))}
+              placeholder={
+                isLoadingMunicipalidades
+                  ? "Cargando municipalidades..."
+                  : "Buscar municipalidad..."
+              }
+              disabled={isLoadingMunicipalidades}
+              showLabel={false}
+              className="[--input-height:40px] [&_button]:rounded-xl [&_button]:font-semibold"
+            />
           </div>
 
           {/* Estado */}

@@ -778,3 +778,244 @@ def test_crear_liquidacion_sin_contacto(
     lg = data["liquidacion_general"]
 
     assert lg["contacto"] is None, "Sin contacto en input, output debe ser None"
+
+
+# ── tipo_tramite regression tests ─────────────────────────────────────────────────
+
+@pytest.mark.django_db
+def test_tipo_tramite_ampliacion_se_persiste_y_devuelve(
+    auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
+    tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    Regression: tipo_tramite=AMPLIACION sent at top level of liquidacion_especifica
+    is persisted and returned in GET detail response.
+
+    Previously tipo_tramite was stripped at schema level (LiquidacionPorcentajeObraIn
+    had no top-level tipo_tramite field) and the orchestrator hardcoded tipo_tramite=None.
+    """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-TIPO-TRAMITE-001",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test tipo_tramite AMPLIACION",
+        tipo_tramite="AMPLIACION",
+    )
+    response = auth_client.post(
+        "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
+        json=payload,
+    )
+
+    assert response.status_code == 200, \
+        f"Expected 200, got {response.status_code}: {response.content}"
+
+    data = response.json()["data"]
+    lt = data["liquidacion_tipo"]
+
+    assert lt["tipo_tramite"] == "AMPLIACION", \
+        f"Expected tipo_tramite=AMPLIACION, got {lt['tipo_tramite']}"
+
+    # Verify GET detail also returns it
+    detail_response = auth_client.get(
+        f"/liquidaciones/edificaciones/{data['liquidacion_general']['id']}",
+    )
+    assert detail_response.status_code == 200
+    detail_data = detail_response.json()["data"]
+    assert detail_data["liquidacion_tipo"]["tipo_tramite"] == "AMPLIACION"
+
+
+@pytest.mark.django_db
+def test_tipo_tramite_null_se_devuelve_como_null_no_fabricado(
+    auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
+    tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    When tipo_tramite is not provided (null), it must remain null in the response.
+    Frontend must NOT fabricate OBRA_NUEVA when backend returns null.
+    """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-TIPO-TRAMITE-NULL-001",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test tipo_tramite null — no fabricate",
+        tipo_tramite=None,  # explicitly null
+    )
+    response = auth_client.post(
+        "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
+        json=payload,
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    lt = data["liquidacion_tipo"]
+
+    # Must be null, not fabricated as OBRA_NUEVA
+    assert lt["tipo_tramite"] is None, \
+        f"Expected tipo_tramite=None (not fabricated), got {lt['tipo_tramite']}"
+
+
+@pytest.mark.django_db
+def test_tipo_tramite_obranueva_se_persiste_correctamente(
+    auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
+    tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    tipo_tramite=OBRA_NUEVA (the default) is persisted and returned correctly.
+    """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-TIPO-TRAMITE-OBRA-NUEVA-001",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test tipo_tramite OBRA_NUEVA",
+        tipo_tramite="OBRA_NUEVA",
+    )
+    response = auth_client.post(
+        "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
+        json=payload,
+    )
+
+    assert response.status_code == 200, f"Expected 200: {response.content}"
+    data = response.json()["data"]
+    lt = data["liquidacion_tipo"]
+
+    assert lt["tipo_tramite"] == "OBRA_NUEVA", \
+        f"Expected tipo_tramite=OBRA_NUEVA, got {lt['tipo_tramite']}"
+
+
+# ── denominacion_de_proyecto regression tests ─────────────────────────────────────
+
+@pytest.mark.django_db
+def test_denominacion_de_proyecto_se_persiste_y_devuelve(
+    auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
+    tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    Regression: denominacion_de_proyecto sent in liquidacion_general is persisted
+    to LiquidacionGeneral.denominacion_de_proyecto and returned in response.
+
+    Previously the field was dropped at schema level (LiquidacionGeneralRevisionIn did
+    not accept it) and there was no field on the model to store it.
+    """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-DENOM-001",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test denominacion_de_proyecto",
+        denominacion_de_proyecto="Edificio Residencial Los Jardines",
+    )
+    response = auth_client.post(
+        "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
+        json=payload,
+    )
+
+    assert response.status_code == 200, \
+        f"Expected 200, got {response.status_code}: {response.content}"
+
+    data = response.json()["data"]
+    lg = data["liquidacion_general"]
+
+    assert lg["denominacion_de_proyecto"] == "Edificio Residencial Los Jardines", \
+        f"Expected denominacion_de_proyecto='Edificio Residencial Los Jardines', got {lg.get('denominacion_de_proyecto')}"
+
+    # Verify GET detail also returns it
+    detail_response = auth_client.get(
+        f"/liquidaciones/edificaciones/{data['liquidacion_general']['id']}",
+    )
+    assert detail_response.status_code == 200
+    detail_data = detail_response.json()["data"]
+    assert detail_data["liquidacion_general"]["denominacion_de_proyecto"] == "Edificio Residencial Los Jardines"
+
+
+@pytest.mark.django_db
+def test_denominacion_de_proyecto_null_se_devuelve_como_null(
+    auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
+    tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    When denominacion_de_proyecto is not provided (null), it must remain null in the response.
+    No fabricated value should be returned.
+    """
+    payload = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-DENOM-NULL-001",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Test denominacion_de_proyecto null",
+        denominacion_de_proyecto=None,
+    )
+    response = auth_client.post(
+        "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
+        json=payload,
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    lg = data["liquidacion_general"]
+
+    assert lg.get("denominacion_de_proyecto") is None, \
+        f"Expected denominacion_de_proyecto=None, got {lg.get('denominacion_de_proyecto')}"
+
+
+@pytest.mark.django_db
+def test_denominacion_de_proyecto_en_nueva_revision(
+    auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
+    tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    denominacion_de_proyecto is inherited from the previous revision in nueva_revision.
+    """
+    # Create first revision
+    payload_1 = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-DENOM-NR-001",
+        valor_declarado=100000.00,
+        tarifas=None,
+        observacion="Primera revision",
+        denominacion_de_proyecto="Torre Empresarial Omega",
+    )
+    response_1 = auth_client.post(
+        "/liquidaciones/edificaciones/nueva-liquidacion/primera-revision",
+        json=payload_1,
+    )
+    assert response_1.status_code == 200
+    data_1 = response_1.json()["data"]
+    lg_id = data_1["liquidacion_general"]["id"]
+
+    # Verify first revision has the field
+    assert data_1["liquidacion_general"]["denominacion_de_proyecto"] == "Torre Empresarial Omega"
+
+    # Create nueva revision (inherits denominacion_de_proyecto)
+    payload_2 = make_payload_po(
+        municipalidad.id,
+        municipalidad.distrito_id,
+        expediente="EXP-DENOM-NR-001",
+        valor_declarado=150000.00,
+        tarifas=None,
+        observacion="Segunda revision",
+        denominacion_de_proyecto=None,  # Should inherit from previous
+    )
+    response_2 = auth_client.post(
+        f"/liquidaciones/edificaciones/{lg_id}/nueva-revision",
+        json=payload_2,
+    )
+    assert response_2.status_code == 200
+    data_2 = response_2.json()["data"]
+
+    assert data_2["liquidacion_general"]["denominacion_de_proyecto"] == "Torre Empresarial Omega", \
+        f"Expected inherited 'Torre Empresarial Omega', got {data_2['liquidacion_general'].get('denominacion_de_proyecto')}"

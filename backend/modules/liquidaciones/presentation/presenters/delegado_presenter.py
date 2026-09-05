@@ -32,10 +32,11 @@ from modules.liquidaciones.presentation.schemas.delegado.delegado_schemas import
     MunicipalidadesAsignadasOut,
     DelegadoMunicipalidadesOut,
     DelegadoForMunicipalidadOut,
-    DelegadosPorMunicipalidadOut,
     EspecialidadOut,
     CapituloOut,
     MunicipalidadBasicOut,
+    DelegadoBaseOut,
+    EspecialidadRevisionMinimalOut,
 )
 from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
     EspecialidadRevisionOut,
@@ -43,6 +44,8 @@ from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas 
     DelegadosVigentesOut,
     LiquidacionDelegadoOut,
     LiquidacionDelegadoBatchOut,
+    DelegadoOperatividadesVigentesOut,
+    DelegadoOperacionVigenteOut,
 )
 from core.pagination import PaginatedData
 
@@ -181,6 +184,33 @@ class DelegadoPresenter:
         return EspecialidadRevisionOut(
             id=uuid.UUID(result.id),
             nombre=result.nombre,
+        )
+
+    @staticmethod
+    def _map_especialidad_revision_minimal(
+        result: EspecialidadRevisionResult,
+    ) -> EspecialidadRevisionMinimalOut:
+        """Maps EspecialidadRevisionResult to EspecialidadRevisionMinimalOut."""
+        return EspecialidadRevisionMinimalOut(
+            id=uuid.UUID(result.id),
+            nombre=result.nombre,
+        )
+
+    @staticmethod
+    def _map_delegado_base(result: DelegadoVigenteResult) -> DelegadoBaseOut:
+        """
+        Maps DelegadoVigenteResult to DelegadoBaseOut.
+        Canonical shared helper for building the base delegado shape used across
+        LiquidacionGeneralOutput.delegados and other endpoints.
+        """
+        return DelegadoBaseOut(
+            id=uuid.UUID(result.id),
+            nombre_completo=result.nombre_completo,
+            cip=result.cip,
+            tipo=result.tipo,
+            especialidad=DelegadoPresenter._map_especialidad_revision_minimal(
+                result.especialidad
+            ),
         )
 
     @staticmethod
@@ -345,9 +375,21 @@ class DelegadoPresenter:
         from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
             DelegadoCandidatasOut,
             CandidataOut,
+            ComprobanteActivoMinimalOut,
         )
-        candidatas = [
-            CandidataOut(
+        candidatas = []
+        for c in domain_result.candidatas:
+            # Map comprobante_activo if present
+            comprobante_activo_out = None
+            if c.comprobante_activo:
+                comprobante_activo_out = ComprobanteActivoMinimalOut(
+                    tipo_comprobante=c.comprobante_activo.tipo_comprobante,
+                    serie=c.comprobante_activo.serie,
+                    numero=c.comprobante_activo.numero,
+                    fecha_emision=c.comprobante_activo.fecha_emision,
+                )
+            
+            candidatas.append(CandidataOut(
                 id=uuid.UUID(c.id),
                 expediente=c.expediente,
                 numero_revision=c.numero_revision,
@@ -363,12 +405,79 @@ class DelegadoPresenter:
                 especialidad_candidata=DelegadoPresenter._map_especialidad_revision(
                     c.especialidad_candidata
                 ),
-            )
-            for c in domain_result.candidatas
-        ]
+                tipo_delegado=c.tipo_delegado,
+                delegado_operacion_id=uuid.UUID(c.delegado_operacion_id),
+                liquidacion_especifica_numero=c.liquidacion_especifica_numero,
+                comprobante_activo=comprobante_activo_out,
+            ))
         
         return DelegadoCandidatasOut(
             delegado=DelegadoPresenter._map_liquidacion_delegado_delegado(domain_result.delegado),
             candidatas=candidatas,
             total=domain_result.total,
+        )
+
+    @staticmethod
+    def present_tipos_liquidacion(
+        tipos: list,
+    ) -> "DelegadoTiposLiquidacionOut":
+        """Maps a list of TipoLiquidacion ORM objects to DelegadoTiposLiquidacionOut."""
+        from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+            DelegadoTiposLiquidacionOut,
+            TipoLiquidacionListItem,
+        )
+        return DelegadoTiposLiquidacionOut(
+            tipos=[
+                TipoLiquidacionListItem(
+                    id=t.id,
+                    codigo=t.codigo,
+                    nombre=t.nombre,
+                )
+                for t in tipos
+            ]
+        )
+
+    @staticmethod
+    def present_operatividades_vigentes(
+        domain_result: "DelegadoOperatividadesVigentesResult",
+    ) -> DelegadoOperatividadesVigentesOut:
+        """
+        Maps DelegadoOperatividadesVigentesResult to DelegadoOperatividadesVigentesOut.
+        """
+        from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+            DelegadoOperatividadesVigentesOut as Out,
+            DelegadoOperacionVigenteOut as OpOut,
+        )
+
+        operatividades = []
+        for op in domain_result.operatividades:
+            tipo_liq_id = None
+            tipo_liq_codigo = None
+            tipo_liq_nombre = None
+            if op.tipo_liquidacion_id:
+                tipo_liq_id = uuid.UUID(op.tipo_liquidacion_id) if isinstance(op.tipo_liquidacion_id, str) else op.tipo_liquidacion_id
+            if op.tipo_liquidacion_codigo:
+                tipo_liq_codigo = op.tipo_liquidacion_codigo
+            if op.tipo_liquidacion_nombre:
+                tipo_liq_nombre = op.tipo_liquidacion_nombre
+
+            operatividades.append(OpOut(
+                id=uuid.UUID(op.id),
+                municipalidad_id=uuid.UUID(op.municipalidad_id),
+                municipalidad_nombre=op.municipalidad_nombre,
+                tipo_liquidacion_id=tipo_liq_id,
+                tipo_liquidacion_codigo=tipo_liq_codigo,
+                tipo_liquidacion_nombre=tipo_liq_nombre,
+                especialidad_id=uuid.UUID(op.especialidad_id),
+                especialidad_nombre=op.especialidad_nombre,
+                tipo=op.tipo,
+                periodo_inicio=op.periodo_inicio.isoformat() if op.periodo_inicio else None,
+                periodo_fin=op.periodo_fin.isoformat() if op.periodo_fin else None,
+            ))
+
+        return Out(
+            delegado_id=uuid.UUID(domain_result.delegado_id),
+            cip=domain_result.cip,
+            nombre_completo=domain_result.nombre_completo,
+            operatividades=operatividades,
         )

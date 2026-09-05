@@ -11,6 +11,7 @@ Thin controller — only delegates, no logic.
 """
 import uuid
 from datetime import date
+from typing import Optional
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
@@ -32,6 +33,13 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
     LiquidacionTaludesOutput,
     LiquidacionTaludesCotizarInput,
     LiquidacionTaludesCotizarOutput,
+)
+from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_patch_po_schemas import (
+    LiquidacionPatchPOIn,
+    LiquidacionPatchPOWrapperIn,
+)
+from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_cotizar_edicion_schemas import (
+    CotizarEdicionPOWrapperIn,
 )
 
 
@@ -105,16 +113,52 @@ class LiquidacionTaludesController:
         result = self.presenter.present_detalle(liquidacion)
         return success_response(result)
 
+    @route.patch(
+        "/{uuid:liquidacion_id}",
+        response={200: ApiResponse[LiquidacionTaludesOutput]},
+    )
+    def actualizar_calculo(
+        self,
+        liquidacion_id: uuid.UUID,
+        data: LiquidacionPatchPOWrapperIn,
+    ):
+        """
+        PATCH recalculation of PO calculation inputs.
+
+        Supports two input formats:
+        1. Wrapper (recommended): { liquidacion_general: {...}, liquidacion_tipo: {...} }
+        2. Flat (legacy): { valor_declarado: ..., tarifas: [...] }
+
+        Both general and tipo fields can be updated in one call.
+        Solo editable cuando estado == PENDIENTE. PAGADA bloquea toda la edición.
+        """
+        # Extract wrapper data if present
+        liquidacion_general = data.liquidacion_general.model_dump(exclude_none=True) if data.liquidacion_general else None
+        liquidacion_tipo = data.liquidacion_tipo.model_dump(exclude_none=True) if data.liquidacion_tipo else None
+
+        result = self.orchestrator.recalcular_po(
+            liquidacion_id=liquidacion_id,
+            valor_declarado=data.valor_declarado,
+            tarifas=data.tarifas,
+            liquidacion_general=liquidacion_general,
+            liquidacion_tipo=liquidacion_tipo,
+        )
+        output = self.presenter.present_detalle(result)
+        return success_response(output)
+
     @route.get(
         "/tarifas/vigentes",
         response={200: ApiResponse[dict]},
         auth=None,
     )
-    def get_tarifas_vigentes(self):
+    def get_tarifas_vigentes(
+        self,
+        fecha: Optional[date] = Query(default=None, description="Optional date to get vigentes at that date (YYYY-MM-DD). If omitted, returns current vigentes."),
+    ):
         """
-        Get the currently active tarifas and derecho for Taludes.
+        Get the currently active (or historical at fecha) tarifas and derecho for Taludes.
         """
-        tarifas, especialidades_disponibles = self.orchestrator.obtener_tarifas_vigentes_proceso()
+        tarifas, especialidades_disponibles = self.orchestrator.obtener_tarifas_vigentes_proceso(fecha=fecha)
         presented = self.presenter.present_tarifas_vigentes(tarifas, especialidades_disponibles)
         return success_response(presented)
 
@@ -153,5 +197,23 @@ class LiquidacionTaludesController:
             tarifas_input=le.tarifas,
         )
 
+        presented = self.presenter.present_cotizacion(domain_result)
+        return success_response(presented)
+
+    @route.post(
+        "/{uuid:liquidacion_id}/cotizar-edicion",
+        response={200: ApiResponse[LiquidacionTaludesCotizarOutput]},
+    )
+    def cotizar_edicion(self, liquidacion_id: uuid.UUID, payload: CotizarEdicionPOWrapperIn):
+        """
+        Read-only quote preview for editing an existing Taludes liquidacion.
+
+        Uses historical financial values from the existing liquidacion's fecha_registro.
+        Does NOT persist any changes.
+        """
+        domain_result = self.orchestrator.cotizar_edicion_proceso(
+            liquidacion_id=liquidacion_id,
+            payload_in=payload,
+        )
         presented = self.presenter.present_cotizacion(domain_result)
         return success_response(presented)

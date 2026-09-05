@@ -424,3 +424,180 @@ def test_derechos_historicos_overlap_periodo_fin_null(api_client, db):
     assert len(derechos) == 1, f"Expected 1 overlapping derecho (ongoing from 2024), got {len(derechos)}: {derechos}"
     assert derechos[0]["periodo_inicio"] == "2024-01-01"
     assert derechos[0]["periodo_fin"] is None
+
+
+# ── Decimal Precision Tests ─────────────────────────────────────────────────────
+
+@pytest.mark.django_db
+def test_tarifas_historicas_porcentaje_float_no_string_leakage(
+    api_client,
+    tarifa_liquidacion_base_edificacion,
+    especialidad_estructuras,
+    tarifa_porcentaje_obra_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    Historical tariff porcentaje_liquidacion returns as numeric float, not string.
+    Verifies no string leakage in the JSON response (which would happen if Decimal
+    serialization was broken and Decimals leaked as strings).
+    """
+    # tarifa_porcentaje_obra_estructuras has porcentaje_liquidacion=Decimal("0.0010")
+    response = api_client.get(
+        f"/liquidaciones/edificacion/tarifas/historicas?fecha_desde=2024-01-01&fecha_hasta=2025-12-31&page=1&page_size=10"
+    )
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+
+    items = response.json()["data"]["items"]
+    assert len(items) >= 1
+
+    # Find the estructura entry
+    found = False
+    for periodo in items:
+        for tarifa in periodo.get("tarifas_porcentaje", []):
+            if tarifa["especialidad_nombre"] == "Estructuras":
+                found = True
+                pct = tarifa["porcentaje_liquidacion"]
+                # MUST be a numeric float, NOT a string (which would indicate
+                # a broken Decimal serialization leaking through as JSON string)
+                assert isinstance(pct, (int, float)), \
+                    f"porcentaje_liquidacion should be numeric float, got {type(pct).__name__}: {pct!r}"
+                # Value should be correct (float of Decimal("0.0010") = 0.001)
+                assert abs(pct - 0.001) < 1e-9, \
+                    f"Expected ~0.001, got {pct}"
+                break
+        if found:
+            break
+
+    assert found, "Estructuras tariff not found in response"
+
+
+@pytest.mark.django_db
+def test_tarifas_historicas_m2_float_no_string_leakage(
+    api_client,
+    tipo_habilitacion_urbana,
+):
+    """
+    Historical tariff costo_por_m2 returns as numeric float, not string.
+    """
+    base = TarifaLiquidacionBase.objects.create(
+        tipo_liquidacion=tipo_habilitacion_urbana,
+        periodo_inicio=date(2024, 1, 1),
+        periodo_fin=None,
+    )
+    TarifaPorMetroCuadrado.objects.create(
+        tarifa_base=base,
+        costo_por_m2=Decimal("150.0000"),
+    )
+
+    response = api_client.get(
+        f"/liquidaciones/habilitacion-urbana/tarifas/historicas?fecha_desde=2024-01-01&fecha_hasta=2025-12-31&page=1&page_size=10"
+    )
+
+    assert response.status_code == 200
+    items = response.json()["data"]["items"]
+    assert len(items) == 1
+    assert items[0]["tarifa_m2"] is not None
+
+    costo = items[0]["tarifa_m2"]["costo_por_m2"]
+    # MUST be numeric float, not string
+    assert isinstance(costo, (int, float)), \
+        f"costo_por_m2 should be numeric float, got {type(costo).__name__}: {costo!r}"
+    assert abs(costo - 150.0) < 1e-6, \
+        f"Expected ~150.0, got {costo}"
+
+
+@pytest.mark.django_db
+def test_tarifas_historicas_visitas_float_no_string_leakage(
+    api_client,
+    tipo_inspeccion_obra,
+):
+    """
+    Historical tariff porcentaje_uit returns as numeric float, not string.
+    """
+    base = TarifaLiquidacionBase.objects.create(
+        tipo_liquidacion=tipo_inspeccion_obra,
+        periodo_inicio=date(2024, 1, 1),
+        periodo_fin=None,
+    )
+    TarifaPorCategoriaVisitas.objects.create(
+        tarifa_base=base,
+        porcentaje_uit=Decimal("0.05"),
+        categoria_visitas="A",
+    )
+
+    response = api_client.get(
+        f"/liquidaciones/inspeccion-obra/tarifas/historicas?fecha_desde=2024-01-01&fecha_hasta=2025-12-31&page=1&page_size=10"
+    )
+
+    assert response.status_code == 200
+    items = response.json()["data"]["items"]
+    assert len(items) == 1
+
+    visitas = items[0]["tarifas_visitas"]
+    assert len(visitas) >= 1
+
+    pct = visitas[0]["porcentaje_uit"]
+    assert isinstance(pct, (int, float)), \
+        f"porcentaje_uit should be numeric float, got {type(pct).__name__}: {pct!r}"
+    assert abs(pct - 0.05) < 1e-9, \
+        f"Expected ~0.05, got {pct}"
+
+
+@pytest.mark.django_db
+def test_derechos_historicos_float_no_string_leakage(
+    api_client,
+    derecho_porcentaje_vigente_2024,
+):
+    """
+    Historical derecho financial fields return as numeric floats, not strings.
+    derecho_minimo=500.00, derecho_maximo=50000.00, porcentaje_minimo_uit=0.10.
+    """
+    response = api_client.get(
+        f"/liquidaciones/derechos/historicos?tipo=PORCENTAJE&fecha_desde=2024-01-01&fecha_hasta=2024-12-31"
+    )
+
+    assert response.status_code == 200
+    derechos = response.json()["data"]["derechos"]
+    assert len(derechos) == 1
+
+    d = derechos[0]
+    # All financial fields must be numeric floats, NOT strings
+    assert isinstance(d["derecho_minimo"], (int, float)), \
+        f"derecho_minimo should be float, got {type(d['derecho_minimo']).__name__}: {d['derecho_minimo']!r}"
+    assert abs(d["derecho_minimo"] - 500.0) < 1e-6
+
+    assert isinstance(d["derecho_maximo"], (int, float)), \
+        f"derecho_maximo should be float, got {type(d['derecho_maximo']).__name__}: {d['derecho_maximo']!r}"
+    assert abs(d["derecho_maximo"] - 50000.0) < 1e-4
+
+    assert isinstance(d["porcentaje_minimo_uit"], (int, float)), \
+        f"porcentaje_minimo_uit should be float, got {type(d['porcentaje_minimo_uit']).__name__}: {d['porcentaje_minimo_uit']!r}"
+    assert abs(d["porcentaje_minimo_uit"] - 0.10) < 1e-9
+
+
+@pytest.mark.django_db
+def test_derechos_historicos_m2_float_no_string_leakage(
+    api_client,
+    derecho_m2_vigente_2024,
+):
+    """
+    Historical derecho M2 fields return as numeric floats, not strings.
+    derecho_minimo=100.00, derecho_maximo=10000.00.
+    """
+    response = api_client.get(
+        f"/liquidaciones/derechos/historicos?tipo=METRO_CUADRADO&fecha_desde=2024-01-01&fecha_hasta=2024-12-31"
+    )
+
+    assert response.status_code == 200
+    derechos = response.json()["data"]["derechos"]
+    assert len(derechos) == 1
+
+    d = derechos[0]
+    assert isinstance(d["derecho_minimo"], (int, float)), \
+        f"derecho_minimo should be float, got {type(d['derecho_minimo']).__name__}: {d['derecho_minimo']!r}"
+    assert abs(d["derecho_minimo"] - 100.0) < 1e-6
+
+    assert isinstance(d["derecho_maximo"], (int, float)), \
+        f"derecho_maximo should be float, got {type(d['derecho_maximo']).__name__}: {d['derecho_maximo']!r}"
+    assert abs(d["derecho_maximo"] - 10000.0) < 1e-4

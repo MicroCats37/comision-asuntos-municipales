@@ -5,7 +5,10 @@ const num = () => z.coerce.number();
 /** Detalle de cotización — POST /liquidaciones/{tipo}/cotizar */
 export const CotizacionDetalleSchema = z.object({
   tarifa_id: z.string(),
-  especialidad_id: z.string(),
+  especialidad: z.object({
+    id: z.string(),
+    nombre: z.string(),
+  }),
   porcentaje_aplicado: num(),
   subtotal: num(),
 });

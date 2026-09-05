@@ -17,6 +17,10 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
     LiquidacionInspeccionObraOutput,
     LiquidacionInspeccionObraNuevaRevisionInput,
 )
+from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_patch_visitas_schemas import (
+    LiquidacionPatchVisitasIn,
+    LiquidacionPatchVisitasWrapperIn,
+)
 from modules.liquidaciones.domain.services.orchestrators.liquidacion_especifico.liquidacion_inspeccion_obra_orchestrator import (
     LiquidacionInspeccionObraOrchestrator,
 )
@@ -30,6 +34,9 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.visitas_schemas
     TarifasVigentesPorCategoriaVisitasOutputSchema,
     CotizarPorCategoriaVisitasInputSchema,
     CotizarPorCategoriaVisitasOutputSchema,
+)
+from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_cotizar_edicion_schemas import (
+    CotizarEdicionVisitasWrapperIn,
 )
 
 @api_controller("/liquidaciones/inspeccion-obra", tags=["Inspección de Obra"], permissions=[AllowAny])
@@ -119,6 +126,40 @@ class LiquidacionInspeccionObraController:
         result = self.presenter.present_detalle(lg)
         return success_response(result)
 
+    @route.patch(
+        "/{uuid:liquidacion_id}",
+        response={200: ApiResponse[LiquidacionInspeccionObraOutput]},
+    )
+    def actualizar_calculo(
+        self,
+        liquidacion_id: uuid.UUID,
+        data: LiquidacionPatchVisitasWrapperIn,
+    ):
+        """
+        PATCH recalculation of Visitas calculation inputs.
+
+        Supports two input formats:
+        1. Wrapper (recommended): { liquidacion_general: {...}, liquidacion_tipo: {...} }
+        2. Flat (legacy): { cantidad_visitas: ..., categoria: ..., tarifa_visitas_id: ... }
+
+        Both general and tipo fields can be updated in one call.
+        Solo editable cuando estado == PENDIENTE. PAGADA bloquea toda la edición.
+        """
+        # Extract wrapper data if present
+        liquidacion_general = data.liquidacion_general.model_dump(exclude_none=True) if data.liquidacion_general else None
+        liquidacion_tipo = data.liquidacion_tipo.model_dump(exclude_none=True) if data.liquidacion_tipo else None
+
+        result = self.orchestrator.recalcular_visitas(
+            liquidacion_id=liquidacion_id,
+            cantidad_visitas=data.cantidad_visitas,
+            categoria=data.categoria,
+            tarifa_visitas_id=data.tarifa_visitas_id,
+            liquidacion_general=liquidacion_general,
+            liquidacion_tipo=liquidacion_tipo,
+        )
+        output = self.presenter.present_detalle(result)
+        return success_response(output)
+
     @route.post(
         "/cotizar",
         response={200: ApiResponse[CotizarPorCategoriaVisitasOutputSchema]},
@@ -139,6 +180,23 @@ class LiquidacionInspeccionObraController:
             tarifa_id=str(tarifa_visitas_id),
         )
 
+        return success_response(self.visitas_presenter.present_cotizacion(result))
+
+    @route.post(
+        "/{uuid:liquidacion_id}/cotizar-edicion",
+        response={200: ApiResponse[CotizarPorCategoriaVisitasOutputSchema]},
+    )
+    def cotizar_edicion(self, liquidacion_id: uuid.UUID, payload: CotizarEdicionVisitasWrapperIn):
+        """
+        Read-only quote preview for editing an existing Inspección de Obra liquidacion.
+
+        Uses historical financial values from the existing liquidacion's fecha_registro.
+        Does NOT persist any changes.
+        """
+        result = self.orchestrator.cotizar_edicion_proceso(
+            liquidacion_id=liquidacion_id,
+            payload_in=payload,
+        )
         return success_response(self.visitas_presenter.present_cotizacion(result))
 
     @route.post(

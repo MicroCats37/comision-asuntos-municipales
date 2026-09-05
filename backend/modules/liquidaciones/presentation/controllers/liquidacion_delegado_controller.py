@@ -9,6 +9,7 @@ Endpoints:
 NO business logic. Only: parse input, call orchestrator, map via presenter.
 """
 import uuid
+from datetime import date
 from typing import Optional
 
 from injector import inject
@@ -57,17 +58,22 @@ class LiquidacionDelegadoController:
         municipalidad_id: uuid.UUID,
         tipo_liquidacion: str,
         revision_id: Optional[uuid.UUID] = None,
+        fecha: Optional[date] = None,
     ):
         """
-        GET /liquidaciones/delegados/vigentes?municipalidad_id=&tipo_liquidacion=&revision_id=
+        GET /liquidaciones/delegados/vigentes?municipalidad_id=&tipo_liquidacion=&revision_id=&fecha=YYYY-MM-DD
 
         Delegados cuyo especialidad_revision pertenece a las especialidades vigentes
         del tipo de liquidación y con asignación municipal vigente.
+
+        When `fecha` is provided, resolves vigentes at that date.
+        When omitted, defaults to today for backward compatibility.
         """
         domain_result = self.orchestrator.obtener_delegados_vigentes_proceso(
             municipalidad_id=municipalidad_id,
             tipo_liquidacion=tipo_liquidacion,
             revision_id=revision_id,
+            fecha=fecha,
         )
         return success_response(
             self.presenter.present_delegados_vigentes(domain_result)

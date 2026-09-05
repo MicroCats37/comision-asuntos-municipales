@@ -81,6 +81,12 @@ from modules.liquidaciones.domain.services.core.inspector.inspector_core_service
 from modules.liquidaciones.domain.services.orchestrators.inspector_orchestrator import (
     InspectorOrchestrator,
 )
+from modules.liquidaciones.domain.services.orchestrators.inspectores_batch_orchestrator import (
+    InspectoresBatchOrchestrator,
+)
+from modules.liquidaciones.domain.services.flujos.inspectores_batch_flujo import (
+    InspectoresBatchFlujo,
+)
 from modules.liquidaciones.presentation.presenters.inspector_presenter import (
     InspectorPresenter,
 )
@@ -105,6 +111,15 @@ from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_l
 )
 from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_legacy_por_visitas_core_service import (
     LiquidacionLegacyPorVisitasCoreService,
+)
+from modules.liquidaciones.domain.services.core.liquidacion_patch_porcentaje_obra_service import (
+    LiquidacionPatchPorcentajeObraService,
+)
+from modules.liquidaciones.domain.services.core.liquidacion_patch_m2_service import (
+    LiquidacionPatchM2Service,
+)
+from modules.liquidaciones.domain.services.core.liquidacion_patch_visitas_service import (
+    LiquidacionPatchVisitasService,
 )
 from modules.liquidaciones.domain.services.orchestrators.liquidacion_legacy.liquidacion_edificaciones_legacy_orchestrator import (
     LiquidacionEdificacionesLegacyOrchestrator,
@@ -208,6 +223,12 @@ class LiquidacionesModule(Module):
         # Orchestrators — Inspector
         binder.bind(InspectorOrchestrator, to=InspectorOrchestrator)
 
+        # Flujos — Inspectores Batch
+        binder.bind(InspectoresBatchFlujo, to=InspectoresBatchFlujo)
+
+        # Orchestrators — Inspectores Batch
+        binder.bind(InspectoresBatchOrchestrator, to=InspectoresBatchOrchestrator)
+
         # Presenters — Inspector
         binder.bind(InspectorPresenter, to=InspectorPresenter)
 
@@ -234,3 +255,8 @@ class LiquidacionesModule(Module):
         binder.bind(LiquidacionHabilitacionUrbanaLegacyOrchestrator, to=LiquidacionHabilitacionUrbanaLegacyOrchestrator)
         binder.bind(LiquidacionMecanicaSuelosLegacyOrchestrator, to=LiquidacionMecanicaSuelosLegacyOrchestrator)
         binder.bind(LiquidacionInspeccionObraLegacyOrchestrator, to=LiquidacionInspeccionObraLegacyOrchestrator)
+
+        # Patch services (Package 6 — used by specific orchestrators)
+        binder.bind(LiquidacionPatchPorcentajeObraService, to=LiquidacionPatchPorcentajeObraService)
+        binder.bind(LiquidacionPatchM2Service, to=LiquidacionPatchM2Service)
+        binder.bind(LiquidacionPatchVisitasService, to=LiquidacionPatchVisitasService)

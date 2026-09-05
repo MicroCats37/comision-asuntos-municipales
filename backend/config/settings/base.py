@@ -45,6 +45,8 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    'import_export',
+
     "core",
     "core_application",
     "modules.entidades",

@@ -33,6 +33,7 @@ from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_genera
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
     LiquidacionPorcentajeObraResult,
     DetallePorcentajeObraResult,
+    EspecialidadResult,
 )
 from modules.liquidaciones.domain.constants import TipoLiquidacion
 
@@ -90,7 +91,6 @@ class LiquidacionTaludesFlujo:
 
         # Paso 2: Proyecto
         proyecto_data = {
-            "denominacion": gen_data.proyecto.denominacion,
             "nombre_propietario": gen_data.proyecto.nombre_propietario,
             "direccion": gen_data.proyecto.direccion,
             "distrito_id": gen_data.proyecto.distrito_id,
@@ -100,7 +100,7 @@ class LiquidacionTaludesFlujo:
         }
         proyecto = self.general_core.create_proyecto(proyecto_data, entidad)
 
-        # Paso 3: LiquidacionGeneral (with totals=0 initially)
+# Paso 3: LiquidacionGeneral (with totals=0 initially)
         from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
         liquidacion_general = self.general_core.create_liquidacion_general(
             municipalidad_id=gen_data.municipalidad_id,
@@ -109,6 +109,7 @@ class LiquidacionTaludesFlujo:
             proyecto=proyecto,
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.TALUDES),
             numero_revision=1,
+            denominacion_de_proyecto=gen_data.denominacion_de_proyecto,
         )
 
         # Get IGV/UIT FKs for snapshot
@@ -192,7 +193,10 @@ class LiquidacionTaludesFlujo:
                     DetallePorcentajeObraResult(
                         id=str(d.id),
                         tarifa_aplicada_id=str(d.tarifa_aplicada_id),
-                        especialidad_id=str(d.especialidad_id),
+                        especialidad=EspecialidadResult(
+                            id=str(d.especialidad_id),
+                            nombre=getattr(d.especialidad, 'nombre', '') or '',
+                        ) if d.especialidad_id else None,
                         porcentaje_aplicado=d.porcentaje_aplicado,
                         subtotal=d.subtotal,
                     )
@@ -234,7 +238,6 @@ class LiquidacionTaludesFlujo:
 
         # Paso 2: Proyecto
         proyecto_data = {
-            "denominacion": gen_data.proyecto.denominacion,
             "nombre_propietario": gen_data.proyecto.nombre_propietario,
             "direccion": gen_data.proyecto.direccion,
             "distrito_id": gen_data.proyecto.distrito_id,
@@ -253,7 +256,7 @@ class LiquidacionTaludesFlujo:
             proyecto=proyecto,
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.TALUDES),
             numero_revision=numero_revision,
-            denominacion_de_proyecto_liquidacion=gen_data.denominacion_de_proyecto_liquidacion,
+            denominacion_de_proyecto=gen_data.denominacion_de_proyecto,
             descripcion_legacy=gen_data.descripcion_legacy,
         )
 

@@ -88,6 +88,7 @@ class RHDelegadoCotizarItemIn(_BaseSchema):
     """
     liquidacion_general_id: str  # UUID string de CandidataOut.id
     especialidad_revision_id: str  # UUID string de CandidataOut.especialidad_candidata.id
+    delegado_operacion_id: Optional[str] = None  # UUID string de DelegadoOperacion — deducido de top-level en cotizar
     numero_rh: Optional[str] = None  # Número de Orden/RH — se usa en LiquidacionDelegado.numero_rh
     periodo: Optional[int] = None  # Año — se usa en LiquidacionDelegado.periodo
     mes: Optional[int] = None  # Mes (1-12) — se usa en LiquidacionDelegado.mes
@@ -100,4 +101,5 @@ class RHDelegadoCotizarIn(_BaseSchema):
     """Payload de entrada para cotizar/crear el RH mensual del delegado."""
     cip: str
     periodo: str  # "YYYY-MM"
+    delegado_operacion_id: str  # UUID string of DelegadoOperacion — required for new RH flows
     items: list[RHDelegadoCotizarItemIn]

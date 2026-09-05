@@ -6,6 +6,8 @@ reutilizables por cualquier especialidad que use el mismo tipo de cálculo.
 """
 from core.types import BaseSchema
 from ninja import Field
+from pydantic import ConfigDict
+from decimal import Decimal
 import uuid
 from typing import Optional
 
@@ -25,7 +27,9 @@ class LiquidacionTipoOutput(BaseSchema):
 # Metro Cuadrado (M2) — Entrada y Salida de cálculo
 # =============================================================================
 class LiquidacionPorMetroCuadradoDatosIn(BaseSchema):
-    area_solicitada: float = Field(..., description="Área solicitada en metros cuadrados")
+    model_config = ConfigDict(ser_json_decimal_to_float=True)
+
+    area_solicitada: Decimal = Field(..., description="Área solicitada en metros cuadrados")
 
 class LiquidacionPorMetroCuadradoTarifaIn(BaseSchema):
     tarifa_m2_id: uuid.UUID = Field(..., description="ID de la tarifa M2 a aplicar")
@@ -37,11 +41,13 @@ class LiquidacionPorMetroCuadradoIn(BaseSchema):
 
 class LiquidacionPorMetroCuadradoDatosOut(BaseSchema):
     """Esquema de salida que representa la tabla LiquidacionPorMetroCuadrado."""
+    model_config = ConfigDict(ser_json_decimal_to_float=True)
+
     id: uuid.UUID
-    area_m2: float
-    costo_por_m2: float
-    derecho_minimo: float
-    derecho_maximo: float
+    area_m2: Decimal
+    costo_por_m2: Decimal
+    derecho_minimo: Decimal
+    derecho_maximo: Decimal
     tarifa_aplicada_id: uuid.UUID
     derecho_aplicado_id: uuid.UUID
 
@@ -50,16 +56,20 @@ class LiquidacionPorMetroCuadradoDatosOut(BaseSchema):
 # Metro Cuadrado (M2) — Tarifas Vigentes
 # =============================================================================
 class TarifaVigentePorMetroCuadradoDatos(BaseSchema):
+    model_config = ConfigDict(ser_json_decimal_to_float=True)
+
     id: uuid.UUID
-    costo_por_m2: float
+    costo_por_m2: Decimal
 
 class TarifaVigentePorMetroCuadradoWrapper(BaseSchema):
     datos: TarifaVigentePorMetroCuadradoDatos
 
 class DerechoVigentePorMetroCuadradoDatos(BaseSchema):
+    model_config = ConfigDict(ser_json_decimal_to_float=True)
+
     id: uuid.UUID
-    derecho_minimo: float
-    derecho_maximo: float
+    derecho_minimo: Decimal
+    derecho_maximo: Decimal
 
 class DerechoVigentePorMetroCuadradoWrapper(BaseSchema):
     datos: DerechoVigentePorMetroCuadradoDatos
@@ -76,24 +86,32 @@ class CotizarPorMetroCuadradoInputSchema(BaseSchema):
     liquidacion_especifica: LiquidacionPorMetroCuadradoIn
 
 class CotizarPorMetroCuadradoTarifaOut(BaseSchema):
+    model_config = ConfigDict(ser_json_decimal_to_float=True)
+
     id: uuid.UUID
-    costo_por_m2: float
+    costo_por_m2: Decimal
 
 class CotizarPorMetroCuadradoDerechoOut(BaseSchema):
+    model_config = ConfigDict(ser_json_decimal_to_float=True)
+
     id: uuid.UUID
-    derecho_minimo: float
-    derecho_maximo: float
+    derecho_minimo: Decimal
+    derecho_maximo: Decimal
 
 class CotizarPorMetroCuadradoDatosOutputSchema(BaseSchema):
+    model_config = ConfigDict(ser_json_decimal_to_float=True)
+
     entrada: LiquidacionPorMetroCuadradoIn
     tarifa: CotizarPorMetroCuadradoTarifaOut
     derecho: CotizarPorMetroCuadradoDerechoOut
     variables_financieras: VariablesFinancierasNulasOut
 
 class CotizarPorMetroCuadradoCalculoOutputSchema(BaseSchema):
-    monto_bruto: float
-    subtotal: float
-    total: float
+    model_config = ConfigDict(ser_json_decimal_to_float=True)
+
+    monto_bruto: Decimal
+    subtotal: Decimal
+    total: Decimal
 
 class CotizarPorMetroCuadradoOutputSchema(BaseSchema):
     datos: CotizarPorMetroCuadradoDatosOutputSchema

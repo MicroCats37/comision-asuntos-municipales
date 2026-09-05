@@ -163,6 +163,7 @@ export function LiquidacionesImpactoVialView() {
                   <LiquidacionImpactoVialCard
                     key={item.liquidacion_general.id}
                     item={item}
+                    onUpdated={refetch}
                   />
                 ))}
               </div>

@@ -52,19 +52,19 @@ class TarifasHistoricasPresenter:
                         id=d.id,
                         especialidad_id=d.especialidad_id,
                         especialidad_nombre=d.especialidad_nombre,
-                        porcentaje_liquidacion=d.porcentaje_liquidacion,
+                        porcentaje_liquidacion=float(d.porcentaje_liquidacion),
                     )
                     for d in r.tarifas_porcentaje
                 ],
                 tarifa_m2=TarifaM2DetalleSchema(
                     id=r.tarifa_m2.id,
-                    costo_por_m2=r.tarifa_m2.costo_por_m2,
+                    costo_por_m2=float(r.tarifa_m2.costo_por_m2),
                 ) if r.tarifa_m2 else None,
                 tarifas_visitas=[
                     TarifaVisitasDetalleSchema(
                         id=v.id,
                         categoria=v.categoria,
-                        porcentaje_uit=v.porcentaje_uit,
+                        porcentaje_uit=float(v.porcentaje_uit),
                     )
                     for v in r.tarifas_visitas
                 ],
@@ -95,9 +95,9 @@ class DerechosHistoricosPresenter:
             derechos=[
                 DerechoHistoricoSchema(
                     id=r.id,
-                    derecho_minimo=r.derecho_minimo,
-                    derecho_maximo=r.derecho_maximo,
-                    porcentaje_minimo_uit=r.porcentaje_minimo_uit,
+                    derecho_minimo=float(r.derecho_minimo) if r.derecho_minimo is not None else None,
+                    derecho_maximo=float(r.derecho_maximo) if r.derecho_maximo is not None else None,
+                    porcentaje_minimo_uit=float(r.porcentaje_minimo_uit) if r.porcentaje_minimo_uit is not None else None,
                     periodo_inicio=r.periodo_inicio,
                     periodo_fin=r.periodo_fin,
                 )

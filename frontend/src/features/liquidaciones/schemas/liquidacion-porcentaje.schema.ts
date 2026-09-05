@@ -3,13 +3,19 @@ import { z } from "zod";
 // Coerce helper: backend may send Decimal as string ("123.45") or number
 const num = () => z.coerce.number();
 
-// PorcentajeObraDetalleOut: id, tarifa_aplicada_id, especialidad_id, porcentaje_aplicado, subtotal, igv, uit, total
+// PorcentajeObraDetalleOut: id, tarifa_aplicada_id, especialidad_id, porcentaje_aplicado, subtotal
+// especialidad is optional — backend may include { id, nombre } for display in tarifas table
+const EspecialidadSchema = z.object({
+  id: z.string(),
+  nombre: z.string(),
+});
 export const PorcentajeObraDetalleOutSchema = z.object({
   id: z.string(),
   tarifa_aplicada_id: z.string(),
   especialidad_id: z.string(),
   porcentaje_aplicado: num(),
   subtotal: num(),
+  especialidad: EspecialidadSchema.optional(),
 });
 
 // PorcentajeObraDatosOut (Edificaciones, Taludes, Impacto Vial):

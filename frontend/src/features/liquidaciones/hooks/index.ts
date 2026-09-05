@@ -1,3 +1,4 @@
+export * from "./useCrearComprobante";
 export * from "./useCrearEdificaciones";
 export * from "./useCrearHabilitacionUrbana";
 export * from "./useCrearImpactoVial";
@@ -11,3 +12,9 @@ export * from "./useLiquidacionesInspeccionObra";
 export * from "./useLiquidacionesMecanicaSuelos";
 export * from "./useLiquidacionesTaludes";
 export * from "./useLiquidacionList";
+export * from "./useEditarEdificaciones";
+export * from "./useEditarHabilitacionUrbana";
+export * from "./useEditarImpactoVial";
+export * from "./useEditarInspeccionObra";
+export * from "./useEditarMecanicaSuelos";
+export * from "./useEditarTaludes";

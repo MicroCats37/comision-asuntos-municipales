@@ -8,6 +8,7 @@ from core.types import BaseSchema
 from ninja import Field
 import uuid
 from typing import Optional
+from decimal import Decimal
 
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
     VariablesFinancierasBasicasOut,
@@ -45,6 +46,7 @@ class LiquidacionInspectorOut(BaseSchema):
     """
     id: uuid.UUID
     inspector_id: uuid.UUID
+    inspector_operacion_id: Optional[uuid.UUID] = None
     perfil_ingeniero: PerfilIngenieroOut
     especialidad_revision: Optional[EspecialidadRevisionOut] = None
     numero_registro: Optional[str] = None
@@ -60,7 +62,7 @@ class LiquidacionPorCategoriaVisitasDatosOut(BaseSchema):
     """Esquema de salida que representa la tabla LiquidacionPorCategoriaVisitas."""
     id: uuid.UUID
     cantidad_visitas: int
-    porcentaje_uit: float
+    porcentaje_uit: Decimal
     categoria: str
     tarifa_aplicada_id: uuid.UUID
     inspectores: list[LiquidacionInspectorOut] = []
@@ -71,7 +73,7 @@ class LiquidacionPorCategoriaVisitasDatosOut(BaseSchema):
 # =============================================================================
 class TarifaVigenteVisitasDatos(BaseSchema):
     id: uuid.UUID
-    costo_por_visita: float
+    costo_por_visita: Decimal
     categoria: str
 
 class TarifasVigentesPorCategoriaVisitasOutputSchema(BaseSchema):
@@ -87,7 +89,7 @@ class CotizarPorCategoriaVisitasInputSchema(BaseSchema):
 
 class CotizarPorCategoriaVisitasTarifaOut(BaseSchema):
     id: uuid.UUID
-    costo_por_visita: float
+    costo_por_visita: Decimal
 
 class CotizarPorCategoriaVisitasDatosOutputSchema(BaseSchema):
     entrada: LiquidacionPorCategoriaVisitasIn
@@ -95,9 +97,9 @@ class CotizarPorCategoriaVisitasDatosOutputSchema(BaseSchema):
     variables_financieras: VariablesFinancierasBasicasOut
 
 class CotizarPorCategoriaVisitasCalculoOutputSchema(BaseSchema):
-    monto_bruto: float
-    subtotal: float
-    total: float
+    monto_bruto: Decimal
+    subtotal: Decimal
+    total: Decimal
 
 class CotizarPorCategoriaVisitasOutputSchema(BaseSchema):
     datos: CotizarPorCategoriaVisitasDatosOutputSchema

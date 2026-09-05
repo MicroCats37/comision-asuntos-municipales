@@ -1,13 +1,20 @@
 /**
+ * Auth storage prefix — configurable per environment via NEXT_PUBLIC_AUTH_STORAGE_PREFIX.
+ * Default "cam_auth" provides environment isolation for cookies and localStorage.
+ */
+export const AUTH_STORAGE_PREFIX =
+  process.env.NEXT_PUBLIC_AUTH_STORAGE_PREFIX ?? "cam_auth";
+
+/**
  * Cookie configuration constants.
  * All cookies are non-httpOnly: set via cookies-next client-side
  * and read by both client (getCookie) and server (cookies()).
  */
 export const AUTH_COOKIES = {
-  ACCESS_TOKEN: "auth_access_token",
-  REFRESH_TOKEN: "auth_refresh_token",
-  EXPIRES_AT: "auth_expires_at",
-  USER_SESSION: "auth_user_session",
+  ACCESS_TOKEN: `${AUTH_STORAGE_PREFIX}_access_token`,
+  REFRESH_TOKEN: `${AUTH_STORAGE_PREFIX}_refresh_token`,
+  EXPIRES_AT: `${AUTH_STORAGE_PREFIX}_expires_at`,
+  USER_SESSION: `${AUTH_STORAGE_PREFIX}_user_session`,
 } as const;
 
 export const COOKIE_OPTIONS = {

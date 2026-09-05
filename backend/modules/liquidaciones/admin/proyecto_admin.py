@@ -10,14 +10,12 @@ class ProyectoAdmin(admin.ModelAdmin):
     """Admin for Proyecto (project linked to a liquidacion)."""
 
     list_display = [
-        "denominacion",
         "nombre_propietario",
         "entidad",
         "distrito",
         "urbanizacion",
     ]
     search_fields = [
-        "denominacion",
         "nombre_propietario",
         "entidad_numero_documento",
         "urbanizacion",

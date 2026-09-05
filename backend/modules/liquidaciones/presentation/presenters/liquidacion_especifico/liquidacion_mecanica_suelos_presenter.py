@@ -56,10 +56,10 @@ class LiquidacionMecanicaSuelosPresenter:
 
         especifica_out = LiquidacionPorMetroCuadradoDatosOut(
             id=uuid.UUID(tipo.id),
-            area_m2=tipo.area_m2,
-            costo_por_m2=tipo.costo_por_m2,
-            derecho_minimo=tipo.derecho_minimo,
-            derecho_maximo=tipo.derecho_maximo or 0.0,
+            area_m2=float(tipo.area_m2),
+            costo_por_m2=float(tipo.costo_por_m2),
+            derecho_minimo=float(tipo.derecho_minimo),
+            derecho_maximo=float(tipo.derecho_maximo) if tipo.derecho_maximo else 0.0,
             tarifa_aplicada_id=uuid.UUID(tipo.tarifa_aplicada_id),
             derecho_aplicado_id=uuid.UUID(tipo.derecho_aplicado_id),
         )

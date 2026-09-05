@@ -7,7 +7,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { ClipboardCheck, Filter, Plus, RefreshCw, X } from "lucide-react";
+import { ClipboardCheck, Filter, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
@@ -170,6 +170,7 @@ export function LiquidacionesInspeccionObraView() {
                   <LiquidacionInspeccionObraCard
                     key={item.liquidacion_general.id}
                     item={item}
+                    onUpdated={refetch}
                   />
                 ))}
               </div>

@@ -18,7 +18,9 @@ from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 
 
 class TarifaLiquidacionBase(BaseModel, VigenciaModel):
-    
+
+    history = HistoricalRecords()
+
     tipo_liquidacion = models.ForeignKey(
         'liquidaciones.TipoLiquidacion',
         on_delete=models.PROTECT,

@@ -2,6 +2,7 @@
 Flujo para Inspección de Obra (Transaccional).
 """
 from datetime import date
+from typing import Optional
 from django.db import transaction
 from injector import inject
 import uuid
@@ -21,6 +22,7 @@ from modules.liquidaciones.domain.results.liquidacion_especifico.inspeccion_obra
 )
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
     LiquidacionGeneralResult,
+    LiquidacionPreviaResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_visitas_result import (
     LiquidacionVisitasResult,
@@ -92,6 +94,7 @@ class LiquidacionInspeccionObraFlujo:
             proyecto=proyecto,
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.INSPECCION_OBRA),
             numero_revision=1,
+            denominacion_de_proyecto=liquidacion_previa.denominacion_de_proyecto,
         )
 
         # Aplicar totales con IGV y asignar FKs de impuestos
@@ -101,6 +104,9 @@ class LiquidacionInspeccionObraFlujo:
         liquidacion_general.uit_id = uit_vigente
         liquidacion_general.usuario_creador_id = usuario_id
         liquidacion_general.save()
+
+        # 3b. Establish M2M relationship to the previous liquidacion
+        liquidacion_general.liquidaciones_previas.add(liquidacion_previa)
 
         # 4. Crear Tipo: LiquidacionPorCategoriaVisitas
         liquidacion_visitas = self.visitas_core.crear_liquidacion_tipo_visitas(
@@ -144,6 +150,15 @@ class LiquidacionInspeccionObraFlujo:
         )
 
         # 7. Mapear a Result puro (reutiliza la lógica de mapeo de ejecutar_primera_revision)
+        liquidacion_general.refresh_from_db()
+        revisiones_previas = [
+            LiquidacionPreviaResult(
+                id=str(lp.id),
+                numero_revision=lp.numero_revision,
+                expediente=lp.expediente or "",
+            )
+            for lp in liquidacion_general.liquidaciones_previas.all().order_by("numero_revision")
+        ]
         return self._build_result_from_orm(
             liquidacion_general=liquidacion_general,
             liquidacion_io=liquidacion_io,
@@ -151,6 +166,7 @@ class LiquidacionInspeccionObraFlujo:
             proyecto=proyecto,
             entidad=entidad,
             usuario_id=usuario_id,
+            revisiones_previas=revisiones_previas,
         )
 
     def _build_result_from_orm(
@@ -161,6 +177,7 @@ class LiquidacionInspeccionObraFlujo:
         proyecto,
         entidad,
         usuario_id: int,
+        revisiones_previas: Optional[list] = None,
     ) -> InspeccionObraPrimeraRevisionResult:
         """
         Construye InspeccionObraPrimeraRevisionResult a partir de objetos ORM.
@@ -170,12 +187,13 @@ class LiquidacionInspeccionObraFlujo:
         general_result = self.general_core.build_general_result(
             liquidacion_general=liquidacion_general,
             usuario_id=usuario_id,
+            revisiones_previas=revisiones_previas,
         )
 
         tipo_result = LiquidacionVisitasResult(
             id=str(liquidacion_visitas.id),
             cantidad_visitas=liquidacion_visitas.cantidad_visitas,
-            porcentaje_uit=float(liquidacion_visitas.porcentaje_uit),
+            porcentaje_uit=liquidacion_visitas.porcentaje_uit,
             categoria=liquidacion_visitas.categoria,
             tarifa_aplicada_id=str(liquidacion_visitas.tarifa_aplicada_id),
             inspectores=self._build_inspectores_result(liquidacion_visitas),
@@ -227,6 +245,7 @@ class LiquidacionInspeccionObraFlujo:
                 LiquidacionInspectorResult(
                     id=str(li.id),
                     inspector_id=str(li.inspector_id),
+                    inspector_operacion_id=str(li.inspector_operacion_id) if li.inspector_operacion else None,
                     perfil_ingeniero=PerfilIngenieroResult(
                         id=str(perfil.id),
                         cip=perfil.cip,
@@ -300,7 +319,7 @@ class LiquidacionInspeccionObraFlujo:
             proyecto=proyecto,
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.INSPECCION_OBRA),
             numero_revision=numero_revision,
-            denominacion_de_proyecto_liquidacion=data.liquidacion_general.denominacion_de_proyecto_liquidacion,
+            denominacion_de_proyecto=data.liquidacion_general.denominacion_de_proyecto,
             descripcion_legacy=data.liquidacion_general.descripcion_legacy,
         )
 
@@ -314,6 +333,9 @@ class LiquidacionInspeccionObraFlujo:
         liquidacion_general.uit_id = uit
         liquidacion_general.usuario_creador_id = usuario_id
         liquidacion_general.save()
+
+        # 3b. Establish M2M relationship to the previous liquidacion
+        liquidacion_general.liquidaciones_previas.add(liquidacion_previa)
 
         # 4. Crear Tipo: LiquidacionPorCategoriaVisitas
         liquidacion_visitas = self.visitas_core.crear_liquidacion_tipo_visitas(
@@ -353,6 +375,15 @@ class LiquidacionInspeccionObraFlujo:
         )
 
         # 7. Mapear a Result puro
+        liquidacion_general.refresh_from_db()
+        revisiones_previas = [
+            LiquidacionPreviaResult(
+                id=str(lp.id),
+                numero_revision=lp.numero_revision,
+                expediente=lp.expediente or "",
+            )
+            for lp in liquidacion_general.liquidaciones_previas.all().order_by("numero_revision")
+        ]
         return self._build_result_from_orm(
             liquidacion_general=liquidacion_general,
             liquidacion_io=liquidacion_io,
@@ -360,4 +391,5 @@ class LiquidacionInspeccionObraFlujo:
             proyecto=proyecto,
             entidad=entidad,
             usuario_id=usuario_id,
+            revisiones_previas=revisiones_previas,
         )

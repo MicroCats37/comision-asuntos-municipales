@@ -6,11 +6,17 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
+class EspecialidadResult(BaseModel):
+    """Domain DTO for nested especialidad in liquidacion detail."""
+    id: str
+    nombre: str
+
+
 class DetallePorcentajeObraResult(BaseModel):
     """Result de un Detalle persistido."""
     id: str
     tarifa_aplicada_id: str
-    especialidad_id: str
+    especialidad: Optional[EspecialidadResult] = None
     porcentaje_aplicado: Decimal
     subtotal: Decimal
 

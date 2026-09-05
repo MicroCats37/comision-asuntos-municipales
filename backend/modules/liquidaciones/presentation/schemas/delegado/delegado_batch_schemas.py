@@ -8,6 +8,7 @@ from datetime import date
 from typing import Optional
 
 from core.types import BaseSchema
+from modules.liquidaciones.presentation.schemas.delegado.delegado_schemas import DelegadoBaseOut
 
 
 class EspecialidadRevisionOut(BaseSchema):
@@ -17,12 +18,17 @@ class EspecialidadRevisionOut(BaseSchema):
 
 
 class DelegadoVigenteOut(BaseSchema):
-    """Output schema for a delegado vigente (match municipalidad + especialidad vigente)."""
+    """
+    Output schema for a delegado vigente (match municipalidad + especialidad vigente).
+    Fields mirror DelegadoBaseOut (id, nombre_completo, cip, tipo, especialidad).
+    DelegadoBaseOut is used in LiquidacionDelegadoEnGeneralOut; this schema
+    is kept separate for the /delegados/vigentes endpoint contract.
+    """
     id: uuid.UUID
     nombre_completo: str
     cip: str
     especialidad: EspecialidadRevisionOut
-    tipo: str
+    tipo: str  # TITULAR or ALTERNO
 
 
 class DelegadosVigentesOut(BaseSchema):
@@ -98,6 +104,14 @@ class LiquidacionDelegadoOut(BaseSchema):
     fecha_revision: Optional[str] = None
 
 
+class ComprobanteActivoMinimalOut(BaseSchema):
+    """Output schema for minimal active comprobante (tipo, serie, numero, fecha_emision)."""
+    tipo_comprobante: Optional[str] = None
+    serie: Optional[str] = None
+    numero: Optional[str] = None
+    fecha_emision: Optional[str] = None
+
+
 class CandidataOut(BaseSchema):
     """Output schema for a candidate liquidacion."""
     id: uuid.UUID
@@ -109,6 +123,10 @@ class CandidataOut(BaseSchema):
     proyecto_denominacion: Optional[str] = None
     tipo_liquidacion: Optional[TipoLiquidacionMinimalOut] = None
     especialidad_candidata: EspecialidadRevisionOut
+    tipo_delegado: str  # TITULAR or ALTERNO
+    delegado_operacion_id: uuid.UUID  # ID of the DelegadoOperacion this candidate belongs to
+    liquidacion_especifica_numero: Optional[int] = None  # numero from specific model (Edificacion, HU, etc.)
+    comprobante_activo: Optional[ComprobanteActivoMinimalOut] = None  # activo=True comprobante
 
 
 class DelegadoCandidatasOut(BaseSchema):
@@ -123,3 +141,68 @@ class LiquidacionDelegadoBatchOut(BaseSchema):
     created: list[LiquidacionDelegadoOut] = []
     updated: list[LiquidacionDelegadoOut] = []
     deleted: list[str] = []
+
+
+# --- LiquidacionDelegadoEnGeneral schemas (for LiquidacionGeneralOutput.delegados) ---
+
+
+class LiquidacionDelegadoDatosOut(BaseSchema):
+    """
+    Assignment metadata for a LiquidacionDelegado inside LiquidacionGeneralOutput.
+    Contains the mutable fields from the association (periodo, mes, dictamen, fechas).
+    """
+    periodo: Optional[int] = None
+    mes: Optional[int] = None
+    dictamen_revision: Optional[str] = None
+    fecha_presentacion: Optional[str] = None
+    fecha_revision: Optional[str] = None
+
+
+class LiquidacionDelegadoEnGeneralOut(BaseSchema):
+    """
+    Output schema for a LiquidacionDelegado nested inside LiquidacionGeneralOutput.
+    Shape: { datos: LiquidacionDelegadoDatosOut, delegado: DelegadoBaseOut }
+
+    This is the canonical shape for 'delegados' in LiquidacionGeneralOutput.
+    """
+    datos: LiquidacionDelegadoDatosOut
+    delegado: "DelegadoBaseOut"
+
+
+class TipoLiquidacionListItem(BaseSchema):
+    """Minimal TipoLiquidacion item for select lists."""
+    id: uuid.UUID
+    codigo: str
+    nombre: str
+
+
+class DelegadoTiposLiquidacionOut(BaseSchema):
+    """Output schema for GET /delegados/tipos-liquidacion."""
+    tipos: list[TipoLiquidacionListItem]
+
+
+class DelegadoOperacionVigenteOut(BaseSchema):
+    """Output schema for a single DelegadoOperacion vigencia entry."""
+    id: uuid.UUID
+    municipalidad_id: uuid.UUID
+    municipalidad_nombre: str
+    tipo_liquidacion_id: Optional[uuid.UUID] = None
+    tipo_liquidacion_codigo: Optional[str] = None
+    tipo_liquidacion_nombre: Optional[str] = None
+    especialidad_id: uuid.UUID
+    especialidad_nombre: str
+    tipo: str  # TITULAR or ALTERNO
+    periodo_inicio: Optional[date] = None
+    periodo_fin: Optional[date] = None
+
+
+class DelegadoOperatividadesVigentesOut(BaseSchema):
+    """Output schema for GET /delegados/operatividades-vigentes."""
+    delegado_id: uuid.UUID
+    cip: str
+    nombre_completo: str
+    operatividades: list[DelegadoOperacionVigenteOut]
+
+
+# Rebuild forward refs now that DelegadoBaseOut is imported
+LiquidacionDelegadoEnGeneralOut.model_rebuild()

@@ -68,11 +68,10 @@ class LiquidacionMecanicaSuelosFlujo:
             )
 
             proyecto_data = {
-                "denominacion": gen_data.proyecto.denominacion,
                 "nombre_propietario": gen_data.proyecto.nombre_propietario,
                 "direccion": gen_data.proyecto.direccion,
                 "distrito_id": gen_data.proyecto.distrito_id,
-                "urbanizacion": None,
+                "urbanizacion": gen_data.proyecto.urbanizacion,
                 "entidad_razon_social": gen_data.proyecto.entidad_razon_social,
                 "entidad_tipo_documento": gen_data.proyecto.entidad.tipo_documento,
                 "entidad_numero_documento": gen_data.proyecto.entidad.numero_documento,
@@ -97,6 +96,7 @@ class LiquidacionMecanicaSuelosFlujo:
                 proyecto=proyecto,
                 tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.MECANICA_SUELOS),
                 numero_revision=1,
+                denominacion_de_proyecto=gen_data.denominacion_de_proyecto,
             )
             liquidacion_general.sub_total = Decimal(str(cotizacion.subtotal))
             liquidacion_general.total = Decimal(str(cotizacion.total))
@@ -131,10 +131,10 @@ class LiquidacionMecanicaSuelosFlujo:
 
             tipo_result = LiquidacionM2Result(
                 id=str(liquidacion_m2.id),
-                area_m2=float(liquidacion_m2.area_m2),
-                costo_por_m2=float(liquidacion_m2.costo_por_m2),
-                derecho_minimo=float(liquidacion_m2.derecho_minimo),
-                derecho_maximo=float(liquidacion_m2.derecho_maximo) if liquidacion_m2.derecho_maximo else None,
+                area_m2=liquidacion_m2.area_m2,
+                costo_por_m2=liquidacion_m2.costo_por_m2,
+                derecho_minimo=liquidacion_m2.derecho_minimo,
+                derecho_maximo=liquidacion_m2.derecho_maximo if liquidacion_m2.derecho_maximo else None,
                 derecho_aplicado_id=str(derecho.id),
                 tarifa_aplicada_id=str(liquidacion_m2.tarifa_aplicada_id),
             )
@@ -184,7 +184,6 @@ class LiquidacionMecanicaSuelosFlujo:
         )
 
         proyecto_data = {
-            "denominacion": gen_data.proyecto.denominacion,
             "nombre_propietario": gen_data.proyecto.nombre_propietario,
             "direccion": gen_data.proyecto.direccion,
             "distrito_id": gen_data.proyecto.distrito_id,
@@ -209,7 +208,7 @@ class LiquidacionMecanicaSuelosFlujo:
             proyecto=proyecto,
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.MECANICA_SUELOS),
             numero_revision=numero_revision,
-            denominacion_de_proyecto_liquidacion=gen_data.denominacion_de_proyecto_liquidacion,
+            denominacion_de_proyecto=gen_data.denominacion_de_proyecto,
             descripcion_legacy=gen_data.descripcion_legacy,
         )
 
@@ -253,10 +252,10 @@ class LiquidacionMecanicaSuelosFlujo:
 
         tipo_result = LiquidacionM2Result(
             id=str(liquidacion_m2.id),
-            area_m2=float(liquidacion_m2.area_m2),
-            costo_por_m2=float(liquidacion_m2.costo_por_m2),
-            derecho_minimo=float(liquidacion_m2.derecho_minimo),
-            derecho_maximo=float(liquidacion_m2.derecho_maximo) if liquidacion_m2.derecho_maximo else None,
+            area_m2=liquidacion_m2.area_m2,
+            costo_por_m2=liquidacion_m2.costo_por_m2,
+            derecho_minimo=liquidacion_m2.derecho_minimo,
+            derecho_maximo=liquidacion_m2.derecho_maximo if liquidacion_m2.derecho_maximo else None,
             derecho_aplicado_id=str(derecho.id),
             tarifa_aplicada_id=str(liquidacion_m2.tarifa_aplicada_id),
         )

@@ -7,6 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from django.core.management.base import BaseCommand
+from django.core.management import call_command
 
 from modules.finanzas.models import UIT, IGV
 from modules.finanzas.domain.models.descuento_inspector import (
@@ -120,6 +121,8 @@ class Command(BaseCommand):
 
         self._seed_escala_descuento_inspector(dry_run)
 
+        self._seed_tasas_delegado(dry_run)
+
         if dry_run:
             self.stdout.write(self.style.WARNING("DRY-RUN: No se escribió en la base de datos."))
 
@@ -204,3 +207,20 @@ class Command(BaseCommand):
                 f"Rangos: {rangos_creados} creados, {rangos_actualizados} actualizados"
             )
         )
+
+    def _seed_tasas_delegado(self, dry_run: bool):
+        """
+        Siembra las tasas de delegado vigentes (una por tipo de liquidación).
+
+        Replica la misma tasa por defecto (25% CIP, 5% Codemu, 10% Fondo Común)
+        con vigencia desde 1900 para cada uno de los 6 tipos de liquidación.
+        """
+        try:
+            if dry_run:
+                call_command("seed_tasas_delegado", "--dry-run")
+            else:
+                call_command("seed_tasas_delegado")
+        except Exception as exc:  # pragma: no cover - error surface
+            self.stdout.write(
+                self.style.ERROR(f"No se pudieron sembrar las tasas de delegado: {exc}")
+            )

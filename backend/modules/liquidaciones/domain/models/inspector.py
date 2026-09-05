@@ -12,7 +12,9 @@ from modules.liquidaciones.domain.constants import DictamenRevision, CategoriaIO
 
 
 class Inspector(BaseModel):
-    
+
+    history = HistoricalRecords()
+
     perfil_ingeniero = models.OneToOneField(
         "usuarios.PerfilIngeniero",
         on_delete=models.PROTECT,
@@ -182,6 +184,14 @@ class LiquidacionInspector(BaseModel):
         on_delete=models.PROTECT,
         related_name="liquidacion_inspectores",
         verbose_name="Inspector",
+    )
+    inspector_operacion = models.ForeignKey(
+        "InspectorOperacion",
+        on_delete=models.PROTECT,
+        related_name="liquidaciones_inspector",
+        verbose_name="Inspector de Operación",
+        blank=True,
+        null=True,
     )
     especialidad_revision = models.ForeignKey(
         "usuarios.EspecialidadRevision",

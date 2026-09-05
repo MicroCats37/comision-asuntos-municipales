@@ -35,7 +35,6 @@ export interface PdfLiquidacionItem {
     igv?: { valor?: number } | null;
     uit?: { valor?: number } | null;
     proyecto: {
-      denominacion: string;
       nombre_propietario?: string;
       direccion?: string;
       entidad?: {
@@ -44,6 +43,19 @@ export interface PdfLiquidacionItem {
         razon_social?: string;
       } | null;
     };
+    denominacion_de_proyecto?: string | null;
+    /** Código de cuenta (LiquidacionCodigo) asociado al tipo de liquidación */
+    codigo_cta?: string | null;
+    /** Contacto principal de la liquidación (ContactoOutput) — persona de contacto, no el propietario */
+    contacto?: {
+      nombres?: string | null;
+      apellidos?: string | null;
+      dni?: string | null;
+      cargo?: string | null;
+      telefono?: string | null;
+      celular?: string | null;
+      email?: string | null;
+    } | null;
   };
   liquidacion_especifica: {
     /** Número correlativo de la especialidad (auto-incremental) — es el "Nro" del recibo */

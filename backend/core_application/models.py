@@ -74,6 +74,7 @@ class AutoNumeroModel(models.Model):
         help_text="Numero asignado automaticamente por el sistema.",
         null=True,
         blank=True,
+        db_index=True,
     )
 
     class Meta:

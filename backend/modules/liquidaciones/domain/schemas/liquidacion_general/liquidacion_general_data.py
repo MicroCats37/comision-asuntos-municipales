@@ -3,15 +3,15 @@ from typing import Optional
 
 
 class EntidadData(BaseSchema):
-    tipo_documento: str
-    numero_documento: str
+    tipo_documento: Optional[str] = None
+    numero_documento: Optional[str] = None
 
 
 class ProyectoData(BaseSchema):
-    denominacion: str
     nombre_propietario: str
     direccion: str
     distrito_id: str
+    urbanizacion: Optional[str] = None
     entidad_razon_social: str
     entidad: EntidadData
 
@@ -34,5 +34,5 @@ class LiquidacionGeneralData(BaseSchema):
     retencion: bool = False
     proyecto: ProyectoData
     contacto: Optional[ContactoData] = None
-    denominacion_de_proyecto_liquidacion: Optional[str] = None
+    denominacion_de_proyecto: Optional[str] = None
     descripcion_legacy: Optional[str] = None

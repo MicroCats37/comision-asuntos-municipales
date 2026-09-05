@@ -181,6 +181,7 @@ export function LiquidacionesEdificacionesView() {
                   <LiquidacionEdificacionesCard
                     key={item.liquidacion_general.id}
                     item={item}
+                    onUpdated={refetch}
                   />
                 ))}
               </div>

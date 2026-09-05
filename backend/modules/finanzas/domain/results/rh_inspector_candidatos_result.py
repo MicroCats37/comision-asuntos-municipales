@@ -4,6 +4,8 @@ RH Inspector Candidatos results — DTOs internos para listado de candidatas del
 Results heredan de pydantic.BaseModel (no BaseSchema).
 Cumple con contrato 3C: domain/results/ = DTOs internos.
 """
+from decimal import Decimal
+
 from pydantic import BaseModel
 
 
@@ -27,9 +29,9 @@ class InspectorCandidataItemResult(BaseModel):
     cantidad_visitas: int  # inspecciones_programadas (from LiquidacionPorCategoriaVisitas)
     inspecciones_pagadas: int  # accumulated inspecciones_pagadas until previous period
     saldo_disponible: int  # cantidad_visitas - inspecciones_pagadas
-    costo_por_inspeccion: float  # sub_total / cantidad_visitas
-    total_liquidacion: float  # sub_total of LiquidacionGeneral
-    sub_total_liquidacion: float  # same as total_liquidacion
+    costo_por_inspeccion: Decimal  # sub_total / cantidad_visitas
+    total_liquidacion: Decimal  # sub_total of LiquidacionGeneral
+    sub_total_liquidacion: Decimal  # same as total_liquidacion
 
 
 class InspectorCandidatosResult(BaseModel):

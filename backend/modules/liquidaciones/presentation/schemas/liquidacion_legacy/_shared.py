@@ -27,5 +27,5 @@ class LiquidacionGeneralLegacyIn(BaseSchema):
     proyecto: ProyectoCotizarSchema = Field(..., description="Datos del proyecto")
     contacto: Optional[ContactoInlineSchema] = Field(None, description="Contacto principal (se crea inline)")
     fecha_registro: Optional[date] = Field(None, description="Fecha de registro histórica (para tarifas legacy)")
-    denominacion_de_proyecto_liquidacion: Optional[str] = Field(None, description="Denominación de proyecto para liquidación (legacy)")
+    denominacion_de_proyecto: Optional[str] = Field(None, description="Denominación de proyecto para liquidación (legacy)")
     descripcion_legacy: Optional[str] = Field(None, description="Descripción legacy del proyecto")

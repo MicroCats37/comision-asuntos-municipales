@@ -6,6 +6,7 @@ Consumido por cualquier controller de especialidad que use M2 (HU, Mecánica de 
 NO business logic.
 """
 import uuid
+from decimal import Decimal
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaPorMetroCuadrado,
     DerechoPorMetroCuadrado,
@@ -43,30 +44,30 @@ class LiquidacionPorMetroCuadradoPresenter:
         if tarifa is not None:
             tarifa_datos = TarifaVigentePorMetroCuadradoDatos(
                 id=tarifa.id,
-                costo_por_m2=float(tarifa.costo_por_m2),
+                costo_por_m2=tarifa.costo_por_m2,
             )
             tarifa_vigente = TarifaVigentePorMetroCuadradoWrapper(datos=tarifa_datos)
         else:
             tarifa_vigente = TarifaVigentePorMetroCuadradoWrapper(
                 datos=TarifaVigentePorMetroCuadradoDatos(
                     id=uuid.UUID("00000000-0000-0000-0000-000000000000"),
-                    costo_por_m2=0.0,
+                    costo_por_m2=Decimal("0"),
                 )
             )
 
         if derecho is not None:
             derecho_datos = DerechoVigentePorMetroCuadradoDatos(
                 id=derecho.id,
-                derecho_minimo=float(derecho.derecho_minimo),
-                derecho_maximo=float(derecho.derecho_maximo),
+                derecho_minimo=derecho.derecho_minimo,
+                derecho_maximo=derecho.derecho_maximo,
             )
             derecho_vigente = DerechoVigentePorMetroCuadradoWrapper(datos=derecho_datos)
         else:
             derecho_vigente = DerechoVigentePorMetroCuadradoWrapper(
                 datos=DerechoVigentePorMetroCuadradoDatos(
                     id=uuid.UUID("00000000-0000-0000-0000-000000000000"),
-                    derecho_minimo=0.0,
-                    derecho_maximo=0.0,
+                    derecho_minimo=Decimal("0"),
+                    derecho_maximo=Decimal("0"),
                 )
             )
 
@@ -91,7 +92,7 @@ class LiquidacionPorMetroCuadradoPresenter:
         derecho = CotizarPorMetroCuadradoDerechoOut(
             id=uuid.UUID(result.derecho_id),
             derecho_minimo=result.minimo,
-            derecho_maximo=result.maximo if result.maximo is not None else 0.0,
+            derecho_maximo=result.maximo if result.maximo is not None else Decimal("0"),
         )
 
         variables = VariablesFinancierasNulasOut(igv=None, uit=None)

@@ -11,6 +11,7 @@ import {
   formatCurrency,
   formatDate,
 } from "@/features/liquidaciones/components/liquidacion-ui";
+import { RhInspectorVariablesCalculo } from "@/features/finanzas/components/RhInspectorVariablesCalculo";
 
 interface ReciboHonorarioInspectorMensualCardProps {
   item: ReciboHonorarioInspectorMensual;
@@ -73,7 +74,7 @@ export function ReciboHonorarioInspectorMensualCard({
           </div>
         </div>
 
-        {/* IO incluidas */}
+        {/* IO incluidas — compact table */}
         <div className="p-3 rounded-lg border border-border/60 bg-muted/10">
           <div className="flex items-center gap-2 mb-2">
             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
@@ -85,31 +86,112 @@ export function ReciboHonorarioInspectorMensualCard({
             </span>
           </div>
           {detalles.length > 0 ? (
-            <div className="space-y-1.5">
-              {detalles.slice(0, 5).map((detalle, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between text-xs"
-                >
-                  <span className="text-muted-foreground truncate max-w-[50%]">
-                    {detalle.expediente || "—"}
-                  </span>
-                  <span className="text-muted-foreground truncate max-w-[30%] ml-2">
-                    {detalle.nombre_propietario || "—"}
-                  </span>
-                  <span className="font-medium ml-2">
-                    {detalle.inspecciones_liquidadas} insp.
-                  </span>
-                  <span className="font-medium text-primary ml-2">
-                    {formatCurrency(detalle.monto_contribuido)}
-                  </span>
-                </div>
-              ))}
-              {detalles.length > 5 && (
-                <p className="text-[10px] text-muted-foreground text-center">
-                  +{detalles.length - 5} más
-                </p>
-              )}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border/50">
+                    <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 pr-3 whitespace-nowrap">
+                      N° Liq.
+                    </th>
+                    <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 pr-3 whitespace-nowrap">
+                      Expediente
+                    </th>
+                    <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 px-3 whitespace-nowrap">
+                      Administrado
+                    </th>
+                    <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 px-3 whitespace-nowrap">
+                      Distrito
+                    </th>
+                    <th className="text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 px-3 whitespace-nowrap">
+                      Prog.
+                    </th>
+                    <th className="text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 px-3 whitespace-nowrap">
+                      Liq.
+                    </th>
+                    <th className="text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 px-3 whitespace-nowrap">
+                      Pag. Ant.
+                    </th>
+                    <th className="text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 px-3 whitespace-nowrap">
+                      Saldo
+                    </th>
+                    <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 px-3 whitespace-nowrap">
+                      Comprobante
+                    </th>
+                    <th className="text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 pl-3 whitespace-nowrap">
+                      Costo/Und.
+                    </th>
+                    <th className="text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 pl-3 whitespace-nowrap">
+                      Monto
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detalles.map((detalle, i) => {
+                    const comp = detalle.comprobante_activo;
+                    const compLabel = comp
+                      ? `${comp.tipo_comprobante ?? ""} ${comp.serie ?? ""}${comp.numero ?? ""}`.trim()
+                      : null;
+                    return (
+                    <tr
+                      key={`${detalle.expediente}-${i}`}
+                      className="border-b border-border/30 last:border-b-0 hover:bg-muted/20 transition-colors"
+                    >
+                      <td className="py-1.5 pr-3 text-muted-foreground text-center whitespace-nowrap font-mono text-[10px]">
+                        {detalle.liquidacion_especifica_numero ?? "—"}
+                      </td>
+                      <td className="py-1.5 pr-3 text-muted-foreground truncate max-w-[100px]">
+                        {detalle.expediente || "—"}
+                      </td>
+                      <td className="py-1.5 px-3 text-muted-foreground truncate max-w-[140px]">
+                        {detalle.nombre_propietario || "—"}
+                      </td>
+                      <td className="py-1.5 px-3 text-muted-foreground truncate max-w-[110px]">
+                        {detalle.distrito ?? "—"}
+                      </td>
+                      <td className="py-1.5 px-3 text-right font-medium whitespace-nowrap">
+                        {detalle.inspecciones_programadas}
+                      </td>
+                      <td className="py-1.5 px-3 text-right font-medium text-primary whitespace-nowrap">
+                        {detalle.inspecciones_liquidadas}
+                      </td>
+                      <td className="py-1.5 px-3 text-right text-muted-foreground whitespace-nowrap">
+                        {detalle.inspecciones_pagadas_hasta_mes_anterior}
+                      </td>
+                      <td className="py-1.5 px-3 text-right font-medium whitespace-nowrap">
+                        {detalle.saldo_restante}
+                      </td>
+                      <td className="py-1.5 px-3 text-muted-foreground truncate max-w-[120px] text-[10px]">
+                        {compLabel ?? "—"}
+                      </td>
+                      <td className="py-1.5 pl-3 text-right text-muted-foreground whitespace-nowrap">
+                        {formatCurrency(detalle.costo_por_inspeccion)}
+                      </td>
+                      <td className="py-1.5 pl-3 text-right font-semibold text-primary whitespace-nowrap">
+                        {formatCurrency(detalle.monto_contribuido)}
+                      </td>
+                    </tr>
+                  );})}
+                </tbody>
+                {/* Totals row */}
+                <tfoot>
+                  <tr className="border-t border-border/50 bg-muted/20">
+                    <td
+                      colSpan={7}
+                      className="py-1.5 pr-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
+                    >
+                      TOTALES
+                    </td>
+                    <td className="py-1.5 px-3 text-right font-medium whitespace-nowrap">
+                      {totales.saldo_restante}
+                    </td>
+                    <td className="py-1.5 px-3 text-muted-foreground" />
+                    <td className="py-1.5 pl-3 text-right text-muted-foreground whitespace-nowrap" />
+                    <td className="py-1.5 pl-3 text-right font-bold text-primary whitespace-nowrap">
+                      {formatCurrency(totales.sub_total)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           ) : (
             <p className="text-xs text-muted-foreground italic">
@@ -171,7 +253,11 @@ export function ReciboHonorarioInspectorMensualCard({
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground">
-                Descuento ({totales.tasa_descuento_aplicada * 100}%)
+                Descuento (
+                {item.variables_calculo?.rango_aplicado?.porcentaje_descuento != null
+                  ? (item.variables_calculo.rango_aplicado.porcentaje_descuento * 100).toFixed(0)
+                  : (totales.tasa_descuento_aplicada * 100).toFixed(0)}
+                %)
               </p>
               <p className="text-sm font-semibold text-destructive/80">
                 -{formatCurrency(totales.descuento)}
@@ -184,6 +270,27 @@ export function ReciboHonorarioInspectorMensualCard({
               </p>
             </div>
           </div>
+          {/* Descuento aplicado — compact row */}
+          {item.variables_calculo ? (
+            <RhInspectorVariablesCalculo
+              escala_nombre={item.variables_calculo.escala_nombre}
+              porcentaje_descuento={
+                item.variables_calculo.rango_aplicado.porcentaje_descuento
+              }
+              monto_minimo={
+                item.variables_calculo.rango_aplicado.monto_minimo ?? undefined
+              }
+              monto_maximo={
+                item.variables_calculo.rango_aplicado.monto_maximo ?? undefined
+              }
+              compact
+            />
+          ) : (
+            <RhInspectorVariablesCalculo
+              porcentaje_descuento={totales.tasa_descuento_aplicada}
+              compact
+            />
+          )}
         </div>
       </div>
     </div>

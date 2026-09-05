@@ -10,11 +10,19 @@ from .delegado import (
 )
 from .tipo_liquidacion import TipoLiquidacion
 from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadIngeniero, EspecialidadRevision
-from .liquidacion.liquidacion_general.liquidacion import (
+from .liquidacion.liquidacion_general import (
     LiquidacionGeneral,
     LiquidacionContacto,
     LiquidacionDocumentos,
     LiquidacionProyectista,
+    LiquidacionComprobante,
+    # Proxy models for admin (filtered by tipo_liquidacion)
+    LiquidacionEdificacionProxy,
+    LiquidacionHabilitacionUrbanaProxy,
+    LiquidacionMecanicaSuelosProxy,
+    LiquidacionTaludesProxy,
+    LiquidacionInspeccionObraProxy,
+    LiquidacionImpactoVialProxy,
 )
 from .liquidacion.liquidacion_especifico.liquidacion_edificaciones import (
     # Modelo de detalle para edificaciones (singular)
@@ -67,6 +75,13 @@ __all__ = [
     "LiquidacionGeneral",
     "LiquidacionContacto",
     "LiquidacionDocumentos",
+    # Proxy models for admin (filtered by tipo_liquidacion)
+    "LiquidacionEdificacionProxy",
+    "LiquidacionHabilitacionUrbanaProxy",
+    "LiquidacionMecanicaSuelosProxy",
+    "LiquidacionTaludesProxy",
+    "LiquidacionInspeccionObraProxy",
+    "LiquidacionImpactoVialProxy",
     # Modelo de detalle para edificaciones
     "LiquidacionEdificacion",
     # Modelos de especialidades M2 y visitas
@@ -80,6 +95,7 @@ __all__ = [
     "LiquidacionPorCategoriaVisitas",
     # Modelos del refactor
     "LiquidacionProyectista",
+    "LiquidacionComprobante",
     "TarifaPorcentajeObra",
     "TarifaLiquidacionBase",
     "LiquidacionPorcentajeObra",

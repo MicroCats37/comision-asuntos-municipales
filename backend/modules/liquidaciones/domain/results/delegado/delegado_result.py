@@ -166,6 +166,14 @@ class LiquidacionDelegadoBatchResult(BaseModel):
     deleted: list[str]
 
 
+class ComprobanteActivoMinimal(BaseModel):
+    """Domain DTO for minimal active comprobante (tipo, serie, numero, fecha_emision)."""
+    tipo_comprobante: Optional[str] = None
+    serie: Optional[str] = None
+    numero: Optional[str] = None
+    fecha_emision: Optional[str] = None
+
+
 class CandidataResult(BaseModel):
     """Domain DTO for a candidate liquidacion."""
     id: str
@@ -177,6 +185,10 @@ class CandidataResult(BaseModel):
     proyecto_denominacion: Optional[str] = None
     tipo_liquidacion: Optional[TipoLiquidacionMinimalResult] = None
     especialidad_candidata: EspecialidadRevisionResult
+    tipo_delegado: str  # TITULAR or ALTERNO
+    delegado_operacion_id: str  # ID of the DelegadoOperacion this candidate belongs to
+    liquidacion_especifica_numero: Optional[int] = None  # numero from specific model (Edificacion, HU, etc.)
+    comprobante_activo: Optional[ComprobanteActivoMinimal] = None  # activo=True comprobante
 
 
 class DelegadoCandidatasResult(BaseModel):
@@ -184,3 +196,26 @@ class DelegadoCandidatasResult(BaseModel):
     delegado: LiquidacionDelegadoDelegadoMinimal
     candidatas: list[CandidataResult]
     total: int
+
+
+class DelegadoOperacionVigenteResult(BaseModel):
+    """Domain DTO for a single DelegadoOperacion vigencia entry."""
+    id: str
+    municipalidad_id: str
+    municipalidad_nombre: str
+    tipo_liquidacion_id: Optional[str] = None
+    tipo_liquidacion_codigo: Optional[str] = None
+    tipo_liquidacion_nombre: Optional[str] = None
+    especialidad_id: str
+    especialidad_nombre: str
+    tipo: str  # TITULAR or ALTERNO
+    periodo_inicio: Optional[date] = None
+    periodo_fin: Optional[date] = None
+
+
+class DelegadoOperatividadesVigentesResult(BaseModel):
+    """Domain DTO for GET /delegados/operatividades-vigentes response."""
+    delegado_id: str
+    cip: str
+    nombre_completo: str
+    operatividades: list[DelegadoOperacionVigenteResult]

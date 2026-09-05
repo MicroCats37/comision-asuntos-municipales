@@ -19,12 +19,15 @@ import { useDebounce } from "@/hooks/system/useDebounce";
 import api from "@/lib/api";
 import type { CotizacionOutput } from "../../schemas/cotizacion.schema";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface CotizacionPorcentajeSmartFieldProps {
+  // biome-ignore lint/suspicious/noExplicitAny: Smart field is reused by several form schemas that share field names but not a single concrete type.
   methods: UseFormReturn<any>;
-  /** Tipo de liquidación para el endpoint de cotizar (default: edificaciones) */
+  /** Liquidation type path segment for quote endpoints. */
   tipo?: string;
-  /** Valor declarado FIJO (para nueva revisión — se hereda de la previa, no está en el form) */
+  /** Edit mode calls /{id}/cotizar-edicion and sends liquidacion_tipo. */
+  mode?: "create" | "edit";
+  liquidacionId?: string;
+  /** Fixed declared value used when the value is inherited instead of form-owned. */
   valorDeclaradoFijo?: number;
 }
 
@@ -40,6 +43,8 @@ const formatSoles = (value: unknown): string =>
 export function CotizacionPorcentajeSmartField({
   methods,
   tipo = "edificaciones",
+  mode = "create",
+  liquidacionId,
   valorDeclaradoFijo,
 }: CotizacionPorcentajeSmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionOutput | null>(null);
@@ -50,16 +55,32 @@ export function CotizacionPorcentajeSmartField({
       valor_declarado: number;
       tarifa_id: string;
       especialidades_ids: string[];
+      tipo_tramite?: string;
     }): Promise<CotizacionOutput> => {
-      const { data } = await api.post(`/liquidaciones/${tipo}/cotizar`, {
-        liquidacion_especifica: {
-          datos: { valor_declarado: payload.valor_declarado },
-          tarifas: payload.especialidades_ids.map((espId) => ({
-            tarifa_porcentaje_obra_id: payload.tarifa_id,
-            especialidad_id: espId,
-          })),
+      const liquidacionTipo = {
+        datos: {
+          valor_declarado: payload.valor_declarado,
+          ...(payload.tipo_tramite && { tipo_tramite: payload.tipo_tramite }),
         },
-      });
+        tarifas: payload.especialidades_ids.map((espId) => ({
+          tarifa_porcentaje_obra_id: payload.tarifa_id,
+          especialidad_id: espId,
+        })),
+      };
+
+      const endpoint =
+        mode === "edit" && liquidacionId
+          ? `/liquidaciones/${tipo}/${liquidacionId}/cotizar-edicion`
+          : `/liquidaciones/${tipo}/cotizar`;
+
+      const body =
+        mode === "edit"
+          ? { liquidacion_tipo: liquidacionTipo }
+          : {
+              liquidacion_especifica: liquidacionTipo,
+            };
+
+      const { data } = await api.post(endpoint, body);
       return data.data;
     },
     onSuccess: (result) => {
@@ -87,7 +108,11 @@ export function CotizacionPorcentajeSmartField({
     control: methods.control,
     name: "especialidades_seleccionadas",
   });
-  // Use fixed value (nueva revision) OR form value (primera revision)
+  const tipoTramite = useWatch({
+    control: methods.control,
+    name: "tipo_tramite",
+  }) as string | undefined;
+  // Use fixed value (new revision) or form value (first revision).
   const effectiveValor = valorDeclaradoFijo ?? valorDeclaradoForm;
   const debouncedValor = useDebounce(effectiveValor, 500);
 
@@ -95,8 +120,13 @@ export function CotizacionPorcentajeSmartField({
     const v = Number(debouncedValor);
     const espIds = (especialidadesSeleccionadas || []) as string[];
 
-    // Sin especialidades seleccionadas NO se cotiza (evita auto-fill del backend)
-    if (!v || v <= 0 || espIds.length === 0) {
+    // Do not quote without selected specialties; this avoids backend auto-fill.
+    if (
+      !v ||
+      v <= 0 ||
+      espIds.length === 0 ||
+      (mode === "edit" && !liquidacionId)
+    ) {
       setQuote(null);
       setError(null);
       return;
@@ -106,9 +136,18 @@ export function CotizacionPorcentajeSmartField({
       valor_declarado: v,
       tarifa_id: tarifaUnicaId ?? "",
       especialidades_ids: espIds,
+      tipo_tramite: tipoTramite,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedValor, tarifaUnicaId, especialidadesSeleccionadas]);
+  }, [
+    debouncedValor,
+    tarifaUnicaId,
+    especialidadesSeleccionadas,
+    tipoTramite,
+    mode,
+    liquidacionId,
+    cotizacionMutation.mutate,
+  ]);
 
   const isLoading = cotizacionMutation.isPending;
 

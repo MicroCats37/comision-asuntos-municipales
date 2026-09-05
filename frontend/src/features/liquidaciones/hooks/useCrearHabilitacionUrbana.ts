@@ -34,11 +34,12 @@ export function useCrearHabilitacionUrbana() {
             expediente: rest.expediente,
             observacion: rest.observacion,
             retencion: rest.retencion ?? false,
+            denominacion_de_proyecto: rest.denominacion || undefined,
             proyecto: {
-              denominacion: rest.denominacion,
               nombre_propietario: rest.nombre_propietario,
               direccion: rest.direccion,
               distrito_id: rest.distrito_id,
+              urbanizacion: rest.urbanizacion || undefined,
               entidad: {
                 tipo_documento: rest.entidad_tipo_documento,
                 numero_documento: rest.entidad_numero_documento,
@@ -64,11 +65,12 @@ export function useCrearHabilitacionUrbana() {
             expediente: rest.expediente,
             observacion: rest.observacion,
             retencion: rest.retencion ?? false,
+            denominacion_de_proyecto: rest.denominacion || undefined,
             proyecto: {
-              denominacion: rest.denominacion,
               nombre_propietario: rest.nombre_propietario,
               direccion: rest.direccion,
               distrito_id: rest.distrito_id,
+              urbanizacion: rest.urbanizacion || undefined,
               entidad: {
                 tipo_documento: rest.entidad_tipo_documento,
                 numero_documento: rest.entidad_numero_documento,

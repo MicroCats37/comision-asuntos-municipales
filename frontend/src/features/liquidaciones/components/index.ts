@@ -5,7 +5,6 @@
 export type { LiquidacionCardBase } from "../schemas/liquidacion-card.schema";
 // Cards
 export * from "./cards";
-export { LiquidacionCardHeader } from "./LiquidacionCardHeader";
 // Detail components - re-export from LiquidacionDetalleCompleta
 export {
   formatCurrency,

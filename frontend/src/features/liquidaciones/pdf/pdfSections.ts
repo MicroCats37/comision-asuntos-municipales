@@ -126,7 +126,7 @@ export function renderHeader(paper: HTMLElement, item: PdfLiquidacionItem) {
     ...pdfTheme.noticeLine,
     margin: "8px 0 0",
   });
-  appendText(notice, "p", "CTA 46201", {
+  appendText(notice, "p", `CTA ${lg.codigo_cta ?? "46201"}`, {
     margin: "6px 0 0",
     fontSize: "24px",
     fontWeight: "700",
@@ -171,7 +171,7 @@ function appendCommonFields(details: HTMLElement, item: PdfLiquidacionItem) {
   appendReceiptRow(
     details,
     "NOMBRE DEL PROYECTO",
-    proyecto.denominacion || "—",
+    lg.denominacion_de_proyecto || "—",
   );
   appendReceiptRow(
     details,
@@ -310,8 +310,13 @@ export function renderTotalPagar(paper: HTMLElement, item: PdfLiquidacionItem) {
 export function renderFooter(paper: HTMLElement, item: PdfLiquidacionItem) {
   const lg = item.liquidacion_general;
   const printedDateTime = formatPrintedDateTime(lg.fecha_registro || "");
+  // Tramitante = persona de contacto (contacto) de la liquidación, no el propietario.
   const contactoNombre =
-    lg.proyecto.nombre_propietario || lg.proyecto.entidad?.razon_social || "—";
+    (lg.contacto &&
+      [lg.contacto.nombres, lg.contacto.apellidos].filter(Boolean).join(" ")) ||
+    lg.proyecto.nombre_propietario ||
+    lg.proyecto.entidad?.razon_social ||
+    "—";
   const hechoPor = lg.usuario_creador
     ? [lg.usuario_creador.nombres, lg.usuario_creador.apellidos]
         .filter(Boolean)
@@ -333,7 +338,21 @@ export function renderFooter(paper: HTMLElement, item: PdfLiquidacionItem) {
     margin: "8px 0 0",
     fontWeight: "700",
   });
-  appendText(left, "p", "TELEFONO      —", {
+  // Build contact info line: telefono/celular and dni if available
+  const contacto = lg.contacto;
+  const contactoTelefono = contacto?.telefono || contacto?.celular;
+  const contactoDni = contacto?.dni;
+  let telefonoLine = "TELEFONO      —";
+  if (contactoTelefono) {
+    const tipo = contacto?.telefono ? "TELEFONO" : "CELULAR";
+    telefonoLine = `${tipo}  ${contactoTelefono}`;
+    if (contactoDni) {
+      telefonoLine += `   |   DNI ${contactoDni}`;
+    }
+  } else if (contactoDni) {
+    telefonoLine = `DNI  ${contactoDni}`;
+  }
+  appendText(left, "p", telefonoLine, {
     margin: "10px 0 0",
     fontWeight: "700",
   });

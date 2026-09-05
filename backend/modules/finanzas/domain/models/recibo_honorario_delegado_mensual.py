@@ -29,6 +29,14 @@ class ReciboHonorarioDelegadoMensual(BaseModel):
         related_name="recibos_mensuales",
         verbose_name="Delegado",
     )
+    delegado_operacion = models.ForeignKey(
+        "liquidaciones.DelegadoOperacion",
+        on_delete=models.PROTECT,
+        related_name="recibos_mensuales",
+        verbose_name="Delegado Operatividad",
+        null=True,
+        blank=True,
+    )
     periodo = models.CharField(max_length=7, verbose_name="Periodo (YYYY-MM)")
     fecha_registro = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Registro")
 
@@ -62,12 +70,6 @@ class ReciboHonorarioDelegadoMensual(BaseModel):
         verbose_name = "Recibo de Honorarios Mensual del Delegado"
         verbose_name_plural = "Recibos de Honorarios Mensuales del Delegado"
         ordering = ["-periodo"]
-        constraints = [
-            models.UniqueConstraint(
-                fields=["delegado", "periodo"],
-                name="unique_rh_delegado_mensual",
-            ),
-        ]
 
     def __str__(self):
         return f"RH Delegado {self.delegado_id} - {self.periodo}"

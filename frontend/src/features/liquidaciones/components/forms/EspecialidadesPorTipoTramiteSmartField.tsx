@@ -52,6 +52,17 @@ interface EspecialidadesPorTipoTramiteSmartFieldProps {
   methods: UseFormReturn<any>;
   /** Tipo de liquidación para el endpoint (default: edificaciones) */
   tipo?: string;
+  /** Modo de uso: 'create' usa vigentes actuales, 'edit' usa vigentes a la fecha de registro */
+  mode?: "create" | "edit";
+  /** Fecha de registro de la liquidación (modo edit). Se usa para tarifas históricas. */
+  fecha?: string;
+  /**
+   * Para Group A tipos (OBRA_NUEVA, etc.): si true (default), auto-selecciona
+   * todas las especialidades al cargar. Si false, deja la selección vacía
+   * para que el usuario elija manualmente.
+   * Usar false en flujos de Nueva Revisión.
+   */
+  autoSelectAllForGroupA?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -59,11 +70,11 @@ interface EspecialidadesPorTipoTramiteSmartFieldProps {
 const formatPercent = (value: number): string => `${(value * 100).toFixed(4)}%`;
 
 function isGroupA(tipo: TipoTramiteEdificaciones | undefined): boolean {
-  return (TIPO_GRUPO_A as string[]).includes(tipo ?? "OBRA_NUEVA");
+  return tipo !== undefined && (TIPO_GRUPO_A as string[]).includes(tipo);
 }
 
 function isGroupB(tipo: TipoTramiteEdificaciones | undefined): boolean {
-  return (TIPO_GRUPO_B as string[]).includes(tipo ?? "OBRA_NUEVA");
+  return tipo !== undefined && (TIPO_GRUPO_B as string[]).includes(tipo);
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -71,8 +82,14 @@ function isGroupB(tipo: TipoTramiteEdificaciones | undefined): boolean {
 export function EspecialidadesPorTipoTramiteSmartField({
   methods,
   tipo = "edificaciones",
+  mode = "create",
+  fecha,
+  autoSelectAllForGroupA = true,
 }: EspecialidadesPorTipoTramiteSmartFieldProps) {
-  const { data, isLoading } = useTarifasVigentesPorcentaje(tipo);
+  // In edit mode with fecha, pass fecha to fetch historical vigentes.
+  // In create mode (or edit without fecha), fetch current vigentes.
+  const hookProps = mode === "edit" && fecha ? { fecha } : {};
+  const { data, isLoading } = useTarifasVigentesPorcentaje(tipo, hookProps);
 
   // Reactivo: cambia de modo al instante cuando cambia tipo_tramite
   const tipoTramite = useWatch({
@@ -111,22 +128,24 @@ export function EspecialidadesPorTipoTramiteSmartField({
     });
 
     if (especialidades.length > 0) {
-      if (grupoA) {
-        // All selected, read-only
-        const allIds = especialidades.map((e) => e.id);
-        methods.setValue("especialidades_seleccionadas", allIds, {
-          shouldValidate: true,
-        });
+      if (autoSelectAllForGroupA && grupoA) {
+        // Creation flow: auto-select all specialties for Group A types.
+        methods.setValue(
+          "especialidades_seleccionadas",
+          especialidades.map((e) => e.id),
+          { shouldValidate: false },
+        );
       } else {
-        // Particulares: SIN preselección — el usuario elige 1, 2 o 3.
-        // (El schema exige min 1 para evitar envíos vacíos)
+        // Nueva Revision / edit: user selects manually via checkboxes.
+        // Set empty with shouldValidate: false to avoid premature min(1)
+        // validation errors before the user has interacted with the form.
         methods.setValue("especialidades_seleccionadas", [], {
-          shouldValidate: true,
+          shouldValidate: false,
         });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tarifaUnica, especialidades, tipoTramite]);
+  }, [tarifaUnica, especialidades, tipoTramite, especialidades.length, autoSelectAllForGroupA]);
 
   if (isLoading) {
     return (
@@ -163,20 +182,26 @@ export function EspecialidadesPorTipoTramiteSmartField({
         <div className="flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold uppercase tracking-wide">
-            {grupoA ? "Todas las Especialidades" : "Especialidad a aplicar"}
+            {grupoA && autoSelectAllForGroupA
+              ? "Todas las Especialidades"
+              : grupoA
+                ? "Especialidades a aplicar"
+                : "Especialidad a aplicar"}
           </h3>
         </div>
         <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-bold text-primary">
           <Percent className="h-3 w-3" />
           {formatPercent(totalAplicado)}
-          <span className="font-normal text-primary/70">
-            × {countAplicado} esp.
-          </span>
+          {!(grupoA && autoSelectAllForGroupA) && (
+            <span className="font-normal text-primary/70">
+              × {countAplicado} esp.
+            </span>
+          )}
         </span>
       </div>
 
-      {grupoA ? (
-        // ── Group A: rigid all-selected chips (read-only) ──────────────────
+      {grupoA && autoSelectAllForGroupA ? (
+        // ── Group A (creation): read-only chips — all specialties selected ─
         <div className="flex flex-wrap gap-1.5">
           {especialidades.map((esp) => (
             <span
@@ -190,8 +215,8 @@ export function EspecialidadesPorTipoTramiteSmartField({
             </span>
           ))}
         </div>
-      ) : grupoB ? (
-        // ── Group B: checkboxes multi-selection (1, 2 o 3 especialidades) ──
+      ) : (grupoA || grupoB) ? (
+        // ── Group A (Nueva Revision) & Group B: checkboxes for manual selection ─
         <fieldset className="space-y-2">
           <legend className="text-sm font-medium text-foreground">
             Especialidades a aplicar <span className="text-destructive">*</span>
@@ -244,8 +269,7 @@ export function EspecialidadesPorTipoTramiteSmartField({
             })}
           </div>
         </fieldset>
-      ) : // Fallback: sin grupo definido — sin selector
-      null}
+      ) : null}
     </div>
   );
 }

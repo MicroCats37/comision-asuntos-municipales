@@ -19,6 +19,10 @@ from modules.finanzas.domain.results.rh_inspector_mensual_result import (
     RHInspectorTotalesResult,
     RHInspectorCotizarResult,
 )
+from modules.finanzas.domain.services.flujos.rh_delegado_mensual_flujo import (
+    _resolve_liquidacion_especifica_numero,
+    _resolve_comprobante_activo,
+)
 
 TWO_PLACES = Decimal("0.01")
 
@@ -168,6 +172,10 @@ class RHInspectorMensualCotizarFlujo:
             if lg.proyecto:
                 nombre_propietario = lg.proyecto.nombre_propietario or ""
 
+            # Resolve liquidacion_especifica_numero and comprobante_activo from LiquidacionGeneral
+            liquidacion_especifica_numero = _resolve_liquidacion_especifica_numero(lg)
+            comprobante_activo = _resolve_comprobante_activo(lg)
+
             saldo_restante = saldo_disponible - item.cantidad_visitas
             sub_total += monto_contribuido
             items.append(
@@ -176,16 +184,18 @@ class RHInspectorMensualCotizarFlujo:
                     liquidacion_inspector_id=str(li.id),
                     liquidacion_categoria_visitas_id=str(lcv.id),
                     nombre_propietario=nombre_propietario,
-                    importe_bruto=float(importe_bruto),
+                    importe_bruto=importe_bruto,
                     inspecciones_programadas=programas,
                     inspecciones_liquidadas=item.cantidad_visitas,
                     inspecciones_pagadas_hasta_mes_anterior=pagadas_hasta_mes_anterior,
-                    costo_por_inspeccion=float(costo_por_inspeccion),
-                    monto_contribuido=float(monto_contribuido),
+                    costo_por_inspeccion=costo_por_inspeccion,
+                    monto_contribuido=monto_contribuido,
                     saldo_disponible=saldo_disponible,
                     saldo_restante=saldo_restante,
                     periodo=item.periodo or header_periodo,
                     mes=item.mes or header_mes,
+                    liquidacion_especifica_numero=liquidacion_especifica_numero,
+                    comprobante_activo=comprobante_activo,
                 )
             )
 
@@ -195,7 +205,27 @@ class RHInspectorMensualCotizarFlujo:
         descuento = (sub_total * tasa).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
         honorarios = (sub_total - descuento).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
 
-        from modules.finanzas.domain.results.rh_inspector_mensual_result import InspectorRHMinimalResult
+        from modules.finanzas.domain.results.rh_inspector_mensual_result import (
+            InspectorRHMinimalResult,
+            RHInspectorVariablesCalculoResult,
+            RangoDescuentoResult,
+        )
+
+        all_rangos = [
+            RangoDescuentoResult(
+                monto_minimo=r.monto_minimo,
+                monto_maximo=r.monto_maximo,
+                porcentaje_descuento=r.porcentaje_descuento,
+            )
+            for r in escala.rangos.all().order_by("monto_minimo")
+        ]
+        rango_aplicado_result = None
+        if rango:
+            rango_aplicado_result = RangoDescuentoResult(
+                monto_minimo=rango.monto_minimo,
+                monto_maximo=rango.monto_maximo,
+                porcentaje_descuento=rango.porcentaje_descuento,
+            )
 
         return RHInspectorCotizarResult(
             inspector=InspectorRHMinimalResult(
@@ -215,12 +245,18 @@ class RHInspectorMensualCotizarFlujo:
             periodo=payload.periodo,
             items=items,
             totales=RHInspectorTotalesResult(
-                sub_total=float(sub_total),
-                descuento=float(descuento),
-                honorarios=float(honorarios),
-                tasa_descuento_aplicada=float(tasa),
+                sub_total=sub_total,
+                descuento=descuento,
+                honorarios=honorarios,
+                tasa_descuento_aplicada=tasa,
             ),
             escala_descuento_id=str(escala.id),
+            variables_calculo=RHInspectorVariablesCalculoResult(
+                escala_id=str(escala.id),
+                escala_nombre=escala.nombre or "",
+                rango_aplicado=rango_aplicado_result,
+                rangos=all_rangos,
+            ),
         )
 
 
@@ -261,18 +297,45 @@ class RHInspectorMensualCrearFlujo:
         # 1. Calcular (reutiliza la lógica de cotizar, que valida todo)
         resultado = self.cotizar_flujo.cotizar(payload)
 
-        # 2. Crear/obtener la maestra mensual (idempotente por inspector+periodo)
+        # 2. Derivar inspector_operacion_id de los items seleccionados.
+        #    Si todos los LiquidacionInspector tienen el mismo inspector_operacion_id, usarlo.
+        #    Si hay mezcla de operaciones diferentes, raise 409 (RH debe ser por operación).
+        #    Si faltan (legacy), handle null safely.
+        inspector_operacion_ids: set[str | None] = set()
+        for item in resultado.items:
+            li = self.core.get_liquidacion_inspector_by_id(item.liquidacion_inspector_id)
+            if li:
+                inspector_operacion_ids.add(
+                    str(li.inspector_operacion_id) if li.inspector_operacion_id else None
+                )
+            else:
+                inspector_operacion_ids.add(None)
+
+        # Validación: sin mezcla de operaciones distintas
+        non_null_ops = {op for op in inspector_operacion_ids if op is not None}
+        if len(non_null_ops) > 1:
+            raise HttpError(
+                409,
+                f"No se puede crear un RH mensual con operaciones diferentes: {non_null_ops}. "
+                "Seleccione items de la misma operación o cree RH separados por operación.",
+            )
+
+        # Extraer el valor único (o None para todo-legacy)
+        inspector_operacion_id: str | None = next(iter(non_null_ops)) if non_null_ops else None
+
+        # 3. Crear la maestra mensual (siempre crea uno nuevo, nunca reutiliza)
         # inspector_id y escala_id son UUIDs (BaseModel = UUIDModel) - se pasan como strings
-        rh, _ = self.core.crear_rh_inspector_mensual(
+        rh = self.core.crear_rh_inspector_mensual(
             inspector_id=resultado.inspector.id,
             periodo=resultado.periodo,
             escala_id=resultado.escala_descuento_id,
             sub_total=Decimal(str(resultado.totales.sub_total)),
             descuento=Decimal(str(resultado.totales.descuento)),
             honorarios=Decimal(str(resultado.totales.honorarios)),
+            inspector_operacion_id=inspector_operacion_id,
         )
 
-        # 3. Crear detalles (uno por liquidación) y actualizar registro de pago
+        # 4. Crear detalles (uno por liquidación) y actualizar registro de pago
         # liquidacion_categoria_visitas_id es un UUID string — se pasa directo a Django FK
         for item in resultado.items:
             self.core.crear_detalle_honorario(
@@ -292,5 +355,8 @@ class RHInspectorMensualCrearFlujo:
                 periodo=item.periodo,
                 mes=item.mes,
             )
+
+        # 5. Enriquecer el resultado con inspector_operacion_id para el caller
+        resultado.inspector_operacion_id = inspector_operacion_id
 
         return resultado

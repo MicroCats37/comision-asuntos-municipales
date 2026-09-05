@@ -44,20 +44,26 @@ export function useCrearNuevaRevisionEdificaciones() {
           tipo_tramite,
           ...rest
         } = payload;
+        const espIds = especialidades_seleccionadas ?? [];
+        // tarifa_unica_id is guaranteed by EspecialidadesPorTipoTramiteSmartField
+        // which auto-sets it from the vigentes hook. schema.min(1) on
+        // especialidades_seleccionadas guards against sending empty tarifas.
+        const tarifas = espIds.map((espId) => ({
+          tarifa_porcentaje_obra_id: tarifa_unica_id as string,
+          especialidad_id: espId,
+        }));
         mutation.mutate({
           liquidacion_previa_id,
           liquidacion_general: {
             expediente: rest.expediente,
+            denominacion_de_proyecto: rest.denominacion_de_proyecto ?? null,
             observacion: rest.observacion,
             retencion: rest.retencion ?? false,
             ...(rest.contacto ? { contacto: rest.contacto } : {}),
           },
           liquidacion_especifica: {
             tipo_tramite,
-            tarifas: (especialidades_seleccionadas || []).map((espId) => ({
-              tarifa_porcentaje_obra_id: tarifa_unica_id,
-              especialidad_id: espId,
-            })),
+            tarifas,
           },
         });
       },
@@ -69,20 +75,23 @@ export function useCrearNuevaRevisionEdificaciones() {
           tipo_tramite,
           ...rest
         } = payload;
+        const espIds = especialidades_seleccionadas ?? [];
+        const tarifas = espIds.map((espId) => ({
+          tarifa_porcentaje_obra_id: tarifa_unica_id as string,
+          especialidad_id: espId,
+        }));
         return mutation.mutateAsync({
           liquidacion_previa_id,
           liquidacion_general: {
             expediente: rest.expediente,
+            denominacion_de_proyecto: rest.denominacion_de_proyecto ?? null,
             observacion: rest.observacion,
             retencion: rest.retencion ?? false,
             ...(rest.contacto ? { contacto: rest.contacto } : {}),
           },
           liquidacion_especifica: {
             tipo_tramite,
-            tarifas: (especialidades_seleccionadas || []).map((espId) => ({
-              tarifa_porcentaje_obra_id: tarifa_unica_id,
-              especialidad_id: espId,
-            })),
+            tarifas,
           },
         });
       },

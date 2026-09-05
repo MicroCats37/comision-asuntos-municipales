@@ -1,6 +1,7 @@
 """Professionals admin classes: Delegado, Inspector, Proyectista."""
 
 from django.contrib import admin
+from import_export.admin import ImportExportMixin
 
 from modules.liquidaciones.domain.models import (
     Delegado,
@@ -10,6 +11,10 @@ from modules.liquidaciones.domain.models import (
     InspectorOperacion,
     InspectorOperacionPeriodo,
     Proyectista,
+)
+from modules.liquidaciones.domain.resources import (
+    DelegadoOperacionResource,
+    InspectorOperacionResource,
 )
 
 
@@ -69,18 +74,19 @@ class DelegadoAdmin(admin.ModelAdmin):
 
 
 @admin.register(DelegadoOperacion)
-class DelegadoOperacionAdmin(admin.ModelAdmin):
-    """Standalone admin for DelegadoOperacion (not typically needed separately)."""
+class DelegadoOperacionAdmin(ImportExportMixin, admin.ModelAdmin):
+    """Standalone admin for DelegadoOperacion with Excel import/export support."""
 
-    list_display = ["delegado", "municipalidad", "liquidacion_revision", "tipo"]
+    list_display = ["delegado", "municipalidad", "tipo_liquidacion", "tipo"]
     search_fields = [
         "delegado__perfil_ingeniero__nombres",
         "delegado__perfil_ingeniero__apellido_paterno",
         "municipalidad__nombre",
     ]
-    list_filter = ["tipo", "liquidacion_revision"]
+    list_filter = ["tipo", "tipo_liquidacion"]
     readonly_fields = ["created_at", "updated_at"]
     inlines = [DelegadoOperacionPeriodoInline]
+    resource_classes = [DelegadoOperacionResource]
 
 
 @admin.register(Inspector)
@@ -98,8 +104,8 @@ class InspectorAdmin(admin.ModelAdmin):
 
 
 @admin.register(InspectorOperacion)
-class InspectorOperacionAdmin(admin.ModelAdmin):
-    """Standalone admin for InspectorOperacion."""
+class InspectorOperacionAdmin(ImportExportMixin, admin.ModelAdmin):
+    """Standalone admin for InspectorOperacion with Excel import/export support."""
 
     list_display = ["inspector", "tipo_liquidacion", "numero_registro", "categoria"]
     search_fields = [
@@ -110,6 +116,7 @@ class InspectorOperacionAdmin(admin.ModelAdmin):
     list_filter = ["tipo_liquidacion", "categoria"]
     readonly_fields = ["created_at", "updated_at"]
     inlines = [InspectorOperacionPeriodoInline]
+    resource_classes = [InspectorOperacionResource]
 
 
 @admin.register(Proyectista)

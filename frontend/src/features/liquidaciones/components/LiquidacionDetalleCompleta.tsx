@@ -15,7 +15,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type {
   ContactoOutput,
-  DelegadoOperativoMinOutput,
+  LiquidacionDelegadoEnGeneralOutput,
   LiquidacionGeneralOutput,
   LiquidacionTipoOutput,
 } from "../schemas/liquidacion-base.schema";
@@ -146,7 +146,7 @@ function EmptyState({
 function RevisionesSection({
   revisiones,
 }: {
-  revisiones: LiquidacionGeneralOutput["revisiones_previas"];
+  revisiones: LiquidacionGeneralOutput["liquidaciones_previas"];
 }) {
   if (revisiones.length === 0) {
     return (
@@ -189,7 +189,7 @@ function RevisionesSection({
 function DelegadosSection({
   delegados,
 }: {
-  delegados: DelegadoOperativoMinOutput[];
+  delegados: LiquidacionDelegadoEnGeneralOutput[];
 }) {
   if (delegados.length === 0) {
     return (
@@ -203,7 +203,7 @@ function DelegadosSection({
     <div className="flex flex-wrap gap-2">
       {delegados.map((d) => (
         <div
-          key={d.id}
+          key={d.delegado.id}
           className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/60"
         >
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -211,17 +211,17 @@ function DelegadosSection({
           </div>
           <div className="flex flex-col">
             <span className="text-xs font-bold text-foreground">
-              {d.colegiado.nombre_completo || "—"}
+              {d.delegado.nombre_completo || "—"}
             </span>
             <div className="flex items-center gap-2">
-              {d.colegiado.cip && (
+              {d.delegado.cip && (
                 <span className="text-[10px] text-muted-foreground">
-                  CIP: {d.colegiado.cip}
+                  CIP: {d.delegado.cip}
                 </span>
               )}
-              {d.colegiado.especialidad?.nombre && (
+              {d.delegado.especialidad?.nombre && (
                 <span className="text-[10px] text-primary/70">
-                  • {d.colegiado.especialidad.nombre}
+                  • {d.delegado.especialidad.nombre}
                 </span>
               )}
             </div>
@@ -415,7 +415,7 @@ export function LiquidacionDetalleCompleta({
               Nombre
             </span>
             <span className="text-sm font-medium text-foreground ml-2">
-              {item.liquidacion_general.proyecto.denominacion}
+              {item.liquidacion_general.denominacion_de_proyecto}
             </span>
           </div>
           {item.liquidacion_general.proyecto.direccion && (
@@ -556,18 +556,18 @@ export function LiquidacionDetalleCompleta({
         <div className="flex items-center gap-2 mb-3">
           <SectionLabel>Revisiones</SectionLabel>
           <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary/10 text-xs font-bold text-primary">
-            {item.liquidacion_general.revisiones_previas.length}
+            {item.liquidacion_general.liquidaciones_previas.length}
           </span>
           <span className="text-xs text-muted-foreground">
-            ({item.liquidacion_general.revisiones_previas.length}{" "}
-            {item.liquidacion_general.revisiones_previas.length === 1
+            ({item.liquidacion_general.liquidaciones_previas.length}{" "}
+            {item.liquidacion_general.liquidaciones_previas.length === 1
               ? "revisión"
               : "revisiones"}
             )
           </span>
         </div>
         <RevisionesSection
-          revisiones={item.liquidacion_general.revisiones_previas}
+          revisiones={item.liquidacion_general.liquidaciones_previas}
         />
       </PageSection>
 

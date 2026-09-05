@@ -155,30 +155,59 @@ class ReciboHonorarioInspectorOut(BaseSchema):
 
 # ── RH Inspector Mensual (Cotización/Creación) ─────────────────────────────────
 
+class LiquidacionComprobanteMinimalOut(BaseSchema):
+    """
+    Datos mínimos del comprobante activo asociado a una LiquidacionGeneral.
+    """
+    tipo_comprobante: Optional[str] = Field(None, description="Tipo de comprobante (e.g. Factura, Boleta)")
+    serie: Optional[str] = Field(None, description="Serie del comprobante")
+    numero: Optional[str] = Field(None, description="Número del comprobante")
+    fecha_emision: Optional[str] = Field(None, description="Fecha de emisión (ISO)")
+
+
 class RHInspectorCotizarItemOut(BaseSchema):
     """Item individual en la cotización del RH mensual del inspector."""
     exp_liqui: str = Field(..., description="Expediente de la liquidación")
     liquidacion_inspector_id: uuid.UUID = Field(..., description="ID de LiquidacionInspector (asignación inspector-IO)")
     liquidacion_categoria_visitas_id: uuid.UUID = Field(..., description="ID de la IO (LiquidacionPorCategoriaVisitas)")
     nombre_propietario: str = Field(..., description="Nombre del propietario del proyecto")
-    importe_bruto: float = Field(..., description="Sub total de LiquidacionGeneral (total de referencia sin IGV)")
+    importe_bruto: Decimal = Field(..., description="Sub total de LiquidacionGeneral (total de referencia sin IGV)")
     inspecciones_programadas: int = Field(..., description="Visitas programadas en la IO")
     inspecciones_liquidadas: int = Field(..., description="Inspecciones liquidadas en este RH")
     inspecciones_pagadas_hasta_mes_anterior: int = Field(..., description="Inspecciones pagadas acumuladas hasta el periodo anterior")
-    costo_por_inspeccion: float = Field(..., description="Costo por inspección")
-    monto_contribuido: float = Field(..., description="Monto contribuido de esta IO")
+    costo_por_inspeccion: Decimal = Field(..., description="Costo por inspección")
+    monto_contribuido: Decimal = Field(..., description="Monto contribuido de esta IO")
     saldo_disponible: int = Field(..., description="Saldo de visitas disponibles antes de esta cotización (programadas - pagadas_historicas)")
     saldo_restante: int = Field(..., description="Saldo restante después de esta cotización (programadas - pagadas_historicas - cantidad_visitas)")
     periodo: Optional[int] = Field(None, description="Año de la LiquidacionInspector")
     mes: Optional[int] = Field(None, description="Mes de la LiquidacionInspector")
+    # Número de la liquidación específica (e.g. LiquidacionInspeccionObra numero)
+    liquidacion_especifica_numero: Optional[int] = Field(None, description="Número de la liquidación específica")
+    # Comprobante activo asociado a la liquidación
+    comprobante_activo: Optional[LiquidacionComprobanteMinimalOut] = Field(None, description="Comprobante activo de la liquidación")
 
 
 class RHInspectorTotalesOut(BaseSchema):
     """Totales calculados para la cotización del RH mensual."""
-    sub_total: float = Field(..., description="Sub total del mes (suma de montos)")
-    descuento: float = Field(..., description="Descuento sobre el total")
-    honorarios: float = Field(..., description="Honorarios a pagar")
-    tasa_descuento_aplicada: float = Field(..., description="Tasa de descuento aplicada (ej 0.20)")
+    sub_total: Decimal = Field(..., description="Sub total del mes (suma de montos)")
+    descuento: Decimal = Field(..., description="Descuento sobre el total")
+    honorarios: Decimal = Field(..., description="Honorarios a pagar")
+    tasa_descuento_aplicada: Decimal = Field(..., description="Tasa de descuento aplicada (ej 0.20)")
+
+
+class RangoDescuentoOut(BaseSchema):
+    """Rango de descuento con sus límites y porcentaje."""
+    monto_minimo: Decimal = Field(..., description="Monto mínimo del rango")
+    monto_maximo: Decimal | None = Field(None, description="Monto máximo (null = sin tope superior)")
+    porcentaje_descuento: Decimal = Field(..., description="Porcentaje de descuento (fracción decimal, ej. 0.20)")
+
+
+class RHInspectorVariablesCalculoOut(BaseSchema):
+    """Variables de cálculo usadas en la cotización del RH mensual del inspector."""
+    escala_id: str = Field(..., description="ID de la escala de descuento")
+    escala_nombre: str = Field(..., description="Nombre de la escala de descuento")
+    rango_aplicado: RangoDescuentoOut = Field(..., description="Rango de descuento aplicado según el monto")
+    rangos: list[RangoDescuentoOut] = Field(default_factory=list, description="Todos los rangos de la escala")
 
 
 class RHInspectorCotizarOut(BaseSchema):
@@ -188,6 +217,7 @@ class RHInspectorCotizarOut(BaseSchema):
     items: list[RHInspectorCotizarItemOut] = Field(default_factory=list, description="Detalle por liquidación")
     totales: RHInspectorTotalesOut
     escala_descuento_id: uuid.UUID = Field(..., description="Escala de descuento aplicada")
+    variables_calculo: RHInspectorVariablesCalculoOut
 
 
 # ── Inspector Candidatas (RH Mensual) ─────────────────────────────────────────
@@ -208,9 +238,9 @@ class InspectorCandidataItemOut(BaseSchema):
     cantidad_visitas: int = Field(..., description="Visitas programadas en la IO")
     inspecciones_pagadas: int = Field(..., description="Inspecciones ya pagadas hasta el periodo anterior")
     saldo_disponible: int = Field(..., description="Saldo de visitas disponibles")
-    costo_por_inspeccion: float = Field(..., description="Costo por inspección (sub_total / cantidad_visitas)")
-    total_liquidacion: float = Field(..., description="Total de la liquidación")
-    sub_total_liquidacion: float = Field(..., description="Sub total de la liquidación")
+    costo_por_inspeccion: Decimal = Field(..., description="Costo por inspección (sub_total / cantidad_visitas)")
+    total_liquidacion: Decimal = Field(..., description="Total de la liquidación")
+    sub_total_liquidacion: Decimal = Field(..., description="Sub total de la liquidación")
 
 
 class InspectorCandidatosOut(BaseSchema):
@@ -226,29 +256,41 @@ class InspectorCandidatosOut(BaseSchema):
 
 # ── RH Delegado Mensual (Cotización/Creación) ─────────────────────────────────
 
+class RHDelegadoVariablesCalculoOut(BaseSchema):
+    """Variables de cálculo usadas en la cotización del RH mensual del delegado."""
+    tasa_renta_cip: Decimal = Field(..., description="Tasa Renta CIP (ej. 0.25)")
+    tasa_aporte_codemu: Decimal = Field(..., description="Tasa Aporte CODEMU (ej. 0.05)")
+    tasa_fondo_comun: Decimal = Field(..., description="Tasa Fondo Común (ej. 0.10)")
+
+
 class RHDelegadoCotizarItemOut(BaseSchema):
     """Item individual en la cotización del RH mensual del delegado."""
     exp_liqui: str = Field(..., description="Expediente de la liquidación")
     liquidacion_delegado_id: Optional[uuid.UUID] = Field(None, description="ID de la LiquidacionDelegado (None para liquidaciones candidatadas)")
-    imp_bruto: float = Field(..., description="Importe bruto del detalle porcentual")
+    delegado_operacion_id: Optional[uuid.UUID] = Field(None, description="ID de la DelegadoOperacion")
+    imp_bruto: Decimal = Field(..., description="Importe bruto del detalle porcentual")
     fecha_revision: Optional[str] = Field(None, description="Fecha de revisión (ISO)")
     numero_revision: Optional[int] = Field(None, description="Número de revisión")
-    total_liquidacion: Optional[float] = Field(None, description="Total de la liquidación")
-    sub_total_liquidacion: Optional[float] = Field(None, description="Sub total de la liquidación")
+    total_liquidacion: Optional[Decimal] = Field(None, description="Total de la liquidación")
+    sub_total_liquidacion: Optional[Decimal] = Field(None, description="Sub total de la liquidación")
     numero_rh: Optional[str] = Field(None, description="Número de RH")
-    renta_cip: Optional[float] = Field(None, description="Renta CIP (25%) — deducción por item")
-    aporte_codemu: Optional[float] = Field(None, description="Aporte CODEMU (5%) — deducción por item")
-    fondo_comun: Optional[float] = Field(None, description="Fondo Común (10%) — deducción por item")
-    neto_honorario: Optional[float] = Field(None, description="Neto honorario — deducción por item")
+    renta_cip: Optional[Decimal] = Field(None, description="Renta CIP (25%) — deducción por item")
+    aporte_codemu: Optional[Decimal] = Field(None, description="Aporte CODEMU (5%) — deducción por item")
+    fondo_comun: Optional[Decimal] = Field(None, description="Fondo Común (10%) — deducción por item")
+    neto_honorario: Optional[Decimal] = Field(None, description="Neto honorario — deducción por item")
+    # Número de la liquidación específica (e.g. Edificaciones numero)
+    liquidacion_especifica_numero: Optional[int] = Field(None, description="Número de la liquidación específica")
+    # Comprobante activo asociado a la liquidación
+    comprobante_activo: Optional[LiquidacionComprobanteMinimalOut] = Field(None, description="Comprobante activo de la liquidación")
 
 
 class RHDelegadoTotalesOut(BaseSchema):
     """Totales calculados para la cotización del RH mensual del delegado."""
-    sub_total: float = Field(..., description="Sub total del mes (suma de imp_bruto)")
-    renta_cip: float = Field(..., description="Renta CIP (25%)")
-    aporte_codemu: float = Field(..., description="Aporte CODEMU (5%)")
-    fondo_comun: float = Field(..., description="Fondo Común (10%)")
-    neto_honorario: float = Field(..., description="Neto Honorario")
+    sub_total: Decimal = Field(..., description="Sub total del mes (suma de imp_bruto)")
+    renta_cip: Decimal = Field(..., description="Renta CIP (25%)")
+    aporte_codemu: Decimal = Field(..., description="Aporte CODEMU (5%)")
+    fondo_comun: Decimal = Field(..., description="Fondo Común (10%)")
+    neto_honorario: Decimal = Field(..., description="Neto Honorario")
 
 
 
@@ -260,31 +302,85 @@ class RHDelegadoCotizarOut(BaseSchema):
     periodo: str = Field(..., description="Periodo (YYYY-MM)")
     items: list[RHDelegadoCotizarItemOut] = Field(default_factory=list, description="Detalle por liquidación")
     totales: RHDelegadoTotalesOut
+    variables_calculo: RHDelegadoVariablesCalculoOut
 
 
 # ── RH Delegado Mensual — Listado ─────────────────────────────────────────────
 
 class RHDelegadoMensualDetalleOut(BaseSchema):
-    """Detalle individual en el listado de RH mensual."""
+    """
+    Detalle individual en el listado de RH mensual.
+
+    Incluye todos los campos por fila (liquidacion_delegado_id, expediente,
+    imp_bruto, partials, fechas, numeros) para que el frontend pueda reconstruir
+    la misma tabla que muestra cotizar sin pérdida de datos.
+    """
+    liquidacion_delegado_id: uuid.UUID
     expediente: str = Field(..., description="Expediente de la liquidación")
-    imp_bruto: float = Field(..., description="Importe bruto del detalle")
+    fecha_revision: str | None = Field(None, description="Fecha de revisión (ISO)")
+    numero_revision: int | None = Field(None, description="Número de revisión")
+    total_liquidacion: Decimal | None = Field(None, description="Total de la liquidación")
+    sub_total_liquidacion: Decimal | None = Field(None, description="Subtotal de la liquidación")
+    numero_rh: str | None = Field(None, description="Número de RH")
+    imp_bruto: Decimal = Field(..., description="Importe bruto del detalle")
+    renta_cip: Decimal | None = Field(None, description="Renta CIP (25%)")
+    aporte_codemu: Decimal | None = Field(None, description="Aporte CODEMU (5%)")
+    fondo_comun: Decimal | None = Field(None, description="Fondo Común (10%)")
+    neto_honorario: Decimal | None = Field(None, description="Neto honorario")
+    periodo: int | None = Field(None, description="Periodo (año)")
+    mes: int | None = Field(None, description="Mes (1-12)")
+    dictamen_revision: str | None = Field(None, description="Dictamen de revisión")
+    fecha_presentacion: str | None = Field(None, description="Fecha de presentación (ISO)")
+    delegado_operacion_id: Optional[uuid.UUID] = Field(None, description="ID de la DelegadoOperacion")
+    # Número de la liquidación específica (e.g. Edificaciones numero)
+    liquidacion_especifica_numero: Optional[int] = Field(
+        None, description="Número de la liquidación específica"
+    )
+    # Comprobante activo asociado a la liquidación
+    comprobante_activo: Optional["LiquidacionComprobanteMinimalOut"] = Field(
+        None, description="Comprobante activo de la liquidación"
+    )
 
 
 class RHDelegadoMensualTotalesOut(BaseSchema):
     """Totales del RH mensual listado."""
-    sub_total: float
-    renta_cip: float
-    aporte_codemu: float
-    fondo_comun: float
-    neto_honorario: float
+    sub_total: Decimal
+    renta_cip: Decimal
+    aporte_codemu: Decimal
+    fondo_comun: Decimal
+    neto_honorario: Decimal
+
+
+class DelegadoOperacionContextOut(BaseSchema):
+    """
+    Contexto completo de la operatividad del delegado en un RH mensual.
+
+    Expone municipalidad, tipo de liquidación, especialidad y rol para mostrar
+    al usuario en lugar del UUID crudo.
+    """
+    id: uuid.UUID = Field(..., description="ID de la DelegadoOperacion")
+    municipalidad_id: uuid.UUID = Field(..., description="ID de la municipalidad")
+    municipalidad_nombre: str = Field(..., description="Nombre de la municipalidad")
+    tipo_liquidacion_id: Optional[uuid.UUID] = Field(
+        None, description="ID del tipo de liquidación (nullable)"
+    )
+    tipo_liquidacion_codigo: Optional[str] = Field(
+        None, description="Código del tipo de liquidación"
+    )
+    tipo_liquidacion_nombre: Optional[str] = Field(
+        None, description="Nombre del tipo de liquidación"
+    )
+    especialidad_id: uuid.UUID = Field(..., description="ID de la especialidad de revisión")
+    especialidad_nombre: str = Field(..., description="Nombre de la especialidad")
+    tipo: str = Field(..., description="Rol: TITULAR o ALTERNO")
 
 
 class RHDelegadoMensualListItemOut(BaseSchema):
     """
     Schema de salida para un ReciboHonorarioDelegadoMensual en lista paginada.
 
-    Muestra: id, periodo, fecha_registro, delegado, totales, y lista de detalles
-    (expediente + imp_bruto) agrupados en el mes.
+    Muestra: id, periodo, fecha_registro, delegado, totales, detalles
+    (expediente + imp_bruto) agrupados en el mes, y tasas vigentes.
     """
     id: uuid.UUID
     periodo: str = Field(..., description="Periodo (YYYY-MM)")
@@ -294,6 +390,15 @@ class RHDelegadoMensualListItemOut(BaseSchema):
     detalles: list[RHDelegadoMensualDetalleOut] = Field(
         default_factory=list, description="Lista de detalles con expediente e imp_bruto"
     )
+    variables_calculo: RHDelegadoVariablesCalculoOut = Field(
+        description="Tasas vigentes usadas en el cálculo del RH"
+    )
+    delegado_operacion_id: Optional[uuid.UUID] = Field(
+        None, description="ID de la DelegadoOperacion (operatividad) asociada al RH"
+    )
+    delegado_operacion_context: Optional[DelegadoOperacionContextOut] = Field(
+        None, description="Contexto completo de la operatividad (municipalidad, tipo, especialidad, rol)"
+    )
 
 
 # ── RH Inspector Mensual — Listado ─────────────────────────────────────────────
@@ -302,13 +407,24 @@ class RHInspectorMensualDetalleOut(BaseSchema):
     """Detalle individual en el listado de RH mensual del inspector."""
     expediente: str = Field(..., description="Expediente de la liquidación")
     nombre_propietario: str = Field(..., description="Nombre del propietario del proyecto")
-    importe_bruto: float = Field(..., description="Sub total de LiquidacionGeneral (total de referencia)")
+    distrito: Optional[str] = Field(
+        None, description="Distrito del proyecto de la liquidación"
+    )
+    importe_bruto: Decimal = Field(..., description="Sub total de LiquidacionGeneral (total de referencia)")
     inspecciones_programadas: int = Field(..., description="Visitas programadas en la IO")
     inspecciones_liquidadas: int = Field(..., description="Inspecciones liquidadas en este RH")
     inspecciones_pagadas_hasta_mes_anterior: int = Field(..., description="Inspecciones pagadas acumuladas hasta el periodo anterior")
-    costo_por_inspeccion: float = Field(..., description="Costo por inspección")
-    monto_contribuido: float = Field(..., description="Monto contribuido (inspecciones_liquidadas * costo_por_inspeccion)")
+    costo_por_inspeccion: Decimal = Field(..., description="Costo por inspección")
+    monto_contribuido: Decimal = Field(..., description="Monto contribuido (inspecciones_liquidadas * costo_por_inspeccion)")
     saldo_restante: int = Field(..., description="Saldo restante después de esta liquidación")
+    # Número de la liquidación específica (e.g. LiquidacionInspeccionObra numero)
+    liquidacion_especifica_numero: Optional[int] = Field(
+        None, description="Número de la liquidación específica de IO"
+    )
+    # Comprobante activo asociado a la liquidación
+    comprobante_activo: Optional["LiquidacionComprobanteMinimalOut"] = Field(
+        None, description="Comprobante activo de la liquidación"
+    )
 
 
 class RHInspectorMensualTotalesOut(BaseSchema):
@@ -317,18 +433,18 @@ class RHInspectorMensualTotalesOut(BaseSchema):
     inspecciones_liquidadas: int = Field(..., description="Total inspecciones liquidadas en el mes")
     inspecciones_pagadas_hasta_mes_anterior: int = Field(..., description="Total inspecciones pagadas hasta mes anterior")
     saldo_restante: int = Field(..., description="Saldo restante total")
-    sub_total: float = Field(..., description="Sub total del mes")
-    descuento: float = Field(..., description="Descuento aplicado")
-    honorarios: float = Field(..., description="Honorarios a pagar")
-    tasa_descuento_aplicada: float = Field(..., description="Tasa de descuento aplicada")
+    sub_total: Decimal = Field(..., description="Sub total del mes")
+    descuento: Decimal = Field(..., description="Descuento aplicado")
+    honorarios: Decimal = Field(..., description="Honorarios a pagar")
+    tasa_descuento_aplicada: Decimal = Field(..., description="Tasa de descuento aplicada")
 
 
 class RHInspectorMensualListItemOut(BaseSchema):
     """
     Schema de salida para un ReciboHonorarioInspectorMensual en lista paginada.
 
-    Muestra: id, periodo, fecha_registro, inspector, totales, y lista de detalles
-    agrupados en el mes.
+    Muestra: id, periodo, fecha_registro, inspector, totales, detalles,
+    y variables_calculo con la escala de descuento aplicada.
     """
     id: uuid.UUID
     periodo: str = Field(..., description="Periodo (YYYY-MM)")
@@ -337,4 +453,7 @@ class RHInspectorMensualListItemOut(BaseSchema):
     totales: RHInspectorMensualTotalesOut
     detalles: list[RHInspectorMensualDetalleOut] = Field(
         default_factory=list, description="Lista de detalles por IO"
+    )
+    variables_calculo: RHInspectorVariablesCalculoOut = Field(
+        description="Variables de cálculo con escala de descuento aplicada"
     )

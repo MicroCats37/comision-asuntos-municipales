@@ -55,8 +55,31 @@ class ColegiadoMinOut(BaseSchema):
     capitulo: Optional[CapituloOut] = None
 
 
+class DelegadoBaseOut(BaseSchema):
+    """
+    Base output schema for a delegado.
+    Strict: id, nombre_completo, cip, tipo, especialidad (as nested object with id + nombre).
+    Used as the canonical delegado shape across all presentation schemas.
+    """
+    id: uuid.UUID
+    nombre_completo: str
+    cip: str
+    tipo: str  # TITULAR or ALTERNO
+    especialidad: "EspecialidadRevisionMinimalOut"
+
+
+class EspecialidadRevisionMinimalOut(BaseSchema):
+    """Minimal especialidad for nested output in DelegadoBaseOut."""
+    id: uuid.UUID
+    nombre: str
+
+
 class DelegadoOperativoMinOut(BaseSchema):
-    """Delegado operativo reducido — devuelve el delegado elegido como objeto colegiado (el ingeniero)."""
+    """
+    Deprecated: use DelegadoBaseOut instead.
+    Delegado operativo reducido — devuelve el delegado elegido como objeto colegiado (el ingeniero).
+    Kept for backwards compatibility with existing consumers.
+    """
     id: uuid.UUID
     colegiado: ColegiadoMinOut
 

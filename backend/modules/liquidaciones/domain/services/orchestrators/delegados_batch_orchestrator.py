@@ -66,26 +66,30 @@ class DelegadosBatchOrchestrator:
         municipalidad_id: uuid.UUID,
         tipo_liquidacion: str,
         revision_id: Optional[uuid.UUID] = None,
+        fecha: Optional[date] = None,
     ) -> DelegadosVigentesResult:
         """
         Returns delegados vigentes for a municipalidad + tipo_liquidacion.
 
         Match:
         1. DelegadoMunicipalidad with municipalidad_id AND
-           (liquidacion_revision IS NULL OR matches the tipo)
+           (tipo_liquidacion IS NULL OR matches the tipo)
         2. delegado.especialidad_revision IN especialidades vigentes del tipo
         3. periodo municipal vigente
 
         revision_id is accepted for frontend compatibility but does not
         participate in the match (already covered by tipo_liquidacion).
+
+        fecha: when provided, resolves vigentes at that date; otherwise defaults
+        to date.today() for backward compatibility.
         """
         tipo_codigo = normalizar_tipo_liquidacion(tipo_liquidacion)
-        today = date.today()
+        fecha_vigencia = fecha or date.today()
 
         asignaciones = self.core_service.list_delegados_vigentes(
             municipalidad_id=municipalidad_id,
             tipo_codigo=tipo_codigo,
-            fecha=today,
+            fecha=fecha_vigencia,
         )
 
         delegados: list[DelegadoVigenteResult] = []
@@ -267,8 +271,8 @@ class DelegadosBatchOrchestrator:
                     else None
                 ),
                 proyecto_denominacion=(
-                    liquidacion_rel.proyecto.denominacion
-                    if hasattr(liquidacion_rel, 'proyecto') and liquidacion_rel.proyecto
+                    liquidacion_rel.denominacion_de_proyecto
+                    if hasattr(liquidacion_rel, 'denominacion_de_proyecto')
                     else None
                 ),
                 tipo_liquidacion=(

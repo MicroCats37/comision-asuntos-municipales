@@ -6,6 +6,7 @@ Re-exports: ubigeo_departamento, ubigeo_provincia, ubigeo_distrito, municipalida
 import pytest
 from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
 from modules.entidades.domain.models.municipalidad import Municipalidad
+from modules.entidades.domain.models import Entidad
 from modules.liquidaciones.domain.models.proyecto import Proyecto
 
 
@@ -46,9 +47,13 @@ def municipalidad(db, ubigeo_distrito):
 
 @pytest.fixture
 def proyecto(db, municipalidad, ubigeo_distrito):
-    """Create a proyecto for testing."""
+    """Create a proyecto for testing, with a proper Entidad FK."""
+    entidad = Entidad.objects.create(
+        tipo_documento="RUC",
+        numero_documento="20456789012",
+    )
     return Proyecto.objects.create(
-        denominacion="Proyecto Test Edificaciones",
+        entidad=entidad,
         nombre_propietario="Propietario Test SAC",
         direccion="Av. Test 123",
         distrito_id=ubigeo_distrito.id,

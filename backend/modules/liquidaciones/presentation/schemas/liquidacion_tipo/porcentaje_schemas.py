@@ -36,7 +36,14 @@ class LiquidacionPorcentajeObraIn(BaseSchema):
     Si tiene elementos, se validan explícitamente.
     """
     datos: LiquidacionPorcentajeObraDatosIn
+    tipo_tramite: Optional[str] = None  # Accept tipo_tramite at top level (frontend sends here)
     tarifas: List[LiquidacionPorcentajeObraTarifaIn] = []
+
+
+class EspecialidadOut(BaseSchema):
+    """Especialidad in output (nested object with id + nombre)."""
+    id: uuid.UUID
+    nombre: str
 
 
 class LiquidacionPorcentajeObraDetalleOut(BaseSchema):
@@ -44,6 +51,7 @@ class LiquidacionPorcentajeObraDetalleOut(BaseSchema):
     id: uuid.UUID
     tarifa_aplicada_id: uuid.UUID
     especialidad_id: uuid.UUID
+    especialidad: Optional[EspecialidadOut] = None
     porcentaje_aplicado: Decimal
     subtotal: Decimal
 

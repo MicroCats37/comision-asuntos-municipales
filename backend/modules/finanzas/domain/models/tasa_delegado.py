@@ -51,6 +51,13 @@ class TasaDelegado(BaseModel, VigenciaModel):
 
     history = HistoricalRecords()
 
+    tipo_liquidacion = models.ForeignKey(
+        "liquidaciones.TipoLiquidacion",
+        on_delete=models.PROTECT,
+        related_name="tasas_delegado",
+        verbose_name="Tipo de Liquidación",
+    )
+
     nombre = models.CharField(
         max_length=100,
         blank=True,
@@ -97,14 +104,15 @@ class TasaDelegado(BaseModel, VigenciaModel):
         ordering = ["-periodo_inicio"]
         constraints = [
             models.UniqueConstraint(
-                fields=["periodo_inicio"],
+                fields=["tipo_liquidacion", "periodo_inicio"],
                 condition=models.Q(periodo_fin__isnull=True),
-                name="unique_tasa_delegado_vigente_periodo_inicio",
+                name="unique_tasa_delegado_vigente_por_tipo",
             ),
         ]
 
     def __str__(self):
-        return f"TasaDelegado({self.periodo_inicio})"
+        tipo = self.tipo_liquidacion.nombre if self.tipo_liquidacion else "?"
+        return f"TasaDelegado({tipo}, {self.periodo_inicio})"
 
     @property
     def vigente(self):

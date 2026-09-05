@@ -9,6 +9,10 @@ from modules.finanzas.domain.results.rh_inspector_mensual_result import (
     RHInspectorCotizarResult,
     RHInspectorTotalesResult,
 )
+from modules.finanzas.domain.results.rh_inspector_candidatos_result import (
+    InspectorCandidataItemResult,
+    InspectorCandidatosResult,
+)
 from modules.finanzas.domain.results.rh_delegado_mensual_result import (
     RHDelegadoCotizarItemResult,
     RHDelegadoCotizarResult,
@@ -20,6 +24,8 @@ __all__ = [
     "RHInspectorCotizarItemResult",
     "RHInspectorCotizarResult",
     "RHInspectorTotalesResult",
+    "InspectorCandidataItemResult",
+    "InspectorCandidatosResult",
     "RHDelegadoCotizarItemResult",
     "RHDelegadoCotizarResult",
     "RHDelegadoTotalesResult",

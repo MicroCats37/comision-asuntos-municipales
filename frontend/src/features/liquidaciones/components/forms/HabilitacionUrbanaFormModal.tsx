@@ -89,6 +89,7 @@ export function HabilitacionUrbanaFormModal({
             contacto={contacto}
             onAddContacto={() => setContactoModalOpen(true)}
             onRemoveContacto={() => setContacto(null)}
+            showUrbanizacion
             tramiteField={
               <MoneyInput
                 name="area_solicitada"

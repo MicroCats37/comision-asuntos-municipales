@@ -163,6 +163,7 @@ export function LiquidacionesTaludesView() {
                   <LiquidacionTaludesCard
                     key={item.liquidacion_general.id}
                     item={item}
+                    onUpdated={refetch}
                   />
                 ))}
               </div>

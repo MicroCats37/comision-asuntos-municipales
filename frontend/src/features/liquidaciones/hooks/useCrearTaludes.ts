@@ -34,8 +34,8 @@ export function useCrearTaludes() {
             expediente: rest.expediente,
             observacion: rest.observacion,
             retencion: rest.retencion ?? false,
+            denominacion_de_proyecto: rest.denominacion || undefined,
             proyecto: {
-              denominacion: rest.denominacion,
               nombre_propietario: rest.nombre_propietario,
               direccion: rest.direccion,
               distrito_id: rest.distrito_id,
@@ -68,8 +68,8 @@ export function useCrearTaludes() {
             expediente: rest.expediente,
             observacion: rest.observacion,
             retencion: rest.retencion ?? false,
+            denominacion_de_proyecto: rest.denominacion || undefined,
             proyecto: {
-              denominacion: rest.denominacion,
               nombre_propietario: rest.nombre_propietario,
               direccion: rest.direccion,
               distrito_id: rest.distrito_id,

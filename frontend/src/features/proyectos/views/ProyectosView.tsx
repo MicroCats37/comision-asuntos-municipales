@@ -116,7 +116,7 @@ function ProyectoRow({ proyecto }: ProyectoRowProps) {
           {/* Title + meta */}
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-foreground truncate">
-              {proyecto.denominacion ?? "Sin denominación"}
+              {proyecto.nombre_propietario ?? "Sin propietario"}
             </h3>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-xs text-muted-foreground font-mono">
@@ -128,6 +128,14 @@ function ProyectoRow({ proyecto }: ProyectoRowProps) {
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
                     {proyecto.distrito}
+                  </span>
+                </>
+              )}
+              {proyecto.urbanizacion && (
+                <>
+                  <span className="text-muted-foreground/30">•</span>
+                  <span className="text-xs text-muted-foreground">
+                    {proyecto.urbanizacion}
                   </span>
                 </>
               )}

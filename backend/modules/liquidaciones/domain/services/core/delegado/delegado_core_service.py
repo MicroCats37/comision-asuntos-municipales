@@ -85,6 +85,26 @@ class DelegadoCoreService:
             'perfil_ingeniero',
         ).filter(id=delegado_id).first()
 
+    def get_delegado_operacion_by_id(
+        self,
+        operacion_id: uuid.UUID,
+    ) -> Optional[DelegadoOperacion]:
+        """
+        Returns a single DelegadoOperacion by UUID with prefetched relations.
+        Returns None if not found.
+        """
+        return (
+            DelegadoOperacion.objects.filter(id=operacion_id)
+            .select_related(
+                'delegado__perfil_ingeniero',
+                'municipalidad',
+                'especialidad_revision',
+                'tipo_liquidacion',
+            )
+            .prefetch_related('periodos')
+            .first()
+        )
+
     def get_municipalidades_for_delegado(
         self,
         delegado_id: uuid.UUID,
@@ -278,7 +298,7 @@ class DelegadoCoreService:
 
         Match:
         1. DelegadoOperacion with municipalidad_id AND
-           (liquidacion_revision IS NULL OR liquidacion_revision.codigo == tipo_codigo)
+           (tipo_liquidacion IS NULL OR tipo_liquidacion.codigo == tipo_codigo)
         2. operacion.especialidad_revision IN especialidades vigentes del tipo
         3. periodo municipal vigente (inicio <= fecha AND fin IS NULL OR >= fecha)
         """
@@ -287,8 +307,8 @@ class DelegadoCoreService:
             DelegadoOperacion.objects.filter(
                 municipalidad_id=municipalidad_id,
             ).filter(
-                Q(liquidacion_revision__isnull=True)
-                | Q(liquidacion_revision__codigo=tipo_codigo)
+                Q(tipo_liquidacion__isnull=True)
+                | Q(tipo_liquidacion__codigo=tipo_codigo)
             ).filter(
                 especialidad_revision_id__in=especialidad_ids,
             ).filter(
@@ -374,8 +394,8 @@ class DelegadoCoreService:
                 delegado=delegado,
                 municipalidad_id=liquidacion.municipalidad_id,
             ).filter(
-                Q(liquidacion_revision__isnull=True)
-                | Q(liquidacion_revision_id=liquidacion.tipo_liquidacion_id)
+                Q(tipo_liquidacion__isnull=True)
+                | Q(tipo_liquidacion_id=liquidacion.tipo_liquidacion_id)
             ).filter(
                 Q(
                     periodos__periodo_inicio__lte=fecha,
@@ -467,33 +487,44 @@ class DelegadoCoreService:
         offset = (page - 1) * page_size
         return list(qs[offset:offset + page_size]), total
 
-    def get_candidatas_for_delegado(
+    def resolve_delegado_operacion(
         self,
         delegado: Delegado,
+        municipalidad_id: uuid.UUID,
+        tipo_liquidacion_id: uuid.UUID,
+        tipo_delegado: str,
         fecha: date,
-        fecha_inicio: str | None = None,
-        fecha_fin: str | None = None,
-    ) -> list:
+    ) -> Optional[DelegadoOperacion]:
         """
-        Returns a list of tuples (LiquidacionGeneral, EspecialidadRevision) representing
-        candidate liquidaciones for the given delegado.
-        A liquidacion is a candidate if:
-        1. It belongs to a municipalidad where the delegado is TITULAR (and matches the tipo).
-        2. The liquidacion requires the TITULAR operation's especialidad (in especialidades_revisadas).
-        3. The liquidacion does NOT already have a LiquidacionDelegado for that especialidad.
+        Resolves exactly ONE active DelegadoOperacion matching:
+          cip + municipalidad_id + tipo_liquidacion_id + tipo_delegado + current vigency.
 
-        Args:
-            delegado: The Delegado ORM object.
-            fecha: Reference date for vigencia checks.
-            fecha_inicio: Optional filter — fecha_registro >= fecha_inicio (inclusive).
-            fecha_fin: Optional filter — fecha_registro <= fecha_fin (inclusive).
+        Resolution logic:
+        1. Find all active operations for (delegado, municipalidad, tipo_delegado) with vigente periodo.
+        2. Among those, match on tipo_liquidacion:
+           - If an operation has tipo_liquidacion_id matching tipo_liquidacion_id exactly -> use it.
+           - If an operation has tipo_liquidacion_id=None (wildcard) -> it's a candidate.
+        3. If both exact match AND wildcard match -> 409 conflict (ambiguity).
+        4. If only wildcard matches -> use the wildcard.
+        5. If only exact match -> use the exact.
+        6. If neither matches -> 404.
+
+        Returns:
+            The resolved DelegadoOperacion.
+
+        Raises:
+            HttpError 404: No matching operation found.
+            HttpError 409: Ambiguous match (both wildcard and exact match).
         """
+        from ninja.errors import HttpError
         from modules.liquidaciones.domain.constants import TipoDelegado
-        
-        operaciones_titular = list(
+
+        # Get all active operations for this delegado/municipalidad/tipo with vigente periodo
+        active_ops = list(
             DelegadoOperacion.objects.filter(
                 delegado=delegado,
-                tipo=TipoDelegado.TITULAR,
+                municipalidad_id=municipalidad_id,
+                tipo=tipo_delegado,
             ).filter(
                 Q(
                     periodos__periodo_inicio__lte=fecha,
@@ -503,70 +534,169 @@ class DelegadoCoreService:
                     periodos__periodo_inicio__lte=fecha,
                     periodos__periodo_fin__gte=fecha,
                 )
-            ).select_related("especialidad_revision").distinct()
-        )
-        
-        candidatas_tuples = []
-        procesadas = set()
-
-        for op in operaciones_titular:
-            q_filter = Q(municipalidad_id=op.municipalidad_id)
-            if op.liquidacion_revision_id:
-                q_filter &= Q(tipo_liquidacion_id=op.liquidacion_revision_id)
-            else:
-                # liquidacion_revision=None means this operation covers liquidaciones
-                # that have NOT yet been assigned a specific tipo_liquidacion revision.
-                # Exclude liquidaciones that already have a concrete liquidacion_revision
-                # (they belong to other-specific-type operations).
-                q_filter &= Q(tipo_liquidacion__isnull=False)
-
-            # The especialidad_valida_para_tipo check only verifies the tipo supports
-            # this especialidad — it does NOT verify the liquidacion actually HAS this
-            # especialidad in its details. Add a detail-existence filter to ensure
-            # only liquidaciones that actually have this especialidad are candidates.
-            tiene_detalle_de_especialidad = Exists(
-                LiquidacionPorcentajeObraDetalle.objects.filter(
-                    liquidacion_porcentaje__liquidacion_general_id=OuterRef("pk"),
-                    especialidad_id=op.especialidad_revision_id,
-                )
-            )
-
-            # Validate via catalog: tipo_liquidacion of the candidate must have
-            # op.especialidad_revision_id marked activo=True and vigente on fecha.
-            especialidad_valida_para_tipo = LiquidacionEspecialidadDisponibles.objects.filter(
-                tipo_liquidacion_id=OuterRef('tipo_liquidacion_id'),
-                especialidad_id=op.especialidad_revision_id,
-                activo=True,
-                periodo_inicio__lte=fecha,
-            ).filter(
-                Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha)
-            )
-
-            tiene_delegado_en_esta_especialidad = LiquidacionDelegado.objects.filter(
-                liquidacion_id=OuterRef("pk"),
-                especialidad_revision_id=op.especialidad_revision_id
-            )
-
-            qs = LiquidacionGeneral.objects.filter(q_filter).annotate(
-                ya_asignada=Exists(tiene_delegado_en_esta_especialidad),
-                especialidad_valida=Exists(especialidad_valida_para_tipo),
-                tiene_el_detalle=tiene_detalle_de_especialidad,
-            ).filter(ya_asignada=False, especialidad_valida=True, tiene_el_detalle=True).select_related(
-                "tipo_liquidacion",
+            ).select_related(
+                "delegado__perfil_ingeniero",
                 "municipalidad",
-                "proyecto",
-            )
+                "especialidad_revision",
+                "tipo_liquidacion",
+            ).distinct()
+        )
 
-            # Apply date range filter on LiquidacionGeneral.fecha_registro
-            if fecha_inicio:
-                qs = qs.filter(fecha_registro__date__gte=fecha_inicio)
-            if fecha_fin:
-                qs = qs.filter(fecha_registro__date__lte=fecha_fin)
-            
-            for liq in qs:
-                clave = (liq.id, op.especialidad_revision.id)
-                if clave not in procesadas:
-                    procesadas.add(clave)
-                    candidatas_tuples.append((liq, op.especialidad_revision))
-                    
-        return candidatas_tuples
+        if not active_ops:
+            raise HttpError(404, "No se encontró operación activa para los criterios dados")
+
+        # Separate into exact match (tipo_liquidacion == tipo_liquidacion_id) and wildcard (null)
+        exact_matches = [op for op in active_ops if op.tipo_liquidacion_id == tipo_liquidacion_id]
+        wildcard_matches = [op for op in active_ops if op.tipo_liquidacion_id is None]
+
+        # Case: both exact and wildcard exist -> ambiguity -> 409
+        if exact_matches and wildcard_matches:
+            raise HttpError(409, "Configuración ambigua: existe operación wildcard y específica para este tipo de liquidación")
+
+        # Case: exact match exists
+        if exact_matches:
+            if len(exact_matches) > 1:
+                raise HttpError(409, "Múltiples operaciones activas coinciden con los criterios")
+            return exact_matches[0]
+
+        # Case: wildcard match exists
+        if wildcard_matches:
+            if len(wildcard_matches) > 1:
+                raise HttpError(409, "Múltiples operaciones wildcard coinciden con los criterios")
+            return wildcard_matches[0]
+
+        # Case: no match found
+        raise HttpError(404, "No se encontró operación activa para los criterios dados")
+
+    def get_operatividades_vigentes_delegado(
+        self,
+        delegado: Delegado,
+        fecha: date,
+    ) -> list:
+        """
+        Returns all active DelegadoOperacion records for a delegado that have
+        a vigente periodo on the given date.
+
+        Each record includes the current periodo's vigency dates.
+
+        Args:
+            delegado: The Delegado ORM object.
+            fecha: Reference date for vigencia checks.
+
+        Returns:
+            List of DelegadoOperacion ORM objects with prefetched relations.
+        """
+        return list(
+            DelegadoOperacion.objects.filter(
+                delegado=delegado,
+            ).filter(
+                Q(
+                    periodos__periodo_inicio__lte=fecha,
+                    periodos__periodo_fin__isnull=True,
+                )
+                | Q(
+                    periodos__periodo_inicio__lte=fecha,
+                    periodos__periodo_fin__gte=fecha,
+                )
+            ).select_related(
+                "delegado__perfil_ingeniero",
+                "municipalidad",
+                "tipo_liquidacion",
+                "especialidad_revision",
+            ).prefetch_related(
+                "periodos",
+            ).distinct().order_by(
+                "municipalidad__nombre",
+            )
+        )
+
+    def get_candidatas_for_delegado(
+        self,
+        delegado: Delegado,
+        fecha: date,
+        operacion: DelegadoOperacion,
+        fecha_inicio: str | None = None,
+        fecha_fin: str | None = None,
+    ) -> list:
+        """
+        Returns a list of tuples (LiquidacionGeneral, EspecialidadRevision, tipo_delegado, DelegadoOperacion) 
+        representing candidate liquidaciones for the given pre-resolved DelegadoOperacion.
+
+        A liquidacion is a candidate if:
+        1. It belongs to the operacion's municipalidad.
+        2. If operacion.tipo_liquidacion_id is set, matches that specific tipo_liquidacion.
+           If operacion.tipo_liquidacion_id is None (wildcard), matches any tipo_liquidacion.
+        3. The liquidacion requires the operacion's especialidad (in LiquidacionEspecialidadDisponibles).
+        4. The liquidacion does NOT already have a LiquidacionDelegado for that especialidad.
+
+        Args:
+            delegado: The Delegado ORM object.
+            fecha: Reference date for vigencia checks.
+            operacion: The pre-resolved DelegadoOperacion (from resolve_delegado_operacion).
+            fecha_inicio: Optional filter — fecha_registro >= fecha_inicio (inclusive).
+            fecha_fin: Optional filter — fecha_registro <= fecha_fin (inclusive).
+
+        Returns:
+            List of tuples: (LiquidacionGeneral, EspecialidadRevision, tipo_delegado, DelegadoOperacion).
+        """
+        # Build the base filter for municipalidad
+        q_filter = Q(municipalidad_id=operacion.municipalidad_id)
+
+        # If operacion has a specific tipo_liquidacion, match it exactly.
+        # If None (wildcard), accept any tipo_liquidacion.
+        if operacion.tipo_liquidacion_id:
+            q_filter &= Q(tipo_liquidacion_id=operacion.tipo_liquidacion_id)
+        # If wildcard (None), we don't add a tipo filter — all tipos accepted
+
+        # The candidate's tipo_liquidacion must have the operation's especialidad available and vigente
+        especialidad_valida_para_tipo = LiquidacionEspecialidadDisponibles.objects.filter(
+            tipo_liquidacion_id=OuterRef('tipo_liquidacion_id'),
+            especialidad_id=operacion.especialidad_revision_id,
+            activo=True,
+            periodo_inicio__lte=fecha,
+        ).filter(
+            Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha)
+        )
+
+        # The liquidacion must actually have a detail for this especialidad
+        # (not just be of a tipo that supports it)
+        tiene_detalle_de_especialidad = Exists(
+            LiquidacionPorcentajeObraDetalle.objects.filter(
+                liquidacion_porcentaje__liquidacion_general_id=OuterRef("pk"),
+                especialidad_id=operacion.especialidad_revision_id,
+            )
+        )
+
+        # The liquidacion must not already be assigned to this delegado in this especialidad
+        ya_asignada = LiquidacionDelegado.objects.filter(
+            liquidacion_id=OuterRef("pk"),
+            especialidad_revision_id=operacion.especialidad_revision_id
+        )
+
+        qs = LiquidacionGeneral.objects.filter(q_filter).annotate(
+            ya_asignada=Exists(ya_asignada),
+            especialidad_valida=Exists(especialidad_valida_para_tipo),
+            tiene_el_detalle=tiene_detalle_de_especialidad,
+        ).filter(
+            ya_asignada=False,
+            especialidad_valida=True,
+            tiene_el_detalle=True,
+        ).select_related(
+            "tipo_liquidacion",
+            "municipalidad",
+            "proyecto",
+        ).prefetch_related(
+            "comprobantes",
+        )
+
+        # Apply date range filter on LiquidacionGeneral.fecha_registro
+        if fecha_inicio:
+            qs = qs.filter(fecha_registro__date__gte=fecha_inicio)
+        if fecha_fin:
+            qs = qs.filter(fecha_registro__date__lte=fecha_fin)
+
+        # Build result tuples: (liquidacion, especialidad_revision, tipo_delegado, operacion)
+        return [
+            (liq, operacion.especialidad_revision, operacion.tipo, operacion)
+            for liq in qs
+        ]

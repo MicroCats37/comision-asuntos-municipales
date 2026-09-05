@@ -7,20 +7,19 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { FileSpreadsheet, Plus, RefreshCw, User } from "lucide-react";
+import { Plus, RefreshCw, User } from "lucide-react";
 import { useState } from "react";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { ReciboHonorarioDelegadoMensualCard } from "@/features/finanzas/components/cards/ReciboHonorarioDelegadoMensualCard";
-import { ReciboHonorarioFormModal } from "@/features/finanzas/components/modals/ReciboHonorarioFormModal";
 import { RhDelegadoMensualModal } from "@/features/finanzas/components/modals/RhDelegadoMensualModal";
 import { useRecibosDelegados } from "@/features/finanzas/hooks/useRecibosDelegados";
+import type { RHDelegadoCotizar } from "@/features/finanzas/schemas/rh-delegado-mensual.schema";
 
 const KIND_ICON: LucideIcon = User;
 
 export function RecibosDelegadosView() {
-  const [formModalOpen, setFormModalOpen] = useState(false);
   const [rhModalOpen, setRhModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -41,19 +40,11 @@ export function RecibosDelegadosView() {
           actionNodes={
             <>
               <Button
-                variant="outline"
-                className="gap-2 h-11 rounded-xl font-bold shrink-0"
+                className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
                 onClick={() => setRhModalOpen(true)}
               >
-                <FileSpreadsheet className="h-4 w-4" />
-                Importar RH Mensual
-              </Button>
-              <Button
-                className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-                onClick={() => setFormModalOpen(true)}
-              >
                 <Plus className="h-4 w-4" />
-                Nuevo Recibo
+                Crear RH
               </Button>
             </>
           }
@@ -85,15 +76,15 @@ export function RecibosDelegadosView() {
                 No hay recibos de honorario registrados
               </p>
               <p className="text-xs text-muted-foreground mb-4">
-                Crea un nuevo recibo usando el botón "Nuevo Recibo"
+                Crea un nuevo recibo usando el botón "Crear RH"
               </p>
               <Button
                 variant="outline"
                 className="gap-2 h-10 rounded-xl font-semibold"
-                onClick={() => setFormModalOpen(true)}
+                onClick={() => setRhModalOpen(true)}
               >
                 <Plus className="h-4 w-4" />
-                Nuevo Recibo
+                Crear RH
               </Button>
             </div>
           ) : (
@@ -119,15 +110,6 @@ export function RecibosDelegadosView() {
           )}
         </div>
       </div>
-
-      <ReciboHonorarioFormModal
-        open={formModalOpen}
-        onOpenChange={setFormModalOpen}
-        onSuccess={() => {
-          setFormModalOpen(false);
-          refetch();
-        }}
-      />
 
       <RhDelegadoMensualModal
         open={rhModalOpen}

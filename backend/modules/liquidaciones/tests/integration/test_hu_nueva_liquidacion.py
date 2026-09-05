@@ -398,3 +398,104 @@ def test_hu_nueva_liquidacion_no_usuario_creador_in_input(
     assert "liquidacion_general" in result
     assert "liquidacion_tipo" in result
     assert "liquidacion_especifica" in result
+
+
+# ── denominacion_de_proyecto regression test ─────────────────────────────────
+
+@pytest.mark.django_db
+def test_hu_denominacion_de_proyecto_se_persiste_y_devuelve(
+    auth_client, municipalidad, derecho_m2_vigente, valid_tarifa_m2_id,
+    ubigeo_distrito, valid_municipalidad_id, valid_distrito_id
+):
+    """
+    Regression: denominacion_de_proyecto sent in liquidacion_general is persisted
+    to LiquidacionGeneral.denominacion_de_proyecto and returned in the response.
+
+    Mirrors the Edificaciones regression test (test_denominacion_de_proyecto_se_persiste_y_devuelve).
+    """
+    payload = {
+        "liquidacion_general": {
+            "municipalidad_id": valid_municipalidad_id,
+            "expediente": "EXP-2024-DEN",
+            "observacion": "Test denominacion_de_proyecto",
+            "denominacion_de_proyecto": "Proyecto Residencial Los Cedros",
+            "proyecto": {
+                "denominacion": "Proyecto HU",
+                "nombre_propietario": "Propietario Test SAC",
+                "direccion": "Av. Test 123",
+                "distrito_id": valid_distrito_id,
+                "entidad": {
+                    "tipo_documento": "RUC",
+                    "numero_documento": "20456789015",
+                    "razon_social": "Propietario Test SAC",
+                },
+            },
+        },
+        "liquidacion_especifica": {
+            "datos": {
+                "area_solicitada": 100.0,
+            },
+            "tarifa": {
+                "tarifa_m2_id": valid_tarifa_m2_id,
+            },
+        },
+    }
+
+    response = auth_client.post(
+        "/liquidaciones/habilitacion-urbana/nueva-liquidacion/primera-revision",
+        json=payload,
+    )
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+
+    lg = response.json()["data"]["liquidacion_general"]
+    assert lg["denominacion_de_proyecto"] == "Proyecto Residencial Los Cedros", \
+        f"Expected denominacion_de_proyecto='Proyecto Residencial Los Cedros', got {lg.get('denominacion_de_proyecto')}"
+
+
+@pytest.mark.django_db
+def test_hu_denominacion_de_proyecto_null_se_devuelve_como_null(
+    auth_client, municipalidad, derecho_m2_vigente, valid_tarifa_m2_id,
+    ubigeo_distrito, valid_municipalidad_id, valid_distrito_id
+):
+    """
+    When denominacion_de_proyecto is not provided (null), it must remain null in the response.
+    """
+    payload = {
+        "liquidacion_general": {
+            "municipalidad_id": valid_municipalidad_id,
+            "expediente": "EXP-2024-DENNULL",
+            "observacion": "Test denominacion_de_proyecto null",
+            "denominacion_de_proyecto": None,
+            "proyecto": {
+                "denominacion": "Proyecto HU",
+                "nombre_propietario": "Propietario Test SAC",
+                "direccion": "Av. Test 123",
+                "distrito_id": valid_distrito_id,
+                "entidad": {
+                    "tipo_documento": "RUC",
+                    "numero_documento": "20456789016",
+                    "razon_social": "Propietario Test SAC",
+                },
+            },
+        },
+        "liquidacion_especifica": {
+            "datos": {
+                "area_solicitada": 100.0,
+            },
+            "tarifa": {
+                "tarifa_m2_id": valid_tarifa_m2_id,
+            },
+        },
+    }
+
+    response = auth_client.post(
+        "/liquidaciones/habilitacion-urbana/nueva-liquidacion/primera-revision",
+        json=payload,
+    )
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+
+    lg = response.json()["data"]["liquidacion_general"]
+    assert lg.get("denominacion_de_proyecto") is None, \
+        f"Expected denominacion_de_proyecto=None, got {lg.get('denominacion_de_proyecto')}"

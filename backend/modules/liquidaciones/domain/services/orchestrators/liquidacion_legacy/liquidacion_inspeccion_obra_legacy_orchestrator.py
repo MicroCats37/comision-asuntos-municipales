@@ -121,18 +121,18 @@ class LiquidacionInspeccionObraLegacyOrchestrator:
             raise HttpError(404, "No hay UIT vigente para la fecha indicada")
 
         # Calculate: subtotal = cantidad_visitas * (porcentaje_uit * uit_valor)
-        costo_por_visita = float(tarifa.porcentaje_uit) * float(uit.valor)
-        subtotal = Decimal(str(cantidad_visitas)) * Decimal(str(costo_por_visita))
-        igv_valor = float(igv.valor)
-        total = float(subtotal) * (1 + igv_valor)
+        costo_por_visita = tarifa.porcentaje_uit * uit.valor
+        subtotal = Decimal(str(cantidad_visitas)) * costo_por_visita
+        igv_valor = igv.valor
+        total = subtotal * (Decimal("1") + igv_valor)
 
         return CotizacionVisitasResult(
             cantidad_visitas=cantidad_visitas,
             categoria=tarifa.categoria_visitas,
             costo_por_visita=costo_por_visita,
             tarifa_id=str(tarifa.id),
-            monto_bruto=float(subtotal),
-            subtotal=float(subtotal),
+            monto_bruto=subtotal,
+            subtotal=subtotal,
             total=total,
             uit={"id": str(uit.id), "valor": float(uit.valor)},
             igv={"id": str(igv.id), "valor": float(igv.valor)},
@@ -234,7 +234,6 @@ class LiquidacionInspeccionObraLegacyOrchestrator:
                 observacion=previa.observacion,
                 retencion=previa.retencion,
                 proyecto=ProyectoData(
-                    denominacion=previa.proyecto.denominacion,
                     nombre_propietario=previa.proyecto.nombre_propietario,
                     direccion=previa.proyecto.direccion,
                     distrito_id=str(previa.proyecto.distrito_id),
@@ -244,8 +243,8 @@ class LiquidacionInspeccionObraLegacyOrchestrator:
                         numero_documento=getattr(previa.proyecto, "entidad_numero_documento", None) or "",
                     ),
                 ),
-                denominacion_de_proyecto_liquidacion=getattr(
-                    payload.liquidacion_general, "denominacion_de_proyecto_liquidacion", None
+                denominacion_de_proyecto=getattr(
+                    payload.liquidacion_general, "denominacion_de_proyecto", None
                 ),
                 descripcion_legacy=getattr(
                     payload.liquidacion_general, "descripcion_legacy", None

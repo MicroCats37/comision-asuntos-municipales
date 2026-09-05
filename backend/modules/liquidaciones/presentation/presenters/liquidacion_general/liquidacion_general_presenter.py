@@ -5,7 +5,7 @@ NO ORM. Only @staticmethod. Only maps Result → Schema Out.
 """
 import math
 import uuid
-from typing import List
+from typing import List, Optional
 
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
     LiquidacionGeneralResult,
@@ -23,6 +23,9 @@ from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_genera
     ContactoResult,
     LiquidacionDelegadoEnGeneralResult,
 )
+from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_comprobante_result import (
+    LiquidacionComprobanteResult,
+)
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
     LiquidacionGeneralOutput,
     EntidadInlineSchema,
@@ -38,10 +41,16 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     LiquidacionPreviaOutput,
     ContactoOutput,
 )
+from modules.liquidaciones.presentation.schemas.liquidacion_general.comprobante_schemas import (
+    LiquidacionComprobanteOutput,
+)
 from modules.liquidaciones.presentation.schemas.delegado.delegado_schemas import (
-    DelegadoOperativoMinOut,
-    ColegiadoMinOut,
-    EspecialidadOut,
+    DelegadoBaseOut,
+    EspecialidadRevisionMinimalOut,
+)
+from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
+    LiquidacionDelegadoDatosOut,
+    LiquidacionDelegadoEnGeneralOut,
 )
 from core.pagination import PaginatedData
 
@@ -50,7 +59,30 @@ class LiquidacionGeneralPresenter:
     """
     Presenter for general Liquidacion endpoints.
     Maps LiquidacionGeneralResult to LiquidacionGeneralOutput. Zero ORM.
+
+    codigo_cta is pre-resolved at the service layer and passed in LiquidacionGeneralResult.
     """
+
+    @staticmethod
+    def _map_comprobante(result: Optional[LiquidacionComprobanteResult]) -> Optional[LiquidacionComprobanteOutput]:
+        """Maps a LiquidacionComprobanteResult to LiquidacionComprobanteOutput."""
+        if not result:
+            return None
+        return LiquidacionComprobanteOutput(
+            id=uuid.UUID(result.id),
+            tipo_comprobante=result.tipo_comprobante,
+            serie=result.serie,
+            numero=result.numero,
+            fecha_emision=result.fecha_emision,
+            monto=result.monto,
+            activo=result.activo,
+            motivo_reemplazo=result.motivo_reemplazo,
+        )
+
+    @staticmethod
+    def _map_comprobantes(results: list[LiquidacionComprobanteResult]) -> list[LiquidacionComprobanteOutput]:
+        """Maps a list of LiquidacionComprobanteResult to a list of LiquidacionComprobanteOutput."""
+        return [LiquidacionGeneralPresenter._map_comprobante(r) for r in results]
 
     @staticmethod
     def _map_result_to_output(result: LiquidacionGeneralResult) -> LiquidacionGeneralOutput:
@@ -95,9 +127,9 @@ class LiquidacionGeneralPresenter:
         # Build proyecto output
         proyecto_out = ProyectoOutput(
             id=uuid.UUID(general.proyecto.id),
-            denominacion=general.proyecto.denominacion,
             nombre_propietario=general.proyecto.nombre_propietario,
             direccion=general.proyecto.direccion,
+            urbanizacion=getattr(general.proyecto, 'urbanizacion', None),
             distrito=distrito_out,
             entidad=entidad_out,
         )
@@ -159,17 +191,24 @@ class LiquidacionGeneralPresenter:
                 email=general.contacto.email,
             )
 
-        # Build revisiones previas output
+        # Build liquidaciones previas output
         previas_out: List[LiquidacionPreviaOutput] = []
-        for prev in general.revisiones_previas:
+        for prev in general.liquidaciones_previas:
             previas_out.append(LiquidacionPreviaOutput(
                 id=uuid.UUID(prev.id),
                 numero_revision=prev.numero_revision,
                 expediente=prev.expediente,
+                tipo=prev.tipo,
+                numero_liquidacion_especifica=prev.numero_liquidacion_especifica,
+                denominacion_de_proyecto=prev.denominacion_de_proyecto,
             ))
+
+        # Build comprobantes list output
+        comprobantes_out = LiquidacionGeneralPresenter._map_comprobantes(general.comprobantes)
 
         return LiquidacionGeneralOutput(
             id=uuid.UUID(general.id),
+            estado=general.estado,
             municipalidad=municipalidad_out,
             usuario_creador=usuario_out,
             fecha_registro=general.fecha_registro,
@@ -179,35 +218,42 @@ class LiquidacionGeneralPresenter:
             sub_total=general.sub_total,
             total=general.total,
             retencion=general.retencion,
+            legacy=general.legacy,
+            codigo_cta=general.codigo_cta,
             igv=igv_out,
             uit=uit_out,
             proyecto=proyecto_out,
             contacto=contacto_out,
             tipo_liquidacion=tipo_liq_out,
-            revisiones_previas=previas_out,
+            liquidaciones_previas=previas_out,
+            comprobantes=comprobantes_out,
         )
 
     @staticmethod
-    def _map_delegados(general: LiquidacionGeneralResult) -> List[DelegadoOperativoMinOut]:
+    def _map_delegados(general: LiquidacionGeneralResult) -> List[LiquidacionDelegadoEnGeneralOut]:
         """
         Maps the 'delegados' flat-join fields from LiquidacionGeneralResult
-        into a list of DelegadoOperativoMinOut (objeto colegiado = el ingeniero).
+        into a list of LiquidacionDelegadoEnGeneralOut ({ datos, delegado }).
         Returns [] if general.delegados is empty or None.
         """
         return [
-            DelegadoOperativoMinOut(
-                id=uuid.UUID(d.delegado_id),
-                colegiado=ColegiadoMinOut(
+            LiquidacionDelegadoEnGeneralOut(
+                datos=LiquidacionDelegadoDatosOut(
+                    periodo=d.periodo,
+                    mes=d.mes,
+                    dictamen_revision=d.dictamen_revision,
+                    fecha_presentacion=d.fecha_presentacion,
+                    fecha_revision=d.fecha_revision,
+                ),
+                delegado=DelegadoBaseOut(
                     id=uuid.UUID(d.delegado_id),
-                    cip=d.delegado_cip,
-                    dni=d.delegado_dni,
                     nombre_completo=d.delegado_nombre_completo,
-                    especialidad=EspecialidadOut(
+                    cip=d.delegado_cip,
+                    tipo=d.tipo or "",
+                    especialidad=EspecialidadRevisionMinimalOut(
                         id=uuid.UUID(d.especialidad_revision_id),
-                        codigo="",
                         nombre=d.especialidad_revision_nombre,
                     ) if d.especialidad_revision_id else None,
-                    capitulo=None,
                 ),
             )
             for d in (general.delegados or [])
@@ -264,9 +310,9 @@ class LiquidacionGeneralPresenter:
         # Build proyecto output
         proyecto_out = ProyectoOutput(
             id=uuid.UUID(general.proyecto.id),
-            denominacion=general.proyecto.denominacion,
             nombre_propietario=general.proyecto.nombre_propietario,
             direccion=general.proyecto.direccion,
+            urbanizacion=getattr(general.proyecto, 'urbanizacion', None),
             distrito=distrito_out,
             entidad=entidad_out,
         )
@@ -330,17 +376,24 @@ class LiquidacionGeneralPresenter:
                 email=general.contacto.email,
             )
 
-        # Build revisiones previas output
+        # Build liquidaciones previas output
         previas_out: List[LiquidacionPreviaOutput] = []
-        for prev in (general.revisiones_previas or []):
+        for prev in (general.liquidaciones_previas or []):
             previas_out.append(LiquidacionPreviaOutput(
                 id=uuid.UUID(prev.id),
                 numero_revision=prev.numero_revision,
                 expediente=prev.expediente,
+                tipo=prev.tipo,
+                numero_liquidacion_especifica=prev.numero_liquidacion_especifica,
+                denominacion_de_proyecto=prev.denominacion_de_proyecto,
             ))
+
+        # Build comprobantes list output
+        comprobantes_out = LiquidacionGeneralPresenter._map_comprobantes(general.comprobantes)
 
         return LiquidacionGeneralOutput(
             id=uuid.UUID(general.id),
+            estado=general.estado,
             municipalidad=municipalidad_out,
             usuario_creador=usuario_out,
             fecha_registro=general.fecha_registro,
@@ -350,13 +403,17 @@ class LiquidacionGeneralPresenter:
             sub_total=general.sub_total,
             total=general.total,
             retencion=general.retencion,
+            legacy=general.legacy,
+            codigo_cta=general.codigo_cta,
             igv=igv_out,
             uit=uit_out,
             proyecto=proyecto_out,
             contacto=contacto_out,
             tipo_liquidacion=tipo_liq_out,
-            revisiones_previas=previas_out,
+            liquidaciones_previas=previas_out,
             delegados=LiquidacionGeneralPresenter._map_delegados(general),
+            comprobantes=comprobantes_out,
+            denominacion_de_proyecto=general.denominacion_de_proyecto,
         )
 
     @staticmethod

@@ -44,7 +44,7 @@ export function ProyectoSmartField({ methods }: ProyectoSmartFieldProps) {
             type: "text",
             placeholder: "Nombre del proyecto",
             icon: FileText,
-            required: true,
+            required: false,
           }}
           register={register as never}
           control={control as never}

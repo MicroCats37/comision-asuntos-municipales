@@ -34,11 +34,29 @@ export const delegadosVigentesResponseSchema = apiResponseSchema(
   }),
 );
 
+/**
+ * Normalize a date string or Date to YYYY-MM-DD in local time.
+ * Handles ISO strings with time components by extracting the date part.
+ * Returns null if input is null/undefined.
+ */
+function normalizeFecha(fecha: string | Date | null | undefined): string | null {
+  if (!fecha) return null;
+  const d = typeof fecha === "string" ? new Date(fecha) : fecha;
+  if (isNaN(d.getTime())) return null;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function useDelegadosVigentes(
   municipalidadId: string | null,
   tipoLiquidacion: string | null,
   revisionId: string | null = null,
+  fechaRegistro: string | Date | null = null,
 ) {
+  const normalizedFecha = normalizeFecha(fechaRegistro);
+
   const query = useApiQuery<
     z.infer<typeof delegadosVigentesResponseSchema>,
     DelegadoVigente[]
@@ -49,6 +67,7 @@ export function useDelegadosVigentes(
       municipalidadId,
       tipoLiquidacion,
       revisionId,
+      normalizedFecha,
     ],
     url: "/liquidaciones/delegados/vigentes",
     params:
@@ -57,6 +76,7 @@ export function useDelegadosVigentes(
             municipalidad_id: municipalidadId,
             tipo_liquidacion: tipoLiquidacion,
             ...(revisionId ? { revision_id: revisionId } : {}),
+            ...(normalizedFecha ? { fecha: normalizedFecha } : {}),
           }
         : undefined,
     schema: delegadosVigentesResponseSchema,

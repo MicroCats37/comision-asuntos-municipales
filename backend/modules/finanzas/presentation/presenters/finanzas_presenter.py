@@ -43,14 +43,19 @@ from modules.finanzas.presentation.schemas.finanzas_schemas import (
     RHInspectorCotizarItemOut,
     RHInspectorTotalesOut,
     RHInspectorCotizarOut,
+    RangoDescuentoOut,
+    RHInspectorVariablesCalculoOut,
     InspectorCandidataItemOut,
     InspectorCandidatosOut,
     RHDelegadoCotizarItemOut,
     RHDelegadoTotalesOut,
     RHDelegadoCotizarOut,
+    RHDelegadoVariablesCalculoOut,
+    LiquidacionComprobanteMinimalOut,
     RHDelegadoMensualDetalleOut,
     RHDelegadoMensualTotalesOut,
     RHDelegadoMensualListItemOut,
+    DelegadoOperacionContextOut,
     RHInspectorMensualDetalleOut,
     RHInspectorMensualTotalesOut,
     RHInspectorMensualListItemOut,
@@ -328,6 +333,13 @@ class FinanzasPresenter:
                     saldo_restante=i.saldo_restante,
                     periodo=i.periodo,
                     mes=i.mes,
+                    liquidacion_especifica_numero=i.liquidacion_especifica_numero,
+                    comprobante_activo=LiquidacionComprobanteMinimalOut(
+                        tipo_comprobante=i.comprobante_activo.tipo_comprobante if i.comprobante_activo else None,
+                        serie=i.comprobante_activo.serie if i.comprobante_activo else None,
+                        numero=i.comprobante_activo.numero if i.comprobante_activo else None,
+                        fecha_emision=i.comprobante_activo.fecha_emision if i.comprobante_activo else None,
+                    ) if i.comprobante_activo else None,
                 )
                 for i in result.items
             ],
@@ -338,6 +350,23 @@ class FinanzasPresenter:
                 tasa_descuento_aplicada=result.totales.tasa_descuento_aplicada,
             ),
             escala_descuento_id=uuid.UUID(result.escala_descuento_id),
+            variables_calculo=RHInspectorVariablesCalculoOut(
+                escala_id=result.variables_calculo.escala_id,
+                escala_nombre=result.variables_calculo.escala_nombre,
+                rango_aplicado=RangoDescuentoOut(
+                    monto_minimo=result.variables_calculo.rango_aplicado.monto_minimo,
+                    monto_maximo=result.variables_calculo.rango_aplicado.monto_maximo,
+                    porcentaje_descuento=result.variables_calculo.rango_aplicado.porcentaje_descuento,
+                ),
+                rangos=[
+                    RangoDescuentoOut(
+                        monto_minimo=r.monto_minimo,
+                        monto_maximo=r.monto_maximo,
+                        porcentaje_descuento=r.porcentaje_descuento,
+                    )
+                    for r in result.variables_calculo.rangos
+                ],
+            ),
         )
 
     @staticmethod
@@ -411,6 +440,7 @@ class FinanzasPresenter:
                 RHDelegadoCotizarItemOut(
                     exp_liqui=i.exp_liqui,
                     liquidacion_delegado_id=uuid.UUID(i.liquidacion_delegado_id) if i.liquidacion_delegado_id else None,
+                    delegado_operacion_id=uuid.UUID(i.delegado_operacion_id) if i.delegado_operacion_id else None,
                     imp_bruto=i.imp_bruto,
                     fecha_revision=i.fecha_revision,
                     numero_revision=i.numero_revision,
@@ -421,6 +451,13 @@ class FinanzasPresenter:
                     aporte_codemu=i.aporte_codemu,
                     fondo_comun=i.fondo_comun,
                     neto_honorario=i.neto_honorario,
+                    liquidacion_especifica_numero=i.liquidacion_especifica_numero,
+                    comprobante_activo=LiquidacionComprobanteMinimalOut(
+                        tipo_comprobante=i.comprobante_activo.tipo_comprobante if i.comprobante_activo else None,
+                        serie=i.comprobante_activo.serie if i.comprobante_activo else None,
+                        numero=i.comprobante_activo.numero if i.comprobante_activo else None,
+                        fecha_emision=i.comprobante_activo.fecha_emision if i.comprobante_activo else None,
+                    ) if i.comprobante_activo else None,
                 )
                 for i in result.items
             ],
@@ -430,6 +467,11 @@ class FinanzasPresenter:
                 aporte_codemu=result.totales.aporte_codemu,
                 fondo_comun=result.totales.fondo_comun,
                 neto_honorario=result.totales.neto_honorario,
+            ),
+            variables_calculo=RHDelegadoVariablesCalculoOut(
+                tasa_renta_cip=result.variables_calculo.tasa_renta_cip,
+                tasa_aporte_codemu=result.variables_calculo.tasa_aporte_codemu,
+                tasa_fondo_comun=result.variables_calculo.tasa_fondo_comun,
             ),
         )
 
@@ -489,11 +531,60 @@ class FinanzasPresenter:
             ),
             detalles=[
                 RHDelegadoMensualDetalleOut(
+                    liquidacion_delegado_id=uuid.UUID(d.liquidacion_delegado_id),
                     expediente=d.expediente,
+                    fecha_revision=d.fecha_revision,
+                    numero_revision=d.numero_revision,
+                    total_liquidacion=d.total_liquidacion,
+                    sub_total_liquidacion=d.sub_total_liquidacion,
+                    numero_rh=d.numero_rh,
                     imp_bruto=d.imp_bruto,
+                    renta_cip=d.renta_cip,
+                    aporte_codemu=d.aporte_codemu,
+                    fondo_comun=d.fondo_comun,
+                    neto_honorario=d.neto_honorario,
+                    periodo=d.periodo,
+                    mes=d.mes,
+                    dictamen_revision=d.dictamen_revision,
+                    fecha_presentacion=d.fecha_presentacion,
+                    delegado_operacion_id=uuid.UUID(d.delegado_operacion_id) if d.delegado_operacion_id else None,
+                    liquidacion_especifica_numero=d.liquidacion_especifica_numero,
+                    comprobante_activo=LiquidacionComprobanteMinimalOut(
+                        tipo_comprobante=d.comprobante_activo.tipo_comprobante if d.comprobante_activo else None,
+                        serie=d.comprobante_activo.serie if d.comprobante_activo else None,
+                        numero=d.comprobante_activo.numero if d.comprobante_activo else None,
+                        fecha_emision=d.comprobante_activo.fecha_emision if d.comprobante_activo else None,
+                    ) if d.comprobante_activo else None,
                 )
                 for d in r.detalles
             ],
+            variables_calculo=RHDelegadoVariablesCalculoOut(
+                tasa_renta_cip=r.variables_calculo.tasa_renta_cip,
+                tasa_aporte_codemu=r.variables_calculo.tasa_aporte_codemu,
+                tasa_fondo_comun=r.variables_calculo.tasa_fondo_comun,
+            ),
+            delegado_operacion_id=(
+                uuid.UUID(r.delegado_operacion_id) if r.delegado_operacion_id else None
+            ),
+            delegado_operacion_context=(
+                DelegadoOperacionContextOut(
+                    id=uuid.UUID(r.delegado_operacion_context.id),
+                    municipalidad_id=uuid.UUID(r.delegado_operacion_context.municipalidad_id),
+                    municipalidad_nombre=r.delegado_operacion_context.municipalidad_nombre,
+                    tipo_liquidacion_id=(
+                        uuid.UUID(r.delegado_operacion_context.tipo_liquidacion_id)
+                        if r.delegado_operacion_context.tipo_liquidacion_id
+                        else None
+                    ),
+                    tipo_liquidacion_codigo=r.delegado_operacion_context.tipo_liquidacion_codigo,
+                    tipo_liquidacion_nombre=r.delegado_operacion_context.tipo_liquidacion_nombre,
+                    especialidad_id=uuid.UUID(r.delegado_operacion_context.especialidad_id),
+                    especialidad_nombre=r.delegado_operacion_context.especialidad_nombre,
+                    tipo=r.delegado_operacion_context.tipo,
+                )
+                if r.delegado_operacion_context
+                else None
+            ),
         )
 
     # ── RH Inspector Mensual — Listado ───────────────────────────────────────────
@@ -559,6 +650,7 @@ class FinanzasPresenter:
                 RHInspectorMensualDetalleOut(
                     expediente=d.expediente,
                     nombre_propietario=d.nombre_propietario,
+                    distrito=d.distrito,
                     importe_bruto=d.importe_bruto,
                     inspecciones_programadas=d.inspecciones_programadas,
                     inspecciones_liquidadas=d.inspecciones_liquidadas,
@@ -566,7 +658,31 @@ class FinanzasPresenter:
                     costo_por_inspeccion=d.costo_por_inspeccion,
                     monto_contribuido=d.monto_contribuido,
                     saldo_restante=d.saldo_restante,
+                    liquidacion_especifica_numero=d.liquidacion_especifica_numero,
+                    comprobante_activo=LiquidacionComprobanteMinimalOut(
+                        tipo_comprobante=d.comprobante_activo.tipo_comprobante if d.comprobante_activo else None,
+                        serie=d.comprobante_activo.serie if d.comprobante_activo else None,
+                        numero=d.comprobante_activo.numero if d.comprobante_activo else None,
+                        fecha_emision=d.comprobante_activo.fecha_emision if d.comprobante_activo else None,
+                    ) if d.comprobante_activo else None,
                 )
                 for d in r.detalles
             ],
+            variables_calculo=RHInspectorVariablesCalculoOut(
+                escala_id=r.variables_calculo.escala_id,
+                escala_nombre=r.variables_calculo.escala_nombre,
+                rango_aplicado=RangoDescuentoOut(
+                    monto_minimo=r.variables_calculo.rango_aplicado.monto_minimo,
+                    monto_maximo=r.variables_calculo.rango_aplicado.monto_maximo,
+                    porcentaje_descuento=r.variables_calculo.rango_aplicado.porcentaje_descuento,
+                ),
+                rangos=[
+                    RangoDescuentoOut(
+                        monto_minimo=rg.monto_minimo,
+                        monto_maximo=rg.monto_maximo,
+                        porcentaje_descuento=rg.porcentaje_descuento,
+                    )
+                    for rg in r.variables_calculo.rangos
+                ],
+            ),
         )

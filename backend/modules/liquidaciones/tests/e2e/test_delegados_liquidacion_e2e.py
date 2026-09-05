@@ -179,6 +179,68 @@ def test_delegados_vigentes_tipo_sin_especialidades_vacio(
     assert result["delegados"] == []
 
 
+@pytest.mark.django_db
+def test_delegados_vigentes_con_fecha_param_retorna_solo_vigentes_en_fecha(
+    auth_client,
+    municipalidad,
+    tipo_edificacion,
+    especialidad_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    GET /delegados/vigentes?fecha=YYYY-MM-DD filtra delegados vigentes SOLO en
+    esa fecha (periodo_inicio <= fecha AND (periodo_fin is null OR periodo_fin >= fecha)).
+
+    Sin fecha: defaults to today (backward-compatible).
+    """
+    fecha_hoy = date.today()
+    fecha_pasado = fecha_hoy - timedelta(days=60)   # before periodo started
+    fecha_durante = fecha_hoy - timedelta(days=30)  # inside vigente periodo
+    fecha_futuro = fecha_hoy + timedelta(days=30)   # future (periodo still open)
+
+    # Delegado whose assignment period started 30 days ago and is still open
+    delegado = _crear_delegado("77777", "77777777")
+    dm = _crear_asignacion_municipal(delegado, municipalidad, vigente=True, especialidad=especialidad_estructuras)
+    # Override periodo_inicio to 30 days ago (the helper sets it to date.today()-30)
+    dm.periodos.update(periodo_inicio=fecha_durante)
+
+    # Sanity: without fecha param (today), delegate IS included
+    response_today = auth_client.get(
+        f"/liquidaciones/delegados/vigentes?municipalidad_id={municipalidad.id}"
+        f"&tipo_liquidacion=EDIFICACION",
+    )
+    assert response_today.status_code == 200
+    ids_today = {item["id"] for item in response_today.json()["data"]["delegados"]}
+    assert str(delegado.id) in ids_today, "Delegate should be vigente today"
+
+    # With fecha=during the periodo, delegate IS included
+    response_durante = auth_client.get(
+        f"/liquidaciones/delegados/vigentes?municipalidad_id={municipalidad.id}"
+        f"&tipo_liquidacion=EDIFICACION&fecha={fecha_durante.isoformat()}",
+    )
+    assert response_durante.status_code == 200
+    ids_durante = {item["id"] for item in response_durante.json()["data"]["delegados"]}
+    assert str(delegado.id) in ids_durante, "Delegate should be vigente on fecha_durante"
+
+    # With fecha=60 days ago (before the periodo started), delegate is NOT included
+    response_pasado = auth_client.get(
+        f"/liquidaciones/delegados/vigentes?municipalidad_id={municipalidad.id}"
+        f"&tipo_liquidacion=EDIFICACION&fecha={fecha_pasado.isoformat()}",
+    )
+    assert response_pasado.status_code == 200
+    ids_pasado = {item["id"] for item in response_pasado.json()["data"]["delegados"]}
+    assert str(delegado.id) not in ids_pasado, "Delegate should NOT be vigente before periodo started"
+
+    # With fecha=future, delegate IS still included (periodo_fin is null)
+    response_futuro = auth_client.get(
+        f"/liquidaciones/delegados/vigentes?municipalidad_id={municipalidad.id}"
+        f"&tipo_liquidacion=EDIFICACION&fecha={fecha_futuro.isoformat()}",
+    )
+    assert response_futuro.status_code == 200
+    ids_futuro = {item["id"] for item in response_futuro.json()["data"]["delegados"]}
+    assert str(delegado.id) in ids_futuro, "Delegate should still be vigente in the future"
+
+
 # ── PATCH /liquidaciones/{liquidacion_id}/delegados ───────────────────────────
 
 @pytest.mark.django_db

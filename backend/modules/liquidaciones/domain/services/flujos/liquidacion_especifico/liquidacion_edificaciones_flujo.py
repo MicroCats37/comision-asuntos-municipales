@@ -47,6 +47,7 @@ from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_genera
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
     LiquidacionPorcentajeObraResult,
     DetallePorcentajeObraResult,
+    EspecialidadResult,
 )
 from modules.liquidaciones.domain.constants import TipoLiquidacion
 
@@ -104,7 +105,6 @@ class LiquidacionEdificacionesFlujo:
         
         # Paso 2: Proyecto
         proyecto_data = {
-            "denominacion": gen_data.proyecto.denominacion,
             "nombre_propietario": gen_data.proyecto.nombre_propietario,
             "direccion": gen_data.proyecto.direccion,
             "distrito_id": gen_data.proyecto.distrito_id,
@@ -132,6 +132,7 @@ class LiquidacionEdificacionesFlujo:
               tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.EDIFICACION),
               numero_revision=1,
               contacto=contacto,
+              denominacion_de_proyecto=gen_data.denominacion_de_proyecto,
           )
         
         # Get IGV/UIT FKs for snapshot
@@ -316,15 +317,8 @@ class LiquidacionEdificacionesFlujo:
         """
         liquidacion_general.refresh_from_db()
 
-        # Build previas list (specific to edificaciones nueva revision flow)
-        revisiones_previas = [
-            LiquidacionPreviaResult(
-                id=str(lp.id),
-                numero_revision=lp.numero_revision,
-                expediente=lp.expediente or "",
-            )
-            for lp in liquidacion_general.liquidaciones_previas.all().order_by('numero_revision')
-        ]
+        # Build previas list using the enriched helper (includes denominacion_de_proyecto, tipo, etc.)
+        revisiones_previas = self.general_core.build_revisiones_previas_result(liquidacion_general)
 
         # Build ContactoResult inline (specific mapping not extracted to core)
         contacto_result = None
@@ -369,14 +363,17 @@ class LiquidacionEdificacionesFlujo:
                 derecho_maximo=liquidacion_po.derecho_maximo,
                 porcentaje_minimo_uit=liquidacion_po.porcentaje_minimo_uit,
                 derecho_aplicado_id=str(liquidacion_po.derecho_aplicado_id),
-                detalles=[
-                    DetallePorcentajeObraResult(
-                        id=str(d.id),
-                        tarifa_aplicada_id=str(d.tarifa_aplicada_id),
-                        especialidad_id=str(d.especialidad_id),
-                        porcentaje_aplicado=d.porcentaje_aplicado,
-                        subtotal=d.subtotal,
-                    )
+	                detalles=[
+	                    DetallePorcentajeObraResult(
+	                        id=str(d.id),
+	                        tarifa_aplicada_id=str(d.tarifa_aplicada_id),
+	                        especialidad=EspecialidadResult(
+	                            id=str(d.especialidad_id),
+	                            nombre=getattr(d.especialidad, 'nombre', '') or '',
+	                        ) if d.especialidad_id else None,
+	                        porcentaje_aplicado=d.porcentaje_aplicado,
+	                        subtotal=d.subtotal,
+	                    )
                     for d in liquidacion_po.detalles.all()
                 ],
             ),
@@ -438,7 +435,10 @@ class LiquidacionEdificacionesFlujo:
                     DetallePorcentajeObraResult(
                         id=str(d.id),
                         tarifa_aplicada_id=str(d.tarifa_aplicada_id),
-                        especialidad_id=str(d.especialidad_id),
+                        especialidad=EspecialidadResult(
+                            id=str(d.especialidad_id),
+                            nombre=getattr(d.especialidad, 'nombre', '') or '',
+                        ) if d.especialidad_id else None,
                         porcentaje_aplicado=d.porcentaje_aplicado,
                         subtotal=d.subtotal,
                     )
@@ -482,7 +482,6 @@ class LiquidacionEdificacionesFlujo:
 
         # Paso 2: Proyecto
         proyecto_data = {
-            "denominacion": gen_data.proyecto.denominacion,
             "nombre_propietario": gen_data.proyecto.nombre_propietario,
             "direccion": gen_data.proyecto.direccion,
             "distrito_id": gen_data.proyecto.distrito_id,
@@ -495,7 +494,7 @@ class LiquidacionEdificacionesFlujo:
         # Paso 2.5: Contacto principal (inline, opcional)
         contacto = None
         if gen_data.contacto:
-            contacto = self.general_core.create_contacto(
+            contacto = self.general_core.upsert_contacto(
                 gen_data.contacto.model_dump() if hasattr(gen_data.contacto, "model_dump") else gen_data.contacto.__dict__
             )
 
@@ -510,7 +509,7 @@ class LiquidacionEdificacionesFlujo:
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.EDIFICACION),
             numero_revision=numero_revision,
             contacto=contacto,
-            denominacion_de_proyecto_liquidacion=gen_data.denominacion_de_proyecto_liquidacion,
+            denominacion_de_proyecto=gen_data.denominacion_de_proyecto,
             descripcion_legacy=gen_data.descripcion_legacy,
         )
 

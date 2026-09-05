@@ -127,6 +127,7 @@ def liquidacion_asignacion(db, proyecto, municipalidad, tipo_edificacion, create
         numero_revision=1,
         estado=EstadoLiquidacion.PENDIENTE,
         expediente="EXP-2026-001",
+        denominacion_de_proyecto="Proyecto Test Edificaciones",
         sub_total=Decimal("10000.00"),
         total=Decimal("11800.00"),
         usuario_creador=create_user,

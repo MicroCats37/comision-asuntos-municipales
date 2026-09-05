@@ -1,7 +1,6 @@
 """
 Schemas for historical tariff and derecho endpoints.
 """
-import math
 from datetime import date
 from typing import List, Optional
 from uuid import UUID

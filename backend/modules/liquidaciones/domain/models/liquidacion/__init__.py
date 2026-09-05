@@ -2,13 +2,14 @@
 Liquidacion package — re-exports for liquidacion domain models.
 """
 
-from .liquidacion_general.liquidacion import (
+from .liquidacion_general import (
     EstadoLiquidacion,
     TipoLiquidacion,
     LiquidacionGeneral,
     LiquidacionContacto,
     LiquidacionDocumentos,
     LiquidacionProyectista,
+    LiquidacionComprobante,
 )
 from .liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorcentajeObra,

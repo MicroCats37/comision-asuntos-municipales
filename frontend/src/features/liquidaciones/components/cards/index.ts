@@ -1,4 +1,4 @@
-export { LiquidacionBaseCard } from "./LiquidacionBaseCard";
+export { LiquidacionCardShell } from "./LiquidacionCardShell";
 export { LiquidacionEdificacionesCard } from "./LiquidacionEdificacionesCard";
 export { LiquidacionHabilitacionUrbanaCard } from "./LiquidacionHabilitacionUrbanaCard";
 export { LiquidacionImpactoVialCard } from "./LiquidacionImpactoVialCard";

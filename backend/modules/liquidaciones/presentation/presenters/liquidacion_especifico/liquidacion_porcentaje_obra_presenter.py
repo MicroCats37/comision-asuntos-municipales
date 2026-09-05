@@ -24,6 +24,7 @@ from modules.liquidaciones.presentation.presenters.liquidacion_general.liquidaci
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraDatosOut,
     LiquidacionPorcentajeObraDetalleOut,
+    EspecialidadOut,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas import (
     LiquidacionTipoOutput,
@@ -42,6 +43,15 @@ class LiquidacionPorcentajeObraPresenter:
     OUTPUT_SCHEMA: ClassVar = None
     COTIZAR_OUTPUT_SCHEMA: ClassVar = None
     COTIZAR_DETALLE_SCHEMA: ClassVar = None
+
+    @staticmethod
+    def _map_especialidad(especialidad) -> EspecialidadOut | None:
+        if not especialidad:
+            return None
+        return EspecialidadOut(
+            id=uuid.UUID(especialidad.id),
+            nombre=especialidad.nombre or "",
+        )
     
     @classmethod
     def present_primera_revision(cls, domain_result: LiquidacionEspecificaPrimeraRevisionResult):
@@ -72,7 +82,8 @@ class LiquidacionPorcentajeObraPresenter:
                 LiquidacionPorcentajeObraDetalleOut(
                     id=uuid.UUID(d.id),
                     tarifa_aplicada_id=uuid.UUID(d.tarifa_aplicada_id),
-                    especialidad_id=uuid.UUID(d.especialidad_id),
+                    especialidad_id=uuid.UUID(d.especialidad.id),
+                    especialidad=cls._map_especialidad(d.especialidad),
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
                 )
@@ -101,7 +112,7 @@ class LiquidacionPorcentajeObraPresenter:
             detalles=[
                 cls.COTIZAR_DETALLE_SCHEMA(
                     tarifa_id=uuid.UUID(d.tarifa_id),
-                    especialidad_id=uuid.UUID(d.especialidad_id),
+                    especialidad=cls._map_especialidad(d.especialidad),
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
                 )

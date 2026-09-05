@@ -71,31 +71,38 @@ class LiquidacionPorMetroCuadradoCoreService:
         tipo_liquidacion: str,
         area_solicitada: float,
         tarifa_m2_id: str,
+        derecho: Optional[DerechoPorMetroCuadrado] = None,
     ) -> CotizacionM2Result:
         """
         Calculates M2 quotation using BD vigencias.
         PURE computation - only arithmetic, no business logic validation.
+
+        Args:
+            derecho: Optional pre-resolved DerechoPorMetroCuadrado.
+                    If None, resolves via vigentes() (current) — use for new creations.
+                    If provided, uses the passed derecho — use for PATCH recalculation.
         """
         try:
             tarifa = TarifaPorMetroCuadradoModel.objects.select_related("tarifa_base").get(id=tarifa_m2_id)
         except TarifaPorMetroCuadradoModel.DoesNotExist:
             tarifa = self.get_tarifa_m2_vigente(tipo_liquidacion)
 
-        derecho = self.get_derecho_minimo_m2_vigente()
+        if derecho is None:
+            derecho = self.get_derecho_minimo_m2_vigente()
 
         monto_bruto = Decimal(str(area_solicitada)) * tarifa.costo_por_m2
         subtotal = monto_bruto
 
         return CotizacionM2Result(
-            area_m2=float(area_solicitada),
-            costo_por_m2=float(tarifa.costo_por_m2),
+            area_m2=Decimal(str(area_solicitada)),
+            costo_por_m2=tarifa.costo_por_m2,
             tarifa_id=str(tarifa.id),
             derecho_id=str(derecho.id) if derecho else None,
-            minimo=float(derecho.derecho_minimo) if derecho else None,
-            maximo=float(derecho.derecho_maximo) if derecho and derecho.derecho_maximo is not None else None,
-            monto_bruto=float(monto_bruto),
-            subtotal=float(subtotal),
-            total=float(subtotal),
+            minimo=derecho.derecho_minimo if derecho else None,
+            maximo=derecho.derecho_maximo if derecho and derecho.derecho_maximo is not None else None,
+            monto_bruto=monto_bruto,
+            subtotal=subtotal,
+            total=subtotal,
         )
 
     def create_liquidacion_por_metro_cuadrado(

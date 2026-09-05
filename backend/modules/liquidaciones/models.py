@@ -28,6 +28,20 @@ from .domain.models import (
     InspectorOperacion,
     InspectorOperacionPeriodo,
     LiquidacionInspector,
+    LiquidacionComprobante,
+    # Specific models
+    LiquidacionHabilitacionUrbana,
+    LiquidacionMecanicaSuelos,
+    LiquidacionImpactoVial,
+    LiquidacionTaludes,
+    LiquidacionInspeccionObra,
+    # Proxy models for admin (filtered by tipo_liquidacion)
+    LiquidacionEdificacionProxy,
+    LiquidacionHabilitacionUrbanaProxy,
+    LiquidacionMecanicaSuelosProxy,
+    LiquidacionTaludesProxy,
+    LiquidacionInspeccionObraProxy,
+    LiquidacionImpactoVialProxy,
 )
 
 __all__ = [
@@ -58,4 +72,18 @@ __all__ = [
     "InspectorOperacion",
     "InspectorOperacionPeriodo",
     "LiquidacionInspector",
+    "LiquidacionComprobante",
+    # Specific models
+    "LiquidacionHabilitacionUrbana",
+    "LiquidacionMecanicaSuelos",
+    "LiquidacionImpactoVial",
+    "LiquidacionTaludes",
+    "LiquidacionInspeccionObra",
+    # Proxy models for admin
+    "LiquidacionEdificacionProxy",
+    "LiquidacionHabilitacionUrbanaProxy",
+    "LiquidacionMecanicaSuelosProxy",
+    "LiquidacionTaludesProxy",
+    "LiquidacionInspeccionObraProxy",
+    "LiquidacionImpactoVialProxy",
 ]

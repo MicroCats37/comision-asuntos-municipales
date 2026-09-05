@@ -297,8 +297,10 @@ def test_ms_cotizar_clamping_minimo(api_client, derecho_m2_vigente, valid_tarifa
     calculo = result["calculo"]
 
     # The total should be clamped to derecho_minimo (500.00)
-    assert calculo["total"] == 500.00, f"Expected total to be clamped to 500.00, got {calculo['total']}"
-    assert calculo["subtotal"] == 500.00, f"Expected subtotal to be clamped to 500.00, got {calculo['subtotal']}"
+    # Note: API serializes Decimal as JSON string (e.g. "500.0"), not float
+    # Frontend uses z.coerce.number() which handles string numerics correctly
+    assert float(calculo["total"]) == 500.00, f"Expected total to be clamped to 500.00, got {calculo['total']}"
+    assert float(calculo["subtotal"]) == 500.00, f"Expected subtotal to be clamped to 500.00, got {calculo['subtotal']}"
 
 
 @pytest.mark.django_db
@@ -332,5 +334,7 @@ def test_ms_cotizar_clamping_maximo(api_client, derecho_m2_vigente, valid_tarifa
     calculo = result["calculo"]
 
     # The total should be clamped to derecho_maximo (50000.00)
-    assert calculo["total"] == 50000.00, f"Expected total to be clamped to 50000.00, got {calculo['total']}"
-    assert calculo["subtotal"] == 50000.00, f"Expected subtotal to be clamped to 50000.00, got {calculo['subtotal']}"
+    # Note: API serializes Decimal as JSON string (e.g. "50000.0"), not float
+    # Frontend uses z.coerce.number() which handles string numerics correctly
+    assert float(calculo["total"]) == 50000.00, f"Expected total to be clamped to 50000.00, got {calculo['total']}"
+    assert float(calculo["subtotal"]) == 50000.00, f"Expected subtotal to be clamped to 50000.00, got {calculo['subtotal']}"

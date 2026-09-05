@@ -298,6 +298,7 @@ class InspectorOrchestrator:
                     categoria=operacion.categoria or None,
                     numero_registro=operacion.numero_registro,
                     vigencia=str(periodo.periodo_fin) if periodo and periodo.periodo_fin else None,
+                    inspector_operacion_id=str(operacion.id),
                 )
             )
 
@@ -357,7 +358,7 @@ class InspectorOrchestrator:
                     lg.municipalidad.nombre if lg.municipalidad else None
                 ),
                 proyecto_denominacion=(
-                    lg.proyecto.denominacion if lg.proyecto else None
+                    lg.proyecto.nombre_propietario if lg.proyecto else None
                 ),
                 tipo_liquidacion=(
                     TipoLiquidacionMinimalResult(

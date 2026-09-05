@@ -123,10 +123,9 @@ def municipalidad_test(db, ubigeo_test):
 @pytest.fixture
 def proyecto_test(db, municipalidad_test, ubigeo_test):
     return Proyecto.objects.create(
-        denominacion="Proyecto IO Test",
         nombre_propietario="Propietario IO SAC",
         direccion="Av. Test 123",
-        distrito_id=ubigeo_test.id,
+        distrito=ubigeo_test,
         entidad_tipo_documento="RUC",
         entidad_numero_documento="20456789012",
         entidad_razon_social="Propietario IO SAC",
@@ -327,6 +326,11 @@ def test_cotizar_con_cip_valido_inspector_asociado(
     assert Decimal(str(item.monto_contribuido)) == Decimal("400.00")
     assert item.saldo_disponible == 10  # available before this quote (no prior payments)
     assert item.saldo_restante == 6  # remaining after this quote: 10 - 0 - 4
+    # New fields: liquidacion_especifica_numero and comprobante_activo are null-safe
+    assert hasattr(item, "liquidacion_especifica_numero")
+    assert hasattr(item, "comprobante_activo")
+    assert item.liquidacion_especifica_numero is None  # LiquidacionInspeccionObra has no numero set
+    assert item.comprobante_activo is None  # no comprobante activo in test fixture
 
     assert Decimal(str(result.totales.sub_total)) == Decimal("400.00")
     assert Decimal(str(result.totales.tasa_descuento_aplicada)) == Decimal("0.15")
@@ -590,7 +594,7 @@ def test_crear_rh_inspector_mensual(
 
 
 @pytest.mark.django_db
-def test_crear_idempotente(
+def test_crear_siempre_nuevo(
     crear_flujo,
     cotizar_flujo,
     inspector,
@@ -601,8 +605,9 @@ def test_crear_idempotente(
     escala_descuento_15,
 ):
     """
-    Llamar crear 2 veces con el mismo (inspector, periodo) no duplica —
-    usa get_or_create en crear_rh_inspector_mensual.
+    Llamar crear 2 veces con el mismo (inspector, periodo) crea DOS RH headers —
+    crear_rh_inspector_mensual siempre crea, nunca reutiliza.
+    Los detalles del primer RH permanecen attached a ese primer header.
     """
     payload = _payload(
         cip=perfil_ingeniero_inspector.cip,
@@ -614,14 +619,22 @@ def test_crear_idempotente(
     assert result1.totales.sub_total == 300.0  # 100 * 3
 
     result2 = crear_flujo.crear(payload)
+    assert result2.totales.sub_total == 300.0  # 100 * 3
 
-    # Solo se creó 1 RH mensual (UniqueConstraint)
-    assert ReciboHonorarioInspectorMensual.objects.count() == 1
-    rh = ReciboHonorarioInspectorMensual.objects.first()
-    assert rh.periodo == "2026-01"
+    # Se crearon 2 RH mensuales distintos (siempre crea nuevo)
+    assert ReciboHonorarioInspectorMensual.objects.count() == 2
+    rh_list = list(ReciboHonorarioInspectorMensual.objects.order_by("fecha_registro"))
+    assert rh_list[0].periodo == "2026-01"
+    assert rh_list[1].periodo == "2026-01"
 
-    # El detalle se creó 2 veces (no hay unique constraint por lcv+recibo)
-    assert rh.detalles.count() == 2
+    # Cada RH tiene su propio detalle
+    assert rh_list[0].detalles.count() == 1
+    assert rh_list[1].detalles.count() == 1
+
+    # Los detalles son de distintos receipts (no se mezclan)
+    detalle1_lcv = rh_list[0].detalles.first().liquidacion_por_categoria_visitas_id
+    detalle2_lcv = rh_list[1].detalles.first().liquidacion_por_categoria_visitas_id
+    assert detalle1_lcv == detalle2_lcv  # Misma IO pero en distintos RH
 
 
 @pytest.mark.django_db
@@ -807,6 +820,7 @@ def test_crear_actualiza_registro_pago_acumulativo(
     """
     Crear dos veces con distintos items del mismo periodo acumula
     inspecciones_pagadas en el mismo RegistroPagoInspector.
+    Los detalles se attachan a cada RH nuevo, no se mezclan.
     """
     # Primera creación: 3 visitas
     crear_flujo.crear(
@@ -826,18 +840,19 @@ def test_crear_actualiza_registro_pago_acumulativo(
         )
     )
 
-    # Un solo RegistroPagoInspector con inspecciones acumuladas
+    # Un solo RegistroPagoInspector con inspecciones acumuladas (upsert accumulation)
     registro = RegistroPagoInspector.objects.get(
         liquidacion_por_categoria_visitas=liquidacion_visitas,
         periodo="2026-03",
     )
     assert registro.inspecciones_pagadas == 5  # 3 + 2
 
-    # Un solo RH mensual (UniqueConstraint inspector+periodo)
-    assert ReciboHonorarioInspectorMensual.objects.filter(periodo="2026-03").count() == 1
-    rh = ReciboHonorarioInspectorMensual.objects.get(periodo="2026-03")
-    # Dos detalles (uno por cada creación)
-    assert rh.detalles.count() == 2
+    # Dos RH mensuales distintos (siempre crea nuevo)
+    assert ReciboHonorarioInspectorMensual.objects.filter(periodo="2026-03").count() == 2
+    rh_list = list(ReciboHonorarioInspectorMensual.objects.filter(periodo="2026-03").order_by("fecha_registro"))
+    # Cada RH tiene su propio detalle (no se mezclan)
+    assert rh_list[0].detalles.count() == 1
+    assert rh_list[1].detalles.count() == 1
 
 
 # ── Inspector Candidatas Tests ────────────────────────────────────────────────────
@@ -882,6 +897,10 @@ def test_list_candidatas_inspector_returns_candidatas_con_saldo(
     assert candidata.saldo_disponible == liquidacion_visitas.cantidad_visitas
     assert candidata.liquidacion_inspector_id == str(liquidacion_inspector.id)
     assert candidata.liquidacion_categoria_visitas_id == str(liquidacion_visitas.id)
+    # Decimal precision assertions — financial fields must preserve precision
+    assert Decimal(str(candidata.costo_por_inspeccion)) == Decimal("100.00")
+    assert Decimal(str(candidata.total_liquidacion)) == Decimal("1000.00")
+    assert Decimal(str(candidata.sub_total_liquidacion)) == Decimal("1000.00")
 
 
 @pytest.mark.django_db

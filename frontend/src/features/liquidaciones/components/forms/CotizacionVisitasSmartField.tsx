@@ -8,44 +8,72 @@ import { Calculator, CheckCircle2, Loader2, XCircle } from "lucide-react";
  * Architecture:
  * - Receives `methods: UseFormReturn<VisitasFormData>` from parent
  * - Reads `cantidad_visitas`, `categoria`, `tarifa_visitas_id` from form
- * - "Calcular" button triggers POST /liquidaciones/inspeccion-obra/cotizar
+ * - "Calcular" button triggers POST /liquidaciones/inspeccion-obra/cotizar (create)
+ *   or POST /liquidaciones/inspeccion-obra/{id}/cotizar-edicion (edit)
  * - Shows result in its OWN state
+ *
+ * Backend response shape (CotizarPorCategoriaVisitasOutputSchema via present_cotizacion):
+ * {
+ *   datos: {
+ *     entrada: { datos: { cantidad_visitas, categoria }, tarifa: { tarifa_visitas_id } },
+ *     tarifa: { id, costo_por_visita },
+ *     variables_financieras: { igv, uit }
+ *   },
+ *   calculo: { monto_bruto, subtotal, total }
+ * }
  */
 import { useCallback, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { notify } from "@/errors";
 import api from "@/lib/api";
-import type { VisitasFormData } from "../../schemas/liquidacion-visitas-form.schema";
 
-interface CotizacionResult {
-  subtotal: number;
-  igv: number;
-  total: number;
-  liquidacion_total: number;
-  total_a_pagar: number;
-}
+// ── Output type matching backend CotizarPorCategoriaVisitasOutputSchema ─────────
 
 interface CotizacionVisitasQuote {
-  numero_revision: number;
-  calculo_visitas: {
-    cantidad_visitas: number;
-    visitas_base_calculo: number;
-    derecho: number;
-    categoria: string;
+  datos: {
+    entrada: {
+      datos: {
+        cantidad_visitas: number;
+        categoria: string;
+      };
+      tarifa: {
+        tarifa_visitas_id: string;
+      };
+    };
+    tarifa: {
+      id: string;
+      costo_por_visita: number;
+    };
+    variables_financieras: {
+      igv: number;
+      uit: number;
+    };
   };
-  totales: CotizacionResult;
+  calculo: {
+    monto_bruto: number;
+    subtotal: number;
+    total: number;
+  };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface CotizacionVisitasSmartFieldProps {
   methods: UseFormReturn<any>;
+  /** Edit mode calls /{id}/cotizar-edicion and sends liquidacion_tipo wrapper */
+  mode?: "create" | "edit";
+  liquidacionId?: string;
 }
 
-const formatSoles = (value: number): string => `S/ ${value.toFixed(2)}`;
+const formatSoles = (value: unknown): string => {
+  const num = Number(value);
+  return Number.isNaN(num) ? "S/ 0.00" : `S/ ${num.toFixed(2)}`;
+};
 
 export function CotizacionVisitasSmartField({
   methods,
+  mode = "create",
+  liquidacionId,
 }: CotizacionVisitasSmartFieldProps) {
   // Own state — does not cause form re-render
   const [quote, setQuote] = useState<CotizacionVisitasQuote | null>(null);
@@ -55,16 +83,35 @@ export function CotizacionVisitasSmartField({
     mutationFn: async (payload: {
       cantidad_visitas: number;
       categoria: string;
-      tarifas_ids: string[];
+      tarifa_visitas_id: string;
     }): Promise<CotizacionVisitasQuote> => {
-      const { data } = await api.post(
-        "/liquidaciones/inspeccion-obra/cotizar",
-        {
-          liquidacion: payload,
-        },
-      );
+      const endpoint =
+        mode === "edit" && liquidacionId
+          ? `/liquidaciones/inspeccion-obra/${liquidacionId}/cotizar-edicion`
+          : `/liquidaciones/inspeccion-obra/cotizar`;
+
+      const body =
+        mode === "edit"
+          ? {
+              liquidacion_tipo: {
+                datos: {
+                  cantidad_visitas: payload.cantidad_visitas,
+                  categoria: payload.categoria,
+                },
+                tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
+              },
+            }
+          : {
+              liquidacion: {
+                cantidad_visitas: payload.cantidad_visitas,
+                categoria: payload.categoria,
+                tarifas_ids: [payload.tarifa_visitas_id],
+              },
+            };
+
+      const { data } = await api.post(endpoint, body);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (data as any).data;
+      return (data as any).data as CotizacionVisitasQuote;
     },
     onSuccess: (result) => {
       setQuote(result);
@@ -103,7 +150,7 @@ export function CotizacionVisitasSmartField({
     cotizacionMutation.mutate({
       cantidad_visitas: cantidadVisitas,
       categoria,
-      tarifas_ids: [tarifaVisitasId],
+      tarifa_visitas_id: tarifaVisitasId,
     });
   }, [methods, cotizacionMutation]);
 
@@ -116,6 +163,9 @@ export function CotizacionVisitasSmartField({
         <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
           Cotización
         </h3>
+        {isLoading && (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        )}
       </div>
 
       <Button
@@ -155,26 +205,32 @@ export function CotizacionVisitasSmartField({
             <div className="flex justify-between">
               <span className="text-muted-foreground">Visitas:</span>
               <span className="font-medium">
-                {quote.calculo_visitas.cantidad_visitas} (
-                {quote.calculo_visitas.categoria})
+                {quote.datos.entrada.datos.cantidad_visitas} (
+                {quote.datos.entrada.datos.categoria})
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Costo/visita:</span>
+              <span className="font-medium">
+                {formatSoles(quote.datos.tarifa.costo_por_visita)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal:</span>
               <span className="font-medium">
-                {formatSoles(quote.totales.subtotal)}
+                {formatSoles(quote.calculo.subtotal)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">IGV (18%):</span>
               <span className="font-medium">
-                {formatSoles(quote.totales.igv)}
+                {formatSoles(quote.calculo.total - quote.calculo.subtotal)}
               </span>
             </div>
             <div className="flex justify-between border-t border-border pt-1.5 font-semibold">
               <span>Total:</span>
               <span className="text-primary">
-                {formatSoles(quote.totales.total)}
+                {formatSoles(quote.calculo.total)}
               </span>
             </div>
           </div>

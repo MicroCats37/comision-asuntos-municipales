@@ -630,9 +630,10 @@ def test_ms_nueva_liquidacion_snapshot_costo_por_m2(
     lt = result["liquidacion_tipo"]
 
     # Verify costo_por_m2 is snapshotted from the tariff
-    assert lt["costo_por_m2"] == 150.0, \
+    # Note: API serializes Decimal as JSON string, test uses float() to coerce
+    assert float(lt["costo_por_m2"]) == 150.0, \
         f"Expected costo_por_m2 to be 150.0 (from tariff), got {lt['costo_por_m2']}"
 
     # Also verify that the area_m2 matches what was requested
-    assert lt["area_m2"] == 100.0, \
+    assert float(lt["area_m2"]) == 100.0, \
         f"Expected area_m2 to be 100.0, got {lt['area_m2']}"

@@ -1,0 +1,100 @@
+{
+  "version": "1.0",
+  "periodo": "2026",
+  "descripcion": "Tarifas liquidaciones CIP CAM 2026 - seed enriquecido (incluye tarifa legacy EDIFICACION 0.02%).",
+  "derechos_porcentaje": {
+    "periodo_inicio": "2020-01-01",
+    "periodo_fin": null,
+    "porcentaje_minimo_uit": "0.02",
+    "derecho_minimo": "129.80",
+    "derecho_maximo": null
+  },
+  "derechos_m2": {
+    "periodo_inicio": "2026-01-01",
+    "periodo_fin": null,
+    "derecho_minimo": "1000.00",
+    "derecho_maximo": "10000.00"
+  },
+  "tarifas_porcentaje": [
+    {
+      "tipo_liquidacion": "EDIFICACION",
+      "periodo_inicio": "2017-01-01",
+      "periodo_fin": "2026-04-30",
+      "porcentaje_liquidacion": "0.0002"
+    },
+    {
+      "tipo_liquidacion": "EDIFICACION",
+      "periodo_inicio": "2026-05-01",
+      "periodo_fin": null,
+      "porcentaje_liquidacion": "0.0005"
+    },
+    {
+      "tipo_liquidacion": "IMPACTO_VIAL",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "porcentaje_liquidacion": "0.0005"
+    },
+    {
+      "tipo_liquidacion": "TALUDES",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "porcentaje_liquidacion": "0.0005"
+    }
+  ],
+  "tarifas_m2": [
+    {
+      "tipo_liquidacion": "HABILITACION_URBANA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "costo_por_m2": "0.20"
+    },
+    {
+      "tipo_liquidacion": "MECANICA_SUELOS",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "costo_por_m2": "0.20"
+    }
+  ],
+  "tarifas_visitas": [
+    {
+      "tipo_liquidacion": "INSPECCION_OBRA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "categoria": "1",
+      "porcentaje_uit": "0.032"
+    },
+    {
+      "tipo_liquidacion": "INSPECCION_OBRA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "categoria": "2",
+      "porcentaje_uit": "0.037"
+    },
+    {
+      "tipo_liquidacion": "INSPECCION_OBRA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "categoria": "3",
+      "porcentaje_uit": "0.042"
+    },
+    {
+      "tipo_liquidacion": "INSPECCION_OBRA",
+      "periodo_inicio": "2026-01-01",
+      "periodo_fin": null,
+      "categoria": "4",
+      "porcentaje_uit": "0.088"
+    }
+  ],
+  "especialidades_disponibles": [
+    { "tipo_liquidacion": "EDIFICACION", "especialidad": "Ingeniería Civil", "periodo_inicio": "2017-01-01", "periodo_fin": null },
+    { "tipo_liquidacion": "EDIFICACION", "especialidad": "Ingeniería Sanitaria", "periodo_inicio": "2017-01-01", "periodo_fin": null },
+    { "tipo_liquidacion": "EDIFICACION", "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica", "periodo_inicio": "2017-01-01", "periodo_fin": null },
+    { "tipo_liquidacion": "EDIFICACION", "especialidad": "Ingeniería Electrónica", "periodo_inicio": "2017-01-01", "periodo_fin": "2026-05-01" },
+    { "tipo_liquidacion": "IMPACTO_VIAL", "especialidad": "Ingeniería Civil", "periodo_inicio": "2026-01-01", "periodo_fin": null },
+    { "tipo_liquidacion": "IMPACTO_VIAL", "especialidad": "Ingeniería Sanitaria", "periodo_inicio": "2026-01-01", "periodo_fin": null },
+    { "tipo_liquidacion": "IMPACTO_VIAL", "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica", "periodo_inicio": "2026-01-01", "periodo_fin": null },
+    { "tipo_liquidacion": "TALUDES", "especialidad": "Ingeniería Civil", "periodo_inicio": "2026-01-01", "periodo_fin": null },
+    { "tipo_liquidacion": "TALUDES", "especialidad": "Ingeniería Sanitaria", "periodo_inicio": "2026-01-01", "periodo_fin": null },
+    { "tipo_liquidacion": "TALUDES", "especialidad": "Ingeniería Eléctrica y Mecánica Eléctrica", "periodo_inicio": "2026-01-01", "periodo_fin": null }
+  ]
+}

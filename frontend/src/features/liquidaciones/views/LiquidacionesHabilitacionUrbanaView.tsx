@@ -166,6 +166,7 @@ export function LiquidacionesHabilitacionUrbanaView() {
                   <LiquidacionHabilitacionUrbanaCard
                     key={item.liquidacion_general.id}
                     item={item}
+                    onUpdated={refetch}
                   />
                 ))}
               </div>

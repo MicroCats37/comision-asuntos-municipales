@@ -59,7 +59,7 @@ class DelegadoOperacion(BaseModel):
         verbose_name="Municipalidad",
     )
 
-    liquidacion_revision = models.ForeignKey(
+    tipo_liquidacion = models.ForeignKey(
         "liquidaciones.TipoLiquidacion",
         on_delete=models.PROTECT,
         related_name="delegados_operacion",
@@ -93,7 +93,7 @@ class DelegadoOperacion(BaseModel):
     class Meta:
         verbose_name = "Delegado de Operación"
         verbose_name_plural = "Delegados de Operaciones"
-        unique_together = ("delegado", "municipalidad", "liquidacion_revision")
+        unique_together = ("delegado", "municipalidad", "tipo_liquidacion")
         ordering = [
             "delegado__perfil_ingeniero__apellido_paterno",
             "delegado__perfil_ingeniero__apellido_materno",
@@ -171,14 +171,14 @@ class LiquidacionDelegado(BaseModel):
     """
 
     history = HistoricalRecords()
-    
+
     liquidacion = models.ForeignKey(
         "LiquidacionGeneral",
         on_delete=models.CASCADE,
         related_name="liquidacion_delegados",
         verbose_name="Liquidacion",
     )
-    
+
     especialidad_revision = models.ForeignKey(
         "usuarios.EspecialidadRevision",
         on_delete=models.PROTECT,
@@ -191,6 +191,15 @@ class LiquidacionDelegado(BaseModel):
         on_delete=models.PROTECT,
         related_name="delegado_liquidacion",
         verbose_name="Delegado",
+    )
+
+    delegado_operacion = models.ForeignKey(
+        "DelegadoOperacion",
+        on_delete=models.PROTECT,
+        related_name="liquidacion_delegados",
+        verbose_name="Delegado Operatividad",
+        null=True,
+        blank=True,
     )
     
     periodo = models.PositiveSmallIntegerField(

@@ -252,7 +252,6 @@ class LiquidacionTaludesLegacyOrchestrator(LiquidacionPOValidationMixin):
                 observacion=payload.liquidacion_general.observacion,
                 retencion=getattr(payload.liquidacion_general, "retencion", False),
                 proyecto=ProyectoData(
-                    denominacion=payload.liquidacion_general.proyecto.denominacion,
                     nombre_propietario=payload.liquidacion_general.proyecto.nombre_propietario,
                     direccion=payload.liquidacion_general.proyecto.direccion,
                     distrito_id=str(payload.liquidacion_general.proyecto.distrito_id),
@@ -275,8 +274,8 @@ class LiquidacionTaludesLegacyOrchestrator(LiquidacionPOValidationMixin):
                     if payload.liquidacion_general.contacto
                     else None
                 ),
-                denominacion_de_proyecto_liquidacion=getattr(
-                    payload.liquidacion_general, "denominacion_de_proyecto_liquidacion", None
+                denominacion_de_proyecto=getattr(
+                    payload.liquidacion_general, "denominacion_de_proyecto", None
                 ),
                 descripcion_legacy=getattr(
                     payload.liquidacion_general, "descripcion_legacy", None

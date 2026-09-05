@@ -6,7 +6,7 @@ export const TarifasVigentesPorcentajeSchema = z.object({
   tarifas: z.array(
     z.object({
       id: z.string(),
-      porcentaje_liquidacion: z.number(),
+      porcentaje_liquidacion: z.coerce.number(),
     }),
   ),
   especialidades_disponibles: z.array(
@@ -26,7 +26,9 @@ export type TarifasVigentesPorcentajeData = z.infer<
 export const TarifasVigentesM2Schema = z.object({
   tarifa_vigente: z
     .object({
-      datos: z.object({ id: z.string(), costo_por_m2: z.number() }).nullable(),
+      datos: z
+        .object({ id: z.string(), costo_por_m2: z.coerce.number() })
+        .nullable(),
     })
     .nullable(),
   derecho_vigente: z
@@ -34,8 +36,8 @@ export const TarifasVigentesM2Schema = z.object({
       datos: z
         .object({
           id: z.string(),
-          derecho_minimo: z.number(),
-          derecho_maximo: z.number(),
+          derecho_minimo: z.coerce.number(),
+          derecho_maximo: z.coerce.number(),
         })
         .nullable(),
     })
@@ -49,10 +51,10 @@ export const TarifasVigentesVisitasSchema = z.object({
   tarifas: z.array(
     z.object({
       id: z.string(),
-      costo_por_visita: z.number(),
+      costo_por_visita: z.coerce.number(),
       categoria: z.string(),
-      // No presentes en todos los backends — opcionales defensivos
-      visitas_minimas: z.number().optional(),
+      // No presentes en todos los backends - opcionales defensivos
+      visitas_minimas: z.coerce.number().optional(),
       habilitada: z.boolean().optional(),
     }),
   ),

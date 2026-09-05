@@ -51,6 +51,14 @@ interface TarifasVisitasNuevaRevisionSmartFieldProps {
   onCantidadVisitasChange: (cantidad: number) => void;
   onCategoriaChange: (categoria: string) => void;
   onTarifaChange: (tarifaId: string) => void;
+  /**
+   * Modo de cotización:
+   * - "create" (default): POST /cotizar — cuerpo { liquidacion_especifica: {...} }
+   * - "edit": POST /{id}/cotizar-edicion — cuerpo { liquidacion_tipo: {...} }
+   */
+  mode?: "create" | "edit";
+  /** ID de la liquidación — requerido cuando mode="edit" para llamar a /cotizar-edicion */
+  liquidacionId?: string;
 }
 
 const toNumber = (value: unknown): number => {
@@ -60,6 +68,12 @@ const toNumber = (value: unknown): number => {
 const formatSoles = (value: unknown): string =>
   `S/ ${toNumber(value).toFixed(2)}`;
 
+/** Normaliza categoría del API: puede venir como "1" o "C1" → siempre devuelve "C1", "C2", etc. */
+const normalizeCategoria = (cat: string): string => {
+  if (["1", "2", "3", "4"].includes(cat)) return `C${cat}`;
+  return cat;
+};
+
 export function TarifasVisitasNuevaRevisionSmartField({
   cantidadVisitas,
   categoria,
@@ -67,6 +81,8 @@ export function TarifasVisitasNuevaRevisionSmartField({
   onCantidadVisitasChange,
   onCategoriaChange,
   onTarifaChange,
+  mode = "create",
+  liquidacionId,
 }: TarifasVisitasNuevaRevisionSmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionVisitasOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -74,19 +90,37 @@ export function TarifasVisitasNuevaRevisionSmartField({
   const { data: tarifasData, isLoading } = useTarifasVigentesVisitas();
   const tarifas = tarifasData?.tarifas ?? [];
 
-  // Categorías únicas disponibles (orden estables: A, B, C...)
+  // Categorías únicas disponibles (orden estable: C1, C2, C3, C4)
   const categorias = useMemo(
-    () => [...new Set((tarifas || []).map((t) => t.categoria))].sort(),
+    () =>
+      [
+        ...new Set((tarifas || []).map((t) => normalizeCategoria(t.categoria))),
+      ].sort(),
     [tarifas],
   );
   const tarifasDeCategoria = useMemo(
-    () => (tarifas || []).filter((t) => t.categoria === categoria),
+    () =>
+      (tarifas || []).filter(
+        (t) => normalizeCategoria(t.categoria) === categoria,
+      ),
     [tarifas, categoria],
   );
   const tarifaSeleccionada = useMemo(
     () => (tarifas || []).find((t) => t.id === tarifaVisitasId) || null,
     [tarifas, tarifaVisitasId],
   );
+
+  // Auto-seleccionar tarifa cuando cambia la categoría
+  useEffect(() => {
+    if (!categoria || tarifasDeCategoria.length === 0) return;
+    const tarifaValida = tarifasDeCategoria.find(
+      (t) => t.id === tarifaVisitasId,
+    );
+    if (!tarifaValida) {
+      onTarifaChange(tarifasDeCategoria[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoria, tarifasDeCategoria]);
 
   // Preseleccionar la primera categoría + su primera tarifa si no hay selección
   useEffect(() => {
@@ -114,18 +148,32 @@ export function TarifasVisitasNuevaRevisionSmartField({
       categoria: string;
       tarifa_visitas_id: string;
     }): Promise<CotizacionVisitasOutput> => {
-      const { data } = await api.post(
-        "/liquidaciones/inspeccion-obra/cotizar",
-        {
-          liquidacion_especifica: {
-            datos: {
-              cantidad_visitas: payload.cantidad_visitas,
-              categoria: payload.categoria,
+      const isEdit = mode === "edit" && liquidacionId;
+      const endpoint = isEdit
+        ? `/liquidaciones/inspeccion-obra/${liquidacionId}/cotizar-edicion`
+        : "/liquidaciones/inspeccion-obra/cotizar";
+
+      const body = isEdit
+        ? {
+            liquidacion_tipo: {
+              datos: {
+                cantidad_visitas: payload.cantidad_visitas,
+                categoria: payload.categoria,
+              },
+              tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
             },
-            tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
-          },
-        },
-      );
+          }
+        : {
+            liquidacion_especifica: {
+              datos: {
+                cantidad_visitas: payload.cantidad_visitas,
+                categoria: payload.categoria,
+              },
+              tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
+            },
+          };
+
+      const { data } = await api.post(endpoint, body);
       return data.data;
     },
     onSuccess: (result) => {
@@ -260,14 +308,17 @@ export function TarifasVisitasNuevaRevisionSmartField({
                     className="sr-only"
                     checked={isSelected}
                     onChange={() => {
-                      onCategoriaChange(cat);
+                      const catNormalizada = normalizeCategoria(cat);
+                      onCategoriaChange(catNormalizada);
                       const tarifaCat =
                         tarifasDeCategoria.length > 0
                           ? tarifasDeCategoria[0]
                           : null;
                       const primerTarifaCat =
-                        (tarifas || []).find((t) => t.categoria === cat) ||
-                        tarifaCat;
+                        (tarifas || []).find(
+                          (t) =>
+                            normalizeCategoria(t.categoria) === catNormalizada,
+                        ) || tarifaCat;
                       if (primerTarifaCat) onTarifaChange(primerTarifaCat.id);
                     }}
                   />
@@ -278,56 +329,20 @@ export function TarifasVisitasNuevaRevisionSmartField({
         )}
       </div>
 
-      {/* Tarifa de la categoría seleccionada */}
+      {/* Tarifa de la categoría seleccionada — texto informativo, sin radio duplicado */}
       {categoria && tarifasDeCategoria.length > 0 && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
-            Tarifa por Visita <span className="text-destructive">*</span>
-          </label>
-          <div className="flex flex-row flex-wrap gap-2">
-            {tarifasDeCategoria.map((tarifa) => {
-              const isSelected = tarifaVisitasId === tarifa.id;
-              return (
-                <label
-                  key={tarifa.id}
-                  role="radio"
-                  aria-checked={isSelected}
-                  className={[
-                    "rounded-lg border bg-background px-3 py-2.5 transition-all duration-200 text-left flex-1 min-w-[160px] flex flex-col gap-1 cursor-pointer",
-                    isSelected
-                      ? "border-primary ring-1 ring-primary/30 bg-primary/5"
-                      : "border-border hover:border-primary/40",
-                  ].join(" ")}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={[
-                        "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
-                        isSelected ? "border-primary" : "border-border",
-                      ].join(" ")}
-                    >
-                      {isSelected && (
-                        <span className="h-2 w-2 rounded-full bg-primary" />
-                      )}
-                    </span>
-                    <span className="text-sm font-medium">
-                      Cat. {tarifa.categoria}
-                    </span>
-                  </div>
-                  <span className="text-xs font-semibold text-primary pl-6">
-                    {formatSoles(tarifa.costo_por_visita)}/visita
-                  </span>
-                  <input
-                    type="radio"
-                    name="tarifa_io"
-                    className="sr-only"
-                    checked={isSelected}
-                    onChange={() => onTarifaChange(tarifa.id)}
-                  />
-                </label>
-              );
-            })}
-          </div>
+        <div className="space-y-1">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Tarifa por Visita
+          </span>
+          <p className="text-sm font-semibold text-primary">
+            {(() => {
+              const tarifa =
+                tarifasDeCategoria.find((t) => t.id === tarifaVisitasId) ||
+                tarifasDeCategoria[0];
+              return `Cat. ${tarifa.categoria} · ${formatSoles(tarifa.costo_por_visita)}/visita`;
+            })()}
+          </p>
         </div>
       )}
 

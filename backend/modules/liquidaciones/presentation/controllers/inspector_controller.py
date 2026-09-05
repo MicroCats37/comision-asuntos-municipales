@@ -15,6 +15,9 @@ from core.pagination import PaginatedData
 from modules.liquidaciones.domain.services.orchestrators.inspector_orchestrator import (
     InspectorOrchestrator,
 )
+from modules.liquidaciones.domain.services.orchestrators.inspectores_batch_orchestrator import (
+    InspectoresBatchOrchestrator,
+)
 from modules.liquidaciones.presentation.presenters.inspector_presenter import (
     InspectorPresenter,
 )
@@ -26,6 +29,10 @@ from modules.liquidaciones.presentation.schemas.inspector.inspector_schemas impo
     InspectorVigenteListOut,
     InspectoresSeleccionablesOut,
     LiquidacionInspectorAsignacionOut,
+)
+from modules.liquidaciones.presentation.schemas.inspector.inspector_batch_schemas import (
+    LiquidacionInspectorBatchIn,
+    LiquidacionInspectorBatchOut,
 )
 from modules.liquidaciones.domain.constants import TipoLiquidacion
 
@@ -111,9 +118,11 @@ class LiquidacionInspectorController:
     def __init__(
         self,
         orchestrator: InspectorOrchestrator,
+        batch_orchestrator: InspectoresBatchOrchestrator,
         presenter: InspectorPresenter,
     ):
         self.orchestrator = orchestrator
+        self.batch_orchestrator = batch_orchestrator
         self.presenter = presenter
 
     @route.get(
@@ -172,4 +181,27 @@ class LiquidacionInspectorController:
             self.presenter.present_asignaciones_inspectores_list(
                 results, total, page, page_size
             )
+        )
+
+    @route.patch(
+        "/{liquidacion_id}/inspectores",
+        response={200: ApiResponse[LiquidacionInspectorBatchOut]},
+        auth=None,
+    )
+    def batch_inspectores(
+        self,
+        liquidacion_id: uuid.UUID,
+        payload: LiquidacionInspectorBatchIn,
+    ):
+        """
+        PATCH /liquidaciones/{liquidacion_id}/inspectores
+
+        Batch create/update/delete de LiquidacionInspector en una única transacción.
+        """
+        batch_result = self.batch_orchestrator.procesar_batch_inspectores_proceso(
+            liquidacion_id=liquidacion_id,
+            payload=payload,
+        )
+        return success_response(
+            LiquidacionInspectorBatchOut(**batch_result)
         )

@@ -80,7 +80,7 @@ def test_ms_tarifas_vigentes_exitoso(api_client, tarifa_m2_ms, derecho_m2_vigent
     assert "datos" in tarifa_vigente, "tarifa_vigente should have 'datos' wrapper"
     assert "id" in tarifa_vigente["datos"], "tarifa_vigente.datos should have 'id'"
     assert "costo_por_m2" in tarifa_vigente["datos"], "tarifa_vigente.datos should have 'costo_por_m2'"
-    assert tarifa_vigente["datos"]["costo_por_m2"] == 150.0, "tarifa_vigente.costo_por_m2 should be 150.0"
+    assert Decimal(str(tarifa_vigente["datos"]["costo_por_m2"])) == Decimal("150.0"), "tarifa_vigente.costo_por_m2 should be 150.0"
 
     # Verify derecho_vigente structure
     derecho_vigente = result["derecho_vigente"]
@@ -88,8 +88,8 @@ def test_ms_tarifas_vigentes_exitoso(api_client, tarifa_m2_ms, derecho_m2_vigent
     assert "id" in derecho_vigente["datos"], "derecho_vigente.datos should have 'id'"
     assert "derecho_minimo" in derecho_vigente["datos"], "derecho_vigente.datos should have 'derecho_minimo'"
     assert "derecho_maximo" in derecho_vigente["datos"], "derecho_vigente.datos should have 'derecho_maximo'"
-    assert derecho_vigente["datos"]["derecho_minimo"] == 500.0, "derecho_minimo should be 500.0"
-    assert derecho_vigente["datos"]["derecho_maximo"] == 50000.0, "derecho_maximo should be 50000.0"
+    assert Decimal(str(derecho_vigente["datos"]["derecho_minimo"])) == Decimal("500.0"), "derecho_minimo should be 500.0"
+    assert Decimal(str(derecho_vigente["datos"]["derecho_maximo"])) == Decimal("50000.0"), "derecho_maximo should be 50000.0"
 
 
 @pytest.mark.django_db
@@ -139,7 +139,7 @@ def test_ms_tarifas_vigentes_filtro_tipo(api_client, db, tipo_habilitacion_urban
     result = data["data"]
 
     # Should only return MS tariff (150.0), not HU tariff (200.0)
-    assert result["tarifa_vigente"]["datos"]["costo_por_m2"] == 150.0, \
+    assert Decimal(str(result["tarifa_vigente"]["datos"]["costo_por_m2"])) == Decimal("150.0"), \
         "Should return MS tariff (150.0), not HU tariff (200.0)"
 
 

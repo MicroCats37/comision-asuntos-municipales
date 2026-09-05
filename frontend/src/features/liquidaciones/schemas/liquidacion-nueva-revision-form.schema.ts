@@ -14,10 +14,12 @@ export const nuevaRevisionEdificacionesFormSchema = z.object({
   liquidacion_previa_id: z.string().min(1, "Falta la liquidación previa"),
   // Solo estos campos se editan de liquidacion_general
   expediente: z.string().optional(),
+  /** Denominación del proyecto — editable, prefill from previa */
+  denominacion_de_proyecto: z.string().optional(),
   observacion: z.string().optional(),
   retencion: z.boolean().optional(),
-  /** Tipo de trámite de edificaciones — requerido, default OBRA_NUEVA */
-  tipo_tramite: TipoTramiteEdificacionesSchema.default("OBRA_NUEVA"),
+  /** Tipo de trámite de edificaciones — sin default; debe ser elegido explícitamente */
+  tipo_tramite: TipoTramiteEdificacionesSchema,
   // Contacto principal (singular)
   contacto: contactoInlineSchema.optional(),
   // Smart Field outputs — set by Smart Fields via setValue

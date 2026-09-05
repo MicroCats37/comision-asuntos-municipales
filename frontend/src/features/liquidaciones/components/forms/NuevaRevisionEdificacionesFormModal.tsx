@@ -38,6 +38,7 @@ import {
   type NuevaRevisionEdificacionesFormData,
   nuevaRevisionEdificacionesFormSchema,
 } from "../../schemas/liquidacion-nueva-revision-form.schema";
+import { TipoTramiteEdificacionesSchema } from "../../schemas/tramite.schema";
 import { ContactoFormModal } from "./ContactoFormModal";
 import { CotizacionNuevaRevisionSmartField } from "./CotizacionNuevaRevisionSmartField";
 import { EspecialidadesPorTipoTramiteSmartField } from "./EspecialidadesPorTipoTramiteSmartField";
@@ -60,7 +61,7 @@ const formatSoles = (value: number | undefined | null): string =>
 const formatDate = (value?: string | null): string => {
   if (!value) return "—";
   const d = new Date(value);
-  return isNaN(d.getTime())
+  return Number.isNaN(d.getTime())
     ? value
     : d.toLocaleDateString("es-PE", {
         year: "numeric",
@@ -98,6 +99,14 @@ export function NuevaRevisionEdificacionesFormModal({
   const lg = previa?.liquidacion_general;
   const lt = previa?.liquidacion_tipo;
   const valorDeclaradoFijo = lt ? Number(lt.valor_declarado) : undefined;
+  const tipoTramiteResult = TipoTramiteEdificacionesSchema.safeParse(
+    lt?.tipo_tramite,
+  );
+  // Do NOT default to OBRA_NUEVA — let it be undefined if missing from previous revision.
+  // The SmartField will show unselected state and require explicit user choice.
+  const tipoTramite = tipoTramiteResult.success
+    ? tipoTramiteResult.data
+    : undefined;
 
   const handleContactoSaved = useCallback((saved: ContactoInline) => {
     setContacto(saved);
@@ -124,12 +133,14 @@ export function NuevaRevisionEdificacionesFormModal({
   );
 
   // initialData — prellenar campos editables desde la previa
-  // tipo_tramite defaults to OBRA_NUEVA via schema .default()
+  // tipo_tramite is inherited from the previous revision; fallback preserves schema default.
   const initialData: Partial<NuevaRevisionEdificacionesFormData> = {
     liquidacion_previa_id: previa?.liquidacion_general.id ?? "",
     expediente: previa?.liquidacion_general.expediente ?? "",
+    denominacion_de_proyecto: previa?.liquidacion_general.denominacion_de_proyecto ?? "",
     observacion: previa?.liquidacion_general.observacion ?? "",
     retencion: previa?.liquidacion_general.retencion ?? false,
+    tipo_tramite: tipoTramite,
   };
 
   return (
@@ -139,7 +150,9 @@ export function NuevaRevisionEdificacionesFormModal({
         onOpenChange={onOpenChange}
         title="Nueva Revisión"
         description={
-          lg ? `Sobre: ${lg.proyecto.denominacion}` : "Crea una nueva revisión"
+          lg
+            ? `Sobre: ${lg.denominacion_de_proyecto}`
+            : "Crea una nueva revisión"
         }
         eyebrow="Edificaciones"
         icon={<RefreshCw className="h-5 w-5 text-primary" />}
@@ -182,7 +195,7 @@ export function NuevaRevisionEdificacionesFormModal({
                         </div>
                         <div className="min-w-0">
                           <p className="text-base font-bold text-foreground truncate">
-                            {lg.proyecto.denominacion}
+                            {lg.denominacion_de_proyecto}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {lg.municipalidad?.codigo
@@ -346,6 +359,17 @@ export function NuevaRevisionEdificacionesFormModal({
                       />
                     </div>
                     <div className="space-y-2">
+                      <Label htmlFor="denominacion_de_proyecto">
+                        Denominación del Proyecto
+                      </Label>
+                      <Input
+                        id="denominacion_de_proyecto"
+                        placeholder="Denominación del proyecto (opcional)"
+                        className="w-full"
+                        {...methods.register("denominacion_de_proyecto")}
+                      />
+                    </div>
+                    <div className="space-y-2">
                       <Label>Retención</Label>
                       <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-background px-3 py-2.5">
                         <Checkbox
@@ -379,7 +403,10 @@ export function NuevaRevisionEdificacionesFormModal({
                 </div>
 
                 {/* Especialidades selector — behavior switches based on tipo_tramite */}
-                <EspecialidadesPorTipoTramiteSmartField methods={methods} />
+                <EspecialidadesPorTipoTramiteSmartField
+                  methods={methods}
+                  autoSelectAllForGroupA={false}
+                />
 
                 {/* Cotización con valor FIJO + especialidades seleccionadas */}
                 <CotizacionNuevaRevisionSmartField

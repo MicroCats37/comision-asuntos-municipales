@@ -123,29 +123,65 @@ function RetencionField({ control }: { control: Control<any> }) {
   );
 }
 
-function DenominacionField({ control }: { control: Control<any> }) {
+function DenominacionField({
+  control,
+  disabled,
+}: {
+  control: Control<any>;
+  disabled?: boolean;
+}) {
   const { field, fieldState } = useController({
     name: "denominacion",
     control,
     defaultValue: "",
+    disabled,
   });
   return (
     <div className="space-y-2">
-      <Label htmlFor="denominacion">
-        Denominación <span className="text-destructive">*</span>
-      </Label>
+      <Label htmlFor="denominacion">Denominación</Label>
       <div className="relative">
         <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           id="denominacion"
           placeholder="Nombre del proyecto"
           className="pl-10 w-full"
+          disabled={field.disabled}
           {...field}
         />
       </div>
       {fieldState.error && (
         <p className="text-xs text-destructive">{fieldState.error.message}</p>
       )}
+    </div>
+  );
+}
+
+function UrbanizacionField({
+  control,
+  disabled,
+}: {
+  control: Control<any>;
+  disabled?: boolean;
+}) {
+  const { field } = useController({
+    name: "urbanizacion",
+    control,
+    defaultValue: "",
+    disabled,
+  });
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="urbanizacion">Urbanización</Label>
+      <div className="relative">
+        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          id="urbanizacion"
+          placeholder="Nombre de la urbanización (opcional)"
+          className="pl-10 w-full"
+          disabled={field.disabled}
+          {...field}
+        />
+      </div>
     </div>
   );
 }
@@ -171,26 +207,31 @@ function NombrePropietarioInline({ control }: { control: Control<any> }) {
   );
 }
 
-function DireccionField({ control }: { control: Control<any> }) {
+function DireccionField({
+  control,
+  disabled,
+}: {
+  control: Control<any>;
+  disabled?: boolean;
+}) {
   const { field, fieldState } = useController({
     name: "direccion",
     control,
     defaultValue: "",
+    disabled,
   });
   return (
     <div className="space-y-2">
       <Label htmlFor="direccion">
         Dirección <span className="text-destructive">*</span>
       </Label>
-      <div className="relative">
-        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          id="direccion"
-          placeholder="Dirección del proyecto"
-          className="pl-10 w-full"
-          {...field}
-        />
-      </div>
+      <Textarea
+        id="direccion"
+        placeholder="Dirección del proyecto"
+        rows={2}
+        disabled={field.disabled}
+        {...field}
+      />
       {fieldState.error && (
         <p className="text-xs text-destructive">{fieldState.error.message}</p>
       )}
@@ -202,10 +243,12 @@ function DistritoField({
   register,
   control,
   errors,
+  disabled,
 }: {
   register: any;
   control: any;
   errors: FieldErrors<any>;
+  disabled?: boolean;
 }) {
   const { data: distritos, isLoading } = useDistritos();
   return (
@@ -222,6 +265,7 @@ function DistritoField({
           value: d.id,
         })),
         isLoading,
+        disabled,
       }}
       register={register as never}
       control={control as never}
@@ -244,6 +288,12 @@ interface LiquidacionFormBodyBaseProps {
   motorSection: ReactNode;
   /** Campos extra del tipo (p.ej. tipo_tramite) — se renderizan al inicio de "Datos del Proyecto" */
   proyectoFieldsExtra?: ReactNode;
+  /** Solo Habilitación Urbana y Mecánica de Suelos: renderiza el campo urbanización */
+  showUrbanizacion?: boolean;
+  /** Sección de valores actuales ya calculados (subtotal/total) — se renderiza antes del motorSection */
+  valoresActualesSection?: ReactNode;
+  /** When false, project fields are visually disabled and excluded from PATCH payload (revisions > 1) */
+  canEditProyecto?: boolean;
 }
 
 export function LiquidacionFormBodyBase({
@@ -255,6 +305,9 @@ export function LiquidacionFormBodyBase({
   tramiteField,
   motorSection,
   proyectoFieldsExtra,
+  showUrbanizacion = false,
+  valoresActualesSection,
+  canEditProyecto = true,
 }: LiquidacionFormBodyBaseProps) {
   const {
     formState: { errors },
@@ -289,6 +342,7 @@ export function LiquidacionFormBodyBase({
         </div>
 
         {/* Sección específica del motor (tarifas + cotización) — cada tipo la define */}
+        {valoresActualesSection}
         {motorSection}
       </div>
 
@@ -309,18 +363,27 @@ export function LiquidacionFormBodyBase({
           <EntidadLookupField
             control={control as never}
             errors={errors}
+            disabled={!canEditProyecto}
             razonSocialSideSlot={<NombrePropietarioInline control={control} />}
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <DenominacionField control={control} />
+            <div className="sm:col-span-2">
+              <DenominacionField control={control} disabled={!canEditProyecto} />
+            </div>
+            {showUrbanizacion && (
+              <div className="sm:col-span-2">
+                <UrbanizacionField control={control} disabled={!canEditProyecto} />
+              </div>
+            )}
             <DistritoField
               register={register}
               control={control}
               errors={errors}
+              disabled={!canEditProyecto}
             />
             <div className="sm:col-span-2">
-              <DireccionField control={control} />
+              <DireccionField control={control} disabled={!canEditProyecto} />
             </div>
           </div>
 
@@ -357,7 +420,13 @@ export function LiquidacionFormBodyBase({
                     {contacto.nombres} {contacto.apellidos}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {[contacto.cargo, contacto.email, contacto.celular]
+                    {[
+                      contacto.dni ? `DNI ${contacto.dni}` : null,
+                      contacto.telefono || null,
+                      contacto.celular || null,
+                      contacto.email || null,
+                      contacto.cargo || null,
+                    ]
                       .filter(Boolean)
                       .join(" · ") || "Sin datos"}
                   </p>

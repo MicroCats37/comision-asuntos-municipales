@@ -33,8 +33,8 @@ export function useCrearImpactoVial() {
             municipalidad_id: rest.municipalidad_id,
             expediente: rest.expediente,
             observacion: rest.observacion,
+            denominacion_de_proyecto: rest.denominacion || undefined,
             proyecto: {
-              denominacion: rest.denominacion,
               nombre_propietario: rest.nombre_propietario,
               direccion: rest.direccion,
               distrito_id: rest.distrito_id,
@@ -64,8 +64,8 @@ export function useCrearImpactoVial() {
             municipalidad_id: rest.municipalidad_id,
             expediente: rest.expediente,
             observacion: rest.observacion,
+            denominacion_de_proyecto: rest.denominacion || undefined,
             proyecto: {
-              denominacion: rest.denominacion,
               nombre_propietario: rest.nombre_propietario,
               direccion: rest.direccion,
               distrito_id: rest.distrito_id,

@@ -107,7 +107,6 @@ def municipalidad(db, ubigeo_distrito):
 @pytest.fixture
 def proyecto(db, municipalidad, ubigeo_distrito):
     return Proyecto.objects.create(
-        denominacion="Proyecto E2E Test",
         nombre_propietario="Propietario E2E SAC",
         direccion="Av. E2E 123",
         distrito_id=ubigeo_distrito.id,
@@ -137,11 +136,12 @@ def uit_vigente(db):
 
 
 @pytest.fixture
-def tasa_delegado_vigente(db):
+def tasa_delegado_vigente(db, tipo_edificacion):
     """TasaDelegado vigente con tasas por defecto (vigencia desde 1900)."""
     from modules.finanzas.domain.models.tasa_delegado import TasaDelegado
     return TasaDelegado.objects.create(
         nombre="Tasas Delegado (vigencia histórica)",
+        tipo_liquidacion=tipo_edificacion,
         renta_cip=Decimal("0.25"),
         aporte_codemu=Decimal("0.05"),
         fondo_comun=Decimal("0.10"),
@@ -214,6 +214,7 @@ def liquidacion_general_porcentaje(
         tipo_liquidacion=tipo_edificacion,
         usuario_creador=usuario_liquidacion,
         expediente="EXP-E2E-POR-001",
+        denominacion_de_proyecto="Proyecto E2E Test",
         estado="REGISTRADO",
         sub_total=Decimal("5000.00"),
         total=Decimal("5900.00"),
@@ -307,6 +308,7 @@ def liquidacion_general_m2(
         tipo_liquidacion=tipo_habilitacion_urbana,
         usuario_creador=usuario_liquidacion,
         expediente="EXP-E2E-M2-001",
+        denominacion_de_proyecto="Proyecto E2E Test",
         estado="REGISTRADO",
         sub_total=Decimal("3000.00"),
         total=Decimal("3540.00"),
@@ -361,6 +363,7 @@ def liquidacion_general_io(
         tipo_liquidacion=tipo_inspeccion_obra,
         usuario_creador=usuario_liquidacion,
         expediente="EXP-E2E-IO-001",
+        denominacion_de_proyecto="Proyecto E2E Test",
         estado="REGISTRADO",
         sub_total=Decimal("2000.00"),
         total=Decimal("2360.00"),

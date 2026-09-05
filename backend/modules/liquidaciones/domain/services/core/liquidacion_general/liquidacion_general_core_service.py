@@ -5,11 +5,13 @@ PURE ORM — no business logic, no conditionals.
 Handles: Entidad, Proyecto, LiquidacionGeneral.
 """
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, Dict, List
 from datetime import date
 import uuid
 
-from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
+from django.db.models import Prefetch
+
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral, LiquidacionCodigo
 from modules.liquidaciones.domain.models.proyecto import Proyecto
 from modules.finanzas.domain.models.impuestos import UIT, IGV
 from modules.entidades.domain.models import Entidad
@@ -30,6 +32,12 @@ from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_genera
     DepartamentoResult,
     TipoLiquidacionResult,
 )
+from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_comprobante_result import (
+    LiquidacionComprobanteResult,
+)
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.comprobante import (
+    LiquidacionComprobante,
+)
 
 
 class LiquidacionGeneralCoreService:
@@ -44,15 +52,43 @@ class LiquidacionGeneralCoreService:
     def get_igv_vigente(self) -> Optional[IGV]:
         return IGV.objects.vigente()
 
+    def get_codigo_cta_map(self, tipo_liquidacion_codigos: List[str]) -> Dict[str, str]:
+        """
+        Batch fetch codigo_cta for multiple tipo_liquidacion codigos.
+        Returns a dict mapping tipo_liquidacion.codigo -> codigo_cta.
+        If no codes found for a tipo, it won't be in the dict (caller should treat as None).
+        """
+        if not tipo_liquidacion_codigos:
+            return {}
+        codigos = LiquidacionCodigo.objects.filter(
+            tipo_liquidacion__codigo__in=tipo_liquidacion_codigos
+        ).select_related('tipo_liquidacion')
+        return {c.tipo_liquidacion.codigo: c.codigo_cta for c in codigos}
+
+    def get_codigo_cta(self, tipo_liquidacion) -> Optional[str]:
+        """
+        Resolve codigo_cta for a single TipoLiquidacion (or a LiquidacionGeneral).
+        Returns None when the tipo or code is missing.
+        """
+        tipo_codigo = getattr(tipo_liquidacion, "codigo", None)
+        if not tipo_codigo:
+            return None
+        return self.get_codigo_cta_map([tipo_codigo]).get(tipo_codigo)
+
     def create_entidad(
         self,
-        tipo_documento: str,
-        numero_documento: str,
-    ) -> Entidad:
+        tipo_documento: Optional[str] = None,
+        numero_documento: Optional[str] = None,
+    ) -> Optional[Entidad]:
         """
         Creates or returns existing Entidad by numero_documento.
         Note: razon_social and direccion belong to Proyecto, not Entidad.
+
+        If tipo_documento or numero_documento is empty/None, no Entidad row is
+        created (returns None) — the caller stores snapshot fields on Proyecto.
         """
+        if not tipo_documento or not numero_documento:
+            return None
         existente = Entidad.objects.filter(numero_documento=numero_documento).first()
         if existente:
             return existente
@@ -71,7 +107,6 @@ class LiquidacionGeneralCoreService:
         """
         return Proyecto.objects.create(
             entidad=entidad,
-            denominacion=proyecto_data["denominacion"],
             nombre_propietario=proyecto_data["nombre_propietario"],
             entidad_razon_social=proyecto_data.get("entidad_razon_social"),
             entidad_tipo_documento=proyecto_data.get("entidad_tipo_documento"),
@@ -132,7 +167,7 @@ class LiquidacionGeneralCoreService:
         numero_revision: int = 1,
         contacto=None,
         retencion: bool = False,
-        denominacion_de_proyecto_liquidacion: Optional[str] = None,
+        denominacion_de_proyecto: Optional[str] = None,
         descripcion_legacy: Optional[str] = None,
     ) -> LiquidacionGeneral:
         """
@@ -155,7 +190,7 @@ class LiquidacionGeneralCoreService:
             sub_total=Decimal("0"),
             total=Decimal("0"),
             contacto=contacto,
-            denominacion_de_proyecto_liquidacion=denominacion_de_proyecto_liquidacion,
+            denominacion_de_proyecto=denominacion_de_proyecto,
             descripcion_legacy=descripcion_legacy,
         )
 
@@ -240,6 +275,42 @@ class LiquidacionGeneralCoreService:
         TipoLiquidacion.IMPACTO_VIAL: 'impacto_vial__numero',
     }
 
+    # Maps tipo_liquidacion codigo → (specific model class, related_name on LiquidacionGeneral)
+    # Used for the direct-lookup optimization: find liquidacion_id from specific table,
+    # then filter LiquidacionGeneral by those ids (avoids expensive OR across 6 reverse joins).
+    _NUMERO_SPECIFIC_MODEL_MAP = {
+        TipoLiquidacion.EDIFICACION: (
+            'modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_edificaciones',
+            'LiquidacionEdificacion',
+            'edificaciones',
+        ),
+        TipoLiquidacion.HABILITACION_URBANA: (
+            'modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_habilitacion_urbana',
+            'LiquidacionHabilitacionUrbana',
+            'habilitacion_urbana',
+        ),
+        TipoLiquidacion.MECANICA_SUELOS: (
+            'modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_mecanica_suelos',
+            'LiquidacionMecanicaSuelos',
+            'mecanica_suelos',
+        ),
+        TipoLiquidacion.TALUDES: (
+            'modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_taludes',
+            'LiquidacionTaludes',
+            'taludes',
+        ),
+        TipoLiquidacion.INSPECCION_OBRA: (
+            'modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_inspeccion_obra',
+            'LiquidacionInspeccionObra',
+            'inspeccion_obra',
+        ),
+        TipoLiquidacion.IMPACTO_VIAL: (
+            'modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_impacto_vial',
+            'LiquidacionImpactoVial',
+            'impacto_vial',
+        ),
+    }
+
     def list_liquidaciones_paginated(
         self,
         tipo_liquidacion: str,
@@ -272,6 +343,7 @@ class LiquidacionGeneralCoreService:
             'municipalidad',
             'usuario_creador',
             'tipo_liquidacion',
+            'contacto',
         ).prefetch_related(
             *self._PREFETCH_MAP[tipo_liquidacion]
         ).order_by('-fecha_registro')
@@ -508,6 +580,7 @@ class LiquidacionGeneralCoreService:
             'municipalidad',
             'usuario_creador',
             'tipo_liquidacion',
+            'contacto',
         ).prefetch_related(
             'edificaciones',
             'liquidacion_porcentaje_obra',
@@ -566,6 +639,7 @@ class LiquidacionGeneralCoreService:
             'municipalidad',
             'usuario_creador',
             'tipo_liquidacion',
+            'contacto',
         ).prefetch_related(
             'edificaciones',
             'liquidacion_porcentaje_obra',
@@ -595,6 +669,7 @@ class LiquidacionGeneralCoreService:
             'municipalidad',
             'usuario_creador',
             'tipo_liquidacion',
+            'contacto',
         ).prefetch_related(
             'habilitacion_urbana',
             'liquidacion_m2',
@@ -622,6 +697,7 @@ class LiquidacionGeneralCoreService:
             'municipalidad',
             'usuario_creador',
             'tipo_liquidacion',
+            'contacto',
         ).prefetch_related(
             'liquidacion_m2',
             'liquidacion_m2__tarifa_aplicada',
@@ -649,6 +725,7 @@ class LiquidacionGeneralCoreService:
             'municipalidad',
             'usuario_creador',
             'tipo_liquidacion',
+            'contacto',
         ).prefetch_related(
             'taludes',
             'liquidacion_porcentaje_obra',
@@ -678,6 +755,7 @@ class LiquidacionGeneralCoreService:
             'municipalidad',
             'usuario_creador',
             'tipo_liquidacion',
+            'contacto',
         ).prefetch_related(
             'inspeccion_obra',
             'liquidacion_visitas',
@@ -703,6 +781,7 @@ class LiquidacionGeneralCoreService:
             'municipalidad',
             'usuario_creador',
             'tipo_liquidacion',
+            'contacto',
         ).prefetch_related(
             'impacto_vial',
             'liquidacion_porcentaje_obra',
@@ -747,6 +826,7 @@ class LiquidacionGeneralCoreService:
             'municipalidad',
             'usuario_creador',
             'tipo_liquidacion',
+            'contacto',
         )
 
         # Dynamic prefetch based on tipo_liquidacion (matching the pattern in list_liquidaciones_generales_paginated)
@@ -851,8 +931,6 @@ class LiquidacionGeneralCoreService:
             qs = qs.filter(proyecto__entidad_razon_social__icontains=razon_social)
         if numero_documento:
             qs = qs.filter(proyecto__entidad_numero_documento=numero_documento)
-        if numero is not None:
-            qs = qs.filter(**{self._NUMERO_FILTER_FIELD_MAP[tipo_liquidacion]: numero})
         if fecha_desde:
             qs = qs.filter(fecha_registro__date__gte=fecha_desde)
         if fecha_hasta:
@@ -867,6 +945,27 @@ class LiquidacionGeneralCoreService:
         ).values('max_rev')[:1]
 
         qs = qs.filter(numero_revision=Subquery(max_rev_subquery))
+
+        # numero filter: resolve liquidacion_id directly from specific model to avoid
+        # expensive reverse JOIN (edificaciones__numero) on the full LiquidacionGeneral table.
+        # Applied AFTER latest-revisions subquery so the id__in filter runs on the
+        # small latest-revisions dataset — same strategy as list_liquidaciones_ultimas_generales_paginated.
+        if numero is not None:
+            if tipo_liquidacion in self._NUMERO_SPECIFIC_MODEL_MAP:
+                module_path, _cls_name, _related_name = self._NUMERO_SPECIFIC_MODEL_MAP[tipo_liquidacion]
+                from importlib import import_module
+                module = import_module(module_path)
+                specific_model_cls = getattr(module, _cls_name)
+                liquidacion_ids = list(
+                    specific_model_cls.objects.filter(numero=numero)
+                    .values_list('liquidacion_id', flat=True)
+                )
+                if liquidacion_ids:
+                    qs = qs.filter(id__in=liquidacion_ids)
+                else:
+                    qs = qs.filter(id__in=[None])
+            else:
+                qs = qs.filter(**{self._NUMERO_FILTER_FIELD_MAP[tipo_liquidacion]: numero})
 
         total = qs.count()
         offset = (page - 1) * page_size
@@ -933,6 +1032,7 @@ class LiquidacionGeneralCoreService:
             'municipalidad',
             'usuario_creador',
             'tipo_liquidacion',
+            'contacto',
         )
 
         # Conditional prefetch based on tipo filter to avoid N+1
@@ -949,6 +1049,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
         elif tipo == TipoLiquidacion.HABILITACION_URBANA:
             qs = qs.prefetch_related(
@@ -960,6 +1061,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
         elif tipo == TipoLiquidacion.MECANICA_SUELOS:
             qs = qs.prefetch_related(
@@ -971,6 +1073,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
         elif tipo == TipoLiquidacion.TALUDES:
             qs = qs.prefetch_related(
@@ -984,6 +1087,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
         elif tipo == TipoLiquidacion.INSPECCION_OBRA:
             qs = qs.prefetch_related(
@@ -994,6 +1098,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
         elif tipo == TipoLiquidacion.IMPACTO_VIAL:
             qs = qs.prefetch_related(
@@ -1007,6 +1112,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
         else:
             # No tipo filter: prefetch all relations (general listing)
@@ -1031,6 +1137,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
 
         qs = qs.order_by('-fecha_registro')
@@ -1084,9 +1191,13 @@ class LiquidacionGeneralCoreService:
         qs = LiquidacionGeneral.objects.all().select_related(
             'proyecto',
             'proyecto__entidad',
+            'proyecto__distrito',
+            'proyecto__distrito__provincia',
+            'proyecto__distrito__provincia__departamento',
             'municipalidad',
             'usuario_creador',
             'tipo_liquidacion',
+            'contacto',
         )
 
         # Conditional prefetch based on tipo filter (same strategy as list_liquidaciones_generales_paginated)
@@ -1102,6 +1213,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
         elif tipo == TipoLiquidacion.HABILITACION_URBANA:
             qs = qs.prefetch_related(
@@ -1113,6 +1225,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
         elif tipo == TipoLiquidacion.MECANICA_SUELOS:
             qs = qs.prefetch_related(
@@ -1124,6 +1237,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
         elif tipo == TipoLiquidacion.TALUDES:
             qs = qs.prefetch_related(
@@ -1137,6 +1251,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
         elif tipo == TipoLiquidacion.INSPECCION_OBRA:
             qs = qs.prefetch_related(
@@ -1147,6 +1262,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
         elif tipo == TipoLiquidacion.IMPACTO_VIAL:
             qs = qs.prefetch_related(
@@ -1160,6 +1276,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
         else:
             # No tipo filter: prefetch all relations (general listing)
@@ -1184,6 +1301,7 @@ class LiquidacionGeneralCoreService:
                 'liquidacion_delegados__delegado',
                 'liquidacion_delegados__delegado__perfil_ingeniero',
                 'liquidacion_delegados__especialidad_revision',
+                Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
 
         qs = qs.order_by('-fecha_registro')
@@ -1204,21 +1322,10 @@ class LiquidacionGeneralCoreService:
         if nombre_propietario:
             qs = qs.filter(proyecto__nombre_propietario__icontains=nombre_propietario)
 
-        # numero filter: applies to type-specific numero field(s)
-        # Each Liquidacion<tipo> subclass has its own independent numero sequence (AutoNumeroModel).
-        # If tipo is provided: filter by the specific mapped field.
-        # If tipo is omitted: OR across all 6 type-specific numero fields so that the same
-        #   numero value existing in multiple types returns the latest revision of each.
-        if numero is not None:
-            if tipo is not None:
-                qs = qs.filter(**{self._NUMERO_FILTER_FIELD_MAP[tipo]: numero})
-            else:
-                numero_q = Q()
-                for field in self._NUMERO_FILTER_FIELD_MAP.values():
-                    numero_q |= Q(**{field: numero})
-                qs = qs.filter(numero_q)
-
         # Subquery to get max numero_revision per (proyecto_id, tipo_liquidacion__codigo)
+        # Applied BEFORE the numero filter so that filtering happens on the reduced
+        # latest-revisions dataset instead of the full dataset (avoids heavy OR-join
+        # across 6 type-specific tables on millions of rows).
         max_rev_subquery = LiquidacionGeneral.objects.filter(
             proyecto_id=OuterRef('proyecto_id'),
             tipo_liquidacion__codigo=OuterRef('tipo_liquidacion__codigo'),
@@ -1228,9 +1335,314 @@ class LiquidacionGeneralCoreService:
 
         qs = qs.filter(numero_revision=Subquery(max_rev_subquery))
 
-        total = qs.count()
+        # numero filter: applies to type-specific numero field(s)
+        # Each Liquidacion<tipo> subclass has its own independent numero sequence (AutoNumeroModel).
+        #
+        # Optimization strategy:
+        # - If tipo is provided: direct field lookup (already optimal).
+        # - If tipo is omitted: instead of an expensive OR across 6 reverse-relation joins
+        #   (each requiring a LEFT OUTER JOIN on a large table), we first query the specific
+        #   tables directly to get matching liquidacion_id values, then filter
+        #   LiquidacionGeneral by those ids using a single IN clause.  This avoids the
+        #   multi-join explosion and leverages the (tipo_liquidacion, numero) index once
+        #   the db_index on AutoNumeroModel.numero is added.
+        #
+        # Applied AFTER latest-revisions subquery so the IN filter runs on the small
+        # latest-revisions set instead of the full dataset.
+        if numero is not None:
+            if tipo is not None:
+                qs = qs.filter(**{self._NUMERO_FILTER_FIELD_MAP[tipo]: numero})
+            else:
+                # Direct lookup in specific tables — avoids 6-way OR join on reverse relations.
+                # Import specific models lazily to avoid circular imports at module load time.
+                from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico import (
+                    liquidacion_edificaciones,
+                    liquidacion_habilitacion_urbana,
+                    liquidacion_mecanica_suelos,
+                    liquidacion_taludes,
+                    liquidacion_inspeccion_obra,
+                    liquidacion_impacto_vial,
+                )
+
+                specific_model_by_tipo = {
+                    TipoLiquidacion.EDIFICACION: liquidacion_edificaciones.LiquidacionEdificacion,
+                    TipoLiquidacion.HABILITACION_URBANA: liquidacion_habilitacion_urbana.LiquidacionHabilitacionUrbana,
+                    TipoLiquidacion.MECANICA_SUELOS: liquidacion_mecanica_suelos.LiquidacionMecanicaSuelos,
+                    TipoLiquidacion.TALUDES: liquidacion_taludes.LiquidacionTaludes,
+                    TipoLiquidacion.INSPECCION_OBRA: liquidacion_inspeccion_obra.LiquidacionInspeccionObra,
+                    TipoLiquidacion.IMPACTO_VIAL: liquidacion_impacto_vial.LiquidacionImpactoVial,
+                }
+
+                liquidacion_ids = []
+                for tipo_codigo, specific_model_cls in specific_model_by_tipo.items():
+                    ids = list(
+                        specific_model_cls.objects.filter(numero=numero)
+                        .values_list('liquidacion_id', flat=True)
+                    )
+                    liquidacion_ids.extend(ids)
+
+                # Filter LiquidacionGeneral by the collected ids.
+                # Since each specific record corresponds to exactly one LiquidacionGeneral,
+                # and we apply this AFTER the latest-revisions subquery, this correctly
+                # returns only the latest revision for each (proyecto, tipo) pair that matches.
+                if liquidacion_ids:
+                    qs = qs.filter(id__in=liquidacion_ids)
+                else:
+                    # No matches at all — return empty queryset efficiently
+                    qs = qs.filter(id__in=[None])
+
+        # Slice first, then count on the sliced queryset.
+        # This avoids executing the correlated latest-revisions subquery on the ENTIRE filtered
+        # dataset before pagination — O(page_size) instead of O(n).
         offset = (page - 1) * page_size
-        return qs[offset:offset + page_size], total
+        qs_paginated = qs[offset:offset + page_size]
+        total = qs.count()  # Count on the full filtered set (still needed for total_pages calc)
+        return qs_paginated, total
+
+    # ── General Fetch & Update ──────────────────────────────────────────────────
+
+    def get_liquidacion_general_by_id(self, liquidacion_id: uuid.UUID) -> LiquidacionGeneral:
+        """
+        Returns a single LiquidacionGeneral by UUID (any tipo).
+
+        Uses the same select_related and full prefetch chain as list_liquidaciones_generales_paginated
+        for the unfiltered case to ensure full hydration.
+        Raises LiquidacionGeneral.DoesNotExist if not found.
+        """
+        return LiquidacionGeneral.objects.filter(
+            id=liquidacion_id
+        ).select_related(
+            'proyecto',
+            'proyecto__entidad',
+            'municipalidad',
+            'usuario_creador',
+            'tipo_liquidacion',
+            'contacto',
+        ).prefetch_related(
+            'edificaciones',
+            'liquidacion_porcentaje_obra',
+            'liquidacion_porcentaje_obra__detalles',
+            'liquidacion_porcentaje_obra__detalles__tarifa_aplicada',
+            'liquidacion_porcentaje_obra__detalles__especialidad',
+            'liquidacion_porcentaje_obra__derecho_aplicado',
+            'habilitacion_urbana',
+            'liquidacion_m2',
+            'liquidacion_m2__tarifa_aplicada',
+            'liquidacion_m2__derecho',
+            'mecanica_suelos',
+            'inspeccion_obra',
+            'liquidacion_visitas',
+            'liquidacion_visitas__tarifa_aplicada',
+            'taludes',
+            'impacto_vial',
+            'liquidacion_delegados',
+            'liquidacion_delegados__delegado',
+            'liquidacion_delegados__delegado__perfil_ingeniero',
+            'liquidacion_delegados__delegado_operacion',
+            'liquidacion_delegados__especialidad_revision',
+            Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
+        ).get(id=liquidacion_id)
+
+    def actualizar_liquidacion_general(
+        self,
+        liquidacion: LiquidacionGeneral,
+        expediente: Optional[str] = None,
+        observacion: Optional[str] = None,
+        retencion: Optional[bool] = None,
+        denominacion_de_proyecto: Optional[str] = None,
+        contacto_data: Optional[dict] = None,
+    ) -> LiquidacionGeneral:
+        """
+        Updates editable general fields on a LiquidacionGeneral ORM object.
+
+        PURE ORM — no business logic. Caller is responsible for guard checks
+        (e.g. estado == PENDIENTE) before calling this method.
+
+        Args:
+            liquidacion: LiquidacionGeneral ORM instance (must be saved by caller).
+            expediente: New expediente value (None = no change).
+            observacion: New observacion value (None = no change).
+            retencion: New retencion value (None = no change).
+            denominacion_de_proyecto: New denominacion value (None = no change).
+            contacto_data: Contacto upsert data dict; if provided, upserts Contacto
+                          and assigns it to liquidacion.contacto.
+
+        Returns:
+            The same liquidacion instance (refreshed in-place by .save()).
+        """
+        if expediente is not None:
+            liquidacion.expediente = expediente
+        if observacion is not None:
+            liquidacion.observacion = observacion
+        if retencion is not None:
+            liquidacion.retencion = retencion
+        if denominacion_de_proyecto is not None:
+            liquidacion.denominacion_de_proyecto = denominacion_de_proyecto
+        if contacto_data is not None:
+            contacto = self.upsert_contacto(contacto_data)
+            liquidacion.contacto = contacto
+        liquidacion.save()
+        return liquidacion
+
+    def marcar_estado_pagada(self, liquidacion: "LiquidacionGeneral") -> "LiquidacionGeneral":
+        """
+        Marks a LiquidacionGeneral as PAGADA.
+
+        PURE ORM — no business logic. Caller is responsible for guard checks
+        (e.g. only call when transitioning from PENDIENTE).
+
+        Args:
+            liquidacion: LiquidacionGeneral ORM instance (must be saved by caller).
+
+        Returns:
+            The same liquidacion instance with estado updated to PAGADA.
+        """
+        liquidacion.estado = EstadoLiquidacion.PAGADA
+        liquidacion.save(update_fields=["estado"])
+        return liquidacion
+
+    # ── Proyecto & Entidad Update (Pure ORM) ─────────────────────────────────────
+
+    def find_or_create_entidad(
+        self,
+        tipo_documento: str,
+        numero_documento: str,
+    ) -> "Entidad":
+        """
+        Finds an existing Entidad by tipo+numero_documento, or creates a new one.
+        NEVEř mutates an existing Entidad row.
+
+        PURE ORM — no business logic.
+
+        Args:
+            tipo_documento: Document type (RUC/DNI).
+            numero_documento: Document number (unique on Entidad).
+
+        Returns:
+            Existing or newly created Entidad instance.
+        """
+        existente = Entidad.objects.filter(
+            tipo_documento=tipo_documento,
+            numero_documento=numero_documento,
+        ).first()
+        if existente:
+            return existente
+        return Entidad.objects.create(
+            tipo_documento=tipo_documento,
+            numero_documento=numero_documento,
+        )
+
+    def actualizar_proyecto_fields(
+        self,
+        liquidacion: "LiquidacionGeneral",
+        nombre_propietario: Optional[str] = None,
+        direccion: Optional[str] = None,
+        urbanizacion: Optional[str] = None,
+        distrito_id: Optional[uuid.UUID] = None,
+    ) -> "LiquidacionGeneral":
+        """
+        Updates editable scalar fields on the Proyecto attached to a LiquidacionGeneral.
+
+        PURE ORM — no business logic. Caller is responsible for guard checks
+        (e.g. estado == PENDIENTE, revision rule).
+
+        Args:
+            liquidacion: LiquidacionGeneral ORM instance.
+            nombre_propietario: New owner name (None = no change).
+            direccion: New address (None = no change).
+            urbanizacion: New urbanizacion (None = no change).
+            distrito_id: New distrito UUID (None = no change).
+
+        Returns:
+            The same liquidacion instance (proyecto updated in-place).
+        """
+        proyecto = liquidacion.proyecto
+        if nombre_propietario is not None:
+            proyecto.nombre_propietario = nombre_propietario
+        if direccion is not None:
+            proyecto.direccion = direccion
+        if urbanizacion is not None:
+            proyecto.urbanizacion = urbanizacion
+        if distrito_id is not None:
+            proyecto.distrito_id = distrito_id
+        proyecto.save()
+        return liquidacion
+
+    def actualizar_entidad_snapshot(
+        self,
+        proyecto: "Proyecto",
+        entidad_tipo_documento: Optional[str] = None,
+        entidad_numero_documento: Optional[str] = None,
+        entidad_razon_social: Optional[str] = None,
+    ) -> "Proyecto":
+        """
+        Updates denormalized entity snapshot fields on a Proyecto.
+        Does NOT mutate the Entidad row itself.
+
+        PURE ORM — no business logic.
+
+        Args:
+            proyecto: Proyecto ORM instance.
+            entidad_tipo_documento: New document type (None = no change).
+            entidad_numero_documento: New document number (None = no change).
+            entidad_razon_social: New razon social snapshot (None = no change).
+
+        Returns:
+            The same proyecto instance (updated in-place).
+        """
+        if entidad_tipo_documento is not None:
+            proyecto.entidad_tipo_documento = entidad_tipo_documento
+        if entidad_numero_documento is not None:
+            proyecto.entidad_numero_documento = entidad_numero_documento
+        if entidad_razon_social is not None:
+            proyecto.entidad_razon_social = entidad_razon_social
+        proyecto.save()
+        return proyecto
+
+    def reassign_proyecto_entidad(
+        self,
+        proyecto: "Proyecto",
+        entidad: "Entidad",
+    ) -> "Proyecto":
+        """
+        Reassigns the entidad FK on a Proyecto and keeps snapshot fields
+        congruent with the new Entidad.
+
+        PURE ORM — no business logic. Caller is responsible for guard checks.
+
+        Args:
+            proyecto: Proyecto ORM instance.
+            entidad: Entidad instance to assign.
+
+        Returns:
+            The same proyecto instance (updated in-place).
+        """
+        proyecto.entidad = entidad
+        proyecto.entidad_tipo_documento = entidad.tipo_documento
+        proyecto.entidad_numero_documento = entidad.numero_documento
+        proyecto.save()
+        return proyecto
+
+    def actualizar_municipalidad(
+        self,
+        liquidacion: "LiquidacionGeneral",
+        municipalidad_id: uuid.UUID,
+    ) -> "LiquidacionGeneral":
+        """
+        Updates the municipalidad FK on a LiquidacionGeneral.
+
+        PURE ORM — no business logic. Caller is responsible for guard checks.
+
+        Args:
+            liquidacion: LiquidacionGeneral ORM instance.
+            municipalidad_id: UUID of the new municipalidad.
+
+        Returns:
+            The same liquidacion instance (updated in-place).
+        """
+        liquidacion.municipalidad_id = municipalidad_id
+        liquidacion.save(update_fields=["municipalidad_id"])
+        return liquidacion
 
     # ── Result Builders (ORM → Domain Result) ──────────────────────────────────
 
@@ -1241,6 +1653,7 @@ class LiquidacionGeneralCoreService:
         contacto_result: Optional[ContactoResult] = None,
         revisiones_previas: Optional[list] = None,
         delegados: Optional[list] = None,
+        codigo_cta: Optional[str] = None,
     ) -> LiquidacionGeneralResult:
         """
         Builds a complete LiquidacionGeneralResult from an ORM LiquidacionGeneral instance.
@@ -1254,6 +1667,7 @@ class LiquidacionGeneralCoreService:
             contacto_result: Optional ContactoResult; None if not provided.
             revisiones_previas: Optional list of LiquidacionPreviaResult; defaults to [].
             delegados: Optional list of LiquidacionDelegadoEnGeneralResult; defaults to [].
+            codigo_cta: Pre-resolved codigo_cta from batch lookup (optional for backward compat).
         """
         fecha_registro = liquidacion_general.fecha_registro.isoformat()
 
@@ -1267,6 +1681,7 @@ class LiquidacionGeneralCoreService:
 
         return LiquidacionGeneralResult(
             id=str(liquidacion_general.id),
+            estado=liquidacion_general.estado,
             municipalidad=MunicipalidadResult(
                 id=str(liquidacion_general.municipalidad.id),
                 codigo=liquidacion_general.municipalidad.codigo,
@@ -1315,7 +1730,7 @@ class LiquidacionGeneralCoreService:
             ),
             proyecto=proyecto_result,
             contacto=contacto_result,
-            revisiones_previas=revisiones_previas if revisiones_previas is not None else [],
+            liquidaciones_previas=revisiones_previas if revisiones_previas is not None else [],
             delegados=delegados if delegados is not None else [],
             tipo_liquidacion=(
                 TipoLiquidacionResult(
@@ -1325,6 +1740,10 @@ class LiquidacionGeneralCoreService:
                 if liquidacion_general.tipo_liquidacion
                 else None
             ),
+            legacy=liquidacion_general.legacy,
+            codigo_cta=codigo_cta,
+            comprobantes=self.build_comprobantes_result(liquidacion_general),
+            denominacion_de_proyecto=liquidacion_general.denominacion_de_proyecto,
         )
 
     def _build_entidad_result(self, proyecto) -> Optional[EntidadResult]:
@@ -1347,9 +1766,9 @@ class LiquidacionGeneralCoreService:
         distrito_result = self._build_distrito_result(proyecto)
         return ProyectoResult(
             id=str(proyecto.id),
-            denominacion=proyecto.denominacion,
             nombre_propietario=proyecto.nombre_propietario,
             direccion=proyecto.direccion,
+            urbanizacion=proyecto.urbanizacion,
             distrito=distrito_result,
             entidad=entidad_result,
         )
@@ -1395,6 +1814,9 @@ class LiquidacionGeneralCoreService:
         """
         Builds a list of LiquidacionDelegadoEnGeneralResult from liquidacion_delegados prefetch.
         Returns [] if no delegados are present.
+
+        Extracts `tipo` from delegado_operacion.tipo (TITULAR/ALTERNO) when available.
+        Requires liquidacion_delegados__delegado_operacion in the prefetch chain to avoid N+1.
         """
         return [
             LiquidacionDelegadoEnGeneralResult(
@@ -1406,6 +1828,11 @@ class LiquidacionGeneralCoreService:
                 delegado_cip=ld.delegado.perfil_ingeniero.cip,
                 delegado_dni=ld.delegado.perfil_ingeniero.dni,
                 delegado_nombre_completo=ld.delegado.perfil_ingeniero.nombre_completo,
+                tipo=(
+                    ld.delegado_operacion.tipo
+                    if ld.delegado_operacion is not None
+                    else None
+                ),
                 periodo=ld.periodo,
                 mes=ld.mes,
                 dictamen_revision=ld.dictamen_revision,
@@ -1424,15 +1851,178 @@ class LiquidacionGeneralCoreService:
         Builds a list of LiquidacionPreviaResult from liquidaciones_previas prefetch.
         Encapsulates iteration over lg.liquidaciones_previas.all().
         Returns [] if no previas are present.
+
+        Extracts new fields with N+1-safe access patterns:
+        - tipo / tipo_tramite: from tipo_liquidacion (select_related safe)
+        - denominacion_de_proyecto: scalar field on prev_lg (no extra query)
+        - numero_liquidacion_especifica: checked across all specific relations
+          using the first available .numero (iterates known relations to avoid
+          MissingReverseRelation errors on unknown types).
         """
         from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
             LiquidacionPreviaResult,
         )
-        return [
-            LiquidacionPreviaResult(
+
+        def _get_numero_especifico(prev_lg: LiquidacionGeneral) -> Optional[int]:
+            """Returns the numero from the specific liquidacion, or None."""
+            # Try each known specific relation; first one with data wins.
+            # Using getattr to safely handle cases where the reverse relation
+            # may not exist on the proxy model (avoids AttributeError).
+            for rel_name in (
+                'edificaciones',
+                'habilitacion_urbana',
+                'mecanica_suelos',
+                'taludes',
+                'impacto_vial',
+                'inspeccion_obra',
+            ):
+                related_mgr = getattr(prev_lg, rel_name, None)
+                if related_mgr is None:
+                    continue
+                # Use first() for efficiency — avoids loading all items into memory
+                try:
+                    primero = related_mgr.first()
+                    if primero is not None:
+                        numero = getattr(primero, 'numero', None)
+                        if numero is not None:
+                            return numero
+                except Exception:
+                    # If the relation doesn't exist at all, skip
+                    continue
+            return None
+
+        def _get_tipo_tramite(prev_lg: LiquidacionGeneral) -> Optional[str]:
+            """Returns tipo_tramite from the percentage-specific table if present."""
+            # tipo_tramite lives on LiquidacionPorcentajeObra (edificaciones, taludes, etc.)
+            # It is accessible via the 'porcentaje_obra' reverse relation on LiquidacionGeneral.
+            try:
+                po = getattr(prev_lg, 'porcentaje_obra', None)
+                if po is not None:
+                    tipo = getattr(po, 'tipo_tramite', None)
+                    if tipo is not None:
+                        return tipo
+            except Exception:
+                # Guard against any unexpected attribute errors
+                pass
+            return None
+
+        previas_qs = getattr(liquidacion_general, "liquidaciones_previas", []).all()
+        # Ensure tipo_liquidacion is select_related to avoid N+1 on tipo/nombre access
+        # ( qs may already have it, but adding it here is safe for chaining )
+        try:
+            previas_qs = previas_qs.select_related('tipo_liquidacion')
+        except Exception:
+            # If select_related fails (e.g., already ordered differently), proceed without it
+            pass
+
+        resultados = []
+        for prev_lg in previas_qs:
+            tipo_liq = getattr(prev_lg, 'tipo_liquidacion', None)
+            resultados.append(LiquidacionPreviaResult(
                 id=str(prev_lg.id),
                 numero_revision=prev_lg.numero_revision,
                 expediente=prev_lg.expediente or None,
+                tipo=tipo_liq.nombre if tipo_liq else None,
+                denominacion_de_proyecto=getattr(prev_lg, 'denominacion_de_proyecto', None),
+                numero_liquidacion_especifica=_get_numero_especifico(prev_lg),
+                tipo_tramite=_get_tipo_tramite(prev_lg),
+            ))
+        return resultados
+
+    # ── Comprobante Operations ───────────────────────────────────────────────────
+
+    def build_comprobantes_result(
+        self,
+        liquidacion_general,
+    ) -> list[LiquidacionComprobanteResult]:
+        """
+        Builds a list of LiquidacionComprobanteResult for all comprobantes on a LiquidacionGeneral.
+        Returns an empty list if no comprobantes exist.
+
+        Uses prefetched data (comprobantes_prefetched) when available to avoid N+1.
+        Falls back to a safe query when no prefetch is active (e.g., detail views).
+        Results are ordered newest-first by fecha_emision then id.
+        """
+        # First check if we have prefetched data (set by list/detail queries with Prefetch)
+        prefetched = getattr(liquidacion_general, "comprobantes_prefetched", None)
+        if prefetched is not None:
+            # Prefetch is active — use the pre-loaded list (ordered newest-first)
+            return [
+                LiquidacionComprobanteResult(
+                    id=str(c.id),
+                    tipo_comprobante=c.tipo_comprobante,
+                    serie=c.serie,
+                    numero=c.numero,
+                    fecha_emision=c.fecha_emision.isoformat() if c.fecha_emision else None,
+                    monto=float(c.monto) if c.monto else None,
+                    activo=c.activo,
+                    motivo_reemplazo=c.motivo_reemplazo,
+                )
+                for c in prefetched
+            ]
+
+        # No prefetch — fall back to a safe query
+        qs = getattr(liquidacion_general, "comprobantes", None)
+        if qs is None:
+            return []
+        return [
+            LiquidacionComprobanteResult(
+                id=str(c.id),
+                tipo_comprobante=c.tipo_comprobante,
+                serie=c.serie,
+                numero=c.numero,
+                fecha_emision=c.fecha_emision.isoformat() if c.fecha_emision else None,
+                monto=float(c.monto) if c.monto else None,
+                activo=c.activo,
+                motivo_reemplazo=c.motivo_reemplazo,
             )
-            for prev_lg in getattr(liquidacion_general, "liquidaciones_previas", []).all()
+            for c in qs.order_by("-fecha_emision", "-id")
         ]
+
+    def crear_comprobante(
+        self,
+        liquidacion_general,
+        tipo_comprobante: str,
+        serie: Optional[str] = None,
+        numero: Optional[str] = None,
+        fecha_emision: Optional[str] = None,
+        monto: Optional[float] = None,
+        motivo_reemplazo: Optional[str] = None,
+    ) -> LiquidacionComprobante:
+        """
+        Creates a new comprobante for a LiquidacionGeneral, deactivating any existing active one.
+        This method should be called inside a transaction.atomic() context from the orchestrator.
+
+        PURE ORM — no business logic.
+
+        Args:
+            liquidacion_general: LiquidacionGeneral ORM instance.
+            tipo_comprobante: Type of comprobante (FACTURA, BOLETA, etc.).
+            serie: Optional serie.
+            numero: Optional numero.
+            fecha_emision: Optional fecha emision as ISO string (YYYY-MM-DD).
+            monto: Optional monto.
+            motivo_reemplazo: Optional motivo for replacement.
+
+        Returns:
+            The newly created LiquidacionComprobante instance.
+        """
+        # Deactivate any existing active comprobante
+        liquidacion_general.comprobantes.filter(activo=True).update(activo=False)
+
+        # Parse fecha_emision if provided
+        parsed_fecha = None
+        if fecha_emision:
+            parsed_fecha = date.fromisoformat(fecha_emision)
+
+        # Create new comprobante as activo
+        return LiquidacionComprobante.objects.create(
+            liquidacion_general=liquidacion_general,
+            tipo_comprobante=tipo_comprobante,
+            serie=serie,
+            numero=numero,
+            fecha_emision=parsed_fecha,
+            monto=Decimal(str(monto)) if monto is not None else None,
+            activo=True,
+            motivo_reemplazo=motivo_reemplazo,
+        )

@@ -62,14 +62,7 @@ class Proyecto(BaseModel):
     nombre_propietario = models.CharField(
         max_length=255, verbose_name="Nombre del Propietario"
     )
-    
-    denominacion = models.CharField(
-        max_length=255,
-        verbose_name="Denominación del Proyecto",
-        null=True,
-        blank=True,
-    )
-    
+
     distrito = models.ForeignKey(
         "entidades.UbigeoDistrito",
         on_delete=models.SET_NULL,
@@ -100,14 +93,14 @@ class Proyecto(BaseModel):
     class Meta:
         verbose_name = "Proyecto"
         verbose_name_plural = "Proyectos"
-        ordering = ["denominacion"]
+        ordering = ["nombre_propietario"]
 
     def clean(self):
         if self.entidad and self.entidad.tipo_documento not in ["RUC", "DNI"]:
             raise ValidationError("La entidad debe tener tipo de documento RUC o DNI.")
 
     def __str__(self):
-        return self.denominacion or "Sin denominación"
+        return self.nombre_propietario or "Sin propietario"
 
 class ProyectoEmpresarialManager(models.Manager):
     def get_queryset(self):

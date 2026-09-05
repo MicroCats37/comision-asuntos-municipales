@@ -35,12 +35,15 @@ class CategoriaIO(models.TextChoices):
 
 
 class EstadoLiquidacion(models.TextChoices):
-    """Estado de LiquidacionGeneral."""
+    """Estado de LiquidacionGeneral — Fase E solo usa PENDIENTE y PAGADA."""
 
     PENDIENTE = "PENDIENTE", "Pendiente"
-    APROBADA = "APROBADA", "Aprobada"
-    REINGRESADA = "REINGRESADA", "Reingresada"
-    RECHAZADA = "RECHAZADA", "Rechazada"
+    PAGADA = "PAGADA", "Pagada"
+
+    # Deprecated states (Fase E — kept for historical data migration reference only):
+    # APROBADA = "APROBADA", "Aprobada"
+    # REINGRESADA = "REINGRESADA", "Reingresada"
+    # RECHAZADA = "RECHAZADA", "Rechazada"
 
 class DictamenRevision(models.TextChoices):
     """Dictamen de revision asociado a un delegado de liquidacion."""

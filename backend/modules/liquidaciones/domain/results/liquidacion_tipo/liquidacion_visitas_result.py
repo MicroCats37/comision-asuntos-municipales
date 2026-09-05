@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from decimal import Decimal
 
 from modules.liquidaciones.domain.results.inspector.inspector_result import (
     PerfilIngenieroResult,
@@ -20,6 +21,7 @@ class LiquidacionInspectorResult(BaseModel):
     """
     id: str
     inspector_id: str
+    inspector_operacion_id: Optional[str] = None
     perfil_ingeniero: PerfilIngenieroResult
     especialidad_revision: Optional[EspecialidadRevisionResult] = None
     numero_registro: Optional[str] = None
@@ -34,7 +36,7 @@ class LiquidacionInspectorResult(BaseModel):
 class LiquidacionVisitasResult(BaseModel):
     id: str
     cantidad_visitas: int
-    porcentaje_uit: float
+    porcentaje_uit: Decimal
     categoria: str
     tarifa_aplicada_id: str
     inspectores: list[LiquidacionInspectorResult] = []

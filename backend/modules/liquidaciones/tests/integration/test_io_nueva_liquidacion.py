@@ -222,7 +222,13 @@ def test_io_crear_primera_revision_success(
     # Verify General Structure (hereda expediente de la previa)
     general = result["liquidacion_general"]
     assert general["expediente"] == liquidacion_previa.expediente
-    assert general["proyecto"]["denominacion"] == liquidacion_previa.proyecto.denominacion
+    assert general["denominacion_de_proyecto"] == liquidacion_previa.denominacion_de_proyecto
+
+    # Verify liquidaciones_previas contains the previous liquidacion
+    assert "liquidaciones_previas" in general
+    previas = general["liquidaciones_previas"]
+    assert len(previas) == 1
+    assert previas[0]["id"] == str(liquidacion_previa.id)
 
     # Verify Specific Structure (identity wrapper after semantic fix)
     especifica = result["liquidacion_especifica"]

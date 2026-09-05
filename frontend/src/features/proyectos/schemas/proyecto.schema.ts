@@ -34,9 +34,10 @@ export const liquidacionesInlineSchema = z.object({
 export const proyectoListItemSchema = z.object({
   id: z.string().uuid(),
   public_id: z.string(),
-  denominacion: z.string().nullable(),
+  nombre_propietario: z.string().nullable(),
   direccion: z.string().nullable().optional(),
   distrito: z.string().nullable().optional(),
+  urbanizacion: z.string().nullable().optional(),
   entidad: entidadWithNumeroDocumentoSchema.nullable().optional(),
   liquidaciones: liquidacionesInlineSchema,
 });

@@ -126,15 +126,15 @@ class LiquidacionMecanicaSuelosLegacyOrchestrator:
         subtotal = monto_bruto
 
         cotizacion = CotizacionM2Result(
-            area_m2=float(area),
-            costo_por_m2=float(tarifa.costo_por_m2),
+            area_m2=Decimal(str(area)),
+            costo_por_m2=tarifa.costo_por_m2,
             tarifa_id=str(tarifa.id),
             derecho_id=str(derecho.id) if derecho else None,
-            minimo=float(derecho.derecho_minimo) if derecho else None,
-            maximo=float(derecho.derecho_maximo) if derecho and derecho.derecho_maximo is not None else None,
-            monto_bruto=float(monto_bruto),
-            subtotal=float(subtotal),
-            total=float(subtotal),
+            minimo=derecho.derecho_minimo if derecho else None,
+            maximo=derecho.derecho_maximo if derecho and derecho.derecho_maximo is not None else None,
+            monto_bruto=monto_bruto,
+            subtotal=subtotal,
+            total=subtotal,
         )
 
         # Apply min/max clamping (Orchestrator owns clamping logic)
@@ -205,15 +205,15 @@ class LiquidacionMecanicaSuelosLegacyOrchestrator:
         subtotal = monto_bruto
 
         cotizacion = CotizacionM2Result(
-            area_m2=float(area),
-            costo_por_m2=float(tarifa.costo_por_m2),
+            area_m2=Decimal(str(area)),
+            costo_por_m2=tarifa.costo_por_m2,
             tarifa_id=str(tarifa.id),
             derecho_id=str(derecho.id) if derecho else None,
-            minimo=float(derecho.derecho_minimo) if derecho else None,
-            maximo=float(derecho.derecho_maximo) if derecho and derecho.derecho_maximo is not None else None,
-            monto_bruto=float(monto_bruto),
-            subtotal=float(subtotal),
-            total=float(subtotal),
+            minimo=derecho.derecho_minimo if derecho else None,
+            maximo=derecho.derecho_maximo if derecho and derecho.derecho_maximo is not None else None,
+            monto_bruto=monto_bruto,
+            subtotal=subtotal,
+            total=subtotal,
         )
 
         # Apply min/max clamping (Orchestrator owns clamping logic)
@@ -231,7 +231,6 @@ class LiquidacionMecanicaSuelosLegacyOrchestrator:
                 expediente=payload.liquidacion_general.expediente,
                 observacion=payload.liquidacion_general.observacion,
                 proyecto=ProyectoData(
-                    denominacion=payload.liquidacion_general.proyecto.denominacion,
                     nombre_propietario=payload.liquidacion_general.proyecto.nombre_propietario,
                     direccion=payload.liquidacion_general.proyecto.direccion,
                     distrito_id=str(payload.liquidacion_general.proyecto.distrito_id),
@@ -241,8 +240,8 @@ class LiquidacionMecanicaSuelosLegacyOrchestrator:
                         numero_documento=payload.liquidacion_general.proyecto.entidad.numero_documento,
                     ),
                 ),
-                denominacion_de_proyecto_liquidacion=getattr(
-                    payload.liquidacion_general, "denominacion_de_proyecto_liquidacion", None
+                denominacion_de_proyecto=getattr(
+                    payload.liquidacion_general, "denominacion_de_proyecto", None
                 ),
                 descripcion_legacy=getattr(
                     payload.liquidacion_general, "descripcion_legacy", None

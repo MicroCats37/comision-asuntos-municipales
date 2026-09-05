@@ -254,26 +254,89 @@ class Command(BaseCommand):
                     registros_creados += 1
 
                 # Periodo de vigencia:
-                # - Si el JSON trae vigencia NO vencida → usarla como periodo_fin
-                # - Si la vigencia del JSON ya venció (seed alpha del periodo anterior)
-                #   o no trae fecha → periodo_fin=None (vigencia ABIERTA, vigente hoy),
-                #   misma convención que seed_delegados.
-                periodo_fin = None
-                if vigencia_str:
-                    try:
-                        vigencia = date.fromisoformat(vigencia_str)
-                        if vigencia >= hoy:
-                            periodo_fin = vigencia
-                    except ValueError:
-                        periodo_fin = None
+                # Soporte nuevo: periodos[] array — múltiples periodos en una entrada registro.
+                # Cada entry: {vigencia_inicio, vigencia_fin}. Para cada uno se llama
+                # close_current_and_open_new, que cierra el abierto y abre el nuevo.
+                # Idempotencia: si el periodo cerrado ya existe (mismo periodo_inicio), se salta.
+                #
+                # Fallback legacy: si no hay periodos[], se comporta como antes:
+                # - Si vigencia_inicio presente: close_current_and_open_new(vigencia_inicio)
+                # - Si no: legacy (inicio_default, periodo_fin desde vigencia)
+                periodos_list = reg.get("periodos")
+                vigencia_inicio_str = str(reg.get("vigencia_inicio") or "").strip()  # legacy single-field
+                if periodos_list and isinstance(periodos_list, list) and len(periodos_list) > 0:
+                    for periodo_entry in periodos_list:
+                        vigencia_inicio_str_item = periodo_entry.get("vigencia_inicio")
+                        vigencia_fin_str_item = periodo_entry.get("vigencia_fin")
+                        if not vigencia_inicio_str_item:
+                            continue
+                        try:
+                            from datetime import datetime
 
-                periodo, periodo_created = InspectorOperacionPeriodo.objects.get_or_create(
-                    inspector_tipo_liquidacion=itl,
-                    periodo_inicio=inicio_default,
-                    periodo_fin=periodo_fin,
-                )
-                if periodo_created:
-                    periodos_creados += 1
+                            vigencia_inicio = datetime.strptime(vigencia_inicio_str_item, "%Y-%m-%d").date()
+                            vigencia_fin = None
+                            if vigencia_fin_str_item:
+                                vigencia_fin = datetime.strptime(vigencia_fin_str_item, "%Y-%m-%d").date()
+
+                            InspectorOperacionPeriodo.objects.update_or_create(
+                                inspector_tipo_liquidacion=itl,
+                                periodo_inicio=vigencia_inicio,
+                                defaults={
+                                    "periodo_fin": vigencia_fin
+                                }
+                            )
+                            periodos_creados += 1
+                        except Exception as e:
+                            self.stdout.write(
+                                self.style.WARNING(
+                                    f"    Error creando periodo para Inspector {cip}: {e}"
+                                )
+                            )
+                elif vigencia_inicio_str:
+                    # Legacy: single vigencia_inicio (v1.0 sin periodos[]), backward compat
+                    try:
+                        from datetime import datetime
+
+                        vigencia_inicio = datetime.strptime(vigencia_inicio_str, "%Y-%m-%d").date()
+                        existing_closed = InspectorOperacionPeriodo.objects.filter(
+                            inspector_tipo_liquidacion=itl,
+                            periodo_inicio=vigencia_inicio,
+                            periodo_fin__isnull=False,
+                        ).exists()
+                        if not existing_closed:
+                            InspectorOperacionPeriodo.close_current_and_open_new(itl, vigencia_inicio)
+                            periodos_creados += 1
+                        else:
+                            self.stdout.write(
+                                self.style.WARNING(
+                                    f"    Periodo vigencia_inicio={vigencia_inicio} ya existe (cerrado) "
+                                    f"para Inspector {cip}, saltando"
+                                )
+                            )
+                    except Exception as e:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f"    Error creando periodo para Inspector {cip}: {e}"
+                            )
+                        )
+                else:
+                    # Legacy behavior (backward compat con v1.0 sin vigencia_inicio ni periodos[])
+                    periodo_fin = None
+                    if vigencia_str:
+                        try:
+                            vigencia = date.fromisoformat(vigencia_str)
+                            if vigencia >= hoy:
+                                periodo_fin = vigencia
+                        except ValueError:
+                            periodo_fin = None
+
+                    periodo, periodo_created = InspectorOperacionPeriodo.objects.get_or_create(
+                        inspector_tipo_liquidacion=itl,
+                        periodo_inicio=inicio_default,
+                        periodo_fin=periodo_fin,
+                    )
+                    if periodo_created:
+                        periodos_creados += 1
 
         if dry_run:
             self.stdout.write(self.style.WARNING(f"DRY RUN: {len(data)} inspectores validados."))

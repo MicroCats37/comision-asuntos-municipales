@@ -14,14 +14,29 @@
  *   POST /finanzas/recibos-delegados/crear
  */
 import { FileSpreadsheet, Loader2, Receipt, Search } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { notify } from "@/errors";
 import { useCandidatasDelegado } from "@/features/finanzas/hooks/useCandidatasDelegado";
 import {
@@ -33,6 +48,8 @@ import type {
   RHDelegadoCotizar,
   RHDelegadoCotizarIn,
 } from "@/features/finanzas/schemas/rh-delegado-mensual.schema";
+import { DelegadoOperacionSmartField } from "@/features/finanzas/components/fields/DelegadoOperacionSmartField";
+import type { DelegadoOperacionSelection } from "@/features/finanzas/components/fields/DelegadoOperacionSmartField";
 
 interface RhDelegadoMensualModalProps {
   open: boolean;
@@ -53,12 +70,74 @@ export interface CandidataCardFields {
 }
 
 const DICTAMEN_OPTIONS = [
-  { value: "", label: "Seleccionar…" },
+  { value: "__sin_dictamen__", label: "Seleccionar…" },
   { value: "APROBADO", label: "Aprobado" },
   { value: "OBSERVADO", label: "Observado" },
   { value: "REVISADO", label: "Revisado" },
   { value: "PENDIENTE", label: "Pendiente" },
 ];
+
+const SENTINEL_NO_DICTAMEN = "__sin_dictamen__";
+
+/** Inline date picker using shadcn Calendar popover — preserves ISO string format */
+function InlineDatePicker({
+  value,
+  onChange,
+  id,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  id?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="outline"
+          disabled={disabled}
+          className="w-full h-7 px-2 justify-start text-left font-normal text-xs rounded border border-input bg-background disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <span className="text-muted-foreground mr-1">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="inline-block"
+            >
+              <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+              <line x1="16" x2="16" y1="2" y2="6" />
+              <line x1="8" x2="8" y1="2" y2="6" />
+              <line x1="3" x2="21" y1="10" y2="10" />
+            </svg>
+          </span>
+          {value ? (
+            format(new Date(value), "dd/MM/yyyy")
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value ? new Date(value) : undefined}
+          onSelect={(date) => onChange(date ? format(date, "yyyy-MM-dd") : "")}
+          locale={es}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 const getCurrentPeriodParts = () => {
   const now = new Date();
@@ -90,6 +169,9 @@ export function RhDelegadoMensualModal({
 }: RhDelegadoMensualModalProps) {
   const [step, setStep] = useState<Step>(1);
   const [cip, setCip] = useState("");
+  const [selectedOperacion, setSelectedOperacion] = useState<
+    DelegadoOperacionSelection | null
+  >(null);
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [cotizarResult, setCotizarResult] = useState<RHDelegadoCotizar | null>(
@@ -104,6 +186,9 @@ export function RhDelegadoMensualModal({
     Record<string, CandidataCardFields>
   >({});
 
+  /** Delegado operatividad selected for this RH mensual (required for cotizar/crear). */
+  const [delegadoOperacionId, setDelegadoOperacionId] = useState("");
+
   const cotizarMutation = useCotizarRHDelegado();
   const crearMutation = useCrearRHDelegado();
 
@@ -114,6 +199,12 @@ export function RhDelegadoMensualModal({
     refetch: refetchCandidatas,
   } = useCandidatasDelegado({
     cip,
+    // SmartField path: usa delegado_operacion_id directamente
+    delegado_operacion_id: selectedOperacion?.id,
+    // Filter-based path legacy (only used if SmartField ID not provided)
+    municipalidad_id: selectedOperacion?.municipalidad_id || undefined,
+    tipo_liquidacion_id: selectedOperacion?.tipo_liquidacion_id || undefined,
+    tipo_delegado: selectedOperacion?.tipo || undefined,
     fecha_inicio: fechaInicio || undefined,
     fecha_fin: fechaFin || undefined,
     enabled: false,
@@ -122,13 +213,22 @@ export function RhDelegadoMensualModal({
   const candidatas: CandidataDelegado[] = candidatasData?.candidatas ?? [];
   const delegado = candidatasData?.delegado;
 
+  // Sync delegadoOperacionId when selectedOperacion changes
+  useEffect(() => {
+    if (selectedOperacion) {
+      setDelegadoOperacionId(selectedOperacion.id);
+    }
+  }, [selectedOperacion]);
+
   const resetForm = useCallback(() => {
     setStep(1);
     setCip("");
+    setSelectedOperacion(null);
     setFechaInicio("");
     setFechaFin("");
     setCotizarResult(null);
     setSelectedCardFields({});
+    setDelegadoOperacionId("");
   }, []);
 
   const handleClose = useCallback(() => {
@@ -138,9 +238,12 @@ export function RhDelegadoMensualModal({
 
   // ── Paso 1 → 2: buscar candidatas ────────────────────────────────────
   const handleBuscar = useCallback(async () => {
-
     if (!cip.trim()) {
       notify.error("Ingresa el CIP del delegado");
+      return;
+    }
+    if (!selectedOperacion) {
+      notify.error("Selecciona una operatividad del delegado");
       return;
     }
     if (
@@ -157,7 +260,7 @@ export function RhDelegadoMensualModal({
     } catch {
       notify.error("No se pudieron buscar las candidatas");
     }
-  }, [fechaInicio, fechaFin, cip, refetchCandidatas]);
+  }, [selectedOperacion, fechaInicio, fechaFin, cip, refetchCandidatas]);
   const isSelected = useCallback(
     (id: string) => id in selectedCardFields,
     [selectedCardFields],
@@ -245,6 +348,7 @@ export function RhDelegadoMensualModal({
       const result = await cotizarMutation.cotizar({
         cip,
         periodo: rhPeriodo,
+        delegado_operacion_id: delegadoOperacionId,
         items,
       });
       setCotizarResult(result.data);
@@ -252,7 +356,7 @@ export function RhDelegadoMensualModal({
     } catch {
       // Error handled by mutation
     }
-  }, [selectedCardFields, candidatas, cip, cotizarMutation]);
+  }, [selectedCardFields, candidatas, cip, cotizarMutation, delegadoOperacionId]);
 
   // ── Paso 3 → 4: confirmar ───────────────────────────────────────────
   const handleConfirmar = useCallback(() => {
@@ -267,8 +371,12 @@ export function RhDelegadoMensualModal({
       Delegado: cotizarResult.delegado.nombre_completo,
       CIP: cotizarResult.delegado.cip,
       Periodo: cotizarResult.periodo,
+      "Nro Liq.": item.liquidacion_especifica_numero ?? "",
       Expediente: item.exp_liqui,
       "Nro revision": item.numero_revision ?? "",
+      "Nro Comp.": item.comprobante_activo
+        ? `${item.comprobante_activo.serie ?? ""}-${item.comprobante_activo.numero ?? ""}`
+        : "",
       "Fecha revision": item.fecha_revision ?? "",
       "Nro RH": item.numero_rh ?? "",
       "Periodo item": item.periodo ?? "",
@@ -289,8 +397,10 @@ export function RhDelegadoMensualModal({
       Delegado: "TOTALES",
       CIP: cotizarResult.delegado.cip,
       Periodo: cotizarResult.periodo,
+      "Nro Liq.": "",
       Expediente: "",
       "Nro revision": "",
+      "Nro Comp.": "",
       "Fecha revision": "",
       "Nro RH": "",
       "Periodo item": "",
@@ -362,7 +472,12 @@ export function RhDelegadoMensualModal({
       });
 
     try {
-      await crearMutation.crear({ cip, periodo: rhPeriodo, items });
+      await crearMutation.crear({
+        cip,
+        periodo: rhPeriodo,
+        delegado_operacion_id: delegadoOperacionId,
+        items,
+      });
       notify.success("RH Mensual de delegado creado correctamente");
       handleClose();
       onSuccess?.();
@@ -377,6 +492,7 @@ export function RhDelegadoMensualModal({
     crearMutation,
     handleClose,
     onSuccess,
+    delegadoOperacionId,
   ]);
 
   const isPending = cotizarMutation.isPending || crearMutation.isPending;
@@ -456,6 +572,12 @@ export function RhDelegadoMensualModal({
                   }}
                 />
               </div>
+              {/* SmartField: operatividades delgadas por CIP */}
+              <DelegadoOperacionSmartField
+                cip={cip}
+                onSelect={(selection) => setSelectedOperacion(selection)}
+                selectedId={selectedOperacion?.id}
+              />
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="fecha-inicio">Fecha Inicio</Label>
@@ -513,6 +635,11 @@ export function RhDelegadoMensualModal({
                     </span>
                     <span className="font-bold">{candidatas.length}</span>
                   </div>
+                  <div className="flex justify-end text-sm border-t border-border/40 pt-2 mt-1">
+                    <span className="font-bold text-primary">
+                      {selectedCount} de {candidatas.length} seleccionada(s)
+                    </span>
+                  </div>
                 </div>
               )}
 
@@ -532,13 +659,15 @@ export function RhDelegadoMensualModal({
                     <div className="w-6 shrink-0" />
                     <div className="w-20 shrink-0">Nro Ord</div>
                     <div className="w-24 shrink-0">Expediente</div>
+                    <div className="w-20 shrink-0">N° Liq.</div>
+                    <div className="w-28 shrink-0">Comprobante</div>
                     <div className="flex-1 min-w-0">Especialidad</div>
                     <div className="w-20 shrink-0 text-right">Monto</div>
                     <div className="w-20 shrink-0">Periodo</div>
                     <div className="w-20 shrink-0">Mes</div>
-                    <div className="w-28 shrink-0">Dictamen</div>
-                    <div className="w-28 shrink-0">F. Pres.</div>
-                    <div className="w-28 shrink-0">F. Rev.</div>
+                    <div className="w-24 shrink-0">Dictamen</div>
+                    <div className="w-24 shrink-0">F. Pres.</div>
+                    <div className="w-24 shrink-0">F. Rev.</div>
                   </div>
                   <div className="border border-t-0 border-border rounded-b-lg overflow-hidden">
                     {candidatas.map((c) => {
@@ -559,7 +688,7 @@ export function RhDelegadoMensualModal({
                           />
 
                           {/* Nro Orden (inline input) */}
-                          <input
+                          <Input
                             id={`nro-rh-${c.id}`}
                             type="text"
                             value={selectedCardFields[c.id]?.numero_rh ?? ""}
@@ -568,7 +697,7 @@ export function RhDelegadoMensualModal({
                             }
                             placeholder="N° RH"
                             disabled={!selected}
-                            className="w-20 shrink-0 h-7 px-2 rounded border border-input bg-background text-xs disabled:opacity-40 disabled:cursor-not-allowed ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            className="w-20 shrink-0 h-7 px-2 text-xs rounded border border-input bg-background disabled:opacity-40 disabled:cursor-not-allowed"
                           />
 
                           {/* Expediente (read-only) */}
@@ -579,6 +708,40 @@ export function RhDelegadoMensualModal({
                             <p className="font-mono font-bold text-xs text-foreground truncate">
                               {c.expediente ?? "—"}
                             </p>
+                          </div>
+
+                          {/* N° Liq. (liquidacion_especifica_numero — wider for visibility) */}
+                          <div
+                            className="w-20 shrink-0 cursor-pointer overflow-hidden"
+                            onClick={() => toggleCard(c, !selected)}
+                          >
+                            <p className="font-mono text-xs font-bold text-foreground truncate">
+                              {c.liquidacion_especifica_numero ?? "—"}
+                            </p>
+                          </div>
+
+                          {/* Comprobante (comprobante_activo multi-line: serie-numero + tipo [+ fecha]) */}
+                          <div
+                            className="w-28 shrink-0 cursor-pointer overflow-hidden"
+                            onClick={() => toggleCard(c, !selected)}
+                          >
+                            {c.comprobante_activo ? (
+                              <>
+                                <p className="font-mono text-xs text-foreground truncate leading-tight">
+                                  {`${c.comprobante_activo.serie ?? ""}-${c.comprobante_activo.numero ?? ""}`}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground truncate leading-tight">
+                                  {c.comprobante_activo.tipo_comprobante ?? ""}
+                                  {c.comprobante_activo.fecha_emision
+                                    ? ` · ${c.comprobante_activo.fecha_emision}`
+                                    : ""}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-[10px] text-muted-foreground italic leading-tight">
+                                Sin comprobante
+                              </p>
+                            )}
                           </div>
 
                           {/* Especialidad + tipo (read-only) */}
@@ -609,7 +772,7 @@ export function RhDelegadoMensualModal({
                           </div>
 
                           {/* Periodo / Año (inline input) */}
-                          <input
+                          <Input
                             id={`periodo-${c.id}`}
                             type="number"
                             value={selectedCardFields[c.id]?.periodo ?? ""}
@@ -618,11 +781,11 @@ export function RhDelegadoMensualModal({
                             }
                             placeholder="Año"
                             disabled={!selected}
-                            className="w-20 shrink-0 h-7 px-2 rounded border border-input bg-background text-xs disabled:opacity-40 disabled:cursor-not-allowed ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            className="w-20 shrink-0 h-7 px-2 text-xs rounded border border-input bg-background disabled:opacity-40 disabled:cursor-not-allowed"
                           />
 
                           {/* Mes (inline input) */}
-                          <input
+                          <Input
                             id={`mes-${c.id}`}
                             type="number"
                             min={1}
@@ -633,67 +796,70 @@ export function RhDelegadoMensualModal({
                             }
                             placeholder="Mes"
                             disabled={!selected}
-                            className="w-20 shrink-0 h-7 px-2 rounded border border-input bg-background text-xs disabled:opacity-40 disabled:cursor-not-allowed ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            className="w-20 shrink-0 h-7 px-2 text-xs rounded border border-input bg-background disabled:opacity-40 disabled:cursor-not-allowed"
                           />
 
                           {/* Dictamen (inline select) */}
-                          <select
-                            id={`dictamen-${c.id}`}
+                          <Select
                             value={
-                              selectedCardFields[c.id]?.dictamen_revision ?? ""
+                              selectedCardFields[c.id]?.dictamen_revision ||
+                              SENTINEL_NO_DICTAMEN
                             }
-                            onChange={(e) =>
+                            onValueChange={(v) =>
                               updateCardField(
                                 c.id,
                                 "dictamen_revision",
-                                e.target.value,
+                                v === SENTINEL_NO_DICTAMEN ? "" : v,
                               )
                             }
                             disabled={!selected}
-                            className="w-28 shrink-0 h-7 px-2 rounded border border-input bg-background text-xs disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                           >
-                            {DICTAMEN_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
+                            <SelectTrigger
+                              id={`dictamen-${c.id}`}
+                              className="w-24 shrink-0 h-7 px-1.5 text-xs rounded border border-input bg-background disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              <SelectValue placeholder="—" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DICTAMEN_OPTIONS.map((opt) => (
+                                <SelectItem
+                                  key={opt.value}
+                                  value={opt.value}
+                                  className="text-xs"
+                                >
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
 
                           {/* Fecha Presentación (inline date) */}
-                          <input
-                            id={`fec-pres-${c.id}`}
-                            type="date"
-                            value={
-                              selectedCardFields[c.id]?.fecha_presentacion ?? ""
-                            }
-                            onChange={(e) =>
-                              updateCardField(
-                                c.id,
-                                "fecha_presentacion",
-                                e.target.value,
-                              )
-                            }
-                            disabled={!selected}
-                            className="w-28 shrink-0 h-7 px-2 rounded border border-input bg-background text-xs disabled:opacity-40 disabled:cursor-not-allowed ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                          />
+                          <div className="w-24 shrink-0">
+                            <InlineDatePicker
+                              id={`fec-pres-${c.id}`}
+                              value={
+                                selectedCardFields[c.id]?.fecha_presentacion ?? ""
+                              }
+                              onChange={(v) =>
+                                updateCardField(c.id, "fecha_presentacion", v)
+                              }
+                              disabled={!selected}
+                            />
+                          </div>
 
                           {/* Fecha Revisión (inline date) */}
-                          <input
-                            id={`fec-rev-${c.id}`}
-                            type="date"
-                            value={
-                              selectedCardFields[c.id]?.fecha_revision ?? ""
-                            }
-                            onChange={(e) =>
-                              updateCardField(
-                                c.id,
-                                "fecha_revision",
-                                e.target.value,
-                              )
-                            }
-                            disabled={!selected}
-                            className="w-28 shrink-0 h-7 px-2 rounded border border-input bg-background text-xs disabled:opacity-40 disabled:cursor-not-allowed ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                          />
+                          <div className="w-24 shrink-0">
+                            <InlineDatePicker
+                              id={`fec-rev-${c.id}`}
+                              value={
+                                selectedCardFields[c.id]?.fecha_revision ?? ""
+                              }
+                              onChange={(v) =>
+                                updateCardField(c.id, "fecha_revision", v)
+                              }
+                              disabled={!selected}
+                            />
+                          </div>
                         </div>
                       );
                     })}
@@ -705,10 +871,6 @@ export function RhDelegadoMensualModal({
                   )}
                 </ScrollArea>
               )}
-
-              <p className="text-xs text-muted-foreground text-right">
-                {selectedCount} de {candidatas.length} seleccionada(s)
-              </p>
             </div>
           )}
 
@@ -830,6 +992,9 @@ export function RhDelegadoMensualModal({
                           Liq
                         </th>
                         <th className="border border-border px-1 py-1.5 text-left font-bold uppercase tracking-wide text-[10px]">
+                          N° Liq.
+                        </th>
+                        <th className="border border-border px-1 py-1.5 text-left font-bold uppercase tracking-wide text-[10px]">
                           F. Rev.
                         </th>
                         <th className="border border-border px-1 py-1.5 text-left font-bold uppercase tracking-wide text-[10px]">
@@ -837,6 +1002,9 @@ export function RhDelegadoMensualModal({
                         </th>
                         <th className="border border-border px-1 py-1.5 text-center font-bold uppercase tracking-wide text-[10px]">
                           Nro Rev
+                        </th>
+                        <th className="border border-border px-1 py-1.5 text-left font-bold uppercase tracking-wide text-[10px]">
+                          Nro. Comp.
                         </th>
                         <th className="border border-border px-1 py-1.5 text-right font-bold uppercase tracking-wide text-[10px]">
                           Total
@@ -873,6 +1041,9 @@ export function RhDelegadoMensualModal({
                           <td className="border border-border px-1 py-1.5 text-center">
                             {index + 1}
                           </td>
+                          <td className="border border-border px-1 py-1.5 text-center">
+                            {item.liquidacion_especifica_numero ?? "—"}
+                          </td>
                           <td className="border border-border px-1 py-1.5">
                             {item.fecha_revision ?? "—"}
                           </td>
@@ -881,6 +1052,11 @@ export function RhDelegadoMensualModal({
                           </td>
                           <td className="border border-border px-1 py-1.5 text-center">
                             {item.numero_revision ?? "—"}
+                          </td>
+                          <td className="border border-border px-1 py-1.5 font-mono text-center">
+                            {item.comprobante_activo
+                              ? `${item.comprobante_activo.serie ?? ""}-${item.comprobante_activo.numero ?? ""}`
+                              : "—"}
                           </td>
                           <td className="border border-border px-1 py-1.5 text-right">
                             {item.total_liquidacion != null
@@ -925,7 +1101,7 @@ export function RhDelegadoMensualModal({
                       {/* Fila de Totales */}
                       <tr className="bg-muted/70 font-bold">
                         <td
-                          colSpan={4}
+                          colSpan={6}
                           className="border border-border px-1 py-1.5 text-center uppercase tracking-wide"
                         >
                           Totales

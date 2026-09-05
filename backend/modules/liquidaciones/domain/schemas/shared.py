@@ -5,19 +5,19 @@ This file exists to satisfy imports from domain/schemas/__init__.py.
 """
 from pydantic import BaseModel
 from typing import Optional
+from decimal import Decimal
 import uuid
 
 
 class EntidadInlineData(BaseModel):
     id: uuid.UUID
     razon_social: Optional[str] = None
-    tipo_documento: str
-    numero_documento: str
+    tipo_documento: Optional[str] = None
+    numero_documento: Optional[str] = None
 
 
 class ProyectoInlineData(BaseModel):
     id: uuid.UUID
-    denominacion: str
     entidad_razon_social: Optional[str] = None
     entidad_tipo_documento: Optional[str] = None
     entidad_numero_documento: Optional[str] = None
@@ -32,16 +32,16 @@ class VariablesFinancierasResult(BaseModel):
 
 
 class TarifaM2CalculoData(BaseModel):
-    costo_por_m2: float
-    minimo: float
-    maximo: Optional[float] = None
+    costo_por_m2: Decimal
+    minimo: Decimal
+    maximo: Optional[Decimal] = None
 
 
 class LiquidacionM2CalculoData(BaseModel):
-    area_m2: float
-    costo_por_m2: float
-    minimo: float
-    maximo: Optional[float] = None
+    area_m2: Decimal
+    costo_por_m2: Decimal
+    minimo: Decimal
+    maximo: Optional[Decimal] = None
 
 
 class TarifaVisitasCalculoData(BaseModel):

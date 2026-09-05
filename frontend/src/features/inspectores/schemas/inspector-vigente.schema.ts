@@ -19,6 +19,7 @@ export const InspectorVigenteSchema = z.object({
   categoria: z.string().nullable(),
   numero_registro: z.string(),
   vigencia: z.string().nullable(),
+  inspector_operacion_id: z.string(),
 });
 export type InspectorVigenteData = z.infer<typeof InspectorVigenteSchema>;
 export type InspectorVigente = InspectorVigenteData;

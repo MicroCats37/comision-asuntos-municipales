@@ -18,7 +18,7 @@ def present_tarifas_vigentes_po(tarifas, especialidades_disponibles) -> dict:
         "tarifas": [
             {
                 "id": str(t.id),
-                "porcentaje_liquidacion": float(t.porcentaje_liquidacion),
+                "porcentaje_liquidacion": t.porcentaje_liquidacion,
             }
             for t in tarifas
         ],

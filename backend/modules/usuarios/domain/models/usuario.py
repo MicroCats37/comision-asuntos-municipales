@@ -36,6 +36,15 @@ dni_validator = RegexValidator(
 )
 
 
+# Validador de username: permite letras minúsculas, números, puntos, guiones bajos y guiones.
+# Longitud entre 3 y 150 caracteres.
+username_validator = RegexValidator(
+    regex=r"^[a-z0-9._-]+$",
+    message="El nombre de usuario debe contener solo letras minúsculas, números, puntos, guiones bajos o guiones.",
+    code="invalid_username",
+)
+
+
 class Usuario(AbstractBaseUser, PermissionsMixin, DjangoAuthMixin, BaseModel):
     history = HistoricalRecords()
     """
@@ -46,11 +55,11 @@ class Usuario(AbstractBaseUser, PermissionsMixin, DjangoAuthMixin, BaseModel):
     apellidos = models.CharField(max_length=255, blank=True, null=True, verbose_name="Apellido")
     email = models.EmailField(max_length=255, unique=True, verbose_name="Correo electrónico")
     username = models.CharField(
-        max_length=8,
+        max_length=150,
         unique=True,
-        validators=[dni_validator],
+        validators=[username_validator],
         verbose_name="Nombre de usuario",
-        help_text="DNI como identificador de login.",
+        help_text="Nombre de usuario para login (letras minúsculas, números, puntos, guiones bajos o guiones).",
     )
     dni = models.CharField(
         max_length=8,

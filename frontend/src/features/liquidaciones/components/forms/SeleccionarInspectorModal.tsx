@@ -72,11 +72,19 @@ export function SeleccionarInspectorModal({
     [inspectores],
   );
 
+  // Normaliza la categoría del inspector para que haga match con el filtro (que viene en formato "C1", "C2"…)
+  const normalizeCategoria = (cat: string | null): string => {
+    if (!cat) return "";
+    if (["1", "2", "3", "4"].includes(cat)) return `C${cat}`;
+    return cat;
+  };
+
   // Filtrado en el FRONTEND: por categoría FIJA + especialidad + búsqueda CIP/nombre
   const filtrados = useMemo(() => {
     const query = q.trim().toLowerCase();
     return inspectores.filter((i) => {
-      if (categoria !== "all" && i.categoria !== categoria) return false;
+      if (categoria !== "all" && normalizeCategoria(i.categoria) !== categoria)
+        return false;
       if (especialidad !== "all" && i.especialidad?.nombre !== especialidad)
         return false;
       if (query) {

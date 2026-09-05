@@ -72,14 +72,17 @@ class LiquidacionPorcentajeObraCoreService:
         """Returns the current vigente DerechoPorcentajeObra."""
         return DerechoPorcentajeObra.objects.vigentes().first()
     
-    def get_tarifas_porcentaje_vigentes(self, tipo_liquidacion: str) -> List[TarifaPorcentajeObra]:
+    def get_tarifas_porcentaje_vigentes(
+        self, tipo_liquidacion: str, fecha=None
+    ) -> List[TarifaPorcentajeObra]:
         """
-        Returns all vigentes TarifaPorcentajeObra for the specified tipo_liquidacion.
+        Returns vigentes TarifaPorcentajeObra for the specified tipo_liquidacion.
 
         Args:
             tipo_liquidacion: The liquidacion type (e.g., TipoLiquidacion.EDIFICACION).
+            fecha: Optional date to check vigencia. Defaults to today.
         """
-        bases = TarifaLiquidacionBase.objects.vigentes().filter(
+        bases = TarifaLiquidacionBase.objects.vigentes(fecha=fecha).filter(
             tipo_liquidacion__codigo=tipo_liquidacion
         )
         return list(

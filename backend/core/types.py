@@ -44,7 +44,10 @@ class BaseSchema(Schema):
     Schema base del proyecto. Todos los schemas de negocio deben heredar de este.
     Convierte strings vacíos → None antes de validar.
     """
-    model_config = {"arbitrary_types_allowed": True}
+    model_config = {
+        "arbitrary_types_allowed": True,
+        "ser_json_decimal_to_float": True,
+    }
 
     @model_validator(mode="before")
     @classmethod

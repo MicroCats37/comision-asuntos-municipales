@@ -1,5 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
+
+from .liquidacion_comprobante_result import LiquidacionComprobanteResult
 
 
 class EntidadResult(BaseModel):
@@ -29,9 +31,9 @@ class DistritoResult(BaseModel):
 
 class ProyectoResult(BaseModel):
     id: str
-    denominacion: str
     nombre_propietario: str
     direccion: str
+    urbanizacion: Optional[str] = None
     distrito: Optional[DistritoResult] = None
     # Denormalized entity fields (mirrors ORM proyecto.entidad_*)
     entidad_tipo_documento: Optional[str] = None
@@ -72,6 +74,10 @@ class LiquidacionPreviaResult(BaseModel):
     id: str
     numero_revision: int
     expediente: Optional[str] = None
+    tipo: Optional[str] = None  # tipo_liquidacion.nombre
+    numero_liquidacion_especifica: Optional[int] = None  # numero from specific table
+    denominacion_de_proyecto: Optional[str] = None  # denominacion_de_proyecto from previa
+    tipo_tramite: Optional[str] = None  # tipo_tramite from percentage-specific table (e.g. porcentaje_obra)
 
 
 class ContactoResult(BaseModel):
@@ -105,6 +111,7 @@ class LiquidacionDelegadoEnGeneralResult(BaseModel):
     delegado_cip: str
     delegado_dni: str
     delegado_nombre_completo: str
+    tipo: Optional[str] = None  # TITULAR or ALTERNO from delegado_operacion.tipo
     periodo: Optional[int] = None
     mes: Optional[int] = None
     dictamen_revision: Optional[str] = None
@@ -116,17 +123,22 @@ class LiquidacionGeneralResult(BaseModel):
     id: str
     municipalidad: MunicipalidadResult
     usuario_creador: UsuarioCreadorResult
-    fecha_registro: str  # NEW
+    fecha_registro: str
     expediente: Optional[str] = None
     observacion: Optional[str] = None
     numero_revision: int
     sub_total: float
     total: float
     retencion: bool = False
-    igv: Optional[IgvResult] = None  # NEW
-    uit: Optional[UitResult] = None  # NEW
+    igv: Optional[IgvResult] = None
+    uit: Optional[UitResult] = None
     proyecto: ProyectoResult
     contacto: Optional[ContactoResult] = None
     tipo_liquidacion: Optional[TipoLiquidacionResult] = None
-    revisiones_previas: list[LiquidacionPreviaResult] = []
+    liquidaciones_previas: list[LiquidacionPreviaResult] = []
     delegados: list[LiquidacionDelegadoEnGeneralResult] = []
+    legacy: bool = False
+    codigo_cta: Optional[str] = None  # Resolved in batch at service layer, not in presenter
+    estado: Optional[str] = None  # PENDIENTE or PAGADA — Fase E state machine
+    comprobantes: list[LiquidacionComprobanteResult] = Field(default_factory=list)
+    denominacion_de_proyecto: Optional[str] = None  # Project title at liquidacion level, distinct from proyecto.denominacion

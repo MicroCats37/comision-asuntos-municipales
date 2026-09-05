@@ -31,9 +31,10 @@ class LiquidacionPorCategoriaVisitasPresenter:
         uit_vigente: UIT,
     ) -> TarifasVigentesPorCategoriaVisitasOutputSchema:
         """Transforms vigente models to Visitas vigentes output schema."""
+        from decimal import Decimal
         tarifas_out = []
         for tarifa in tarifas:
-            costo = float(tarifa.porcentaje_uit) * float(uit_vigente.valor)
+            costo = tarifa.porcentaje_uit * uit_vigente.valor
             tarifas_out.append(
                 TarifaVigenteVisitasDatos(
                     id=tarifa.id,

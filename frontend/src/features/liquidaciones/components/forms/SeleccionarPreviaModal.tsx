@@ -268,7 +268,7 @@ export function SeleccionarPreviaModal({
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-semibold truncate">
-                                {item.proyecto.denominacion}
+                                {item.denominacion_de_proyecto}
                               </p>
                               <p className="text-xs text-muted-foreground truncate">
                                 {item.expediente || "Sin expediente"}

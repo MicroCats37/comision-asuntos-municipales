@@ -23,6 +23,7 @@ from modules.liquidaciones.domain.models.delegado import (
     DelegadoMunicipalidad,
     DelegadoMunicipalidadPeriodo,
 )
+from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion
 from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero, EspecialidadRevision
 from modules.entidades.domain.models.municipalidad import Municipalidad
 
@@ -241,6 +242,35 @@ def test_list_delegados_empty_returns_empty_items(auth_client, db):
     assert result["items"] == []
     assert result["total"] == 0
     assert result["total_pages"] == 0
+
+
+# ── Tests: GET /delegados/tipos-liquidacion ────────────────────────────────────
+
+@pytest.mark.django_db
+def test_tipos_liquidacion_returns_uuid_id_as_string(auth_client):
+    """
+    GET /delegados/tipos-liquidacion returns TipoLiquidacion UUID ids without
+    re-parsing UUID objects in the presenter.
+    """
+    tipo = TipoLiquidacion.objects.create(
+        codigo="TEST_TIPO",
+        nombre="Test Tipo Liquidacion",
+    )
+
+    response = auth_client.get("/delegados/tipos-liquidacion")
+
+    assert response.status_code == 200, \
+        f"Expected 200, got {response.status_code}: {response.content}"
+    data = response.json()
+    result = data["data"]
+
+    assert result["tipos"] == [
+        {
+            "id": str(tipo.id),
+            "codigo": "TEST_TIPO",
+            "nombre": "Test Tipo Liquidacion",
+        }
+    ]
 
 
 # ── Tests: GET /delegados/{id}/municipalidades ─────────────────────────────────

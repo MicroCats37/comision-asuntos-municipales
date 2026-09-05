@@ -5,10 +5,7 @@ export const AsignacionDelegadoSchema = z.object({
   delegado_id: z.string(),
   periodo: z.number().int().optional().nullable(),
   mes: z.number().int().optional().nullable(),
-  dictamen_revision: z
-    .enum(["CONFORME", "NO_CONFORME", "PENDIENTE", "AP_OB"])
-    .optional()
-    .nullable(),
+  dictamen_revision: z.string().optional().nullable(),
   fecha_presentacion: z.string().optional().nullable(),
   fecha_revision: z.string().optional().nullable(),
 });

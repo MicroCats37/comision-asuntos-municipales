@@ -78,17 +78,17 @@ class LiquidacionPorCategoriaVisitasCoreService:
             return None
 
         subtotal = self.calcular_subtotal_visitas(cantidad_visitas, tarifa, uit_vigente)
-        costo_por_visita = float(tarifa.porcentaje_uit) * float(uit_vigente.valor)
-        igv_valor = float(igv_vigente.valor)
-        total = float(subtotal) * (1 + igv_valor)
+        costo_por_visita = tarifa.porcentaje_uit * uit_vigente.valor
+        igv_valor = igv_vigente.valor
+        total = subtotal * (Decimal("1") + igv_valor)
 
         return CotizacionVisitasResultDTO(
             cantidad_visitas=cantidad_visitas,
             categoria=tarifa.categoria_visitas,
             costo_por_visita=costo_por_visita,
             tarifa_id=str(tarifa.id),
-            monto_bruto=float(subtotal),
-            subtotal=float(subtotal),
+            monto_bruto=subtotal,
+            subtotal=subtotal,
             total=total,
             uit={"id": str(uit_vigente.id), "valor": float(uit_vigente.valor)},
             igv={"id": str(igv_vigente.id), "valor": float(igv_vigente.valor)},

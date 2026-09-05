@@ -36,8 +36,9 @@ export interface LiquidacionesInline {
 export interface ProyectoListItem {
   id: string;
   public_id: string;
-  denominacion: string | null;
+  nombre_propietario: string | null;
   direccion: string | null;
+  urbanizacion: string | null;
   distrito: string | null;
   entidad: EntidadWithNumeroDocumento | null;
   liquidaciones: LiquidacionesInline;

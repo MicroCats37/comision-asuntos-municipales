@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 import {
+  contactoInlineSchema,
   generalFormSchema,
   proyectoFormSchema,
 } from "./liquidacion-form-base.schema";
@@ -21,6 +22,10 @@ export const visitasFormSchema = z.object({
   }),
   // Smart Field outputs (set by Smart Fields via setValue)
   tarifa_visitas_id: z.string().optional(),
+  // Contacto (used in edit modal — not in creation form)
+  contacto: contactoInlineSchema.optional(),
+  // Inspector operacion ID (optional, for reassigning inspector in edit)
+  inspector_operacion_id: z.string().optional(),
 });
 
 export type VisitasFormData = z.infer<typeof visitasFormSchema>;

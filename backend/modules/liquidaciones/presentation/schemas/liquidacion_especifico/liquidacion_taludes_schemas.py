@@ -17,6 +17,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_sche
     LiquidacionPorcentajeObraIn,
     LiquidacionPorcentajeObraDatosOut,
     LiquidacionPorcentajeObraDetalleOut,
+    EspecialidadOut,
 )
 
 
@@ -58,7 +59,7 @@ class LiquidacionTaludesCotizarTarifaOut(BaseSchema):
 class LiquidacionTaludesCotizarDetalleOut(BaseSchema):
     """Detalle of cotizacion."""
     tarifa_id: uuid.UUID
-    especialidad_id: uuid.UUID
+    especialidad: EspecialidadOut
     porcentaje_aplicado: Decimal
     subtotal: Decimal
 

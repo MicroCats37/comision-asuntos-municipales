@@ -111,16 +111,17 @@ export function SeleccionarUltimaRevisionModal({
         </GenericModal.Header>
 
         <GenericModal.Body className="space-y-6">
-          {/* ── Búsqueda (sección separada) ── */}
+          {/* ── Búsqueda: ambos campos juntos + botón unificado ── */}
           <div className="p-4 rounded-xl border border-border/60 bg-muted/10 space-y-3">
-            <div className="space-y-2">
-              <Label
-                htmlFor="buscar-documento"
-                className="text-sm font-semibold"
-              >
-                N° Documento (RUC/DNI)
-              </Label>
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* N° Documento */}
+              <div className="flex-1 space-y-2">
+                <Label
+                  htmlFor="buscar-documento"
+                  className="text-sm font-semibold"
+                >
+                  N° Documento (RUC/DNI)
+                </Label>
                 <Input
                   id="buscar-documento"
                   placeholder="Ej. 20456789012"
@@ -136,47 +137,56 @@ export function SeleccionarUltimaRevisionModal({
                   }
                   className="w-full h-10 font-mono"
                 />
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={handleSearch}
-                  disabled={!canSearch}
-                  className="h-10 shrink-0 gap-1.5 px-5"
-                >
-                  <Search className="h-4 w-4" />
-                  Buscar
-                </Button>
+                {documento && !isDocumentoValid && !numero.trim() && (
+                  <p className="text-xs text-destructive">
+                    El documento debe tener 8 (DNI) u 11 (RUC) dígitos
+                  </p>
+                )}
               </div>
-              {documento && !isDocumentoValid && !numero.trim() && (
-                <p className="text-xs text-destructive">
-                  El documento debe tener 8 (DNI) u 11 (RUC) dígitos
-                </p>
-              )}
+
+              {/* N° Liquidación */}
+              <div className="flex-1 space-y-2">
+                <Label
+                  htmlFor="buscar-numero"
+                  className="text-sm font-semibold"
+                >
+                  N° Liquidación
+                </Label>
+                <div className="relative">
+                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    id="buscar-numero"
+                    placeholder="Ej. 15"
+                    inputMode="numeric"
+                    value={numero}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setNumero(val);
+                      setSearched(false);
+                    }}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && canSearch && handleSearch()
+                    }
+                    className="w-full h-10 font-mono pl-9"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="buscar-numero" className="text-sm font-semibold">
-                N° Liquidación
-              </Label>
-              <div className="relative">
-                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  id="buscar-numero"
-                  placeholder="Ej. 15"
-                  inputMode="numeric"
-                  value={numero}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 10);
-                    setNumero(val);
-                    setSearched(false);
-                  }}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && canSearch && handleSearch()
-                  }
-                  className="w-full h-10 font-mono pl-9"
-                />
-              </div>
-            </div>
+            {/* Botón de búsqueda: claramente para AMBOS campos */}
+            <Button
+              type="button"
+              variant="default"
+              onClick={handleSearch}
+              disabled={!canSearch}
+              className="w-full h-10 gap-1.5"
+            >
+              <Search className="h-4 w-4" />
+              Buscar por documento o N° de liquidación
+            </Button>
+            <p className="text-xs text-muted-foreground/70 text-center">
+              Puedes buscar por cualquiera de los dos campos
+            </p>
           </div>
 
           {/* ── Resultados (separados del buscador) ── */}
@@ -238,7 +248,7 @@ export function SeleccionarUltimaRevisionModal({
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-semibold truncate">
-                                {lg.proyecto.denominacion}
+                                {lg.denominacion_de_proyecto}
                               </p>
                               <p className="text-xs text-muted-foreground truncate">
                                 {lg.expediente || "Sin expediente"}

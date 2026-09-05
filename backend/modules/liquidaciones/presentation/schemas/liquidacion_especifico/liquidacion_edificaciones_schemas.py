@@ -19,6 +19,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_sche
     LiquidacionPorcentajeObraDatosOut,
     LiquidacionPorcentajeObraDetalleOut,
     LiquidacionPorcentajeObraTarifaIn,
+    EspecialidadOut,
 )
 
 
@@ -60,7 +61,7 @@ class LiquidacionEdificacionesCotizarTarifaOut(BaseSchema):
 class LiquidacionEdificacionesCotizarDetalleOut(BaseSchema):
     """Detalle of cotizacion."""
     tarifa_id: uuid.UUID
-    especialidad_id: uuid.UUID
+    especialidad: EspecialidadOut
     porcentaje_aplicado: Decimal
     subtotal: Decimal
 
@@ -70,11 +71,16 @@ class LiquidacionGeneralNuevaRevisionIn(BaseSchema):
     expediente: Optional[str] = Field(None, description="Número de expediente")
     observacion: Optional[str] = Field(None, description="Observación opcional")
     retencion: bool = Field(False, description="Indica si la liquidación tiene retención")
+    denominacion_de_proyecto: Optional[str] = Field(None, description="Denominación del proyecto (opcional, hereda de la previa si no se provee)")
     contacto: Optional[ContactoInlineSchema] = Field(None, description="Contacto principal (se crea inline)")
 
 
 class LiquidacionEspecificaNuevaRevisionIn(BaseSchema):
-    """Input específico para nueva revisión — solo tarifas (sin datos, se hereda de la previa)."""
+    """Input específico para nueva revisión — tarifas + tipo_tramite (sin datos, se hereda de la previa)."""
+    tipo_tramite: Optional[str] = Field(
+        None,
+        description="Tipo de trámite de edificaciones (ej. OBRA_NUEVA, AMPLIACION, etc.)",
+    )
     tarifas: List[LiquidacionPorcentajeObraTarifaIn] = Field(
         ...,
         description="Tarifas seleccionadas. NO puede estar vacío y deben estar vigentes.",

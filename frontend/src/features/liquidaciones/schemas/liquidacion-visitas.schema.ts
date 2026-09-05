@@ -17,6 +17,7 @@ export const PerfilIngenieroOutSchema = z.object({
 export const LiquidacionInspectorOutSchema = z.object({
   id: z.string(),
   inspector_id: z.string(),
+  inspector_operacion_id: z.string().nullish(),
   perfil_ingeniero: PerfilIngenieroOutSchema,
   numero_registro: z.string().nullish(),
   categoria: z.string().nullish(),

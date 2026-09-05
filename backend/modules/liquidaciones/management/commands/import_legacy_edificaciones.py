@@ -36,7 +36,7 @@ Key changes from TSV version:
     - Pre-calculate via cotizar_legacy_proceso BEFORE insert, compare to Excel columns
     - Build descripcion_legacy with anomaly messages
     - numero_revision from NROREV (blank→1, anomaly>5 flagged)
-    - denominacion_de_proyecto_liquidacion from PROYECTO column
+    - denominacion_de_proyecto from PROYECTO column
     - EspecialidadRevision logged but NOT wired to DB (orchestrator auto-fills)
 
 Documents with empty DNI are stored as tipo_documento=SIN_DOCUMENTO, numero_documento=00000000.
@@ -69,6 +69,7 @@ from modules.liquidaciones.domain.services.orchestrators.liquidacion_legacy.liqu
     LiquidacionEdificacionesLegacyOrchestrator,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
+    ContactoInlineSchema,
     EntidadInlineSchema,
     ProyectoCotizarSchema,
 )
@@ -112,6 +113,9 @@ COL_CODPAGO = 16     # Q
 COL_NROEXPDTE = 17   # R
 COL_NROREV = 18      # S
 COL_ESPECIALIDAD = 19  # T
+COL_TFONO = 60         # índice legacy para telefono
+COL_TPERSONA = 61      # índice legacy para nombre de persona
+COL_USUARIO = 32      # índice legacy para nombre de usuario (nombre de la persona que tramita)
 
 # Max revisions constant (from liquidacion constants)
 MAX_REVISIONES = 5
@@ -208,6 +212,30 @@ def _normalize_specialty(value: str) -> str:
     return normalized.lower().strip()
 
 
+def _parse_tpersona(raw) -> tuple[str, str | None]:
+    """
+    Parse TPERSONA value into (nombres, apellidos).
+
+    Rules:
+        - 1 part  -> nombres=part[0], apellidos=None
+        - 2-3 parts -> nombres=part[0], apellidos=" ".join(rest)
+        - 4+ parts -> nombres=" ".join(part[0:2]), apellidos=" ".join(part[2:])
+        - empty/None -> (None, None)
+    """
+    if raw is None:
+        return None, None
+    text = str(raw).strip()
+    if not text or text.upper() == "NULL":
+        return None, None
+    parts = text.split()
+    if len(parts) == 1:
+        return parts[0], None
+    elif 2 <= len(parts) <= 3:
+        return parts[0], " ".join(parts[1:])
+    else:  # 4+
+        return " ".join(parts[:2]), " ".join(parts[2:])
+
+
 def _resolve_especialidad_revision(especialidad_str: str):
     """
     Map ESPECIALIDAD (Excel) -> EspecialidadRevision or None.
@@ -250,6 +278,86 @@ def _get_or_create_system_user() -> Usuario:
     if created:
         logger.info("Created system user (id=%s)", system_user.id)
     return system_user
+
+
+def _normalize_usuario_to_username(usuario_raw) -> str | None:
+    """
+    Transform a USUARIO raw value into a normalized username slug.
+
+    Rules:
+        - Strip accents (e.g., 'Ñ' -> 'n', 'Ó' -> 'o')
+        - Convert to lowercase
+        - Replace whitespace with dots
+        - Keep only alphanumeric, dots, underscores, hyphens
+        - Return None if input is empty/blank/NULL
+
+    Example:
+        'SANDRA OJEDA'       -> 'sandra.ojeda'
+        'MARIBEL QUIÑONES'   -> 'maribel.quinones'
+    """
+    if usuario_raw is None:
+        return None
+    text = str(usuario_raw).strip()
+    if not text or text.upper() == "NULL":
+        return None
+
+    # Normalize: strip accents using NFKD decomposition
+    normalized = unicodedata.normalize("NFKD", text)
+    normalized = "".join(c for c in normalized if not unicodedata.combining(c))
+
+    # Lowercase
+    normalized = normalized.lower()
+
+    # Replace whitespace with dot
+    normalized = re.sub(r"\s+", ".", normalized)
+
+    # Keep only valid username characters (alphanumeric, dots, underscores, hyphens)
+    normalized = re.sub(r"[^a-z0-9._-]", "", normalized)
+
+    # Remove leading/trailing dots, underscores, hyphens
+    normalized = normalized.strip(".-_")
+
+    if not normalized:
+        return None
+
+    return normalized
+
+
+def _get_or_create_usuario_from_usuario(usuario_raw) -> Usuario:
+    """
+    Get or create a Usuario from a USUARIO raw value.
+
+    If USUARIO is blank/empty, returns the system user (fallback).
+
+    For new users:
+        - username = normalized USUARIO
+        - password = 'admin'
+        - dni = None (no DNI for these legacy users)
+        - is_active = True
+
+    For existing users:
+        - Does NOT overwrite the password.
+    """
+    username = _normalize_usuario_to_username(usuario_raw)
+    if not username:
+        return _get_or_create_system_user()
+
+    # Try to find existing user by username
+    existing = Usuario.objects.filter(username=username).first()
+    if existing:
+        return existing
+
+    # Create new user with normalized username
+    # email unique=True -> usar un email determinista por username para no chocar UNIQUE.
+    user = Usuario.objects.create(
+        username=username,
+        email=f"{username}@legacy.local",
+        dni=None,
+    )
+    user.set_password("admin")
+    user.save(using=Usuario.objects.db)
+    logger.info("Created legacy user '%s' from USUARIO='%s'", username, usuario_raw)
+    return user
 
 
 class Command(BaseCommand):
@@ -365,10 +473,9 @@ class Command(BaseCommand):
             self._generar_reporte_detallado(rows, orchestrator, data_path.parent)
             return
 
-        # Resolve system user (first superuser or create 'system')
-        usuario = _get_or_create_system_user()
-        usuario_id: int = usuario.id
-        self._log(f"  Using usuario_id={usuario_id} ({usuario.username})")
+        # Resolve system user (first superuser or create 'system') for fallback
+        system_user = _get_or_create_system_user()
+        self._log(f"  System user fallback: username={system_user.username}")
 
         # Optional reset: wipe all existing liquidaciones before importing
         if self.reset:
@@ -419,9 +526,13 @@ class Command(BaseCommand):
                 # Build payload
                 payload, anomalies, _ = self._build_payload(row, idx, orchestrator)
 
+                # Get usuario from USUARIO column (per-row)
+                usuario_raw = row[COL_USUARIO] if len(row) > COL_USUARIO else None
+                usuario = _get_or_create_usuario_from_usuario(usuario_raw)
+
                 if not self.dry_run:
                     orchestrator.crear_legacy_proceso(
-                        usuario_id=usuario_id,
+                        usuario_id=usuario.id,
                         payload=payload,
                     )
 
@@ -568,9 +679,9 @@ class Command(BaseCommand):
                 counts[estado] += 1
 
                 nroexpdte = col(row, COL_NROEXPDTE)
-                expediente = str(nroexpdte).strip() if nroexpdte else f"LEGACY-{fila}"
+                expediente = str(nroexpdte).strip() if nroexpdte else None
                 if not expediente or expediente.upper() == "NULL":
-                    expediente = f"LEGACY-{fila}"
+                    expediente = None
 
                 fecha_raw = col(row, COL_FECHA)
                 fecha_str = ""
@@ -770,9 +881,11 @@ class Command(BaseCommand):
 
         # ── Expediente ────────────────────────────────────────────────────────
         nroexpdte = row[COL_NROEXPDTE]
-        expediente = str(nroexpdte).strip() if nroexpdte else f"LEGACY-{idx}"
-        if not expediente or expediente == "NULL":
-            expediente = f"LEGACY-{idx}"
+        expediente = str(nroexpdte).strip() if nroexpdte else None
+        if not expediente or expediente.upper() == "NULL":
+            expediente = None
+        if expediente is None:
+            anomalies.append("Expediente faltante")
 
         # ── Fecha de registro ────────────────────────────────────────────────
         fecha_raw = row[COL_FECHA]
@@ -811,9 +924,12 @@ class Command(BaseCommand):
         elif nrorev_val > MAX_REVISIONES:
             anomalies.append(f"NROREV anómalo: {nrorev_val}")
 
-        # ── denominacion_de_proyecto_liquidacion from PROYECTO ─────────────────
+        # ── denominacion_de_proyecto from PROYECTO ─────────────────
         proyecto_raw = row[COL_PROYECTO]
-        denominacion_de_proyecto = str(proyecto_raw).strip() if proyecto_raw else None
+        proyecto_str = str(proyecto_raw).strip() if proyecto_raw else ""
+        denominacion_de_proyecto = proyecto_str if proyecto_str else None
+        if not proyecto_str:
+            anomalies.append("PROYECTO vacío — se usa None")
 
         # ── numero (secuencial de la liquidación específica) desde NRO ────────
         nro_raw = row[COL_NRO]
@@ -824,11 +940,33 @@ class Command(BaseCommand):
             except (ValueError, TypeError):
                 numero = None
 
+        # ── Contacto (TFONO + TPERSONA) ──────────────────────────────────────
+        tpersona_raw = row[COL_TPERSONA] if len(row) > COL_TPERSONA else None
+        tfono_raw = row[COL_TFONO] if len(row) > COL_TFONO else None
+
+        nombres, apellidos = _parse_tpersona(tpersona_raw)
+        telefono = str(tfono_raw).strip() if tfono_raw is not None and str(tfono_raw).strip() != "" and str(tfono_raw).strip().upper() != "NULL" else None
+
+        contacto_inline = None
+        has_nombres = nombres is not None and nombres != ""
+        has_telefono = telefono is not None and telefono != ""
+
+        if has_nombres or has_telefono:
+            # Only create contacto if we have at least one useful field
+            if has_nombres:
+                contacto_inline = ContactoInlineSchema(
+                    nombres=nombres,
+                    apellidos=apellidos,
+                    telefono=telefono,
+                )
+            elif has_telefono:
+                # TFONO present but TPERSONA empty — can't create contacto without nombre
+                anomalies.append("TFONO presente sin TPERSONA — contacto no creado")
+
         # ── Pre-calculation comparison ────────────────────────────────────────
         # Build minimal payload for cotizar_legacy_proceso (partial, just for calculation)
         # We need to build the full payload first to call cotizar_legacy_proceso
         proyecto_schema = ProyectoCotizarSchema(
-            denominacion=razon_social_str,
             nombre_propietario=razon_social_str,
             direccion=direccion_str,
             distrito_id=distrito_id,
@@ -845,9 +983,9 @@ class Command(BaseCommand):
             observacion=None,
             retencion=False,
             proyecto=proyecto_schema,
-            contacto=None,
+            contacto=contacto_inline,
             fecha_registro=fecha_registro,
-            denominacion_de_proyecto_liquidacion=denominacion_de_proyecto,
+            denominacion_de_proyecto=denominacion_de_proyecto,
             descripcion_legacy=None,  # Will be set after comparison
         )
 

@@ -3,10 +3,12 @@ FinanzasCoreService — ORM queries for finanzas entities.
 
 Pure ORM access. No business logic.
 """
+import uuid
 from datetime import date
 from typing import Optional
 
 from decimal import Decimal
+from django.db.models import Prefetch
 
 from modules.finanzas.domain.models.impuestos import IGV, UIT
 from modules.finanzas.domain.models.recibo_honorario import ReciboHonorarioDelegado
@@ -39,10 +41,14 @@ from modules.liquidaciones.domain.models.inspector import (
 )
 from modules.liquidaciones.domain.models.delegado import (
     Delegado,
+    DelegadoOperacion,
     LiquidacionDelegado,
 )
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
     LiquidacionGeneral,
+)
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.comprobante import (
+    LiquidacionComprobante,
 )
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorCategoriaVisitas,
@@ -231,14 +237,16 @@ class FinanzasCoreService:
     # ── Tasa de Delegado ─────────────────────────────────────────────────────────
 
     def get_tasa_delegado_vigente(
-        self, fecha: date | None = None
+        self, tipo_liquidacion, fecha: date | None = None
     ) -> Optional[TasaDelegado]:
         """
-        Get the currently active TasaDelegado.
+        Get the currently active TasaDelegado for a given TipoLiquidacion.
 
-        Uses the TasaDelegadoQuerySet.vigentes() manager and returns the most recent.
+        Uses the TasaDelegadoQuerySet.vigentes() manager, filters by the
+        tipo_liquidacion, and returns the most recent.
 
         Args:
+            tipo_liquidacion: TipoLiquidacion instance or PK to scope the lookup.
             fecha: Optional date to check against. Defaults to today.
 
         Returns:
@@ -248,6 +256,7 @@ class FinanzasCoreService:
             fecha = date.today()
         return (
             TasaDelegado.objects.vigentes(fecha)
+            .filter(tipo_liquidacion=tipo_liquidacion)
             .order_by("-periodo_inicio")
             .first()
         )
@@ -467,6 +476,34 @@ class FinanzasCoreService:
             .first()
         )
 
+    def get_liquidacion_general_with_comprobantes(
+        self, liquidacion_general_id: int
+    ) -> Optional[LiquidacionGeneral]:
+        """
+        Get a LiquidacionGeneral with active comprobante prefetched.
+
+        Used by RH Delegado cotizar to avoid N+1 queries when accessing
+        comprobante_activo (where activo=True).
+
+        Args:
+            liquidacion_general_id: PK of the LiquidacionGeneral.
+
+        Returns:
+            LiquidacionGeneral instance or None if not found.
+        """
+        active_comprobantes = LiquidacionComprobante.objects.filter(
+            activo=True
+        ).order_by("-fecha_emision", "-id")
+        return (
+            LiquidacionGeneral.objects
+            .select_related("tipo_liquidacion")
+            .filter(id=liquidacion_general_id)
+            .prefetch_related(
+                Prefetch("comprobantes", queryset=active_comprobantes, to_attr="comprobantes_activos")
+            )
+            .first()
+        )
+
     def get_liquidacion_categoria_visitas(
         self, liquidacion_general_id: int
     ) -> Optional[LiquidacionPorCategoriaVisitas]:
@@ -522,6 +559,21 @@ class FinanzasCoreService:
             )
             .first()
         )
+
+    def get_liquidacion_inspector_by_id(
+        self,
+        liquidacion_inspector_id: int | str,
+    ) -> Optional[LiquidacionInspector]:
+        """
+        Get a LiquidacionInspector by its primary key.
+
+        Args:
+            liquidacion_inspector_id: PK of the LiquidacionInspector.
+
+        Returns:
+            LiquidacionInspector instance or None if not found.
+        """
+        return LiquidacionInspector.objects.filter(id=str(liquidacion_inspector_id)).first()
 
     def update_liquidacion_inspector_periodo_mes(
         self,
@@ -596,9 +648,10 @@ class FinanzasCoreService:
         sub_total: Decimal,
         descuento: Decimal,
         honorarios: Decimal,
-    ) -> tuple[ReciboHonorarioInspectorMensual, bool]:
+        inspector_operacion_id: int | str | None = None,
+    ) -> ReciboHonorarioInspectorMensual:
         """
-        Create or retrieve a ReciboHonorarioInspectorMensual for (inspector, periodo).
+        Create a new ReciboHonorarioInspectorMensual (always creates, never reuses).
 
         Args:
             inspector_id: FK to Inspector.
@@ -607,19 +660,19 @@ class FinanzasCoreService:
             sub_total: Subtotal for the month.
             descuento: Discount amount.
             honorarios: Net honorarios to pay.
+            inspector_operacion_id: Optional FK to InspectorOperacion (derived from selected items).
 
         Returns:
-            Tuple of (ReciboHonorarioInspectorMensual, created: bool).
+            Newly created ReciboHonorarioInspectorMensual instance.
         """
-        return ReciboHonorarioInspectorMensual.objects.get_or_create(
+        return ReciboHonorarioInspectorMensual.objects.create(
             inspector_id=inspector_id,
             periodo=periodo,
-            defaults={
-                "escala_descuento_id": escala_id,
-                "sub_total": sub_total,
-                "descuento": descuento,
-                "honorarios": honorarios,
-            },
+            escala_descuento_id=escala_id,
+            sub_total=sub_total,
+            descuento=descuento,
+            honorarios=honorarios,
+            inspector_operacion_id=inspector_operacion_id,
         )
 
     def crear_detalle_honorario(
@@ -783,9 +836,9 @@ class FinanzasCoreService:
                 "cantidad_visitas": programadas,
                 "inspecciones_pagadas": pagadas,
                 "saldo_disponible": saldo,
-                "costo_por_inspeccion": float(costo_por_inspeccion),
-                "total_liquidacion": float(sub_total),
-                "sub_total_liquidacion": float(sub_total),
+                "costo_por_inspeccion": costo_por_inspeccion,
+                "total_liquidacion": sub_total,
+                "sub_total_liquidacion": sub_total,
             })
 
         return candidates
@@ -806,6 +859,24 @@ class FinanzasCoreService:
             Delegado.objects
             .select_related("perfil_ingeniero")
             .filter(perfil_ingeniero__cip=cip)
+            .first()
+        )
+
+    def get_delegado_operacion_by_id(
+        self, operacion_id: uuid.UUID,
+    ) -> Optional[DelegadoOperacion]:
+        """
+        Get a DelegadoOperacion by UUID.
+
+        Args:
+            operacion_id: UUID of the DelegadoOperacion.
+
+        Returns:
+            DelegadoOperacion instance or None if not found.
+        """
+        return (
+            DelegadoOperacion.objects
+            .filter(id=operacion_id)
             .first()
         )
 
@@ -870,9 +941,14 @@ class FinanzasCoreService:
         aporte_codemu: Decimal,
         fondo_comun: Decimal,
         neto_honorario: Decimal,
-    ) -> tuple[ReciboHonorarioDelegadoMensual, bool]:
+        delegado_operacion_id: str | None = None,
+    ) -> ReciboHonorarioDelegadoMensual:
         """
-        Create or retrieve a ReciboHonorarioDelegadoMensual for (delegado, periodo).
+        Create a new ReciboHonorarioDelegadoMensual record.
+
+        Always creates a new record — callers are responsible for ensuring
+        no duplicate RH headers are created for the same delegation if that
+        is not desired.
 
         Args:
             delegado_id: FK to Delegado.
@@ -882,21 +958,45 @@ class FinanzasCoreService:
             aporte_codemu: 5% of sub_total.
             fondo_comun: 10% of sub_total.
             neto_honorario: Net honorarios to pay.
+            delegado_operacion_id: Optional FK to DelegadoOperacion.
 
         Returns:
-            Tuple of (ReciboHonorarioDelegadoMensual, created: bool).
+            Newly created ReciboHonorarioDelegadoMensual instance.
         """
-        return ReciboHonorarioDelegadoMensual.objects.get_or_create(
-            delegado_id=delegado_id,
-            periodo=periodo,
-            defaults={
-                "sub_total": sub_total,
-                "renta_cip": renta_cip,
-                "aporte_codemu": aporte_codemu,
-                "fondo_comun": fondo_comun,
-                "neto_honorario": neto_honorario,
-            },
-        )
+        if delegado_operacion_id:
+            # Set required FK fields so the record does not violate NOT NULL constraint.
+            # The flujo already validated that the DelegadoOperacion belongs to this delegado,
+            # but we look it up here to get the exact Delegado id for the record.
+            try:
+                delegacion = DelegadoOperacion.objects.get(id=delegado_operacion_id)
+                efectivo_delegado_id = delegacion.delegado_id
+            except DelegadoOperacion.DoesNotExist:
+                # Fall back to passed delegado_id if the lookup fails
+                efectivo_delegado_id = (
+                    int(delegado_id) if isinstance(delegado_id, str) else delegado_id
+                )
+            return ReciboHonorarioDelegadoMensual.objects.create(
+                delegado_operacion_id=delegado_operacion_id,
+                delegado_id=efectivo_delegado_id,
+                periodo=periodo,
+                sub_total=sub_total,
+                renta_cip=renta_cip,
+                aporte_codemu=aporte_codemu,
+                fondo_comun=fondo_comun,
+                neto_honorario=neto_honorario,
+            )
+        else:
+            return ReciboHonorarioDelegadoMensual.objects.create(
+                delegado_id=(
+                    int(delegado_id) if isinstance(delegado_id, str) else delegado_id
+                ),
+                periodo=periodo,
+                sub_total=sub_total,
+                renta_cip=renta_cip,
+                aporte_codemu=aporte_codemu,
+                fondo_comun=fondo_comun,
+                neto_honorario=neto_honorario,
+            )
 
     def crear_liquidacion_delegado(
         self,
@@ -909,13 +1009,15 @@ class FinanzasCoreService:
         dictamen_revision: str | None = None,
         fecha_presentacion=None,
         fecha_revision=None,
+        delegado_operacion_id: str | None = None,
     ) -> tuple["LiquidacionDelegado", bool]:
         """
         Create or retrieve a LiquidacionDelegado assignment.
 
         Used by RHDelegadoMensualCrearFlujo when processing candidatas —
         creates the assignment that did not exist before.
-        Uses get_or_create to support re-cálculo (re-running crear).
+        Uses get-or-create-then-update to support re-cálculo (re-running crear)
+        AND to backfill delegado_operacion_id on existing records that lack it.
 
         Args:
             liquidacion_id: FK to LiquidacionGeneral.
@@ -927,23 +1029,52 @@ class FinanzasCoreService:
             dictamen_revision: Optional dictamen.
             fecha_presentacion: Optional date.
             fecha_revision: Optional date.
+            delegado_operacion_id: Optional FK to DelegadoOperacion — backfilled
+                on existing records that don't yet have it set.
 
         Returns:
             Tuple of (LiquidacionDelegado, created: bool).
         """
-        return LiquidacionDelegado.objects.get_or_create(
+        defaults = {
+            "numero_rh": numero_rh,
+            "periodo": periodo,
+            "mes": mes,
+            "dictamen_revision": dictamen_revision,
+            "fecha_presentacion": fecha_presentacion,
+            "fecha_revision": fecha_revision,
+        }
+        created = False
+        # Try to get existing record first
+        existing = LiquidacionDelegado.objects.filter(
             liquidacion_id=liquidacion_id,
             delegado_id=delegado_id,
             especialidad_revision_id=especialidad_revision_id,
-            defaults={
-                "numero_rh": numero_rh,
-                "periodo": periodo,
-                "mes": mes,
-                "dictamen_revision": dictamen_revision,
-                "fecha_presentacion": fecha_presentacion,
-                "fecha_revision": fecha_revision,
-            },
-        )
+        ).first()
+
+        if existing is None:
+            # Create new with all fields including delegado_operacion_id
+            if delegado_operacion_id:
+                defaults["delegado_operacion_id"] = delegado_operacion_id
+            obj = LiquidacionDelegado.objects.create(
+                liquidacion_id=liquidacion_id,
+                delegado_id=delegado_id,
+                especialidad_revision_id=especialidad_revision_id,
+                **defaults,
+            )
+            created = True
+        else:
+            # Existing record found — update non-key fields and backfill
+            # delegado_operacion_id if provided and missing
+            obj = existing
+            for field, value in defaults.items():
+                setattr(obj, field, value)
+            if delegado_operacion_id and obj.delegado_operacion_id is None:
+                obj.delegado_operacion_id = delegado_operacion_id
+            obj.save(update_fields=list(defaults.keys()) + (
+                ["delegado_operacion_id"] if delegado_operacion_id and obj.delegado_operacion_id is not None else []
+            ))
+
+        return obj, created
 
     def get_liquidacion_delegado_por_ids(
         self,
@@ -1037,9 +1168,15 @@ class FinanzasCoreService:
         """
         qs = (
             ReciboHonorarioDelegadoMensual.objects
-            .select_related("delegado__perfil_ingeniero")
+            .select_related(
+                "delegado__perfil_ingeniero",
+                "delegado_operacion__municipalidad",
+                "delegado_operacion__tipo_liquidacion",
+                "delegado_operacion__especialidad_revision",
+            )
             .prefetch_related(
                 "detalles__liquidacion_delegado__liquidacion",
+                "detalles__liquidacion_delegado__delegado_operacion",
             )
             .order_by("-periodo")
         )
@@ -1075,7 +1212,10 @@ class FinanzasCoreService:
             ReciboHonorarioInspectorMensual.objects
             .select_related("inspector__perfil_ingeniero", "escala_descuento")
             .prefetch_related(
-                "detalles__liquidacion_por_categoria_visitas__liquidacion_general__proyecto",
+                "detalles__liquidacion_por_categoria_visitas__liquidacion_general__proyecto__distrito",
+                "detalles__liquidacion_por_categoria_visitas__liquidacion_general__proyecto__distrito__provincia",
+                "detalles__liquidacion_por_categoria_visitas__liquidacion_general__inspeccion_obra",
+                "detalles__liquidacion_por_categoria_visitas__liquidacion_general__comprobantes",
             )
             .order_by("-periodo")
         )

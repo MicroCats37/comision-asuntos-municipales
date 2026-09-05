@@ -153,6 +153,7 @@ class InspectorPresenter:
                     categoria=item.categoria,
                     numero_registro=item.numero_registro,
                     vigencia=item.vigencia,
+                    inspector_operacion_id=uuid.UUID(item.inspector_operacion_id),
                 )
             )
         return InspectoresSeleccionablesOut(inspectores=inspectores)

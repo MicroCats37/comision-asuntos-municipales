@@ -41,6 +41,7 @@ def make_liquidacion_general_payload(
     observacion="Test liquidacion",
     proyecto=None,
     contacto=None,
+    denominacion_de_proyecto=None,
 ):
     """Build the liquidacion_general dict.
 
@@ -50,6 +51,7 @@ def make_liquidacion_general_payload(
         observacion: str
         proyecto: dict — result of make_proyecto_payload(), or None (a default is created)
         contacto: dict or None — contacto sub-dict (nombres, apellidos, dni, cargo, celular)
+        denominacion_de_proyecto: str or None — project title at liquidacion level
     """
     if proyecto is None:
         raise ValueError("proyecto is required (use make_proyecto_payload)")
@@ -61,6 +63,8 @@ def make_liquidacion_general_payload(
     }
     if contacto is not None:
         result["contacto"] = contacto
+    if denominacion_de_proyecto is not None:
+        result["denominacion_de_proyecto"] = denominacion_de_proyecto
     return result
 
 
@@ -75,6 +79,8 @@ def make_payload_po(
     tarifas=None,
     observacion="Test PO",
     contacto=None,
+    tipo_tramite=None,
+    denominacion_de_proyecto=None,
 ):
     """Build a complete PO (PorcentajeObra) payload for Edificaciones/Taludes/Impacto Vial.
 
@@ -89,6 +95,8 @@ def make_payload_po(
         tarifas: list or None — None/[] = auto-fill, [...] = explicit
         observacion: str
         contacto: dict or None — contacto sub-dict (nombres, apellidos, dni, cargo, celular)
+        tipo_tramite: str or None — tipo_tramite value (e.g. OBRA_NUEVA, AMPLIACION).
+            Sent at top level of liquidacion_especifica to match frontend payload format.
 
     Returns:
         dict with keys: liquidacion_general, liquidacion_especifica
@@ -103,18 +111,24 @@ def make_payload_po(
         observacion=observacion,
         proyecto=proyecto,
         contacto=contacto,
+        denominacion_de_proyecto=denominacion_de_proyecto,
     )
     # auto-fill mode: send empty list (not null) so backend recognizes auto-fill
     tarifas_list = [] if tarifas is None else tarifas
 
+    especifica = {
+        "datos": {
+            "valor_declarado": valor_declarado,
+        },
+        "tarifas": tarifas_list,
+    }
+    # tipo_tramite sent at top level (frontend format)
+    if tipo_tramite is not None:
+        especifica["tipo_tramite"] = tipo_tramite
+
     return {
         "liquidacion_general": general,
-        "liquidacion_especifica": {
-            "datos": {
-                "valor_declarado": valor_declarado,
-            },
-            "tarifas": tarifas_list,
-        },
+        "liquidacion_especifica": especifica,
     }
 
 

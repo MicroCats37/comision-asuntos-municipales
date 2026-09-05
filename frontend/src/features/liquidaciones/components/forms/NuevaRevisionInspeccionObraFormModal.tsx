@@ -125,7 +125,7 @@ export function NuevaRevisionInspeccionObraFormModal({
       title="Nueva Liquidación"
       description={
         lg
-          ? `Basada en: ${lg.proyecto.denominacion}`
+          ? `Basada en: ${lg.denominacion_de_proyecto}`
           : "Crea la primera liquidación de Inspección de Obra"
       }
       eyebrow="Inspección de Obra — Primera Liquidación"
@@ -161,7 +161,7 @@ export function NuevaRevisionInspeccionObraFormModal({
                       </div>
                       <div className="min-w-0">
                         <p className="text-base font-bold text-foreground truncate">
-                          {lg.proyecto.denominacion}
+                          {lg.denominacion_de_proyecto}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {lg.municipalidad?.codigo
@@ -332,7 +332,7 @@ export function NuevaRevisionInspeccionObraFormModal({
           <SeleccionarInspectorModal
             open={inspectorModalOpen}
             onOpenChange={setInspectorModalOpen}
-            tipoLiquidacion={previa?.tipo_liquidacion?.codigo ?? null}
+            tipoLiquidacion={previa?.tipo_liquidacion?.codigo ?? undefined}
             categoriaForm={categoria || null}
             selectedId={methods.watch("inspector_id") || undefined}
             onSelect={(id, nombre) => {

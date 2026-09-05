@@ -16,13 +16,15 @@ export type ContactoInline = z.infer<typeof contactoInlineSchema>;
 
 // Shared proyecto fields used in all 6 create forms
 export const proyectoFormSchema = z.object({
-  denominacion: z.string().min(1, "Requerido"),
+  denominacion: z.string().optional(),
   nombre_propietario: z.string().min(1, "Requerido"),
   direccion: z.string().min(1, "Requerido"),
   distrito_id: z.string().min(1, "Requerido"),
-  entidad_tipo_documento: z.enum(["RUC", "DNI"], {
-    message: "Selecciona el tipo de documento",
-  }),
+  urbanizacion: z.string().optional(),
+  entidad_tipo_documento: z
+    .enum(["RUC", "DNI"])
+    .optional()
+    .or(z.literal("")),
   entidad_numero_documento: z.string().min(1, "Requerido"),
   entidad_razon_social: z.string().min(1, "Requerido"),
 });

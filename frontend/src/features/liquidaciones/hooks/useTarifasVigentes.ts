@@ -35,9 +35,26 @@ interface UseTarifasVigentesProps {
   enabled?: boolean;
   /** Tiempo de revalidación. Default 5 min (catálogo, rara vez cambia). */
   staleTime?: number;
+  /** Fecha para tarifas históricas (modo edit). Si se provee, se añade al queryKey. */
+  fecha?: string;
 }
 
 const STALE_TIME_CATALOGO = 1000 * 60 * 5;
+
+/**
+ * Normalizes a date/datetime string to YYYY-MM-DD for API query params.
+ * Avoids new Date().toISOString() which can shift the calendar date due to
+ * timezone conversion (e.g. 2023-08-28T22:00-05:00 would become 2023-08-29).
+ * - If already YYYY-MM-DD (10 chars, first char is a digit), returns as-is.
+ * - Otherwise slices the date part before the first "T" (ISO datetime).
+ */
+function toDateString(fecha: string | undefined): string | undefined {
+  if (!fecha) return undefined;
+  // Already a plain date — return as-is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
+  // ISO datetime — extract only the date part before "T"
+  return fecha.split("T")[0];
+}
 
 function useTarifasVigentesFetch<TShape>({
   tipo,
@@ -45,16 +62,25 @@ function useTarifasVigentesFetch<TShape>({
   fallback,
   enabled = true,
   staleTime = STALE_TIME_CATALOGO,
+  fecha,
 }: {
   tipo: string;
   schema: z.ZodType<TShape>;
   fallback: TShape;
   enabled?: boolean;
   staleTime?: number;
+  fecha?: string;
 }) {
+  const normalizedFecha = toDateString(fecha);
+  const queryKey = normalizedFecha
+    ? ["liquidaciones", tipo, "tarifas-vigentes", normalizedFecha]
+    : ["liquidaciones", tipo, "tarifas-vigentes"];
+  const url = normalizedFecha
+    ? `/liquidaciones/${tipo}/tarifas/vigentes?fecha=${normalizedFecha}`
+    : `/liquidaciones/${tipo}/tarifas/vigentes`;
   return useApiQuery<Envelope<TShape>, TShape>({
-    queryKey: ["liquidaciones", tipo, "tarifas-vigentes"],
-    url: `/liquidaciones/${tipo}/tarifas/vigentes`,
+    queryKey,
+    url,
     schema: apiResponseSchema(schema) as unknown as z.ZodType<Envelope<TShape>>,
     queryOptions: {
       enabled,

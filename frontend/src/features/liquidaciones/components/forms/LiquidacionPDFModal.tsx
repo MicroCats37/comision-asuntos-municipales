@@ -106,7 +106,7 @@ export function LiquidacionPDFModal({
               <div>
                 <span className="text-xs text-muted-foreground">Proyecto</span>
                 <p className="font-semibold text-foreground truncate">
-                  {lg.proyecto.denominacion}
+                  {lg.denominacion_de_proyecto}
                 </p>
               </div>
               <div>

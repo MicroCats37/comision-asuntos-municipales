@@ -17,6 +17,14 @@ class ReciboHonorarioInspectorMensual(BaseModel):
         related_name="recibos_mensuales",
         verbose_name="Inspector",
     )
+    inspector_operacion = models.ForeignKey(
+        "liquidaciones.InspectorOperacion",
+        on_delete=models.PROTECT,
+        related_name="recibos_honorario_mensual",
+        verbose_name="Inspector de Operación",
+        blank=True,
+        null=True,
+    )
     periodo = models.CharField(max_length=7, verbose_name="Periodo (YYYY-MM)")
     fecha_registro = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Registro")
     escala_descuento = models.ForeignKey(
@@ -33,9 +41,6 @@ class ReciboHonorarioInspectorMensual(BaseModel):
         verbose_name = "Recibo de Honorarios Mensual del Inspector"
         verbose_name_plural = "Recibos de Honorarios Mensuales del Inspector"
         ordering = ["-periodo"]
-        constraints = [
-            models.UniqueConstraint(fields=["inspector", "periodo"], name="unique_rh_inspector_mensual"),
-        ]
 
     def __str__(self):
         return f"RH Inspector {self.inspector_id} - {self.periodo}"

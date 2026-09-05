@@ -10,6 +10,8 @@ import { FileText, HardHat, Loader2, Receipt, User, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { notify } from "@/errors";
 import { useCrearReciboInspector } from "@/features/finanzas/hooks/useCrearReciboInspector";
 import type { LiquidacionInspectorAsignacion } from "@/features/finanzas/schemas/inspector-asignacion.schema";
@@ -188,13 +190,10 @@ export function CrearReciboInspectorModal({
                       <User className="h-4 w-4 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <label
-                        htmlFor="inspecciones-mes"
-                        className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block"
-                      >
+                      <Label htmlFor="inspecciones-mes" className="text-[10px]">
                         N° Inspecciones del Mes
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         id="inspecciones-mes"
                         type="number"
                         min={1}
@@ -203,7 +202,7 @@ export function CrearReciboInspectorModal({
                           setInspeccionesMes(e.target.value.replace(/\D/g, ""))
                         }
                         placeholder="Ej. 2"
-                        className="mt-1 w-full h-10 rounded-xl border border-input bg-background px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="mt-1 h-10 text-sm font-semibold"
                       />
                     </div>
                   </div>
