@@ -14,6 +14,7 @@ Covers:
 - cotizar() retorna liquidacion_delegado_id=None (expected — record not created yet)
 """
 import pytest
+import uuid
 from decimal import Decimal
 from datetime import date
 from django.core.management import call_command
@@ -246,8 +247,9 @@ def liquidacion_porcentaje_detalle(
     db, liquidacion_porcentaje_obra, tarifa_porcentaje_obra, especialidad_estructuras
 ):
     """LiquidacionPorcentajeObraDetalle matching the delegado's especialidad.
-    
-    imp_bruto = subtotal = 1000.00
+
+    New flow (with CIP remainder math): subtotal=1000.00 (importe_total was redundant, removed).
+    Pure taxes are calculated on importe_parcial, renta_cip absorbs the adjustment.
     """
     return LiquidacionPorcentajeObraDetalle.objects.create(
         liquidacion_porcentaje=liquidacion_porcentaje_obra,
@@ -255,6 +257,98 @@ def liquidacion_porcentaje_detalle(
         especialidad=especialidad_estructuras,
         porcentaje_aplicado=Decimal("0.0010"),
         subtotal=Decimal("1000.00"),
+        importe_parcial=Decimal("1000.00"),
+        ajuste_redondeo=Decimal("0.00"),
+    )
+
+
+@pytest.fixture
+def liquidacion_porcentaje_detalle_con_ajuste(
+    db, liquidacion_porcentaje_obra, tarifa_porcentaje_obra, especialidad_estructuras
+):
+    """
+    LiquidacionPorcentajeObraDetalle with explicit importe_parcial / ajuste_redondeo
+    to exercise the CIP remainder correction in cotizar().
+
+    Scenario: two items, each with ajuste_redondeo = +0.01 (total +0.02).
+    The cotizar() algorithm adds suma_ajustes_redondeo to the base CIP tax.
+
+    Data (importe_total was redundant with subtotal, now removed):
+      - Item 1: subtotal=1000.01 (importe_parcial=1000.00, ajuste_redondeo=+0.01)
+      - Item 2: subtotal=1000.01 (importe_parcial=1000.00, ajuste_redondeo=+0.01)
+      - sub_total = 2000.02
+
+    Per-item calculations (tasa: renta_cip=0.25, aporte_codemu=0.05, fondo_comun=0.10):
+      - item_renta_cip_1 = 1000.01 × 0.25 = 250.00
+      - item_renta_cip_2 = 1000.01 × 0.25 = 250.00
+      - total_renta_cip_raw = 500.00
+      - suma_ajustes_redondeo = +0.02
+      - total_renta_cip = 500.00 + 0.02 = 500.02
+    """
+    return LiquidacionPorcentajeObraDetalle.objects.create(
+        liquidacion_porcentaje=liquidacion_porcentaje_obra,
+        tarifa_aplicada=tarifa_porcentaje_obra,
+        especialidad=especialidad_estructuras,
+        porcentaje_aplicado=Decimal("0.0010"),
+        subtotal=Decimal("1000.01"),
+        importe_parcial=Decimal("1000.00"),
+        ajuste_redondeo=Decimal("0.01"),
+    )
+
+
+@pytest.fixture
+def segundo_liquidacion_general_porcentaje(
+    db, proyecto, municipalidad, tipo_edificacion, usuario_liquidacion, igv_vigente, uit_vigente
+):
+    """Second LiquidacionGeneral of EDIFICACION type for multi-item RH tests."""
+    return LiquidacionGeneral.objects.create(
+        proyecto=proyecto,
+        municipalidad=municipalidad,
+        tipo_liquidacion=tipo_edificacion,
+        usuario_creador=usuario_liquidacion,
+        expediente="EXP-DEL-MEN-002",
+        estado="REGISTRADO",
+        sub_total=Decimal("3000.00"),
+        total=Decimal("3540.00"),
+        igv_id=igv_vigente,
+        uit_id=uit_vigente,
+        numero_revision=1,
+    )
+
+
+@pytest.fixture
+def segunda_liquidacion_porcentaje_obra(
+    db, segundo_liquidacion_general_porcentaje, derecho_porcentaje_vigente
+):
+    """Second LiquidacionPorcentajeObra for multi-item RH tests."""
+    return LiquidacionPorcentajeObra.objects.create(
+        liquidacion_general=segundo_liquidacion_general_porcentaje,
+        tipo_tramite="OBRA_NUEVA",
+        valor_declarado=Decimal("60000.00"),
+        porcentaje_liquidacion=Decimal("0.0010"),
+        derecho_minimo=Decimal("500.00"),
+        derecho_maximo=Decimal("50000.00"),
+        porcentaje_minimo_uit=Decimal("0.10"),
+        derecho_aplicado=derecho_porcentaje_vigente,
+    )
+
+
+@pytest.fixture
+def segunda_liquidacion_porcentaje_detalle_con_ajuste(
+    db, segunda_liquidacion_porcentaje_obra, tarifa_porcentaje_obra, especialidad_estructuras
+):
+    """
+    Second LiquidacionPorcentajeObraDetalle with the same ajuste_redondeo=+0.01
+    so that the test can assert that the total CIP includes the sum of both adjustments.
+    """
+    return LiquidacionPorcentajeObraDetalle.objects.create(
+        liquidacion_porcentaje=segunda_liquidacion_porcentaje_obra,
+        tarifa_aplicada=tarifa_porcentaje_obra,
+        especialidad=especialidad_estructuras,
+        porcentaje_aplicado=Decimal("0.0010"),
+        subtotal=Decimal("600.01"),
+        importe_parcial=Decimal("600.00"),
+        ajuste_redondeo=Decimal("0.01"),
     )
 
 
@@ -294,11 +388,12 @@ def orquestador(core_service):
     return FinanzasOrchestrator(flujo=flujo, core=core_service)
 
 
-def _payload(cip: str, periodo: str, items: list[dict], delegado_operacion_id: str = "00000000-0000-0000-0000-000000000001"):
+def _payload(cip: str, periodo: int, mes: int, items: list[dict], delegado_operacion_id: str = "00000000-0000-0000-0000-000000000001"):
     """Helper para construir el payload de cotización del delegado."""
     return RHDelegadoCotizarIn(
         cip=cip,
         periodo=periodo,
+        mes=mes,
         delegado_operacion_id=delegado_operacion_id,
         items=[RHDelegadoCotizarItemIn(**i) for i in items],
     )
@@ -325,7 +420,7 @@ def test_cotizar_retorna_liquidacion_delegado_id_null(
     result = cotizar_flujo.cotizar(
         _payload(
             cip=perfil_ingeniero_delegado.cip,
-            periodo="2026-01",
+            periodo=2026, mes=1,
             items=[{
                 "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
                 "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
@@ -337,7 +432,8 @@ def test_cotizar_retorna_liquidacion_delegado_id_null(
     )
 
     assert result.delegado.id == str(delegado.id)
-    assert result.periodo == "2026-01"
+    assert result.periodo == 2026
+    assert result.mes == 1
     assert len(result.items) == 1
 
     item = result.items[0]
@@ -375,7 +471,7 @@ def test_crear_retorna_liquidacion_delegado_id_poblado(
     result = crear_flujo.crear(
         _payload(
             cip=perfil_ingeniero_delegado.cip,
-            periodo="2026-01",
+            periodo=2026, mes=1,
             items=[{
                 "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
                 "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
@@ -456,7 +552,7 @@ def test_crear_multiple_items_cada_uno_retorna_su_liquidacion_delegado_id(
     result = crear_flujo.crear(
         _payload(
             cip=perfil_ingeniero_delegado.cip,
-            periodo="2026-02",
+            periodo=2026, mes=2,
             items=[
                 {
                     "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
@@ -507,7 +603,7 @@ def test_cotizar_cip_inexistente_retorna_404(
         cotizar_flujo.cotizar(
             _payload(
                 cip="CIP-INEXISTENTE",
-                periodo="2026-01",
+                periodo=2026, mes=1,
                 items=[{"liquidacion_general_id": "00000000-0000-0000-0000-000000000001", "especialidad_revision_id": "00000000-0000-0000-0000-000000000001"}],
             )
         )
@@ -539,7 +635,7 @@ def test_cotizar_liquidacion_sin_detalle_porcentaje_retorna_400(
         cotizar_flujo.cotizar(
             _payload(
                 cip=perfil_ingeniero_delegado.cip,
-                periodo="2026-01",
+                periodo=2026, mes=1,
                 items=[{
                     "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
                     "especialidad_revision_id": str(otra_especialidad.id),
@@ -581,7 +677,7 @@ def test_list_rh_mensual_detalles_incluye_todos_los_campos_por_fila(
     result = crear_flujo.crear(
         RHDelegadoCotizarIn(
             cip=perfil_ingeniero_delegado.cip,
-            periodo="2026-03",
+            periodo=2026, mes=3,
             delegado_operacion_id=str(delegado_operacion.id),
             items=[
                 RHDelegadoCotizarItemIn(
@@ -598,7 +694,7 @@ def test_list_rh_mensual_detalles_incluye_todos_los_campos_por_fila(
     cotizar_result = cotizar_flujo.cotizar(
         RHDelegadoCotizarIn(
             cip=perfil_ingeniero_delegado.cip,
-            periodo="2026-03",
+            periodo=2026, mes=3,
             delegado_operacion_id=str(delegado_operacion.id),
             items=[
                 RHDelegadoCotizarItemIn(
@@ -692,7 +788,8 @@ def test_crear_rh_delegado_mensual_con_delegado_operacion_setea_delegado_from_op
     causing: django.db.utils.IntegrityError: NOT NULL constraint failed:
     finanzas_recibohonorariodelegadomensual.delegado_id
     """
-    periodo = "2026-01"
+    periodo = 2026
+    mes = 1
     sub_total = Decimal("1000.00")
     renta_cip = Decimal("250.00")
     aporte_codemu = Decimal("50.00")
@@ -703,6 +800,7 @@ def test_crear_rh_delegado_mensual_con_delegado_operacion_setea_delegado_from_op
     recibo = core_service.crear_rh_delegado_mensual(
         delegado_id=str(delegado.id),
         periodo=periodo,
+        mes=mes,
         sub_total=sub_total,
         renta_cip=renta_cip,
         aporte_codemu=aporte_codemu,
@@ -732,6 +830,7 @@ def test_crear_rh_delegado_mensual_con_delegado_operacion_setea_delegado_from_op
     recibo2 = core_service.crear_rh_delegado_mensual(
         delegado_id=str(delegado.id),
         periodo=periodo,
+        mes=mes,
         sub_total=sub_total,
         renta_cip=renta_cip,
         aporte_codemu=aporte_codemu,
@@ -784,18 +883,20 @@ def test_cotizar_usa_tasa_del_tipo_de_la_operatividad(
     result = cotizar_flujo.cotizar(
         _payload(
             cip=perfil_ingeniero_delegado.cip,
-            periodo="2026-04",
+            periodo=2026, mes=1,
             items=[{
                 "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
                 "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
                 "periodo": 2026,
-                "mes": 4,
+                "mes": 1,
             }],
             delegado_operacion_id=str(delegado_operacion.id),
         )
     )
 
-    # imp_bruto = 1000.00 → EDIFICACION: renta 0.25 -> 250.00 (no 300 del otro tipo)
+    # New math: Pure taxes on importe_parcial=1000.00; renta_cip derived by subtraction.
+    # Since no ajuste_redondeo, renta_cip = 1000.00 - 600.00 - 50.00 - 100.00 = 250.00
+    # (EDIFICACION 0.25 rate — TALUDES 0.30 is different and not used here)
     assert result.totales.renta_cip == Decimal("250.00")
     assert result.totales.aporte_codemu == Decimal("50.00")
     assert result.totales.fondo_comun == Decimal("100.00")
@@ -830,7 +931,7 @@ def test_cotizar_operatividad_sin_tipo_retorna_400(
         cotizar_flujo.cotizar(
             _payload(
                 cip=perfil_ingeniero_delegado.cip,
-                periodo="2026-05",
+                periodo=2026, mes=5,
                 items=[{
                     "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
                     "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
@@ -880,3 +981,134 @@ def test_seed_tasas_delegado_replica_para_los_6_tipos(db):
         assert tasa.renta_cip == Decimal("0.25")
         assert tasa.aporte_codemu == Decimal("0.05")
         assert tasa.fondo_comun == Decimal("0.10")
+
+
+@pytest.mark.django_db
+def test_cotizar_renta_cip_includes_ajuste_redondeo_sum_and_populates_all_decimal_fields(
+    cotizar_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    segundo_liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle_con_ajuste,
+    segunda_liquidacion_porcentaje_detalle_con_ajuste,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    CIP PURE MATH ON IMPORTE_PARCIAL: Pure taxes (neto, codemu, fondo) are calculated
+    on importe_parcial; renta_cip is derived by subtraction from subtotal
+    (importe_total was redundant, now removed), forcing it to absorb the 0.01
+    adjustment and any rate rounding anomalies.
+
+    Two liquidations, each with:
+      - Item 1: subtotal=1000.01 (importe_parcial=1000.00, ajuste_redondeo=+0.01)
+      - Item 2: subtotal=600.01 (importe_parcial=600.00, ajuste_redondeo=+0.01)
+
+    New math (tasa: renta_cip=0.25, aporte_codemu=0.05, fondo_comun=0.10):
+      Item 1: Pure taxes on 1000.00 → neto=600.00, codemu=50.00, fondo=100.00
+              renta_cip = 1000.01 - 600.00 - 50.00 - 100.00 = 250.01 (CIP absorbs adjustment)
+      Item 2: Pure taxes on 600.00 → neto=360.00, codemu=30.00, fondo=60.00
+              renta_cip = 600.01 - 360.00 - 30.00 - 60.00 = 150.01 (CIP absorbs adjustment)
+
+    Totales: sub_total=1600.02, renta_cip=400.02, codemu=80.00, fondo=160.00, neto=960.00
+
+    Also verifies that all 5 Decimal fields + tasa_delegado_id are populated
+    in both the per-item result and the totals/variables_calculo result.
+    """
+    result = cotizar_flujo.cotizar(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=6,
+            items=[
+                {
+                    "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(
+                        liquidacion_porcentaje_detalle_con_ajuste.especialidad_id
+                    ),
+                    "periodo": 2026,
+                    "mes": 6,
+                },
+                {
+                    "liquidacion_general_id": str(segundo_liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(
+                        segunda_liquidacion_porcentaje_detalle_con_ajuste.especialidad_id
+                    ),
+                    "periodo": 2026,
+                    "mes": 6,
+                },
+            ],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+
+    assert len(result.items) == 2
+    assert result.delegado.id == str(delegado.id)
+    assert result.periodo == 2026
+    assert result.mes == 6
+
+    # ── Per-item assertions (Decimal fields populated) ──
+    for item in result.items:
+        # All 5 Decimal fields must be non-None
+        assert item.imp_bruto is not None, "imp_bruto must be populated"
+        assert item.renta_cip is not None, "renta_cip must be populated"
+        assert item.aporte_codemu is not None, "aporte_codemu must be populated"
+        assert item.fondo_comun is not None, "fondo_comun must be populated"
+        assert item.neto_honorario is not None, "neto_honorario must be populated"
+
+        # All Decimals must have ≤ 2 decimal places
+        for field_name in ["imp_bruto", "renta_cip", "aporte_codemu", "fondo_comun", "neto_honorario"]:
+            val = getattr(item, field_name)
+            assert val.as_tuple().exponent >= -2, (
+                f"item.{field_name}={val} exceeds 2 decimal places"
+            )
+
+    # Item 1: Pure taxes on 1000.00 → renta=250.01, codemu=50.00, fondo=100.00, neto=600.00
+    # (CIP absorbs the 0.01 ajuste_redondeo: 1000.01 - 600.00 - 50.00 - 100.00 = 250.01)
+    i0 = result.items[0]
+    assert i0.imp_bruto == Decimal("1000.01")
+    assert i0.renta_cip == Decimal("250.01")
+    assert i0.aporte_codemu == Decimal("50.00")
+    assert i0.fondo_comun == Decimal("100.00")
+    assert i0.neto_honorario == Decimal("600.00")
+
+    # Item 2: Pure taxes on 600.00 → renta=150.01, codemu=30.00, fondo=60.00, neto=360.00
+    # (CIP absorbs the 0.01 ajuste_redondeo: 600.01 - 360.00 - 30.00 - 60.00 = 150.01)
+    i1 = result.items[1]
+    assert i1.imp_bruto == Decimal("600.01")
+    assert i1.renta_cip == Decimal("150.01")
+    assert i1.aporte_codemu == Decimal("30.00")
+    assert i1.fondo_comun == Decimal("60.00")
+    assert i1.neto_honorario == Decimal("360.00")
+
+    # ── Totales assertions ──
+    # sub_total = 1000.01 + 600.01 = 1600.02
+    assert result.totales.sub_total == Decimal("1600.02")
+
+    # KEY ASSERTION: total_renta_cip = sub_total - total_neto - total_codemu - total_fondo
+    # (CIP absorbs the accumulated adjustments intrinsically via sub_total)
+    # total_renta_cip = 1600.02 - 960.00 - 80.00 - 160.00 = 400.02
+    assert result.totales.renta_cip == Decimal("400.02"), (
+        f"renta_cip={result.totales.renta_cip} must equal "
+        f"sub_total(1600.02) - neto(960.00) - codemu(80.00) - fondo(160.00) = 400.02"
+    )
+
+    # Other totals (pure taxes are calculated on importe_parcial, not subtotal)
+    assert result.totales.aporte_codemu == Decimal("80.00")  # 50 + 30
+    assert result.totales.fondo_comun == Decimal("160.00")   # 100 + 60
+    assert result.totales.neto_honorario == Decimal("960.00")  # 600.00 + 360.00
+
+    # ── variables_calculo: tasa_delegado_id must be populated ──
+    assert result.variables_calculo is not None
+    assert result.variables_calculo.tasa_delegado_id is not None, (
+        "tasa_delegado_id must be populated in variables_calculo"
+    )
+    assert isinstance(result.variables_calculo.tasa_delegado_id, uuid.UUID)
+
+    # All 3 tasas must be present
+    assert result.variables_calculo.tasa_renta_cip == Decimal("0.25")
+    assert result.variables_calculo.tasa_aporte_codemu == Decimal("0.05")
+    assert result.variables_calculo.tasa_fondo_comun == Decimal("0.10")
+
+    # No LiquidacionDelegado records created (cotizar is read-only)
+    assert LiquidacionDelegado.objects.count() == 0

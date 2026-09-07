@@ -98,6 +98,7 @@ class LiquidacionPorcentajeObraCoreService:
         igv_porcentaje: Decimal,
         derecho: DerechoPorcentajeObra,
         uit_valor: Decimal,
+        override_subtotal: Decimal | None = None,
     ) -> CotizacionPorcentajeObraData:
         """
         Pure arithmetic for the PorcentajeObra motor.
@@ -107,7 +108,7 @@ class LiquidacionPorcentajeObraCoreService:
         (sourced from LiquidacionEspecialidadDisponibles) — NOT from TarifaPorcentajeObra.especialidad
         (that FK no longer exists).
 
-        Steps:
+        Steps (bypassed when override_subtotal is set):
         1. Sumar porcentajes de todas las tarifas (ej: 3 x 0.05% = 0.15%)
         2. subtotal_bruto = valor_declarado x porcentaje_total
         3. minimo = uit_valor x derecho.porcentaje_minimo_uit (aplica a la LIQUIDACION, no por tarifa)
@@ -122,19 +123,26 @@ class LiquidacionPorcentajeObraCoreService:
             # pero no existe excepción de dominio específica y se mantiene como guard aquí.
             raise HttpError(400, "Se requiere al menos una tarifa")
 
-        # Paso 1-2: subtotal bruto agregado (NO por tarifa)
-        porcentaje_total = sum(
-            (t.porcentaje_liquidacion for t in tarifas), Decimal("0")
-        )
-        subtotal_bruto = valor_declarado * porcentaje_total
+        # Optional Legacy Totals Bypass: use Excel totals directly, skip Steps 1-5
+        if override_subtotal is not None:
+            subtotal_total = override_subtotal.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            porcentaje_total = sum(
+                (t.porcentaje_liquidacion for t in tarifas), Decimal("0")
+            )
+        else:
+            # Paso 1-2: subtotal bruto agregado (NO por tarifa)
+            porcentaje_total = sum(
+                (t.porcentaje_liquidacion for t in tarifas), Decimal("0")
+            )
+            subtotal_bruto = valor_declarado * porcentaje_total
 
-        # Paso 3-4: minimo aplica a la liquidacion completa (UNA vez)
-        minimo = uit_valor * derecho.porcentaje_minimo_uit
-        subtotal_total = max(subtotal_bruto, minimo)
+            # Paso 3-4: minimo aplica a la liquidacion completa (UNA vez)
+            minimo = uit_valor * derecho.porcentaje_minimo_uit
+            subtotal_total = max(subtotal_bruto, minimo)
 
-        # Paso 5: clamp a maximo si aplica
-        if derecho.derecho_maximo is not None and subtotal_total > derecho.derecho_maximo:
-            subtotal_total = derecho.derecho_maximo
+            # Paso 5: clamp a maximo si aplica
+            if derecho.derecho_maximo is not None and subtotal_total > derecho.derecho_maximo:
+                subtotal_total = derecho.derecho_maximo
 
         # Redondear el total a 2 decimales ANTES de repartir (moneda)
         subtotal_total = subtotal_total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
@@ -142,10 +150,34 @@ class LiquidacionPorcentajeObraCoreService:
         # Paso 6: repartir proporcionalmente entre detalles.
         # El último detalle absorbe la diferencia de redondeo (remainder) para que
         # SUM(detalles.subtotal) == subtotal_total EXACTO (sin drift de céntimos).
+        #
+        # SHADOW MODE: el campo `subtotal` se calcula IGUAL que antes para no romper
+        # lectores downstream. En paralelo se calculan los nuevos campos de alta precisión:
+        #   - importe_parcial: valor teórico por especialidad, quantizado.
+        #   - ajuste_redondeo: 0.00 para todos, el último recibe el remainder.
+        #   (importe_total fue eliminado — era idéntico a subtotal)
         detalles: List[DetallePorcentajeObraData] = []
         n = len(tarifas)
+
+        # Primera pasada: calcular importe_parcial teórico para cada detalle
+        importe_parciales: List[Decimal] = []
         for idx, tarifa_dto in enumerate(tarifas):
-            # Proporcion de esta tarifa sobre el total
+            if porcentaje_total > 0:
+                proporcion = tarifa_dto.porcentaje_liquidacion / porcentaje_total
+            else:
+                proporcion = Decimal("1") / Decimal(n)
+            theoretical_value = subtotal_total * proporcion
+            importe_parcial = theoretical_value.quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            importe_parciales.append(importe_parcial)
+
+        # Calcular el ajuste de redondeo total (remainder)
+        suma_importe_parcial = sum(importe_parciales, Decimal("0"))
+        ajuste_total = subtotal_total - suma_importe_parcial
+
+        # Segunda pasada: construir los detalles definitivos
+        for idx, tarifa_dto in enumerate(tarifas):
             if porcentaje_total > 0:
                 proporcion = tarifa_dto.porcentaje_liquidacion / porcentaje_total
             else:
@@ -161,6 +193,13 @@ class LiquidacionPorcentajeObraCoreService:
                     Decimal("0.01"), rounding=ROUND_HALF_UP
                 )
 
+            # Shadow Mode: nuevos campos de alta precisión
+            importe_parcial = importe_parciales[idx]
+            if idx == n - 1:
+                ajuste_redondeo = ajuste_total
+            else:
+                ajuste_redondeo = Decimal("0.00")
+
             # With tarifa-unica: the DTO already has explicit especialidad from input.
             # El detalle SOLO lleva subtotal parcial — el IGV y el total se calculan
             # a nivel global (subtotal_total), NO por tarifa.
@@ -169,6 +208,8 @@ class LiquidacionPorcentajeObraCoreService:
                     tarifa_aplicada=tarifa_dto,  # already has especialidad_id/nombre
                     porcentaje_aplicado=tarifa_dto.porcentaje_liquidacion,
                     subtotal=subtotal_detalle,
+                    importe_parcial=importe_parcial,
+                    ajuste_redondeo=ajuste_redondeo,
                 )
             )
 
@@ -237,5 +278,7 @@ class LiquidacionPorcentajeObraCoreService:
                 especialidad_id=detalle.tarifa_aplicada.especialidad_id,
                 porcentaje_aplicado=detalle.porcentaje_aplicado,
                 subtotal=detalle.subtotal,
+                importe_parcial=detalle.importe_parcial,
+                ajuste_redondeo=detalle.ajuste_redondeo,
             )
         return liquidacion_po

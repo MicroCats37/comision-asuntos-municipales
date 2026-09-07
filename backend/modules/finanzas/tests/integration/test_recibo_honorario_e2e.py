@@ -518,12 +518,13 @@ def test_e2e_get_recibos_paginated(
     GET /finanzas/recibos-delegados?page=1&page_size=2 returns
     PaginatedData with 2 items, total=3, total_pages=2.
     """
-    for periodo in ("2026-01", "2026-02", "2026-03"):
+    for periodo, mes in ((2026, 1), (2026, 2), (2026, 3)):
         response = api_client.post(
             "/finanzas/recibos-delegados/crear",
             json={
                 "cip": "CIP-99999",
                 "periodo": periodo,
+                "mes": mes,
                 "items": [
                     {
                         "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
@@ -569,12 +570,13 @@ def test_e2e_get_recibos_filters(
     GET with ?delegado_id= returns only the delegado's monthly RH.
     """
     # Create monthly RH for the delegado
-    for periodo in ("2026-01", "2026-02"):
+    for periodo, mes in ((2026, 1), (2026, 2)):
         api_client.post(
             "/finanzas/recibos-delegados/crear",
             json={
                 "cip": "CIP-99999",
                 "periodo": periodo,
+                "mes": mes,
                 "items": [
                     {
                         "liquidacion_general_id": str(liquidacion_general_porcentaje.id),

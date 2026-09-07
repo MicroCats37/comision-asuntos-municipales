@@ -22,32 +22,46 @@ class UsuarioAdmin(UserAdmin):
     search_fields = ["username", "dni", "email", "nombres", "apellidos"]
     list_filter = ["is_staff", "is_active", "is_superuser"]
 
-    # Override fieldsets to match custom Usuario fields
-    fieldsets = UserAdmin.fieldsets + (
+    # Completely override fieldsets — do NOT inherit from UserAdmin.fieldsets
+    # The Usuario model inherits from AbstractBaseUser and lacks first_name, last_name, date_joined
+    fieldsets = (
+        (None, {"fields": ("username", "password")}),
         (
             "Datos personales",
             {
                 "fields": (
-                    "dni",
                     "nombres",
                     "apellidos",
+                    "dni",
+                    "email",
                 )
             },
+        ),
+        (
+            "Permisos",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
+        (
+            "Fechas importantes",
+            {"fields": ("last_login",)},
         ),
     )
 
     # Fields shown when creating a user via admin
-    add_fieldsets = UserAdmin.add_fieldsets + (
-        (
-            "Datos personales",
-            {
-                "fields": (
-                    "dni",
-                    "nombres",
-                    "apellidos",
-                )
-            },
-        ),
+    # UserCreationForm handles password automatically, so we only supply the needed fields
+    add_fieldsets = (
+        (None, {
+            "classes": ("wide",),
+            "fields": ("username", "email", "dni", "nombres", "apellidos"),
+        }),
     )
 
     readonly_fields = ["created_at", "updated_at"]

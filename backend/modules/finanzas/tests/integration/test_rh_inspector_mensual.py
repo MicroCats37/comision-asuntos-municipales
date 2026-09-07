@@ -268,11 +268,12 @@ def crear_flujo(core_service, cotizar_flujo):
     return RHInspectorMensualCrearFlujo(core=core_service, cotizar_flujo=cotizar_flujo)
 
 
-def _payload(cip: str, periodo: str, items: list[dict]):
+def _payload(cip: str, periodo: int, mes: int, items: list[dict]):
     """Helper para construir el payload de cotización."""
     return RHInspectorCotizarIn(
         cip=cip,
         periodo=periodo,
+        mes=mes,
         items=[RHInspectorCotizarItemIn(**i) for i in items],
     )
 
@@ -303,7 +304,7 @@ def test_cotizar_con_cip_valido_inspector_asociado(
     result = cotizar_flujo.cotizar(
         _payload(
             cip=perfil_ingeniero_inspector.cip,
-            periodo="2026-01",
+            periodo=2026, mes=1,
             items=[{
                 "exp_liqui": liquidacion_general_io.expediente,
                 "cantidad_visitas": 4,
@@ -315,7 +316,8 @@ def test_cotizar_con_cip_valido_inspector_asociado(
 
     assert result.inspector.id == str(inspector.id)
     assert result.inspector.cip == perfil_ingeniero_inspector.cip
-    assert result.periodo == "2026-01"
+    assert result.periodo == 2026
+    assert result.mes == 1
     assert len(result.items) == 1
 
     item = result.items[0]
@@ -370,7 +372,7 @@ def test_cotizar_saldo_restante_refleja_quoted(
     result = cotizar_flujo.cotizar(
         _payload(
             cip=perfil_ingeniero_inspector.cip,
-            periodo="2026-01",
+            periodo=2026, mes=1,
             items=[{"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 3}],
         )
     )
@@ -394,7 +396,7 @@ def test_cotizar_cip_inexistente(cotizar_flujo, escala_descuento_15):
         cotizar_flujo.cotizar(
             _payload(
                 cip="CIP-INEXISTENTE",
-                periodo="2026-01",
+                periodo=2026, mes=1,
                 items=[{"exp_liqui": "EXP-ANY", "cantidad_visitas": 1}],
             )
         )
@@ -465,7 +467,7 @@ def test_cotizar_expediente_no_pertenece_al_inspector(
         cotizar_flujo.cotizar(
             _payload(
                 cip=perfil_ingeniero_inspector.cip,  # primer inspector
-                periodo="2026-01",
+                periodo=2026, mes=1,
                 items=[{"exp_liqui": lg_otro.expediente, "cantidad_visitas": 1}],
             )
         )
@@ -492,7 +494,7 @@ def test_cotizar_excede_saldo_disponible(
         cotizar_flujo.cotizar(
             _payload(
                 cip=perfil_ingeniero_inspector.cip,
-                periodo="2026-01",
+                periodo=2026, mes=1,
                 items=[{"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 11}],
             )
         )
@@ -516,7 +518,7 @@ def test_cotizar_expediente_no_existe(
         cotizar_flujo.cotizar(
             _payload(
                 cip=perfil_ingeniero_inspector.cip,
-                periodo="2026-01",
+                periodo=2026, mes=1,
                 items=[{"exp_liqui": "EXP-INEXISTENTE", "cantidad_visitas": 1}],
             )
         )
@@ -546,7 +548,7 @@ def test_crear_rh_inspector_mensual(
     result = crear_flujo.crear(
         _payload(
             cip=perfil_ingeniero_inspector.cip,
-            periodo="2026-01",
+            periodo=2026, mes=1,
             items=[{
                 "exp_liqui": liquidacion_general_io.expediente,
                 "cantidad_visitas": 4,
@@ -568,7 +570,8 @@ def test_crear_rh_inspector_mensual(
     assert ReciboHonorarioInspectorMensual.objects.count() == 1
     rh = ReciboHonorarioInspectorMensual.objects.first()
     assert rh.inspector_id == inspector.id
-    assert rh.periodo == "2026-01"
+    assert rh.periodo == 2026
+    assert rh.mes == 1
     assert rh.sub_total == Decimal("400.00")
     assert rh.descuento == Decimal("60.00")
     assert rh.honorarios == Decimal("340.00")
@@ -611,7 +614,7 @@ def test_crear_siempre_nuevo(
     """
     payload = _payload(
         cip=perfil_ingeniero_inspector.cip,
-        periodo="2026-01",
+        periodo=2026, mes=1,
         items=[{"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 3}],
     )
 
@@ -624,8 +627,10 @@ def test_crear_siempre_nuevo(
     # Se crearon 2 RH mensuales distintos (siempre crea nuevo)
     assert ReciboHonorarioInspectorMensual.objects.count() == 2
     rh_list = list(ReciboHonorarioInspectorMensual.objects.order_by("fecha_registro"))
-    assert rh_list[0].periodo == "2026-01"
-    assert rh_list[1].periodo == "2026-01"
+    assert rh_list[0].periodo == 2026
+    assert rh_list[0].mes == 1
+    assert rh_list[1].periodo == 2026
+    assert rh_list[1].mes == 1
 
     # Cada RH tiene su propio detalle
     assert rh_list[0].detalles.count() == 1
@@ -656,7 +661,7 @@ def test_no_pagar_doble(
     crear_flujo.crear(
         _payload(
             cip=perfil_ingeniero_inspector.cip,
-            periodo="2026-01",
+            periodo=2026, mes=1,
             items=[{"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 4}],
         )
     )
@@ -674,7 +679,7 @@ def test_no_pagar_doble(
         cotizar_flujo.cotizar(
             _payload(
                 cip=perfil_ingeniero_inspector.cip,
-                periodo="2026-01",
+                periodo=2026, mes=1,
                 items=[{"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 7}],
             )
         )
@@ -684,7 +689,7 @@ def test_no_pagar_doble(
     result = cotizar_flujo.cotizar(
         _payload(
             cip=perfil_ingeniero_inspector.cip,
-            periodo="2026-01",
+            periodo=2026, mes=1,
             items=[{"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 6}],
         )
     )
@@ -738,7 +743,7 @@ def test_cotizar_con_multiple_items_diferentes(
     result = cotizar_flujo.cotizar(
         _payload(
             cip=perfil_ingeniero_inspector.cip,
-            periodo="2026-02",
+            periodo=2026, mes=2,
             items=[
                 {"exp_liqui": "EXP-MENSUAL-001", "cantidad_visitas": 4},
                 {"exp_liqui": "EXP-MENSUAL-002", "cantidad_visitas": 2},
@@ -799,7 +804,7 @@ def test_cotizar_liquidacion_no_es_io(
         cotizar_flujo.cotizar(
             _payload(
                 cip=perfil_ingeniero_inspector.cip,
-                periodo="2026-01",
+                periodo=2026, mes=1,
                 items=[{"exp_liqui": lg_otro.expediente, "cantidad_visitas": 1}],
             )
         )
@@ -826,7 +831,7 @@ def test_crear_actualiza_registro_pago_acumulativo(
     crear_flujo.crear(
         _payload(
             cip=perfil_ingeniero_inspector.cip,
-            periodo="2026-03",
+            periodo=2026, mes=3,
             items=[{"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 3}],
         )
     )
@@ -835,7 +840,7 @@ def test_crear_actualiza_registro_pago_acumulativo(
     crear_flujo.crear(
         _payload(
             cip=perfil_ingeniero_inspector.cip,
-            periodo="2026-03",
+            periodo=2026, mes=3,
             items=[{"exp_liqui": liquidacion_general_io.expediente, "cantidad_visitas": 2}],
         )
     )
@@ -848,8 +853,8 @@ def test_crear_actualiza_registro_pago_acumulativo(
     assert registro.inspecciones_pagadas == 5  # 3 + 2
 
     # Dos RH mensuales distintos (siempre crea nuevo)
-    assert ReciboHonorarioInspectorMensual.objects.filter(periodo="2026-03").count() == 2
-    rh_list = list(ReciboHonorarioInspectorMensual.objects.filter(periodo="2026-03").order_by("fecha_registro"))
+    assert ReciboHonorarioInspectorMensual.objects.filter(periodo=2026, mes=3).count() == 2
+    rh_list = list(ReciboHonorarioInspectorMensual.objects.filter(periodo=2026, mes=3).order_by("fecha_registro"))
     # Cada RH tiene su propio detalle (no se mezclan)
     assert rh_list[0].detalles.count() == 1
     assert rh_list[1].detalles.count() == 1
@@ -992,7 +997,8 @@ def test_cotizar_con_liquidacion_categoria_visitas_id(
 
     payload = RHInspectorCotizarIn(
         cip=perfil_ingeniero_inspector.cip,
-        periodo="2026-01",
+        periodo=2026,
+        mes=1,
         items=[
             RHInspectorCotizarItemIn(
                 liquidacion_categoria_visitas_id=str(liquidacion_visitas.id),
@@ -1028,7 +1034,8 @@ def test_cotizar_result_tiene_liquidacion_inspector_id(
 
     payload = RHInspectorCotizarIn(
         cip=perfil_ingeniero_inspector.cip,
-        periodo="2026-01",
+        periodo=2026,
+        mes=1,
         items=[
             RHInspectorCotizarItemIn(
                 exp_liqui=liquidacion_general_io.expediente,

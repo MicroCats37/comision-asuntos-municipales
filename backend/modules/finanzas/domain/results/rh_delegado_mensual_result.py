@@ -3,6 +3,7 @@ RH Delegado Mensual results — DTOs internos para cotización del RH mensual de
 
 Results heredan de pydantic.BaseModel (no BaseSchema).
 """
+import uuid
 from decimal import Decimal
 
 from pydantic import BaseModel
@@ -77,6 +78,7 @@ class RHDelegadoVariablesCalculoResult(BaseModel):
     tasa_renta_cip: Decimal  # e.g. Decimal("0.25")
     tasa_aporte_codemu: Decimal  # e.g. Decimal("0.05")
     tasa_fondo_comun: Decimal  # e.g. Decimal("0.10")
+    tasa_delegado_id: uuid.UUID | None = None  # Frozen FK to TasaDelegado; None when listing legacy records without tasa
 
 
 class RHDelegadoCotizarResult(BaseModel):
@@ -84,7 +86,8 @@ class RHDelegadoCotizarResult(BaseModel):
     Resultado completo de la cotización del RH mensual del delegado.
     """
     delegado: DelegadoRHMinimalResult
-    periodo: str
+    periodo: int | None = None
+    mes: int | None = None
     items: list[RHDelegadoCotizarItemResult]
     totales: RHDelegadoTotalesResult
     variables_calculo: RHDelegadoVariablesCalculoResult
@@ -155,7 +158,8 @@ class RHDelegadoMensualListItemResult(BaseModel):
     Item en la lista paginada de RecibosHonorariosDelegadoMensuales.
     """
     id: str
-    periodo: str
+    periodo: int | None = None
+    mes: int | None = None
     fecha_registro: str  # ISO datetime string
     delegado: DelegadoRHMinimalResult
     totales: RHDelegadoMensualTotalesResult

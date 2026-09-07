@@ -317,6 +317,7 @@ class FinanzasPresenter:
                 dni=result.inspector.dni,
             ),
             periodo=result.periodo,
+            mes=result.mes,
             items=[
                 RHInspectorCotizarItemOut(
                     exp_liqui=i.exp_liqui,
@@ -358,14 +359,6 @@ class FinanzasPresenter:
                     monto_maximo=result.variables_calculo.rango_aplicado.monto_maximo,
                     porcentaje_descuento=result.variables_calculo.rango_aplicado.porcentaje_descuento,
                 ),
-                rangos=[
-                    RangoDescuentoOut(
-                        monto_minimo=r.monto_minimo,
-                        monto_maximo=r.monto_maximo,
-                        porcentaje_descuento=r.porcentaje_descuento,
-                    )
-                    for r in result.variables_calculo.rangos
-                ],
             ),
         )
 
@@ -436,6 +429,7 @@ class FinanzasPresenter:
                 dni=result.delegado.dni,
             ),
             periodo=result.periodo,
+            mes=result.mes,
             items=[
                 RHDelegadoCotizarItemOut(
                     exp_liqui=i.exp_liqui,
@@ -515,6 +509,7 @@ class FinanzasPresenter:
         return RHDelegadoMensualListItemOut(
             id=uuid.UUID(r.id),
             periodo=r.periodo,
+            mes=r.mes,
             fecha_registro=datetime.fromisoformat(r.fecha_registro) if r.fecha_registro else datetime.min,
             delegado=DelegadoMinimalOut(
                 id=uuid.UUID(r.delegado.id),
@@ -629,6 +624,7 @@ class FinanzasPresenter:
         return RHInspectorMensualListItemOut(
             id=uuid.UUID(r.id),
             periodo=r.periodo,
+            mes=r.mes,
             fecha_registro=datetime.fromisoformat(r.fecha_registro) if r.fecha_registro else datetime.min,
             inspector=InspectorMinimalOut(
                 id=uuid.UUID(r.inspector.id),
@@ -659,6 +655,9 @@ class FinanzasPresenter:
                     monto_contribuido=d.monto_contribuido,
                     saldo_restante=d.saldo_restante,
                     liquidacion_especifica_numero=d.liquidacion_especifica_numero,
+                    sub_total=d.sub_total,
+                    descuento=d.descuento,
+                    honorarios=d.honorarios,
                     comprobante_activo=LiquidacionComprobanteMinimalOut(
                         tipo_comprobante=d.comprobante_activo.tipo_comprobante if d.comprobante_activo else None,
                         serie=d.comprobante_activo.serie if d.comprobante_activo else None,
@@ -676,13 +675,5 @@ class FinanzasPresenter:
                     monto_maximo=r.variables_calculo.rango_aplicado.monto_maximo,
                     porcentaje_descuento=r.variables_calculo.rango_aplicado.porcentaje_descuento,
                 ),
-                rangos=[
-                    RangoDescuentoOut(
-                        monto_minimo=rg.monto_minimo,
-                        monto_maximo=rg.monto_maximo,
-                        porcentaje_descuento=rg.porcentaje_descuento,
-                    )
-                    for rg in r.variables_calculo.rangos
-                ],
             ),
         )

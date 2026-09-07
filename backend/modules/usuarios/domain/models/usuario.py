@@ -14,18 +14,18 @@ from core.models import BaseModel, DjangoAuthMixin
 class UsuarioManager(BaseUserManager):
     """Custom manager for Usuario model."""
 
-    def create_user(self, dni, password=None, **extra_fields):
-        if not dni:
-            raise ValueError("El campo DNI debe estar establecido.")
-        user = self.model(dni=dni, **extra_fields)
+    def create_user(self, username, password=None, **extra_fields):
+        if not username:
+            raise ValueError("El campo username debe estar establecido.")
+        user = self.model(username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, dni, password=None, **extra_fields):
+    def create_superuser(self, username, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        return self.create_user(dni, password, **extra_fields)
+        return self.create_user(username, password, **extra_fields)
 
 
 # Validador de DNI: exactamente 8 dígitos
@@ -53,7 +53,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin, DjangoAuthMixin, BaseModel):
     """
     nombres = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre")
     apellidos = models.CharField(max_length=255, blank=True, null=True, verbose_name="Apellido")
-    email = models.EmailField(max_length=255, unique=True, verbose_name="Correo electrónico")
+    email = models.EmailField(max_length=255, unique=True, blank=True, null=True, verbose_name="Correo electrónico")
     username = models.CharField(
         max_length=150,
         unique=True,
@@ -86,4 +86,4 @@ class Usuario(AbstractBaseUser, PermissionsMixin, DjangoAuthMixin, BaseModel):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Usuario {self.dni}"
+        return f"Usuario {self.username}"

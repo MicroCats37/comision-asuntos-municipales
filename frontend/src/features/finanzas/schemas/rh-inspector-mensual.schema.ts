@@ -53,7 +53,6 @@ export const RHInspectorVariablesCalculoSchema = z.object({
   escala_id: z.string(),
   escala_nombre: z.string(),
   rango_aplicado: RangoDescuentoSchema,
-  rangos: z.array(RangoDescuentoSchema),
 });
 
 export const InspectorMinimalSchema = z.object({
@@ -65,7 +64,8 @@ export const InspectorMinimalSchema = z.object({
 
 export const RHInspectorCotizarSchema = z.object({
   inspector: InspectorMinimalSchema,
-  periodo: z.string(),
+  periodo: z.number().int().nullish(),
+  mes: z.number().int().nullish(),
   items: z.array(RHInspectorCotizarItemSchema),
   totales: RHInspectorTotalesSchema,
   escala_descuento_id: z.string(),
@@ -89,7 +89,8 @@ export const RHInspectorCotizarItemInSchema = z.object({
 
 export const RHInspectorCotizarInSchema = z.object({
   cip: z.string(),
-  periodo: z.string(),
+  periodo: z.number().int().min(2000).max(2100),
+  mes: z.number().int().min(1).max(12),
   items: z.array(RHInspectorCotizarItemInSchema),
 });
 

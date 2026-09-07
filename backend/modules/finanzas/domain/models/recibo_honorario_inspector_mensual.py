@@ -25,7 +25,13 @@ class ReciboHonorarioInspectorMensual(BaseModel):
         blank=True,
         null=True,
     )
-    periodo = models.CharField(max_length=7, verbose_name="Periodo (YYYY-MM)")
+    numero = models.IntegerField(null=True, blank=True, verbose_name="Número de RH")
+    periodo = models.PositiveSmallIntegerField(
+        null=True, blank=True, verbose_name="Año del Periodo"
+    )
+    mes = models.PositiveSmallIntegerField(
+        null=True, blank=True, verbose_name="Mes del Periodo (1-12)"
+    )
     fecha_registro = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Registro")
     escala_descuento = models.ForeignKey(
         "EscalaDescuentoInspector",
@@ -36,6 +42,13 @@ class ReciboHonorarioInspectorMensual(BaseModel):
     sub_total = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Sub Total del Mes")
     descuento = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Descuento")
     honorarios = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Honorarios a Pagar")
+    tasa_descuento = models.DecimalField(
+        max_digits=7,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        verbose_name="Tasa de Descuento Aplicada",
+    )
 
     class Meta:
         verbose_name = "Recibo de Honorarios Mensual del Inspector"
@@ -43,4 +56,4 @@ class ReciboHonorarioInspectorMensual(BaseModel):
         ordering = ["-periodo"]
 
     def __str__(self):
-        return f"RH Inspector {self.inspector_id} - {self.periodo}"
+        return f"RH Inspector {self.inspector_id} - {self.periodo}-{self.mes:02d}" if self.periodo and self.mes else f"RH Inspector {self.inspector_id}"

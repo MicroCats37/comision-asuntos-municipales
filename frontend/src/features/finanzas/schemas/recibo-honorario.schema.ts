@@ -166,7 +166,8 @@ export const delegadoOperacionContextSchema = z.object({
 /** RHDelegadoMensualListItemOut — matches backend schema exactly */
 export const rhDelegadoMensualListItemSchema = z.object({
   id: uuid(),
-  periodo: z.string(),
+  periodo: z.number().int().nullish(),
+  mes: z.number().int().nullish(),
   fecha_registro: z.string(),
   delegado: delegadoMinimalSchema,
   totales: rhDelegadoMensualTotalesSchema,
@@ -195,6 +196,14 @@ export const rhInspectorMensualDetalleSchema = z.object({
   saldo_restante: z.coerce.number().int(),
   liquidacion_especifica_numero: z.coerce.number().int().nullish(),
   comprobante_activo: comprobanteMinimalSchema.nullish(),
+  // Financial fields from backend
+  honorarios: num().nullable().optional(),
+  descuento: num().nullable().optional(),
+  sub_total: num().nullable().optional(),
+  // Dates
+  fecha_revision: z.string().nullish(),
+  fecha_presentacion: z.string().nullish(),
+  dictamen_revision: z.string().nullish(),
 });
 
 export const rhInspectorMensualTotalesSchema = z.object({
@@ -220,15 +229,16 @@ export const rhInspectorVariablesCalculoSchema = z.object({
   escala_id: z.string(),
   escala_nombre: z.string(),
   rango_aplicado: rangoDescuentoSchema,
-  rangos: z.array(rangoDescuentoSchema),
 });
 
 /** RHInspectorMensualListItemOut — matches backend schema exactly */
 export const rhInspectorMensualListItemSchema = z.object({
   id: uuid(),
-  periodo: z.string(),
+  periodo: z.number().int().nullish(),
+  mes: z.number().int().nullish(),
   fecha_registro: z.string(),
   inspector: inspectorMinimalSchema,
+  numero: z.number().nullable().optional(),
   totales: rhInspectorMensualTotalesSchema,
   detalles: z.array(rhInspectorMensualDetalleSchema),
   variables_calculo: rhInspectorVariablesCalculoSchema,

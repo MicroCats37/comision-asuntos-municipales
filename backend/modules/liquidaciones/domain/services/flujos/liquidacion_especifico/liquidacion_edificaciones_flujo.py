@@ -530,6 +530,7 @@ class LiquidacionEdificacionesFlujo:
             igv_porcentaje=igv_porcentaje,
             derecho=derecho,
             uit_valor=uit_valor,
+            override_subtotal=po_data.override_subtotal,
         )
 
         # Step 5: Set LiquidacionGeneral totals from cotizacion

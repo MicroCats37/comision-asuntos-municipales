@@ -38,11 +38,7 @@ from modules.liquidaciones.domain.models.inspector import (
     InspectorOperacionPeriodo,
 )
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
-from modules.usuarios.domain.models.perfil_ingeniero import (
-    Capitulo,
-    EspecialidadIngeniero,
-    PerfilIngeniero,
-)
+from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero
 
 # Mapeo de tipos del JSON alpha → códigos TipoLiquidacion en DB
 TIPO_MAP = {
@@ -65,55 +61,6 @@ class Command(BaseCommand):
             help="Ruta alternativa al JSON de inspectores.",
         )
 
-    def _get_or_create_perfil(self, cip, identidad, dry_run=False):
-        """Crea/actualiza el PerfilIngeniero desde los datos de identidad del JSON."""
-        capitulo = None
-        cap_raw = identidad.get("capitulo") or {}
-        if cap_raw.get("registro_id"):
-            capitulo, _ = Capitulo.objects.get_or_create(
-                registro_id=cap_raw["registro_id"],
-                defaults={
-                    "abreviacion": cap_raw.get("abreviacion", ""),
-                    "nombre": cap_raw.get("nombre", ""),
-                },
-            )
-
-        cod_esp = identidad.get("codigo_especialidad", "")
-        especialidad = None
-        if cod_esp and capitulo:
-            especialidad, _ = EspecialidadIngeniero.objects.get_or_create(
-                codigo=cod_esp,
-                capitulo=capitulo,
-                defaults={"nombre": cod_esp},
-            )
-
-        perfil_defaults = {
-            "dni": identidad.get("dni", ""),
-            "nombres": identidad.get("nombres", ""),
-            "apellido_paterno": identidad.get("apellido_paterno", ""),
-            "apellido_materno": identidad.get("apellido_materno", ""),
-            "correo_personal": identidad.get("correo_personal") or None,
-            "especialidad": especialidad,
-            "capitulo": capitulo,
-        }
-
-        perfil = PerfilIngeniero.objects.filter(cip=cip).first()
-        if not perfil:
-            if dry_run:
-                return None, True
-            perfil = PerfilIngeniero.objects.create(cip=cip, **perfil_defaults)
-            return perfil, True
-
-        # Actualizar campos si cambiaron (sin tocar usuario)
-        updated = False
-        for k, v in perfil_defaults.items():
-            if getattr(perfil, k) != v:
-                setattr(perfil, k, v)
-                updated = True
-        if updated:
-            perfil.save()
-        return perfil, False
-
     def _resolver_especialidad_revision(self, reg):
         """
         Resuelve la EspecialidadRevision para una operación de inspector,
@@ -129,10 +76,10 @@ class Command(BaseCommand):
         MAPEO_SINONIMOS = {
             "ingenieria civil": "Ingeniería Civil",
             "ingenieria sanitaria": "Ingeniería Sanitaria",
-            "ingenieria electrica": "Eléctrica/Mecánica",
-            "ingenieria mecanica electrica": "Eléctrica/Mecánica",
-            "ingenieria mecanica": "Eléctrica/Mecánica",
-            "ingenieria electronica": "Eléctrica/Mecánica",
+            "ingenieria electrica": "Ingeniería Eléctrica y Mecánica Eléctrica",
+            "ingenieria mecanica electrica": "Ingeniería Eléctrica y Mecánica Eléctrica",
+            "ingenieria mecanica": "Ingeniería Eléctrica y Mecánica Eléctrica",
+            "ingenieria electronica": "Ingeniería Eléctrica y Mecánica Eléctrica",
         }
 
         nombre_esp = (reg.get("especialidad") or "").strip()
@@ -152,10 +99,10 @@ class Command(BaseCommand):
             canon_norm = {
                 "ingenieria civil": "Ingeniería Civil",
                 "ingenieria sanitaria": "Ingeniería Sanitaria",
-                "ingenieria electrica": "Eléctrica/Mecánica",
-                "ingenieria mecanica electrica": "Eléctrica/Mecánica",
-                "ingenieria mecanica": "Eléctrica/Mecánica",
-                "ingenieria electronica": "Eléctrica/Mecánica",
+                "ingenieria electrica": "Ingeniería Eléctrica y Mecánica Eléctrica",
+                "ingenieria mecanica electrica": "Ingeniería Eléctrica y Mecánica Eléctrica",
+                "ingenieria mecanica": "Ingeniería Eléctrica y Mecánica Eléctrica",
+                "ingenieria electronica": "Ingeniería Eléctrica y Mecánica Eléctrica",
             }
             canon2 = canon_norm.get(key_norm)
             if canon2:
@@ -187,23 +134,21 @@ class Command(BaseCommand):
                 tipos_cache[codigo] = tipo
 
         inspectores_creados = 0
-        perfiles_creados = 0
         registros_creados = 0
         periodos_creados = 0
         sin_tipo = []
         sin_registro = []
+        sin_perfil = []
         hoy = date.today()
         inicio_default = hoy - timedelta(days=365)
 
         for entry in data:
             cip = str(entry.get("cip", "")).strip()
-            identidad = entry.get("identidad", {}) or {}
-
-            perfil, perfil_created = self._get_or_create_perfil(cip, identidad, dry_run)
+            # Only resolve EXISTING PerfilIngeniero — do NOT create.
+            perfil = PerfilIngeniero.objects.filter(cip=cip).first()
             if not perfil:
+                sin_perfil.append(cip)
                 continue
-            if perfil_created:
-                perfiles_creados += 1
 
             if dry_run:
                 self.stdout.write(f"[DRY] Inspector {cip}: {perfil.nombre_completo}")
@@ -344,12 +289,13 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.SUCCESS(
                     f"Inspectores: {inspectores_creados} nuevos | "
-                    f"Perfiles creados: {perfiles_creados} | "
                     f"Registros (inspector-tipo): {registros_creados} nuevos | "
                     f"Periodos: {periodos_creados} nuevos"
                 )
             )
 
+        if sin_perfil:
+            self.stdout.write(self.style.WARNING(f"Sin PerfilIngeniero ({len(sin_perfil)}): {', '.join(sin_perfil[:10])}"))
         if sin_tipo:
             self.stdout.write(self.style.WARNING(f"Tipo no encontrado ({len(sin_tipo)}): {', '.join(sin_tipo[:10])}"))
         if sin_registro:

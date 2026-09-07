@@ -77,9 +77,10 @@ class Command(BaseCommand):
             return esp
         # Sinónimos: el CSV/seed usa nombres largos, la BD usa nombres cortos.
         SINONIMOS_ESP = {
-            "Ingeniería Eléctrica y Mecánica Eléctrica": "Eléctrica/Mecánica",
-            "Ingenieria Electrica y Mecanica Electrica": "Eléctrica/Mecánica",
-            "Ingeniería Eléctrica": "Eléctrica/Mecánica",
+            "Ingeniería Eléctrica y Mecánica Eléctrica": "Ingeniería Eléctrica y Mecánica Eléctrica",
+            "Ingenieria Electrica y Mecanica Electrica": "Ingeniería Eléctrica y Mecánica Eléctrica",
+            "Ingeniería Eléctrica": "Ingeniería Eléctrica y Mecánica Eléctrica",
+            "Eléctrica/Mecánica": "Ingeniería Eléctrica y Mecánica Eléctrica",
         }
         sinonimo = SINONIMOS_ESP.get(nombre_esp)
         if sinonimo:
@@ -188,20 +189,8 @@ class Command(BaseCommand):
                     nombre_mun = normalize((mun_seed or {}).get("nombre", ""))
                 municipio = municipios.get(nombre_mun)
 
-            # Si no existe, crearla (incluye códigos L-FALTANTE N)
-            if municipio is None and not dry_run and codigo_seed:
-                nombre_seed = next(
-                    (m.get("nombre") for m in data.get("municipalidades", [])
-                     if m.get("codigo") == codigo_seed),
-                    codigo_seed,
-                )
-                municipio, _ = Municipalidad.objects.get_or_create(
-                    codigo=codigo_seed,
-                    defaults={"nombre": nombre_seed},
-                )
-                municipios[normalize(nombre_seed)] = municipio
-                municipios_por_codigo[codigo_seed] = municipio
-
+            # Si no existe la municipalidad, registrar y saltar.
+            # NO se crea automáticamente — es dato de dominio que viene de Excel import.
             if not municipio:
                 sin_municipio.append(f"{cip} -> {codigo_seed or asign.get('municipalidad_nombre')}")
                 continue

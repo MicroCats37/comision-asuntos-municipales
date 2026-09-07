@@ -347,7 +347,8 @@ export function RhDelegadoMensualModal({
     try {
       const result = await cotizarMutation.cotizar({
         cip,
-        periodo: rhPeriodo,
+        periodo: Number(firstFields.periodo),
+        mes: Number(firstFields.mes),
         delegado_operacion_id: delegadoOperacionId,
         items,
       });
@@ -366,11 +367,16 @@ export function RhDelegadoMensualModal({
   const handleExportExcel = useCallback(() => {
     if (!cotizarResult) return;
 
+    const headerPeriodoStr =
+      cotizarResult.periodo != null && cotizarResult.mes != null
+        ? `${cotizarResult.periodo}-${String(cotizarResult.mes).padStart(2, "0")}`
+        : "—";
+
     const rows: Array<Record<string, string | number>> = cotizarResult.items.map((item, index) => ({
       Item: index + 1,
       Delegado: cotizarResult.delegado.nombre_completo,
       CIP: cotizarResult.delegado.cip,
-      Periodo: cotizarResult.periodo,
+      Periodo: headerPeriodoStr,
       "Nro Liq.": item.liquidacion_especifica_numero ?? "",
       Expediente: item.exp_liqui,
       "Nro revision": item.numero_revision ?? "",
@@ -396,7 +402,7 @@ export function RhDelegadoMensualModal({
       Item: "",
       Delegado: "TOTALES",
       CIP: cotizarResult.delegado.cip,
-      Periodo: cotizarResult.periodo,
+      Periodo: headerPeriodoStr,
       "Nro Liq.": "",
       Expediente: "",
       "Nro revision": "",
@@ -427,7 +433,7 @@ export function RhDelegadoMensualModal({
     XLSX.utils.book_append_sheet(workbook, worksheet, "Resumen RH");
     XLSX.writeFile(
       workbook,
-      `rh-delegado-${safeFilePart(cotizarResult.delegado.cip)}-${safeFilePart(cotizarResult.periodo)}.xlsx`,
+      `rh-delegado-${safeFilePart(cotizarResult.delegado.cip)}-${safeFilePart(headerPeriodoStr)}.xlsx`,
     );
   }, [cotizarResult]);
 
@@ -474,7 +480,8 @@ export function RhDelegadoMensualModal({
     try {
       await crearMutation.crear({
         cip,
-        periodo: rhPeriodo,
+        periodo: Number(firstFields.periodo),
+        mes: Number(firstFields.mes),
         delegado_operacion_id: delegadoOperacionId,
         items,
       });
@@ -906,7 +913,11 @@ export function RhDelegadoMensualModal({
                       <p className="text-[10px] font-bold uppercase text-muted-foreground">
                         Periodo
                       </p>
-                      <p className="font-semibold">{cotizarResult.periodo}</p>
+                      <p className="font-semibold">
+                        {cotizarResult.periodo != null && cotizarResult.mes != null
+                          ? `${cotizarResult.periodo}-${String(cotizarResult.mes).padStart(2, "0")}`
+                          : "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-[10px] font-bold uppercase text-muted-foreground">
@@ -973,7 +984,11 @@ export function RhDelegadoMensualModal({
                   <span className="text-muted-foreground font-semibold">
                     Periodo:
                   </span>
-                  <span className="font-bold">{cotizarResult.periodo}</span>
+                  <span className="font-bold">
+                    {cotizarResult.periodo != null && cotizarResult.mes != null
+                      ? `${cotizarResult.periodo}-${String(cotizarResult.mes).padStart(2, "0")}`
+                      : "—"}
+                  </span>
                 </div>
               </div>
 

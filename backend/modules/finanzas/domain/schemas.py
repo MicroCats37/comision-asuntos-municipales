@@ -66,7 +66,8 @@ class RHInspectorCotizarItemIn(_BaseSchema):
 class RHInspectorCotizarIn(_BaseSchema):
     """Payload de entrada para cotizar/crear el RH mensual del inspector."""
     cip: str
-    periodo: str  # "YYYY-MM"
+    periodo: int = Field(..., ge=2000, le=2100, description="Año del periodo")
+    mes: int = Field(..., ge=1, le=12, description="Mes del periodo (1-12)")
     items: list[RHInspectorCotizarItemIn]
 
 
@@ -100,6 +101,7 @@ class RHDelegadoCotizarItemIn(_BaseSchema):
 class RHDelegadoCotizarIn(_BaseSchema):
     """Payload de entrada para cotizar/crear el RH mensual del delegado."""
     cip: str
-    periodo: str  # "YYYY-MM"
+    periodo: int = Field(..., ge=2000, le=2100, description="Año del periodo")
+    mes: int = Field(..., ge=1, le=12, description="Mes del periodo (1-12)")
     delegado_operacion_id: str  # UUID string of DelegadoOperacion — required for new RH flows
     items: list[RHDelegadoCotizarItemIn]

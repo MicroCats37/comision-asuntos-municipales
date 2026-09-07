@@ -95,6 +95,13 @@ class RHDelegadoMensualCotizarFlujo:
         total_fondo_comun = Decimal("0")
         total_neto_honorario = Decimal("0")
 
+        # Resolve tasas once (all items share the same operativity → same tipo_liquidacion)
+        tasas = self.core.get_tasa_delegado_vigente(
+            operatividad.tipo_liquidacion
+        )
+        if not tasas:
+            raise HttpError(400, "No hay tasas de delegado vigentes")
+
         for item in payload.items:
             # 2. LiquidacionGeneral por ID (candidata — aún no tiene LiquidacionDelegado)
             # Use the method that prefetches comprobantes to avoid N+1.
@@ -105,14 +112,14 @@ class RHDelegadoMensualCotizarFlujo:
                     f"Liquidación con ID '{item.liquidacion_general_id}' no encontrada",
                 )
 
-            # 3. Extraer imp_bruto del LiquidacionPorcentajeObraDetalle
+            # 3. Extraer el breakdown completo del LiquidacionPorcentajeObraDetalle
             #    que coincide con liquidacion_general_id + especialidad_revision_id.
             #    No se requiere LiquidacionDelegado — trabaja directamente sobre
             #    LiquidacionPorcentajeObraDetalle.
-            imp_bruto = self.core.get_imp_bruto_delegado(
+            importes = self.core.get_importes_po_detalle(
                 item.liquidacion_general_id, item.especialidad_revision_id
             )
-            if imp_bruto is None:
+            if importes is None:
                 raise HttpError(
                     400,
                     f"La liquidación '{lg.expediente or item.liquidacion_general_id}' "
@@ -120,23 +127,19 @@ class RHDelegadoMensualCotizarFlujo:
                     f"{item.especialidad_revision_id}",
                 )
 
-            # 4. Resolver tasas vigentes desde la BD (scoped por tipo de liquidación)
-            tasas = self.core.get_tasa_delegado_vigente(
-                operatividad.tipo_liquidacion
-            )
-            if not tasas:
-                raise HttpError(400, "No hay tasas de delegado vigentes")
+            importe_parcial, ajuste_redondeo, importe_total = importes
 
-            # 5. Calcular descuentos POR ITEM
-            item_renta_cip = (imp_bruto * tasas.renta_cip).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
-            item_aporte_codemu = (imp_bruto * tasas.aporte_codemu).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
-            item_fondo_comun = (imp_bruto * tasas.fondo_comun).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
-            item_neto_honorario = (
-                imp_bruto - item_renta_cip - item_aporte_codemu - item_fondo_comun
-            ).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+            # 4. Pure taxes are calculated on importe_parcial (the exact base amount).
+            #    Renta CIP is derived by subtraction from importe_total, forcing it to
+            #    absorb the 0.01 rounding adjustment and any rate rounding anomalies.
+            tasa_neto = Decimal("1") - tasas.renta_cip - tasas.aporte_codemu - tasas.fondo_comun
+            item_neto_honorario = (importe_parcial * tasa_neto).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+            item_aporte_codemu = (importe_parcial * tasas.aporte_codemu).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+            item_fondo_comun = (importe_parcial * tasas.fondo_comun).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+            item_renta_cip = importe_total - item_neto_honorario - item_aporte_codemu - item_fondo_comun
 
-            # Acumular totales
-            sub_total += imp_bruto
+            # Acumular totales: sub_total es la suma de importe_total (no de imp_bruto)
+            sub_total += importe_total
             total_renta_cip += item_renta_cip
             total_aporte_codemu += item_aporte_codemu
             total_fondo_comun += item_fondo_comun
@@ -153,7 +156,7 @@ class RHDelegadoMensualCotizarFlujo:
                     especialidad_revision_id=item.especialidad_revision_id,
                     liquidacion_delegado_id=None,  # creado en crear()
                     delegado_operacion_id=str(operatividad.id),
-                    imp_bruto=imp_bruto,
+                    imp_bruto=importe_total,  # importe_total es la base imponible final
                     fecha_revision=str(item.fecha_revision) if item.fecha_revision else None,
                     numero_revision=lg.numero_revision if hasattr(lg, 'numero_revision') else None,
                     total_liquidacion=lg.total,
@@ -173,6 +176,9 @@ class RHDelegadoMensualCotizarFlujo:
             )
 
         # 5. Totales son la suma de los cálculos por item
+        # total_renta_cip absorbs everything from sub_total via subtraction,
+        # since sub_total already intrinsically contains the adjustment (sub_total = sum(importe_total)).
+        total_renta_cip = sub_total - total_neto_honorario - total_aporte_codemu - total_fondo_comun
         neto_honorario = total_neto_honorario
 
         perfil = getattr(delegado, "perfil_ingeniero", None)
@@ -190,6 +196,7 @@ class RHDelegadoMensualCotizarFlujo:
                 dni=perfil.dni if perfil else "",
             ),
             periodo=payload.periodo,
+            mes=payload.mes,
             items=items,
             totales=RHDelegadoTotalesResult(
                 sub_total=sub_total,
@@ -202,6 +209,7 @@ class RHDelegadoMensualCotizarFlujo:
                 tasa_renta_cip=tasas.renta_cip,
                 tasa_aporte_codemu=tasas.aporte_codemu,
                 tasa_fondo_comun=tasas.fondo_comun,
+                tasa_delegado_id=tasas.id,
             ),
         )
 
@@ -251,15 +259,21 @@ class RHDelegadoMensualCrearFlujo:
         operatividad_id = payload.delegado_operacion_id
 
         # 2. Crear la maestra mensual (siempre crea un nuevo RH header)
+        # MUST NOT recalculate taxes here — use frozen values from resultado.totales.
+        # The header taxes were already computed as: SUM(per-item taxes) + SUM(ajuste_redondeo)
+        # in the cotizar step. We freeze the tasa_delegado FK as well.
+        tasa_delegado_id = resultado.variables_calculo.tasa_delegado_id
         rh = self.core.crear_rh_delegado_mensual(
             delegado_id=resultado.delegado.id,
             periodo=resultado.periodo,
+            mes=resultado.mes,
             sub_total=resultado.totales.sub_total,
             renta_cip=resultado.totales.renta_cip,
             aporte_codemu=resultado.totales.aporte_codemu,
             fondo_comun=resultado.totales.fondo_comun,
             neto_honorario=resultado.totales.neto_honorario,
             delegado_operacion_id=operatividad_id,
+            tasa_delegado_id=tasa_delegado_id,
         )
 
         # 3. Para cada item: crear LiquidacionDelegado primero,
@@ -267,19 +281,14 @@ class RHDelegadoMensualCrearFlujo:
         #    Usa per-item periodo/mes/dictamen/fechas si están presentes,
         #    si no recurre al nivel RH.
         for item in resultado.items:
-            # Extraer año y mes del periodo YYYY-MM del RH header
+            # Extraer año y mes del periodo (ints a nivel RH)
             item_periodo = item.periodo
             item_mes = item.mes
             if item_periodo is None:
-                # Fallback: parsear YYYY-MM del nivel RH
-                rh_periodo = resultado.periodo  # YYYY-MM
-                if rh_periodo and len(rh_periodo) >= 4:
-                    item_periodo = int(rh_periodo[:4])
-                    if len(rh_periodo) >= 7:
-                        try:
-                            item_mes = int(rh_periodo[5:7])
-                        except (ValueError, TypeError):
-                            item_mes = None
+                # Fallback: usar el nivel RH
+                item_periodo = resultado.periodo
+                if item_mes is None:
+                    item_mes = resultado.mes
             liq_delegado, _ = self.core.crear_liquidacion_delegado(
                 liquidacion_id=item.liquidacion_general_id,
                 delegado_id=resultado.delegado.id,
@@ -295,10 +304,18 @@ class RHDelegadoMensualCrearFlujo:
             # Populate liquidacion_delegado_id in the result item so the caller
             # receives the created IDs without needing a separate query.
             item.liquidacion_delegado_id = str(liq_delegado.id)
+            # Pass frozen per-item tax values and the tasa_delegado FK.
+            # These are already computed in cotizar() — do NOT recalculate here.
             self.core.crear_detalle_honorario_delegado(
                 recibo_mensual_id=rh.id,
                 liquidacion_delegado_id=liq_delegado.id,
                 imp_bruto=item.imp_bruto,
+                sub_total=item.imp_bruto,
+                renta_cip=item.renta_cip,
+                aporte_codemu=item.aporte_codemu,
+                fondo_comun=item.fondo_comun,
+                neto_honorario=item.neto_honorario,
+                tasa_delegado_id=tasa_delegado_id,
             )
 
         return resultado

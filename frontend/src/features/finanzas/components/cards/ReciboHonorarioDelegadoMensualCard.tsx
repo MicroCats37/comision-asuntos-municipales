@@ -70,7 +70,11 @@ export function ReciboHonorarioDelegadoMensualCard({
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Periodo
               </p>
-              <p className="text-sm font-bold truncate">{item.periodo}</p>
+              <p className="text-sm font-bold truncate">
+                {item.periodo != null && item.mes != null
+                  ? `${item.periodo}-${String(item.mes).padStart(2, "0")}`
+                  : "—"}
+              </p>
             </div>
           </div>
 

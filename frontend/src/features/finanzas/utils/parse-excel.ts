@@ -1,13 +1,17 @@
 /**
  * Parsea un Excel con columnas: CIP, Expediente, Cantidad_Visitas
  * y genera el payload de cotización del RH mensual del inspector.
+ *
+ * Nota: periodo_year y mes se completan en el modal antes de llamar a la API.
+ * El tipo de retorno es parcial (sin periodo_year/mes) porque se mergea
+ * con el estado del modal que sí los provee.
  */
 import * as XLSX from "xlsx";
 import type { RHInspectorCotizarIn } from "../schemas/rh-inspector-mensual.schema";
 
 export async function parseExcelFile(
   file: File,
-): Promise<RHInspectorCotizarIn> {
+): Promise<Pick<RHInspectorCotizarIn, "cip" | "items">> {
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array" });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -22,8 +26,7 @@ export async function parseExcelFile(
 
   // CIP de la primera fila (campo opcional del archivo)
   const cip = rows.length > 0 ? String(rows[0].CIP ?? "").trim() : "";
-  const periodo = ""; // se completa en el modal
+  // periodo_year y mes se completan en el modal
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { cip, periodo, items: items as any };
+  return { cip, items: items as RHInspectorCotizarIn["items"] };
 }

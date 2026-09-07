@@ -35,6 +35,48 @@ class DetalleHonorarioDelegado(BaseModel):
         decimal_places=2,
         verbose_name="Importe Bruto (del detalle porcentual)",
     )
+    sub_total = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Sub Total",
+    )
+    renta_cip = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Renta CIP",
+    )
+    aporte_codemu = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Aporte CODEMU",
+    )
+    fondo_comun = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Fondo Común",
+    )
+    neto_honorario = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Neto Honorario",
+    )
+    tasa_delegado = models.ForeignKey(
+        "TasaDelegado",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        verbose_name="Tasa Delegado",
+    )
 
     class Meta:
         verbose_name = "Detalle de Honorario del Delegado"

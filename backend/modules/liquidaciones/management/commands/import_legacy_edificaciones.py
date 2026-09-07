@@ -61,6 +61,14 @@ from django.core.management.base import BaseCommand, CommandError
 from injector import Injector
 from ninja.errors import HttpError
 
+
+class VarianceError(Exception):
+    """Variación excesiva entre el subtotal del Excel y el recalculado."""
+    def __init__(self, message: str, subtotal_calculado=None, total_calculado=None):
+        super().__init__(message)
+        self.subtotal_calculado = subtotal_calculado
+        self.total_calculado = total_calculado
+
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.entidades.domain.models.ubigeo import UbigeoDistrito
 from modules.liquidaciones.di import LiquidacionesModule
@@ -74,6 +82,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     ProyectoCotizarSchema,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_legacy.liquidacion_edificaciones_legacy_schemas import (
+    CotizacionLegacyIn,
     LiquidacionEdificacionesLegacyIn,
     LiquidacionGeneralLegacyIn,
 )
@@ -197,11 +206,11 @@ def _build_orchestrator() -> LiquidacionEdificacionesLegacyOrchestrator:
 
 
 # Mapeo ESPECIALIDAD (Excel) -> EspecialidadRevision.nombre
-# NOTA: los nombres deben coincidir EXACTAMENTE con los de la BD local.
+# NOTA: los valores deben coincidir EXACTAMENTE con los nombres canónicos de la BD local.
 _ESPECIALIDAD_REVISION_MAP = {
     "Estructuras": "Ingeniería Civil",
     "Inst. Sanitarias": "Ingeniería Sanitaria",
-    "Inst. Mecánico Eléctricas": "Eléctrica/Mecánica",
+    "Inst. Mecánico Eléctricas": "Ingeniería Eléctrica y Mecánica Eléctrica",
 }
 
 
@@ -370,6 +379,19 @@ class Command(BaseCommand):
             help="Read and validate rows without writing to the database",
         )
         parser.add_argument(
+            "--rechazar-dif-alta",
+            action="store_true",
+            help="Rechazar filas donde la diferencia entre el subtotal recalculado y el "
+                 "legacy supere el umbral (default 1). Desactivado por defecto.",
+        )
+        parser.add_argument(
+            "--umbral-dif",
+            type=float,
+            default=1.0,
+            help="Umbral de diferencia (S/.) para --rechazar-dif-alta (default 1.0). "
+                 "Solo suben filas con diferencia <= umbral.",
+        )
+        parser.add_argument(
             "--data-path",
             type=str,
             default=None,
@@ -447,6 +469,8 @@ class Command(BaseCommand):
         self.batch_size = int(options["batch_size"])
         self.reset = bool(options.get("reset", False))
         self.solo_reporte = bool(options.get("solo_report", False)) or bool(options.get("solo_reporte", False))
+        self.rechazar_dif_alta = bool(options.get("rechazar_dif_alta", False))
+        self.umbral_dif = Decimal(str(options.get("umbral_dif", 1.0)))
 
         data_path = Path(options["data_path"]) if options["data_path"] else DEFAULT_DATA_PATH
         if not data_path.exists():
@@ -526,6 +550,37 @@ class Command(BaseCommand):
                 # Build payload
                 payload, anomalies, _ = self._build_payload(row, idx, orchestrator)
 
+                # ── Filtro opcional: rechazar diferencia alta ──────────────
+                # Compara el subtotal legacy (Excel) contra el subtotal recalculado
+                # real (sin override). Solo sube si la diferencia <= umbral.
+                if self.rechazar_dif_alta:
+                    excel_subtotal = (
+                        payload.cotizacion_legacy.sub_total
+                        if payload.cotizacion_legacy is not None
+                        else None
+                    )
+                    recal_subtotal = None
+                    if excel_subtotal is not None:
+                        try:
+                            recal = orchestrator.cotizar_legacy_proceso(payload)
+                            recal_subtotal = recal.total_subtotal
+                        except Exception:  # noqa: BLE001
+                            recal_subtotal = None
+                    if (
+                        excel_subtotal is not None
+                        and recal_subtotal is not None
+                        and abs(excel_subtotal - recal_subtotal) > self.umbral_dif
+                    ):
+                        diff = abs(excel_subtotal - recal_subtotal)
+                        report_writer.writerow([
+                            idx,
+                            payload.liquidacion_general.expediente or "",
+                            f"Diferencia alta subtotal: legacy={excel_subtotal}, recalc={recal_subtotal}, diff={diff} > {self.umbral_dif}",
+                            "NO",
+                        ])
+                        rejected += 1
+                        continue
+
                 # Get usuario from USUARIO column (per-row)
                 usuario_raw = row[COL_USUARIO] if len(row) > COL_USUARIO else None
                 usuario = _get_or_create_usuario_from_usuario(usuario_raw)
@@ -597,7 +652,7 @@ class Command(BaseCommand):
             "PORCENTAJE_EXCEL", "PORCENTAJE_CALCULADO",
             "SUBTOTAL_EXCEL", "SUBTOTAL_CALCULADO",
             "TOTAL_EXCEL", "TOTAL_CALCULADO",
-            "DESCRIPCION_LEGACY", "ESTADO",
+            "DESCRIPCION_LEGACY", "ESTADO", "REGISTRADO_EN_BD",
         ]
         csv_path = output_dir / "reporte_legacy_detallado.csv"
         xlsx_path = output_dir / "reporte_legacy_detallado.xlsx"
@@ -645,6 +700,7 @@ class Command(BaseCommand):
                     col(row, COL_SUBTOTAL) or "", "",
                     col(row, COL_TOTAL) or "", "",
                     ", ".join(anomalies), estado,
+                    False,
                 ]
                 writer.writerow(row_data)
                 ws.append([str(v) if v is not None else "" for v in row_data])
@@ -707,6 +763,23 @@ class Command(BaseCommand):
                     calc_total,
                     ", ".join(anomalies),
                     estado,
+                    True,
+                ]
+                writer.writerow(row_data)
+                ws.append([str(v) if v is not None else "" for v in row_data])
+            except VarianceError as e:
+                estado = "ERROR"
+                counts[estado] += 1
+                row_data = [
+                    fila,
+                    nro_val if nro_val is not None else "",
+                    "", "", especialidad_str,
+                    razon_social,
+                    col(row, COL_VALOROBRA) or "",
+                    col(row, COL_PORCENTAJE) or "", "",
+                    col(row, COL_SUBTOTAL) or "", str(e.subtotal_calculado) if e.subtotal_calculado is not None else "",
+                    col(row, COL_TOTAL) or "", str(e.total_calculado) if e.total_calculado is not None else "",
+                    f"ERROR: {e}", estado, False,
                 ]
                 writer.writerow(row_data)
                 ws.append([str(v) if v is not None else "" for v in row_data])
@@ -722,7 +795,7 @@ class Command(BaseCommand):
                     col(row, COL_PORCENTAJE) or "", "",
                     col(row, COL_SUBTOTAL) or "", "",
                     col(row, COL_TOTAL) or "", "",
-                    f"ERROR: {exc}", estado,
+                    f"ERROR: {exc}", estado, False,
                 ]
                 writer.writerow(row_data)
                 ws.append([str(v) if v is not None else "" for v in row_data])
@@ -989,41 +1062,58 @@ class Command(BaseCommand):
             descripcion_legacy=None,  # Will be set after comparison
         )
 
-        # ── Tarifas explícitas para revisiones > 1 con especialidad concreta ──
+        # ── Tarifas explícitas para especialidad concreta ──
         # En legacy la tarifa NO viene en el Excel: se resuelve la vigente a
         # fecha_registro (igual que el flujo normal) y se combina SOLO con la
         # especialidad revisada de la fila -> porcentaje parcial de esa tarifa.
-        # NROREV == 1 o ESPECIALIDAD == TODAS -> auto-fill (tarifas=[]).
+        # Solo ESPECIALIDAD == TODAS -> auto-fill (tarifas=[]).
         tarifas_explicit: list[LiquidacionPorcentajeObraTarifaIn] = []
-        if nrorev_val is not None and nrorev_val > 1:
-            if especialidad_str and especialidad_str.strip().upper() != "TODAS":
-                esp_revision = _resolve_especialidad_revision(especialidad_str)
-                if esp_revision is None:
-                    anomalies.append(f"Especialidad no encontrada: {especialidad_str}")
+        if especialidad_str and especialidad_str.strip().upper() != "TODAS":
+            esp_revision = _resolve_especialidad_revision(especialidad_str)
+            if esp_revision is None:
+                anomalies.append(f"Especialidad no encontrada: {especialidad_str}")
+            else:
+                tarifas_vigentes = orchestrator.legacy_po_core.get_tarifa_por_fecha(
+                    TipoLiquidacion.EDIFICACION, fecha_registro
+                )
+                if not tarifas_vigentes:
+                    anomalies.append("No hay tarifa vigente para la fecha — se usa auto-fill")
                 else:
-                    tarifas_vigentes = orchestrator.legacy_po_core.get_tarifa_por_fecha(
-                        TipoLiquidacion.EDIFICACION, fecha_registro
-                    )
-                    if not tarifas_vigentes:
-                        anomalies.append("No hay tarifa vigente para la fecha — se usa auto-fill")
-                    else:
-                        tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas_vigentes}.values())
-                        tarifas_explicit = [
-                            LiquidacionPorcentajeObraTarifaIn(
-                                tarifa_porcentaje_obra_id=t.id,
-                                especialidad_id=esp_revision.id,
-                            )
-                            for t in tarifas_dedup
-                        ]
+                    tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas_vigentes}.values())
+                    tarifas_explicit = [
+                        LiquidacionPorcentajeObraTarifaIn(
+                            tarifa_porcentaje_obra_id=t.id,
+                            especialidad_id=esp_revision.id,
+                        )
+                        for t in tarifas_dedup
+                    ]
 
         liquidacion_especifica = LiquidacionPorcentajeObraIn(
             datos=LiquidacionPorcentajeObraDatosIn(valor_declarado=valor_declarado),
             tarifas=tarifas_explicit,  # Vacío = auto-fill; con entries = porcentaje parcial
         )
 
+        # Subtotal/total legacy: se guardan los montos del Excel (fuente de verdad),
+        # el porcentaje se recalcula con la tarifa vigente en el servicio.
+        cotizacion_legacy = None
+        if (
+            row[COL_SUBTOTAL] is not None
+            and row[COL_TOTAL] is not None
+            and str(row[COL_SUBTOTAL]).strip() != ""
+            and str(row[COL_TOTAL]).strip() != ""
+        ):
+            try:
+                cotizacion_legacy = CotizacionLegacyIn(
+                    sub_total=Decimal(str(row[COL_SUBTOTAL]).strip()),
+                    total=Decimal(str(row[COL_TOTAL]).strip()),
+                )
+            except (InvalidOperation, ValueError) as exc:
+                anomalies.append(f"Subtotal/Total inválido: {exc}")
+
         payload = LiquidacionEdificacionesLegacyIn(
             liquidacion_general=liquidacion_general_partial,
             liquidacion_especifica=liquidacion_especifica,
+            cotizacion_legacy=cotizacion_legacy,
             numero_revision=nrorev_val,
             numero=numero,
         )

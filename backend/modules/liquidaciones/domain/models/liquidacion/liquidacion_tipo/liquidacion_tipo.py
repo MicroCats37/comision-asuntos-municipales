@@ -287,6 +287,24 @@ class LiquidacionPorcentajeObraDetalle(BaseModel):
         "El IGV y el total se calculan a nivel global en LiquidacionGeneral.",
     )
 
+    importe_parcial = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Importe Parcial",
+        help_text="Importe parcial calculado para esta especialidad.",
+    )
+
+    ajuste_redondeo = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Ajuste de Redondeo",
+        help_text="Ajuste por redondeo aplicado a esta especialidad.",
+    )
+
     class Meta:
         verbose_name = "Detalle de Liquidación Porcentual de Obra"
         verbose_name_plural = "Detalles de Liquidaciones Porcentuales de Obra"

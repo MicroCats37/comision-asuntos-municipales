@@ -207,13 +207,13 @@ class RHInspectorVariablesCalculoOut(BaseSchema):
     escala_id: str = Field(..., description="ID de la escala de descuento")
     escala_nombre: str = Field(..., description="Nombre de la escala de descuento")
     rango_aplicado: RangoDescuentoOut = Field(..., description="Rango de descuento aplicado según el monto")
-    rangos: list[RangoDescuentoOut] = Field(default_factory=list, description="Todos los rangos de la escala")
 
 
 class RHInspectorCotizarOut(BaseSchema):
     """Schema de salida para la cotización/creación del RH mensual del inspector."""
     inspector: InspectorMinimalOut
-    periodo: str = Field(..., description="Periodo (YYYY-MM)")
+    periodo: Optional[int] = Field(None, description="Año del periodo (e.g. 2026)")
+    mes: Optional[int] = Field(None, description="Mes del periodo (1-12)")
     items: list[RHInspectorCotizarItemOut] = Field(default_factory=list, description="Detalle por liquidación")
     totales: RHInspectorTotalesOut
     escala_descuento_id: uuid.UUID = Field(..., description="Escala de descuento aplicada")
@@ -299,7 +299,8 @@ class RHDelegadoTotalesOut(BaseSchema):
 class RHDelegadoCotizarOut(BaseSchema):
     """Schema de salida para la cotización/creación del RH mensual del delegado."""
     delegado: DelegadoMinimalOut
-    periodo: str = Field(..., description="Periodo (YYYY-MM)")
+    periodo: Optional[int] = Field(None, description="Año del periodo (e.g. 2026)")
+    mes: Optional[int] = Field(None, description="Mes del periodo (1-12)")
     items: list[RHDelegadoCotizarItemOut] = Field(default_factory=list, description="Detalle por liquidación")
     totales: RHDelegadoTotalesOut
     variables_calculo: RHDelegadoVariablesCalculoOut
@@ -379,11 +380,12 @@ class RHDelegadoMensualListItemOut(BaseSchema):
     """
     Schema de salida para un ReciboHonorarioDelegadoMensual en lista paginada.
 
-    Muestra: id, periodo, fecha_registro, delegado, totales, detalles
+    Muestra: id, periodo, mes, fecha_registro, delegado, totales, detalles
     (expediente + imp_bruto) agrupados en el mes, y tasas vigentes.
     """
     id: uuid.UUID
-    periodo: str = Field(..., description="Periodo (YYYY-MM)")
+    periodo: Optional[int] = Field(None, description="Año del periodo (e.g. 2026)")
+    mes: Optional[int] = Field(None, description="Mes del periodo (1-12)")
     fecha_registro: datetime = Field(..., description="Fecha de registro")
     delegado: DelegadoMinimalOut
     totales: RHDelegadoMensualTotalesOut
@@ -425,6 +427,16 @@ class RHInspectorMensualDetalleOut(BaseSchema):
     comprobante_activo: Optional["LiquidacionComprobanteMinimalOut"] = Field(
         None, description="Comprobante activo de la liquidación"
     )
+    # Frozen math fields — populated from DetalleHonorarioInspector
+    sub_total: Optional[Decimal] = Field(
+        None, description="Sub total de la liquidación del mes"
+    )
+    descuento: Optional[Decimal] = Field(
+        None, description="Descuento aplicado"
+    )
+    honorarios: Optional[Decimal] = Field(
+        None, description="Honorarios a pagar"
+    )
 
 
 class RHInspectorMensualTotalesOut(BaseSchema):
@@ -443,11 +455,12 @@ class RHInspectorMensualListItemOut(BaseSchema):
     """
     Schema de salida para un ReciboHonorarioInspectorMensual en lista paginada.
 
-    Muestra: id, periodo, fecha_registro, inspector, totales, detalles,
+    Muestra: id, periodo, mes, fecha_registro, inspector, totales, detalles,
     y variables_calculo con la escala de descuento aplicada.
     """
     id: uuid.UUID
-    periodo: str = Field(..., description="Periodo (YYYY-MM)")
+    periodo: Optional[int] = Field(None, description="Año del periodo (e.g. 2026)")
+    mes: Optional[int] = Field(None, description="Mes del periodo (1-12)")
     fecha_registro: datetime = Field(..., description="Fecha de registro")
     inspector: InspectorMinimalOut
     totales: RHInspectorMensualTotalesOut

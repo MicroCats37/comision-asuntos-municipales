@@ -1,16 +1,15 @@
 /**
- * buildRhDelegadoPdfElement — Compositor de la liquidacion RH Delegado Mensual.
- *
- * Orden: root → paper → header → title → info rows → table → totals → footer
+ * buildRhInspectorPdfElement — Construye el elemento HTML del PDF de Recibo de Honorarios
+ * Mensual del Inspector. Es un clon visual estricto de buildRhDelegadoPdfElement.ts,
+ * con las etiquetas y el mapeo de datos adaptados al dominio de Inspector.
  */
-import { applyStyles } from "@/components-app/pdf/pdfShell";
-import { formatCurrency, formatPrintedDateTime } from "@/components-app/pdf/pdfShell";
-import type { ReciboHonorarioDelegadoMensual } from "@/features/finanzas/schemas/recibo-honorario.schema";
+import { applyStyles, formatCurrency, formatPrintedDateTime } from "@/components-app/pdf/pdfShell";
+import type { ReciboHonorarioInspectorMensual } from "@/features/finanzas/schemas/recibo-honorario.schema";
 
 /** Type for style objects — derived from applyStyles to avoid direct CSSStyleDeclaration reference */
 type StyleObject = Parameters<typeof applyStyles>[1];
 
-// ── Theme ─────────────────────────────────────────────────────────────────
+// ── Theme — reutilizado tal cual de buildRhDelegadoPdfElement ──────────────────
 
 export const rhPdfTheme = {
   fontFamily: "'Courier New', Courier, monospace",
@@ -254,15 +253,13 @@ function appendReceiptRow(
 
 // ── Builder ───────────────────────────────────────────────────────────────
 
-export function buildRhDelegadoPdfElement(
-  item: ReciboHonorarioDelegadoMensual,
+export function buildRhInspectorPdfElement(
+  item: ReciboHonorarioInspectorMensual,
   ownerDocument: Document,
 ): HTMLElement {
-  const del = item.delegado;
+  const insp = item.inspector;
   const totales = item.totales;
   const detalles = item.detalles || [];
-  const vc = item.variables_calculo;
-  const ctx = item.delegado_operacion_context;
 
   // Root
   const root = ownerDocument.createElement("div");
@@ -293,29 +290,25 @@ export function buildRhDelegadoPdfElement(
     margin: "2px 0 0",
   });
 
-  // Notice area (top right) — date/time
+  // Notice area (top right) — date/time + numero RH
   const notice = append(header, "div", rhPdfTheme.notice);
   const printedDateTime = formatPrintedDateTime(item.fecha_registro || "");
   appendText(notice, "p", printedDateTime, rhPdfTheme.dateTime);
+  if (item.numero != null) {
+    appendText(notice, "p", `N° RH - ${item.numero}`, rhPdfTheme.dateTime);
+  }
 
   // Title
-  appendText(paper, "h2", "LIQUIDACION DE HONORARIOS A DELEGADOS", rhPdfTheme.title);
+  appendText(paper, "h2", "LIQUIDACION DE HONORARIOS A INSPECTORES", rhPdfTheme.title);
   appendText(paper, "p", "COMISION TECNICA CALIFICADORA DE PROYECTOS", rhPdfTheme.subtitle);
 
   // Info rows
   const infoSection = append(paper, "div", rhPdfTheme.infoSection);
 
-  // Row: Municipalidad
-  const municipalidad = ctx?.municipalidad_nombre || "—";
-  appendReceiptRow(infoSection, "Municipalidad", municipalidad);
-
-  // Row: Delegado CIP + name
-  const cipLabel = del?.cip ? `CIP ${del.cip}` : "—";
-  const nombreLabel = del?.nombre_completo || "—";
-  appendReceiptRow(infoSection, "Delegado", `${cipLabel} — ${nombreLabel}`);
-
-  // Row: Liquidación (blank — header-level number left empty per spec)
-  appendReceiptRow(infoSection, "Liquidacion", "");
+  // Row: Inspector CIP + name
+  const cipLabel = insp?.cip ? `CIP ${insp.cip}` : "—";
+  const nombreLabel = insp?.nombre_completo || "—";
+  appendReceiptRow(infoSection, "Inspector", `${cipLabel} — ${nombreLabel}`);
 
   // Row: Periodo
   const periodoStr =
@@ -323,6 +316,18 @@ export function buildRhDelegadoPdfElement(
       ? `${item.periodo}-${String(item.mes).padStart(2, "0")}`
       : "—";
   appendReceiptRow(infoSection, "Periodo", periodoStr);
+
+  // Row: Escala de descuento
+  const escalaNombre = item.variables_calculo?.escala_nombre || "—";
+  appendReceiptRow(infoSection, "Escala Descuento", escalaNombre);
+
+  // Row: Fecha Revisión
+  const fechaRev = item.detalles?.[0]?.fecha_revision || "—";
+  appendReceiptRow(infoSection, "Fecha Revision", fechaRev);
+
+  // Row: Dictamen Revisión
+  const dictamenRev = item.detalles?.[0]?.dictamen_revision || "—";
+  appendReceiptRow(infoSection, "Dictamen Revision", dictamenRev);
 
   // Table
   const table = append(paper, "table", rhPdfTheme.table);
@@ -333,17 +338,16 @@ export function buildRhDelegadoPdfElement(
 
   const columns = [
     "Nro",
-    "F. Rev.",
-    "Expdte",
-    "Doc. Ref.",
-    "Rev",
-    "Total",
-    "Subtotal",
-    "Bruto",
-    "CIP",
-    "Ap. CODEMU",
-    "Fondo",
-    "Honorario",
+    "Expediente",
+    "Propietario",
+    "Distrito",
+    "Prog.",
+    "Liq.",
+    "Pag. Ant.",
+    "Saldo",
+    "Costo/Und.",
+    "Monto",
+    "Honorarios",
   ];
 
   for (const col of columns) {
@@ -355,55 +359,42 @@ export function buildRhDelegadoPdfElement(
   for (const detalle of detalles) {
     const tr = append(tbody, "tr", {});
 
-    // Nro — liquidacion_especifica_numero fallback "—"
+    // Nro — liquidacion_especifica_numero
     const nro = detalle.liquidacion_especifica_numero != null
       ? String(detalle.liquidacion_especifica_numero)
       : "—";
     appendText(tr, "td", nro, rhPdfTheme.tdCenter);
 
-    // F. Rev.
-    const fechaRev = detalle.fecha_revision
-      ? new Date(detalle.fecha_revision).toLocaleDateString("es-PE", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })
-      : "—";
-    appendText(tr, "td", fechaRev, rhPdfTheme.td);
-
-    // Expdte
+    // Expediente
     appendText(tr, "td", detalle.expediente || "—", rhPdfTheme.td);
 
-    // Doc. Ref. — serie + numero from comprobante_activo
-    let docRef = "—";
-    if (detalle.comprobante_activo?.serie && detalle.comprobante_activo?.numero) {
-      docRef = `${detalle.comprobante_activo.serie}-${detalle.comprobante_activo.numero}`;
-    }
-    appendText(tr, "td", docRef, rhPdfTheme.tdCenter);
+    // Propietario
+    appendText(tr, "td", detalle.nombre_propietario || "—", rhPdfTheme.td);
 
-    // Rev (numero_revision)
-    appendText(tr, "td", detalle.numero_revision != null ? String(detalle.numero_revision) : "—", rhPdfTheme.tdCenter);
+    // Distrito
+    appendText(tr, "td", detalle.distrito || "—", rhPdfTheme.td);
 
-    // Total
-    appendText(tr, "td", detalle.total_liquidacion != null ? formatCurrency(detalle.total_liquidacion) : "—", rhPdfTheme.tdRight);
+    // Prog. (inspecciones_programadas)
+    appendText(tr, "td", String(detalle.inspecciones_programadas ?? "—"), rhPdfTheme.tdCenter);
 
-    // Subtotal
-    appendText(tr, "td", detalle.sub_total_liquidacion != null ? formatCurrency(detalle.sub_total_liquidacion) : "—", rhPdfTheme.tdRight);
+    // Liq. (inspecciones_liquidadas)
+    appendText(tr, "td", String(detalle.inspecciones_liquidadas ?? "—"), rhPdfTheme.tdCenter);
 
-    // Bruto
-    appendText(tr, "td", formatCurrency(detalle.imp_bruto), rhPdfTheme.tdRight);
+    // Pag. Ant. (inspecciones_pagadas_hasta_mes_anterior)
+    appendText(tr, "td", String(detalle.inspecciones_pagadas_hasta_mes_anterior ?? "—"), rhPdfTheme.tdCenter);
 
-    // CIP (renta_cip)
-    appendText(tr, "td", detalle.renta_cip != null ? formatCurrency(detalle.renta_cip) : "—", rhPdfTheme.tdRight);
+    // Saldo (saldo_restante)
+    appendText(tr, "td", String(detalle.saldo_restante ?? "—"), rhPdfTheme.tdCenter);
 
-    // Ap. CODEMU
-    appendText(tr, "td", detalle.aporte_codemu != null ? formatCurrency(detalle.aporte_codemu) : "—", rhPdfTheme.tdRight);
+    // Costo/Und. (costo_por_inspeccion)
+    appendText(tr, "td", detalle.costo_por_inspeccion != null ? formatCurrency(Number(detalle.costo_por_inspeccion)) : "—", rhPdfTheme.tdRight);
 
-    // Fondo
-    appendText(tr, "td", detalle.fondo_comun != null ? formatCurrency(detalle.fondo_comun) : "—", rhPdfTheme.tdRight);
+    // Monto (monto_contribuido)
+    appendText(tr, "td", detalle.monto_contribuido != null ? formatCurrency(Number(detalle.monto_contribuido)) : "—", rhPdfTheme.tdRight);
 
-    // Honorario (neto_honorario)
-    appendText(tr, "td", detalle.neto_honorario != null ? formatCurrency(detalle.neto_honorario) : "—", rhPdfTheme.tdRight);
+    // Honorarios
+    const honorarios = detalle.honorarios != null ? formatCurrency(Number(detalle.honorarios)) : "—";
+    appendText(tr, "td", honorarios, rhPdfTheme.tdRight);
   }
 
   // Totals row
@@ -412,20 +403,13 @@ export function buildRhDelegadoPdfElement(
   appendText(totalsTr, "td", "", rhPdfTheme.td);
   appendText(totalsTr, "td", "", rhPdfTheme.td);
   appendText(totalsTr, "td", "", rhPdfTheme.td);
-  appendText(totalsTr, "td", "", rhPdfTheme.td);
-  appendText(totalsTr, "td", formatCurrency(
-    detalles.reduce((sum, d) => sum + (d.total_liquidacion ?? 0), 0),
-  ), rhPdfTheme.tdRight);
-  appendText(totalsTr, "td", formatCurrency(
-    detalles.reduce((sum, d) => sum + (d.sub_total_liquidacion ?? 0), 0),
-  ), rhPdfTheme.tdRight);
-  appendText(totalsTr, "td", formatCurrency(
-    detalles.reduce((sum, d) => sum + (d.imp_bruto ?? 0), 0),
-  ), rhPdfTheme.tdRight);
-  appendText(totalsTr, "td", formatCurrency(totales.renta_cip), rhPdfTheme.tdRight);
-  appendText(totalsTr, "td", formatCurrency(totales.aporte_codemu), rhPdfTheme.tdRight);
-  appendText(totalsTr, "td", formatCurrency(totales.fondo_comun), rhPdfTheme.tdRight);
-  appendText(totalsTr, "td", formatCurrency(totales.neto_honorario), { ...rhPdfTheme.tdRight, fontWeight: "700", color: "#111827" });
+  appendText(totalsTr, "td", String(totales.inspecciones_programadas), rhPdfTheme.tdCenter);
+  appendText(totalsTr, "td", String(totales.inspecciones_liquidadas), rhPdfTheme.tdCenter);
+  appendText(totalsTr, "td", String(totales.inspecciones_pagadas_hasta_mes_anterior), rhPdfTheme.tdCenter);
+  appendText(totalsTr, "td", String(totales.saldo_restante), rhPdfTheme.tdCenter);
+  appendText(totalsTr, "td", "", rhPdfTheme.tdRight);
+  appendText(totalsTr, "td", formatCurrency(totales.sub_total), { ...rhPdfTheme.tdRight, fontWeight: "700", color: "#111827" });
+  appendText(totalsTr, "td", totales.honorarios != null ? formatCurrency(totales.honorarios) : "—", { ...rhPdfTheme.tdRight, fontWeight: "700", color: "#111827" });
 
   // Footer
   const footer = append(paper, "div", rhPdfTheme.footer);
@@ -437,7 +421,7 @@ export function buildRhDelegadoPdfElement(
     fontWeight: "800",
   });
   appendText(left, "p", "Tel.: 202-5066", { margin: "0", fontSize: "13px" });
-  appendText(left, "p", `Elaborado por ${del?.nombre_completo || "—"}`, {
+  appendText(left, "p", `Elaborado por ${insp?.nombre_completo || "—"}`, {
     margin: "8px 0 0",
     fontWeight: "700",
   });
@@ -456,7 +440,7 @@ export function buildRhDelegadoPdfElement(
 
   const right = append(footer, "div", { lineHeight: "1.45" });
   appendText(right, "p", `Neto a Pagar`, { margin: "0", fontWeight: "700" });
-  appendText(right, "p", formatCurrency(totales.neto_honorario), {
+  appendText(right, "p", totales.honorarios != null ? formatCurrency(Number(totales.honorarios)) : "—", {
     margin: "4px 0 0",
     fontSize: "22px",
     fontWeight: "900",

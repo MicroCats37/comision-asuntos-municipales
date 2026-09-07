@@ -28,7 +28,12 @@ class RHInspectorCotizarItemResult(BaseModel):
     costo_por_inspeccion: Decimal
     monto_contribuido: Decimal
     saldo_disponible: int  # available BEFORE this quote: programdas - pagadas_historicas
-    saldo_restante: int  # remaining AFTER this quote: programadas - pagadas_historicas - cantidad_visitas
+    saldo_restante: int  # remaining AFTER this quote: programada
+    # Frozen math values — frozen at creation time for auditability
+    escala_descuento_id: str  # FK to EscalaDescuentoInspector (frozen reference)
+    sub_total: Decimal  # equals monto_contribuido (frozen at item level)
+    descuento: Decimal  # proportional share of total descuento (frozen)
+    honorarios: Decimal  # sub_total - descuento (frozen)
     periodo: int | None = None
     mes: int | None = None
     # Specific liquidation numero (e.g. LiquidacionInspeccionObra numero) — resolved from the
@@ -70,12 +75,11 @@ class RangoDescuentoResult(BaseModel):
 class RHInspectorVariablesCalculoResult(BaseModel):
     """
     Variables de cálculo usadas en la cotización del RH mensual del inspector.
-    Escala de descuento vigente con el rango aplicado y todos los rangos disponibles.
+    Escala de descuento vigente con el rango aplicado.
     """
     escala_id: str
     escala_nombre: str
     rango_aplicado: RangoDescuentoResult
-    rangos: list[RangoDescuentoResult]  # todos los rangos de la escala (ya prefetched)
 
 
 class RHInspectorCotizarResult(BaseModel):
@@ -83,7 +87,8 @@ class RHInspectorCotizarResult(BaseModel):
     Resultado completo de la cotización del RH mensual del inspector.
     """
     inspector: InspectorRHMinimalResult
-    periodo: str
+    periodo: int | None = None
+    mes: int | None = None
     items: list[RHInspectorCotizarItemResult]
     totales: RHInspectorTotalesResult
     escala_descuento_id: str
@@ -101,18 +106,26 @@ class RHInspectorMensualDetalleResult(BaseModel):
     expediente: str  # from LiquidacionGeneral.expediente
     nombre_propietario: str  # from LiquidacionGeneral.proyecto.nombre_propietario
     distrito: str | None = None  # from LiquidacionGeneral.proyecto.distrito.nombre
-    importe_bruto: Decimal  # sub_total of LiquidacionGeneral
-    inspecciones_programadas: int  # cantidad_visitas from LiquidacionPorCategoriaVisitas
+    importe_bruto: Decimal  # from DetalleHonorarioInspector.importe_bruto (frozen)
+    inspecciones_programadas: int  # from DetalleHonorarioInspector.inspecciones_programadas (frozen)
     inspecciones_liquidadas: int  # inspecciones_liquidadas from DetalleHonorarioInspector
-    inspecciones_pagadas_hasta_mes_anterior: int  # derived from RegistroPagoInspector
+    inspecciones_pagadas_hasta_mes_anterior: int  # from DetalleHonorarioInspector.inspecciones_pagadas_hasta_mes_anterior (frozen)
     costo_por_inspeccion: Decimal
-    monto_contribuido: Decimal  # inspecciones_liquidadas * costo_por_inspeccion
-    saldo_restante: int  # inspecciones_programadas - inspecciones_pagadas_hasta_mes_anterior - inspecciones_liquidadas
+    monto_contribuido: Decimal
+    saldo_restante: int  # from DetalleHonorarioInspector.saldo_restante (frozen)
+    # Frozen math values
+    sub_total: Decimal  # frozen per-item subtotal
+    descuento: Decimal  # frozen proportional descuento
+    honorarios: Decimal  # frozen net honorarios (sub_total - descuento)
     # Specific liquidation numero (e.g. LiquidacionInspeccionObra numero) — resolved from
     # liquidacion_por_categoria_visitas.liquidacion_general via the inspeccion_obra one-to-one
     liquidacion_especifica_numero: int | None = None
     # Active comprobante for this liquidation (activo=True)
     comprobante_activo: "LiquidacionComprobanteMinimalResult | None" = None
+    # Dates from LiquidacionInspector (through table linking inspector to lcv)
+    fecha_revision: str | None = None
+    fecha_presentacion: str | None = None
+    dictamen_revision: str | None = None
 
 
 class RHInspectorMensualTotalesResult(BaseModel):
@@ -132,7 +145,9 @@ class RHInspectorMensualListItemResult(BaseModel):
     Item en la lista paginada de RecibosHonorariosInspectorMensuales.
     """
     id: str
-    periodo: str
+    numero: int | None = None  # numero de RH (from ReciboHonorarioInspectorMensual)
+    periodo: int | None = None
+    mes: int | None = None
     fecha_registro: str  # ISO datetime string
     inspector: InspectorRHMinimalResult
     totales: RHInspectorMensualTotalesResult

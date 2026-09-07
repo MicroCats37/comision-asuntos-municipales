@@ -28,7 +28,9 @@ class LiquidacionPOValidationMixin:
     These are NOT moved to core (core is pure ORM mapping, no business logic).
     """
 
-    def _validar_tarifa_explicita(self, tarifa, tipo_liquidacion: str) -> None:
+    def _validar_tarifa_explicita(
+        self, tarifa, tipo_liquidacion: str, fecha=None
+    ) -> None:
         """
         Validates an explicitly-provided tarifa in the input.
         Raises HttpError if invalid.
@@ -36,13 +38,16 @@ class LiquidacionPOValidationMixin:
         Args:
             tarifa: TarifaPorcentajeObra ORM object
             tipo_liquidacion: TipoLiquidacion constant string (e.g. 'EDIFICACION')
+            fecha: Date used to check vigencia. Defaults to today (flujo normal).
+                   El flujo legacy pasa fecha_registro para validar la tarifa
+                   vigente en esa fecha histórica, no contra hoy.
         """
-        today = timezone.now().date()
+        fecha = fecha if fecha is not None else timezone.now().date()
         is_vigente = (
-            tarifa.tarifa_base.periodo_inicio <= today
+            tarifa.tarifa_base.periodo_inicio <= fecha
             and (
                 tarifa.tarifa_base.periodo_fin is None
-                or tarifa.tarifa_base.periodo_fin >= today
+                or tarifa.tarifa_base.periodo_fin >= fecha
             )
         )
         if not is_vigente:

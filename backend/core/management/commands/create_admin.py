@@ -36,7 +36,7 @@ class Command(BaseCommand):
         }
 
         user, created = Usuario.objects.update_or_create(
-            dni=dni,
+            username="admin",
             defaults=defaults,
         )
 
@@ -46,13 +46,13 @@ class Command(BaseCommand):
 
         if created:
             self.stdout.write(
-                self.style.SUCCESS(f"Admin user created: DNI={dni}, password={password}")
+                self.style.SUCCESS(f"Admin user created: username=admin, password={password}")
             )
         else:
             action = "updated" if options["force"] else "verified"
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Admin user {action}: DNI={dni}, password={password}, "
+                    f"Admin user {action}: username=admin, password={password}, "
                     f"is_staff={user.is_staff}, is_superuser={user.is_superuser}, "
                     f"is_active={user.is_active}"
                 )
@@ -60,6 +60,6 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Login credentials: dni={dni}, password={password}"
+                f"Login credentials: username=admin, password={password}"
             )
         )

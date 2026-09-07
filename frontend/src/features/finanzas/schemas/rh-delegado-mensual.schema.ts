@@ -88,7 +88,8 @@ export const RHDelegadoCotizarItemInSchema = z.object({
 
 export const RHDelegadoCotizarInSchema = z.object({
   cip: z.string(),
-  periodo: z.string(), // "YYYY-MM" — periodo general del RH mensual
+  periodo: z.number().int().min(2000).max(2100),
+  mes: z.number().int().min(1).max(12),
   delegado_operacion_id: z.string(), // UUID string of DelegadoOperacion — required for new RH flows
   items: z.array(RHDelegadoCotizarItemInSchema),
 });
@@ -151,7 +152,8 @@ export const RHDelegadoDelegadoMinimalSchema = z.object({
 
 export const RHDelegadoCotizarSchema = z.object({
   delegado: RHDelegadoDelegadoMinimalSchema,
-  periodo: z.string(),
+  periodo: z.number().int().nullish(),
+  mes: z.number().int().nullish(),
   items: z.array(RHDelegadoCotizarItemSchema),
   totales: RHDelegadoTotalesSchema,
   variables_calculo: RHDelegadoVariablesCalculoSchema,

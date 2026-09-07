@@ -56,6 +56,22 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacio
 )
 
 
+def _parse_periodo_year(periodo: str) -> Optional[int]:
+    """Extrae el año (int) de un periodo 'YYYY-MM'. None si no parseable."""
+    try:
+        return int(str(periodo).split("-")[0])
+    except (ValueError, TypeError, IndexError):
+        return None
+
+
+def _parse_periodo_mes(periodo: str) -> Optional[int]:
+    """Extrae el mes (int, 1-12) de un periodo 'YYYY-MM'. None si no parseable."""
+    try:
+        return int(str(periodo).split("-")[1])
+    except (ValueError, TypeError, IndexError):
+        return None
+
+
 class FinanzasCoreService:
     """
     Core service for querying IGV, UIT, ReciboHonorarioDelegado, and
@@ -643,11 +659,13 @@ class FinanzasCoreService:
     def crear_rh_inspector_mensual(
         self,
         inspector_id: int | str,
-        periodo: str,
+        periodo: int,
+        mes: int,
         escala_id: int | str,
         sub_total: Decimal,
         descuento: Decimal,
         honorarios: Decimal,
+        tasa_descuento: Decimal | None = None,
         inspector_operacion_id: int | str | None = None,
     ) -> ReciboHonorarioInspectorMensual:
         """
@@ -655,11 +673,13 @@ class FinanzasCoreService:
 
         Args:
             inspector_id: FK to Inspector.
-            periodo: Period string in YYYY-MM format.
+            periodo: Año del periodo (int).
+            mes: Mes del periodo (int, 1-12).
             escala_id: FK to EscalaDescuentoInspector.
             sub_total: Subtotal for the month.
             descuento: Discount amount.
             honorarios: Net honorarios to pay.
+            tasa_descuento: Frozen discount rate used (e.g. 0.20).
             inspector_operacion_id: Optional FK to InspectorOperacion (derived from selected items).
 
         Returns:
@@ -668,10 +688,12 @@ class FinanzasCoreService:
         return ReciboHonorarioInspectorMensual.objects.create(
             inspector_id=inspector_id,
             periodo=periodo,
+            mes=mes,
             escala_descuento_id=escala_id,
             sub_total=sub_total,
             descuento=descuento,
             honorarios=honorarios,
+            tasa_descuento=tasa_descuento,
             inspector_operacion_id=inspector_operacion_id,
         )
 
@@ -682,9 +704,21 @@ class FinanzasCoreService:
         inspecciones_liquidadas: int,
         costo_por_inspeccion: Decimal,
         monto_contribuido: Decimal,
+        escala_descuento_id: int | str | None = None,
+        importe_bruto: Decimal | None = None,
+        inspecciones_programadas: int | None = None,
+        inspecciones_pagadas_hasta_mes_anterior: int | None = None,
+        saldo_restante: Decimal | None = None,
+        sub_total: Decimal | None = None,
+        descuento: Decimal | None = None,
+        honorarios: Decimal | None = None,
+        tasa_descuento: Decimal | None = None,
     ) -> DetalleHonorarioInspector:
         """
-        Create a DetalleHonorarioInspector record.
+        Create a DetalleHonorarioInspector record with frozen per-item values.
+
+        All math fields are frozen at creation time so the header can sum them
+        without recalculating.
 
         Args:
             recibo_mensual_id: FK to ReciboHonorarioInspectorMensual.
@@ -692,16 +726,43 @@ class FinanzasCoreService:
             inspecciones_liquidadas: Number of inspections liquidated in this detail.
             costo_por_inspeccion: Cost per inspection for this liquidacion.
             monto_contribuido: Monetary contribution from this liquidacion.
+            escala_descuento_id: FK to EscalaDescuentoInspector (frozen reference).
+            importe_bruto: sub_total from LiquidacionGeneral (frozen reference amount).
+            inspecciones_programadas: cantidad_visitas from LiquidacionPorCategoriaVisitas.
+            inspecciones_pagadas_hasta_mes_anterior: accumulated historical paid inspections.
+            saldo_restante: remaining inspections after this quote.
+            sub_total: Frozen item subtotal (equals monto_contribuido).
+            descuento: Frozen proportional descuento for this item.
+            honorarios: Frozen net honorarios for this item (sub_total - descuento).
+            tasa_descuento: Frozen discount rate for this item.
 
         Returns:
             DetalleHonorarioInspector instance.
         """
+        escala_descuento = None
+        if escala_descuento_id:
+            try:
+                escala_descuento = EscalaDescuentoInspector.objects.get(
+                    id=escala_descuento_id
+                )
+            except EscalaDescuentoInspector.DoesNotExist:
+                pass
+
         return DetalleHonorarioInspector.objects.create(
             recibo_mensual_id=recibo_mensual_id,
             liquidacion_por_categoria_visitas_id=liquidacion_categoria_visitas_id,
             inspecciones_liquidadas=inspecciones_liquidadas,
             costo_por_inspeccion=costo_por_inspeccion,
             monto_contribuido=monto_contribuido,
+            escala_descuento=escala_descuento,
+            importe_bruto=importe_bruto,
+            inspecciones_programadas=inspecciones_programadas,
+            inspecciones_pagadas_hasta_mes_anterior=inspecciones_pagadas_hasta_mes_anterior,
+            saldo_restante=saldo_restante,
+            sub_total=sub_total,
+            descuento=descuento,
+            honorarios=honorarios,
+            tasa_descuento=tasa_descuento,
         )
 
     def get_detalles_de_recibo(
@@ -913,6 +974,10 @@ class FinanzasCoreService:
         Get the imp_bruto from LiquidacionPorcentajeObraDetalle matching
         the given liquidacion_general and especialidad_revision.
 
+        DEPRECATED: Returns only the subtotal for backward compatibility.
+        New callers should use get_importes_po_detalle() which returns
+        the full breakdown (importe_parcial, ajuste_redondeo, subtotal).
+
         Args:
             liquidacion_general_id: PK of the LiquidacionGeneral.
             especialidad_revision_id: PK of the EspecialidadRevision.
@@ -932,16 +997,59 @@ class FinanzasCoreService:
             return Decimal(str(detalle.subtotal))
         return None
 
+    def get_importes_po_detalle(
+        self,
+        liquidacion_general_id: int,
+        especialidad_revision_id: int,
+    ) -> tuple[Decimal, Decimal, Decimal] | None:
+        """
+        Get the full importe breakdown from LiquidacionPorcentajeObraDetalle.
+
+        Returns a 3-tuple:
+            (importe_parcial, ajuste_redondeo, subtotal)
+
+        Safe fallbacks when fields are NULL:
+            - ajuste_redondeo defaults to Decimal("0.00")
+            - subtotal defaults to Decimal("0.00")
+
+        Args:
+            liquidacion_general_id: PK of the LiquidacionGeneral.
+            especialidad_revision_id: PK of the EspecialidadRevision.
+
+        Returns:
+            Tuple (importe_parcial, ajuste_redondeo, subtotal) as Decimals,
+            or None if no matching detail found.
+        """
+        detalle = (
+            LiquidacionPorcentajeObraDetalle.objects
+            .filter(
+                liquidacion_porcentaje__liquidacion_general_id=liquidacion_general_id,
+                especialidad_id=especialidad_revision_id,
+            )
+            .first()
+        )
+        if not detalle:
+            return None
+
+        importe_parcial = Decimal(str(detalle.importe_parcial)) if detalle.importe_parcial is not None else Decimal("0.00")
+        ajuste_redondeo = Decimal(str(detalle.ajuste_redondeo)) if detalle.ajuste_redondeo is not None else Decimal("0.00")
+        # subtotal is the authoritative amount per specialty (importe_total was redundant with subtotal).
+        subtotal_item = Decimal(str(detalle.subtotal))
+
+        return (importe_parcial, ajuste_redondeo, subtotal_item)
+
     def crear_rh_delegado_mensual(
         self,
         delegado_id: int | str,
-        periodo: str,
+        periodo: int,
+        mes: int,
         sub_total: Decimal,
         renta_cip: Decimal,
         aporte_codemu: Decimal,
         fondo_comun: Decimal,
         neto_honorario: Decimal,
         delegado_operacion_id: str | None = None,
+        tasa_delegado_id: int | str | None = None,
     ) -> ReciboHonorarioDelegadoMensual:
         """
         Create a new ReciboHonorarioDelegadoMensual record.
@@ -952,13 +1060,15 @@ class FinanzasCoreService:
 
         Args:
             delegado_id: FK to Delegado.
-            periodo: Period string in YYYY-MM format.
-            sub_total: Subtotal for the month.
-            renta_cip: 25% of sub_total.
-            aporte_codemu: 5% of sub_total.
-            fondo_comun: 10% of sub_total.
-            neto_honorario: Net honorarios to pay.
+            periodo: Año del periodo (int, ej. 2026).
+            mes: Mes del periodo (int, 1-12).
+            sub_total: Subtotal for the month (sum of frozen detail subtotal values).
+            renta_cip: 25% of sub_total + suma_ajustes_redondeo (frozen).
+            aporte_codemu: 5% of sub_total (frozen).
+            fondo_comun: 10% of sub_total (frozen).
+            neto_honorario: Net honorarios to pay (frozen from details).
             delegado_operacion_id: Optional FK to DelegadoOperacion.
+            tasa_delegado_id: Optional FK to TasaDelegado (frozen reference).
 
         Returns:
             Newly created ReciboHonorarioDelegadoMensual instance.
@@ -979,11 +1089,13 @@ class FinanzasCoreService:
                 delegado_operacion_id=delegado_operacion_id,
                 delegado_id=efectivo_delegado_id,
                 periodo=periodo,
+                mes=mes,
                 sub_total=sub_total,
                 renta_cip=renta_cip,
                 aporte_codemu=aporte_codemu,
                 fondo_comun=fondo_comun,
                 neto_honorario=neto_honorario,
+                tasa_delegado_id=tasa_delegado_id,
             )
         else:
             return ReciboHonorarioDelegadoMensual.objects.create(
@@ -991,11 +1103,13 @@ class FinanzasCoreService:
                     int(delegado_id) if isinstance(delegado_id, str) else delegado_id
                 ),
                 periodo=periodo,
+                mes=mes,
                 sub_total=sub_total,
                 renta_cip=renta_cip,
                 aporte_codemu=aporte_codemu,
                 fondo_comun=fondo_comun,
                 neto_honorario=neto_honorario,
+                tasa_delegado_id=tasa_delegado_id,
             )
 
     def crear_liquidacion_delegado(
@@ -1111,14 +1225,29 @@ class FinanzasCoreService:
         recibo_mensual_id: int | str,
         liquidacion_delegado_id: int | str,
         imp_bruto: Decimal,
+        sub_total: Decimal | None = None,
+        renta_cip: Decimal | None = None,
+        aporte_codemu: Decimal | None = None,
+        fondo_comun: Decimal | None = None,
+        neto_honorario: Decimal | None = None,
+        tasa_delegado_id: int | str | None = None,
     ) -> DetalleHonorarioDelegado:
         """
-        Create a DetalleHonorarioDelegado record.
+        Create a DetalleHonorarioDelegado record with frozen per-item values.
+
+        All tax fields and the tasa_delegado FK are frozen at creation time
+        so the header can sum them without recalculating.
 
         Args:
             recibo_mensual_id: FK to ReciboHonorarioDelegadoMensual.
             liquidacion_delegado_id: FK to LiquidacionDelegado.
-            imp_bruto: Importe bruto from the LiquidacionPorcentajeObraDetalle.
+            imp_bruto: Importe bruto (subtotal from LiquidacionPorcentajeObraDetalle).
+            sub_total: Frozen subtotal for this detail.
+            renta_cip: Frozen renta_cip for this detail.
+            aporte_codemu: Frozen aporte_codemu for this detail.
+            fondo_comun: Frozen fondo_comun for this detail.
+            neto_honorario: Frozen neto_honorario for this detail.
+            tasa_delegado_id: Optional FK to TasaDelegado (frozen reference).
 
         Returns:
             DetalleHonorarioDelegado instance.
@@ -1127,6 +1256,12 @@ class FinanzasCoreService:
             recibo_mensual_id=recibo_mensual_id,
             liquidacion_delegado_id=liquidacion_delegado_id,
             imp_bruto=imp_bruto,
+            sub_total=sub_total,
+            renta_cip=renta_cip,
+            aporte_codemu=aporte_codemu,
+            fondo_comun=fondo_comun,
+            neto_honorario=neto_honorario,
+            tasa_delegado_id=tasa_delegado_id,
         )
 
     def delete_detalles_honorario_delegado(

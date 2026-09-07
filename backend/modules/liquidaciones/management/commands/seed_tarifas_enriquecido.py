@@ -79,7 +79,7 @@ class Command(BaseCommand):
         """Obtiene o crea una EspecialidadRevision por nombre (match por nombre, fallback slug)."""
         import re
 
-        # 1) Match por nombre exacto (el sistema guarda "Eléctrica/Mecánica", no la forma larga).
+        # 1) Match por nombre exacto (nombre canónico: "Ingeniería Eléctrica y Mecánica Eléctrica").
         esp = EspecialidadRevision.objects.filter(nombre=nombre).first()
         if esp:
             return esp

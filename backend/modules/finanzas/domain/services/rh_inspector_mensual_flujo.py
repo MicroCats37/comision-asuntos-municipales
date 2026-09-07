@@ -66,7 +66,9 @@ class RHInspectorMensualCotizarFlujo:
 
         items: list[RHInspectorCotizarItemResult] = []
         sub_total = Decimal("0")
-        header_periodo, header_mes = (int(part) for part in payload.periodo.split("-"))
+        header_periodo = payload.periodo
+        header_mes = payload.mes
+        periodo_str = f"{header_periodo:04d}-{header_mes:02d}"
 
         for item in payload.items:
             # 3a. Resolver liquidacion_categoria_visitas_id
@@ -139,7 +141,7 @@ class RHInspectorMensualCotizarFlujo:
             )
             registros_previos = RegistroPagoInspector.objects.filter(
                 liquidacion_por_categoria_visitas_id=lcv.id,
-                periodo__lte=payload.periodo,
+                periodo__lte=periodo_str,
             )
             pagadas_hasta_mes_anterior = sum(
                 r.inspecciones_pagadas for r in registros_previos
@@ -177,7 +179,9 @@ class RHInspectorMensualCotizarFlujo:
             comprobante_activo = _resolve_comprobante_activo(lg)
 
             saldo_restante = saldo_disponible - item.cantidad_visitas
-            sub_total += monto_contribuido
+            # sub_total at item level = monto_contribuido (frozen per-item subtotal)
+            item_sub_total = monto_contribuido
+            sub_total += item_sub_total
             items.append(
                 RHInspectorCotizarItemResult(
                     exp_liqui=exp_liqui,
@@ -192,6 +196,10 @@ class RHInspectorMensualCotizarFlujo:
                     monto_contribuido=monto_contribuido,
                     saldo_disponible=saldo_disponible,
                     saldo_restante=saldo_restante,
+                    escala_descuento_id=str(escala.id),
+                    sub_total=item_sub_total,
+                    descuento=Decimal("0"),  # computed after total descuento is known
+                    honorarios=Decimal("0"),  # computed after total descuento is known
                     periodo=item.periodo or header_periodo,
                     mes=item.mes or header_mes,
                     liquidacion_especifica_numero=liquidacion_especifica_numero,
@@ -202,8 +210,34 @@ class RHInspectorMensualCotizarFlujo:
         # 8. Descuento sobre el TOTAL (según decisión del usuario)
         rango = self.core.get_rango_para_monto(escala, sub_total)
         tasa = Decimal(str(rango.porcentaje_descuento)) if rango else Decimal("0")
-        descuento = (sub_total * tasa).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
-        honorarios = (sub_total - descuento).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+        total_descuento = (sub_total * tasa).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+        total_honorarios = (sub_total - total_descuento).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+
+        # 9. Compute per-item descuento and honorarios (proportional to each item's sub_total)
+        # Subtraction Rule (remainder absorption): every item except the last gets the
+        # proportional quantized discount; the last item absorbs the remainder by subtraction
+        # so that sum(item_descuentos) == total_descuento exactly.
+        running_descuento = Decimal("0")
+        for i, item in enumerate(items):
+            if i < len(items) - 1:
+                # Not the last item: use proportional quantized discount
+                if sub_total > Decimal("0"):
+                    item_proporcion = item.sub_total / sub_total
+                    item_descuento = (
+                        total_descuento * item_proporcion
+                    ).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+                else:
+                    item_descuento = Decimal("0")
+            else:
+                # Last item: absorb remainder via strict subtraction
+                item_descuento = total_descuento - running_descuento
+            item_honorarios = (item.sub_total - item_descuento).quantize(
+                TWO_PLACES, rounding=ROUND_HALF_UP
+            )
+            # Update in-place (items list was built above with placeholder values)
+            item.descuento = item_descuento
+            item.honorarios = item_honorarios
+            running_descuento += item_descuento
 
         from modules.finanzas.domain.results.rh_inspector_mensual_result import (
             InspectorRHMinimalResult,
@@ -211,14 +245,6 @@ class RHInspectorMensualCotizarFlujo:
             RangoDescuentoResult,
         )
 
-        all_rangos = [
-            RangoDescuentoResult(
-                monto_minimo=r.monto_minimo,
-                monto_maximo=r.monto_maximo,
-                porcentaje_descuento=r.porcentaje_descuento,
-            )
-            for r in escala.rangos.all().order_by("monto_minimo")
-        ]
         rango_aplicado_result = None
         if rango:
             rango_aplicado_result = RangoDescuentoResult(
@@ -242,12 +268,13 @@ class RHInspectorMensualCotizarFlujo:
                     inspector.perfil_ingeniero.dni if inspector.perfil_ingeniero else ""
                 ),
             ),
-            periodo=payload.periodo,
+            periodo=header_periodo,
+            mes=header_mes,
             items=items,
             totales=RHInspectorTotalesResult(
                 sub_total=sub_total,
-                descuento=descuento,
-                honorarios=honorarios,
+                descuento=total_descuento,
+                honorarios=total_honorarios,
                 tasa_descuento_aplicada=tasa,
             ),
             escala_descuento_id=str(escala.id),
@@ -255,7 +282,6 @@ class RHInspectorMensualCotizarFlujo:
                 escala_id=str(escala.id),
                 escala_nombre=escala.nombre or "",
                 rango_aplicado=rango_aplicado_result,
-                rangos=all_rangos,
             ),
         )
 
@@ -297,6 +323,9 @@ class RHInspectorMensualCrearFlujo:
         # 1. Calcular (reutiliza la lógica de cotizar, que valida todo)
         resultado = self.cotizar_flujo.cotizar(payload)
 
+        # Periodo derivado SOLO para RegistroPagoInspector (modelo con CharField).
+        periodo_str = f"{resultado.periodo:04d}-{resultado.mes:02d}"
+
         # 2. Derivar inspector_operacion_id de los items seleccionados.
         #    Si todos los LiquidacionInspector tienen el mismo inspector_operacion_id, usarlo.
         #    Si hay mezcla de operaciones diferentes, raise 409 (RH debe ser por operación).
@@ -328,10 +357,12 @@ class RHInspectorMensualCrearFlujo:
         rh = self.core.crear_rh_inspector_mensual(
             inspector_id=resultado.inspector.id,
             periodo=resultado.periodo,
+            mes=resultado.mes,
             escala_id=resultado.escala_descuento_id,
             sub_total=Decimal(str(resultado.totales.sub_total)),
             descuento=Decimal(str(resultado.totales.descuento)),
             honorarios=Decimal(str(resultado.totales.honorarios)),
+            tasa_descuento=Decimal(str(resultado.totales.tasa_descuento_aplicada)),
             inspector_operacion_id=inspector_operacion_id,
         )
 
@@ -344,10 +375,19 @@ class RHInspectorMensualCrearFlujo:
                 inspecciones_liquidadas=item.inspecciones_liquidadas,
                 costo_por_inspeccion=Decimal(str(item.costo_por_inspeccion)),
                 monto_contribuido=Decimal(str(item.monto_contribuido)),
+                escala_descuento_id=item.escala_descuento_id,
+                importe_bruto=Decimal(str(item.importe_bruto)),
+                inspecciones_programadas=item.inspecciones_programadas,
+                inspecciones_pagadas_hasta_mes_anterior=item.inspecciones_pagadas_hasta_mes_anterior,
+                saldo_restante=Decimal(str(item.saldo_restante)),
+                sub_total=Decimal(str(item.sub_total)),
+                descuento=Decimal(str(item.descuento)),
+                honorarios=Decimal(str(item.honorarios)),
+                tasa_descuento=Decimal(str(resultado.totales.tasa_descuento_aplicada)),
             )
             self.core.upsert_registro_pago(
                 liquidacion_categoria_visitas_id=item.liquidacion_categoria_visitas_id,
-                periodo=resultado.periodo,
+                periodo=periodo_str,
                 inspecciones_pagadas=item.inspecciones_liquidadas,
             )
             self.core.update_liquidacion_inspector_periodo_mes(

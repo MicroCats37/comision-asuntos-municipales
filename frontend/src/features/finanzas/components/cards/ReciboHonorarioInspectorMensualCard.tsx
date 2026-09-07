@@ -5,13 +5,14 @@
  * Mensual del inspector.
  * Muestra: Periodo, Inspector, Totales, número de IO y detalle de inspecciones.
  */
-import { Banknote, Calendar, FileText, User } from "lucide-react";
+import { Banknote, Calendar, FileText, Printer, User } from "lucide-react";
 import type { ReciboHonorarioInspectorMensual } from "@/features/finanzas/schemas/recibo-honorario.schema";
 import {
   formatCurrency,
   formatDate,
 } from "@/features/liquidaciones/components/liquidacion-ui";
 import { RhInspectorVariablesCalculo } from "@/features/finanzas/components/RhInspectorVariablesCalculo";
+import { printRhInspectorMensual } from "@/features/finanzas/pdf/printRhInspectorMensual";
 
 interface ReciboHonorarioInspectorMensualCardProps {
   item: ReciboHonorarioInspectorMensual;
@@ -25,6 +26,10 @@ export function ReciboHonorarioInspectorMensualCard({
   const detalles = item.detalles || [];
   const ioCount = detalles.length;
 
+  const handlePrint = () => {
+    printRhInspectorMensual(item);
+  };
+
   return (
     <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
       {/* Header */}
@@ -33,6 +38,7 @@ export function ReciboHonorarioInspectorMensualCard({
           <FileText className="h-4 w-4 text-muted-foreground" />
           <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
             Recibo de Honorario Mensual — Inspector
+            {item.numero != null ? ` N° ${item.numero}` : ""}
           </span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -52,7 +58,11 @@ export function ReciboHonorarioInspectorMensualCard({
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Periodo
               </p>
-              <p className="text-sm font-bold truncate">{item.periodo}</p>
+              <p className="text-sm font-bold truncate">
+                {item.periodo != null && item.mes != null
+                  ? `${item.periodo}-${String(item.mes).padStart(2, "0")}`
+                  : "—"}
+              </p>
             </div>
           </div>
 
@@ -123,6 +133,9 @@ export function ReciboHonorarioInspectorMensualCard({
                     <th className="text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 pl-3 whitespace-nowrap">
                       Monto
                     </th>
+                    <th className="text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 pl-3 whitespace-nowrap">
+                      Honorarios
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -169,6 +182,9 @@ export function ReciboHonorarioInspectorMensualCard({
                       <td className="py-1.5 pl-3 text-right font-semibold text-primary whitespace-nowrap">
                         {formatCurrency(detalle.monto_contribuido)}
                       </td>
+                      <td className="py-1.5 pl-3 text-right font-medium text-muted-foreground whitespace-nowrap">
+                        {detalle.honorarios != null ? formatCurrency(Number(detalle.honorarios)) : "—"}
+                      </td>
                     </tr>
                   );})}
                 </tbody>
@@ -188,6 +204,9 @@ export function ReciboHonorarioInspectorMensualCard({
                     <td className="py-1.5 pl-3 text-right text-muted-foreground whitespace-nowrap" />
                     <td className="py-1.5 pl-3 text-right font-bold text-primary whitespace-nowrap">
                       {formatCurrency(totales.sub_total)}
+                    </td>
+                    <td className="py-1.5 pl-3 text-right font-bold text-primary whitespace-nowrap">
+                      {totales.honorarios != null ? formatCurrency(totales.honorarios) : "—"}
                     </td>
                   </tr>
                 </tfoot>
@@ -291,6 +310,17 @@ export function ReciboHonorarioInspectorMensualCard({
               compact
             />
           )}
+        </div>
+
+        {/* Print button */}
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+          >
+            <Printer className="h-4 w-4" />
+            Imprimir
+          </button>
         </div>
       </div>
     </div>

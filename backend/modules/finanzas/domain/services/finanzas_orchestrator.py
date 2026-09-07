@@ -690,28 +690,11 @@ class FinanzasOrchestrator:
             lg = ld.liquidacion
             expediente = getattr(lg, "expediente", "") or ""
 
-            # Calcular parciales por item usando tasas vigentes
-            imp_bruto_dec = Decimal(str(d.imp_bruto))
-            if tasas:
-                TWO_PLACES = Decimal("0.01")
-                item_renta_cip = (imp_bruto_dec * tasas.renta_cip).quantize(
-                    TWO_PLACES, rounding=ROUND_HALF_UP
-                )
-                item_aporte_codemu = (imp_bruto_dec * tasas.aporte_codemu).quantize(
-                    TWO_PLACES, rounding=ROUND_HALF_UP
-                )
-                item_fondo_comun = (imp_bruto_dec * tasas.fondo_comun).quantize(
-                    TWO_PLACES, rounding=ROUND_HALF_UP
-                )
-                item_neto = (
-                    imp_bruto_dec - item_renta_cip - item_aporte_codemu - item_fondo_comun
-                ).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
-            else:
-                # Sin tasas vigentes — cero todos los campos
-                item_renta_cip = Decimal("0")
-                item_aporte_codemu = Decimal("0")
-                item_fondo_comun = Decimal("0")
-                item_neto = Decimal("0")
+            # Read directly from DB fields on the detail object — no on-the-fly calculation.
+            renta_cip = d.renta_cip if d.renta_cip is not None else Decimal("0.00")
+            aporte_codemu = d.aporte_codemu if d.aporte_codemu is not None else Decimal("0.00")
+            fondo_comun = d.fondo_comun if d.fondo_comun is not None else Decimal("0.00")
+            neto_honorario = d.neto_honorario if d.neto_honorario is not None else Decimal("0.00")
 
             detalles.append(
                 RHDelegadoMensualDetalleResult(
@@ -723,10 +706,10 @@ class FinanzasOrchestrator:
                     sub_total_liquidacion=lg.sub_total,
                     numero_rh=ld.numero_rh or None,
                     imp_bruto=d.imp_bruto,
-                    renta_cip=item_renta_cip,
-                    aporte_codemu=item_aporte_codemu,
-                    fondo_comun=item_fondo_comun,
-                    neto_honorario=item_neto,
+                    renta_cip=renta_cip,
+                    aporte_codemu=aporte_codemu,
+                    fondo_comun=fondo_comun,
+                    neto_honorario=neto_honorario,
                     periodo=ld.periodo,
                     mes=ld.mes,
                     dictamen_revision=ld.dictamen_revision or None,
@@ -766,9 +749,22 @@ class FinanzasOrchestrator:
                     tipo=op.tipo or "",
                 )
 
+        # Resolve periodo_year/mes — prefer stored ints, fallback to parsing periodo string
+        periodo_year = recibo_mensual.periodo
+        mes = recibo_mensual.mes
+        if periodo_year is None or mes is None:
+            # Fallback: parse "YYYY-MM" from legacy periodo field
+            from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreService
+            cs = FinanzasCoreService()
+            if periodo_year is None:
+                periodo_year = cs._parse_periodo_year(recibo_mensual.periodo)
+            if mes is None:
+                mes = cs._parse_periodo_mes(recibo_mensual.periodo)
+
         return RHDelegadoMensualListItemResult(
             id=str(recibo_mensual.id),
-            periodo=recibo_mensual.periodo,
+            periodo=periodo_year,
+            mes=mes,
             fecha_registro=recibo_mensual.fecha_registro.isoformat() if recibo_mensual.fecha_registro else "",
             delegado=DelegadoRHMinimalResult(
                 id=str(recibo_mensual.delegado.id),
@@ -788,6 +784,7 @@ class FinanzasOrchestrator:
                 tasa_renta_cip=tasas.renta_cip if tasas else Decimal("0.25"),
                 tasa_aporte_codemu=tasas.aporte_codemu if tasas else Decimal("0.05"),
                 tasa_fondo_comun=tasas.fondo_comun if tasas else Decimal("0.10"),
+                tasa_delegado_id=tasas.id if tasas else None,
             ),
             delegado_operacion_id=(
                 str(recibo_mensual.delegado_operacion_id)
@@ -855,14 +852,12 @@ class FinanzasOrchestrator:
 
         inspector_perfil = recibo_mensual.inspector.perfil_ingeniero
 
-        # Calcular tasa de descuento aplicada: tasa = 1 - (honorarios / sub_total)
-        # Ya que: honorarios = sub_total * (1 - tasa) → tasa = 1 - (honorarios / sub_total)
-        sub_total_val = Decimal(str(recibo_mensual.sub_total)) if recibo_mensual.sub_total else Decimal("0")
-        honorarios_val = Decimal(str(recibo_mensual.honorarios)) if recibo_mensual.honorarios else Decimal("0")
-        if sub_total_val and sub_total_val != 0:
-            tasa_descuento = (Decimal("1") - (honorarios_val / sub_total_val)).quantize(Decimal("0.0001"))
-        else:
-            tasa_descuento = Decimal("0")
+        # Leer tasa de descuento directamente del campo congelado
+        tasa_descuento = (
+            Decimal(str(recibo_mensual.tasa_descuento))
+            if recibo_mensual.tasa_descuento is not None
+            else Decimal("0.0000")
+        )
 
         detalles: list[RHInspectorMensualDetalleResult] = []
         total_inspecciones_programadas = 0
@@ -870,7 +865,12 @@ class FinanzasOrchestrator:
         total_inspecciones_pagadas_anterior = 0
         total_saldo_restante = 0
 
-        for d in recibo_mensual.detalles.all():
+        for d in recibo_mensual.detalles.select_related(
+            "liquidacion_por_categoria_visitas__liquidacion_general__proyecto__distrito"
+        ).prefetch_related(
+            "liquidacion_por_categoria_visitas__inspectores",
+            "liquidacion_por_categoria_visitas__liquidacion_general__comprobantes",
+        ):
             lcv = d.liquidacion_por_categoria_visitas
             lg = lcv.liquidacion_general
 
@@ -879,23 +879,11 @@ class FinanzasOrchestrator:
                 c for c in lg.comprobantes.all() if c.activo
             ]
 
-            # Obtener inspecciones pagadas hasta el periodo anterior al actual
-            # periodo del recibo actual: YYYY-MM, queremos todas las pago anteriores a este periodo
-            # Actually for the list item, we need the cumulative paid before this RH's period
-            # For simplicity we compute from RegistroPagoInspector for this LCV before current periodo
-            from modules.finanzas.domain.models.registro_pago_inspector import (
-                RegistroPagoInspector,
-            )
-            registros_previos = RegistroPagoInspector.objects.filter(
-                liquidacion_por_categoria_visitas=lcv,
-                periodo__lt=recibo_mensual.periodo,
-            )
-            inspecciones_pagadas_hasta_mes_anterior = sum(
-                r.inspecciones_pagadas for r in registros_previos
-            )
-
-            inspecciones_programadas = lcv.cantidad_visitas or 0
-            saldo_restante = inspecciones_programadas - inspecciones_pagadas_hasta_mes_anterior - d.inspecciones_liquidadas
+            # Read frozen fields directly from DetalleHonorarioInspector (no on-the-fly calculation)
+            importe_bruto = d.importe_bruto if d.importe_bruto is not None else Decimal("0")
+            inspecciones_programadas = d.inspecciones_programadas if d.inspecciones_programadas is not None else 0
+            inspecciones_pagadas_hasta_mes_anterior = d.inspecciones_pagadas_hasta_mes_anterior if d.inspecciones_pagadas_hasta_mes_anterior is not None else 0
+            saldo_restante = int(d.saldo_restante) if d.saldo_restante is not None else 0
 
             total_inspecciones_programadas += inspecciones_programadas
             total_inspecciones_liquidadas += d.inspecciones_liquidadas
@@ -912,20 +900,44 @@ class FinanzasOrchestrator:
             if lg.proyecto and lg.proyecto.distrito:
                 distrito = lg.proyecto.distrito.nombre or None
 
+            # Extract dates from LiquidacionInspector through table
+            # Find the inspector matching recibo_mensual.inspector_id
+            liquidacion_inspector = None
+            for li in lcv.inspectores.all():
+                if str(li.inspector_id) == str(recibo_mensual.inspector_id):
+                    liquidacion_inspector = li
+                    break
+
+            fecha_revision = None
+            fecha_presentacion = None
+            dictamen_revision = None
+            if liquidacion_inspector:
+                if liquidacion_inspector.fecha_revision:
+                    fecha_revision = str(liquidacion_inspector.fecha_revision.isoformat())
+                if liquidacion_inspector.fecha_presentacion:
+                    fecha_presentacion = str(liquidacion_inspector.fecha_presentacion.isoformat())
+                dictamen_revision = liquidacion_inspector.dictamen_revision or None
+
             detalles.append(
                 RHInspectorMensualDetalleResult(
                     expediente=expediente,
                     nombre_propietario=nombre_propietario,
                     distrito=distrito,
-                    importe_bruto=lg.sub_total if lg.sub_total else Decimal("0"),
+                    importe_bruto=importe_bruto,
                     inspecciones_programadas=inspecciones_programadas,
                     inspecciones_liquidadas=d.inspecciones_liquidadas,
                     inspecciones_pagadas_hasta_mes_anterior=inspecciones_pagadas_hasta_mes_anterior,
                     costo_por_inspeccion=d.costo_por_inspeccion,
                     monto_contribuido=d.monto_contribuido,
                     saldo_restante=saldo_restante,
+                    sub_total=d.sub_total,
+                    descuento=d.descuento,
+                    honorarios=d.honorarios,
                     liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(lg),
                     comprobante_activo=_resolve_comprobante_activo(lg),
+                    fecha_revision=fecha_revision,
+                    fecha_presentacion=fecha_presentacion,
+                    dictamen_revision=dictamen_revision,
                 )
             )
 
@@ -950,24 +962,28 @@ class FinanzasOrchestrator:
                 monto_maximo=first.monto_maximo if first else None,
                 porcentaje_descuento=tasa_descuento,
             )
-        rangos_result = [
-            RangoDescuentoResult(
-                monto_minimo=r.monto_minimo,
-                monto_maximo=r.monto_maximo,
-                porcentaje_descuento=r.porcentaje_descuento,
-            )
-            for r in rangos_qs
-        ]
         variables_calculo = RHInspectorVariablesCalculoResult(
             escala_id=str(escala.id),
             escala_nombre=escala.nombre or "",
             rango_aplicado=rango_aplicado,
-            rangos=rangos_result,
         )
+
+        # Resolve periodo_year/mes — prefer stored ints, fallback to parsing periodo string
+        periodo_year = recibo_mensual.periodo
+        mes = recibo_mensual.mes
+        if periodo_year is None or mes is None:
+            from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreService
+            cs = FinanzasCoreService()
+            if periodo_year is None:
+                periodo_year = cs._parse_periodo_year(recibo_mensual.periodo)
+            if mes is None:
+                mes = cs._parse_periodo_mes(recibo_mensual.periodo)
 
         return RHInspectorMensualListItemResult(
             id=str(recibo_mensual.id),
-            periodo=recibo_mensual.periodo,
+            numero=recibo_mensual.numero,
+            periodo=periodo_year,
+            mes=mes,
             fecha_registro=recibo_mensual.fecha_registro.isoformat() if recibo_mensual.fecha_registro else "",
             inspector=InspectorRHMinimalResult(
                 id=str(recibo_mensual.inspector.id),

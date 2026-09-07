@@ -52,13 +52,21 @@ def normalize_name(name: str) -> str:
         c
         for c in n
         if unicodedata.category(c) != "Mn"
-    ).replace("-", " ").replace("–", " ").split().__reversed__()  # noqa: C416
+    ).replace("-", " ")
 
 
 def normalize_cip(cip: str) -> str:
     """Normalize CIP to 6-digit zero-padded string."""
     digits = "".join(ch for ch in (cip or "").strip() if ch.isdigit())
     return digits.zfill(6)[:6]
+
+
+def _normalize_tipo_codigo(codigo: str) -> str:
+    """Normaliza el código de tipo de liquidación (espacios, plurales)."""
+    c = (codigo or "").strip().upper().replace(" ", "_")
+    if c == "EDIFICACIONES":
+        return "EDIFICACION"
+    return c
 
 
 def cip_sin_ceros(cip: str) -> str:
@@ -98,9 +106,10 @@ def _resolve_especialidad(nombre_esp: str) -> Optional[EspecialidadRevision]:
 
     # Known synonyms used by seeds / CSV exports
     SYNONYMS = {
-        "Ingeniería Eléctrica y Mecánica Eléctrica": "Eléctrica/Mecánica",
-        "Ingenieria Electrica y Mecanica Electrica": "Eléctrica/Mecánica",
-        "Ingeniería Eléctrica": "Eléctrica/Mecánica",
+        "Ingeniería Eléctrica y Mecánica Eléctrica": "Ingeniería Eléctrica y Mecánica Eléctrica",
+        "Ingenieria Electrica y Mecanica Electrica": "Ingeniería Eléctrica y Mecánica Eléctrica",
+        "Ingeniería Eléctrica": "Ingeniería Eléctrica y Mecánica Eléctrica",
+        "Eléctrica/Mecánica": "Ingeniería Eléctrica y Mecánica Eléctrica",
         "INGENIERIA CIVIL": "Ingeniería Civil",
         "INGENIERIA SANITARIA": "Ingeniería Sanitaria",
     }
@@ -118,20 +127,46 @@ def _resolve_especialidad(nombre_esp: str) -> Optional[EspecialidadRevision]:
     return None
 
 
-def _resolve_municipalidad(codigo: str, nombre: str = "") -> Optional[Municipalidad]:
+def _resolve_municipalidad(codigo: str = "", nombre: str = "") -> Optional[Municipalidad]:
     """
-    Resolve Municipalidad by codigo first, then by normalized nombre.
+    Resolve Municipalidad by normalized nombre first, then by codigo fallback.
     Returns None if not found.
     """
-    if codigo:
-        m = Municipio.objects.filter(codigo=codigo).first()
-        if m:
-            return m
+    # 0. Aliases explícitos (nombres del Excel legacy -> nombre canónico en DB)
+    ALIASES = {
+        "ASIA": "SAN VICENTE DE CAÑETE/ASIA",
+        "BARRANCA": "BARRANCA - NORTE",
+        "CENTRO HISTORICO": "CENTRO HISTÓRICO DE LIMA",
+        "COMISION AD HOC": "COMISION AD HOC SEGUNDA INSTANCIA ADMINISTRATIVA",
+        "LURIGANCHO – CHOSICA": "LURIGANCHO - CHOSICA",
+        "PROVINCIA DE HUAROCHIRI": "HUAROCHIRI",
+        "PROVINCIAL DE BARRANCA": "BARRANCA - NORTE",
+        "PROVINCIAL DE CAÑETE": "SAN ANTONIO - CAÑETE",
+        "PROVINCIAL DE HUAURA": "HUAURA",
+        "SAN ANTONIO DE CAÑETE": "SAN ANTONIO - CAÑETE",
+        "SAN LUIS DE CAÑETE": "SAN LUIS - CAÑETE",
+        "STA MARIA": "SANTA MARIA",
+        "SATA MARIA": "SANTA MARIA",
+        "SUPE PUERTO": "SUPE",
+    }
+    if nombre:
+        clave = nombre.strip().upper()
+        objetivo = ALIASES.get(clave)
+        if objetivo:
+            m = Municipalidad.objects.filter(nombre__iexact=objetivo).first()
+            if m:
+                return m
+    # 1. Try normalized name match across ALL municipalidades
     if nombre:
         norm = normalize_name(nombre)
-        for m in Municipio.objects.all():
+        for m in Municipalidad.objects.all():
             if normalize_name(m.nombre) == norm:
                 return m
+    # 2. Fallback: try codigo match
+    if codigo:
+        m = Municipalidad.objects.filter(codigo=codigo).first()
+        if m:
+            return m
     return None
 
 
@@ -276,21 +311,23 @@ class DelegadoOperacionResource(resources.ModelResource):
         if not cip:
             raise ValidationError(f"CIP vacío o inválido: '{cip_raw}'")
 
-        # ── 2. Enrich from CIP API ──────────────────────────────────────────
-        try:
-            cip_data = get_cip_client().get_colegiado(cip)
-        except CipServiceUnavailableError as e:
-            raise ValidationError(
-                f"Servicio CIP no disponible para CIP {cip}: {e}"
-            ) from e
+        # ── 2. Enrich from CIP API (solo si el perfil NO existe) ──────────
+        perfil = PerfilIngeniero.objects.filter(cip=cip).first()
+        if perfil is None:
+            try:
+                cip_data = get_cip_client().get_colegiado(cip)
+            except CipServiceUnavailableError as e:
+                raise ValidationError(
+                    f"Servicio CIP no disponible para CIP {cip}: {e}"
+                ) from e
 
-        if not cip_data:
-            raise ValidationError(
-                f"CIP {cip} no encontrado en el servicio CIP ni en la base local. "
-                "Verifique el número de CIP."
-            )
+            if not cip_data:
+                raise ValidationError(
+                    f"CIP {cip} no encontrado en el servicio CIP ni en la base local. "
+                    "Verifique el número de CIP."
+                )
 
-        perfil, _ = _upsert_perfil_from_cip(cip, cip_data)
+            perfil, _ = _upsert_perfil_from_cip(cip, cip_data)
 
         # ── 3. Get or create Delegado ───────────────────────────────────────
         delegado, _ = Delegado.objects.get_or_create(
@@ -299,7 +336,8 @@ class DelegadoOperacionResource(resources.ModelResource):
 
         # ── 4. Resolve FKs ────────────────────────────────────────────────
         codigo = str(row.get("municipalidad_codigo", "")).strip()
-        municipalidad = _resolve_municipalidad(codigo)
+        # La columna puede traer el nombre o el código L; probar ambos.
+        municipalidad = _resolve_municipalidad(codigo=codigo, nombre=codigo)
         if not municipalidad:
             raise ValidationError(
                 f"Municipalidad no encontrada para código/nombre: '{codigo}'"
@@ -308,7 +346,9 @@ class DelegadoOperacionResource(resources.ModelResource):
         tipo_liq_codigo = str(row.get("tipo_liquidacion_codigo", "")).strip()
         tipo_liq = None
         if tipo_liq_codigo:
-            tipo_liq = TipoLiquidacion.objects.filter(codigo=tipo_liq_codigo).first()
+            tipo_liq = TipoLiquidacion.objects.filter(
+                codigo=_normalize_tipo_codigo(tipo_liq_codigo)
+            ).first()
             if not tipo_liq:
                 raise ValidationError(
                     f"TipoLiquidacion no encontrado: '{tipo_liq_codigo}'"
@@ -477,26 +517,29 @@ class InspectorOperacionResource(resources.ModelResource):
         Enrich row from CIP API and resolve all FK references.
         Raises ValidationError if CIP cannot be resolved.
         """
+        self._current_row = row
         # ── 1. Normalize CIP ───────────────────────────────────────────────
         cip_raw = str(row.get("cip", "")).strip()
         cip = normalize_cip(cip_raw)
         if not cip:
             raise ValidationError(f"CIP vacío o inválido: '{cip_raw}'")
 
-        # ── 2. Enrich from CIP API ─────────────────────────────────────────
-        try:
-            cip_data = get_cip_client().get_colegiado(cip)
-        except CipServiceUnavailableError as e:
-            raise ValidationError(
-                f"Servicio CIP no disponible para CIP {cip}: {e}"
-            ) from e
+        # ── 2. Enrich from CIP API (solo si el perfil NO existe) ─────────
+        perfil = PerfilIngeniero.objects.filter(cip=cip).first()
+        if perfil is None:
+            try:
+                cip_data = get_cip_client().get_colegiado(cip)
+            except CipServiceUnavailableError as e:
+                raise ValidationError(
+                    f"Servicio CIP no disponible para CIP {cip}: {e}"
+                ) from e
 
-        if not cip_data:
-            raise ValidationError(
-                f"CIP {cip} no encontrado en el servicio CIP ni en la base local."
-            )
+            if not cip_data:
+                raise ValidationError(
+                    f"CIP {cip} no encontrado en el servicio CIP ni en la base local."
+                )
 
-        perfil, _ = _upsert_perfil_from_cip(cip, cip_data)
+            perfil, _ = _upsert_perfil_from_cip(cip, cip_data)
 
         # ── 3. Get or create Inspector ────────────────────────────────────
         inspector, _ = Inspector.objects.get_or_create(
@@ -507,7 +550,9 @@ class InspectorOperacionResource(resources.ModelResource):
         tipo_liq_codigo = str(row.get("tipo_liquidacion_codigo", "")).strip()
         tipo_liq = None
         if tipo_liq_codigo:
-            tipo_liq = TipoLiquidacion.objects.filter(codigo=tipo_liq_codigo).first()
+            tipo_liq = TipoLiquidacion.objects.filter(
+                codigo=_normalize_tipo_codigo(tipo_liq_codigo)
+            ).first()
             if not tipo_liq:
                 raise ValidationError(
                     f"TipoLiquidacion no encontrado: '{tipo_liq_codigo}'"
@@ -529,6 +574,7 @@ class InspectorOperacionResource(resources.ModelResource):
         row["tipo_liquidacion_id"] = tipo_liq.id if tipo_liq else None
         row["especialidad_revision_id"] = esp.id
         row["numero_registro"] = numero_registro
+        row["categoria"] = categoria
         row["_inspector"] = inspector
         row["_tipo_liq"] = tipo_liq
         row["_esp"] = esp
@@ -572,6 +618,13 @@ class InspectorOperacionResource(resources.ModelResource):
         if existing:
             return existing
         return None
+
+    def before_save_instance(self, instance, row, **kwargs):
+        """Asegura que categoria y numero_registro se asignen al modelo antes de guardar."""
+        if "categoria" in row:
+            instance.categoria = str(row["categoria"]).strip()
+        if "numero_registro" in row:
+            instance.numero_registro = row["numero_registro"]
 
     def after_save_instance(self, instance, row, **kwargs):
         """

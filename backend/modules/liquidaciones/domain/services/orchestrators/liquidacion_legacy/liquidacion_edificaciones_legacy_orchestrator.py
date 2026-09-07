@@ -206,7 +206,9 @@ class LiquidacionEdificacionesLegacyOrchestrator(LiquidacionPOValidationMixin):
 
         if payload_tarifas_ids:
             for tarifa in tarifas:
-                self._validar_tarifa_explicita(tarifa, TipoLiquidacion.EDIFICACION)
+                self._validar_tarifa_explicita(
+                    tarifa, TipoLiquidacion.EDIFICACION, fecha=fecha_registro
+                )
 
         if not tarifas:
             raise HttpError(400, "No hay tarifas vigentes para edificaciones en la fecha indicada")
@@ -299,6 +301,11 @@ class LiquidacionEdificacionesLegacyOrchestrator(LiquidacionPOValidationMixin):
                 datos=DatosPorcentajeObra(valor_declarado=valor_declarado),
                 tarifas=tarifas_aplicadas,
                 tipo_tramite=getattr(payload, "tipo_tramite", None),
+                override_subtotal=(
+                    payload.cotizacion_legacy.sub_total
+                    if getattr(payload, "cotizacion_legacy", None) is not None
+                    else None
+                ),
             ),
         )
 

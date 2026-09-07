@@ -38,13 +38,34 @@ class LiquidacionPorcentajeObraData(BaseSchema):
         description="Tarifas a aplicar (vacío = auto-fill con todas las vigentes)",
     )
     tipo_tramite: Optional[str] = None  # FUTURE: activar cuando el frontend lo envíe
+    override_subtotal: Optional[Decimal] = Field(
+        default=None,
+        description="Legacy bypass: when set, usar este subtotal directamente en lugar de calcularlo (bypasses Steps 1-5)",
+    )
 
 
 class DetallePorcentajeObraData(BaseSchema):
-    """Cálculo de un detalle individual (uno por tarifa/especialidad)."""
+    """
+    Cálculo de un detalle individual (uno por tarifa/especialidad).
+
+    Shadow Mode: `subtotal` se conserva exactamente como estaba (downstream readers
+    no deben romperse). Los nuevos campos de alta precisión permiten cálculos exactos
+    sin drift de céntimos:
+    - `importe_parcial`: valor teórico por especialidad, redondeado a 2 decimales.
+    - `ajuste_redondeo`: 0.00 para todos los detalles excepto el último, que recibe
+      la diferencia para que SUM(subtotal) == subtotal_total exactamente.
+    """
     tarifa_aplicada: TarifaPorcentajeObraAplicada
     porcentaje_aplicado: Decimal
-    subtotal: Decimal
+    subtotal: Decimal  # Shadow Mode: preserved exactly as-is for backward compatibility
+    importe_parcial: Decimal = Field(
+        default=Decimal("0.00"),
+        description="Importe parcial de alta precisión (theoretical_value redondeado).",
+    )
+    ajuste_redondeo: Decimal = Field(
+        default=Decimal("0.00"),
+        description="Ajuste de redondeo (0.00 para todos, último detalle recibe el remainder).",
+    )
 
 
 class CotizacionPorcentajeObraData(BaseSchema):

@@ -66,6 +66,10 @@ class AuthFlujo:
         3. Autentica con username + password.
         4. Si está autenticado, crea tokens y retorna resultado.
         """
+        # Paso 0: Safety shield — reject empty DNI
+        if not dni:
+            raise HttpError(401, "Credenciales inválidas")
+
         # Paso 1: Buscar usuario por dni
         usuario = await self.auth_core.buscar_usuario_por_dni(dni)
         if not usuario:
@@ -102,6 +106,10 @@ class AuthFlujo:
         3. Autentica con username + password.
         4. Si está autenticado, crea tokens y retorna resultado.
         """
+        # Paso 0: Safety shield — reject empty email
+        if not email:
+            raise HttpError(401, "Credenciales inválidas")
+
         # Paso 1: Buscar usuario por email
         usuario = await self.auth_core.buscar_usuario_por_email(email)
         if not usuario:
