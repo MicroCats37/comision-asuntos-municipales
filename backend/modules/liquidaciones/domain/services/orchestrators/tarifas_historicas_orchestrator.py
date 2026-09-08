@@ -275,7 +275,9 @@ class TarifasHistoricasOrchestrator:
 
         for tipo_codigo in tipos_presentes:
             if tipo_codigo in TIPO_LIQUIDACION_PORCENTAJE:
-                raw = self.core_service.get_tarifas_porcentaje_obra_por_base(base_ids)
+                raw = self.core_service.get_tarifas_porcentaje_obra_por_base(
+                    base_ids, tipo_liquidacion=tipo_codigo
+                )
                 today = timezone.now().date()
                 especialidades = LiquidacionEspecialidadDisponibles.objects.filter(
                     tipo_liquidacion__codigo=tipo_codigo,

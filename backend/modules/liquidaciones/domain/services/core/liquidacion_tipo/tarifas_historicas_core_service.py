@@ -52,6 +52,7 @@ class TarifasHistoricasCoreService:
     def get_tarifas_porcentaje_obra_por_base(
         self,
         tarifa_base_ids: List[str],
+        tipo_liquidacion: str | None = None,
     ) -> List[TarifaPorcentajeObra]:
         """
         Get all TarifaPorcentajeObra records for the given TarifaLiquidacionBase IDs.
@@ -59,12 +60,19 @@ class TarifasHistoricasCoreService:
         With tarifa-unica-especialidades: TarifaPorcentajeObra no longer has especialidad FK.
         The ordering by especialidad__nombre is removed. Caller (presenter) will fill
         especialidad from LiquidacionEspecialidadDisponibles when building the result DTOs.
+
+        Args:
+            tarifa_base_ids: List of TarifaLiquidacionBase primary keys.
+            tipo_liquidacion: If provided, filter to only records whose base has this
+                tipo_liquidacion__codigo. Useful when querying for a specific tipo among
+                multiple tipos to avoid cross-contamination of results.
         """
-        return list(
-            TarifaPorcentajeObra.objects.filter(
-                tarifa_base_id__in=tarifa_base_ids
-            ).select_related("tarifa_base").order_by("porcentaje_liquidacion")
-        )
+        qs = TarifaPorcentajeObra.objects.filter(
+            tarifa_base_id__in=tarifa_base_ids
+        ).select_related("tarifa_base")
+        if tipo_liquidacion is not None:
+            qs = qs.filter(tarifa_base__tipo_liquidacion__codigo=tipo_liquidacion)
+        return list(qs.order_by("porcentaje_liquidacion"))
 
     def get_tarifa_m2_por_base(
         self,
