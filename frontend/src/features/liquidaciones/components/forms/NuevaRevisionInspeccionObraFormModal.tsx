@@ -7,6 +7,9 @@ import {
   HardHat,
   IdCard,
   MapPin,
+  Phone,
+  Plus,
+  Trash2,
 } from "lucide-react";
 /**
  * NuevaRevisionInspeccionObraFormModal — Form LIVIANO para nueva revisión de Inspección de Obra
@@ -28,10 +31,12 @@ import { useCrearInspeccionObraDesdePrevia } from "../../hooks/useCrearInspeccio
 import type { LiquidacionGeneralItem } from "../../hooks/useLiquidacionesGenerales";
 import type { PdfLiquidacionItem } from "../../pdf/buildLiquidacionPdfElement";
 import { printLiquidacion } from "../../pdf/printLiquidacion";
+import type { ContactoInline } from "../../schemas/liquidacion-form-base.schema";
 import {
   type NuevaRevisionInspeccionObraFormData,
   nuevaRevisionInspeccionObraFormSchema,
 } from "../../schemas/liquidacion-nueva-revision-io.schema";
+import { ContactoFormModal } from "./ContactoFormModal";
 import { SeleccionarInspectorModal } from "./SeleccionarInspectorModal";
 import { TarifasVisitasNuevaRevisionSmartField } from "./TarifasVisitasNuevaRevisionSmartField";
 
@@ -73,6 +78,13 @@ export function NuevaRevisionInspeccionObraFormModal({
   const [tarifaVisitasId, setTarifaVisitasId] = useState<string | null>(null);
   const [inspectorModalOpen, setInspectorModalOpen] = useState(false);
   const [inspectorNombre, setInspectorNombre] = useState("");
+  const [contacto, setContacto] = useState<ContactoInline | null>(null);
+  const [contactoModalOpen, setContactoModalOpen] = useState(false);
+
+  const handleContactoSaved = useCallback((saved: ContactoInline) => {
+    setContacto(saved);
+    setContactoModalOpen(false);
+  }, []);
 
   // Reset del estado local al abrir
   useEffect(() => {
@@ -81,6 +93,7 @@ export function NuevaRevisionInspeccionObraFormModal({
       setCategoria("");
       setTarifaVisitasId(null);
       setInspectorNombre("");
+      setContacto(null);
     }
   }, [open]);
 
@@ -93,6 +106,7 @@ export function NuevaRevisionInspeccionObraFormModal({
         const result = await crearMutation.mutateAsync({
           ...data,
           liquidacion_previa_id: previa.id,
+          contacto: contacto ?? undefined,
         });
         const created = (result as { data?: unknown })?.data as
           | PdfLiquidacionItem
@@ -268,30 +282,9 @@ export function NuevaRevisionInspeccionObraFormModal({
               )}
             </div>
 
-            {/* ── Columna Derecha: Inspector + Datos Visitas + Cálculo ── */}
+            {/* ── Columna Derecha: Cálculo de Visitas + Contacto + Inspector ── */}
             <div className="space-y-4">
-              {/* Inspector */}
-              <div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
-                <div className="flex items-center gap-2 border-b border-border/40 pb-2">
-                  <HardHat className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold uppercase tracking-wide">
-                    Inspector Asignado
-                  </h3>
-                </div>
-                {/* Botón que abre el modal de selección de inspector */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setInspectorModalOpen(true)}
-                  disabled={!previa?.tipo_liquidacion?.codigo}
-                  className="w-full gap-2"
-                >
-                  <HardHat className="h-4 w-4" />
-                  {inspectorNombre
-                    ? `Inspector: ${inspectorNombre}`
-                    : "Seleccionar inspector"}
-                </Button>
-              </div>
+              {/* Cálculo de Visitas */}
               <TarifasVisitasNuevaRevisionSmartField
                 cantidadVisitas={cantidadVisitas}
                 categoria={categoria}
@@ -313,6 +306,96 @@ export function NuevaRevisionInspeccionObraFormModal({
                   });
                 }}
               />
+
+              {/* Contacto principal */}
+              <div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
+                <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+                  <Phone className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wide">
+                    Contacto Principal
+                  </h3>
+                  {contacto && (
+                    <span className="inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[9px] font-bold text-primary">
+                      Agregado
+                    </span>
+                  )}
+                </div>
+                {!contacto ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setContactoModalOpen(true)}
+                    className="w-full gap-1 text-xs"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Agregar contacto
+                  </Button>
+                ) : (
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {contacto.nombres} {contacto.apellidos}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {[
+                          contacto.dni ? `DNI ${contacto.dni}` : null,
+                          contacto.telefono || null,
+                          contacto.celular || null,
+                          contacto.email || null,
+                          contacto.cargo || null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "Sin datos"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setContactoModalOpen(true)}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                        onClick={() => setContacto(null)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Inspector */}
+              <div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
+                <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+                  <HardHat className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wide">
+                    Inspector Asignado
+                  </h3>
+                </div>
+                {/* Botón que abre el modal de selección de inspector */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setInspectorModalOpen(true)}
+                  disabled={!previa?.tipo_liquidacion?.codigo}
+                  className="w-full gap-1"
+                >
+                  <HardHat className="h-3 w-3" />
+                  {inspectorNombre
+                    ? `Inspector: ${inspectorNombre}`
+                    : "Seleccionar inspector"}
+                </Button>
+              </div>
 
               {/* Nota sobre herencia */}
               <div className="rounded-lg bg-muted/20 border border-border/40 p-3">
@@ -339,6 +422,13 @@ export function NuevaRevisionInspeccionObraFormModal({
               methods.setValue("inspector_id", id, { shouldValidate: true });
               setInspectorNombre(nombre);
             }}
+          />
+
+          <ContactoFormModal
+            open={contactoModalOpen}
+            onOpenChange={setContactoModalOpen}
+            onSaved={handleContactoSaved}
+            initialData={contacto ?? undefined}
           />
         </>
       )}

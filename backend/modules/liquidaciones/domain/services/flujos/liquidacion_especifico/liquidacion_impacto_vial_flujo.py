@@ -29,6 +29,7 @@ from modules.liquidaciones.domain.results.liquidacion_especifico.primera_revisio
 )
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
     LiquidacionGeneralResult,
+    ContactoResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
     LiquidacionPorcentajeObraResult,
@@ -167,10 +168,26 @@ class LiquidacionImpactoVialFlujo:
         """Maps ORM objects to domain Result. Delegates common mapping to core."""
         liquidacion_general.refresh_from_db()
 
+        # Build ContactoResult inline (specific mapping not extracted to core)
+        contacto_result = None
+        if liquidacion_general.contacto:
+            contacto = liquidacion_general.contacto
+            contacto_result = ContactoResult(
+                id=str(contacto.id),
+                nombres=contacto.nombres,
+                apellidos=contacto.apellidos,
+                dni=contacto.dni,
+                cargo=contacto.cargo,
+                telefono=contacto.telefono,
+                celular=contacto.celular,
+                email=contacto.email,
+            )
+
         # Core: builds LiquidacionGeneralResult (delegados included from prefetch)
         general_result = self.general_core.build_general_result(
             liquidacion_general=liquidacion_general,
             usuario_id=usuario_id,
+            contacto_result=contacto_result,
         )
 
         return LiquidacionEspecificaPrimeraRevisionResult(

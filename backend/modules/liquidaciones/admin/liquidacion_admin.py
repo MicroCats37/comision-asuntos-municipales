@@ -428,6 +428,9 @@ class LiquidacionHabilitacionUrbanaProxyAdmin(BaseLiquidacionProxyAdmin):
         calc = getattr(obj, "liquidacion_m2", None)
         if not calc:
             return "-"
+        calc = calc.first()
+        if not calc:
+            return "-"
         return f"{calc.area_m2:,.2f} m²" if calc.area_m2 else "-"
 
     area_list.short_description = "Área"
@@ -448,6 +451,9 @@ class LiquidacionMecanicaSuelosProxyAdmin(BaseLiquidacionProxyAdmin):
         calc = getattr(obj, "liquidacion_m2", None)
         if not calc:
             return "-"
+        calc = calc.first()
+        if not calc:
+            return "-"
         return f"{calc.area_m2:,.2f} m²" if calc.area_m2 else "-"
 
     area_list.short_description = "Área"
@@ -459,18 +465,18 @@ class LiquidacionTaludesProxyAdmin(BaseLiquidacionProxyAdmin):
 
     tipo_codigo = TipoLiquidacion.TALUDES
     specific_inline = LiquidacionTaludesInline
-    calc_inline = LiquidacionPorMetroCuadradoInline
+    calc_inline = LiquidacionPorcentajeObraInline
     specific_related_name = "taludes"
 
-    list_display = BaseLiquidacionProxyAdmin.list_display + ["area_list"]
+    list_display = BaseLiquidacionProxyAdmin.list_display + ["tipo_tramite_list"]
 
-    def area_list(self, obj):
-        calc = getattr(obj, "liquidacion_m2", None)
+    def tipo_tramite_list(self, obj):
+        calc = getattr(obj, "liquidacion_porcentaje_obra", None)
         if not calc:
             return "-"
-        return f"{calc.area_m2:,.2f} m²" if calc.area_m2 else "-"
+        return calc.tipo_tramite if calc.tipo_tramite else "-"
 
-    area_list.short_description = "Área"
+    tipo_tramite_list.short_description = "Tipo Trámite"
 
 
 @admin.register(LiquidacionInspeccionObraProxy)
@@ -488,7 +494,10 @@ class LiquidacionInspeccionObraProxyAdmin(BaseLiquidacionProxyAdmin):
         calc = getattr(obj, "liquidacion_visitas", None)
         if not calc:
             return "-"
-        return calc.categoria if calc and calc.categoria else "-"
+        calc = calc.first()
+        if not calc:
+            return "-"
+        return calc.categoria if calc.categoria else "-"
 
     categoria_list.short_description = "Categoría"
 
@@ -496,7 +505,10 @@ class LiquidacionInspeccionObraProxyAdmin(BaseLiquidacionProxyAdmin):
         calc = getattr(obj, "liquidacion_visitas", None)
         if not calc:
             return "-"
-        return str(calc.cantidad_visitas) if calc and calc.cantidad_visitas else "-"
+        calc = calc.first()
+        if not calc:
+            return "-"
+        return str(calc.cantidad_visitas) if calc.cantidad_visitas else "-"
 
     visitas_list.short_description = "Visitas"
 
@@ -507,18 +519,18 @@ class LiquidacionImpactoVialProxyAdmin(BaseLiquidacionProxyAdmin):
 
     tipo_codigo = TipoLiquidacion.IMPACTO_VIAL
     specific_inline = LiquidacionImpactoVialInline
-    calc_inline = LiquidacionPorMetroCuadradoInline
+    calc_inline = LiquidacionPorcentajeObraInline
     specific_related_name = "impacto_vial"
 
-    list_display = BaseLiquidacionProxyAdmin.list_display + ["area_list"]
+    list_display = BaseLiquidacionProxyAdmin.list_display + ["tipo_tramite_list"]
 
-    def area_list(self, obj):
-        calc = getattr(obj, "liquidacion_m2", None)
+    def tipo_tramite_list(self, obj):
+        calc = getattr(obj, "liquidacion_porcentaje_obra", None)
         if not calc:
             return "-"
-        return f"{calc.area_m2:,.2f} m²" if calc.area_m2 else "-"
+        return calc.tipo_tramite if calc.tipo_tramite else "-"
 
-    area_list.short_description = "Área"
+    tipo_tramite_list.short_description = "Tipo Trámite"
 
 
 # =============================================================================

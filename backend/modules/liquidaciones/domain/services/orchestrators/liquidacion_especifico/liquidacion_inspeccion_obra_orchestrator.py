@@ -24,6 +24,7 @@ from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_visitas_d
     TarifaVisitas,
 )
 from modules.liquidaciones.domain.schemas.liquidacion_general.liquidacion_general_data import (
+    ContactoData,
     LiquidacionGeneralData,
     ProyectoData,
     EntidadData,
@@ -36,6 +37,9 @@ from modules.liquidaciones.domain.services.orchestrators.liquidacion_general_orc
 )
 from modules.liquidaciones.domain.results.liquidacion_especifico.inspeccion_obra_primera_revision_result import (
     InspeccionObraPrimeraRevisionResult,
+)
+from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
+    ContactoResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import (
     CotizacionVisitasResult,
@@ -171,13 +175,25 @@ class LiquidacionInspeccionObraOrchestrator:
         )
 
         # Delegate general result construction to core (NO more duplicate inline mapping)
-        # IO does not use contacto_result or delegados — pass empty lists
+        # Map contacto like Edificaciones does
+        contacto_result = None
+        if lg.contacto:
+            contacto_result = ContactoResult(
+                id=str(lg.contacto.id),
+                nombres=lg.contacto.nombres,
+                apellidos=lg.contacto.apellidos,
+                dni=lg.contacto.dni,
+                cargo=lg.contacto.cargo,
+                telefono=lg.contacto.telefono,
+                celular=lg.contacto.celular,
+                email=lg.contacto.email,
+            )
         usuario_id = lg.usuario_creador.id if lg.usuario_creador else 0
         revisiones_previas = self.general_core.build_revisiones_previas_result(lg)
         general_result = self.general_core.build_general_result(
             lg,
             usuario_id=usuario_id,
-            contacto_result=None,
+            contacto_result=contacto_result,
             delegados=[],
             codigo_cta=self.general_core.get_codigo_cta(lg.tipo_liquidacion),
             revisiones_previas=revisiones_previas,
@@ -300,6 +316,19 @@ class LiquidacionInspeccionObraOrchestrator:
                         tipo_documento=getattr(previa.proyecto, 'entidad_tipo_documento', None) or "",
                         numero_documento=getattr(previa.proyecto, 'entidad_numero_documento', None) or "",
                     ),
+                ),
+                contacto=(
+                    ContactoData(
+                        nombres=payload_in.contacto.nombres,
+                        apellidos=payload_in.contacto.apellidos,
+                        dni=payload_in.contacto.dni,
+                        cargo=payload_in.contacto.cargo,
+                        telefono=payload_in.contacto.telefono,
+                        celular=payload_in.contacto.celular,
+                        email=payload_in.contacto.email,
+                    )
+                    if payload_in.contacto
+                    else None
                 ),
             ),
             liquidacion_especifica=visitas_data,

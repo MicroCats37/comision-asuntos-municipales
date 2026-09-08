@@ -15,6 +15,9 @@ from modules.liquidaciones.domain.results.liquidacion_especifico.habilitacion_ur
     HabilitacionUrbanaPrimeraRevisionResult,
     LiquidacionEspecificaHabilitacionUrbanaResult,
 )
+from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
+    ContactoResult,
+)
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_m2_result import (
     LiquidacionM2Result,
 )
@@ -124,9 +127,25 @@ class LiquidacionHabilitacionUrbanaFlujo:
 
             # Paso 6: Construir el Result 100% tipado con Pydantic
             # Delegates common ORM→Result mapping to core
+            # Build ContactoResult inline (specific mapping not extracted to core)
+            contacto_result = None
+            if liquidacion_general.contacto:
+                contacto = liquidacion_general.contacto
+                contacto_result = ContactoResult(
+                    id=str(contacto.id),
+                    nombres=contacto.nombres,
+                    apellidos=contacto.apellidos,
+                    dni=contacto.dni,
+                    cargo=contacto.cargo,
+                    telefono=contacto.telefono,
+                    celular=contacto.celular,
+                    email=contacto.email,
+                )
+
             general_result = self.general_core.build_general_result(
                 liquidacion_general=liquidacion_general,
                 usuario_id=usuario_id,
+                contacto_result=contacto_result,
             )
 
             tipo_result = LiquidacionM2Result(

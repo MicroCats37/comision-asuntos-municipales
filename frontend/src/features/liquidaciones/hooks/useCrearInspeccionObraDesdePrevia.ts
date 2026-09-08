@@ -10,7 +10,8 @@
  *     datos: { cantidad_visitas: number, categoria: string },
  *     tarifa: { tarifa_visitas_id: string },
  *     inspector_id: string,
- *   }
+ *   },
+ *   contacto?: { nombres, apellidos, dni, cargo, telefono, celular, email },
  * }
  * Se hereda de la previa: proyecto, municipalidad, entidad, expediente, observacion, retencion.
  */
@@ -30,6 +31,15 @@ export function useCrearInspeccionObraDesdePrevia() {
         datos: { cantidad_visitas: number; categoria: string };
         tarifa: { tarifa_visitas_id: string };
         inspector_id: string;
+      };
+      contacto?: {
+        nombres: string;
+        apellidos?: string;
+        dni?: string;
+        cargo?: string;
+        telefono?: string;
+        celular?: string;
+        email?: string;
       };
     }
   >({
@@ -53,6 +63,7 @@ export function useCrearInspeccionObraDesdePrevia() {
             tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
             inspector_id: payload.inspector_id,
           },
+          contacto: payload.contacto ?? undefined,
         });
       },
       mutateAsync: async (payload: NuevaRevisionInspeccionObraFormData) => {
@@ -66,6 +77,7 @@ export function useCrearInspeccionObraDesdePrevia() {
             tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
             inspector_id: payload.inspector_id,
           },
+          contacto: payload.contacto ?? undefined,
         });
       },
     }),

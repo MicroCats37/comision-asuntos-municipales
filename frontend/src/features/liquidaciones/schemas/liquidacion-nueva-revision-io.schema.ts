@@ -7,6 +7,7 @@
  * Se edita: cantidad_visitas, categoria, tarifa_visitas_id, inspector_id.
  */
 import { z } from "zod";
+import { contactoInlineSchema } from "./liquidacion-form-base.schema";
 
 export const nuevaRevisionInspeccionObraFormSchema = z.object({
   // ID de la liquidación previa (obligatorio, se usa como base)
@@ -18,6 +19,8 @@ export const nuevaRevisionInspeccionObraFormSchema = z.object({
   tarifa_visitas_id: z.string().min(1, "Selecciona una tarifa"),
   // Inspector asignado
   inspector_id: z.string().min(1, "Selecciona un inspector"),
+  // Contacto principal (opcional, gestionado via ContactoFormModal)
+  contacto: contactoInlineSchema.optional(),
 });
 
 export type NuevaRevisionInspeccionObraFormData = z.infer<

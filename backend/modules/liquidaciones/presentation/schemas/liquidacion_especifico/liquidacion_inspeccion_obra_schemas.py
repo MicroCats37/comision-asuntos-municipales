@@ -2,10 +2,12 @@
 Especifico Inspección de Obra schemas — Solo el payload final de primera-revisión.
 """
 import uuid
+from typing import Optional
 from core.types import BaseSchema
 from ninja import Field
 
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
+    ContactoInlineSchema,
     LiquidacionGeneralOutput,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas import (
@@ -51,7 +53,8 @@ class LiquidacionInspeccionObraNuevaRevisionEspecificaIn(BaseSchema):
 class LiquidacionInspeccionObraNuevaRevisionInput(BaseSchema):
     """
     Payload de entrada para crear una IO primera-revision heredando
-    proyecto/municipalidad/entidad de una liquidación previa (Edificación o HU).
+    proyecto/municipalidad/entidad de una liquidación previa (Edificación o Habilitación Urbana).
     """
     liquidacion_previa_id: uuid.UUID = Field(..., description="ID de la liquidación previa (Edificación o Habilitación Urbana)")
     liquidacion_especifica: LiquidacionInspeccionObraNuevaRevisionEspecificaIn
+    contacto: Optional[ContactoInlineSchema] = Field(None, description="Contacto principal (se crea inline)")

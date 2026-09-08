@@ -234,6 +234,7 @@ class DelegadoOperacionResource(resources.ModelResource):
         widget=widgets.CharWidget(),
     )
     tipo = fields.Field(
+        attribute="tipo",
         column_name="tipo",
         widget=widgets.CharWidget(),
     )
@@ -287,6 +288,10 @@ class DelegadoOperacionResource(resources.ModelResource):
         report_skipped = True  # enabled for debugging
         # Use empty import_id_fields — we override get_instance instead
         import_id_fields = []
+        # Disable wrapping the whole import in one transaction: before_import_row
+        # makes network calls (CIP API) that would otherwise hold the SQLite write
+        # lock for a long time → "database is locked".
+        use_transactions = False
 
     def skip_row(self, instance, original, row, import_validation_errors=None, **kwargs):
         """
@@ -406,6 +411,8 @@ class DelegadoOperacionResource(resources.ModelResource):
             delegado_id=delegado_id,
             municipalidad_id=municipalidad_id,
         )
+        tipo_val = str(row.get("tipo", "TITULAR")).strip() or "TITULAR"
+        query = query.filter(tipo=tipo_val)
         if tipo_liq_id:
             query = query.filter(tipo_liquidacion_id=tipo_liq_id)
         else:
@@ -455,6 +462,7 @@ class InspectorOperacionResource(resources.ModelResource):
         saves_null_values=False,
     )
     categoria = fields.Field(
+        attribute="categoria",
         column_name="categoria",
         widget=widgets.CharWidget(),
     )
@@ -620,9 +628,7 @@ class InspectorOperacionResource(resources.ModelResource):
         return None
 
     def before_save_instance(self, instance, row, **kwargs):
-        """Asegura que categoria y numero_registro se asignen al modelo antes de guardar."""
-        if "categoria" in row:
-            instance.categoria = str(row["categoria"]).strip()
+        """Asegura que numero_registro se asigne al modelo antes de guardar."""
         if "numero_registro" in row:
             instance.numero_registro = row["numero_registro"]
 

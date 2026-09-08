@@ -23,6 +23,7 @@ from modules.liquidaciones.domain.results.liquidacion_especifico.inspeccion_obra
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
     LiquidacionGeneralResult,
     LiquidacionPreviaResult,
+    ContactoResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_visitas_result import (
     LiquidacionVisitasResult,
@@ -81,6 +82,15 @@ class LiquidacionInspeccionObraFlujo:
         proyecto = liquidacion_previa.proyecto
         entidad = proyecto.entidad if hasattr(proyecto, 'entidad') and proyecto.entidad else None
 
+        # Contacto upsert by ALL fields (convert ContactoData to Contacto model instance)
+        contacto = None
+        if data.liquidacion_general.contacto:
+            contacto = self.general_core.upsert_contacto(
+                data.liquidacion_general.contacto.model_dump()
+                if hasattr(data.liquidacion_general.contacto, "model_dump")
+                else data.liquidacion_general.contacto.__dict__
+            )
+
         # 3. Crear LiquidacionGeneral con tipo_liquidacion=INSPECCION_OBRA y numero_revision=1
         from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
         from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
@@ -95,6 +105,7 @@ class LiquidacionInspeccionObraFlujo:
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.INSPECCION_OBRA),
             numero_revision=1,
             denominacion_de_proyecto=liquidacion_previa.denominacion_de_proyecto,
+            contacto=contacto,
         )
 
         # Aplicar totales con IGV y asignar FKs de impuestos
@@ -183,10 +194,26 @@ class LiquidacionInspeccionObraFlujo:
         Construye InspeccionObraPrimeraRevisionResult a partir de objetos ORM.
         Delegates common ORM→Result mapping to core.
         """
+        # Build ContactoResult inline (specific mapping not extracted to core)
+        contacto_result = None
+        if liquidacion_general.contacto:
+            contacto = liquidacion_general.contacto
+            contacto_result = ContactoResult(
+                id=str(contacto.id),
+                nombres=contacto.nombres,
+                apellidos=contacto.apellidos,
+                dni=contacto.dni,
+                cargo=contacto.cargo,
+                telefono=contacto.telefono,
+                celular=contacto.celular,
+                email=contacto.email,
+            )
+
         # Delegates common mapping to core (uses denormalized proyecto fields)
         general_result = self.general_core.build_general_result(
             liquidacion_general=liquidacion_general,
             usuario_id=usuario_id,
+            contacto_result=contacto_result,
             revisiones_previas=revisiones_previas,
         )
 
