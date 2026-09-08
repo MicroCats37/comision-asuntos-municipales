@@ -407,12 +407,13 @@ class DelegadoOperacionResource(resources.ModelResource):
 
         # Match on the unique_together: (delegado, municipalidad, tipo_liquidacion)
         # tipo_liquidacion can be null, so we filter accordingly
+        # NOTE: No filtramos por `tipo` aquí porque unique_together NO incluye tipo.
+        # Al no filtrar, la fila hace UPSERT sobre el registro existente (evita el
+        # error de duplicate key) y `attribute="tipo"` escribe el valor correcto.
         query = DelegadoOperacion.objects.filter(
             delegado_id=delegado_id,
             municipalidad_id=municipalidad_id,
         )
-        tipo_val = str(row.get("tipo", "TITULAR")).strip() or "TITULAR"
-        query = query.filter(tipo=tipo_val)
         if tipo_liq_id:
             query = query.filter(tipo_liquidacion_id=tipo_liq_id)
         else:
