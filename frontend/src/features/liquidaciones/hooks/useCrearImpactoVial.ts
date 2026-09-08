@@ -16,7 +16,7 @@ export function useCrearImpactoVial() {
     { id: string | number },
     { liquidacion_general: unknown; liquidacion_especifica: unknown }
   >({
-    url: `${BASE_URL}/primera-revision`,
+    url: `${BASE_URL}/nueva-liquidacion/primera-revision`,
     queryKey: LIST_KEY,
     listShape: "paginated",
   });

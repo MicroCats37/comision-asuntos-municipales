@@ -105,7 +105,7 @@ export function TaludesFormModal({
                   methods={methods}
                   tipo="taludes"
                 />
-                <CotizacionPorcentajeSmartField methods={methods} />
+                <CotizacionPorcentajeSmartField methods={methods} tipo="taludes" />
               </div>
             }
           />

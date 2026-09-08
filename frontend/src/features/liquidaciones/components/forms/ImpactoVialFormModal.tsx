@@ -105,7 +105,7 @@ export function ImpactoVialFormModal({
                   methods={methods}
                   tipo="impacto-vial"
                 />
-                <CotizacionPorcentajeSmartField methods={methods} />
+                <CotizacionPorcentajeSmartField methods={methods} tipo="impacto-vial" />
               </div>
             }
           />

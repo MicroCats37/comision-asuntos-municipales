@@ -23,6 +23,8 @@ interface CotizacionNuevaRevisionSmartFieldProps {
   tarifaId: string | null;
   /** Especialidades seleccionadas (checkbox) */
   especialidadesIds: string[];
+  /** Tipo de liquidación para la ruta de cotización (default: edificaciones) */
+  tipo?: string;
 }
 
 const toNumber = (value: unknown): number => {
@@ -36,6 +38,7 @@ export function CotizacionNuevaRevisionSmartField({
   valorDeclarado,
   tarifaId,
   especialidadesIds,
+  tipo = "edificaciones",
 }: CotizacionNuevaRevisionSmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +49,7 @@ export function CotizacionNuevaRevisionSmartField({
       tarifa_id: string;
       especialidades_ids: string[];
     }): Promise<CotizacionOutput> => {
-      const { data } = await api.post("/liquidaciones/edificaciones/cotizar", {
+      const { data } = await api.post(`/liquidaciones/${tipo}/cotizar`, {
         liquidacion_especifica: {
           datos: { valor_declarado: payload.valor_declarado },
           tarifas: payload.especialidades_ids.map((espId) => ({
