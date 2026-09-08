@@ -357,6 +357,26 @@
     {
       "codigo": "L60-11",
       "nombre": "SANTA MARIA"
+    },
+    {
+      "codigo": "SINCODE1",
+      "nombre": "ATAVILLOS ALTO"
+    },
+    {
+      "codigo": "SINCODE2",
+      "nombre": "ATAVILLOS BAJO"
+    },
+    {
+      "codigo": "SINCODE3",
+      "nombre": "27 DE NOVIEMBRE"
+    },
+    {
+      "codigo": "SINCODE4",
+      "nombre": "AMBAR"
+    },
+    {
+      "codigo": "SINCODE5",
+      "nombre": "PROVINCIA CANTA"
     }
   ]
 }
