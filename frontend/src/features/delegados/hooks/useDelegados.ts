@@ -16,7 +16,7 @@ interface UseDelegadosProps {
   filtros?: DelegadoFiltros;
 }
 
-const BASE_URL = "/delegados";
+const BASE_URL = "/delegados/";
 
 export function useDelegados({
   page = 1,

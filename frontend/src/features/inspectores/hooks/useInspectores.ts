@@ -16,7 +16,7 @@ interface UseInspectoresProps {
   pageSize?: number;
 }
 
-const BASE_URL = "/inspectores";
+const BASE_URL = "/inspectores/";
 
 export function useInspectores(props: UseInspectoresProps = {}) {
   const { page, pageSize, onPageChange, onPageSizeChange, paginationParams } =
