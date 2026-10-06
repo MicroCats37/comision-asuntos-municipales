@@ -1,0 +1,1 @@
+"""Modelos de infraestructura — modelos Django ORM (pendiente)."""

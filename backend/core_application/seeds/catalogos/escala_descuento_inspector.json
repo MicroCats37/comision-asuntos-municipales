@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "descripcion": "Escala de descuento para inspectores (vigencia 2000).",
+  "escala": {
+    "nombre": "Escala 2026",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": null,
+    "rangos": [
+      { "monto_minimo": "0", "monto_maximo": "8000", "porcentaje_descuento": "0.15" },
+      { "monto_minimo": "8000", "monto_maximo": "15000", "porcentaje_descuento": "0.20" },
+      { "monto_minimo": "15000", "monto_maximo": "30000", "porcentaje_descuento": "0.30" },
+      { "monto_minimo": "30000", "monto_maximo": null, "porcentaje_descuento": "0.40" }
+    ]
+  }
+}

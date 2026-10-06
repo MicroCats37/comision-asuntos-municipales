@@ -1,0 +1,1 @@
+export { GenericErrorBoundary } from "./GenericErrorBoundary";

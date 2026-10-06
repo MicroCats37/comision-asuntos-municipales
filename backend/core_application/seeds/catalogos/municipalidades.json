@@ -1,0 +1,486 @@
+{
+  "version": "1.0",
+  "descripcion": "Municipalidades con código ubigeo del distrito (no por nombre).",
+  "municipalidades": [
+    {
+      "codigo": "L2",
+      "nombre": "ANCON",
+      "ubigeo": "140102"
+    },
+    {
+      "codigo": "L3",
+      "nombre": "ATE VITARTE",
+      "ubigeo": "140103"
+    },
+    {
+      "codigo": "L50-12",
+      "nombre": "AUCALLAMA",
+      "ubigeo": "140804"
+    },
+    {
+      "codigo": "L70",
+      "nombre": "BARRANCA - NORTE",
+      "ubigeo": "140901"
+    },
+    {
+      "codigo": "L4",
+      "nombre": "BARRANCO",
+      "ubigeo": "140125"
+    },
+    {
+      "codigo": "L5",
+      "nombre": "BREÑA",
+      "ubigeo": "140104"
+    },
+    {
+      "codigo": "L44-10",
+      "nombre": "CALANGO",
+      "ubigeo": "140402"
+    },
+    {
+      "codigo": "L60-1",
+      "nombre": "CALETA DE CARQUIN",
+      "ubigeo": "140504"
+    },
+    {
+      "codigo": "L6",
+      "nombre": "CARABAYLLO",
+      "ubigeo": "140105"
+    },
+    {
+      "codigo": "L1-2",
+      "nombre": "CENTRO HISTÓRICO DE LIMA",
+      "ubigeo": null
+    },
+    {
+      "codigo": "L1",
+      "nombre": "CERCADO DE LIMA",
+      "ubigeo": "140101"
+    },
+    {
+      "codigo": "L44-3",
+      "nombre": "CERRO AZUL",
+      "ubigeo": "140403"
+    },
+    {
+      "codigo": "L8",
+      "nombre": "CHACLACAYO",
+      "ubigeo": "140107"
+    },
+    {
+      "codigo": "L50-1",
+      "nombre": "CHANCAY",
+      "ubigeo": "140805"
+    },
+    {
+      "codigo": "L60-6",
+      "nombre": "CHECRAS",
+      "ubigeo": "140505"
+    },
+    {
+      "codigo": "L44-6",
+      "nombre": "CHILCA",
+      "ubigeo": "140405"
+    },
+    {
+      "codigo": "L9",
+      "nombre": "CHORRILLOS",
+      "ubigeo": "140108"
+    },
+    {
+      "codigo": "L40",
+      "nombre": "CIENEGUILLA",
+      "ubigeo": "140139"
+    },
+    {
+      "codigo": "L44-11",
+      "nombre": "COAYLLO",
+      "ubigeo": "140404"
+    },
+    {
+      "codigo": "L7",
+      "nombre": "COMAS",
+      "ubigeo": "140106"
+    },
+    {
+      "codigo": "L1-1",
+      "nombre": "COMISION AD HOC SEGUNDA INSTANCIA ADMINISTRATIVA",
+      "ubigeo": null
+    },
+    {
+      "codigo": "L1-1",
+      "nombre": "COMISION TÉCNICA AD HOC DE EDIFICACIONES (2da. Instancia apelaciones dictámenes de la Comisión Técnica del Cercado de Lima)",
+      "ubigeo": null
+    },
+    {
+      "codigo": "L10",
+      "nombre": "EL AGUSTINO",
+      "ubigeo": "140135"
+    },
+    {
+      "codigo": "L60-2",
+      "nombre": "HUACHO",
+      "ubigeo": "140501"
+    },
+    {
+      "codigo": "L60-10",
+      "nombre": "HUALMAY",
+      "ubigeo": "140506"
+    },
+    {
+      "codigo": "L50",
+      "nombre": "HUARAL",
+      "ubigeo": "140801"
+    },
+    {
+      "codigo": "L-80",
+      "nombre": "HUAROCHIRI",
+      "ubigeo": "140609"
+    },
+    {
+      "codigo": "L60",
+      "nombre": "HUAURA",
+      "ubigeo": "140507"
+    },
+    {
+      "codigo": "L50-3",
+      "nombre": "IHUARI",
+      "ubigeo": "140806"
+    },
+    {
+      "codigo": "L44-7",
+      "nombre": "IMPERIAL",
+      "ubigeo": "140406"
+    },
+    {
+      "codigo": "L28",
+      "nombre": "INDEPENDENCIA",
+      "ubigeo": "140134"
+    },
+    {
+      "codigo": "L11",
+      "nombre": "JESUS MARIA",
+      "ubigeo": "140133"
+    },
+    {
+      "codigo": "L12",
+      "nombre": "LA MOLINA",
+      "ubigeo": "140110"
+    },
+    {
+      "codigo": "L13",
+      "nombre": "LA VICTORIA",
+      "ubigeo": "140109"
+    },
+    {
+      "codigo": "L50-6",
+      "nombre": "LAMPIAN",
+      "ubigeo": "140807"
+    },
+    {
+      "codigo": "L60-7",
+      "nombre": "LEONCIO PRADO",
+      "ubigeo": "140508"
+    },
+    {
+      "codigo": "L1",
+      "nombre": "LIMA CERCADO Y PROVINCIAL LIMA",
+      "ubigeo": "140101"
+    },
+    {
+      "codigo": "L14",
+      "nombre": "LINCE",
+      "ubigeo": "140111"
+    },
+    {
+      "codigo": "L39",
+      "nombre": "LOS OLIVOS",
+      "ubigeo": "140142"
+    },
+    {
+      "codigo": "L44-4",
+      "nombre": "LUNAHUANA",
+      "ubigeo": "140407"
+    },
+    {
+      "codigo": "L15",
+      "nombre": "LURIGANCHO - CHOSICA",
+      "ubigeo": "140112"
+    },
+    {
+      "codigo": "L15",
+      "nombre": "LURIGANCHO – CHOSICA",
+      "ubigeo": "140112"
+    },
+    {
+      "codigo": "L16",
+      "nombre": "LURIN",
+      "ubigeo": "140113"
+    },
+    {
+      "codigo": "L17",
+      "nombre": "MAGDALENA DEL MAR",
+      "ubigeo": "140114"
+    },
+    {
+      "codigo": "L44-5",
+      "nombre": "MALA",
+      "ubigeo": "140408"
+    },
+    {
+      "codigo": "L18",
+      "nombre": "MIRAFLORES",
+      "ubigeo": "140115"
+    },
+    {
+      "codigo": "L44-8",
+      "nombre": "NUEVO IMPERIAL",
+      "ubigeo": "140409"
+    },
+    {
+      "codigo": "L44-12",
+      "nombre": "PACARAN",
+      "ubigeo": "140410"
+    },
+    {
+      "codigo": "L50-5",
+      "nombre": "PACARAOS",
+      "ubigeo": "140808"
+    },
+    {
+      "codigo": "L60-9",
+      "nombre": "PACCHO",
+      "ubigeo": "140509"
+    },
+    {
+      "codigo": "L19",
+      "nombre": "PACHACAMAC",
+      "ubigeo": "140116"
+    },
+    {
+      "codigo": "L70-3",
+      "nombre": "PARAMONGA",
+      "ubigeo": "140902"
+    },
+    {
+      "codigo": "L70-4",
+      "nombre": "PATIVILCA",
+      "ubigeo": "140903"
+    },
+    {
+      "codigo": "L44",
+      "nombre": "PROVINCIAL DE CAÑETE",
+      "ubigeo": null
+    },
+    {
+      "codigo": "L20",
+      "nombre": "PUCUSANA",
+      "ubigeo": "140118"
+    },
+    {
+      "codigo": "L21",
+      "nombre": "PUEBLO LIBRE",
+      "ubigeo": "140117"
+    },
+    {
+      "codigo": "L22",
+      "nombre": "PUENTE PIEDRA",
+      "ubigeo": "140119"
+    },
+    {
+      "codigo": "L24",
+      "nombre": "PUNTA HERMOSA",
+      "ubigeo": "140120"
+    },
+    {
+      "codigo": "L23",
+      "nombre": "PUNTA NEGRA",
+      "ubigeo": "140121"
+    },
+    {
+      "codigo": "L44-13",
+      "nombre": "QUILMANA",
+      "ubigeo": "140411"
+    },
+    {
+      "codigo": "L25",
+      "nombre": "RIMAC",
+      "ubigeo": "140122"
+    },
+    {
+      "codigo": "L44-1",
+      "nombre": "SAN ANTONIO - CAÑETE",
+      "ubigeo": "140412"
+    },
+    {
+      "codigo": "L80-1",
+      "nombre": "SAN ANTONIO DE HUAROCHIRI",
+      "ubigeo": "140615"
+    },
+    {
+      "codigo": "L26",
+      "nombre": "SAN BARTOLO",
+      "ubigeo": "140123"
+    },
+    {
+      "codigo": "L41",
+      "nombre": "SAN BORJA",
+      "ubigeo": "140140"
+    },
+    {
+      "codigo": "L27",
+      "nombre": "SAN ISIDRO",
+      "ubigeo": "140124"
+    },
+    {
+      "codigo": "L36",
+      "nombre": "SAN JUAN DE LURIGANCHO",
+      "ubigeo": "140137"
+    },
+    {
+      "codigo": "L29",
+      "nombre": "SAN JUAN DE MIRAFLORES",
+      "ubigeo": "140136"
+    },
+    {
+      "codigo": "L30",
+      "nombre": "SAN LUIS",
+      "ubigeo": "140138"
+    },
+    {
+      "codigo": "L44-9",
+      "nombre": "SAN LUIS - CAÑETE",
+      "ubigeo": "140413"
+    },
+    {
+      "codigo": "L44-9",
+      "nombre": "SAN LUIS  DE CAÑETE",
+      "ubigeo": "140413"
+    },
+    {
+      "codigo": "L44-9",
+      "nombre": "SAN LUIS DE CAÑETE",
+      "ubigeo": "140413"
+    },
+    {
+      "codigo": "L31",
+      "nombre": "SAN MARTIN DE PORRES",
+      "ubigeo": "140126"
+    },
+    {
+      "codigo": "L32",
+      "nombre": "SAN MIGUEL",
+      "ubigeo": "140127"
+    },
+    {
+      "codigo": "L50-10",
+      "nombre": "SAN MIGUEL DE ACOS",
+      "ubigeo": "140809"
+    },
+    {
+      "codigo": "L44",
+      "nombre": "SAN VICENTE DE CAÑETE",
+      "ubigeo": "140401"
+    },
+    {
+      "codigo": "L44-2",
+      "nombre": "SAN VICENTE DE CAÑETE/ASIA",
+      "ubigeo": "140401"
+    },
+    {
+      "codigo": "L43",
+      "nombre": "SANTA ANITA",
+      "ubigeo": "140143"
+    },
+    {
+      "codigo": "L50-11",
+      "nombre": "SANTA CRUZ DE ANDAMARCA",
+      "ubigeo": "140811"
+    },
+    {
+      "codigo": "L44-14",
+      "nombre": "SANTA CRUZ DE FLORES",
+      "ubigeo": "140414"
+    },
+    {
+      "codigo": "L60-8",
+      "nombre": "SANTA LEONOR",
+      "ubigeo": "140511"
+    },
+    {
+      "codigo": "L60-11",
+      "nombre": "SANTA MARIA",
+      "ubigeo": "140512"
+    },
+    {
+      "codigo": "L15-1",
+      "nombre": "SANTA MARIA DE HUACHIPA",
+      "ubigeo": "000000"
+    },
+    {
+      "codigo": "L37",
+      "nombre": "SANTA MARIA DEL MAR",
+      "ubigeo": "140128"
+    },
+    {
+      "codigo": "L38",
+      "nombre": "SANTA ROSA",
+      "ubigeo": "140129"
+    },
+    {
+      "codigo": "L33",
+      "nombre": "SANTIAGO DE SURCO",
+      "ubigeo": "140130"
+    },
+    {
+      "codigo": "L60-3",
+      "nombre": "SAYAN",
+      "ubigeo": "140513"
+    },
+    {
+      "codigo": "L50-4",
+      "nombre": "SUMBILCA",
+      "ubigeo": "140812"
+    },
+    {
+      "codigo": "L70-1",
+      "nombre": "SUPE",
+      "ubigeo": "140904"
+    },
+    {
+      "codigo": "L70-2",
+      "nombre": "SUPE - PUERTO",
+      "ubigeo": "140905"
+    },
+    {
+      "codigo": "L70-2",
+      "nombre": "SUPE PUERTO",
+      "ubigeo": "140905"
+    },
+    {
+      "codigo": "L34",
+      "nombre": "SURQUILLO",
+      "ubigeo": "140131"
+    },
+    {
+      "codigo": "L60-4",
+      "nombre": "VEGUETA",
+      "ubigeo": "140516"
+    },
+    {
+      "codigo": "L42",
+      "nombre": "VILLA EL SALVADOR",
+      "ubigeo": "140141"
+    },
+    {
+      "codigo": "L35",
+      "nombre": "VILLA MARIA DEL TRIUNFO",
+      "ubigeo": "140132"
+    },
+    {
+      "codigo": "L44-15",
+      "nombre": "ZUÑIGA",
+      "ubigeo": "140415"
+    }
+  ]
+}

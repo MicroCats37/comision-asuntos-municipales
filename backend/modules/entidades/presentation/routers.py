@@ -1,0 +1,1 @@
+"""Routers de presentación — definiciones de Ninja Router (pendiente)."""

@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "descripcion": "Códigos de cuenta (LiquidacionCodigo) por tipo de liquidación — catálogo central.",
+  "codigos": [
+    { "tipo_liquidacion": "EDIFICACION", "codigo_cta": "46201" },
+    { "tipo_liquidacion": "HABILITACION_URBANA", "codigo_cta": "703179999" },
+    { "tipo_liquidacion": "INSPECCION_OBRA", "codigo_cta": "462021" },
+    { "tipo_liquidacion": "TALUDES", "codigo_cta": "7032018" },
+    { "tipo_liquidacion": "IMPACTO_VIAL", "codigo_cta": "46201" },
+    { "tipo_liquidacion": "MECANICA_SUELOS", "codigo_cta": "46201" }
+  ]
+}

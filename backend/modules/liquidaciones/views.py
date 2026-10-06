@@ -1,0 +1,1 @@
+"""Views (empty — no views in this module per SDD scope)."""

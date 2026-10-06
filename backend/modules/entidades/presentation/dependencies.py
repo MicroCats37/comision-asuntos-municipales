@@ -1,0 +1,1 @@
+"""Dependencias de presentación — fábricas de inyección de dependencias (pendiente)."""

@@ -1,0 +1,48 @@
+{
+  "version": "1.0",
+  "descripcion": "Capítulos profesionales CIP — catálogo central de referencia.",
+  "capitulos": [
+    {
+      "registro_id": "02",
+      "abreviacion": "CIVIL",
+      "nombre": "INGENIERIA CIVIL",
+      "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+    },
+    {
+      "registro_id": "03",
+      "abreviacion": "GEOLOGICA",
+      "nombre": "INGENIERIA GEOLOGICA",
+      "grupo_envio_intitucional": "institucionales_geologica@ciplima.org.pe"
+    },
+    {
+      "registro_id": "05",
+      "abreviacion": "MECANICA",
+      "nombre": "INGENIERIA MECÁNICA Y MECÁNICA ELÉCTRICA",
+      "grupo_envio_intitucional": "institucionales_mecanica@ciplima.org.pe"
+    },
+    {
+      "registro_id": "09",
+      "abreviacion": "SANITARIA",
+      "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+      "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+    },
+    {
+      "registro_id": "15",
+      "abreviacion": "ELECTRICA",
+      "nombre": "INGENIERIA ELECTRICA",
+      "grupo_envio_intitucional": "institucionales_electrica@ciplima.org.pe"
+    },
+    {
+      "registro_id": "16",
+      "abreviacion": "ELECTRONICA",
+      "nombre": "INGENIERIA ELECTRONICA",
+      "grupo_envio_intitucional": "institucionales_electronica@ciplima.org.pe"
+    },
+    {
+      "registro_id": "25",
+      "abreviacion": "AMBIENTAL",
+      "nombre": "INGENIERIA AMBIENTAL",
+      "grupo_envio_intitucional": "institucionales_ambiental@ciplima.org.pe"
+    }
+  ]
+}

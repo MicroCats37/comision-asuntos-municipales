@@ -1,0 +1,568 @@
+{
+  "version": "1.1",
+  "source": "Legacy DEVCOMU - tabla Municipios (todas, incluyendo codigos con guion; sin ubigeo/distrito)",
+  "municipalidades": [
+    {
+      "codigo": "L1",
+      "nombre": "CERCADO DE LIMA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "LIMA"
+    },
+    {
+      "codigo": "L2",
+      "nombre": "ANCON",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "ANCON"
+    },
+    {
+      "codigo": "L3",
+      "nombre": "ATE VITARTE",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "ATE"
+    },
+    {
+      "codigo": "L4",
+      "nombre": "BARRANCO",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "BARRANCO"
+    },
+    {
+      "codigo": "L5",
+      "nombre": "BREÑA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "BREÑA"
+    },
+    {
+      "codigo": "L6",
+      "nombre": "CARABAYLLO",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "CARABAYLLO"
+    },
+    {
+      "codigo": "L7",
+      "nombre": "COMAS",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "COMAS"
+    },
+    {
+      "codigo": "L8",
+      "nombre": "CHACLACAYO",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "CHACLACAYO"
+    },
+    {
+      "codigo": "L9",
+      "nombre": "CHORRILLOS",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "CHORRILLOS"
+    },
+    {
+      "codigo": "L10",
+      "nombre": "EL AGUSTINO",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "EL AGUSTINO"
+    },
+    {
+      "codigo": "L11",
+      "nombre": "JESUS MARIA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "JESUS MARIA"
+    },
+    {
+      "codigo": "L12",
+      "nombre": "LA MOLINA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "LA MOLINA"
+    },
+    {
+      "codigo": "L13",
+      "nombre": "LA VICTORIA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "LA VICTORIA"
+    },
+    {
+      "codigo": "L14",
+      "nombre": "LINCE",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "LINCE"
+    },
+    {
+      "codigo": "L15",
+      "nombre": "LURIGANCHO - CHOSICA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "LURIGANCHO"
+    },
+    {
+      "codigo": "L16",
+      "nombre": "LURIN",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "LURIN"
+    },
+    {
+      "codigo": "L17",
+      "nombre": "MAGDALENA DEL MAR",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "MAGDALENA DEL MAR"
+    },
+    {
+      "codigo": "L18",
+      "nombre": "MIRAFLORES",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "MIRAFLORES"
+    },
+    {
+      "codigo": "L19",
+      "nombre": "PACHACAMAC",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "PACHACAMAC"
+    },
+    {
+      "codigo": "L20",
+      "nombre": "PUCUSANA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "PUCUSANA"
+    },
+    {
+      "codigo": "L21",
+      "nombre": "PUEBLO LIBRE",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "PUEBLO LIBRE"
+    },
+    {
+      "codigo": "L22",
+      "nombre": "PUENTE PIEDRA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "PUENTE PIEDRA"
+    },
+    {
+      "codigo": "L23",
+      "nombre": "PUNTA NEGRA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "PUNTA NEGRA"
+    },
+    {
+      "codigo": "L24",
+      "nombre": "PUNTA HERMOSA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "PUNTA HERMOSA"
+    },
+    {
+      "codigo": "L25",
+      "nombre": "RIMAC",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "RIMAC"
+    },
+    {
+      "codigo": "L26",
+      "nombre": "SAN BARTOLO",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SAN BARTOLO"
+    },
+    {
+      "codigo": "L27",
+      "nombre": "SAN ISIDRO",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SAN ISIDRO"
+    },
+    {
+      "codigo": "L28",
+      "nombre": "INDEPENDENCIA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "INDEPENDENCIA"
+    },
+    {
+      "codigo": "L29",
+      "nombre": "SAN JUAN DE MIRAFLORES",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SAN JUAN DE MIRAFLORES"
+    },
+    {
+      "codigo": "L30",
+      "nombre": "SAN LUIS",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SAN LUIS"
+    },
+    {
+      "codigo": "L31",
+      "nombre": "SAN MARTIN DE PORRES",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SAN MARTIN DE PORRES"
+    },
+    {
+      "codigo": "L32",
+      "nombre": "SAN MIGUEL",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SAN MIGUEL"
+    },
+    {
+      "codigo": "L33",
+      "nombre": "SANTIAGO DE SURCO",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SANTIAGO DE SURCO"
+    },
+    {
+      "codigo": "L34",
+      "nombre": "SURQUILLO",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SURQUILLO"
+    },
+    {
+      "codigo": "L35",
+      "nombre": "VILLA MARIA DEL TRIUNFO",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "VILLA MARIA DEL TRIUNFO"
+    },
+    {
+      "codigo": "L36",
+      "nombre": "SAN JUAN DE LURIGANCHO",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SAN JUAN DE LURIGANCHO"
+    },
+    {
+      "codigo": "L37",
+      "nombre": "SANTA MARIA DEL MAR",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SANTA MARIA DEL MAR"
+    },
+    {
+      "codigo": "L38",
+      "nombre": "SANTA ROSA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SANTA ROSA"
+    },
+    {
+      "codigo": "L39",
+      "nombre": "LOS OLIVOS",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "LOS OLIVOS"
+    },
+    {
+      "codigo": "L40",
+      "nombre": "CIENEGUILLA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "CIENEGUILLA"
+    },
+    {
+      "codigo": "L41",
+      "nombre": "SAN BORJA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SAN BORJA"
+    },
+    {
+      "codigo": "L42",
+      "nombre": "VILLA EL SALVADOR",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "VILLA EL SALVADOR"
+    },
+    {
+      "codigo": "L43",
+      "nombre": "SANTA ANITA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SANTA ANITA"
+    },
+    {
+      "codigo": "L44",
+      "nombre": "SAN VICENTE DE CAÑETE",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "SAN VICENTE DE CAÑETE"
+    },
+    {
+      "codigo": "L50",
+      "nombre": "HUARAL",
+      "provincia_nombre": "HUARAL",
+      "distrito_nombre": "HUARAL"
+    },
+    {
+      "codigo": "L60",
+      "nombre": "HUAURA",
+      "provincia_nombre": "HUAURA",
+      "distrito_nombre": "HUAURA"
+    },
+    {
+      "codigo": "L70",
+      "nombre": "BARRANCA - NORTE",
+      "provincia_nombre": "BARRANCA",
+      "distrito_nombre": "BARRANCA"
+    },
+    {
+      "codigo": "L-80",
+      "nombre": "HUAROCHIRI",
+      "provincia_nombre": "HUAROCHIRI",
+      "distrito_nombre": "HUAROCHIRI"
+    },
+    {
+      "codigo": "L1-1",
+      "nombre": "COMISION AD HOC SEGUNDA INSTANCIA ADMINISTRATIVA"
+    },
+    {
+      "codigo": "L1-2",
+      "nombre": "CENTRO HISTÓRICO DE LIMA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "LIMA"
+    },
+    {
+      "codigo": "L15-1",
+      "nombre": "SANTA MARIA DE HUACHIPA",
+      "provincia_nombre": "LIMA",
+      "distrito_nombre": "SANTA MARIA DE HUACHIPA"
+    },
+    {
+      "codigo": "L44-1",
+      "nombre": "SAN ANTONIO - CAÑETE",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "SAN ANTONIO"
+    },
+    {
+      "codigo": "L44-2",
+      "nombre": "SAN VICENTE DE CAÑETE/ASIA",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "SAN VICENTE DE CAÑETE"
+    },
+    {
+      "codigo": "L44-3",
+      "nombre": "CERRO AZUL",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "CERRO AZUL"
+    },
+    {
+      "codigo": "L44-4",
+      "nombre": "LUNAHUANA",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "LUNAHUANA"
+    },
+    {
+      "codigo": "L44-5",
+      "nombre": "MALA",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "MALA"
+    },
+    {
+      "codigo": "L44-6",
+      "nombre": "CHILCA",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "CHILCA"
+    },
+    {
+      "codigo": "L44-7",
+      "nombre": "IMPERIAL",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "IMPERIAL"
+    },
+    {
+      "codigo": "L44-8",
+      "nombre": "NUEVO IMPERIAL",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "NUEVO IMPERIAL"
+    },
+    {
+      "codigo": "L44-9",
+      "nombre": "SAN LUIS - CAÑETE",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "SAN LUIS"
+    },
+    {
+      "codigo": "L50-1",
+      "nombre": "CHANCAY",
+      "provincia_nombre": "HUARAL",
+      "distrito_nombre": "CHANCAY"
+    },
+    {
+      "codigo": "L50-3",
+      "nombre": "IHUARI",
+      "provincia_nombre": "HUARAL",
+      "distrito_nombre": "IHUARI"
+    },
+    {
+      "codigo": "L50-4",
+      "nombre": "SUMBILCA",
+      "provincia_nombre": "HUARAL",
+      "distrito_nombre": "SUMBILCA"
+    },
+    {
+      "codigo": "L50-5",
+      "nombre": "PACARAOS",
+      "provincia_nombre": "HUARAL",
+      "distrito_nombre": "PACARAOS"
+    },
+    {
+      "codigo": "L50-6",
+      "nombre": "LAMPIAN",
+      "provincia_nombre": "HUARAL",
+      "distrito_nombre": "LAMPIAN"
+    },
+    {
+      "codigo": "L60-1",
+      "nombre": "CALETA DE CARQUIN",
+      "provincia_nombre": "HUAURA",
+      "distrito_nombre": "CALETA DE CARQUIN"
+    },
+    {
+      "codigo": "L60-2",
+      "nombre": "HUACHO",
+      "provincia_nombre": "HUAURA",
+      "distrito_nombre": "HUACHO"
+    },
+    {
+      "codigo": "L60-3",
+      "nombre": "SAYAN",
+      "provincia_nombre": "HUAURA",
+      "distrito_nombre": "SAYAN"
+    },
+    {
+      "codigo": "L60-4",
+      "nombre": "VEGUETA",
+      "provincia_nombre": "HUAURA",
+      "distrito_nombre": "VEGUETA"
+    },
+    {
+      "codigo": "L60-6",
+      "nombre": "CHECRAS",
+      "provincia_nombre": "HUAURA",
+      "distrito_nombre": "CHECRAS"
+    },
+    {
+      "codigo": "L60-7",
+      "nombre": "LEONCIO PRADO",
+      "provincia_nombre": "HUAURA",
+      "distrito_nombre": "LEONCIO PRADO"
+    },
+    {
+      "codigo": "L60-8",
+      "nombre": "SANTA LEONOR",
+      "provincia_nombre": "HUAURA",
+      "distrito_nombre": "SANTA LEONOR"
+    },
+    {
+      "codigo": "L60-9",
+      "nombre": "PACCHO",
+      "provincia_nombre": "HUAURA",
+      "distrito_nombre": "PACCHO"
+    },
+    {
+      "codigo": "L70-1",
+      "nombre": "SUPE",
+      "provincia_nombre": "BARRANCA",
+      "distrito_nombre": "SUPE"
+    },
+    {
+      "codigo": "L70-2",
+      "nombre": "SUPE - PUERTO",
+      "provincia_nombre": "BARRANCA",
+      "distrito_nombre": "SUPE PUERTO"
+    },
+    {
+      "codigo": "L70-3",
+      "nombre": "PARAMONGA",
+      "provincia_nombre": "BARRANCA",
+      "distrito_nombre": "PARAMONGA"
+    },
+    {
+      "codigo": "L70-4",
+      "nombre": "PATIVILCA",
+      "provincia_nombre": "BARRANCA",
+      "distrito_nombre": "PATIVILCA"
+    },
+    {
+      "codigo": "L80-1",
+      "nombre": "SAN ANTONIO DE HUAROCHIRI",
+      "provincia_nombre": "HUAROCHIRI",
+      "distrito_nombre": "SAN ANTONIO"
+    },
+    {
+      "codigo": "L44-10",
+      "nombre": "CALANGO",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "CALANGO"
+    },
+    {
+      "codigo": "L44-11",
+      "nombre": "COAYLLO",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "COAYLLO"
+    },
+    {
+      "codigo": "L44-12",
+      "nombre": "PACARAN",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "PACARAN"
+    },
+    {
+      "codigo": "L44-13",
+      "nombre": "QUILMANA",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "QUILMANA"
+    },
+    {
+      "codigo": "L44-14",
+      "nombre": "SANTA CRUZ DE FLORES",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "SANTA CRUZ DE FLORES"
+    },
+    {
+      "codigo": "L44-15",
+      "nombre": "ZUÑIGA",
+      "provincia_nombre": "CAÑETE",
+      "distrito_nombre": "ZUÑIGA"
+    },
+    {
+      "codigo": "L50-10",
+      "nombre": "SAN MIGUEL DE ACOS",
+      "provincia_nombre": "HUARAL",
+      "distrito_nombre": "SAN MIGUEL DE ACOS"
+    },
+    {
+      "codigo": "L50-11",
+      "nombre": "SANTA CRUZ DE ANDAMARCA",
+      "provincia_nombre": "HUARAL",
+      "distrito_nombre": "SANTA CRUZ DE ANDAMARCA"
+    },
+    {
+      "codigo": "L50-12",
+      "nombre": "AUCALLAMA",
+      "provincia_nombre": "HUARAL",
+      "distrito_nombre": "AUCALLAMA"
+    },
+    {
+      "codigo": "L60-10",
+      "nombre": "HUALMAY",
+      "provincia_nombre": "HUAURA",
+      "distrito_nombre": "HUALMAY"
+    },
+    {
+      "codigo": "L60-11",
+      "nombre": "SANTA MARIA",
+      "provincia_nombre": "HUAURA",
+      "distrito_nombre": "SANTA MARIA"
+    },
+    {
+      "codigo": "SINCODE1",
+      "nombre": "ATAVILLOS ALTO",
+      "provincia_nombre": "HUARAL",
+      "distrito_nombre": "ATAVILLOS ALTO"
+    },
+    {
+      "codigo": "SINCODE2",
+      "nombre": "ATAVILLOS BAJO",
+      "provincia_nombre": "HUARAL",
+      "distrito_nombre": "ATAVILLOS BAJO"
+    },
+    {
+      "codigo": "SINCODE3",
+      "nombre": "27 DE NOVIEMBRE",
+      "provincia_nombre": "HUARAL",
+      "distrito_nombre": "VEINTISIETE DE NOVIEMBRE"
+    },
+    {
+      "codigo": "SINCODE4",
+      "nombre": "AMBAR",
+      "provincia_nombre": "HUAURA",
+      "distrito_nombre": "AMBAR"
+    },
+    {
+      "codigo": "SINCODE5",
+      "nombre": "PROVINCIA CANTA",
+      "provincia_nombre": "CANTA",
+      "distrito_nombre": "CANTA"
+    }
+  ]
+}

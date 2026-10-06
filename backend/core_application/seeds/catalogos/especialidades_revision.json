@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "descripcion": "Especialidades de revisión + mapeo a capítulos CIP — catálogo central.",
+  "especialidades": [
+    {
+      "slug": "civil",
+      "nombre": "Ingeniería Civil",
+      "capitulos": ["02"]
+    },
+    {
+      "slug": "sanitaria",
+      "nombre": "Ingeniería Sanitaria",
+      "capitulos": ["09"]
+    },
+    {
+      "slug": "ingenier-a-el-ctrica-y-mec-nica-el-ctrica",
+      "nombre": "Ingeniería Eléctrica y Mecánica Eléctrica",
+      "capitulos": ["05", "15"]
+    },
+    {
+      "slug": "ingenier-a-electr-nica",
+      "nombre": "Ingeniería Electrónica",
+      "capitulos": ["16"]
+    },
+    {
+      "slug": "inspeccion-obra",
+      "nombre": "Inspección de Obra",
+      "capitulos": []
+    }
+  ]
+}

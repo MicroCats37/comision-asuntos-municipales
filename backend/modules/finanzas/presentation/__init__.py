@@ -1,0 +1,1 @@
+"""Capa de presentación — adaptadores HTTP (pendiente)."""

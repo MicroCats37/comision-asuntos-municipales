@@ -1,0 +1,1 @@
+"""Repositorios de dominio — puertos de interfaz de persistencia (pendiente)."""

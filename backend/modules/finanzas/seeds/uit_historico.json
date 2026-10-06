@@ -1,0 +1,31 @@
+{
+  "uit_values": [
+    {"valor": 2900, "periodo_inicio": "2000-01-01", "periodo_fin": "2000-12-31"},
+    {"valor": 3000, "periodo_inicio": "2001-01-01", "periodo_fin": "2001-12-31"},
+    {"valor": 3100, "periodo_inicio": "2002-01-01", "periodo_fin": "2002-12-31"},
+    {"valor": 3100, "periodo_inicio": "2003-01-01", "periodo_fin": "2003-12-31"},
+    {"valor": 3200, "periodo_inicio": "2004-01-01", "periodo_fin": "2004-12-31"},
+    {"valor": 3300, "periodo_inicio": "2005-01-01", "periodo_fin": "2005-12-31"},
+    {"valor": 3400, "periodo_inicio": "2006-01-01", "periodo_fin": "2006-12-31"},
+    {"valor": 3450, "periodo_inicio": "2007-01-01", "periodo_fin": "2007-12-31"},
+    {"valor": 3500, "periodo_inicio": "2008-01-01", "periodo_fin": "2008-12-31"},
+    {"valor": 3550, "periodo_inicio": "2009-01-01", "periodo_fin": "2009-12-31"},
+    {"valor": 3600, "periodo_inicio": "2010-01-01", "periodo_fin": "2010-12-31"},
+    {"valor": 3600, "periodo_inicio": "2011-01-01", "periodo_fin": "2011-12-31"},
+    {"valor": 3650, "periodo_inicio": "2012-01-01", "periodo_fin": "2012-12-31"},
+    {"valor": 3700, "periodo_inicio": "2013-01-01", "periodo_fin": "2013-12-31"},
+    {"valor": 3800, "periodo_inicio": "2014-01-01", "periodo_fin": "2014-12-31"},
+    {"valor": 3850, "periodo_inicio": "2015-01-01", "periodo_fin": "2015-12-31"},
+    {"valor": 3950, "periodo_inicio": "2016-01-01", "periodo_fin": "2016-12-31"},
+    {"valor": 4050, "periodo_inicio": "2017-01-01", "periodo_fin": "2017-12-31"},
+    {"valor": 4150, "periodo_inicio": "2018-01-01", "periodo_fin": "2018-12-31"},
+    {"valor": 4200, "periodo_inicio": "2019-01-01", "periodo_fin": "2019-12-31"},
+    {"valor": 4300, "periodo_inicio": "2020-01-01", "periodo_fin": "2020-12-31"},
+    {"valor": 4400, "periodo_inicio": "2021-01-01", "periodo_fin": "2021-12-31"},
+    {"valor": 4600, "periodo_inicio": "2022-01-01", "periodo_fin": "2022-12-31"},
+    {"valor": 4950, "periodo_inicio": "2023-01-01", "periodo_fin": "2023-12-31"},
+    {"valor": 5150, "periodo_inicio": "2024-01-01", "periodo_fin": "2024-12-31"},
+    {"valor": 5350, "periodo_inicio": "2025-01-01", "periodo_fin": "2025-12-31"},
+    {"valor": 5500, "periodo_inicio": "2026-01-01", "periodo_fin": null}
+  ]
+}

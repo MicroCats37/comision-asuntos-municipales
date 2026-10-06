@@ -1,0 +1,81 @@
+"""
+Presentation schemas for PorcentajeObra motor.
+
+Input: User sends tarifas[] (can be empty for auto-fill mode).
+Output: 3 wrappers with detalles[] nested in liquidacion_tipo.
+"""
+import uuid
+from decimal import Decimal
+from typing import List, Optional
+from ninja import Field
+from core.types import BaseSchema
+
+
+class LiquidacionPorcentajeObraDatosIn(BaseSchema):
+    """Datos básicos de entrada."""
+    valor_declarado: Decimal = Field(
+        ...,
+        le=Decimal("9999999999.99"),
+        max_digits=12,
+        decimal_places=2,
+        description="Valor declarado máximo compatible con DecimalField(max_digits=12, decimal_places=2).",
+    )
+    tipo_tramite: Optional[str] = None
+
+
+class LiquidacionPorcentajeObraTarifaIn(BaseSchema):
+    """
+    Tarifa seleccionada por el usuario con especialidad explícita.
+
+    With tarifa-unica-especialidades: the same tarifa can be sent multiple
+    times with different especialidad_id values (one entry per specialty).
+    Backend validates each entry by tariff ID + vigencia.
+    """
+    tarifa_porcentaje_obra_id: uuid.UUID
+    especialidad_id: uuid.UUID
+
+
+class LiquidacionPorcentajeObraIn(BaseSchema):
+    """
+    Wrapper Input del motor PorcentajeObra.
+    
+    Si `tarifas` está vacío, el backend auto-rellena con todas las vigentes.
+    Si tiene elementos, se validan explícitamente.
+    """
+    datos: LiquidacionPorcentajeObraDatosIn
+    tipo_tramite: Optional[str] = None  # Accept tipo_tramite at top level (frontend sends here)
+    tarifas: List[LiquidacionPorcentajeObraTarifaIn] = []
+
+
+class EspecialidadOut(BaseSchema):
+    """Especialidad in output (nested object with id + nombre)."""
+    id: uuid.UUID
+    nombre: str
+
+
+class LiquidacionPorcentajeObraDetalleOut(BaseSchema):
+    """Detalle de una liquidación porcentual aplicada a una especialidad."""
+    id: uuid.UUID
+    tarifa_aplicada_id: Optional[uuid.UUID] = None
+    especialidad_id: uuid.UUID
+    especialidad: Optional[EspecialidadOut] = None
+    porcentaje_aplicado: Optional[Decimal] = None
+    subtotal: Decimal
+
+
+class LiquidacionPorcentajeObraDatosOut(BaseSchema):
+    """
+    Wrapper Output del motor PorcentajeObra.
+    
+    Contiene los detalles anidados (1-N por especialidad).
+    """
+    id: uuid.UUID
+    valor_declarado: Optional[Decimal] = None
+    porcentaje_liquidacion: Optional[Decimal] = None  # SUM de tarifas aplicadas; null en modo MANUAL
+    tipo_tramite: Optional[str] = None  # NULL por ahora
+    derecho_minimo: Optional[Decimal] = None
+    derecho_maximo: Optional[Decimal] = None
+    porcentaje_minimo_uit: Optional[Decimal] = None
+    derecho_aplicado_id: Optional[uuid.UUID] = None  # null en modo MANUAL
+    tarifa_aplicada_id: Optional[uuid.UUID] = None  # null en modo MANUAL; PO tariffs live in detalles
+    detalles: List[LiquidacionPorcentajeObraDetalleOut]

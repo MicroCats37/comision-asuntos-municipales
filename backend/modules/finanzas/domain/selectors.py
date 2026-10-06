@@ -1,0 +1,1 @@
+"""Selectores de dominio — puertos de interfaz de consultas (pendiente)."""

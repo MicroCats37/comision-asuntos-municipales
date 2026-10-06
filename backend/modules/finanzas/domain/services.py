@@ -1,0 +1,1 @@
+"""Servicios de dominio — interfaces de lógica de negocio (pendiente)."""

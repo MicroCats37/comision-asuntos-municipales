@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "descripcion": "Municipalidades operativas extra con codigos SINCODE1-5.Estas municipalidades no existen en el catalogo principal y se cargan adicionalmente para el flujo de importacion Excel de delegados.",
+  "municipalidades": [
+    {
+      "codigo": "SINCODE1",
+      "nombre": "ATAVILLOS ALTO",
+      "ubigeo": "140802"
+    },
+    {
+      "codigo": "SINCODE2",
+      "nombre": "ATAVILLOS BAJO",
+      "ubigeo": "140803"
+    },
+    {
+      "codigo": "SINCODE3",
+      "nombre": "27 DE NOVIEMBRE",
+      "ubigeo": "140810"
+    },
+    {
+      "codigo": "SINCODE4",
+      "nombre": "AMBAR",
+      "ubigeo": "140502"
+    },
+    {
+      "codigo": "SINCODE5",
+      "nombre": "PROVINCIA CANTA",
+      "ubigeo": "140301"
+    }
+  ]
+}

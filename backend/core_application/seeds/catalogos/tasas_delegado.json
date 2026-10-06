@@ -1,0 +1,9 @@
+{
+  "version": "1.0",
+  "descripcion": "Tasas de delegado por tipo de liquidación (vigencia 2000).",
+  "tasas_delegado": [
+    { "tipo_liquidacion": "EDIFICACION", "periodo_inicio": "2000-01-01", "periodo_fin": null, "renta_cip": "0.25", "aporte_codemu": "0.05", "fondo_comun": "0.10" },
+    { "tipo_liquidacion": "HABILITACION_URBANA", "periodo_inicio": "2000-01-01", "periodo_fin": null, "renta_cip": "0.25", "aporte_codemu": "0.05", "fondo_comun": "0" },
+    { "tipo_liquidacion": "MECANICA_SUELOS", "periodo_inicio": "2000-01-01", "periodo_fin": null, "renta_cip": "0.25", "aporte_codemu": "0.05", "fondo_comun": "0" }
+  ]
+}

@@ -1,0 +1,223 @@
+"use client";
+
+import { Activity, Filter, IdCard } from "lucide-react";
+/**
+ * DelegadosFiltroModal — Modal de filtros para la lista de delegados.
+ * Usa AppFormModal como shell.
+ *
+ * Filtros: cip, municipalidad_id, estado
+ * Al aplicar: onApply(filtros) → la vista muestra los filtros activos arriba.
+ */
+import { useCallback } from "react";
+import { z } from "zod";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { AppFormModal } from "@/components-app/forms/AppFormModal";
+import { useMunicipalidades } from "@/features/liquidaciones/hooks/useMunicipalidades";
+import { useCapitulosOptions } from "../hooks/useCapitulosOptions";
+import { useEspecialidadesOptions } from "../hooks/useEspecialidadesOptions";
+import type { DelegadoEstado, DelegadoFiltros } from "../types/delegados.types";
+
+const filtroSchema = z.object({
+  cip: z.string().optional(),
+  municipalidad_id: z.string().optional(),
+  capitulo_id: z.string().optional(),
+  especialidad_id: z.string().optional(),
+  estado: z.string().optional(),
+});
+
+type FiltroFormData = z.infer<typeof filtroSchema>;
+
+interface DelegadosFiltroModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialFiltros?: DelegadoFiltros;
+  onApply: (filtros: DelegadoFiltros) => void;
+}
+
+const ESTADO_OPTIONS: { value: DelegadoEstado; label: string }[] = [
+  { value: "vigente", label: "Vigente" },
+  { value: "sin_vigencia", label: "Sin Vigencia" },
+  { value: "sin_asignaciones", label: "Sin Asignaciones" },
+];
+
+export function DelegadosFiltroModal({
+  open,
+  onOpenChange,
+  initialFiltros,
+  onApply,
+}: DelegadosFiltroModalProps) {
+  const { data: municipalidades, isLoading: isLoadingMunicipalidades } =
+    useMunicipalidades();
+  const capitulosOptions = useCapitulosOptions();
+  const especialidadesOptions = useEspecialidadesOptions();
+
+  const initialData: FiltroFormData = {
+    cip: initialFiltros?.cip ?? "",
+    municipalidad_id: initialFiltros?.municipalidad_id ?? "",
+    capitulo_id: initialFiltros?.capitulo_id ?? "",
+    especialidad_id: initialFiltros?.especialidad_id ?? "",
+    estado: initialFiltros?.estado ?? "",
+  };
+
+  const handleSubmit = useCallback(
+    async (data: FiltroFormData) => {
+      const filtros: DelegadoFiltros = {};
+      if (data.cip) filtros.cip = data.cip;
+      if (data.municipalidad_id)
+        filtros.municipalidad_id = data.municipalidad_id;
+      if (data.capitulo_id) filtros.capitulo_id = data.capitulo_id;
+      if (data.especialidad_id) filtros.especialidad_id = data.especialidad_id;
+      if (data.estado) filtros.estado = data.estado as DelegadoEstado;
+      onApply(filtros);
+    },
+    [onApply],
+  );
+
+  return (
+    <AppFormModal<FiltroFormData>
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Filtrar Delegados"
+      description="Filtra la lista por CIP, municipalidad o estado"
+      eyebrow="Delegados"
+      icon={<Filter className="h-5 w-5 text-primary" />}
+      primaryLabel="Aplicar Filtros"
+      primaryLoadingLabel="Aplicando..."
+      primaryLoading={false}
+      primaryDisabled={false}
+      onPrimary={() => undefined}
+      schema={filtroSchema}
+      initialData={initialData}
+      onSubmit={handleSubmit}
+      size="md"
+    >
+      {({ methods }) => (
+        <div className="space-y-4">
+          {/* CIP */}
+          <div className="space-y-2">
+            <Label htmlFor="filtro-cip">CIP</Label>
+            <div className="relative">
+              <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="filtro-cip"
+                placeholder="Ej. 006502"
+                className="pl-10 w-full"
+                {...methods.register("cip")}
+              />
+            </div>
+          </div>
+
+          {/* Municipalidad */}
+          <div className="space-y-2">
+            <SearchableSelect
+              id="filtro-municipalidad"
+              label="Municipalidad"
+              value={methods.watch("municipalidad_id") || null}
+              onValueChange={(v) =>
+                methods.setValue("municipalidad_id", v ?? "")
+              }
+              options={(municipalidades || []).map((m) => ({
+                value: m.id,
+                label: m.codigo ? `${m.codigo} - ${m.nombre}` : m.nombre,
+              }))}
+              placeholder={
+                isLoadingMunicipalidades
+                  ? "Cargando municipalidades..."
+                  : "Buscar municipalidad..."
+              }
+              disabled={isLoadingMunicipalidades}
+              showLabel={false}
+              className="[--input-height:40px] [&_button]:rounded-xl [&_button]:font-semibold"
+            />
+          </div>
+
+          {/* Estado */}
+          <div className="space-y-2">
+            <Label htmlFor="filtro-estado">Estado</Label>
+            <div className="relative">
+              <Activity className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+              <Select
+                value={methods.watch("estado") || ""}
+                onValueChange={(v) => methods.setValue("estado", v)}
+              >
+                <SelectTrigger id="filtro-estado" className="pl-10 h-10 w-full">
+                  <SelectValue placeholder="Seleccionar estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ESTADO_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Capítulo */}
+          <div className="space-y-2">
+            <Label htmlFor="filtro-capitulo">Capítulo</Label>
+            <Select
+              value={methods.watch("capitulo_id") || ""}
+              onValueChange={(v) => methods.setValue("capitulo_id", v)}
+            >
+              <SelectTrigger id="filtro-capitulo" className="h-10 w-full">
+                <SelectValue placeholder="Seleccionar capítulo" />
+              </SelectTrigger>
+              <SelectContent>
+                {capitulosOptions.data.length === 0 &&
+                !capitulosOptions.isLoading ? (
+                  <SelectItem value="__empty__" disabled>
+                    Sin opciones disponibles (backend pendiente)
+                  </SelectItem>
+                ) : (
+                  capitulosOptions.data.map((cap) => (
+                    <SelectItem key={cap.id} value={cap.id}>
+                      {cap.abreviacion ?? cap.nombre ?? cap.id}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Especialidad */}
+          <div className="space-y-2">
+            <Label htmlFor="filtro-especialidad">Especialidad</Label>
+            <Select
+              value={methods.watch("especialidad_id") || ""}
+              onValueChange={(v) => methods.setValue("especialidad_id", v)}
+            >
+              <SelectTrigger id="filtro-especialidad" className="h-10 w-full">
+                <SelectValue placeholder="Seleccionar especialidad" />
+              </SelectTrigger>
+              <SelectContent>
+                {especialidadesOptions.data.length === 0 &&
+                !especialidadesOptions.isLoading ? (
+                  <SelectItem value="__empty__" disabled>
+                    Sin opciones disponibles (backend pendiente)
+                  </SelectItem>
+                ) : (
+                  especialidadesOptions.data.map((esp) => (
+                    <SelectItem key={esp.id} value={esp.id}>
+                      {esp.nombre ?? esp.codigo ?? esp.id}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+    </AppFormModal>
+  );
+}

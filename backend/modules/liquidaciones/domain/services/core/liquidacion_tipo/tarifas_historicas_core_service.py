@@ -1,0 +1,193 @@
+"""
+TarifasHistoricasCoreService — consultas ORM para tarifas históricas.
+
+ORM puro. Sin lógica de negocio.
+"""
+from datetime import date
+from typing import List, Optional, Tuple
+
+from django.db.models import Q
+
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
+    TarifaLiquidacionBase,
+    TarifaPorMetroCuadrado,
+    TarifaPorCategoriaVisitas,
+    TarifaPorcentajeObra,
+    DerechoPorMetroCuadrado,
+    DerechoPorcentajeObra,
+)
+
+
+class TarifasHistoricasCoreService:
+    """
+    Core service for querying historical tariff records.
+    """
+
+    def get_tarifas_historicas(
+        self,
+        tipo_liquidacion: str,
+        fecha_desde: date,
+        fecha_hasta: date,
+        page: int,
+        page_size: int,
+    ) -> Tuple[List[TarifaLiquidacionBase], int]:
+        """
+        Get historical tariff bases for a tipo_liquidacion within a date range.
+        
+        Returns (list of TarifaLiquidacionBase, total_count).
+        """
+        qs = TarifaLiquidacionBase.objects.filter(
+            tipo_liquidacion__codigo=tipo_liquidacion,
+        ).filter(
+            periodo_inicio__lte=fecha_hasta,
+        ).filter(
+            Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha_desde)
+        ).order_by("periodo_inicio")
+
+        total = qs.count()
+        offset = (page - 1) * page_size
+        items = list(qs[offset:offset + page_size])
+        return items, total
+
+    def get_tarifas_porcentaje_obra_por_base(
+        self,
+        tarifa_base_ids: List[str],
+        tipo_liquidacion: str | None = None,
+    ) -> List[TarifaPorcentajeObra]:
+        """
+        Get all TarifaPorcentajeObra records for the given TarifaLiquidacionBase IDs.
+
+        With tarifa-unica-especialidades: TarifaPorcentajeObra no longer has especialidad FK.
+        The ordering by especialidad__nombre is removed. Caller (presenter) will fill
+        especialidad from LiquidacionEspecialidadDisponibles when building the result DTOs.
+
+        Args:
+            tarifa_base_ids: List of TarifaLiquidacionBase primary keys.
+            tipo_liquidacion: If provided, filter to only records whose base has this
+                tipo_liquidacion__codigo. Useful when querying for a specific tipo among
+                multiple tipos to avoid cross-contamination of results.
+        """
+        qs = TarifaPorcentajeObra.objects.filter(
+            tarifa_base_id__in=tarifa_base_ids
+        ).select_related("tarifa_base")
+        if tipo_liquidacion is not None:
+            qs = qs.filter(tarifa_base__tipo_liquidacion__codigo=tipo_liquidacion)
+        return list(qs.order_by("porcentaje_liquidacion"))
+
+    def get_tarifa_m2_por_base(
+        self,
+        tarifa_base_id: str,
+    ) -> Optional[TarifaPorMetroCuadrado]:
+        """
+        Get TarifaPorMetroCuadrado for a single TarifaLiquidacionBase (OneToOne).
+        """
+        try:
+            return TarifaPorMetroCuadrado.objects.select_related("tarifa_base").get(
+                tarifa_base_id=tarifa_base_id
+            )
+        except TarifaPorMetroCuadrado.DoesNotExist:
+            return None
+
+    def get_tarifas_categoria_visitas_por_base(
+        self,
+        tarifa_base_ids: List[str],
+    ) -> List[TarifaPorCategoriaVisitas]:
+        """
+        Get all TarifaPorCategoriaVisitas records for the given TarifaLiquidacionBase IDs.
+        Multiple categories can exist per base period.
+        """
+        return list(
+            TarifaPorCategoriaVisitas.objects.filter(
+                tarifa_base_id__in=tarifa_base_ids
+            ).select_related("tarifa_base").order_by("categoria_visitas")
+        )
+
+    def get_derechos_porcentaje_historicos(
+        self,
+        fecha_desde: date,
+        fecha_hasta: date,
+    ) -> List[DerechoPorcentajeObra]:
+        """
+        Get historical DerechoPorcentajeObra records within a date range.
+        """
+        return list(
+            DerechoPorcentajeObra.objects.filter(
+                periodo_inicio__lte=fecha_hasta,
+            ).filter(
+                Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha_desde)
+            ).order_by("periodo_inicio")
+        )
+
+    def get_derechos_m2_historicos(
+        self,
+        fecha_desde: date,
+        fecha_hasta: date,
+    ) -> List[DerechoPorMetroCuadrado]:
+        """
+        Get historical DerechoPorMetroCuadrado records within a date range.
+        """
+        return list(
+            DerechoPorMetroCuadrado.objects.filter(
+                periodo_inicio__lte=fecha_hasta,
+            ).filter(
+                Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha_desde)
+            ).order_by("periodo_inicio")
+        )
+
+    def get_derechos_porcentaje_vigentes(self, fecha: date = None) -> List[DerechoPorcentajeObra]:
+        """Derechos PORCENTAJE vigentes en la fecha dada (default hoy)."""
+        qs = DerechoPorcentajeObra.objects.vigentes(fecha=fecha).order_by("-periodo_inicio")
+        return list(qs)
+
+    def get_derechos_m2_vigentes(self, fecha: date = None) -> List[DerechoPorMetroCuadrado]:
+        """Derechos M2 vigentes en la fecha dada (default hoy)."""
+        qs = DerechoPorMetroCuadrado.objects.vigentes(fecha=fecha).order_by("-periodo_inicio")
+        return list(qs)
+
+    def get_tarifas_vigentes(self, tipo_liquidacion: str, fecha: date = None) -> List[TarifaLiquidacionBase]:
+        """Bases de tarifa vigentes en la fecha dada (default hoy) para un tipo."""
+        qs = TarifaLiquidacionBase.objects.filter(tipo_liquidacion__codigo=tipo_liquidacion)
+        return list(qs.vigentes(fecha=fecha).order_by("-periodo_inicio"))
+
+    # ── General (all tipos) ───────────────────────────────────────────────────
+
+    def get_tarifas_generales_vigentes(
+        self,
+        fecha: date = None,
+    ) -> List[TarifaLiquidacionBase]:
+        """
+        All TarifaLiquidacionBase vigentes (no tipo filter).
+
+        Returns bases for ALL tipo_liquidacion that are vigentes at fecha.
+        """
+        qs = TarifaLiquidacionBase.objects.vigentes(fecha=fecha).order_by(
+            "tipo_liquidacion__codigo", "periodo_inicio"
+        )
+        return list(qs)
+
+    def get_tarifas_generales_historicas(
+        self,
+        fecha_desde: date = None,
+        fecha_hasta: date = None,
+        page: int = 1,
+        page_size: int = 10000,
+    ) -> Tuple[List[TarifaLiquidacionBase], int]:
+        """
+        Historical tariff bases across ALL tipo_liquidacion.
+
+        If no dates are provided, returns every registered tariff base.
+        If one or both dates are provided, returns bases overlapping that range.
+
+        Returns (list of TarifaLiquidacionBase, total_count).
+        """
+        qs = TarifaLiquidacionBase.objects.all()
+        if fecha_hasta is not None:
+            qs = qs.filter(periodo_inicio__lte=fecha_hasta)
+        if fecha_desde is not None:
+            qs = qs.filter(Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=fecha_desde))
+        qs = qs.order_by("tipo_liquidacion__codigo", "periodo_inicio")
+
+        total = qs.count()
+        offset = (page - 1) * page_size
+        items = list(qs[offset:offset + page_size])
+        return items, total

@@ -1,0 +1,1 @@
+"""Controladores de presentación — manejadores HTTP (pendiente)."""
