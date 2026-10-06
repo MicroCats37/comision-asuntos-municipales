@@ -1,0 +1,30 @@
+[
+  {
+    "uuid": "c36ea17d89b74635969be54c260a2430",
+    "escala_uuid": "2e0454692ae34bdbbb1b9949b3eef5e6",
+    "monto_minimo": 0,
+    "monto_maximo": 8000,
+    "porcentaje_descuento": 0.15
+  },
+  {
+    "uuid": "564f40991e9f4f619c5026b3f3537739",
+    "escala_uuid": "2e0454692ae34bdbbb1b9949b3eef5e6",
+    "monto_minimo": 8000,
+    "monto_maximo": 15000,
+    "porcentaje_descuento": 0.2
+  },
+  {
+    "uuid": "166466da3a9946b8a2546abf4c1a65e5",
+    "escala_uuid": "2e0454692ae34bdbbb1b9949b3eef5e6",
+    "monto_minimo": 15000,
+    "monto_maximo": 30000,
+    "porcentaje_descuento": 0.3
+  },
+  {
+    "uuid": "be51f933aac44ee9a3e9c89d61088c89",
+    "escala_uuid": "2e0454692ae34bdbbb1b9949b3eef5e6",
+    "monto_minimo": 30000,
+    "monto_maximo": null,
+    "porcentaje_descuento": 0.4
+  }
+]

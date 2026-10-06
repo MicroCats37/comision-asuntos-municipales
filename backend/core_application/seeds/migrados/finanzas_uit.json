@@ -1,0 +1,164 @@
+[
+  {
+    "uuid": "6386bb1e994541d799f785ddd76e5720",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": "2000-12-31",
+    "valor": 2900
+  },
+  {
+    "uuid": "a32a6de23089458683e08dccf002297a",
+    "periodo_inicio": "2001-01-01",
+    "periodo_fin": "2001-12-31",
+    "valor": 3000
+  },
+  {
+    "uuid": "b087ff752bef4b61b59d03696537e35e",
+    "periodo_inicio": "2002-01-01",
+    "periodo_fin": "2002-12-31",
+    "valor": 3100
+  },
+  {
+    "uuid": "a46d5e9ef0444917934e03652758ff0d",
+    "periodo_inicio": "2003-01-01",
+    "periodo_fin": "2003-12-31",
+    "valor": 3100
+  },
+  {
+    "uuid": "78e3233c6ffc4c999336b1fe79a495e8",
+    "periodo_inicio": "2004-01-01",
+    "periodo_fin": "2004-12-31",
+    "valor": 3200
+  },
+  {
+    "uuid": "e94f0305a1a8491d99fde7d8b3532edd",
+    "periodo_inicio": "2005-01-01",
+    "periodo_fin": "2005-12-31",
+    "valor": 3300
+  },
+  {
+    "uuid": "a5821535f0ae497eae72bd5799ba1262",
+    "periodo_inicio": "2006-01-01",
+    "periodo_fin": "2006-12-31",
+    "valor": 3400
+  },
+  {
+    "uuid": "3f3a4e3e7d014c5996631e6c0374a632",
+    "periodo_inicio": "2007-01-01",
+    "periodo_fin": "2007-12-31",
+    "valor": 3450
+  },
+  {
+    "uuid": "4a09f3a5d90f4b5fa2f8009fcff75fca",
+    "periodo_inicio": "2008-01-01",
+    "periodo_fin": "2008-12-31",
+    "valor": 3500
+  },
+  {
+    "uuid": "c126b4907bcd4d1e87f6a1c88aad9728",
+    "periodo_inicio": "2009-01-01",
+    "periodo_fin": "2009-12-31",
+    "valor": 3550
+  },
+  {
+    "uuid": "d88174b06ccd42b0adc87bb67cc08b06",
+    "periodo_inicio": "2010-01-01",
+    "periodo_fin": "2010-12-31",
+    "valor": 3600
+  },
+  {
+    "uuid": "1617b0a8cb99454b8a8404b5d0746d0e",
+    "periodo_inicio": "2011-01-01",
+    "periodo_fin": "2011-12-31",
+    "valor": 3600
+  },
+  {
+    "uuid": "b708efb16d2e47d391b83e2dbcb86017",
+    "periodo_inicio": "2012-01-01",
+    "periodo_fin": "2012-12-31",
+    "valor": 3650
+  },
+  {
+    "uuid": "e8204c55878e48dc83eaa0181795136c",
+    "periodo_inicio": "2013-01-01",
+    "periodo_fin": "2013-12-31",
+    "valor": 3700
+  },
+  {
+    "uuid": "1133d63d70534817a1e9d4a4a61d772e",
+    "periodo_inicio": "2014-01-01",
+    "periodo_fin": "2014-12-31",
+    "valor": 3800
+  },
+  {
+    "uuid": "07c23011f2354b6d9f963928359f7f60",
+    "periodo_inicio": "2015-01-01",
+    "periodo_fin": "2015-12-31",
+    "valor": 3850
+  },
+  {
+    "uuid": "b668e2b1cdce460faa00c89f16b1b4ee",
+    "periodo_inicio": "2016-01-01",
+    "periodo_fin": "2016-12-31",
+    "valor": 3950
+  },
+  {
+    "uuid": "7d0a8179a7ce4804b58edc4b5d433ccd",
+    "periodo_inicio": "2017-01-01",
+    "periodo_fin": "2017-12-31",
+    "valor": 4050
+  },
+  {
+    "uuid": "d0033f855680460382e5b7f80c66d238",
+    "periodo_inicio": "2018-01-01",
+    "periodo_fin": "2018-12-31",
+    "valor": 4150
+  },
+  {
+    "uuid": "ae8daa00986f45bda5bdcbfcf39a4491",
+    "periodo_inicio": "2019-01-01",
+    "periodo_fin": "2019-12-31",
+    "valor": 4200
+  },
+  {
+    "uuid": "18e4bf33ae67459c97b6684c68399baa",
+    "periodo_inicio": "2020-01-01",
+    "periodo_fin": "2020-12-31",
+    "valor": 4300
+  },
+  {
+    "uuid": "59475fbc18ac4f0a85a960fad4d95406",
+    "periodo_inicio": "2021-01-01",
+    "periodo_fin": "2021-12-31",
+    "valor": 4400
+  },
+  {
+    "uuid": "a5744ccfbc8845769a331f276f9352b3",
+    "periodo_inicio": "2022-01-01",
+    "periodo_fin": "2022-12-31",
+    "valor": 4600
+  },
+  {
+    "uuid": "83ff4f0865ec4a64b0625baeddd619ed",
+    "periodo_inicio": "2023-01-01",
+    "periodo_fin": "2023-12-31",
+    "valor": 4950
+  },
+  {
+    "uuid": "03a3cf0ebba04f978b3accba8dcce805",
+    "periodo_inicio": "2024-01-01",
+    "periodo_fin": "2024-12-31",
+    "valor": 5150
+  },
+  {
+    "uuid": "3ffdc8e0651f40cc8981f8130696fe67",
+    "periodo_inicio": "2025-01-01",
+    "periodo_fin": "2025-12-31",
+    "valor": 5350
+  },
+  {
+    "uuid": "f20480ddd7e3413bada41ca00acd2fef",
+    "periodo_inicio": "2026-01-01",
+    "periodo_fin": null,
+    "valor": 5500
+  }
+]

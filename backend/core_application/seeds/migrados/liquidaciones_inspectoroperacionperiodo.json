@@ -1,0 +1,1700 @@
+[
+  {
+    "uuid": "ee8aa3849f6745a1a479f4dbb95d6c4a",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "112c53fd46bd4e8093f53e28b8d12520"
+  },
+  {
+    "uuid": "cc33783bcfd043e38c5d305aec5a7915",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "59ddb2148ed743f3808bba907949ccf2"
+  },
+  {
+    "uuid": "a621c549d35047ed9c23017dec0d457b",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "a2fb52c7b2fe40e89711ba3da2cfd846"
+  },
+  {
+    "uuid": "95d3502dc711422f90a92bb90607df5d",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "2cbe71a1a0664ea1b6e2b64f5090b16e"
+  },
+  {
+    "uuid": "574549fdf633418491d3187fa5a98c3a",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "2f234bbebf484ce2964b5a055e7516ef"
+  },
+  {
+    "uuid": "279dc11290da47f395825be4fe92bfc0",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "42b2c4a598f44d5388fcabd170185b7b"
+  },
+  {
+    "uuid": "f3c3270a59884cb4af9d5cd7a4a523e4",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "027c5ee52409465aacd96d33eed722c0"
+  },
+  {
+    "uuid": "df57d562d8da4af68dc8ae2a30ca9164",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "b92224b5507f4111aef55d9ab14609bc"
+  },
+  {
+    "uuid": "22048c7923fa4661aaa32650963c478a",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "76aa46c3c9514c27a2c9523255d5e108"
+  },
+  {
+    "uuid": "bfc2d39fd39d4978ae6c56c5a1157a1e",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "cae4d1b02461468b9969153bdd8600ae"
+  },
+  {
+    "uuid": "6426b796404842bbb5de92efad34e417",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "e8faa76c9bf348c6a7b0b1911d3762b8"
+  },
+  {
+    "uuid": "895f92762bca4743b912f4f8e7f12457",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "4e3be830b7cb479b9ada5801b32d044e"
+  },
+  {
+    "uuid": "cc17ac118857431ba22a3b8cf1286992",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "e821eb35517f4a0e92809eb1bd9f5ac9"
+  },
+  {
+    "uuid": "160fab54783a4a00aec41f0990b21292",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "871269ad7a7c4b1692e9115eca9e0828"
+  },
+  {
+    "uuid": "ba0dc3ef8ee04626aff23d770cdbb173",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "b132f0bd196843e49667df8c52dbb975"
+  },
+  {
+    "uuid": "a1316d168b174e0d9bf0ec949b41330b",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "da4e3452bc4541e197ebfb695ac19cab"
+  },
+  {
+    "uuid": "8374b7f65bd14d5e84553f74c11cf5c7",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "8298c43156a94becad22ff81f3ffa3f5"
+  },
+  {
+    "uuid": "2c775266a47b4bd7a5cc452573b1332a",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "6b72d59c22f3403b8e8bc37896a4cb2d"
+  },
+  {
+    "uuid": "8ba23e2e8e924ed0a5e643a39671dea7",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "faf434cb56ff4f43b7b07c4f55d54194"
+  },
+  {
+    "uuid": "757b38312b0d43e48253ff1d02b5ce25",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "f6e7a9e95a5041a6baddfea5627a73c3"
+  },
+  {
+    "uuid": "76e654b0f9af40c49b9cc073a04cdf94",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "9bdf9c87eef9433d8c8326702c5bc422"
+  },
+  {
+    "uuid": "cc98ff82fb4243f880e16480c9a46028",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "60bf4b9d10f64caba11ec75b38b24baa"
+  },
+  {
+    "uuid": "38802c5d79d3450a9c3bad9cd87695c9",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "941f160b421e494f9611ac44c0d881ad"
+  },
+  {
+    "uuid": "48c605d690cd4c23b028fa35f7d398dc",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "573c664b39c44539aa32f191066d0b57"
+  },
+  {
+    "uuid": "ecbf17daa284415db8abd93542c3fa39",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "832eedbe52744c3aa73ce5972145aa69"
+  },
+  {
+    "uuid": "487942d1c085484c8b558b8d1de04605",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "c1dc9a70648a4476b37f1031a123167d"
+  },
+  {
+    "uuid": "692ad73d99e6455590d9b6f0fa57ebee",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "d0015699d8fb47c5b8e9c8ad20e1d281"
+  },
+  {
+    "uuid": "0a56749c28544fd8968405c09de7a389",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "47ec303f924b4be9ab45f63cced8c745"
+  },
+  {
+    "uuid": "b4a1978dbec2403daf1d9ade16e3c52f",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "aedbd87b1c0046069b51777d448bfc80"
+  },
+  {
+    "uuid": "06ca40aea64444abbc4208ddb7547e68",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "e402779176ca4cedb16f9cc98895f039"
+  },
+  {
+    "uuid": "9c8675c8213d45fc816ac570e1156883",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "64386f1da68b43dd85c7b31728414009"
+  },
+  {
+    "uuid": "8b3ce272e0aa45ee8509b6326dbac66e",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "90b2560347b040f0ac34297cc52f387e"
+  },
+  {
+    "uuid": "387b88af9b86478f8cad47e332d73eda",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "41016d5e7204474a900cef88bbd5d1f9"
+  },
+  {
+    "uuid": "32622d5c263741719bb3035026cdb92f",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "36a4aebd61f54cb589a6b44992f2044c"
+  },
+  {
+    "uuid": "f3b5edd1606e4a28bfb14dbd9fed388f",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "c4d34a33cb3747ee9aeff2658c7cf7a6"
+  },
+  {
+    "uuid": "5934b6df4145411683450b47fad2d1b5",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "00cd3e861b4749cb91529d0b7db3a04a"
+  },
+  {
+    "uuid": "c4af080282f34c7ab2f980fe308d0591",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "4bdeb1c077094227b0bb2e3cef0930c3"
+  },
+  {
+    "uuid": "fd2cd54e290d4ec19f98ec59a64044ee",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "3d5adeeb117e45babf9671f6893c4472"
+  },
+  {
+    "uuid": "3f3cdaac67084e2dbd53b83b18125293",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "d6b05074f91746dfb90865a3b1250706"
+  },
+  {
+    "uuid": "bd60b482de2a4d77b1006c91917cf2a5",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "f077c79470724255bba05b11a3217fea"
+  },
+  {
+    "uuid": "eae881a65d754577b6f4ab033d01551f",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "461dc3c5564b4205b937c9283e39d8d2"
+  },
+  {
+    "uuid": "f20feb15a04e4264bfbae68efe8d1a84",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "b9241562f02d403b8a05c92772d9f242"
+  },
+  {
+    "uuid": "04ef706aa50e464382d9eaa970752b93",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "cc783d6621bc486ca1da0c312b4ee8d9"
+  },
+  {
+    "uuid": "5a4b0f3a27844bf78f1fda0a15117e1b",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "4d95f580ae0e4a378e07ae95a5fe37d6"
+  },
+  {
+    "uuid": "7dcc27bc525c4369b0aa37e36731dbb0",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "a3e06abca96942b4af76abc39f2d0c9d"
+  },
+  {
+    "uuid": "984df13a08c64b899423c58324aff92d",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "1c2af7a382c14764a54b50b7e5d08298"
+  },
+  {
+    "uuid": "f0f454cf1ed249b2b162fb04dd6ddfef",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "f4df6b9b7c1141f3ae504978bea132d0"
+  },
+  {
+    "uuid": "a27cc90ec2f24fca894edeb96a2d5b3a",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "d6bdf866898e41758fbc21652d5e7865"
+  },
+  {
+    "uuid": "99eaa315c6b94bcdacc4cab8dfb71c8a",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "afdf586efd034364a1ee7466d9a3498c"
+  },
+  {
+    "uuid": "9bf40b07200b44e8887f6cb85c440f4b",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "2b16f72a57db40c186e1375889743738"
+  },
+  {
+    "uuid": "d36171b64eaf4090a905a47010eabca1",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "0995e9cd75454adbbe32458f4693d69b"
+  },
+  {
+    "uuid": "f132efe6dce246c48ce1ef7f9333c0e9",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "b93577e358ac4d32bad5c23bb6dd0e85"
+  },
+  {
+    "uuid": "06147e49a64c4990914e33b88754eb28",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "440951ac12be46b09db299ad4d1d45d4"
+  },
+  {
+    "uuid": "cf832391f6884d378ff860db515b3702",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "5f87751f0f3e486694a4c8df6f4ce182"
+  },
+  {
+    "uuid": "e8ff49f3ddac41f99a234fad6bc35755",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "2e57c725903b4699bd42928be7f9b8bb"
+  },
+  {
+    "uuid": "5983d74ce2ee4cb1ac0c3a3e79831f80",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "a1f740f51f4645aba55dc2ecfe1c064e"
+  },
+  {
+    "uuid": "947b0c87c43c47e684fe20445a1775bd",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "421122ea39cd4bad80bce09b2978d35a"
+  },
+  {
+    "uuid": "43155291d2514f5592ff8c1ef190599f",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "081b4d41d51e4dfeaf955320028afe42"
+  },
+  {
+    "uuid": "abdf2d7b2926411e981fb9c31ab281cc",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "321a6736dbc8432cacfab29e06d55b45"
+  },
+  {
+    "uuid": "1f621c9173554b42b162bfc195ab81b6",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "6c4bcd0aee3944a4bd927d4de070a40d"
+  },
+  {
+    "uuid": "5d6d8e26923b41e2a7f13e96261f9ccc",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "4d987bc31b7b41aebf088ce9cbb25c54"
+  },
+  {
+    "uuid": "d3e081b42bfb45498d9a6b078bf98ed5",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "2a96134d89464a09a9494664f84d6204"
+  },
+  {
+    "uuid": "9bb7c5fc61e54bbb8ab53c130af52486",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "3cff2eec2d504793a2577512a61bc852"
+  },
+  {
+    "uuid": "fb72c6dd5f424580a03a9e7918289943",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "20e4c33a0b544ee283f2bec01c76ba4e"
+  },
+  {
+    "uuid": "403d0eed569a4974bf7cb330547972ba",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "28d5156fc0e24887a9f59586e7f7e857"
+  },
+  {
+    "uuid": "52cd5f52459444718c67384df0ea6d53",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "abb5cc91a0e441a19840d9ebba87dcf8"
+  },
+  {
+    "uuid": "154ac5bd5ee94af2944052b9a8a66c0e",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "52325fe9038443b5a33e94217b7e6f2d"
+  },
+  {
+    "uuid": "f285b8f775c342b5ab30ab3d8ad4e49f",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "193c347828954de3a411edfccf80bcc9"
+  },
+  {
+    "uuid": "af5b04fa749c4608850af585e1693000",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "0236ae009f5f4ae399a5474cef922fa4"
+  },
+  {
+    "uuid": "201d974edf1b41708868de08a53572cf",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "61689967f8ee4f7ab0bf2eb3238bc55a"
+  },
+  {
+    "uuid": "9c1bd62d70d04ba38d7ffad2f6fc5b8f",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "de073be52b8c42bf83ceee2b7a7f65e5"
+  },
+  {
+    "uuid": "d62c4c115da34e05aaf397d4161c1b2c",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "75b7f3271a634871988745f55e267a5e"
+  },
+  {
+    "uuid": "cac6c5b0a52a4857a7429374e2aafa60",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "bebc9bd145de4ceabd436d60d999d36d"
+  },
+  {
+    "uuid": "294bab1f823e449e812e3eb6fd2bef19",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "7f818286f06646e8a8f4cdfb58e63aed"
+  },
+  {
+    "uuid": "4b0535b20b1f40c2b9a764c047edeb79",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "e50eccbc9aef4ea7a99c8e48492aebb0"
+  },
+  {
+    "uuid": "3fb6052d636d428390383b5a03d86a45",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "e78b8454b0014e8cbe72d4d5f071ad6d"
+  },
+  {
+    "uuid": "f8d2f4da724044e7993c6f8c0b1d047f",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "18ee8d09f2564d9796c992d2fd6dda41"
+  },
+  {
+    "uuid": "6b93049154884ea28ee71d5209dfafb6",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "fa38121e646b4d23bd3b054faabcb976"
+  },
+  {
+    "uuid": "fd2995738dff4c668bad225b2f3dbabb",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "194b33ab02f04ef8b11a9b71c8da941a"
+  },
+  {
+    "uuid": "296131c654074fc6bd2e14b73a6a8ea4",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "99c02e711e00412096ab5a7bf8ed91d5"
+  },
+  {
+    "uuid": "c7104cc6508a4b8494117311ce4eb639",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "ec885aa6eacd4decb2e32764a538a2aa"
+  },
+  {
+    "uuid": "5a7a9ba386564dd9b1e93fa5acf6de9e",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "071b654d7bbe42208502bc5cd9d74a70"
+  },
+  {
+    "uuid": "531cd2850e4f49249e7dcbd35f7f62e2",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "628ee12b30a74ad2b0de4b6e3b97b74b"
+  },
+  {
+    "uuid": "ddd25da1590543888fdb0b4091e56cd6",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "6d9f5b1f910b48ce92dc0a0b24872d05"
+  },
+  {
+    "uuid": "fc48a4ba10cb4ca1af443820b5537e8c",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "95275229f42c4fd3801d3f0cab2ebab2"
+  },
+  {
+    "uuid": "753711a4fcf54e3b908efcdb78c048f8",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "0a77ecfaf38249cd9e921001e4c66825"
+  },
+  {
+    "uuid": "ed474d341d3d4e20af88382c0e63ad28",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "b7029f4f638349bdbc65238fe3f33047"
+  },
+  {
+    "uuid": "11190a3926624931b94a074a26275e75",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "267dcc0605ea46bd802807da2f76f3e4"
+  },
+  {
+    "uuid": "b9d4b51e9055447b9c8b2fdaa0787c61",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "6d44232bcda848d1aca85cf8f5a3a003"
+  },
+  {
+    "uuid": "a3e2cd26d164488ba9fe7322edbea3d0",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "351aa468686243cf8a89165286506528"
+  },
+  {
+    "uuid": "3d172ee35172413b91d7aff89b6693ba",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "7140bf0d0b3b4658b209eef8d6a5242d"
+  },
+  {
+    "uuid": "21fc6c5acc1346f9998c95ce1866fefd",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "f26eb5a425fe4880beb70581f25b3453"
+  },
+  {
+    "uuid": "777a23004c6d482a83aaf369bf3b0504",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "3dcea9cb0ef7418eb633f871c84304f7"
+  },
+  {
+    "uuid": "fa7a411d91374309b400bd342b23eb09",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "a687c612bba149bb90638d94678c3748"
+  },
+  {
+    "uuid": "62b51411c7544d798e3e974cfaa076e1",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "93317d846d5a4c74a5606035c0cef4b3"
+  },
+  {
+    "uuid": "961f0d65b564486a95ebaa1d9a58e183",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "6a1bcfac7c424df89566339852ca262d"
+  },
+  {
+    "uuid": "3dd93c2535f6441bad0fc802e5f5989f",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "9b8a5ddf3d0e4d5b939a47adcd2049ee"
+  },
+  {
+    "uuid": "a475785a1f1c433cb92ddf1ef37acc35",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "589297ae2ed34fb685b2d4b92dc0aecb"
+  },
+  {
+    "uuid": "f555b9df04864cea9a2c24fbee86da55",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "334d265e3b504ce88513ee572754966c"
+  },
+  {
+    "uuid": "20ac6163a4204de38d150a34686ea9bd",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "65d5ef0bd3f248058aea5d4e86ae798e"
+  },
+  {
+    "uuid": "ffb2b5e46c9d4e85a049889a837456f7",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "244dc7f2362c41c892d58119e1887330"
+  },
+  {
+    "uuid": "820122602bd24c9caf8b4fea4860ebcf",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "eb00b2fe59be421e8d67fb471c234ec2"
+  },
+  {
+    "uuid": "1f09141ba03249babd7d33712944e661",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "cd7599cebe4e4e7dad7c5f371d9dc418"
+  },
+  {
+    "uuid": "f53ca5c47f574b228ec7e05c3a2c30e6",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "7dd98eb72fc0470d9d30fcce00cd15a3"
+  },
+  {
+    "uuid": "d4d8dc15fef841f88d843b4a4a381c27",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "0a114f6e97b34efb93f804ec34561399"
+  },
+  {
+    "uuid": "76ec821ff6d442188c59d7996f0c6db8",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "3feb2a25f9ce471b99d394eb1f6ff3c8"
+  },
+  {
+    "uuid": "c28aee52acb44e6a9fbbc472b98d4018",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "22d48e37544b4862869a42ee6fb6f259"
+  },
+  {
+    "uuid": "7241a363c11b4824b0052a04cbc02546",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "c9f73ebb21e04055903c1c0a8b0d4a2d"
+  },
+  {
+    "uuid": "775d50f2bca143a686848f08a8d4832f",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "7345f81b50cb4a24a042890a6c18c28e"
+  },
+  {
+    "uuid": "2ec48ea6f40d4bb9b80dec81559d0ebd",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "0f693fe86ed4479c877f8506a8f63513"
+  },
+  {
+    "uuid": "291b5372cbbb4f72a7f3af45ec015a55",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "f3b74ff548994d9fb5262b9516926d30"
+  },
+  {
+    "uuid": "8ef677b926714a13ae947ef463ce8716",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "b2bc3550fdf1459eab9895a74a0dde73"
+  },
+  {
+    "uuid": "024ef935af564c109b915092f9f9539a",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "37f357c3ca8b4200a85189daa9352580"
+  },
+  {
+    "uuid": "623d438a32e54992a91cf073fa9091c9",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "fe925110816745f7979430dd32099da9"
+  },
+  {
+    "uuid": "3d315ddff80e4af190832988a22ecfe8",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "4f287a9a09ac4db6ad1ae13e056f2c94"
+  },
+  {
+    "uuid": "220774990fbd401c8d09eb8d430f99a1",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "1971f817252c49ac9ab8072ed438d61d"
+  },
+  {
+    "uuid": "9f94d81eeb8c4d679a55c2a988d2d72e",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "58dca81bc6374a4d939817de49d670b0"
+  },
+  {
+    "uuid": "8f00d2e1ef714611864644ad7fe69bfd",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "f4c80cdd14294537b64fc40cf88f99d7"
+  },
+  {
+    "uuid": "56efbf323a604b52b19f1be50e5359a0",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "0ad6dc795a734a1a9551601bc7960621"
+  },
+  {
+    "uuid": "f8d10ba43bb248e1b865041bea3acce3",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "098bf6f1def044a283447c59a768cc09"
+  },
+  {
+    "uuid": "095ca2305820424db811f6a47c185e0a",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "e655cf1eb0fd47c4951ad5170db95179"
+  },
+  {
+    "uuid": "277872bfd8ee4a35958dbffbb89a8688",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "b356a3c417d348498d28201fbee1e385"
+  },
+  {
+    "uuid": "7d2ac4d2d3dd4f97bd7508ac25ecb424",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "07d06706e69946ec87071f0c211a0e87"
+  },
+  {
+    "uuid": "97b13961af2240c6af72113b17cb7195",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "b545cb1a8d5746af81a7c42980095249"
+  },
+  {
+    "uuid": "c2f51b14e26c4a2ca0a5cb2078a9e787",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "21b734c85afc4fc2a4fd18874a6a8a48"
+  },
+  {
+    "uuid": "b444eff5d91345629117709a621a26bd",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "b3b5ee25ca3b4b28bcc9768f0e3e815a"
+  },
+  {
+    "uuid": "47bb33631221444ebfa60e81c8ac6205",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "d7576d28741b43d5819efb439e8581e6"
+  },
+  {
+    "uuid": "be3eabb35a6c4fcea0580c701aed2034",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "fd7ac87ffc0445e9b0e9d3ba0c90a076"
+  },
+  {
+    "uuid": "39f7f6fe9b2d4dd785d5eb4bebb6bae9",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "b2343db727704745bbaa11a5ee4a1207"
+  },
+  {
+    "uuid": "f5a0cc94c8a44fa1aea8edbbcadcc2d7",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "24874d9571624ab5a5644b376aa39f59"
+  },
+  {
+    "uuid": "9c917450c39449008dcfeb4379fe2e83",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "cb4cefb8644f4d258ede4604b4304913"
+  },
+  {
+    "uuid": "2d032e9e646d4bb6a64868df701a115c",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "3770232e849846d59a146e29198a00ce"
+  },
+  {
+    "uuid": "667bbfa8140e43dc95bd85f754f536ff",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "05b6fe8b956a403cb37b65fec6e8e445"
+  },
+  {
+    "uuid": "f5e6ee064eed4528875a594118a501ac",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "bb882fdba433459d82f46bbb4685356c"
+  },
+  {
+    "uuid": "b2171f8b615146ce9a8966892bddc70e",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "fc05ee2232a24c52a65da0aedf50e2bd"
+  },
+  {
+    "uuid": "1b880c316f4d4fbd84c904d49f9646a1",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "59371cbfa7004016ae49e17e199e601a"
+  },
+  {
+    "uuid": "341138c24ce7467293f3992536ece370",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "0db6a79a0f2b4f5baea0ba9161fd7b6f"
+  },
+  {
+    "uuid": "c40c481543904104b524583f82c0cc44",
+    "periodo_inicio": "2025-08-01",
+    "periodo_fin": "2026-07-31",
+    "inspector_tipo_liquidacion_uuid": "807b5e8a886f4ebab79be157c7c4811f"
+  },
+  {
+    "uuid": "f12b5dd2b70549f49978548f8800715a",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "20e4c33a0b544ee283f2bec01c76ba4e"
+  },
+  {
+    "uuid": "53165a8643bb4ec580c90a1cd76bda17",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "027c5ee52409465aacd96d33eed722c0"
+  },
+  {
+    "uuid": "50e443f0f6024520ae6b9bad162ca19a",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "de073be52b8c42bf83ceee2b7a7f65e5"
+  },
+  {
+    "uuid": "f22081a98b1f47649b635d39a7afd66c",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "4d95f580ae0e4a378e07ae95a5fe37d6"
+  },
+  {
+    "uuid": "4f3fc383d29140bdbb6b7201a0ea5e7e",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "b92224b5507f4111aef55d9ab14609bc"
+  },
+  {
+    "uuid": "32f91732f2bd46a59f335b3fcb7e6551",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "99c02e711e00412096ab5a7bf8ed91d5"
+  },
+  {
+    "uuid": "54422bcd62264369a51a14f236e34a56",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "59ddb2148ed743f3808bba907949ccf2"
+  },
+  {
+    "uuid": "ddf894f993ee4abab05b2241e7c90d1e",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "071b654d7bbe42208502bc5cd9d74a70"
+  },
+  {
+    "uuid": "69ffbff4f2134b1889130d2bc7144a5b",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "1c2af7a382c14764a54b50b7e5d08298"
+  },
+  {
+    "uuid": "6404baab9a1e4487a9a41929c7e6f1ef",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "112c53fd46bd4e8093f53e28b8d12520"
+  },
+  {
+    "uuid": "44bba19f2c8a43a0b95c4d8d1aee3338",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "0236ae009f5f4ae399a5474cef922fa4"
+  },
+  {
+    "uuid": "a5b627b305624969b821804dea0299e1",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "90b2560347b040f0ac34297cc52f387e"
+  },
+  {
+    "uuid": "19dc1ec49a26469bae39daa5ed51543d",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "b132f0bd196843e49667df8c52dbb975"
+  },
+  {
+    "uuid": "39a18be0727d42e0beb8e4c94e67ef7b",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "47ec303f924b4be9ab45f63cced8c745"
+  },
+  {
+    "uuid": "ee57255d83b44698b4c0e304b566b7d7",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "00cd3e861b4749cb91529d0b7db3a04a"
+  },
+  {
+    "uuid": "744e31ffcf754d009c5a7d8b830f4778",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "a687c612bba149bb90638d94678c3748"
+  },
+  {
+    "uuid": "0e11a03df9404eb9b35a16943aac2feb",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "e78b8454b0014e8cbe72d4d5f071ad6d"
+  },
+  {
+    "uuid": "f29e0c9d3d624958aa441c37cbb54e7c",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "461dc3c5564b4205b937c9283e39d8d2"
+  },
+  {
+    "uuid": "1f25ec7bb4774f95882c323e2f815a92",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "a5fb18164718451c955bb7accab8842d"
+  },
+  {
+    "uuid": "cab22bb4bc1f405e9945b1ce945a0d36",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "b356a3c417d348498d28201fbee1e385"
+  },
+  {
+    "uuid": "3c5e1cfb25584d37afcc2f96206a9133",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "faf434cb56ff4f43b7b07c4f55d54194"
+  },
+  {
+    "uuid": "adcccc55fc1f4effb7ee09a0e1ab2186",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "b9241562f02d403b8a05c92772d9f242"
+  },
+  {
+    "uuid": "3615a250994c4c1595f45e0b734de640",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "832eedbe52744c3aa73ce5972145aa69"
+  },
+  {
+    "uuid": "416fcef573bd485fa7f056784835d932",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "a13c20cb502648428b0425b811516ee8"
+  },
+  {
+    "uuid": "516a3fb1b03f49ad80f711351dc916e3",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "ec885aa6eacd4decb2e32764a538a2aa"
+  },
+  {
+    "uuid": "1bf82dd7f77f423b9a5319e27859eace",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "6b72d59c22f3403b8e8bc37896a4cb2d"
+  },
+  {
+    "uuid": "09f2ebba12b84ddead94a07a433265ca",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "941f160b421e494f9611ac44c0d881ad"
+  },
+  {
+    "uuid": "673afc783b204f3fab16db36297f19c2",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "a2fb52c7b2fe40e89711ba3da2cfd846"
+  },
+  {
+    "uuid": "12b7107096244e0f86cb14501a524edd",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "377a79f251fe4447816f1e480b660734"
+  },
+  {
+    "uuid": "c5d9fe4c69ef441e8985d2e28b8cb547",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "bebc9bd145de4ceabd436d60d999d36d"
+  },
+  {
+    "uuid": "48d6b52cda924a9ab22348e469765ef4",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "2e57c725903b4699bd42928be7f9b8bb"
+  },
+  {
+    "uuid": "f4138d3ef36044668058e7f670cd8cff",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "e402779176ca4cedb16f9cc98895f039"
+  },
+  {
+    "uuid": "063a875b08b54256be09117be61db4aa",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "42b2c4a598f44d5388fcabd170185b7b"
+  },
+  {
+    "uuid": "e19f5628699c4d008b59be88602198a0",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "9bdf9c87eef9433d8c8326702c5bc422"
+  },
+  {
+    "uuid": "6e47c0c6effa4fb188a9547552be612c",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "3dcea9cb0ef7418eb633f871c84304f7"
+  },
+  {
+    "uuid": "7e9bed628db2435f86c6596db964107c",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "36a4aebd61f54cb589a6b44992f2044c"
+  },
+  {
+    "uuid": "200084e666cf4ed99892a876865f3076",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "4bdeb1c077094227b0bb2e3cef0930c3"
+  },
+  {
+    "uuid": "01b0c669fee24c26bcc6536f1b76728d",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "4e3be830b7cb479b9ada5801b32d044e"
+  },
+  {
+    "uuid": "555a57b8387d4cb8a6a9eb066da2abda",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "193c347828954de3a411edfccf80bcc9"
+  },
+  {
+    "uuid": "543d583a04d3429ea448079f9894de13",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "2f234bbebf484ce2964b5a055e7516ef"
+  },
+  {
+    "uuid": "00dc1ac0851b435681543414751003fe",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "3aea54931e2e4b24b7d99fc0da451a20"
+  },
+  {
+    "uuid": "7f14fd3d79554b43bc32ac266df1774d",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "b7029f4f638349bdbc65238fe3f33047"
+  },
+  {
+    "uuid": "80ce61f4794f49069c34a4dcc1156a78",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "cd7599cebe4e4e7dad7c5f371d9dc418"
+  },
+  {
+    "uuid": "6238245332fa44d5a967bf175159fb6c",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "e8faa76c9bf348c6a7b0b1911d3762b8"
+  },
+  {
+    "uuid": "0754b205a8a349e6b8a1ee1376eba8ec",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "64386f1da68b43dd85c7b31728414009"
+  },
+  {
+    "uuid": "ff11526bdae442eba75e09c5e2d91725",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "f4df6b9b7c1141f3ae504978bea132d0"
+  },
+  {
+    "uuid": "7e553882be614e75a629569d7c55f832",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "cae4d1b02461468b9969153bdd8600ae"
+  },
+  {
+    "uuid": "80ad65ccba5348efa3d96c926df0db22",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "d0015699d8fb47c5b8e9c8ad20e1d281"
+  },
+  {
+    "uuid": "e19b317597384f0aafa38eaea6658661",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "7f818286f06646e8a8f4cdfb58e63aed"
+  },
+  {
+    "uuid": "83ce966cd5b647bfad18c8f3037168a1",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "c67cd485c71f44f2bc6a2040a54569a3"
+  },
+  {
+    "uuid": "52208c054e5a4adc827453de26d28cea",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "081b4d41d51e4dfeaf955320028afe42"
+  },
+  {
+    "uuid": "ce307681807a438dab222ea15ccab122",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "334d265e3b504ce88513ee572754966c"
+  },
+  {
+    "uuid": "b91740d194664edc90d126e504082741",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "351aa468686243cf8a89165286506528"
+  },
+  {
+    "uuid": "5bf88015b68740f18cc8e3eed776caf9",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "440951ac12be46b09db299ad4d1d45d4"
+  },
+  {
+    "uuid": "932610330ff84731b4c2db0021044af6",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "210e6ecd5a0843a2a27bee948e0d3f3b"
+  },
+  {
+    "uuid": "842387b99320414a9e6c898e200753b9",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "52325fe9038443b5a33e94217b7e6f2d"
+  },
+  {
+    "uuid": "e27bcf5aa49c403f8714da67c473d542",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "0a114f6e97b34efb93f804ec34561399"
+  },
+  {
+    "uuid": "56b6cdea19c14e0d9015aedd8823e937",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "dfb567e111aa4dd4b05da180fa915ac6"
+  },
+  {
+    "uuid": "55c642ff21b64723bc605476c0d66abb",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "58dca81bc6374a4d939817de49d670b0"
+  },
+  {
+    "uuid": "c540b39e5fb74111ad9f3a1b4f85698b",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "098bf6f1def044a283447c59a768cc09"
+  },
+  {
+    "uuid": "354c9e795fe742c7992ae913c2a8c661",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "6c4bcd0aee3944a4bd927d4de070a40d"
+  },
+  {
+    "uuid": "e2bf9b81e2c44b228ec75c995a8902a9",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "6d9f5b1f910b48ce92dc0a0b24872d05"
+  },
+  {
+    "uuid": "95641e52ba27457db57936e4fb1d9f82",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "d3d8130f9e564740a445206ef3e83190"
+  },
+  {
+    "uuid": "c2a737d6a272493e81c9f5d24a7bfbd2",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "d6b05074f91746dfb90865a3b1250706"
+  },
+  {
+    "uuid": "803fca5d1c2d49f3a6c5d56257282203",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "0a77ecfaf38249cd9e921001e4c66825"
+  },
+  {
+    "uuid": "cc150bacef6b43fc88efe2498e02b1eb",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "83deddd6f0374145949869f9676b40ee"
+  },
+  {
+    "uuid": "819d48feeb2c4a0c968c885205aba7fb",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "f70d01180bf84dedafd3b7bb9dc422c5"
+  },
+  {
+    "uuid": "73c04d18dd1d48dd8becdb5b199efa75",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "5f87751f0f3e486694a4c8df6f4ce182"
+  },
+  {
+    "uuid": "351d71677d4d44abbc8fde531ad44ed5",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "cc783d6621bc486ca1da0c312b4ee8d9"
+  },
+  {
+    "uuid": "b497a7a6f2c5424aa0847284942cdc71",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "afdf586efd034364a1ee7466d9a3498c"
+  },
+  {
+    "uuid": "be08c03b79a4476ba959dfa008ba8792",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "d932069c06184d608648999fccacd683"
+  },
+  {
+    "uuid": "9e9850e825ae4a63996e35f457526d5c",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "b93577e358ac4d32bad5c23bb6dd0e85"
+  },
+  {
+    "uuid": "b01db5dfbea04761b80bb60b0f63f3f3",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "57cee7c2fb004c97b42a6d0cae838260"
+  },
+  {
+    "uuid": "69c31f9f2052497eb7852ea2e61a928f",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "abb5cc91a0e441a19840d9ebba87dcf8"
+  },
+  {
+    "uuid": "225fb46808df4e258eee976f7b510374",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "7345f81b50cb4a24a042890a6c18c28e"
+  },
+  {
+    "uuid": "4d674c58d06645fb84414942e3d70548",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "fa38121e646b4d23bd3b054faabcb976"
+  },
+  {
+    "uuid": "a28ed897c3e24d96ac22c4f422349212",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "b545cb1a8d5746af81a7c42980095249"
+  },
+  {
+    "uuid": "b297bbd668b54832a194698c3f91b905",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "c1dc9a70648a4476b37f1031a123167d"
+  },
+  {
+    "uuid": "8339402ed59b40bd9d1e1ac40162b49c",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "e14cedabaa3c488393c72c625b68ce86"
+  },
+  {
+    "uuid": "955a920b950d43f2ab3c78bee2b317ce",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "8298c43156a94becad22ff81f3ffa3f5"
+  },
+  {
+    "uuid": "0d538c06b7f34ef6aac91b2863c3b255",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "ecb40505863345e0bba58aae97814100"
+  },
+  {
+    "uuid": "d2837f28a7a840509481181b10282e56",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "95275229f42c4fd3801d3f0cab2ebab2"
+  },
+  {
+    "uuid": "1dcac793f6834b3bb182ad46eb395a10",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "194b33ab02f04ef8b11a9b71c8da941a"
+  },
+  {
+    "uuid": "ca13af21172e463ea1bc375061aa5faa",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "b3b5ee25ca3b4b28bcc9768f0e3e815a"
+  },
+  {
+    "uuid": "6ed98f2c2ee24417962a9dbc9c5ce73b",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "f3b74ff548994d9fb5262b9516926d30"
+  },
+  {
+    "uuid": "99a228be5da144e2ba0b1ce8a00614b0",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "c9f73ebb21e04055903c1c0a8b0d4a2d"
+  },
+  {
+    "uuid": "7f5a2f66c6924ae1897fa946811d2f9d",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "b5a839d2235e4bb69989820ffb2ae834"
+  },
+  {
+    "uuid": "eff4971b95674ef0affa37f23043733f",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "e655cf1eb0fd47c4951ad5170db95179"
+  },
+  {
+    "uuid": "5da56405988f4440b4c3e645e542bf05",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "bb42c994192449b29346791b78d48b71"
+  },
+  {
+    "uuid": "31df84e7adf14b3390aa9d9c07ba3051",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "f4c80cdd14294537b64fc40cf88f99d7"
+  },
+  {
+    "uuid": "b3764fd95edf41309b0fbf9869abb85c",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "0995e9cd75454adbbe32458f4693d69b"
+  },
+  {
+    "uuid": "fd3daf4391964055ba76d58e4f13d5cb",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "7140bf0d0b3b4658b209eef8d6a5242d"
+  },
+  {
+    "uuid": "1293798a3b1749bf92cc79db955c0f5b",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "9525d5253c584a3b8ee6f77710ca7116"
+  },
+  {
+    "uuid": "74969486c2254fe782767b9541578e7a",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "37f357c3ca8b4200a85189daa9352580"
+  },
+  {
+    "uuid": "78a56b7b52a84e79aa70dee67123e35e",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "76aa46c3c9514c27a2c9523255d5e108"
+  },
+  {
+    "uuid": "eff8526ef64843cca0f4b79e048e6299",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "22d48e37544b4862869a42ee6fb6f259"
+  },
+  {
+    "uuid": "e75498e7e99641fa8f4581c0abf7bca9",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "3d5adeeb117e45babf9671f6893c4472"
+  },
+  {
+    "uuid": "4cc082f593f24de4a1abe2dd208faf9d",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "1971f817252c49ac9ab8072ed438d61d"
+  },
+  {
+    "uuid": "7aca967809f54e68b0101c930ad1321b",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "274d2138b8cb4c719311e13c79f0de6b"
+  },
+  {
+    "uuid": "196cc508e9f846d592ae2f0cbe97d1b7",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "ae028f62df6541748c557afda418ed55"
+  },
+  {
+    "uuid": "e912de0f205943d896cc9ca0896c7078",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "00b85e7d755e48caaa56c5f3dfe66cd2"
+  },
+  {
+    "uuid": "a84bcf02aba846f28f64b72c28eddf7d",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "5f155353b93344f8a1bf2818f8e4d672"
+  },
+  {
+    "uuid": "83696c66f1124661b9cfd02fd2666018",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "65eacd46003f4ffd8c712228c9b9f2d4"
+  },
+  {
+    "uuid": "4c9cf5336a954c02999b73ab260830a7",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "a017156830a4439e8b8e4e50a059d122"
+  },
+  {
+    "uuid": "4e4750cd11fd4816ab7e4b067c323309",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "896ad22e30b947e5bce8216aff504447"
+  },
+  {
+    "uuid": "d9e41b0d87c34850bbef09e73400ca61",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "9464cc8ad90e46c0b9d5be51c7356c33"
+  },
+  {
+    "uuid": "2911033a5b4d46e884582a8e2856dae6",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "d6bdf866898e41758fbc21652d5e7865"
+  },
+  {
+    "uuid": "19025cd64f984e3486db93c9342fc195",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "839ded75a8c64f36935c305865ddf9ae"
+  },
+  {
+    "uuid": "f88506f1f219469990cefc47ff24c537",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "a51346e825d24438b71e6c9489f2c42b"
+  },
+  {
+    "uuid": "2f13047d893f431680593f838aa169c9",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "a3e06abca96942b4af76abc39f2d0c9d"
+  },
+  {
+    "uuid": "12225c4a45034469b0505339fff1471e",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "6a1bcfac7c424df89566339852ca262d"
+  },
+  {
+    "uuid": "0b07d07d138241459b8b73ffc443c88e",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "bfc8b3d2f7be4fe69d21cd08c42018cf"
+  },
+  {
+    "uuid": "22fdfb7c9592412b8651f3b4ad1d9012",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "573c664b39c44539aa32f191066d0b57"
+  },
+  {
+    "uuid": "edb2db19fc824e5b92a763766781b574",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "589297ae2ed34fb685b2d4b92dc0aecb"
+  },
+  {
+    "uuid": "8eff369b86464d3a8b9a42782ea52e6e",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "668e572bbb994ca68ce95ebef164a5af"
+  },
+  {
+    "uuid": "6c160610ea064cda9d0f760156424a50",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "eb00b2fe59be421e8d67fb471c234ec2"
+  },
+  {
+    "uuid": "0bf14e62f05e4fc1bbc64226e4e9fa65",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "8051c33092b445abb785ae07a3eb8030"
+  },
+  {
+    "uuid": "dcd9a45832994c8fa2d8878a36c31cc8",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "666b150ea3e34e1aaf693c926ceca91b"
+  },
+  {
+    "uuid": "84fb65c1b00b4c94aa1c024356c49f28",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "44a18a49e79c4b9a94b1228c7663e19c"
+  },
+  {
+    "uuid": "e3a9088b2a0942bd99e789aaf4064463",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "2fbb6698b9ae43fbaefe29a945603656"
+  },
+  {
+    "uuid": "7cb6fb15b268433b885bff04ef1ee6df",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "321a6736dbc8432cacfab29e06d55b45"
+  },
+  {
+    "uuid": "45acc482a3ff43dc80f57aa58ec49ba7",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "28d5156fc0e24887a9f59586e7f7e857"
+  },
+  {
+    "uuid": "17bc0dcf29194a64bf247b744f6eed2e",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "61689967f8ee4f7ab0bf2eb3238bc55a"
+  },
+  {
+    "uuid": "6f275628d0a645f0ad3aa59f17b53943",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "93317d846d5a4c74a5606035c0cef4b3"
+  },
+  {
+    "uuid": "f848360c57fd4d7e8ea266848112eec9",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "18ee8d09f2564d9796c992d2fd6dda41"
+  },
+  {
+    "uuid": "ae1b459bf27a42d79a158a9e0edf7544",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "2cbe71a1a0664ea1b6e2b64f5090b16e"
+  },
+  {
+    "uuid": "5f6c24ae7449445f82832194eacf5aca",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "0f693fe86ed4479c877f8506a8f63513"
+  },
+  {
+    "uuid": "b231448249bc4d80b8669b528f01d223",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "a1f740f51f4645aba55dc2ecfe1c064e"
+  },
+  {
+    "uuid": "bc9b9a0acab1446887e639f1ec66e8d8",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "e821eb35517f4a0e92809eb1bd9f5ac9"
+  },
+  {
+    "uuid": "f3251042393c47e8ae8f8b49504d14a5",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "b2bc3550fdf1459eab9895a74a0dde73"
+  },
+  {
+    "uuid": "e7388d7d075346c48e4d44871f5dbbb4",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "e50eccbc9aef4ea7a99c8e48492aebb0"
+  },
+  {
+    "uuid": "85a60d15e8774933add5fb1ca07128e8",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "65d5ef0bd3f248058aea5d4e86ae798e"
+  },
+  {
+    "uuid": "95b92b57e1654538b51340a6341feb05",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "9854dfddde3b4069b52deca1b3b3bf27"
+  },
+  {
+    "uuid": "d0557673b0c24a519425749521bd3dac",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "6d44232bcda848d1aca85cf8f5a3a003"
+  },
+  {
+    "uuid": "e4646cd76b714c04a865eec60cff2135",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "25653e22d19d40178e1d6c536540177a"
+  },
+  {
+    "uuid": "379e243553eb4551987e034ce7a47e09",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "fe925110816745f7979430dd32099da9"
+  },
+  {
+    "uuid": "c0f470e1b74946e5a2f31d80eac62518",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "d2bb437060824da0a2eefedff3663566"
+  },
+  {
+    "uuid": "b4646cc879984f2a904083c397e49a58",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "75b7f3271a634871988745f55e267a5e"
+  },
+  {
+    "uuid": "aa5067bbfa214e1896a5127c6fc684fa",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "aedbd87b1c0046069b51777d448bfc80"
+  },
+  {
+    "uuid": "7ee81c7368384b12a99caa3d48c38534",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "da4e3452bc4541e197ebfb695ac19cab"
+  },
+  {
+    "uuid": "e7c141ab86a144f1a10fb7ce4f39400c",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "f6e7a9e95a5041a6baddfea5627a73c3"
+  },
+  {
+    "uuid": "55339ef8f42b4348a5effa348ff0e5df",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "871269ad7a7c4b1692e9115eca9e0828"
+  },
+  {
+    "uuid": "c4a26db8e43749079ce9bf566ea00260",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "7dd98eb72fc0470d9d30fcce00cd15a3"
+  },
+  {
+    "uuid": "c46cb9b05cde4c35b489172c5347f6d0",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "2a96134d89464a09a9494664f84d6204"
+  },
+  {
+    "uuid": "8fd33503b0214d918ad4092bb6107faf",
+    "periodo_inicio": "2026-08-01",
+    "periodo_fin": "2027-07-31",
+    "inspector_tipo_liquidacion_uuid": "7b39671e971746f2813bb2f4734e3df0"
+  }
+]

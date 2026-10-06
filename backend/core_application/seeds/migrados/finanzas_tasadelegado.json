@@ -1,0 +1,62 @@
+[
+  {
+    "uuid": "7b6848ebe2be4a4dbf546b0ed6eb7a54",
+    "periodo_inicio": "1900-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "41248a73d7c847b9afabaa34e799b728",
+    "nombre": "Tasas Delegado Edificacion (vigencia histórica)",
+    "renta_cip": 0.25,
+    "aporte_codemu": 0.05,
+    "fondo_comun": 0.1
+  },
+  {
+    "uuid": "e805c425b7bd4121bef7a7f03e1a4d3f",
+    "periodo_inicio": "1900-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "57f7a9e86e364a718ab4a665335c242f",
+    "nombre": "Tasas Delegado Habilitacion Urbana (vigencia histórica)",
+    "renta_cip": 0.25,
+    "aporte_codemu": 0.05,
+    "fondo_comun": 0.1
+  },
+  {
+    "uuid": "618465fe7438417c9c612aed9136bb9c",
+    "periodo_inicio": "1900-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "dcb1fa01603242aba31dc621f15b1c06",
+    "nombre": "Tasas Delegado Mecanica Suelos (vigencia histórica)",
+    "renta_cip": 0.25,
+    "aporte_codemu": 0.05,
+    "fondo_comun": 0.1
+  },
+  {
+    "uuid": "cb262c8661d848aba66dcbef07ed2cca",
+    "periodo_inicio": "1900-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "0ef1521731c141538de6d25bffd269ee",
+    "nombre": "Tasas Delegado Impacto Vial (vigencia histórica)",
+    "renta_cip": 0.25,
+    "aporte_codemu": 0.05,
+    "fondo_comun": 0.1
+  },
+  {
+    "uuid": "04610c6335aa4d4496a082705f76d5f3",
+    "periodo_inicio": "1900-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "c8fe06ffb914407ba7aa7fe80d31c599",
+    "nombre": "Tasas Delegado Taludes (vigencia histórica)",
+    "renta_cip": 0.25,
+    "aporte_codemu": 0.05,
+    "fondo_comun": 0.1
+  },
+  {
+    "uuid": "c955b2d4cf1244ed8e8d40429abf1260",
+    "periodo_inicio": "1900-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "f5fd5fda1bdd4a1585c1b2c58a58f48f",
+    "nombre": "Tasas Delegado Inspeccion Obra (vigencia histórica)",
+    "renta_cip": 0.25,
+    "aporte_codemu": 0.05,
+    "fondo_comun": 0.1
+  }
+]

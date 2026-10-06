@@ -1,0 +1,982 @@
+[
+  {
+    "uuid": "6ae93e7b831a478c8e1f3f6074ab71d7",
+    "departamento_uuid": "8c33a750e6564d6fa0e24c988aeee79f",
+    "nombre": "BAGUA"
+  },
+  {
+    "uuid": "b4eb44ea66dc48c18b20c1f039e38ba1",
+    "departamento_uuid": "8c33a750e6564d6fa0e24c988aeee79f",
+    "nombre": "BONGARA"
+  },
+  {
+    "uuid": "8feba374425749a187cdda7d6bc53f59",
+    "departamento_uuid": "8c33a750e6564d6fa0e24c988aeee79f",
+    "nombre": "CHACHAPOYAS"
+  },
+  {
+    "uuid": "d04b350acaf84c2ab997b86671f8dbe1",
+    "departamento_uuid": "8c33a750e6564d6fa0e24c988aeee79f",
+    "nombre": "CONDORCANQUI"
+  },
+  {
+    "uuid": "90035ebb75eb48d2bc7de9e3569feace",
+    "departamento_uuid": "8c33a750e6564d6fa0e24c988aeee79f",
+    "nombre": "LUYA"
+  },
+  {
+    "uuid": "68851468d8e546a2a863a4407f6ab31b",
+    "departamento_uuid": "8c33a750e6564d6fa0e24c988aeee79f",
+    "nombre": "RODRIGUEZ DE MENDOZA"
+  },
+  {
+    "uuid": "b93fa01063744d7abf1b800ff94b8c2c",
+    "departamento_uuid": "8c33a750e6564d6fa0e24c988aeee79f",
+    "nombre": "UTCUBAMBA"
+  },
+  {
+    "uuid": "c53559c500fd4e14bd8e1e9bc0aab46d",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "AIJA"
+  },
+  {
+    "uuid": "d0a1991dc41247e0940612d9b782cf78",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "ANTONIO RAYMONDI"
+  },
+  {
+    "uuid": "0d40c3f71ff5483e89ebe2fa93db1530",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "ASUNCION"
+  },
+  {
+    "uuid": "ab299815392d457e9e4f2239051236d4",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "BOLOGNESI"
+  },
+  {
+    "uuid": "e56c2f28184345b3be446aa808f1e584",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "CARHUAZ"
+  },
+  {
+    "uuid": "f312d5fb4a6f45c79999493c059b03cf",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "CARLOS FERMIN FITZCARRALD"
+  },
+  {
+    "uuid": "0feb0b952f26437ba86624313893259a",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "CASMA"
+  },
+  {
+    "uuid": "d6a9f8b56d23448585f676e1b8e27d42",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "CORONGO"
+  },
+  {
+    "uuid": "c9e3e49ae1484ae982302e1fed469c75",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "HUARAZ"
+  },
+  {
+    "uuid": "4ab7042631364a2f9ac0224089f9a1bb",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "HUARI"
+  },
+  {
+    "uuid": "de0c80de87c84b5cbea82dd55e910089",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "HUARMEY"
+  },
+  {
+    "uuid": "4b73ccefadab4cd686fd4d08b08efc37",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "HUAYLAS"
+  },
+  {
+    "uuid": "974b15aea4144852a436b3bddd63a24d",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "MARISCAL LUZURIAGA"
+  },
+  {
+    "uuid": "ac8a8f3ee89444269267d99819632c27",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "OCROS"
+  },
+  {
+    "uuid": "eb62ab7cc7574f86bc9b7c807cb81c6f",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "PALLASCA"
+  },
+  {
+    "uuid": "019a6307aa184540afa1730e8b93fea6",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "POMABAMBA"
+  },
+  {
+    "uuid": "d3e04c9df5af4c9da59ddf8683bef7cf",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "RECUAY"
+  },
+  {
+    "uuid": "04a194cccff048c2b8e92aaf16d64bb6",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "SANTA"
+  },
+  {
+    "uuid": "ee35ab3032d3486aa0e24932baa352cd",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "SIHUAS"
+  },
+  {
+    "uuid": "82dc0a5ac5254807a22220dcd8ec2b75",
+    "departamento_uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "YUNGAY"
+  },
+  {
+    "uuid": "2676609878024933be313a5bc4c68c71",
+    "departamento_uuid": "354067ea6ac94e8d96d4cf77e1ead664",
+    "nombre": "ABANCAY"
+  },
+  {
+    "uuid": "d17827b3d98f400b9ad54f4abfe76109",
+    "departamento_uuid": "354067ea6ac94e8d96d4cf77e1ead664",
+    "nombre": "ANDAHUAYLAS"
+  },
+  {
+    "uuid": "a08f39df7f9046fca5dcd193655cacf6",
+    "departamento_uuid": "354067ea6ac94e8d96d4cf77e1ead664",
+    "nombre": "ANTABAMBA"
+  },
+  {
+    "uuid": "654a25414063490d85b05aef7d368dd2",
+    "departamento_uuid": "354067ea6ac94e8d96d4cf77e1ead664",
+    "nombre": "AYMARAES"
+  },
+  {
+    "uuid": "0d36ae527cd7476bb99168afd0866329",
+    "departamento_uuid": "354067ea6ac94e8d96d4cf77e1ead664",
+    "nombre": "CHINCHEROS"
+  },
+  {
+    "uuid": "fd6e9e876bdc43b2b0959a4e9b499697",
+    "departamento_uuid": "354067ea6ac94e8d96d4cf77e1ead664",
+    "nombre": "COTABAMBAS"
+  },
+  {
+    "uuid": "5b20134573d74e0c84b238cf7e519fa5",
+    "departamento_uuid": "354067ea6ac94e8d96d4cf77e1ead664",
+    "nombre": "GRAU"
+  },
+  {
+    "uuid": "feb236b0c304423a9f078779029410ab",
+    "departamento_uuid": "a96be04c421d4282a5c34aea8a5b5a95",
+    "nombre": "AREQUIPA"
+  },
+  {
+    "uuid": "27707ba1c154468c8e3310136a45997b",
+    "departamento_uuid": "a96be04c421d4282a5c34aea8a5b5a95",
+    "nombre": "CAMANA"
+  },
+  {
+    "uuid": "96d5d460bdce4311af695fcfe09e66b0",
+    "departamento_uuid": "a96be04c421d4282a5c34aea8a5b5a95",
+    "nombre": "CARAVELI"
+  },
+  {
+    "uuid": "a4c057777537439ba7084822ebf31cc3",
+    "departamento_uuid": "a96be04c421d4282a5c34aea8a5b5a95",
+    "nombre": "CASTILLA"
+  },
+  {
+    "uuid": "8128af834df34f91aebbaca90b48170a",
+    "departamento_uuid": "a96be04c421d4282a5c34aea8a5b5a95",
+    "nombre": "CAYLLOMA"
+  },
+  {
+    "uuid": "0b57bab0f616420086d4149964c4b927",
+    "departamento_uuid": "a96be04c421d4282a5c34aea8a5b5a95",
+    "nombre": "CONDESUYOS"
+  },
+  {
+    "uuid": "dc695f6a5d50424c8df1f9a2ca899447",
+    "departamento_uuid": "a96be04c421d4282a5c34aea8a5b5a95",
+    "nombre": "ISLAY"
+  },
+  {
+    "uuid": "c4237c3dd49244f19e03e89f2748d65d",
+    "departamento_uuid": "a96be04c421d4282a5c34aea8a5b5a95",
+    "nombre": "LA UNION"
+  },
+  {
+    "uuid": "780d5168411045158a18d65ee1fae013",
+    "departamento_uuid": "e416af5133194588b3bd2b59dd529abd",
+    "nombre": "CANGALLO"
+  },
+  {
+    "uuid": "06e44dec77bf4e26b650676711b9ea11",
+    "departamento_uuid": "e416af5133194588b3bd2b59dd529abd",
+    "nombre": "HUAMANGA"
+  },
+  {
+    "uuid": "8e2a7c5bd9174686a77cf1885330dd1a",
+    "departamento_uuid": "e416af5133194588b3bd2b59dd529abd",
+    "nombre": "HUANCA SANCOS"
+  },
+  {
+    "uuid": "9abb459ec0d0426bb1459c31973793dd",
+    "departamento_uuid": "e416af5133194588b3bd2b59dd529abd",
+    "nombre": "HUANTA"
+  },
+  {
+    "uuid": "69bbee3a3eec437a90733534ac56fe6f",
+    "departamento_uuid": "e416af5133194588b3bd2b59dd529abd",
+    "nombre": "LA MAR"
+  },
+  {
+    "uuid": "517abde2c0a14e3bac1227195d8cc75c",
+    "departamento_uuid": "e416af5133194588b3bd2b59dd529abd",
+    "nombre": "LUCANAS"
+  },
+  {
+    "uuid": "1da03e87831d49c6993da2c445657eb6",
+    "departamento_uuid": "e416af5133194588b3bd2b59dd529abd",
+    "nombre": "PARINACOCHAS"
+  },
+  {
+    "uuid": "0bfe7e1be72e4bc48fe7378cccec432e",
+    "departamento_uuid": "e416af5133194588b3bd2b59dd529abd",
+    "nombre": "PAUCAR DEL SARA SARA"
+  },
+  {
+    "uuid": "94a83b88e2e74db4844e2f3e442203f0",
+    "departamento_uuid": "e416af5133194588b3bd2b59dd529abd",
+    "nombre": "SUCRE"
+  },
+  {
+    "uuid": "4ed1273d96be4985972c2d9a64e889e1",
+    "departamento_uuid": "e416af5133194588b3bd2b59dd529abd",
+    "nombre": "VICTOR FAJARDO"
+  },
+  {
+    "uuid": "6ee72ebdc52c4ce5a600fd7775213237",
+    "departamento_uuid": "e416af5133194588b3bd2b59dd529abd",
+    "nombre": "VILCAS HUAMAN"
+  },
+  {
+    "uuid": "a90fa17917b844fcaa48ddd5f7ec3105",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "CAJABAMBA"
+  },
+  {
+    "uuid": "a820137d65d540ccaa442ffa470f611e",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "CAJAMARCA"
+  },
+  {
+    "uuid": "a50e46ce7786419c94c8c132c6af2f81",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "CELENDIN"
+  },
+  {
+    "uuid": "989e4d7abbd648eab5bd101049464399",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "CHOTA"
+  },
+  {
+    "uuid": "67475677632d4d2eba5b44471213e522",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "CONTUMAZA"
+  },
+  {
+    "uuid": "5a334f1f285e4263b7ee9e0f914d29ba",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "CUTERVO"
+  },
+  {
+    "uuid": "e40df142f0594e58aa8c79e68f848bd9",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "HUALGAYOC"
+  },
+  {
+    "uuid": "7324c3714b084f07b42b20c34134bcf6",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "JAEN"
+  },
+  {
+    "uuid": "bb267c0220ac43d6a272e4a8e6e96709",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "SAN IGNACIO"
+  },
+  {
+    "uuid": "80bf5eba30574f66953fe2af3cbea32d",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "SAN MARCOS"
+  },
+  {
+    "uuid": "f869960a9c1c44b2ab5878927e29eb42",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "SAN MIGUEL"
+  },
+  {
+    "uuid": "0ee820cff9d945a0b58a2095ec907c05",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "SAN PABLO"
+  },
+  {
+    "uuid": "5c3e8feecc3a4c7f8646a9842da2375f",
+    "departamento_uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "SANTA CRUZ"
+  },
+  {
+    "uuid": "42950214e04b4785be49c5320443d788",
+    "departamento_uuid": "3a45672aed42443cbc35d3d838f12442",
+    "nombre": "CALLAO"
+  },
+  {
+    "uuid": "9358f95120f54dfe966d2c34d05e0bb5",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "ACOMAYO"
+  },
+  {
+    "uuid": "4c8637019f974677a37fc81124350802",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "ANTA"
+  },
+  {
+    "uuid": "00510629d9574389978b102e47ff34cd",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "CALCA"
+  },
+  {
+    "uuid": "1b5094cb6d904e1e94875edef4cb1294",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "CANAS"
+  },
+  {
+    "uuid": "3c6ce44c051346a6a1321c3489dc0c9d",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "CANCHIS"
+  },
+  {
+    "uuid": "0814e6bff5d94a02a1d98019b8d9865e",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "CHUMBIVILCAS"
+  },
+  {
+    "uuid": "9c02798e789347beb055e8a91db1e5a9",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "CUSCO"
+  },
+  {
+    "uuid": "165ab21528254c09b6b384a0b48dd1e5",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "ESPINAR"
+  },
+  {
+    "uuid": "059488b7f91d4646bb6953715b5c5230",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "LA CONVENCION"
+  },
+  {
+    "uuid": "ca46e93c73bd48dabae9168dd56d94dd",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "PARURO"
+  },
+  {
+    "uuid": "576d8b4dc30b4d7ca657323e8efafa5c",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "PAUCARTAMBO"
+  },
+  {
+    "uuid": "a46221ae8c094bd186fdb9a39ee55b86",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "QUISPICANCHI"
+  },
+  {
+    "uuid": "0c663bfc3f29487887c6a466ee988853",
+    "departamento_uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "URUBAMBA"
+  },
+  {
+    "uuid": "9b76b4d8da9b423fac1620714a2087c7",
+    "departamento_uuid": "face4d0fe12544829911e3b9ae49ab16",
+    "nombre": "ACOBAMBA"
+  },
+  {
+    "uuid": "f7b94df817234bca9d200090027cbbd5",
+    "departamento_uuid": "face4d0fe12544829911e3b9ae49ab16",
+    "nombre": "ANGARAES"
+  },
+  {
+    "uuid": "f31ca36ecea14c78a36e24f4172f32d5",
+    "departamento_uuid": "face4d0fe12544829911e3b9ae49ab16",
+    "nombre": "CASTROVIRREYNA"
+  },
+  {
+    "uuid": "a1a09e1016b64415b72f5c7bd2c485e6",
+    "departamento_uuid": "face4d0fe12544829911e3b9ae49ab16",
+    "nombre": "CHURCAMPA"
+  },
+  {
+    "uuid": "fa499438c48f43f4bb2e293513c525e7",
+    "departamento_uuid": "face4d0fe12544829911e3b9ae49ab16",
+    "nombre": "HUANCAVELICA"
+  },
+  {
+    "uuid": "19811dce478d44c0911125f4561ea64c",
+    "departamento_uuid": "face4d0fe12544829911e3b9ae49ab16",
+    "nombre": "HUAYTARA"
+  },
+  {
+    "uuid": "d6668f51319c4e4dbcd34ab1f9a16c91",
+    "departamento_uuid": "face4d0fe12544829911e3b9ae49ab16",
+    "nombre": "TAYACAJA"
+  },
+  {
+    "uuid": "f5ecffc126854a2ca530c5ca484513db",
+    "departamento_uuid": "1ac2f4495f0849cfbba86641302c9b49",
+    "nombre": "AMBO"
+  },
+  {
+    "uuid": "9036d82dcebc4c56a69d5801e7c1d32a",
+    "departamento_uuid": "1ac2f4495f0849cfbba86641302c9b49",
+    "nombre": "DOS DE MAYO"
+  },
+  {
+    "uuid": "31af4644f626410ba2fe21626fa82641",
+    "departamento_uuid": "1ac2f4495f0849cfbba86641302c9b49",
+    "nombre": "HUACAYBAMBA"
+  },
+  {
+    "uuid": "be0b8a1a0b2e41969370845fb7d6fc43",
+    "departamento_uuid": "1ac2f4495f0849cfbba86641302c9b49",
+    "nombre": "HUAMALIES"
+  },
+  {
+    "uuid": "bd143c55dc1a4496b111629e702afb16",
+    "departamento_uuid": "1ac2f4495f0849cfbba86641302c9b49",
+    "nombre": "HUANUCO"
+  },
+  {
+    "uuid": "9a5e462802624955b9ab9e195a1187f7",
+    "departamento_uuid": "1ac2f4495f0849cfbba86641302c9b49",
+    "nombre": "LAURICOCHA"
+  },
+  {
+    "uuid": "fb6359cbc9654737ae2ebf3e097f3459",
+    "departamento_uuid": "1ac2f4495f0849cfbba86641302c9b49",
+    "nombre": "LEONCIO PRADO"
+  },
+  {
+    "uuid": "1d9f732e00df47b4af8d0eb3c237f490",
+    "departamento_uuid": "1ac2f4495f0849cfbba86641302c9b49",
+    "nombre": "MARAÑON"
+  },
+  {
+    "uuid": "67a4cbcd8fef4badab848192073cefde",
+    "departamento_uuid": "1ac2f4495f0849cfbba86641302c9b49",
+    "nombre": "PACHITEA"
+  },
+  {
+    "uuid": "9c596401680c41adbbccbe410e2da0de",
+    "departamento_uuid": "1ac2f4495f0849cfbba86641302c9b49",
+    "nombre": "PUERTO INCA"
+  },
+  {
+    "uuid": "b01864e69364445982674a876509819d",
+    "departamento_uuid": "1ac2f4495f0849cfbba86641302c9b49",
+    "nombre": "YAROWILCA"
+  },
+  {
+    "uuid": "ffdfb48b06e24aabadd6a78ec74360af",
+    "departamento_uuid": "95204e83cd2f4a47bebb60a10a5cd412",
+    "nombre": "CHINCHA"
+  },
+  {
+    "uuid": "b30549ae805a487a906b827a37660c0e",
+    "departamento_uuid": "95204e83cd2f4a47bebb60a10a5cd412",
+    "nombre": "ICA"
+  },
+  {
+    "uuid": "4d68ac22b9fa4cf8bab9bae8de4d141a",
+    "departamento_uuid": "95204e83cd2f4a47bebb60a10a5cd412",
+    "nombre": "NAZCA"
+  },
+  {
+    "uuid": "4e73d7cb36fc4305857d433cf08b37a6",
+    "departamento_uuid": "95204e83cd2f4a47bebb60a10a5cd412",
+    "nombre": "PALPA"
+  },
+  {
+    "uuid": "5e00af074e9f48b2bb24fac051d19036",
+    "departamento_uuid": "95204e83cd2f4a47bebb60a10a5cd412",
+    "nombre": "PISCO"
+  },
+  {
+    "uuid": "a5278c08137b4e9fb3def8d3fe5ff7ca",
+    "departamento_uuid": "ea4fc941aae04c74ba8b13217a03ed13",
+    "nombre": "CHANCHAMAYO"
+  },
+  {
+    "uuid": "da3895ba41834779ac247cf4ebebb64c",
+    "departamento_uuid": "ea4fc941aae04c74ba8b13217a03ed13",
+    "nombre": "CHUPACA"
+  },
+  {
+    "uuid": "6b8b9ac3b239425a8777d74476b559a8",
+    "departamento_uuid": "ea4fc941aae04c74ba8b13217a03ed13",
+    "nombre": "CONCEPCION"
+  },
+  {
+    "uuid": "d35938bd8c394c5cbd76aac1ea377f35",
+    "departamento_uuid": "ea4fc941aae04c74ba8b13217a03ed13",
+    "nombre": "HUANCAYO"
+  },
+  {
+    "uuid": "b882bd996ab64bcb943d62f7ba2d32f1",
+    "departamento_uuid": "ea4fc941aae04c74ba8b13217a03ed13",
+    "nombre": "JAUJA"
+  },
+  {
+    "uuid": "56833aa714304480a72022e6069ee618",
+    "departamento_uuid": "ea4fc941aae04c74ba8b13217a03ed13",
+    "nombre": "JUNIN"
+  },
+  {
+    "uuid": "072e999863754706a73241652158634d",
+    "departamento_uuid": "ea4fc941aae04c74ba8b13217a03ed13",
+    "nombre": "SATIPO"
+  },
+  {
+    "uuid": "4ffac645c2864fa490a86ecffbd0c620",
+    "departamento_uuid": "ea4fc941aae04c74ba8b13217a03ed13",
+    "nombre": "TARMA"
+  },
+  {
+    "uuid": "d8565cbf7d6e478e93674022083ace7d",
+    "departamento_uuid": "ea4fc941aae04c74ba8b13217a03ed13",
+    "nombre": "YAULI"
+  },
+  {
+    "uuid": "713fb68d58434d1c8bd9bebb98fa64fd",
+    "departamento_uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "ASCOPE"
+  },
+  {
+    "uuid": "342e6343b9fd4cef9da7c65abdf55153",
+    "departamento_uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "BOLIVAR"
+  },
+  {
+    "uuid": "032b9998e37e4af48c711471194c52a5",
+    "departamento_uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "CHEPEN"
+  },
+  {
+    "uuid": "ce421abb3b1b4c048c64b1b6c042215d",
+    "departamento_uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "GRAN CHIMU"
+  },
+  {
+    "uuid": "abdc8f1be4b048448e31457e818539d7",
+    "departamento_uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "JULCAN"
+  },
+  {
+    "uuid": "ce86d8614508402ea01d4f9705902f93",
+    "departamento_uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "OTUZCO"
+  },
+  {
+    "uuid": "1e544525b534464c97b58530eee905e8",
+    "departamento_uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "PACASMAYO"
+  },
+  {
+    "uuid": "6272afc3231146a4acb4e69a164dd813",
+    "departamento_uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "PATAZ"
+  },
+  {
+    "uuid": "796bfbaa5647443b963c6b6385a86912",
+    "departamento_uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "SANCHEZ CARRION"
+  },
+  {
+    "uuid": "d612ae195c824dd9a8b620335504c96e",
+    "departamento_uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "SANTIAGO DE CHUCO"
+  },
+  {
+    "uuid": "35deeb4328b5473bb11a50712f7339f6",
+    "departamento_uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "TRUJILLO"
+  },
+  {
+    "uuid": "3556458227824a9ea337f579e8be981c",
+    "departamento_uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "VIRU"
+  },
+  {
+    "uuid": "97458646fcad4d66925edec4d68f3ca4",
+    "departamento_uuid": "85074a4d59c34d7bb7b1a931f08bd67f",
+    "nombre": "CHICLAYO"
+  },
+  {
+    "uuid": "a9698dd0460744969cc42082bca26614",
+    "departamento_uuid": "85074a4d59c34d7bb7b1a931f08bd67f",
+    "nombre": "FERREÑAFE"
+  },
+  {
+    "uuid": "ea6546218a32409abc0bf0da342e717d",
+    "departamento_uuid": "85074a4d59c34d7bb7b1a931f08bd67f",
+    "nombre": "LAMBAYEQUE"
+  },
+  {
+    "uuid": "b76721bab0364a8cbc4b8fa6487b2513",
+    "departamento_uuid": "2f32a325c58f4b16948d989cd21e2004",
+    "nombre": "BARRANCA"
+  },
+  {
+    "uuid": "0e22958ce08f47ff88b4950320b1e4c5",
+    "departamento_uuid": "2f32a325c58f4b16948d989cd21e2004",
+    "nombre": "CAJATAMBO"
+  },
+  {
+    "uuid": "3f03e96aafac457b85f0e56c45b7befa",
+    "departamento_uuid": "2f32a325c58f4b16948d989cd21e2004",
+    "nombre": "CANTA"
+  },
+  {
+    "uuid": "7261b82a4dac45d3a2733761fbd56433",
+    "departamento_uuid": "2f32a325c58f4b16948d989cd21e2004",
+    "nombre": "CAÑETE"
+  },
+  {
+    "uuid": "7e58148ef25f43a6a416b148530186cb",
+    "departamento_uuid": "2f32a325c58f4b16948d989cd21e2004",
+    "nombre": "HUARAL"
+  },
+  {
+    "uuid": "16009342e34d48e98554c3139187fa66",
+    "departamento_uuid": "2f32a325c58f4b16948d989cd21e2004",
+    "nombre": "HUAROCHIRI"
+  },
+  {
+    "uuid": "ef66a5af798047ea9686218bd2ab1a50",
+    "departamento_uuid": "2f32a325c58f4b16948d989cd21e2004",
+    "nombre": "HUAURA"
+  },
+  {
+    "uuid": "9afc21b97eac48e2be66b679b741639a",
+    "departamento_uuid": "2f32a325c58f4b16948d989cd21e2004",
+    "nombre": "LIMA"
+  },
+  {
+    "uuid": "51212402d4624d4789e1b5a14c9d764d",
+    "departamento_uuid": "2f32a325c58f4b16948d989cd21e2004",
+    "nombre": "OYON"
+  },
+  {
+    "uuid": "9e4f7b9872bd4dde9392e8ea4d3f3c4b",
+    "departamento_uuid": "2f32a325c58f4b16948d989cd21e2004",
+    "nombre": "YAUYOS"
+  },
+  {
+    "uuid": "42de7da8c08f4ab39b40d66268340532",
+    "departamento_uuid": "057fc38c8e3c426a87a0d0fd4f3e0aae",
+    "nombre": "ALTO AMAZONAS"
+  },
+  {
+    "uuid": "a39e9ede096c4356a6fbab3a70d20cff",
+    "departamento_uuid": "057fc38c8e3c426a87a0d0fd4f3e0aae",
+    "nombre": "DATEM DEL MARAÑON"
+  },
+  {
+    "uuid": "4898bed6e8d34c8cac2acf0282f4386e",
+    "departamento_uuid": "057fc38c8e3c426a87a0d0fd4f3e0aae",
+    "nombre": "LORETO"
+  },
+  {
+    "uuid": "e9c0628bfd364f44919bf91801f18e49",
+    "departamento_uuid": "057fc38c8e3c426a87a0d0fd4f3e0aae",
+    "nombre": "MARISCAL RAMON CASTILLA"
+  },
+  {
+    "uuid": "ff8ec8ac424a4d98a714c5da542621e9",
+    "departamento_uuid": "057fc38c8e3c426a87a0d0fd4f3e0aae",
+    "nombre": "MAYNAS"
+  },
+  {
+    "uuid": "705c3b1580b748288610185be761a00c",
+    "departamento_uuid": "057fc38c8e3c426a87a0d0fd4f3e0aae",
+    "nombre": "PUTUMAYO"
+  },
+  {
+    "uuid": "4b74f9c109284e7b869f7e7fd05a1dd3",
+    "departamento_uuid": "057fc38c8e3c426a87a0d0fd4f3e0aae",
+    "nombre": "REQUENA"
+  },
+  {
+    "uuid": "684f9aba1941411ca1f8e6c8f971235c",
+    "departamento_uuid": "057fc38c8e3c426a87a0d0fd4f3e0aae",
+    "nombre": "UCAYALI"
+  },
+  {
+    "uuid": "80c6621e4fe742fdacbad01bcf6ee197",
+    "departamento_uuid": "42e872f972a34659a9f8391c913ebd6a",
+    "nombre": "MANU"
+  },
+  {
+    "uuid": "fb26f85e2bb74c55862a778892441a0b",
+    "departamento_uuid": "42e872f972a34659a9f8391c913ebd6a",
+    "nombre": "TAHUAMANU"
+  },
+  {
+    "uuid": "73e0429394934f5ab468c1fa4c4b96c7",
+    "departamento_uuid": "42e872f972a34659a9f8391c913ebd6a",
+    "nombre": "TAMBOPATA"
+  },
+  {
+    "uuid": "c8ef387564104504842e3a6bccb003a2",
+    "departamento_uuid": "ed7721c63fe4468fa484f53b5d9119a0",
+    "nombre": "GENERAL SANCHEZ CERRO"
+  },
+  {
+    "uuid": "f3e6c755805b49d6a83ae3f167c92ca3",
+    "departamento_uuid": "ed7721c63fe4468fa484f53b5d9119a0",
+    "nombre": "ILO"
+  },
+  {
+    "uuid": "51239a138f5c464db04ef548b07617fe",
+    "departamento_uuid": "ed7721c63fe4468fa484f53b5d9119a0",
+    "nombre": "MARISCAL NIETO"
+  },
+  {
+    "uuid": "5e39880975ac42e7b3b459da84f60373",
+    "departamento_uuid": "47d782992f74465ab22dc2730900f6d9",
+    "nombre": "DANIEL ALCIDES CARRION"
+  },
+  {
+    "uuid": "43a853dca72645399404e9f125d8942a",
+    "departamento_uuid": "47d782992f74465ab22dc2730900f6d9",
+    "nombre": "OXAPAMPA"
+  },
+  {
+    "uuid": "85693db9870b423abf3012ca110ad027",
+    "departamento_uuid": "47d782992f74465ab22dc2730900f6d9",
+    "nombre": "PASCO"
+  },
+  {
+    "uuid": "11675b0fd09e4443bcf95cba3c3b0d1b",
+    "departamento_uuid": "bbd30a7cc8b8476aa24bb19f4e29aa6f",
+    "nombre": "AYABACA"
+  },
+  {
+    "uuid": "89ae38867a4f40ccbe75975ed3ed14d1",
+    "departamento_uuid": "bbd30a7cc8b8476aa24bb19f4e29aa6f",
+    "nombre": "HUANCABAMBA"
+  },
+  {
+    "uuid": "71f9f8a216344ce48f006040029b7768",
+    "departamento_uuid": "bbd30a7cc8b8476aa24bb19f4e29aa6f",
+    "nombre": "MORROPON"
+  },
+  {
+    "uuid": "8ecfbb15ba8b4dfca18d5cb87e13b477",
+    "departamento_uuid": "bbd30a7cc8b8476aa24bb19f4e29aa6f",
+    "nombre": "PAITA"
+  },
+  {
+    "uuid": "de01894d115a43898850a5535a550b86",
+    "departamento_uuid": "bbd30a7cc8b8476aa24bb19f4e29aa6f",
+    "nombre": "PIURA"
+  },
+  {
+    "uuid": "890884de9cc9400f893cc526d1b08bd9",
+    "departamento_uuid": "bbd30a7cc8b8476aa24bb19f4e29aa6f",
+    "nombre": "SECHURA"
+  },
+  {
+    "uuid": "37d0a882089a495296882d0b61dbdc78",
+    "departamento_uuid": "bbd30a7cc8b8476aa24bb19f4e29aa6f",
+    "nombre": "SULLANA"
+  },
+  {
+    "uuid": "c11a34b24cdd43d38bcbaa9b97d8b2dc",
+    "departamento_uuid": "bbd30a7cc8b8476aa24bb19f4e29aa6f",
+    "nombre": "TALARA"
+  },
+  {
+    "uuid": "8a48d646055e4b3fa73fe559821b3f62",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "AZANGARO"
+  },
+  {
+    "uuid": "1b23885e298c49319c6a69fe3d500633",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "CARABAYA"
+  },
+  {
+    "uuid": "a6bff3381d7142c8a34ad06328798097",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "CHUCUITO"
+  },
+  {
+    "uuid": "b15f7e0762b146c69fde6d383cfc375e",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "EL COLLAO"
+  },
+  {
+    "uuid": "ade185ffd94249cb83c05c95fd096c67",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "HUANCANE"
+  },
+  {
+    "uuid": "df17fc1b77e34f9bbb88ffe692aa65b4",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "LAMPA"
+  },
+  {
+    "uuid": "894f9fdc563847d2aefd6741f52251d7",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "MELGAR"
+  },
+  {
+    "uuid": "5d223768089c4e5e8f4a297d9ea35e2f",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "MOHO"
+  },
+  {
+    "uuid": "7e30511da74f4f0391a9a23bbab677e9",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "PUNO"
+  },
+  {
+    "uuid": "8c9fca2c88014b159c5f7c93c7335dbb",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "SAN ANTONIO DE PUTINA"
+  },
+  {
+    "uuid": "c1779af6b0994a0da93402aca0e7085d",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "SAN ROMAN"
+  },
+  {
+    "uuid": "9d9fff34ec4b48ca9aadae6b2e3c3310",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "SANDIA"
+  },
+  {
+    "uuid": "9e4f5df666dd41f391d7ff0cd6ed9179",
+    "departamento_uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "YUNGUYO"
+  },
+  {
+    "uuid": "88e4712dbfc4469ba9af2b1e203b85cc",
+    "departamento_uuid": "632e0e9084464a29a64d7f9b4c627fe2",
+    "nombre": "BELLAVISTA"
+  },
+  {
+    "uuid": "9df5e5721e9145678bcb9da4a607d990",
+    "departamento_uuid": "632e0e9084464a29a64d7f9b4c627fe2",
+    "nombre": "EL DORADO"
+  },
+  {
+    "uuid": "1bf0b06a2ccf4be98037805167cdb43d",
+    "departamento_uuid": "632e0e9084464a29a64d7f9b4c627fe2",
+    "nombre": "HUALLAGA"
+  },
+  {
+    "uuid": "ef76872499694c1586fa843984399b6b",
+    "departamento_uuid": "632e0e9084464a29a64d7f9b4c627fe2",
+    "nombre": "LAMAS"
+  },
+  {
+    "uuid": "d189d78afb4e489cb5fb3bcc2634e27c",
+    "departamento_uuid": "632e0e9084464a29a64d7f9b4c627fe2",
+    "nombre": "MARISCAL CACERES"
+  },
+  {
+    "uuid": "788b104e3dde4484aba052ef0f3b0ef5",
+    "departamento_uuid": "632e0e9084464a29a64d7f9b4c627fe2",
+    "nombre": "MOYOBAMBA"
+  },
+  {
+    "uuid": "77fb805514684242b8e287a0ffe032d5",
+    "departamento_uuid": "632e0e9084464a29a64d7f9b4c627fe2",
+    "nombre": "PICOTA"
+  },
+  {
+    "uuid": "b770795497a44f27823e6f51eebc8e44",
+    "departamento_uuid": "632e0e9084464a29a64d7f9b4c627fe2",
+    "nombre": "RIOJA"
+  },
+  {
+    "uuid": "56b391cb0ba5463f849a60d9dd938e2d",
+    "departamento_uuid": "632e0e9084464a29a64d7f9b4c627fe2",
+    "nombre": "SAN MARTIN"
+  },
+  {
+    "uuid": "5505a1ee06284a2e8fe5b5d322c79a99",
+    "departamento_uuid": "632e0e9084464a29a64d7f9b4c627fe2",
+    "nombre": "TOCACHE"
+  },
+  {
+    "uuid": "e9017c24e45f4e3bb59a1769510d30e4",
+    "departamento_uuid": "c30e1af5aac14acfa4dc034aff62582f",
+    "nombre": "CANDARAVE"
+  },
+  {
+    "uuid": "d7010d453a2a4f3b8f185e4043e612c2",
+    "departamento_uuid": "c30e1af5aac14acfa4dc034aff62582f",
+    "nombre": "JORGE BASADRE"
+  },
+  {
+    "uuid": "260a345aee524ec3a7c4c901ce6c92b3",
+    "departamento_uuid": "c30e1af5aac14acfa4dc034aff62582f",
+    "nombre": "TACNA"
+  },
+  {
+    "uuid": "d1c606c00f8f4db8bddcf7874bc96bd5",
+    "departamento_uuid": "c30e1af5aac14acfa4dc034aff62582f",
+    "nombre": "TARATA"
+  },
+  {
+    "uuid": "163d0f3ce98342a5a39e16230a83e686",
+    "departamento_uuid": "8f2be0a92edb48ee9f650e223774af1b",
+    "nombre": "CONTRALMIRANTE VILLAR"
+  },
+  {
+    "uuid": "b0cc478158d647428744658e506587ad",
+    "departamento_uuid": "8f2be0a92edb48ee9f650e223774af1b",
+    "nombre": "TUMBES"
+  },
+  {
+    "uuid": "b69c3d5ef333442981e08ebad4ab12c1",
+    "departamento_uuid": "8f2be0a92edb48ee9f650e223774af1b",
+    "nombre": "ZARUMILLA"
+  },
+  {
+    "uuid": "e7367498d6fe427cb79fab1fedd48c9b",
+    "departamento_uuid": "687a40a235a2446bb94440322d82adf0",
+    "nombre": "ATALAYA"
+  },
+  {
+    "uuid": "d31afae865d248889db13f14017d8a18",
+    "departamento_uuid": "687a40a235a2446bb94440322d82adf0",
+    "nombre": "CORONEL PORTILLO"
+  },
+  {
+    "uuid": "b212d19de14c4af8bcfba687aae7c024",
+    "departamento_uuid": "687a40a235a2446bb94440322d82adf0",
+    "nombre": "PADRE ABAD"
+  },
+  {
+    "uuid": "72bb013b092e42dcb77a336c3cc227ae",
+    "departamento_uuid": "687a40a235a2446bb94440322d82adf0",
+    "nombre": "PURUS"
+  }
+]

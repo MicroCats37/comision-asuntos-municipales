@@ -1,0 +1,32 @@
+[
+  {
+    "uuid": "90b62fa61c164ca89c1908cd933803b9",
+    "tarifa_base_uuid": "ebb3efe3136e43f996b6375327cf1485",
+    "porcentaje_liquidacion": 0.0002
+  },
+  {
+    "uuid": "eaa45904eb754a2385d7f9ae1e026ddf",
+    "tarifa_base_uuid": "4dcf6ec57ce7496da8cd184adad70465",
+    "porcentaje_liquidacion": 0.0005
+  },
+  {
+    "uuid": "6acc8df827ef4b3e87c8877ce6cda331",
+    "tarifa_base_uuid": "0c8a0280d5704f21969fc13b46e1cc6b",
+    "porcentaje_liquidacion": 0.0004
+  },
+  {
+    "uuid": "8e5ab0403e144b238199646bb3d1aba2",
+    "tarifa_base_uuid": "2aa48d40ea2a4ab880be3f7bcc50c326",
+    "porcentaje_liquidacion": 0.0015
+  },
+  {
+    "uuid": "d8535a2518554b268fe19e17d26216d7",
+    "tarifa_base_uuid": "b4216eb4b5c24ef98d5213bb00272ce7",
+    "porcentaje_liquidacion": 0.0004
+  },
+  {
+    "uuid": "a28f76c278074e63985f1808fa3aa5c3",
+    "tarifa_base_uuid": "01c1cf0908694de4a621793f08c926a3",
+    "porcentaje_liquidacion": 0.0015
+  }
+]

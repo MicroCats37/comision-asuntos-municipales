@@ -1,0 +1,32 @@
+[
+  {
+    "uuid": "41248a73d7c847b9afabaa34e799b728",
+    "codigo": "EDIFICACION",
+    "nombre": "Edificacion"
+  },
+  {
+    "uuid": "57f7a9e86e364a718ab4a665335c242f",
+    "codigo": "HABILITACION_URBANA",
+    "nombre": "Habilitacion Urbana"
+  },
+  {
+    "uuid": "f5fd5fda1bdd4a1585c1b2c58a58f48f",
+    "codigo": "INSPECCION_OBRA",
+    "nombre": "Inspeccion Obra"
+  },
+  {
+    "uuid": "c8fe06ffb914407ba7aa7fe80d31c599",
+    "codigo": "TALUDES",
+    "nombre": "Taludes"
+  },
+  {
+    "uuid": "0ef1521731c141538de6d25bffd269ee",
+    "codigo": "IMPACTO_VIAL",
+    "nombre": "Impacto Vial"
+  },
+  {
+    "uuid": "dcb1fa01603242aba31dc621f15b1c06",
+    "codigo": "MECANICA_SUELOS",
+    "nombre": "Mecanica Suelos"
+  }
+]

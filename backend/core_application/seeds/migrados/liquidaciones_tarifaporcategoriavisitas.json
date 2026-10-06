@@ -1,0 +1,26 @@
+[
+  {
+    "uuid": "6529efe9b1d7476385d0004dd6503f24",
+    "tarifa_base_uuid": "ed8339761d5c470082e227e002ccae06",
+    "porcentaje_uit": 0.032,
+    "categoria_visitas": "1"
+  },
+  {
+    "uuid": "cb16df74e73e4c80b81f579d058af4b9",
+    "tarifa_base_uuid": "ed8339761d5c470082e227e002ccae06",
+    "porcentaje_uit": 0.037,
+    "categoria_visitas": "2"
+  },
+  {
+    "uuid": "482c5a5d256f4fdeafc63fc830440bfc",
+    "tarifa_base_uuid": "ed8339761d5c470082e227e002ccae06",
+    "porcentaje_uit": 0.042,
+    "categoria_visitas": "3"
+  },
+  {
+    "uuid": "d9e20f2521d748a6ac237b303bb60fcc",
+    "tarifa_base_uuid": "ed8339761d5c470082e227e002ccae06",
+    "porcentaje_uit": 0.088,
+    "categoria_visitas": "4"
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "uuid": "d4f149ed73384095a4cb3280afc42d5c",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": null,
+    "derecho_minimo": null,
+    "derecho_maximo": null,
+    "porcentaje_minimo_uit": 0.02
+  }
+]

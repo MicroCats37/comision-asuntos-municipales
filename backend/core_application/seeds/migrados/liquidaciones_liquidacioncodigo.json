@@ -1,0 +1,32 @@
+[
+  {
+    "uuid": "3b24ddf042c943c084efaaa4a1c86b4b",
+    "tipo_liquidacion_uuid": "41248a73d7c847b9afabaa34e799b728",
+    "codigo_cta": "46201"
+  },
+  {
+    "uuid": "4a5e8817e4fa407abba45e204b5b5036",
+    "tipo_liquidacion_uuid": "57f7a9e86e364a718ab4a665335c242f",
+    "codigo_cta": "703179999"
+  },
+  {
+    "uuid": "1b9bd4508d1a4ffa8caaa89ff2add8ac",
+    "tipo_liquidacion_uuid": "f5fd5fda1bdd4a1585c1b2c58a58f48f",
+    "codigo_cta": "462021"
+  },
+  {
+    "uuid": "129bc2f582934858a3ef01a5c12f12a2",
+    "tipo_liquidacion_uuid": "c8fe06ffb914407ba7aa7fe80d31c599",
+    "codigo_cta": "7032018"
+  },
+  {
+    "uuid": "f2dd209869f1442881c919daf1e02f32",
+    "tipo_liquidacion_uuid": "0ef1521731c141538de6d25bffd269ee",
+    "codigo_cta": "46201"
+  },
+  {
+    "uuid": "c6d86366b2474ec48b3bccfb96ffd9f1",
+    "tipo_liquidacion_uuid": "dcb1fa01603242aba31dc621f15b1c06",
+    "codigo_cta": "46201"
+  }
+]

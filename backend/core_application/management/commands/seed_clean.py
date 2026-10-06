@@ -5,12 +5,11 @@ from django.core.management.base import BaseCommand
 
 
 PHASE_0_COMMANDS = [
-    "seed_capitulos",
-    "seed_especialidades_revision",
-    "seed_codigos_liquidacion",
-    "seed_tasas_finanzas",
-    "seed_tarifas_enriquecidas",
-    "seed_municipalidades",
+    "seed_clean_catalogos_usuarios",
+    "seed_clean_catalogos_ubigeo",
+    "seed_clean_catalogos_municipalidades",
+    "seed_clean_catalogos_finanzas",
+    "seed_clean_catalogos_liquidaciones",
 ]
 
 PHASE_1_13_COMMANDS = [

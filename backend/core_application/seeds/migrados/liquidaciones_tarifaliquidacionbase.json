@@ -1,0 +1,68 @@
+[
+  {
+    "uuid": "ebb3efe3136e43f996b6375327cf1485",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": "2026-04-30",
+    "tipo_liquidacion_uuid": "41248a73d7c847b9afabaa34e799b728"
+  },
+  {
+    "uuid": "4dcf6ec57ce7496da8cd184adad70465",
+    "periodo_inicio": "2026-05-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "41248a73d7c847b9afabaa34e799b728"
+  },
+  {
+    "uuid": "0c8a0280d5704f21969fc13b46e1cc6b",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": "2026-04-30",
+    "tipo_liquidacion_uuid": "0ef1521731c141538de6d25bffd269ee"
+  },
+  {
+    "uuid": "2aa48d40ea2a4ab880be3f7bcc50c326",
+    "periodo_inicio": "2026-05-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "0ef1521731c141538de6d25bffd269ee"
+  },
+  {
+    "uuid": "b4216eb4b5c24ef98d5213bb00272ce7",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": "2026-04-30",
+    "tipo_liquidacion_uuid": "c8fe06ffb914407ba7aa7fe80d31c599"
+  },
+  {
+    "uuid": "01c1cf0908694de4a621793f08c926a3",
+    "periodo_inicio": "2026-05-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "c8fe06ffb914407ba7aa7fe80d31c599"
+  },
+  {
+    "uuid": "827777205a2a4160985b4180cc67ec7f",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": "2026-04-30",
+    "tipo_liquidacion_uuid": "57f7a9e86e364a718ab4a665335c242f"
+  },
+  {
+    "uuid": "d13d1de2e03e4a0291728d437c064b3b",
+    "periodo_inicio": "2026-05-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "57f7a9e86e364a718ab4a665335c242f"
+  },
+  {
+    "uuid": "85101a58b42445209b158ac2eccae751",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": "2026-04-30",
+    "tipo_liquidacion_uuid": "dcb1fa01603242aba31dc621f15b1c06"
+  },
+  {
+    "uuid": "0d3c106daa1c47caac2b94ecb0ed3d5a",
+    "periodo_inicio": "2026-05-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "dcb1fa01603242aba31dc621f15b1c06"
+  },
+  {
+    "uuid": "ed8339761d5c470082e227e002ccae06",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "f5fd5fda1bdd4a1585c1b2c58a58f48f"
+  }
+]

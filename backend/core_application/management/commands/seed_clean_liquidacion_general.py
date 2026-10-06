@@ -64,7 +64,11 @@ class Command(BaseCleanSeedCommand):
                 defaults = {
                     k: v
                     for k, v in row.items()
-                    if k not in ("uuid", "especialidades_revisadas_uuids")
+                    if k not in (
+                        "uuid",
+                        "especialidades_revisadas_uuids",
+                        "usuario_creador_username",
+                    )
                     and not k.endswith("_uuid")
                 }
 

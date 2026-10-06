@@ -7,6 +7,7 @@ from core_application.management.commands._seed_clean_base import (
     SeedContext,
 )
 from modules.entidades.domain.models.entidad import Entidad
+from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.liquidaciones.domain.models.delegado import (
     Delegado,
     DelegadoOperacion,
@@ -17,6 +18,8 @@ from modules.liquidaciones.domain.models.inspector import (
     InspectorOperacion,
     InspectorOperacionPeriodo,
 )
+from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 
 
 class Command(BaseCleanSeedCommand):
@@ -97,8 +100,20 @@ class Command(BaseCleanSeedCommand):
         def resolver(defaults, row, ctx):
             if row.get("delegado_uuid"):
                 defaults["delegado"] = ctx.resolve_fk(Delegado, row["delegado_uuid"])
+            if row.get("municipalidad_uuid"):
+                defaults["municipalidad"] = ctx.resolve_fk(
+                    Municipalidad, row["municipalidad_uuid"]
+                )
             if row.get("entidad_uuid"):
                 defaults["entidad"] = ctx.resolve_fk(Entidad, row["entidad_uuid"])
+            if row.get("tipo_liquidacion_uuid"):
+                defaults["tipo_liquidacion"] = ctx.resolve_fk(
+                    TipoLiquidacion, row["tipo_liquidacion_uuid"]
+                )
+            if row.get("especialidad_revision_uuid"):
+                defaults["especialidad_revision"] = ctx.resolve_fk(
+                    EspecialidadRevision, row["especialidad_revision_uuid"]
+                )
 
         self._process(
             DelegadoOperacion,
@@ -133,8 +148,16 @@ class Command(BaseCleanSeedCommand):
                 defaults["inspector"] = ctx.resolve_fk(
                     Inspector, row["inspector_uuid"]
                 )
+            if row.get("tipo_liquidacion_uuid"):
+                defaults["tipo_liquidacion"] = ctx.resolve_fk(
+                    TipoLiquidacion, row["tipo_liquidacion_uuid"]
+                )
             if row.get("entidad_uuid"):
                 defaults["entidad"] = ctx.resolve_fk(Entidad, row["entidad_uuid"])
+            if row.get("especialidad_revision_uuid"):
+                defaults["especialidad_revision"] = ctx.resolve_fk(
+                    EspecialidadRevision, row["especialidad_revision_uuid"]
+                )
 
         self._process(
             InspectorOperacion,
@@ -148,9 +171,12 @@ class Command(BaseCleanSeedCommand):
 
     def _seed_inspector_operacion_periodo(self, ctx, dry_run, verbose):
         def resolver(defaults, row, ctx):
-            if row.get("inspector_operacion_uuid"):
-                defaults["inspector_operacion"] = ctx.resolve_fk(
-                    InspectorOperacion, row["inspector_operacion_uuid"]
+            itl_uuid = row.get("inspector_tipo_liquidacion_uuid") or row.get(
+                "inspector_operacion_uuid"
+            )
+            if itl_uuid:
+                defaults["inspector_tipo_liquidacion"] = ctx.resolve_fk(
+                    InspectorOperacion, itl_uuid
                 )
 
         self._process(

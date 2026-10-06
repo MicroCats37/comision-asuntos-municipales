@@ -1,0 +1,660 @@
+[
+  {
+    "uuid": "f21a6e7161f94d108fabe7fc8b0a6ba5",
+    "codigo": "L2",
+    "nombre": "ANCON",
+    "provincia_uuid": null,
+    "distrito_uuid": "0a28fd0290df4aaa805ac0c4bd25a0ab"
+  },
+  {
+    "uuid": "7de38d331968419e9ecf58016ff3d079",
+    "codigo": "L3",
+    "nombre": "ATE VITARTE",
+    "provincia_uuid": null,
+    "distrito_uuid": "6d9bf1ffb7da4a18be87a3f092857798"
+  },
+  {
+    "uuid": "79e21eb34adb414b8775eab96aa9d5c2",
+    "codigo": "L50-12",
+    "nombre": "AUCALLAMA",
+    "provincia_uuid": null,
+    "distrito_uuid": "7358703c3a5f431b9a2322c6d66ca8eb"
+  },
+  {
+    "uuid": "8e78067530ee4f988fe3fd48e7b343a6",
+    "codigo": "L70",
+    "nombre": "BARRANCA - NORTE",
+    "provincia_uuid": null,
+    "distrito_uuid": "6269a521faa9454494aa3fef0871cdde"
+  },
+  {
+    "uuid": "c639da704ab84464b5e462f78b80403e",
+    "codigo": "L4",
+    "nombre": "BARRANCO",
+    "provincia_uuid": null,
+    "distrito_uuid": "7f4da9af06d549f9821426f8487de539"
+  },
+  {
+    "uuid": "70e3a3289eda4374ba7486226c066cee",
+    "codigo": "L5",
+    "nombre": "BREÑA",
+    "provincia_uuid": null,
+    "distrito_uuid": "601439be3daa4b75a4d66b8919c85737"
+  },
+  {
+    "uuid": "adc9bf89a3f34308969a79848db8ccc4",
+    "codigo": "L44-10",
+    "nombre": "CALANGO",
+    "provincia_uuid": null,
+    "distrito_uuid": "13e27b7f442243c78b2e047d4e4851d6"
+  },
+  {
+    "uuid": "d61d45d24bf94af7b38bcefaa215c4bf",
+    "codigo": "L60-1",
+    "nombre": "CALETA DE CARQUIN",
+    "provincia_uuid": null,
+    "distrito_uuid": "fda35402316e4871bfc2db8f7f3fa07b"
+  },
+  {
+    "uuid": "b7f3dcff5b4a496c908007b70b5a855a",
+    "codigo": "L6",
+    "nombre": "CARABAYLLO",
+    "provincia_uuid": null,
+    "distrito_uuid": "149b4c3364df4735a96f2ebc84534cab"
+  },
+  {
+    "uuid": "2f0973cc54be40b3b2650b79fc0d035e",
+    "codigo": "L1-2",
+    "nombre": "CENTRO HISTÓRICO DE LIMA",
+    "provincia_uuid": null,
+    "distrito_uuid": null
+  },
+  {
+    "uuid": "0466734ff5c245ffaf6bd454900b8525",
+    "codigo": "L1",
+    "nombre": "LIMA CERCADO Y PROVINCIAL LIMA",
+    "provincia_uuid": null,
+    "distrito_uuid": "d827d460d3784f0bbe1477b01c406dbf"
+  },
+  {
+    "uuid": "395e5f8f06ec4a29be332597707ac116",
+    "codigo": "L44-3",
+    "nombre": "CERRO AZUL",
+    "provincia_uuid": null,
+    "distrito_uuid": "7f4d621e1fb043c682fd13c628603ab0"
+  },
+  {
+    "uuid": "68382b6ea2b441888efcf89a5a44ce6c",
+    "codigo": "L8",
+    "nombre": "CHACLACAYO",
+    "provincia_uuid": null,
+    "distrito_uuid": "f0bc67d655e245a9bed0823f77e9548e"
+  },
+  {
+    "uuid": "f551868405d645daa6ef066871505876",
+    "codigo": "L50-1",
+    "nombre": "CHANCAY",
+    "provincia_uuid": null,
+    "distrito_uuid": "b7fd8be49a71425eb11abbb52ed7b559"
+  },
+  {
+    "uuid": "4ca35bbd24934ec9b1a7018972a2d589",
+    "codigo": "L60-6",
+    "nombre": "CHECRAS",
+    "provincia_uuid": null,
+    "distrito_uuid": "06c63dda84f948d59a27d56af6fdadcf"
+  },
+  {
+    "uuid": "d93be4bb946149a8b709b767bc6dbcd1",
+    "codigo": "L44-6",
+    "nombre": "CHILCA",
+    "provincia_uuid": null,
+    "distrito_uuid": "28e19204279f4841933aa2227b22969e"
+  },
+  {
+    "uuid": "1ebaaf662ccc421faab0dc73a7ab19a5",
+    "codigo": "L9",
+    "nombre": "CHORRILLOS",
+    "provincia_uuid": null,
+    "distrito_uuid": "4edd1b636d5a4f8c839232317a3e2821"
+  },
+  {
+    "uuid": "a01b05880f944dd79bca1329d87b02b2",
+    "codigo": "L40",
+    "nombre": "CIENEGUILLA",
+    "provincia_uuid": null,
+    "distrito_uuid": "62ef69ae62be4e65b3019a04ce69bc96"
+  },
+  {
+    "uuid": "d5c390f4b63542839b8e7a9a0e4a2c3a",
+    "codigo": "L44-11",
+    "nombre": "COAYLLO",
+    "provincia_uuid": null,
+    "distrito_uuid": "afa321ae4f3441368e4c222ad5dca496"
+  },
+  {
+    "uuid": "638ba1839d704014a150511d5b21af8e",
+    "codigo": "L7",
+    "nombre": "COMAS",
+    "provincia_uuid": null,
+    "distrito_uuid": "b6367da0df8e43c38f3c07d80e7cebf7"
+  },
+  {
+    "uuid": "d021a83130584286b617b868ecc2541d",
+    "codigo": "L1-1",
+    "nombre": "COMISION TÉCNICA AD HOC DE EDIFICACIONES (2da. Instancia apelaciones dictámenes de la Comisión Técnica del Cercado de Lima)",
+    "provincia_uuid": null,
+    "distrito_uuid": null
+  },
+  {
+    "uuid": "235e4a43fa084210827e9adfee17c321",
+    "codigo": "L10",
+    "nombre": "EL AGUSTINO",
+    "provincia_uuid": null,
+    "distrito_uuid": "b346981ef785453ba065015740669699"
+  },
+  {
+    "uuid": "4341676f0cd84082aad64377f78e92a7",
+    "codigo": "L60-2",
+    "nombre": "HUACHO",
+    "provincia_uuid": null,
+    "distrito_uuid": "0f2f309492dc4cc59e0efe1278ad41bb"
+  },
+  {
+    "uuid": "9d052aaefceb434e9c9ee982af189040",
+    "codigo": "L60-10",
+    "nombre": "HUALMAY",
+    "provincia_uuid": null,
+    "distrito_uuid": "0a3971df073f4d77843108f84c549f28"
+  },
+  {
+    "uuid": "63c1e44eed944405965de393c183cb19",
+    "codigo": "L50",
+    "nombre": "HUARAL",
+    "provincia_uuid": null,
+    "distrito_uuid": "b985d44db8d84c74a0fb3122934cd722"
+  },
+  {
+    "uuid": "eb978fd14ef44299b3aea4380ec828f7",
+    "codigo": "L-80",
+    "nombre": "HUAROCHIRI",
+    "provincia_uuid": null,
+    "distrito_uuid": "9a167587435e48eda2c1462239bd968e"
+  },
+  {
+    "uuid": "02b728ea8cf848c5829dddd0946792ca",
+    "codigo": "L60",
+    "nombre": "HUAURA",
+    "provincia_uuid": null,
+    "distrito_uuid": "7ceac699049647ffb9bc468e2c69b9df"
+  },
+  {
+    "uuid": "7efb68942e7e4b0c8ff3728f83d7e7d8",
+    "codigo": "L50-3",
+    "nombre": "IHUARI",
+    "provincia_uuid": null,
+    "distrito_uuid": "89f19aa6997845568ac697b7e6299041"
+  },
+  {
+    "uuid": "58310d59c884478083d8cc0d9156982f",
+    "codigo": "L44-7",
+    "nombre": "IMPERIAL",
+    "provincia_uuid": null,
+    "distrito_uuid": "783b9f0efea64ac68f32def6f96e3b18"
+  },
+  {
+    "uuid": "eba9ead95df542a19f4d35fc2feca46c",
+    "codigo": "L28",
+    "nombre": "INDEPENDENCIA",
+    "provincia_uuid": null,
+    "distrito_uuid": "dfc73225bb614de0b95d6df22b3cdcae"
+  },
+  {
+    "uuid": "3ac757f77b11466f9d3e2e9c64dc3c4f",
+    "codigo": "L11",
+    "nombre": "JESUS MARIA",
+    "provincia_uuid": null,
+    "distrito_uuid": "2202ccca86884e479468ea03b85bf1ff"
+  },
+  {
+    "uuid": "a92c057181d349d0b60002ccbe4877d1",
+    "codigo": "L12",
+    "nombre": "LA MOLINA",
+    "provincia_uuid": null,
+    "distrito_uuid": "cfb65285a94b455e93a100682931aa88"
+  },
+  {
+    "uuid": "72c4c75888da41f99dea08ee8562b01d",
+    "codigo": "L13",
+    "nombre": "LA VICTORIA",
+    "provincia_uuid": null,
+    "distrito_uuid": "316b75384fcd4dd3ba292eea9db2c265"
+  },
+  {
+    "uuid": "72eadc2cd53a434a81695e5577017940",
+    "codigo": "L50-6",
+    "nombre": "LAMPIAN",
+    "provincia_uuid": null,
+    "distrito_uuid": "28ab5e75886e4cd7940b582404ad57f6"
+  },
+  {
+    "uuid": "ed63adc637b14a1b933373106df33c4e",
+    "codigo": "L60-7",
+    "nombre": "LEONCIO PRADO",
+    "provincia_uuid": null,
+    "distrito_uuid": "871b153f80094d1bbe8b14333db62c53"
+  },
+  {
+    "uuid": "af3e3787cc5b4c0b997e29468abd635b",
+    "codigo": "L14",
+    "nombre": "LINCE",
+    "provincia_uuid": null,
+    "distrito_uuid": "773f8b0810b340928b6cd73a3fb52dca"
+  },
+  {
+    "uuid": "2b8576cd8ff343feaebf7286ca21dac5",
+    "codigo": "L39",
+    "nombre": "LOS OLIVOS",
+    "provincia_uuid": null,
+    "distrito_uuid": "37340b78d37c43c89e4b1cfc1e6f48c2"
+  },
+  {
+    "uuid": "656df98bd6c94e4bb473f697931a0d94",
+    "codigo": "L44-4",
+    "nombre": "LUNAHUANA",
+    "provincia_uuid": null,
+    "distrito_uuid": "cb3dc28c5e184ef5a05beb3f3a076e3e"
+  },
+  {
+    "uuid": "311bcd5479dc467fa113d1114a6df159",
+    "codigo": "L15",
+    "nombre": "LURIGANCHO – CHOSICA",
+    "provincia_uuid": null,
+    "distrito_uuid": "306fc570da1a418cb7cb78708a519769"
+  },
+  {
+    "uuid": "4c70289e8af54d178594c61920119757",
+    "codigo": "L16",
+    "nombre": "LURIN",
+    "provincia_uuid": null,
+    "distrito_uuid": "b4f4499d3e5f48b8b8f49713c0fa6bfc"
+  },
+  {
+    "uuid": "cbda65d55c4744b6a13470d0bde81ee7",
+    "codigo": "L17",
+    "nombre": "MAGDALENA DEL MAR",
+    "provincia_uuid": null,
+    "distrito_uuid": "fd795bd7a5584c76a327f72346f72b96"
+  },
+  {
+    "uuid": "0d8ad585878445bfb449d4398cdd5b27",
+    "codigo": "L44-5",
+    "nombre": "MALA",
+    "provincia_uuid": null,
+    "distrito_uuid": "6bc7dabe9f134cb1bef6e092ddd7b160"
+  },
+  {
+    "uuid": "1f305ec3392b4d70a76319089566f5ec",
+    "codigo": "L18",
+    "nombre": "MIRAFLORES",
+    "provincia_uuid": null,
+    "distrito_uuid": "d12b43bb361d4c2a8a66e745b828a4d4"
+  },
+  {
+    "uuid": "f4dc4a53bd6242deb0313400bd03430c",
+    "codigo": "L44-8",
+    "nombre": "NUEVO IMPERIAL",
+    "provincia_uuid": null,
+    "distrito_uuid": "afbf08e743ee488a9c5a00fc38b2f08f"
+  },
+  {
+    "uuid": "407d2d02cff64ac09516daf101fa586e",
+    "codigo": "L44-12",
+    "nombre": "PACARAN",
+    "provincia_uuid": null,
+    "distrito_uuid": "6a2604bb76cc4c429ec23f404107c784"
+  },
+  {
+    "uuid": "a09152d3b2924542be2811408a57871e",
+    "codigo": "L50-5",
+    "nombre": "PACARAOS",
+    "provincia_uuid": null,
+    "distrito_uuid": "aeb734f6651c4a9ea52490f7b054a915"
+  },
+  {
+    "uuid": "e44b5d11f3bf498293d5cbd13a9a4854",
+    "codigo": "L60-9",
+    "nombre": "PACCHO",
+    "provincia_uuid": null,
+    "distrito_uuid": "d266e7830f154967b5803c3056163ac8"
+  },
+  {
+    "uuid": "10b94df4aa60476fb69bdd1f8ad02ed9",
+    "codigo": "L19",
+    "nombre": "PACHACAMAC",
+    "provincia_uuid": null,
+    "distrito_uuid": "b8e87a0f57304db3aced0c634a1fbe72"
+  },
+  {
+    "uuid": "8ec21bd8e9704a439a67e4dee02bfb8b",
+    "codigo": "L70-3",
+    "nombre": "PARAMONGA",
+    "provincia_uuid": null,
+    "distrito_uuid": "27b65c719e56442c89f954899e26fc59"
+  },
+  {
+    "uuid": "641b03db3db043e39f96ce4fcfb449a0",
+    "codigo": "L70-4",
+    "nombre": "PATIVILCA",
+    "provincia_uuid": null,
+    "distrito_uuid": "7d36151c0c02460897f58774319bf538"
+  },
+  {
+    "uuid": "90e18655832a456f968cd2d995352726",
+    "codigo": "L44",
+    "nombre": "SAN VICENTE DE CAÑETE",
+    "provincia_uuid": null,
+    "distrito_uuid": "5498ce48f3f04bbf96f8e9b57f7fb3ba"
+  },
+  {
+    "uuid": "cc127f8f690342738be1c815cd81e8c6",
+    "codigo": "L20",
+    "nombre": "PUCUSANA",
+    "provincia_uuid": null,
+    "distrito_uuid": "06151423d7204274a7541cea13a16666"
+  },
+  {
+    "uuid": "d01fb99b58d941cfa772b533cf5cd4bb",
+    "codigo": "L21",
+    "nombre": "PUEBLO LIBRE",
+    "provincia_uuid": null,
+    "distrito_uuid": "b192f7ade55b427d8289786b72a5aee5"
+  },
+  {
+    "uuid": "fa88ad18f29f4bfe8982d14fa9ac61fd",
+    "codigo": "L22",
+    "nombre": "PUENTE PIEDRA",
+    "provincia_uuid": null,
+    "distrito_uuid": "85e70f0d28cf4c11ba4c0628279099a7"
+  },
+  {
+    "uuid": "a4b8e2920e294e7082e19e0696df32f8",
+    "codigo": "L24",
+    "nombre": "PUNTA HERMOSA",
+    "provincia_uuid": null,
+    "distrito_uuid": "8b5f907ece9c4a5a949b50781c0942cd"
+  },
+  {
+    "uuid": "96136c930b17476d84f97f5c9ee2d665",
+    "codigo": "L23",
+    "nombre": "PUNTA NEGRA",
+    "provincia_uuid": null,
+    "distrito_uuid": "93775bcfedc348059333fdf93714ca31"
+  },
+  {
+    "uuid": "f37475b5a46e45e5a14fed081cdc4b02",
+    "codigo": "L44-13",
+    "nombre": "QUILMANA",
+    "provincia_uuid": null,
+    "distrito_uuid": "f78fdd9f3b72470d928ef36e36ce37d1"
+  },
+  {
+    "uuid": "288157fb77984578af8fdb058c1b6c2a",
+    "codigo": "L25",
+    "nombre": "RIMAC",
+    "provincia_uuid": null,
+    "distrito_uuid": "65a2e720239540dc902e84ec4ddebe96"
+  },
+  {
+    "uuid": "45b32bdf5d4447d98f7a1d75838e624f",
+    "codigo": "L44-1",
+    "nombre": "SAN ANTONIO - CAÑETE",
+    "provincia_uuid": null,
+    "distrito_uuid": "cbff268b72a44a5580e773b40266983c"
+  },
+  {
+    "uuid": "d55b8404816443fa864e16df454f07a9",
+    "codigo": "L80-1",
+    "nombre": "SAN ANTONIO DE HUAROCHIRI",
+    "provincia_uuid": null,
+    "distrito_uuid": "7e692ee5aa7e43a3a1cc4b5ad7e2a4ca"
+  },
+  {
+    "uuid": "848fffa56dd54919a7fe935454d2d7c0",
+    "codigo": "L26",
+    "nombre": "SAN BARTOLO",
+    "provincia_uuid": null,
+    "distrito_uuid": "0ecbc60b9bf64a60b26b77aec904eeaf"
+  },
+  {
+    "uuid": "8437a33b9edd400ba05183cc7dba4a13",
+    "codigo": "L41",
+    "nombre": "SAN BORJA",
+    "provincia_uuid": null,
+    "distrito_uuid": "bf13adb4f72b40c1a8325daee951618f"
+  },
+  {
+    "uuid": "7af78e2b7176414289393ea3bce4ba0f",
+    "codigo": "L27",
+    "nombre": "SAN ISIDRO",
+    "provincia_uuid": null,
+    "distrito_uuid": "2ffd59b69ef442198eec8a83b976feff"
+  },
+  {
+    "uuid": "d7d7761dd09546199618186e4e4501e2",
+    "codigo": "L36",
+    "nombre": "SAN JUAN DE LURIGANCHO",
+    "provincia_uuid": null,
+    "distrito_uuid": "0c30c7913b48422d9b76d0124ef10fcc"
+  },
+  {
+    "uuid": "df7a9cb6e70d4be794bf51ca73dee6e7",
+    "codigo": "L29",
+    "nombre": "SAN JUAN DE MIRAFLORES",
+    "provincia_uuid": null,
+    "distrito_uuid": "99f0efe2f5294f629f1e4ae69bb68369"
+  },
+  {
+    "uuid": "bbb34652ef2042c1b8c4cb5ac7bc6b07",
+    "codigo": "L30",
+    "nombre": "SAN LUIS",
+    "provincia_uuid": null,
+    "distrito_uuid": "70fb4b5a1ec440c89b3b7e8c448d2b86"
+  },
+  {
+    "uuid": "fe0c362211324cb5ba0515edb4c49b09",
+    "codigo": "L44-9",
+    "nombre": "SAN LUIS DE CAÑETE",
+    "provincia_uuid": null,
+    "distrito_uuid": "6f65f2c3766b4dbd81f33ff3c4d699c4"
+  },
+  {
+    "uuid": "7d6dea29cb944ba9b9e68ae7dc2bdb6a",
+    "codigo": "L31",
+    "nombre": "SAN MARTIN DE PORRES",
+    "provincia_uuid": null,
+    "distrito_uuid": "86895901f17d476c8df68486cbe48ade"
+  },
+  {
+    "uuid": "c79db372caec41a7ae66ff6c9c8a427f",
+    "codigo": "L32",
+    "nombre": "SAN MIGUEL",
+    "provincia_uuid": null,
+    "distrito_uuid": "2294a79ccc604e2195cae13e1ce171e2"
+  },
+  {
+    "uuid": "174aec58c88740e3830591d2832c4d2d",
+    "codigo": "L50-10",
+    "nombre": "SAN MIGUEL DE ACOS",
+    "provincia_uuid": null,
+    "distrito_uuid": "5ddfde567594498bb00b88bbfee2e0d6"
+  },
+  {
+    "uuid": "4a100f4605944762b8a2d1b22eebd476",
+    "codigo": "L44-2",
+    "nombre": "SAN VICENTE DE CAÑETE/ASIA",
+    "provincia_uuid": null,
+    "distrito_uuid": "5498ce48f3f04bbf96f8e9b57f7fb3ba"
+  },
+  {
+    "uuid": "e3071e55f556462aad6bec72907acbba",
+    "codigo": "L43",
+    "nombre": "SANTA ANITA",
+    "provincia_uuid": null,
+    "distrito_uuid": "0362abef291c473190e17de02374181f"
+  },
+  {
+    "uuid": "088146f5339a45898c79f17cf54b6c3f",
+    "codigo": "L50-11",
+    "nombre": "SANTA CRUZ DE ANDAMARCA",
+    "provincia_uuid": null,
+    "distrito_uuid": "6dc9d7bed2df40c688e867465ff7a46f"
+  },
+  {
+    "uuid": "4118c528d1c2433689d47082519f056d",
+    "codigo": "L44-14",
+    "nombre": "SANTA CRUZ DE FLORES",
+    "provincia_uuid": null,
+    "distrito_uuid": "5f6429df5d7442f0b14c3a32a382ddd2"
+  },
+  {
+    "uuid": "9380592df69e4e25af6ec2844f9d7480",
+    "codigo": "L60-8",
+    "nombre": "SANTA LEONOR",
+    "provincia_uuid": null,
+    "distrito_uuid": "3658ebe3ca504124b2ff107ef33eea49"
+  },
+  {
+    "uuid": "21e440801a204c8bb6d124be1d49261b",
+    "codigo": "L60-11",
+    "nombre": "SANTA MARIA",
+    "provincia_uuid": null,
+    "distrito_uuid": "c269b1bc254541b9ba647dbbc47bf79c"
+  },
+  {
+    "uuid": "288aff62ecc54ddb9ae69e520060cd11",
+    "codigo": "L15-1",
+    "nombre": "SANTA MARIA DE HUACHIPA",
+    "provincia_uuid": null,
+    "distrito_uuid": "bad0971b3b00489ba16612db977f44ae"
+  },
+  {
+    "uuid": "ec76270144814a35bfac75b29c7e723a",
+    "codigo": "L37",
+    "nombre": "SANTA MARIA DEL MAR",
+    "provincia_uuid": null,
+    "distrito_uuid": "2be0d98b0684482a8d099e96d7fc9f0e"
+  },
+  {
+    "uuid": "afa4c8dd269a4314818dd6e847afd53b",
+    "codigo": "L38",
+    "nombre": "SANTA ROSA",
+    "provincia_uuid": null,
+    "distrito_uuid": "c38637ad34444bbe8fe493d4f9eeed6f"
+  },
+  {
+    "uuid": "f8885547e7974f2cad89f7b0e85da48d",
+    "codigo": "L33",
+    "nombre": "SANTIAGO DE SURCO",
+    "provincia_uuid": null,
+    "distrito_uuid": "e778aaf164734e0c8f1ae6c6c9eedbf7"
+  },
+  {
+    "uuid": "270b4204ffbe4d7fa4e79f4b8c6bfb22",
+    "codigo": "L60-3",
+    "nombre": "SAYAN",
+    "provincia_uuid": null,
+    "distrito_uuid": "6aa2c2ece9324b80b3581994687f1d49"
+  },
+  {
+    "uuid": "66b272139f064a1999cfe875379208cf",
+    "codigo": "L50-4",
+    "nombre": "SUMBILCA",
+    "provincia_uuid": null,
+    "distrito_uuid": "d7c0480765514756aa8925b579207da2"
+  },
+  {
+    "uuid": "556715eaec174603b279eea29c9f4568",
+    "codigo": "L70-1",
+    "nombre": "SUPE",
+    "provincia_uuid": null,
+    "distrito_uuid": "756d27083e5a402c93229fff51e7e4a6"
+  },
+  {
+    "uuid": "c93f06c820814461a7efdf6e5ac044e9",
+    "codigo": "L70-2",
+    "nombre": "SUPE PUERTO",
+    "provincia_uuid": null,
+    "distrito_uuid": "ef78294695e1483bbfbd6d5aa38ae722"
+  },
+  {
+    "uuid": "754fb2d4875345bf9ee186ed6af9b59a",
+    "codigo": "L34",
+    "nombre": "SURQUILLO",
+    "provincia_uuid": null,
+    "distrito_uuid": "398f2032be554b2b9eb37d201e1e1168"
+  },
+  {
+    "uuid": "7084a8e41cb1420fad9dd4eb7ea1731a",
+    "codigo": "L60-4",
+    "nombre": "VEGUETA",
+    "provincia_uuid": null,
+    "distrito_uuid": "37fb15175bf54b77b0e2271320bba79d"
+  },
+  {
+    "uuid": "2988d097bf9142008a55a1cb143d020e",
+    "codigo": "L42",
+    "nombre": "VILLA EL SALVADOR",
+    "provincia_uuid": null,
+    "distrito_uuid": "ca3c337ed2aa4f24bc059736c82f5dad"
+  },
+  {
+    "uuid": "fb0f280a18d24a5caac8e8b969ba45c2",
+    "codigo": "L35",
+    "nombre": "VILLA MARIA DEL TRIUNFO",
+    "provincia_uuid": null,
+    "distrito_uuid": "571fe900d09d4aeb929c10a4a37020e9"
+  },
+  {
+    "uuid": "dfddd0e4ac8e4446a51ef008cb06d625",
+    "codigo": "L44-15",
+    "nombre": "ZUÑIGA",
+    "provincia_uuid": null,
+    "distrito_uuid": "d0d16d6877c24b1db744239bd550552d"
+  },
+  {
+    "uuid": "ca66b3ee7f8a4bb4b4b7252590e0ad17",
+    "codigo": "SINCODE1",
+    "nombre": "ATAVILLOS ALTO",
+    "provincia_uuid": null,
+    "distrito_uuid": "ab64fd034bd94a5daf89caf7b1f0fb11"
+  },
+  {
+    "uuid": "13d3a1e1c02945ff940cb4e476600fb5",
+    "codigo": "SINCODE2",
+    "nombre": "ATAVILLOS BAJO",
+    "provincia_uuid": null,
+    "distrito_uuid": "8cf58c4829af47eab51d34b5a77a8e46"
+  },
+  {
+    "uuid": "0267bb663d164a109f2ef41327511118",
+    "codigo": "SINCODE3",
+    "nombre": "27 DE NOVIEMBRE",
+    "provincia_uuid": null,
+    "distrito_uuid": "c6a3d7a6df5d4521980c9e5ed38acda8"
+  },
+  {
+    "uuid": "68cefcc563614d88adae52c2ef4eb03b",
+    "codigo": "SINCODE4",
+    "nombre": "AMBAR",
+    "provincia_uuid": null,
+    "distrito_uuid": "a4dc1766844c4d8eb160c4cdc4778b19"
+  },
+  {
+    "uuid": "b1bfbdb1b9ea4f4f9ef911297dd87e7f",
+    "codigo": "SINCODE5",
+    "nombre": "PROVINCIA CANTA",
+    "provincia_uuid": null,
+    "distrito_uuid": "459822b59c17477ba3cc5bc8cb7df4ef"
+  }
+]

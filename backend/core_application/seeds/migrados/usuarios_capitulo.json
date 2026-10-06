@@ -1,0 +1,72 @@
+[
+  {
+    "uuid": "322c25267e764161b62b162f4ec157ba",
+    "registro_uuid": "02",
+    "abreviacion": "CIVIL",
+    "nombre": "INGENIERIA CIVIL",
+    "grupo_envio_intitucional": "institucionales_civil@ciplima.org.pe"
+  },
+  {
+    "uuid": "c6060104c6a941f5a6aeaf7ab536a4ba",
+    "registro_uuid": "03",
+    "abreviacion": "GEOLOGICA",
+    "nombre": "INGENIERIA GEOLOGICA",
+    "grupo_envio_intitucional": "institucionales_geologica@ciplima.org.pe"
+  },
+  {
+    "uuid": "2300a080d0e64c04bba7c0f319bb702c",
+    "registro_uuid": "05",
+    "abreviacion": "MECANICA",
+    "nombre": "INGENIERIA MECÁNICA Y MECÁNICA ELÉCTRICA",
+    "grupo_envio_intitucional": "institucionales_mecanica@ciplima.org.pe"
+  },
+  {
+    "uuid": "166409f24ae24561912b309159b22511",
+    "registro_uuid": "09",
+    "abreviacion": "SANITARIA",
+    "nombre": "INGENIERIA SANITARIA E HIGIENE Y SEGURIDAD INDUSTRIAL",
+    "grupo_envio_intitucional": "institucionales_cisaehsi@ciplima.org.pe"
+  },
+  {
+    "uuid": "d036e270556b4bab9c8299a4ef4ddb81",
+    "registro_uuid": "15",
+    "abreviacion": "ELECTRICA",
+    "nombre": "INGENIERIA ELECTRICA",
+    "grupo_envio_intitucional": "institucionales_electrica@ciplima.org.pe"
+  },
+  {
+    "uuid": "c52557223dd7490091c8e9039a591694",
+    "registro_uuid": "16",
+    "abreviacion": "ELECTRONICA",
+    "nombre": "INGENIERIA ELECTRONICA",
+    "grupo_envio_intitucional": "institucionales_electronica@ciplima.org.pe"
+  },
+  {
+    "uuid": "dcf8462d36874e6fbdc3f8e701f99bb4",
+    "registro_uuid": "25",
+    "abreviacion": "AMBIENTAL",
+    "nombre": "INGENIERIA AMBIENTAL",
+    "grupo_envio_intitucional": "institucionales_ambiental@ciplima.org.pe"
+  },
+  {
+    "uuid": "8d06755fb1924be599483196991e4303",
+    "registro_uuid": "01",
+    "abreviacion": "AGRONOMICA",
+    "nombre": "INGENIERIA AGRONOMICA Y ZOOTECNIA",
+    "grupo_envio_intitucional": "institucionales_agronomica@ciplima.org.pe"
+  },
+  {
+    "uuid": "9ba9d06da49d4869bf11f58787fc29f5",
+    "registro_uuid": "04",
+    "abreviacion": "INDUSTRIAL-SIST",
+    "nombre": "INGENIERÍA INDUSTRIAL, DE SISTEMAS Y TRANSPORTE",
+    "grupo_envio_intitucional": "institucionales_industrial_y_sistemas@ciplima.org.pe"
+  },
+  {
+    "uuid": "4c70109fe15d4a73a86f64af134c32b3",
+    "registro_uuid": "00",
+    "abreviacion": "NO ESPECIFICADO",
+    "nombre": "NO ESPECIFICADO",
+    "grupo_envio_intitucional": null
+  }
+]

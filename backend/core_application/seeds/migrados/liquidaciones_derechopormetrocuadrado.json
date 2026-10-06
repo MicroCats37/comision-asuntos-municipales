@@ -1,0 +1,16 @@
+[
+  {
+    "uuid": "8187fb89c03a4648a609a2e32439502f",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": "2026-04-30",
+    "derecho_minimo": 750,
+    "derecho_maximo": 7500
+  },
+  {
+    "uuid": "9420b2b79a434fb895e852652e8d8f20",
+    "periodo_inicio": "2026-05-01",
+    "periodo_fin": null,
+    "derecho_minimo": 1000,
+    "derecho_maximo": 10000
+  }
+]

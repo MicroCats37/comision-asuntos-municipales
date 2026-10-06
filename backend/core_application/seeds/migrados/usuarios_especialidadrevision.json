@@ -1,0 +1,27 @@
+[
+  {
+    "uuid": "e3ac3edce90f404ca9325c771aa0cd21",
+    "slug": "civil",
+    "nombre": "Ingeniería Civil"
+  },
+  {
+    "uuid": "34f39a134da045dda7fd67156d2a5290",
+    "slug": "sanitaria",
+    "nombre": "Ingeniería Sanitaria"
+  },
+  {
+    "uuid": "3b4ad252f8dd4876a999b4f92d76427a",
+    "slug": "ingenier-a-el-ctrica-y-mec-nica-el-ctrica",
+    "nombre": "Ingeniería Eléctrica y Mecánica Eléctrica"
+  },
+  {
+    "uuid": "e22fa2c9ea134ac9a06e2cf071e74065",
+    "slug": "ingenier-a-electr-nica",
+    "nombre": "Ingeniería Electrónica"
+  },
+  {
+    "uuid": "c6b06fa5c26949cea41020bd2f051af4",
+    "slug": "inspeccion-obra",
+    "nombre": "Inspección de Obra"
+  }
+]

@@ -51,57 +51,43 @@ class Command(BaseCleanSeedCommand):
 
     def _seed_edificacion(self, ctx, dry_run, verbose):
         rows = self._load_json("liquidaciones_liquidacionedificacion.json")
-        if dry_run:
-            self.print_summary(
-                self.SEED_PHASE, "LiquidacionEdificacion", len(rows), 0, 0, 0, 0.0
-            )
-            return
-
         start = time.time()
-        created = updated = errors = 0
+        created = updated = unchanged = errors = 0
         for row in rows:
             try:
-                defaults = {
-                    k: v
-                    for k, v in row.items()
-                    if k != "uuid" and not k.endswith("_uuid")
-                }
                 if row.get("liquidacion_uuid"):
-                    defaults["liquidacion"] = ctx.resolve_fk(
-                        LiquidacionGeneral, row["liquidacion_uuid"]
-                    )
-
-                obj, was_created = self.update_or_create_with_signals_off(
-                    LiquidacionEdificacion, row, ctx
+                    ctx.resolve_fk(LiquidacionGeneral, row["liquidacion_uuid"])
+                _, action = self.smart_update_or_create(
+                    LiquidacionEdificacion, row, ctx, dry_run=dry_run
                 )
-                obj, was_created = LiquidacionEdificacion.objects.update_or_create(
-                    id=row["uuid"], defaults=defaults
-                )
-                if was_created:
+                if action == "created" or action == "would_create":
                     created += 1
-                else:
+                elif action == "updated" or action == "would_update":
                     updated += 1
-                if verbose:
-                    tag = "CREATE" if was_created else "UPDATE"
-                    self.stdout.write(
-                        f"[{tag}] LiquidacionEdificacion {row['uuid']}"
-                    )
+                elif action.startswith("invalid_field"):
+                    errors += 1
+                    self.stdout.write(f"\nERROR {row.get('uuid','')}: {action}")
+                else:
+                    unchanged += 1
             except Exception as e:
                 errors += 1
-                self.stdout.write(
-                    f"ERROR LiquidacionEdificacion {row['uuid']}: {e}"
-                )
-
+                self.stdout.write(f"\nERROR {row.get('uuid','')}: {e}")
         duration = time.time() - start
-        self.print_summary(
-            self.SEED_PHASE,
-            "LiquidacionEdificacion",
-            len(rows),
-            created,
-            updated,
-            errors,
-            duration,
-        )
+        if dry_run:
+            self.stdout.write(
+                f"[DRY {self.SEED_PHASE}] LiquidacionEdificacion: "
+                f"total={len(rows)} would_create={created} would_update={updated} unchanged={unchanged} errors={errors} duration={duration:.2f}s"
+            )
+        else:
+            self.print_summary(
+                self.SEED_PHASE,
+                "LiquidacionEdificacion",
+                len(rows),
+                created,
+                updated,
+                errors,
+                duration,
+            )
 
     def _seed_porcentaje_obra(self, ctx, dry_run, verbose):
         rows = self._load_json("liquidaciones_liquidacionporcentajeobra.json")

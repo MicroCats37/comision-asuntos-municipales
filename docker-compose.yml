@@ -64,13 +64,23 @@ services:
       args:
         # El navegador entra por el proxy; /backend se reescribe a /api en Django.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/backend}
+        NEXT_PUBLIC_COOKIE_SECURE: ${NEXT_PUBLIC_COOKIE_SECURE:-false}
+        NEXT_PUBLIC_IS_TEST_UUID: ${NEXT_PUBLIC_IS_TEST_UUID:-false}
+        NEXT_PUBLIC_DEBUG_GENERIC_FORM_ERRORS: ${NEXT_PUBLIC_DEBUG_GENERIC_FORM_ERRORS:-false}
+        NEXT_PUBLIC_FRONTEND_URL: ${NEXT_PUBLIC_FRONTEND_URL:-http://localhost:${PROXY_PORT:-7000}}
+        NEXT_PUBLIC_AUTH_STORAGE_PREFIX: ${NEXT_PUBLIC_AUTH_STORAGE_PREFIX:-cam_auth}
     container_name: cam_frontend
     env_file:
-      - frontend/.env.local
+      - .env
     environment:
       PORT: "3000"
       HOSTNAME: ${FRONTEND_HOSTNAME:-0.0.0.0}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/backend}
+      NEXT_PUBLIC_COOKIE_SECURE: ${NEXT_PUBLIC_COOKIE_SECURE:-false}
+      NEXT_PUBLIC_IS_TEST_UUID: ${NEXT_PUBLIC_IS_TEST_UUID:-false}
+      NEXT_PUBLIC_DEBUG_GENERIC_FORM_ERRORS: ${NEXT_PUBLIC_DEBUG_GENERIC_FORM_ERRORS:-false}
+      NEXT_PUBLIC_FRONTEND_URL: ${NEXT_PUBLIC_FRONTEND_URL:-http://localhost:${PROXY_PORT:-7000}}
+      NEXT_PUBLIC_AUTH_STORAGE_PREFIX: ${NEXT_PUBLIC_AUTH_STORAGE_PREFIX:-cam_auth}
     expose:
       - "3000"
     depends_on:

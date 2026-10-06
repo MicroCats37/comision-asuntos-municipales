@@ -1,0 +1,5606 @@
+[
+  {
+    "uuid": "eb2c24c25bd540a1b6ce3984c41a638d",
+    "codigo": "LQG-20261005-093553-DC37"
+  },
+  {
+    "uuid": "2f748f1be25644499714ce6bd0b8df5b",
+    "codigo": "LQG-20261005-093554-6EA4"
+  },
+  {
+    "uuid": "c423feb0c1644687baf712fcc664b6a6",
+    "codigo": "LQG-20261005-093554-168A"
+  },
+  {
+    "uuid": "da731bfa4e384f978bcc66698ccc3cea",
+    "codigo": "LQG-20261005-093554-0086"
+  },
+  {
+    "uuid": "7a51365c2001493ebcf693e02383e1d5",
+    "codigo": "LQG-20261005-093554-E9A3"
+  },
+  {
+    "uuid": "5b1879a750c641668cb2296f728a5e83",
+    "codigo": "LQG-20261005-093555-832C"
+  },
+  {
+    "uuid": "d894711b7a5743ffaea787c8421ae345",
+    "codigo": "LQG-20261005-093556-346F"
+  },
+  {
+    "uuid": "e8ff76aec923402bb0c75d9bf44789d5",
+    "codigo": "LQG-20261005-093556-49B1"
+  },
+  {
+    "uuid": "a1ac10572f29426586f4577ca78fc51f",
+    "codigo": "LQG-20261005-093556-3E5F"
+  },
+  {
+    "uuid": "0d2290e4ce684b4ca78fff3188f3e830",
+    "codigo": "LQG-20261005-093556-777B"
+  },
+  {
+    "uuid": "430c391838204640bd4321aced6bb3fa",
+    "codigo": "LQG-20261005-093557-FCB6"
+  },
+  {
+    "uuid": "2647dbf353934e68b202480d9506a840",
+    "codigo": "LQG-20261005-093558-DBAB"
+  },
+  {
+    "uuid": "6f7d0884792c47b79bc87e11a964e10f",
+    "codigo": "LQG-20261005-093558-8AFD"
+  },
+  {
+    "uuid": "550d7563637d41da8b578af685e7e563",
+    "codigo": "LQG-20261005-093559-D21C"
+  },
+  {
+    "uuid": "3dee4ffd601246d4a1cb5aaff08b3700",
+    "codigo": "LQG-20261005-093559-3C93"
+  },
+  {
+    "uuid": "709ce9edb4f54db0a12554b8d2b544de",
+    "codigo": "LQG-20261005-093559-2EF5"
+  },
+  {
+    "uuid": "600dc417fbe14dd6b8bb044a82ad6a0e",
+    "codigo": "LQG-20261005-093600-A21B"
+  },
+  {
+    "uuid": "e8adb5d3d4924d6eb1c28169c25747a5",
+    "codigo": "LQG-20261005-093600-4A6B"
+  },
+  {
+    "uuid": "3f83f243657b4ee8839f451ad0b50518",
+    "codigo": "LQG-20261005-093600-9B3B"
+  },
+  {
+    "uuid": "d7bbd01c0db347fbbb6c342cfacb2a53",
+    "codigo": "LQG-20261005-093600-EC9A"
+  },
+  {
+    "uuid": "aa87e492af8a4c33b6ef672d919cf42b",
+    "codigo": "LQG-20261005-093600-08A0"
+  },
+  {
+    "uuid": "663126f9ce55453b9eed4ad8e4a0cd68",
+    "codigo": "LQG-20261005-093601-E36D"
+  },
+  {
+    "uuid": "8dd66fa8b4e0478d853ad90b2e3a2f1f",
+    "codigo": "LQG-20261005-093601-27F5"
+  },
+  {
+    "uuid": "349633cfd4604dd381e83ebba3be3a36",
+    "codigo": "LQG-20261005-093601-5DEA"
+  },
+  {
+    "uuid": "e58e2f2120ee47babf772e9a5e9f1b33",
+    "codigo": "LQG-20261005-093601-3A92"
+  },
+  {
+    "uuid": "1768188806e54e41b1bfc692abce7086",
+    "codigo": "LQG-20261005-093602-083B"
+  },
+  {
+    "uuid": "a36a7624a5564533aea9e832ca28cb6f",
+    "codigo": "LQG-20261005-093602-A885"
+  },
+  {
+    "uuid": "2a96a684da7d4071a64e6cdbcc47b619",
+    "codigo": "LQG-20261005-093602-1CEB"
+  },
+  {
+    "uuid": "6aa954d3601a4f9a8144764d7012444f",
+    "codigo": "LQG-20261005-093603-2B72"
+  },
+  {
+    "uuid": "3f1d0d31e2964c81b059d1dd4c2adcee",
+    "codigo": "LQG-20261005-093603-E8C6"
+  },
+  {
+    "uuid": "7851603d760945a49afba04ac3e1643f",
+    "codigo": "LQG-20261005-093603-FF65"
+  },
+  {
+    "uuid": "f69045fa1ca344e0aaee5111bb815942",
+    "codigo": "LQG-20261005-093603-0BE6"
+  },
+  {
+    "uuid": "f35c81a2ba8e474daea572e428586727",
+    "codigo": "LQG-20261005-093603-6596"
+  },
+  {
+    "uuid": "ecf17ac9b45f47f5a2af3a4f744c8c41",
+    "codigo": "LQG-20261005-093604-2F22"
+  },
+  {
+    "uuid": "683a8b7e73ab4ad89264fdd0a004ab58",
+    "codigo": "LQG-20261005-093604-4460"
+  },
+  {
+    "uuid": "283c9076f126451b8c4b971efdcc41a4",
+    "codigo": "LQG-20261005-093604-0C7D"
+  },
+  {
+    "uuid": "e614a65f0bb84618a3337c7011d98502",
+    "codigo": "LQG-20261005-093605-C952"
+  },
+  {
+    "uuid": "720cc008cd15452682077eb0b112ac4c",
+    "codigo": "LQG-20261005-093605-BEBD"
+  },
+  {
+    "uuid": "d66603d98cc44c33b82209d0cef3877a",
+    "codigo": "LQG-20261005-093605-990F"
+  },
+  {
+    "uuid": "e49c159fb9e7476ba01a0801879d4106",
+    "codigo": "LQG-20261005-093605-ED9A"
+  },
+  {
+    "uuid": "21f4afab0001494cab4637dba74f69d8",
+    "codigo": "LQG-20261005-093605-80EF"
+  },
+  {
+    "uuid": "52540f4ffcc74b84ba24e76c11b855b8",
+    "codigo": "LQG-20261005-093605-431E"
+  },
+  {
+    "uuid": "28f5b4cc4090469b9a0f91b1dc5d6c32",
+    "codigo": "LQG-20261005-093605-F619"
+  },
+  {
+    "uuid": "53c025a49ffd480fba28fb220e4e911b",
+    "codigo": "LQG-20261005-093606-0A33"
+  },
+  {
+    "uuid": "b623d12dbc3543c58e0e198de5ae7b10",
+    "codigo": "LQG-20261005-093606-A4D6"
+  },
+  {
+    "uuid": "a21b321bb4c84270afc4df3b4315fab5",
+    "codigo": "LQG-20261005-093606-799F"
+  },
+  {
+    "uuid": "1086506f77bf46b38f49569f11834def",
+    "codigo": "LQG-20261005-093606-FE58"
+  },
+  {
+    "uuid": "a097541dfe7e4c7585ebe691f1a9c6d3",
+    "codigo": "LQG-20261005-093606-A4AB"
+  },
+  {
+    "uuid": "51976fa30c1e4d4581b7e9bdd6e10d7f",
+    "codigo": "LQG-20261005-093607-6078"
+  },
+  {
+    "uuid": "bd069ec8b25d46dc89e698640849db78",
+    "codigo": "LQG-20261005-093607-524C"
+  },
+  {
+    "uuid": "ed7c25887cf44cef88f8548a4245fd9b",
+    "codigo": "LQG-20261005-093607-BA19"
+  },
+  {
+    "uuid": "e690964f76c942379b13ac114aca39b7",
+    "codigo": "LQG-20261005-093607-CCB7"
+  },
+  {
+    "uuid": "7e0a0f3869994793aee37f655249e793",
+    "codigo": "LQG-20261005-093607-1258"
+  },
+  {
+    "uuid": "0f4291a1239e4c169bdbcbfeddeb9283",
+    "codigo": "LQG-20261005-093608-68A9"
+  },
+  {
+    "uuid": "8d0ee8bd195443d4ae00ce8110a935c3",
+    "codigo": "LQG-20261005-093608-C672"
+  },
+  {
+    "uuid": "b277d35ed8af491682326595c3c3f585",
+    "codigo": "LQG-20261005-093608-614A"
+  },
+  {
+    "uuid": "f07bbb66eb5f44a98574011fef6f11dd",
+    "codigo": "LQG-20261005-093608-5D90"
+  },
+  {
+    "uuid": "10f157f3aa304d769ebe1d595fd6ef76",
+    "codigo": "LQG-20261005-093608-7CE1"
+  },
+  {
+    "uuid": "af245a29e9ac429ab2e68e6faa7ccb0c",
+    "codigo": "LQG-20261005-093609-AF84"
+  },
+  {
+    "uuid": "31bdbb63f65c447b8f7fdf964459c881",
+    "codigo": "LQG-20261005-093609-F710"
+  },
+  {
+    "uuid": "3d9c24d2a8e54291a64d7a56192d2618",
+    "codigo": "LQG-20261005-093610-3F51"
+  },
+  {
+    "uuid": "ce5f18e13ec9433b9ef4506c2600406e",
+    "codigo": "LQG-20261005-093610-0599"
+  },
+  {
+    "uuid": "36ffde9c9e4a4fc3951a50cc79a7db77",
+    "codigo": "LQG-20261005-093610-D89A"
+  },
+  {
+    "uuid": "e6776b8cc1894971994b8275a033ff2f",
+    "codigo": "LQG-20261005-093610-ED15"
+  },
+  {
+    "uuid": "8a1b50e7959c4168927516be3d9e939d",
+    "codigo": "LQG-20261005-093610-1CA7"
+  },
+  {
+    "uuid": "d37fb885b158420facbb30f04c7c5a9c",
+    "codigo": "LQG-20261005-093611-F1DA"
+  },
+  {
+    "uuid": "c94de929fe284a87b12f47f8b966bf77",
+    "codigo": "LQG-20261005-093611-3FEF"
+  },
+  {
+    "uuid": "2c19d4fe80564b55aca785eaa7d4a4df",
+    "codigo": "LQG-20261005-093611-6814"
+  },
+  {
+    "uuid": "5042bb6323af43708177c9d99113ad8e",
+    "codigo": "LQG-20261005-093611-AD0D"
+  },
+  {
+    "uuid": "e5c9545df75e4dbc8b8dbebbd1eb414c",
+    "codigo": "LQG-20261005-093611-B978"
+  },
+  {
+    "uuid": "3c13641ba76641edbb145ae0d70e4c0c",
+    "codigo": "LQG-20261005-093612-5FE6"
+  },
+  {
+    "uuid": "62fa277e751c485ab0c8da81389fedca",
+    "codigo": "LQG-20261005-093612-BE08"
+  },
+  {
+    "uuid": "ed718b2b3a87402fb61ae6819d12ac54",
+    "codigo": "LQG-20261005-093612-BCB5"
+  },
+  {
+    "uuid": "3cb37326d9c54121ab840bc68870ef14",
+    "codigo": "LQG-20261005-093612-92E1"
+  },
+  {
+    "uuid": "7b2fda896b0648e19a4a271b3696ce97",
+    "codigo": "LQG-20261005-093612-6890"
+  },
+  {
+    "uuid": "92750dcaf3ab45f599bb9d693542ba5c",
+    "codigo": "LQG-20261005-093612-9601"
+  },
+  {
+    "uuid": "26ed0bc587984ada80c906092c0736a0",
+    "codigo": "LQG-20261005-093613-23C1"
+  },
+  {
+    "uuid": "ff9a0494626048fb82aa38fb52d83716",
+    "codigo": "LQG-20261005-093613-12CA"
+  },
+  {
+    "uuid": "84e7a583afef4523b0f92acd6268ab92",
+    "codigo": "LQG-20261005-093613-DAF0"
+  },
+  {
+    "uuid": "6bc3820f0ae7404cba4bdf3753634817",
+    "codigo": "LQG-20261005-093613-02B3"
+  },
+  {
+    "uuid": "7bda0b5b6bad4812b4bedc07510c2ae0",
+    "codigo": "LQG-20261005-093613-E92A"
+  },
+  {
+    "uuid": "0a81736133b64b9081f5002b7713dd21",
+    "codigo": "LQG-20261005-093613-AD2F"
+  },
+  {
+    "uuid": "08e7ea2d61904ff3b4d031a30cd84de5",
+    "codigo": "LQG-20261005-093614-6E90"
+  },
+  {
+    "uuid": "da3f3d6eeac24dad80b6c730f9540f6d",
+    "codigo": "LQG-20261005-093614-B6BA"
+  },
+  {
+    "uuid": "063dca5f0a4c468cb773bda1488abf11",
+    "codigo": "LQG-20261005-093614-838D"
+  },
+  {
+    "uuid": "f84dbaa4df3844c3b7ee98bf4f31b875",
+    "codigo": "LQG-20261005-093614-B500"
+  },
+  {
+    "uuid": "f8e70923212248d3a4c595f44ffc69bc",
+    "codigo": "LQG-20261005-093614-A23B"
+  },
+  {
+    "uuid": "93b815b0013045f9b8315bef53759721",
+    "codigo": "LQG-20261005-093615-ED83"
+  },
+  {
+    "uuid": "2ecae3563003424a9c5c9e3a4b1326d9",
+    "codigo": "LQG-20261005-093615-0C84"
+  },
+  {
+    "uuid": "273315115de647ff841f063f77cf5f5d",
+    "codigo": "LQG-20261005-093616-2EAC"
+  },
+  {
+    "uuid": "c486be363f0a452282d4da9a109a95b2",
+    "codigo": "LQG-20261005-093616-C9DA"
+  },
+  {
+    "uuid": "5a8338c9544c40659a1ac3dc35226ea3",
+    "codigo": "LQG-20261005-093616-344C"
+  },
+  {
+    "uuid": "11deebbb87c94511809f9d260dcce805",
+    "codigo": "LQG-20261005-093616-6126"
+  },
+  {
+    "uuid": "2fa59824f3f8412c849dfd49d3ec9070",
+    "codigo": "LQG-20261005-093616-315D"
+  },
+  {
+    "uuid": "89911b131aac4fa8ba9995a96afb7cf0",
+    "codigo": "LQG-20261005-093617-52AD"
+  },
+  {
+    "uuid": "5b9d86a0ae864a16bf24b2b6053a3dd5",
+    "codigo": "LQG-20261005-093617-D3E3"
+  },
+  {
+    "uuid": "fa47b0084fbf4b0d916a4715e1b137ed",
+    "codigo": "LQG-20261005-093617-8B35"
+  },
+  {
+    "uuid": "329e3c452776481b8d2226c12f86cf4c",
+    "codigo": "LQG-20261005-093617-1E1D"
+  },
+  {
+    "uuid": "e30ef5843df74a91b1186f15becf314e",
+    "codigo": "LQG-20261005-093617-4518"
+  },
+  {
+    "uuid": "55ccf00d1ab44cad8b810a24a1d1ca93",
+    "codigo": "LQG-20261005-093617-9355"
+  },
+  {
+    "uuid": "702bd4945a594fa28434d1ad77152d7f",
+    "codigo": "LQG-20261005-093618-C91D"
+  },
+  {
+    "uuid": "98dc7b593929485e96a3ee791ac07e4c",
+    "codigo": "LQG-20261005-093618-AA9A"
+  },
+  {
+    "uuid": "3c14564909724c54861da9f44c17bedc",
+    "codigo": "LQG-20261005-093618-D1EA"
+  },
+  {
+    "uuid": "9d54dec0fd2048bcba7ad1ced0456b95",
+    "codigo": "LQG-20261005-093618-DEBD"
+  },
+  {
+    "uuid": "806161a1c64240e490dd9a1932f597f0",
+    "codigo": "LQG-20261005-093618-FD50"
+  },
+  {
+    "uuid": "c2bb84fc2714432aa56d604f2f46a5b4",
+    "codigo": "LQG-20261005-093618-8094"
+  },
+  {
+    "uuid": "47a40361febb480b9762d7622a86863b",
+    "codigo": "LQG-20261005-093619-B393"
+  },
+  {
+    "uuid": "c6656c271eb946cf9e9b47a8c42d9f09",
+    "codigo": "LQG-20261005-093619-7E05"
+  },
+  {
+    "uuid": "f965629d01f54537a5818d090507766c",
+    "codigo": "LQG-20261005-093619-4298"
+  },
+  {
+    "uuid": "b0afd2ff1a4c49768092124687d2c771",
+    "codigo": "LQG-20261005-093619-548A"
+  },
+  {
+    "uuid": "1572da49e2104949950ba2505a650846",
+    "codigo": "LQG-20261005-093619-5449"
+  },
+  {
+    "uuid": "fb34f762fb23427c99c05be93fc078a0",
+    "codigo": "LQG-20261005-093619-B179"
+  },
+  {
+    "uuid": "b9843f47a4d14b0cadcb3321a28a6cae",
+    "codigo": "LQG-20261005-093620-A87D"
+  },
+  {
+    "uuid": "241d6436cabd44739b1dd802537eb4bb",
+    "codigo": "LQG-20261005-093620-DCD7"
+  },
+  {
+    "uuid": "6b761bf7a3504bd5918ac730343d50d3",
+    "codigo": "LQG-20261005-093620-B00A"
+  },
+  {
+    "uuid": "d281fbf9f6b04c8f9bf2c151c048b915",
+    "codigo": "LQG-20261005-093620-374A"
+  },
+  {
+    "uuid": "b0cede0953fd4e298307097cb551ad3f",
+    "codigo": "LQG-20261005-093621-17BA"
+  },
+  {
+    "uuid": "03b0443a79f5434caa58a28dbc8c7ee9",
+    "codigo": "LQG-20261005-093621-075A"
+  },
+  {
+    "uuid": "b2a196f2305947f79b94897c03944f0b",
+    "codigo": "LQG-20261005-093621-5E2D"
+  },
+  {
+    "uuid": "0d605fb9aa294f93bcd9193d296a9fe5",
+    "codigo": "LQG-20261005-093622-6243"
+  },
+  {
+    "uuid": "7a6d85cd072e4184a836486900078c24",
+    "codigo": "LQG-20261005-093622-A581"
+  },
+  {
+    "uuid": "91764d68270c42c693974824b079cc99",
+    "codigo": "LQG-20261005-093622-5F17"
+  },
+  {
+    "uuid": "68021fe2ada14301a450f264ec140843",
+    "codigo": "LQG-20261005-093622-E983"
+  },
+  {
+    "uuid": "2e2d3526a0d54dea8e46fa299ec05d60",
+    "codigo": "LQG-20261005-093622-96FA"
+  },
+  {
+    "uuid": "6a83b45947bd425cafaae20a9f15d4e1",
+    "codigo": "LQG-20261005-093623-9851"
+  },
+  {
+    "uuid": "7eb2136a07e24a9992368442893cb99e",
+    "codigo": "LQG-20261005-093623-41C3"
+  },
+  {
+    "uuid": "16b8700130014b07bd5c2dc609563e94",
+    "codigo": "LQG-20261005-093623-932B"
+  },
+  {
+    "uuid": "290c9e7d9fc04d528dcc087ce23b8b70",
+    "codigo": "LQG-20261005-093623-9F3D"
+  },
+  {
+    "uuid": "5fbd0c379c33408cb8826762322d5961",
+    "codigo": "LQG-20261005-093623-1A22"
+  },
+  {
+    "uuid": "555fb68417624692b609936ec9de5a56",
+    "codigo": "LQG-20261005-093623-94EF"
+  },
+  {
+    "uuid": "157d2f2678aa4b7f80f5aaf2a6a0aae0",
+    "codigo": "LQG-20261005-093624-D838"
+  },
+  {
+    "uuid": "24951cf4e53749dcaef1de5bf7f22b8b",
+    "codigo": "LQG-20261005-093624-4587"
+  },
+  {
+    "uuid": "9be2546f3d144f75b4abea8c0de85952",
+    "codigo": "LQG-20261005-093624-E388"
+  },
+  {
+    "uuid": "cad66fa151964af18c75d98de924cdd0",
+    "codigo": "LQG-20261005-093625-3863"
+  },
+  {
+    "uuid": "eb8fcd34d98248e2af28be9bae4a34d1",
+    "codigo": "LQG-20261005-093625-ACB5"
+  },
+  {
+    "uuid": "e45fcf7074384f948adc6831d757c2ce",
+    "codigo": "LQG-20261005-093625-072E"
+  },
+  {
+    "uuid": "9bb5ecf087be4fb3afd5271768513275",
+    "codigo": "LQG-20261005-093625-F86C"
+  },
+  {
+    "uuid": "2605c246dff34cb3b6baeac2fe9c8ff9",
+    "codigo": "LQG-20261005-093625-9082"
+  },
+  {
+    "uuid": "4ba1de1f25f345daa94c06b74a05507b",
+    "codigo": "LQG-20261005-093625-67A2"
+  },
+  {
+    "uuid": "67662c761208498ab71f8b43bd6f2a65",
+    "codigo": "LQG-20261005-093626-AE0A"
+  },
+  {
+    "uuid": "189f7c05d1514bf2af57a3f02fc713f8",
+    "codigo": "LQG-20261005-093626-1D54"
+  },
+  {
+    "uuid": "08f7ad49fa8f4325a848afc5a10abc33",
+    "codigo": "LQG-20261005-093626-55D2"
+  },
+  {
+    "uuid": "9e0e27efb24d410a88e77a1a3f0b09d1",
+    "codigo": "LQG-20261005-093627-08B4"
+  },
+  {
+    "uuid": "ee583c16007b4c1191a38d69123d6555",
+    "codigo": "LQG-20261005-093627-0E37"
+  },
+  {
+    "uuid": "66628789493e45b5b0e18f3f4c0eade9",
+    "codigo": "LQG-20261005-093627-BC4E"
+  },
+  {
+    "uuid": "aa22551ea84e449ca4d3fa14d56d9a00",
+    "codigo": "LQG-20261005-093627-FF4F"
+  },
+  {
+    "uuid": "e8160cd589ba44129071683ed70c3a3d",
+    "codigo": "LQG-20261005-093627-1C7E"
+  },
+  {
+    "uuid": "2e1947f4a8634951a847bab040f614e0",
+    "codigo": "LQG-20261005-093628-D07F"
+  },
+  {
+    "uuid": "2654ec29ebd54a0d85f1636ac333ba21",
+    "codigo": "LQG-20261005-093628-61EB"
+  },
+  {
+    "uuid": "96aa9e0257e846ccab411887c971a4cd",
+    "codigo": "LQG-20261005-093628-E2D8"
+  },
+  {
+    "uuid": "ad649abc761747f2913005274c408aaf",
+    "codigo": "LQG-20261005-093628-F433"
+  },
+  {
+    "uuid": "9ab7a41ef63047a78ae0743204e9d42f",
+    "codigo": "LQG-20261005-093628-92F2"
+  },
+  {
+    "uuid": "a47df17838304884a24cdbebffb0031d",
+    "codigo": "LQG-20261005-093628-2F80"
+  },
+  {
+    "uuid": "0edbfdd9a51b42b7aa68d6d66cf64d4c",
+    "codigo": "LQG-20261005-093629-A62B"
+  },
+  {
+    "uuid": "4d6d6c8c2e684ed8b46e7ea91effbcbf",
+    "codigo": "LQG-20261005-093629-7805"
+  },
+  {
+    "uuid": "5a6ce6a65ad446d9a4cb3c2dea972842",
+    "codigo": "LQG-20261005-093629-4E52"
+  },
+  {
+    "uuid": "3a525103ec254de98ca813fd2ca7cd63",
+    "codigo": "LQG-20261005-093629-2826"
+  },
+  {
+    "uuid": "e90c7654329d492882bcf494f11b5e45",
+    "codigo": "LQG-20261005-093629-018F"
+  },
+  {
+    "uuid": "a81d5a47a8d748fb8874045a97d55e12",
+    "codigo": "LQG-20261005-093630-7E92"
+  },
+  {
+    "uuid": "184ec3b4122f41e3a497b9d223467d1a",
+    "codigo": "LQG-20261005-093630-AB58"
+  },
+  {
+    "uuid": "8d1b93e13f66400a90b00c6f0503cd64",
+    "codigo": "LQG-20261005-093630-95AA"
+  },
+  {
+    "uuid": "db8004b8f81c441189a507753cb6faab",
+    "codigo": "LQG-20261005-093630-ED62"
+  },
+  {
+    "uuid": "d1b9edade0f34938a171fa32652cea74",
+    "codigo": "LQG-20261005-093630-81F1"
+  },
+  {
+    "uuid": "ecbb1dbf31cd4175ae0ffae91b8dbc2b",
+    "codigo": "LQG-20261005-093631-363C"
+  },
+  {
+    "uuid": "004feafd7fe1449b86622ce0e893ffac",
+    "codigo": "LQG-20261005-093631-D6E6"
+  },
+  {
+    "uuid": "ba564ed4007b4783b4928adad70f8df1",
+    "codigo": "LQG-20261005-093631-BC74"
+  },
+  {
+    "uuid": "e3ffe7d1297e489a9e6fc12fadfd0df3",
+    "codigo": "LQG-20261005-093631-330A"
+  },
+  {
+    "uuid": "02037f80feeb41e1805d0b972fdf94c1",
+    "codigo": "LQG-20261005-093631-810D"
+  },
+  {
+    "uuid": "2584168ab0a54728bbee21d6cd5193fb",
+    "codigo": "LQG-20261005-093631-A7B5"
+  },
+  {
+    "uuid": "f26c890dd12043e9b5e3c479ea5a0f31",
+    "codigo": "LQG-20261005-093632-AC5E"
+  },
+  {
+    "uuid": "a6c62d6f421b4d6597a9044515589351",
+    "codigo": "LQG-20261005-093632-ACD5"
+  },
+  {
+    "uuid": "786d8340a12c469d9fb98c154c781fcb",
+    "codigo": "LQG-20261005-093632-3B23"
+  },
+  {
+    "uuid": "9f889f67f5be430ea0de83b394503dc5",
+    "codigo": "LQG-20261005-093632-D2D4"
+  },
+  {
+    "uuid": "91b9c8b20ec34c07b731476cdaa1387c",
+    "codigo": "LQG-20261005-093633-F8A5"
+  },
+  {
+    "uuid": "4092f48080a24835b16a705064d11a57",
+    "codigo": "LQG-20261005-093633-0DEC"
+  },
+  {
+    "uuid": "253b3991c3734d5daeb3f8961df896cc",
+    "codigo": "LQG-20261005-093633-FB32"
+  },
+  {
+    "uuid": "640f288757424b3fa76f0265aa06615c",
+    "codigo": "LQG-20261005-093633-7F0F"
+  },
+  {
+    "uuid": "96717e5b60064245b6097fc461db8055",
+    "codigo": "LQG-20261005-093633-84FA"
+  },
+  {
+    "uuid": "1efe63b4b8854d1180db1de3487f67f7",
+    "codigo": "LQG-20261005-093633-2E0E"
+  },
+  {
+    "uuid": "19dc3d57bc134c2087ebab8e9cab4894",
+    "codigo": "LQG-20261005-093634-4E2B"
+  },
+  {
+    "uuid": "57e04ebd4bec45ee8302e4c26ba67ab9",
+    "codigo": "LQG-20261005-093634-E9CD"
+  },
+  {
+    "uuid": "80140484b4e64ac3bf255732e2a6ecc4",
+    "codigo": "LQG-20261005-093634-1B28"
+  },
+  {
+    "uuid": "4324348e6f52437ab91128a13326863b",
+    "codigo": "LQG-20261005-093634-1F20"
+  },
+  {
+    "uuid": "29c32d3e717e4ac982bea59f1ddab237",
+    "codigo": "LQG-20261005-093634-D104"
+  },
+  {
+    "uuid": "d9091136ce094eb4a53d1338c044736c",
+    "codigo": "LQG-20261005-093635-B2A0"
+  },
+  {
+    "uuid": "b3af1e268ed9449c9505dc9c8836eeb6",
+    "codigo": "LQG-20261005-093635-A5CD"
+  },
+  {
+    "uuid": "b795d7865ac4464ca1ae442ec762e245",
+    "codigo": "LQG-20261005-093635-B4B2"
+  },
+  {
+    "uuid": "88955750f796445d8cb3b22607b61ea1",
+    "codigo": "LQG-20261005-093635-CA97"
+  },
+  {
+    "uuid": "947e299975b84f75bc2febbf6bfe1de7",
+    "codigo": "LQG-20261005-093635-0566"
+  },
+  {
+    "uuid": "9cc336b5c5bd43808661d7d8ee62bb47",
+    "codigo": "LQG-20261005-093636-C9CB"
+  },
+  {
+    "uuid": "b0692df2bb824db5a0e8cfa2aeb24c98",
+    "codigo": "LQG-20261005-093636-A828"
+  },
+  {
+    "uuid": "cb6499d4c1074e39bbb96cdf795c4aa8",
+    "codigo": "LQG-20261005-093636-FED6"
+  },
+  {
+    "uuid": "214718f6a9b94532a12efaa86bd63726",
+    "codigo": "LQG-20261005-093636-65A2"
+  },
+  {
+    "uuid": "95b992160c4a4dd3a684bad2c7f144c5",
+    "codigo": "LQG-20261005-093636-D40D"
+  },
+  {
+    "uuid": "6cf06260d5a2489fa341595ea86a35bd",
+    "codigo": "LQG-20261005-093637-6FAC"
+  },
+  {
+    "uuid": "cf4d3da52f0e4bb597ae2891f6bb878a",
+    "codigo": "LQG-20261005-093637-46B3"
+  },
+  {
+    "uuid": "d6b8dcd3a54647d2bcc41e7037035e08",
+    "codigo": "LQG-20261005-093637-1DDB"
+  },
+  {
+    "uuid": "33ac7510963545fc9708171e478b54d0",
+    "codigo": "LQG-20261005-093638-332D"
+  },
+  {
+    "uuid": "89822ce5a4e24685b1d528a4ff7bd953",
+    "codigo": "LQG-20261005-093638-66BD"
+  },
+  {
+    "uuid": "dcccf54e2c8b441f9f8819048d33da96",
+    "codigo": "LQG-20261005-093638-E0B0"
+  },
+  {
+    "uuid": "25d8cbddba3b4811a8fb8da63044f9fd",
+    "codigo": "LQG-20261005-093638-8C92"
+  },
+  {
+    "uuid": "8b5737c6c2564770b2891419e894766e",
+    "codigo": "LQG-20261005-093638-CC95"
+  },
+  {
+    "uuid": "5cff9feeb126491cb171116cf4ad5173",
+    "codigo": "LQG-20261005-093639-14AD"
+  },
+  {
+    "uuid": "7dbd9d92bb6443938d29efe590a3ffb4",
+    "codigo": "LQG-20261005-093639-3BF2"
+  },
+  {
+    "uuid": "297dbf598f284ca38ea6eae6b730eb69",
+    "codigo": "LQG-20261005-093639-B9F3"
+  },
+  {
+    "uuid": "4f090e4cdbfe4cde8420c297c7ab3e89",
+    "codigo": "LQG-20261005-093639-1CF6"
+  },
+  {
+    "uuid": "3fd7f39a1ec4453fa9cd1bd782c46940",
+    "codigo": "LQG-20261005-093640-75F2"
+  },
+  {
+    "uuid": "0ab6e2adf2884c3a99b57fdb59765532",
+    "codigo": "LQG-20261005-093640-79EE"
+  },
+  {
+    "uuid": "826d7eca79dc4772ac57061c7ef06b1b",
+    "codigo": "LQG-20261005-093640-9E76"
+  },
+  {
+    "uuid": "bad4e1c1a3a34d59ab78654743d542ed",
+    "codigo": "LQG-20261005-093640-299B"
+  },
+  {
+    "uuid": "7f8fb8f2a98d4f0fa4959fa7123b069c",
+    "codigo": "LQG-20261005-093640-82D4"
+  },
+  {
+    "uuid": "2e9eddb320054bfbbd41414e32115b9a",
+    "codigo": "LQG-20261005-093641-D022"
+  },
+  {
+    "uuid": "60a32d847c054d58ad036ab0588e93d3",
+    "codigo": "LQG-20261005-093641-A8AF"
+  },
+  {
+    "uuid": "f72923e7e0f14448ac0c65b688345c24",
+    "codigo": "LQG-20261005-093641-EB03"
+  },
+  {
+    "uuid": "9e5b3f27038946c48eadfe9c3c98456b",
+    "codigo": "LQG-20261005-093641-CC32"
+  },
+  {
+    "uuid": "32dd42cee7ed43d0a4ced654dd623cb9",
+    "codigo": "LQG-20261005-093641-8786"
+  },
+  {
+    "uuid": "c6e6355d99104284bd8fc14f47a9e6c0",
+    "codigo": "LQG-20261005-093641-4BEC"
+  },
+  {
+    "uuid": "b8aac7c1d096497aa4ff8593e61ad56f",
+    "codigo": "LQG-20261005-093642-48C2"
+  },
+  {
+    "uuid": "5c943bfd17ad4c91852eec9f9d4544d6",
+    "codigo": "LQG-20261005-093642-0A37"
+  },
+  {
+    "uuid": "6cde165ebbd7499b9ac94709fc7b88ae",
+    "codigo": "LQG-20261005-093642-F437"
+  },
+  {
+    "uuid": "816ff0c7a94b49aaa8143484d162d560",
+    "codigo": "LQG-20261005-093643-B063"
+  },
+  {
+    "uuid": "89b39d5b315c4e0699b2eb4a5755a87b",
+    "codigo": "LQG-20261005-093643-BEBD"
+  },
+  {
+    "uuid": "9cd964ac2a1e43c4892558e60531e2a9",
+    "codigo": "LQG-20261005-093643-EC9E"
+  },
+  {
+    "uuid": "dbf152a6408b43bf867719e5b8abb62d",
+    "codigo": "LQG-20261005-093643-C815"
+  },
+  {
+    "uuid": "a274acd70f4f449881f793b305a89f80",
+    "codigo": "LQG-20261005-093643-4418"
+  },
+  {
+    "uuid": "d77600faf85f464f8553c8bdfa2fcfed",
+    "codigo": "LQG-20261005-093643-D622"
+  },
+  {
+    "uuid": "66293c5da71f4fbd8b24cb07ea355bb3",
+    "codigo": "LQG-20261005-093644-388A"
+  },
+  {
+    "uuid": "b6b221daa6424523b4c5f64df9d3bd04",
+    "codigo": "LQG-20261005-093644-591D"
+  },
+  {
+    "uuid": "e4c980ed70134846a898f1b854bb45a1",
+    "codigo": "LQG-20261005-093644-9989"
+  },
+  {
+    "uuid": "bb7e9491e2894e03be0950a2902a202e",
+    "codigo": "LQG-20261005-093644-7BC3"
+  },
+  {
+    "uuid": "e97ee43ca2434d34aa52a330aa857255",
+    "codigo": "LQG-20261005-093644-8FDF"
+  },
+  {
+    "uuid": "bcefa8d2692441c3b8cd583277c16cc4",
+    "codigo": "LQG-20261005-093644-3721"
+  },
+  {
+    "uuid": "31f472a50a324274812c9a833dfaf0a4",
+    "codigo": "LQG-20261005-093645-B840"
+  },
+  {
+    "uuid": "3eb9dbb2910e422fa7c11a0bc39a4f5c",
+    "codigo": "LQG-20261005-093645-5AEF"
+  },
+  {
+    "uuid": "116fbd87eac0488aafe1d821da77d8b3",
+    "codigo": "LQG-20261005-093645-C082"
+  },
+  {
+    "uuid": "766e4a92af0048d3ab2e1337144c812b",
+    "codigo": "LQG-20261005-093645-DBF7"
+  },
+  {
+    "uuid": "cc72bda7d61b47dda1b960815804c59c",
+    "codigo": "LQG-20261005-093645-8EFD"
+  },
+  {
+    "uuid": "cbdb96f0b31a4931bdfd6217d100d78c",
+    "codigo": "LQG-20261005-093646-2886"
+  },
+  {
+    "uuid": "8f7349fe0e444b028783adeb6451e016",
+    "codigo": "LQG-20261005-093646-9817"
+  },
+  {
+    "uuid": "6f7bad2ed1084e31b6b9b509f5761c57",
+    "codigo": "LQG-20261005-093646-BB9C"
+  },
+  {
+    "uuid": "3de122b1a38549389080ba7566065262",
+    "codigo": "LQG-20261005-093646-A507"
+  },
+  {
+    "uuid": "c816219963cd4b63a548caa19ad80dc1",
+    "codigo": "LQG-20261005-093646-0C8C"
+  },
+  {
+    "uuid": "ae6361b92e7a4cb2977ee09f7584e4e9",
+    "codigo": "LQG-20261005-093647-A1D3"
+  },
+  {
+    "uuid": "dad3c85db21246de967cab5a641ca1f6",
+    "codigo": "LQG-20261005-093647-C800"
+  },
+  {
+    "uuid": "3b37e4180e8e4fa0b0352b18ae426089",
+    "codigo": "LQG-20261005-093647-5AAB"
+  },
+  {
+    "uuid": "af62ebd139bc4886b3c5157722916a23",
+    "codigo": "LQG-20261005-093647-04D3"
+  },
+  {
+    "uuid": "857fe873742b4d799f457303702c0bcf",
+    "codigo": "LQG-20261005-093647-D895"
+  },
+  {
+    "uuid": "8e298d326fd240eba7c8e78f04cf41c8",
+    "codigo": "LQG-20261005-093648-1C96"
+  },
+  {
+    "uuid": "b3e680d9de8845f4a54a7ea442f11aec",
+    "codigo": "LQG-20261005-093648-037B"
+  },
+  {
+    "uuid": "724e1598dc054681add977ca2dc79257",
+    "codigo": "LQG-20261005-093648-1592"
+  },
+  {
+    "uuid": "0643623ac961499795785f5751ad391a",
+    "codigo": "LQG-20261005-093649-BB2E"
+  },
+  {
+    "uuid": "6e80d6425e9d4f78812ec60e789a784f",
+    "codigo": "LQG-20261005-093649-8577"
+  },
+  {
+    "uuid": "840769bbdc31475498dcee48e5f4a0e8",
+    "codigo": "LQG-20261005-093649-FFF7"
+  },
+  {
+    "uuid": "3c9c17725c3c461b9f000f48dbb75b36",
+    "codigo": "LQG-20261005-093649-7CE2"
+  },
+  {
+    "uuid": "139510b9048c40fc82f162fcf398e964",
+    "codigo": "LQG-20261005-093649-D633"
+  },
+  {
+    "uuid": "01be46e2c1574ead91c874c579b27e2b",
+    "codigo": "LQG-20261005-093650-09AF"
+  },
+  {
+    "uuid": "e8adbeafcda14d6c92e6e0f96e5681a8",
+    "codigo": "LQG-20261005-093650-165F"
+  },
+  {
+    "uuid": "2f9b9bd77a0a473b835fb086b6437f06",
+    "codigo": "LQG-20261005-093650-EA07"
+  },
+  {
+    "uuid": "eb039efc4cea4055b6ac68be7aa71bb9",
+    "codigo": "LQG-20261005-093650-6641"
+  },
+  {
+    "uuid": "3ba81e0d127d42da89fbeb20fcfabd8a",
+    "codigo": "LQG-20261005-093650-65BD"
+  },
+  {
+    "uuid": "b99738df32cd4624b30c5fd3319bb182",
+    "codigo": "LQG-20261005-093650-5024"
+  },
+  {
+    "uuid": "c2e6d20ab7974317968eabdf9448223a",
+    "codigo": "LQG-20261005-093651-52F6"
+  },
+  {
+    "uuid": "9cc83acceb12499d9cf94901e8e70509",
+    "codigo": "LQG-20261005-093651-AAE2"
+  },
+  {
+    "uuid": "714505e0aec84e4a80e3cdbea6057a71",
+    "codigo": "LQG-20261005-093651-274B"
+  },
+  {
+    "uuid": "2431c09bd4504ae09d7fbf6a5128825d",
+    "codigo": "LQG-20261005-093651-5DC6"
+  },
+  {
+    "uuid": "f871a79b46fc4916b78f7e7347bd1d87",
+    "codigo": "LQG-20261005-093652-F279"
+  },
+  {
+    "uuid": "e96ec89a0115442bad7fe5567bd9b724",
+    "codigo": "LQG-20261005-093652-4C32"
+  },
+  {
+    "uuid": "fb8eddd5f0db4aee9011af0dd6b0bd28",
+    "codigo": "LQG-20261005-093652-9AA7"
+  },
+  {
+    "uuid": "7a18714686ba43b99c1edc83c926b293",
+    "codigo": "LQG-20261005-093652-94FD"
+  },
+  {
+    "uuid": "ebec76d9060942518b2e60e199703a0d",
+    "codigo": "LQG-20261005-093653-CC70"
+  },
+  {
+    "uuid": "c5404f1db6b4420f8838494293b75abd",
+    "codigo": "LQG-20261005-093653-2555"
+  },
+  {
+    "uuid": "c433afb860904b6cb2de61cd86bfa98c",
+    "codigo": "LQG-20261005-093653-48C5"
+  },
+  {
+    "uuid": "9fec964506c04872a710d9b4317ab5f6",
+    "codigo": "LQG-20261005-093653-1B4F"
+  },
+  {
+    "uuid": "74399503ee6d42a19d5783d6c0047e21",
+    "codigo": "LQG-20261005-093654-5CC9"
+  },
+  {
+    "uuid": "c03424f6326b4f8c942cd8dd3a566e4a",
+    "codigo": "LQG-20261005-093654-3D20"
+  },
+  {
+    "uuid": "c077f004792f4d0f8d32d7fe75c26a45",
+    "codigo": "LQG-20261005-093654-ED04"
+  },
+  {
+    "uuid": "3c70a00db1c243178466f3f7286799fb",
+    "codigo": "LQG-20261005-093654-08A2"
+  },
+  {
+    "uuid": "532c09e0cf164c4da41c44ce83c94161",
+    "codigo": "LQG-20261005-093654-0D62"
+  },
+  {
+    "uuid": "eabf197866d247058cc1c63db66c1441",
+    "codigo": "LQG-20261005-093655-ADA9"
+  },
+  {
+    "uuid": "b39fdc82a6424373b90fe36b16dee8ff",
+    "codigo": "LQG-20261005-093655-3BC6"
+  },
+  {
+    "uuid": "38790514af5741eb95ba07747dbe97a6",
+    "codigo": "LQG-20261005-093655-EABB"
+  },
+  {
+    "uuid": "9c2a6bf7172f402a9c1e2a459b824695",
+    "codigo": "LQG-20261005-093656-CB66"
+  },
+  {
+    "uuid": "c2189472d41e4585a0e7cf2fb54bd26c",
+    "codigo": "LQG-20261005-093656-F6BE"
+  },
+  {
+    "uuid": "8d5ea03bc0fa4474b3a88492104af3b5",
+    "codigo": "LQG-20261005-093656-A8B7"
+  },
+  {
+    "uuid": "cb9b033401ec444eb32d34831e06feff",
+    "codigo": "LQG-20261005-093656-99ED"
+  },
+  {
+    "uuid": "8610096b02624517b7183af328ef747f",
+    "codigo": "LQG-20261005-093656-6469"
+  },
+  {
+    "uuid": "de7adbf4ef994a87bc4d1092ce0252f6",
+    "codigo": "LQG-20261005-093657-BB00"
+  },
+  {
+    "uuid": "24b1e27b9d274f66b3c2052c076c69d8",
+    "codigo": "LQG-20261005-093657-B4AC"
+  },
+  {
+    "uuid": "05ddbe2257094368ba6774bc63d05124",
+    "codigo": "LQG-20261005-093657-8957"
+  },
+  {
+    "uuid": "55318031089b453db9be50d256bd7f5c",
+    "codigo": "LQG-20261005-093658-DF44"
+  },
+  {
+    "uuid": "0818d08084ea4c9db6fcf93fc7e0ac97",
+    "codigo": "LQG-20261005-093658-FA6C"
+  },
+  {
+    "uuid": "ed6d3331982346a78581789f97949a12",
+    "codigo": "LQG-20261005-093658-55D4"
+  },
+  {
+    "uuid": "aea81a37bd074f378a8682ff978a3b22",
+    "codigo": "LQG-20261005-093659-4DA0"
+  },
+  {
+    "uuid": "d12ceb7c2ac5482d89d322248150e676",
+    "codigo": "LQG-20261005-093659-5043"
+  },
+  {
+    "uuid": "064d19a4fa534f6e8e5f6f3d9f14942c",
+    "codigo": "LQG-20261005-093659-E0AF"
+  },
+  {
+    "uuid": "66efa91a626f4dbba9fd8201dc99f276",
+    "codigo": "LQG-20261005-093659-CFA3"
+  },
+  {
+    "uuid": "0ef577309e17445d8de0d2b00df592bc",
+    "codigo": "LQG-20261005-093700-B808"
+  },
+  {
+    "uuid": "97f149edf41846e69ddd0b2dc40bff8e",
+    "codigo": "LQG-20261005-093700-C51D"
+  },
+  {
+    "uuid": "ece1c6b45cb44fd992fa6e1564cc4fcd",
+    "codigo": "LQG-20261005-093700-B95A"
+  },
+  {
+    "uuid": "0d75278b8a084f9f877b1c6f3b04eaee",
+    "codigo": "LQG-20261005-093700-895C"
+  },
+  {
+    "uuid": "f88372c93d174ab4a55b36d03cc3389d",
+    "codigo": "LQG-20261005-093700-2AC7"
+  },
+  {
+    "uuid": "6286d8098bdd49bba7dc1822b93ea375",
+    "codigo": "LQG-20261005-093701-5582"
+  },
+  {
+    "uuid": "27f2a0221ac846fcbe921e0abf837a02",
+    "codigo": "LQG-20261005-093701-33C3"
+  },
+  {
+    "uuid": "f26094f61cf844d7b26c98cc493c2446",
+    "codigo": "LQG-20261005-093701-64E2"
+  },
+  {
+    "uuid": "05522ac50c78486c86cdcb49cd26a3d5",
+    "codigo": "LQG-20261005-093701-DDF4"
+  },
+  {
+    "uuid": "984a3f06f5ee4493803bfaef9ef7da76",
+    "codigo": "LQG-20261005-093701-9E22"
+  },
+  {
+    "uuid": "307f43f9577543589c7295b347cb66d0",
+    "codigo": "LQG-20261005-093702-884C"
+  },
+  {
+    "uuid": "1675360013d44574ae4c8e086d3e4b5b",
+    "codigo": "LQG-20261005-093702-AA04"
+  },
+  {
+    "uuid": "91b26d5a8abf40e38193b04987c932af",
+    "codigo": "LQG-20261005-093702-46E4"
+  },
+  {
+    "uuid": "7153878f1f1b41559aaf59436d478026",
+    "codigo": "LQG-20261005-093702-E611"
+  },
+  {
+    "uuid": "a9164a5c681543879a5ac978bdd30c69",
+    "codigo": "LQG-20261005-093703-AB0A"
+  },
+  {
+    "uuid": "a89aac8bade74d8f983b5b653bba6105",
+    "codigo": "LQG-20261005-093703-2BE6"
+  },
+  {
+    "uuid": "519818bd16c44f1786ffcc46e2056544",
+    "codigo": "LQG-20261005-093703-2190"
+  },
+  {
+    "uuid": "93e65f362faa491497b7f5c1cefad486",
+    "codigo": "LQG-20261005-093703-6350"
+  },
+  {
+    "uuid": "5748a41a802740c590f18f6d6d6cbfed",
+    "codigo": "LQG-20261005-093704-FDEE"
+  },
+  {
+    "uuid": "7d317ba0bf524492b0dfacd95813a4e7",
+    "codigo": "LQG-20261005-093704-9F1C"
+  },
+  {
+    "uuid": "064b0174cca2415d9f5f10e901b236d0",
+    "codigo": "LQG-20261005-093704-3C12"
+  },
+  {
+    "uuid": "69090bb7882d422fa14655d3be2b72d4",
+    "codigo": "LQG-20261005-093704-3F3E"
+  },
+  {
+    "uuid": "92f910a0a930453692c23a61f2d20742",
+    "codigo": "LQG-20261005-093704-5968"
+  },
+  {
+    "uuid": "ab7230c9c4ab4ee9a900ca6c4ea10097",
+    "codigo": "LQG-20261005-093705-4E27"
+  },
+  {
+    "uuid": "83fad26c44b04916bd17346226510dc5",
+    "codigo": "LQG-20261005-093705-7C92"
+  },
+  {
+    "uuid": "d0041a304abd4bb0acda47859400207d",
+    "codigo": "LQG-20261005-093705-F7CA"
+  },
+  {
+    "uuid": "93aeffef6ac641008dcabef5366b60ac",
+    "codigo": "LQG-20261005-093705-5875"
+  },
+  {
+    "uuid": "be40f050ff504fd9996110a9a36fd835",
+    "codigo": "LQG-20261005-093705-19DD"
+  },
+  {
+    "uuid": "0e591d61c2e14a128106a913e7745b72",
+    "codigo": "LQG-20261005-093705-4E85"
+  },
+  {
+    "uuid": "241582948d6d40e3bc9f46edd50a8d95",
+    "codigo": "LQG-20261005-093706-571E"
+  },
+  {
+    "uuid": "ad208e0a16b541ffa6d33fd91a665f46",
+    "codigo": "LQG-20261005-093706-7233"
+  },
+  {
+    "uuid": "7156363931bd40eab374dd8e3d869beb",
+    "codigo": "LQG-20261005-093706-9D8B"
+  },
+  {
+    "uuid": "dffb6cb605d74e2cabb436e40ada501e",
+    "codigo": "LQG-20261005-093706-72B0"
+  },
+  {
+    "uuid": "dd1c5f23244d4ca488ee6ca42e204a07",
+    "codigo": "LQG-20261005-093706-2036"
+  },
+  {
+    "uuid": "bd3c8ea2df884990a161bc358487dc1a",
+    "codigo": "LQG-20261005-093707-F2D7"
+  },
+  {
+    "uuid": "e75ef5e81ea142d6856063fd4fc7b929",
+    "codigo": "LQG-20261005-093707-73CA"
+  },
+  {
+    "uuid": "64f91339f1664e82924150422fafacbd",
+    "codigo": "LQG-20261005-093707-877A"
+  },
+  {
+    "uuid": "81c1b746aab04d059a4d3b12fad2fc51",
+    "codigo": "LQG-20261005-093707-EFEA"
+  },
+  {
+    "uuid": "4f15aa6519714ddaab38f3b5f3b1c5cb",
+    "codigo": "LQG-20261005-093708-A18D"
+  },
+  {
+    "uuid": "1e8e2a230d864768a768e68a2b0672f8",
+    "codigo": "LQG-20261005-093708-BF93"
+  },
+  {
+    "uuid": "b91156a841714dd383c5f6782e10b076",
+    "codigo": "LQG-20261005-093708-24F5"
+  },
+  {
+    "uuid": "30a5b6cfcf9c4458b5a283c782611b64",
+    "codigo": "LQG-20261005-093708-4C4E"
+  },
+  {
+    "uuid": "db16e88aca0d4e6ab39e6b3f6526a2b7",
+    "codigo": "LQG-20261005-093709-9CDD"
+  },
+  {
+    "uuid": "4e250aa8a613482e955be9eb4b58b2f0",
+    "codigo": "LQG-20261005-093709-3207"
+  },
+  {
+    "uuid": "029729aa42a64c39b64834c44b742f0c",
+    "codigo": "LQG-20261005-093710-2593"
+  },
+  {
+    "uuid": "5e113b089ec345979cba4e359f1bde5b",
+    "codigo": "LQG-20261005-093710-13A7"
+  },
+  {
+    "uuid": "7e412624862843108183c4aeef956c5b",
+    "codigo": "LQG-20261005-093710-36E2"
+  },
+  {
+    "uuid": "f1e6f72bf9b444088a3c206e7f13b54d",
+    "codigo": "LQG-20261005-093710-1753"
+  },
+  {
+    "uuid": "f95f710686eb42b69502a8ea84b05c66",
+    "codigo": "LQG-20261005-093710-50A5"
+  },
+  {
+    "uuid": "a23cdc97bb194a69862b25fe3e1bcd8c",
+    "codigo": "LQG-20261005-093711-5486"
+  },
+  {
+    "uuid": "02cc978d4ebe41e485069fb2467e8109",
+    "codigo": "LQG-20261005-093711-508F"
+  },
+  {
+    "uuid": "e48335ee198d4ae89092d7af3b9895c6",
+    "codigo": "LQG-20261005-093711-CC89"
+  },
+  {
+    "uuid": "b75faf6705ec46dd9b1111176335f080",
+    "codigo": "LQG-20261005-093711-3875"
+  },
+  {
+    "uuid": "7ef89f8799e94a919f6618fa182c959c",
+    "codigo": "LQG-20261005-093712-DC7A"
+  },
+  {
+    "uuid": "145b13890b9d44d39f2fe1577528a342",
+    "codigo": "LQG-20261005-093712-B0D9"
+  },
+  {
+    "uuid": "862619d1e2a04cf5a633aa0ea74c1ff3",
+    "codigo": "LQG-20261005-093712-7743"
+  },
+  {
+    "uuid": "1315b3e61c004e86a09262ccd5abfb93",
+    "codigo": "LQG-20261005-093712-BD2E"
+  },
+  {
+    "uuid": "f189f908b6ef456fa7f629aa6dde8543",
+    "codigo": "LQG-20261005-093713-DBDC"
+  },
+  {
+    "uuid": "f1475fd2b4e8401a95960195caff77a0",
+    "codigo": "LQG-20261005-093713-F813"
+  },
+  {
+    "uuid": "13fd77f100ef4028a7d165a2f2737771",
+    "codigo": "LQG-20261005-093713-17B0"
+  },
+  {
+    "uuid": "9a3d41d423ef4c0d8e360b409a79a710",
+    "codigo": "LQG-20261005-093713-6B24"
+  },
+  {
+    "uuid": "e96346649bd74ba49176ee5ffa88160a",
+    "codigo": "LQG-20261005-093713-5F13"
+  },
+  {
+    "uuid": "8ac8ac5f78b8495c9b8a5c4426d62695",
+    "codigo": "LQG-20261005-093714-48C4"
+  },
+  {
+    "uuid": "0485283fa3d340cebc2475ba9c4c6aef",
+    "codigo": "LQG-20261005-093715-C66A"
+  },
+  {
+    "uuid": "9291d9101cf340a38e211cd1fef73df6",
+    "codigo": "LQG-20261005-093715-30A0"
+  },
+  {
+    "uuid": "7de92b46c9244f2685e95dc944b028c2",
+    "codigo": "LQG-20261005-093715-3F1A"
+  },
+  {
+    "uuid": "95324f35eb2140e99e31c84a607cb211",
+    "codigo": "LQG-20261005-093715-FEB8"
+  },
+  {
+    "uuid": "274b39efa3644eb6980d0f23360e0902",
+    "codigo": "LQG-20261005-093716-99C7"
+  },
+  {
+    "uuid": "eb8ebb53dec94044ad0705e2b34c7e10",
+    "codigo": "LQG-20261005-093716-CE69"
+  },
+  {
+    "uuid": "db942d0f01a843b1956a44c5c8b382fd",
+    "codigo": "LQG-20261005-093716-188D"
+  },
+  {
+    "uuid": "021098dea7584d80837d922f08e29337",
+    "codigo": "LQG-20261005-093716-EF2F"
+  },
+  {
+    "uuid": "3b8e3f6f5a374fda9b4002678b783e5c",
+    "codigo": "LQG-20261005-093717-3B10"
+  },
+  {
+    "uuid": "9e452e529cf6469ebd9b865586a8d8de",
+    "codigo": "LQG-20261005-093717-1390"
+  },
+  {
+    "uuid": "e27788ee4c71421c80316212bb544f9a",
+    "codigo": "LQG-20261005-093717-716B"
+  },
+  {
+    "uuid": "415bc3e9f5fa4fbb95eb81ad9c1de375",
+    "codigo": "LQG-20261005-093718-8638"
+  },
+  {
+    "uuid": "f894e72ea343418b94cc33748a8f192b",
+    "codigo": "LQG-20261005-093718-1772"
+  },
+  {
+    "uuid": "4efb1c870d2543a1b463940756279465",
+    "codigo": "LQG-20261005-093718-CB27"
+  },
+  {
+    "uuid": "520010d6ae9a4637a4a544555651eaa0",
+    "codigo": "LQG-20261005-093718-4AB7"
+  },
+  {
+    "uuid": "0470c24276824a38badddf4a53c65429",
+    "codigo": "LQG-20261005-093718-FD05"
+  },
+  {
+    "uuid": "d07e5172aee64f9bb078b33fbf0affae",
+    "codigo": "LQG-20261005-093719-0DFA"
+  },
+  {
+    "uuid": "8c8d4e579f31494a973b8a411e643735",
+    "codigo": "LQG-20261005-093719-A480"
+  },
+  {
+    "uuid": "de22e21ef1c24d70a39f266bd1937772",
+    "codigo": "LQG-20261005-093719-33A1"
+  },
+  {
+    "uuid": "3cc74a0fe90140f299b28fccefd2f0d0",
+    "codigo": "LQG-20261005-093719-4E6D"
+  },
+  {
+    "uuid": "f904475fed584401bbd9c8b59410b719",
+    "codigo": "LQG-20261005-093719-7887"
+  },
+  {
+    "uuid": "5bbde81c3da04ac79307ad74f8aaee4a",
+    "codigo": "LQG-20261005-093720-AC72"
+  },
+  {
+    "uuid": "de0cc0d55e804828ab77363f18b4a8e9",
+    "codigo": "LQG-20261005-093720-096E"
+  },
+  {
+    "uuid": "ac42864683ec4c9787705292b93f9cc0",
+    "codigo": "LQG-20261005-093721-B1AD"
+  },
+  {
+    "uuid": "2704f72f96be4a08aaeb468e993de2e9",
+    "codigo": "LQG-20261005-093721-13F9"
+  },
+  {
+    "uuid": "c1c6fac7be624bc1a0a72587a41d023d",
+    "codigo": "LQG-20261005-093721-8B97"
+  },
+  {
+    "uuid": "34c12518670947bd8313d5dc1929a72f",
+    "codigo": "LQG-20261005-093721-57E4"
+  },
+  {
+    "uuid": "e130bc2ef6354382bc92e85e534436a8",
+    "codigo": "LQG-20261005-093721-A26F"
+  },
+  {
+    "uuid": "a16153437f3f43b2a81763b656f7c83e",
+    "codigo": "LQG-20261005-093721-A02A"
+  },
+  {
+    "uuid": "7ebf2be12a344bb7a2180bb074f93e9b",
+    "codigo": "LQG-20261005-093722-F446"
+  },
+  {
+    "uuid": "099b5937ede54797bf0b1fb19cd652e3",
+    "codigo": "LQG-20261005-093722-FBB0"
+  },
+  {
+    "uuid": "1e95a50fcc6544f0aeec070b7781d737",
+    "codigo": "LQG-20261005-093722-35E1"
+  },
+  {
+    "uuid": "8c5511074b384d239d198d66607ae299",
+    "codigo": "LQG-20261005-093722-87DA"
+  },
+  {
+    "uuid": "ab7ac20d9eea4752ab7abb2a1213a8fd",
+    "codigo": "LQG-20261005-093722-40EE"
+  },
+  {
+    "uuid": "24788e43bb564f45840a74909d9734cd",
+    "codigo": "LQG-20261005-093723-7B15"
+  },
+  {
+    "uuid": "aa9929ddda3143c2b89d86707a5a8925",
+    "codigo": "LQG-20261005-093723-1173"
+  },
+  {
+    "uuid": "2ce64a65583a4597a6ef0a8afa8afa21",
+    "codigo": "LQG-20261005-093723-59F0"
+  },
+  {
+    "uuid": "96ac5a9b4c28409fa22292e34c4b9452",
+    "codigo": "LQG-20261005-093723-98A6"
+  },
+  {
+    "uuid": "e074832c874e4a31b4bab306ab36f427",
+    "codigo": "LQG-20261005-093723-F5E9"
+  },
+  {
+    "uuid": "8bf6f9e371a647a7ac24d32f7ae6b9c9",
+    "codigo": "LQG-20261005-093724-ECA6"
+  },
+  {
+    "uuid": "5df1077c739e4954bd0d86cb2f967977",
+    "codigo": "LQG-20261005-093724-13A8"
+  },
+  {
+    "uuid": "294b888f69074fae9155a45cec9eac2b",
+    "codigo": "LQG-20261005-093724-EE6C"
+  },
+  {
+    "uuid": "3379164dd13d452d95ada4f7a2cdccfc",
+    "codigo": "LQG-20261005-093724-F601"
+  },
+  {
+    "uuid": "33a1be9211c44e2686145d1748751446",
+    "codigo": "LQG-20261005-093725-B7A5"
+  },
+  {
+    "uuid": "068bb26a5e544efea0b03eefe4de0063",
+    "codigo": "LQG-20261005-093725-8088"
+  },
+  {
+    "uuid": "ac16866027f24584a59e14488b8cbe5c",
+    "codigo": "LQG-20261005-093725-B9D5"
+  },
+  {
+    "uuid": "edf32ab1b1e740d288ae17ff5c35b5e6",
+    "codigo": "LQG-20261005-093725-069A"
+  },
+  {
+    "uuid": "2387fd8d0c36481dbe4d23acb6de00b4",
+    "codigo": "LQG-20261005-093725-3DAF"
+  },
+  {
+    "uuid": "5ac99a4203a8469ba9a6bf25a06ddfb3",
+    "codigo": "LQG-20261005-093725-44F5"
+  },
+  {
+    "uuid": "3e9fc5f8b044430ba21b3086b4a05bdf",
+    "codigo": "LQG-20261005-093726-35B9"
+  },
+  {
+    "uuid": "b23df1659ab0448395d38fcd62697f2c",
+    "codigo": "LQG-20261005-093727-A873"
+  },
+  {
+    "uuid": "ea596ea0f4ed48199287ccdc19b73fcb",
+    "codigo": "LQG-20261005-093727-E513"
+  },
+  {
+    "uuid": "3ef54644983540fda580c1d4722cc180",
+    "codigo": "LQG-20261005-093727-C55B"
+  },
+  {
+    "uuid": "d95c5e8ebbaa406586809f43bb97484f",
+    "codigo": "LQG-20261005-093727-25CB"
+  },
+  {
+    "uuid": "6aa8163d87a94f2e8c27f6a495472e60",
+    "codigo": "LQG-20261005-093727-EBB5"
+  },
+  {
+    "uuid": "e79a527eeaf14b1baea5574573a57a37",
+    "codigo": "LQG-20261005-093728-C893"
+  },
+  {
+    "uuid": "06ce3c740318481ebf5a893571e50706",
+    "codigo": "LQG-20261005-093728-A6D7"
+  },
+  {
+    "uuid": "9fc4e54033374a1da3d773c3f27eadf0",
+    "codigo": "LQG-20261005-093728-77C6"
+  },
+  {
+    "uuid": "47f8209cd879458a87889779fa12e684",
+    "codigo": "LQG-20261005-093729-1644"
+  },
+  {
+    "uuid": "156b096a194f4e9293db995fc1fe3e46",
+    "codigo": "LQG-20261005-093729-2C7F"
+  },
+  {
+    "uuid": "c6950a9a0a2c4bb8887a7d1e74e52962",
+    "codigo": "LQG-20261005-093729-8395"
+  },
+  {
+    "uuid": "f1be137d2f974bfdb6e1af52a8d7134a",
+    "codigo": "LQG-20261005-093729-AECC"
+  },
+  {
+    "uuid": "501e7ffa4c95493f92187844aadad1be",
+    "codigo": "LQG-20261005-093729-17A5"
+  },
+  {
+    "uuid": "ddd380f450de4e648ddde85fd304a844",
+    "codigo": "LQG-20261005-093730-775F"
+  },
+  {
+    "uuid": "06b9fdcab9304e9fb870875918543370",
+    "codigo": "LQG-20261005-093730-72D6"
+  },
+  {
+    "uuid": "fbd61b17ca334c35b8b4f7faf9b01d96",
+    "codigo": "LQG-20261005-093730-0F9F"
+  },
+  {
+    "uuid": "4bcc3455980a4fea973ce7b2bcfc1454",
+    "codigo": "LQG-20261005-093730-D578"
+  },
+  {
+    "uuid": "ab95e15063a4444d9136d3ee0e4e5b6c",
+    "codigo": "LQG-20261005-093730-0B63"
+  },
+  {
+    "uuid": "e2aba0171498431f86ebbf13bcd086bd",
+    "codigo": "LQG-20261005-093731-4544"
+  },
+  {
+    "uuid": "9079d339fdad47088cbd756cc5848c22",
+    "codigo": "LQG-20261005-093731-877F"
+  },
+  {
+    "uuid": "e2f8d3b52e9a4d3abed16183c93f005f",
+    "codigo": "LQG-20261005-093731-E017"
+  },
+  {
+    "uuid": "be98619280b940b7865077bd5f949e2a",
+    "codigo": "LQG-20261005-093732-935D"
+  },
+  {
+    "uuid": "5dde647c67224832877eccdbe4beda59",
+    "codigo": "LQG-20261005-093732-10A3"
+  },
+  {
+    "uuid": "f9866cd2e6374265b8870388bfeb1191",
+    "codigo": "LQG-20261005-093732-A560"
+  },
+  {
+    "uuid": "5db437f86b504e27ab4ff4e9236390f9",
+    "codigo": "LQG-20261005-093732-402F"
+  },
+  {
+    "uuid": "a011744740d34817a3d8cda801cff9f8",
+    "codigo": "LQG-20261005-093732-8843"
+  },
+  {
+    "uuid": "9ff14956335d43ff96d031cbe6e34202",
+    "codigo": "LQG-20261005-093732-CE6C"
+  },
+  {
+    "uuid": "5700c53089064023bb520cc9a55227b9",
+    "codigo": "LQG-20261005-093733-9F96"
+  },
+  {
+    "uuid": "53e765c4d69a44f082d7a005c0b316ab",
+    "codigo": "LQG-20261005-093733-2228"
+  },
+  {
+    "uuid": "789e4621061e4d3e83288f1d3dddf144",
+    "codigo": "LQG-20261005-093733-B91C"
+  },
+  {
+    "uuid": "e9deac359d1c473f9bcff10f4d059231",
+    "codigo": "LQG-20261005-093733-1785"
+  },
+  {
+    "uuid": "fa6f7c478ea14b308de98ea32a59a97f",
+    "codigo": "LQG-20261005-093733-4851"
+  },
+  {
+    "uuid": "c1a9d705a0fd4b5db5ca79e152750e55",
+    "codigo": "LQG-20261005-093734-11F5"
+  },
+  {
+    "uuid": "fcdd858cc59c4871a624c41dfd0044ee",
+    "codigo": "LQG-20261005-093734-8988"
+  },
+  {
+    "uuid": "09a9e9acc2c3487fa4dc697119a6b9cb",
+    "codigo": "LQG-20261005-093734-1896"
+  },
+  {
+    "uuid": "317a6b33977a4569b0f57830713f9527",
+    "codigo": "LQG-20261005-093734-0719"
+  },
+  {
+    "uuid": "b881ff6bb27a48e1be9966f2e308c7ff",
+    "codigo": "LQG-20261005-093734-AEF6"
+  },
+  {
+    "uuid": "4aec5cff6fc24d088aab251aca0bfefd",
+    "codigo": "LQG-20261005-093735-38B6"
+  },
+  {
+    "uuid": "0c287fa9160c4736bece99a15c31c7bb",
+    "codigo": "LQG-20261005-093735-2CE0"
+  },
+  {
+    "uuid": "315ec5e35b854b0daf86dee2063a1512",
+    "codigo": "LQG-20261005-093735-AA2A"
+  },
+  {
+    "uuid": "20b4fb215273444a8087e1a65b0f5e7f",
+    "codigo": "LQG-20261005-093735-2E4F"
+  },
+  {
+    "uuid": "d69f32d58adc41ceb2e88d63cd8cb092",
+    "codigo": "LQG-20261005-093735-7434"
+  },
+  {
+    "uuid": "9b286f7d2db34582a4838a059394736e",
+    "codigo": "LQG-20261005-093735-5E97"
+  },
+  {
+    "uuid": "3fa30445a1f24892b826702ceac8e5e0",
+    "codigo": "LQG-20261005-093736-ED41"
+  },
+  {
+    "uuid": "a93c400e07d4464d869e2115dab508d1",
+    "codigo": "LQG-20261005-093736-2BB8"
+  },
+  {
+    "uuid": "319accd83c31412fa7be6d6337ad0a43",
+    "codigo": "LQG-20261005-093736-08D6"
+  },
+  {
+    "uuid": "aeb6972ccd174a5a98b9c5dadec518e0",
+    "codigo": "LQG-20261005-093736-E8FE"
+  },
+  {
+    "uuid": "95161910c6ff450295b0f2b093a2642a",
+    "codigo": "LQG-20261005-093736-EF85"
+  },
+  {
+    "uuid": "a1f042ab6ce644e08f55fae488298142",
+    "codigo": "LQG-20261005-093736-F53E"
+  },
+  {
+    "uuid": "bec5ac7b17f54443b8fadf775d5611ff",
+    "codigo": "LQG-20261005-093736-1B76"
+  },
+  {
+    "uuid": "0fe20187b0ae42d99462b02075bdd072",
+    "codigo": "LQG-20261005-093737-40B5"
+  },
+  {
+    "uuid": "e501f8aee9584e60b7672af0aa3935f1",
+    "codigo": "LQG-20261005-093738-91FA"
+  },
+  {
+    "uuid": "ac9205ed4bda42dca2b6ef64753fd5c3",
+    "codigo": "LQG-20261005-093738-D80F"
+  },
+  {
+    "uuid": "ce45a52b2e2c4107902ff6f6f26bf87b",
+    "codigo": "LQG-20261005-093738-9293"
+  },
+  {
+    "uuid": "77e2807826194489b450d265152c9d1c",
+    "codigo": "LQG-20261005-093738-31C3"
+  },
+  {
+    "uuid": "39af7de0807140cbbe11dfabb65dd22d",
+    "codigo": "LQG-20261005-093738-AAF5"
+  },
+  {
+    "uuid": "037eb6059fa545c4be374a100e7e8d74",
+    "codigo": "LQG-20261005-093738-4F60"
+  },
+  {
+    "uuid": "979c8b68c3474cbbbe95fb71bf74b625",
+    "codigo": "LQG-20261005-093739-59D4"
+  },
+  {
+    "uuid": "0a2dc6b944c44e4ba19044a5b94bc7fa",
+    "codigo": "LQG-20261005-093739-B3D5"
+  },
+  {
+    "uuid": "a82386bf490d4e0ba565197fbf991d69",
+    "codigo": "LQG-20261005-093739-0BE4"
+  },
+  {
+    "uuid": "e51d74dbed0b4e9da7dc45c49e637127",
+    "codigo": "LQG-20261005-093739-87F3"
+  },
+  {
+    "uuid": "c01a17458da94921bfcda07aa1fb97e4",
+    "codigo": "LQG-20261005-093739-B9F6"
+  },
+  {
+    "uuid": "689078a4942345d2bc44a115006f5bb3",
+    "codigo": "LQG-20261005-093740-0C7B"
+  },
+  {
+    "uuid": "99370ee3ef034de9a7e87be7b0d875ac",
+    "codigo": "LQG-20261005-093740-F130"
+  },
+  {
+    "uuid": "c4a70011cd9a40bebc20853ad7971f3d",
+    "codigo": "LQG-20261005-093740-CCB1"
+  },
+  {
+    "uuid": "602bed8893114b838f19799a0771a8ed",
+    "codigo": "LQG-20261005-093740-7D10"
+  },
+  {
+    "uuid": "1cabb525d91146e6ad9cf160a1dd1838",
+    "codigo": "LQG-20261005-093740-5FF7"
+  },
+  {
+    "uuid": "1627e1360e194c3d9174e56b43ef818a",
+    "codigo": "LQG-20261005-093740-4AC9"
+  },
+  {
+    "uuid": "f3bafd13ad2d493cae6f44f278aaf554",
+    "codigo": "LQG-20261005-093741-E83C"
+  },
+  {
+    "uuid": "2f0153958c944a3c8ab740d569006554",
+    "codigo": "LQG-20261005-093741-542D"
+  },
+  {
+    "uuid": "4e920f01c64240d3b42377e8e4fcd48a",
+    "codigo": "LQG-20261005-093741-4D74"
+  },
+  {
+    "uuid": "c4a84aca21c747ecac4227f3510b834a",
+    "codigo": "LQG-20261005-093741-09B6"
+  },
+  {
+    "uuid": "176b6930c3284b43ab4bd52bee4bfe63",
+    "codigo": "LQG-20261005-093741-321D"
+  },
+  {
+    "uuid": "83c63fb3b75841d1bbcfecfc1b70589b",
+    "codigo": "LQG-20261005-093742-1FEF"
+  },
+  {
+    "uuid": "e65a36a7a2ce495e9c3edbe6e570964a",
+    "codigo": "LQG-20261005-093742-DB1D"
+  },
+  {
+    "uuid": "ac1b93e089cf4c25a0bcd98d9454ec48",
+    "codigo": "LQG-20261005-093742-08D4"
+  },
+  {
+    "uuid": "8358c14531f440c99016999a4a5d9105",
+    "codigo": "LQG-20261005-093742-D652"
+  },
+  {
+    "uuid": "9893c52da82b495c9ff0aa0c1bcaa987",
+    "codigo": "LQG-20261005-093742-FE7C"
+  },
+  {
+    "uuid": "4be02e07bf3c4524886bae2ed879fe22",
+    "codigo": "LQG-20261005-093743-8B90"
+  },
+  {
+    "uuid": "79ee8a33033447339054659a3c9b9457",
+    "codigo": "LQG-20261005-093744-6763"
+  },
+  {
+    "uuid": "e673ba3474634716a099976b26a93600",
+    "codigo": "LQG-20261005-093744-5BF0"
+  },
+  {
+    "uuid": "01bb4a3a96ff47b4b463bd43e71a467c",
+    "codigo": "LQG-20261005-093744-7917"
+  },
+  {
+    "uuid": "2edc49e236ef419a88ffab32957ac08f",
+    "codigo": "LQG-20261005-093744-B9EB"
+  },
+  {
+    "uuid": "a4b06bf969224ee3a4047646d58a88b0",
+    "codigo": "LQG-20261005-093744-9809"
+  },
+  {
+    "uuid": "632097a90f4649d288ae11bff637a20c",
+    "codigo": "LQG-20261005-093744-C0BA"
+  },
+  {
+    "uuid": "b30758ba913f461d903dae0e2e1c7183",
+    "codigo": "LQG-20261005-093745-754E"
+  },
+  {
+    "uuid": "f982bf90f5a148d89aec3a00fad02deb",
+    "codigo": "LQG-20261005-093745-8260"
+  },
+  {
+    "uuid": "8c50d2e543cc417d949c2db276d228f9",
+    "codigo": "LQG-20261005-093745-CA35"
+  },
+  {
+    "uuid": "0f07be07d8c94caab60e85a13767401e",
+    "codigo": "LQG-20261005-093746-EFFF"
+  },
+  {
+    "uuid": "ce259f46faae454ca02805014a16ef98",
+    "codigo": "LQG-20261005-093746-FE49"
+  },
+  {
+    "uuid": "1a15f27f8dd449d9bc937cfdaa9f6dbd",
+    "codigo": "LQG-20261005-093746-494B"
+  },
+  {
+    "uuid": "c09d3e0f42f24996a6e699c8cc9d01dd",
+    "codigo": "LQG-20261005-093747-527D"
+  },
+  {
+    "uuid": "fda839f6363c488f9c0812cdba038579",
+    "codigo": "LQG-20261005-093747-9399"
+  },
+  {
+    "uuid": "769863f306cd4967b3cf2dff191c1106",
+    "codigo": "LQG-20261005-093747-3EA0"
+  },
+  {
+    "uuid": "981e8dbe61824f74b3884cdf79b82d6e",
+    "codigo": "LQG-20261005-093747-3611"
+  },
+  {
+    "uuid": "7b40d70b6e2e4a73b5058cef4680f01c",
+    "codigo": "LQG-20261005-093747-B721"
+  },
+  {
+    "uuid": "c50c13f19f09499ca574931e93e65067",
+    "codigo": "LQG-20261005-093748-635F"
+  },
+  {
+    "uuid": "7a28a97987524db6bdaa1e4eb44e389e",
+    "codigo": "LQG-20261005-093748-D2EC"
+  },
+  {
+    "uuid": "262dee4d4c654009b0bc9c0697bf8d1c",
+    "codigo": "LQG-20261005-093748-AD8E"
+  },
+  {
+    "uuid": "6cedbc310c2d47eabd0f50d301e45031",
+    "codigo": "LQG-20261005-093749-4B60"
+  },
+  {
+    "uuid": "05306323f60641948eb0112715d181a7",
+    "codigo": "LQG-20261005-093749-F605"
+  },
+  {
+    "uuid": "51b4a9e76e974c2cb43109a5d6e12e63",
+    "codigo": "LQG-20261005-093749-47BF"
+  },
+  {
+    "uuid": "429414d9f8a0467e8d90848563331516",
+    "codigo": "LQG-20261005-093749-0F2F"
+  },
+  {
+    "uuid": "9ee38419600c4ddd972a6a21272ccf5d",
+    "codigo": "LQG-20261005-093749-B89E"
+  },
+  {
+    "uuid": "e36925a57f7a4411b504bb14929a2668",
+    "codigo": "LQG-20261005-093749-A3CB"
+  },
+  {
+    "uuid": "71ec5ae3c3564a9a990276c22297cb6b",
+    "codigo": "LQG-20261005-093750-A7B6"
+  },
+  {
+    "uuid": "df94fe5eab894207a85476928426d135",
+    "codigo": "LQG-20261005-093750-C1CA"
+  },
+  {
+    "uuid": "d18739e92be849f38acfd0448a022607",
+    "codigo": "LQG-20261005-093750-7CAB"
+  },
+  {
+    "uuid": "1dab6cbb165b4c839ba3c92ae52a4b98",
+    "codigo": "LQG-20261005-093750-12EC"
+  },
+  {
+    "uuid": "d1ce647667f346a4babff9a6adb80c39",
+    "codigo": "LQG-20261005-093750-F8D6"
+  },
+  {
+    "uuid": "43f95aed30f84da3a95e4cd18aeb0711",
+    "codigo": "LQG-20261005-093750-76F3"
+  },
+  {
+    "uuid": "6b78050cd54a4a249eeb95e687344266",
+    "codigo": "LQG-20261005-093751-AA94"
+  },
+  {
+    "uuid": "5efbc7ad0b86444db8368c1182bf90b2",
+    "codigo": "LQG-20261005-093751-AB27"
+  },
+  {
+    "uuid": "59c05017d21544b6ba9eaa361a0dd830",
+    "codigo": "LQG-20261005-093751-DBA5"
+  },
+  {
+    "uuid": "606a3084593d44a5ad06cae5739abf9d",
+    "codigo": "LQG-20261005-093751-6329"
+  },
+  {
+    "uuid": "65e0bed1bc9a4f2b92fed63831cd0355",
+    "codigo": "LQG-20261005-093751-E89B"
+  },
+  {
+    "uuid": "acef8f3495174b2aabefd57efe786812",
+    "codigo": "LQG-20261005-093752-1405"
+  },
+  {
+    "uuid": "d05440965a5144589eb0b3d6b61ee99a",
+    "codigo": "LQG-20261005-093752-3E5F"
+  },
+  {
+    "uuid": "d82eec3da2c04cf6bca0e898cb7823b9",
+    "codigo": "LQG-20261005-093752-B617"
+  },
+  {
+    "uuid": "373a944874cb476cb5ce722fa9f4e448",
+    "codigo": "LQG-20261005-093752-D52F"
+  },
+  {
+    "uuid": "da1bd0e9613d4012b476779e49d6a464",
+    "codigo": "LQG-20261005-093752-593A"
+  },
+  {
+    "uuid": "55777f00d4964fe483fa93a0defa2c73",
+    "codigo": "LQG-20261005-093753-D04D"
+  },
+  {
+    "uuid": "9322842a92db4167abf2cdd2359b5138",
+    "codigo": "LQG-20261005-093753-8DB0"
+  },
+  {
+    "uuid": "0b2ee0fa2594486e8631c3a5f797620d",
+    "codigo": "LQG-20261005-093753-5C9C"
+  },
+  {
+    "uuid": "e01e9ccd885142aea00fb1cd4c7736b5",
+    "codigo": "LQG-20261005-093753-1397"
+  },
+  {
+    "uuid": "a15ac9e467574f6a9127cc5cc750a74b",
+    "codigo": "LQG-20261005-093753-610D"
+  },
+  {
+    "uuid": "002c75ed4bee4477a144f0e1101acfa4",
+    "codigo": "LQG-20261005-093753-8E3A"
+  },
+  {
+    "uuid": "da2e416389be4db2a9744c7b69b149a3",
+    "codigo": "LQG-20261005-093754-7CF3"
+  },
+  {
+    "uuid": "3b9af5bec56c4d53a8aa3e0bd9e1eec2",
+    "codigo": "LQG-20261005-093754-7640"
+  },
+  {
+    "uuid": "a6ce1076fce740529ab9ded565e2202e",
+    "codigo": "LQG-20261005-093755-BEAA"
+  },
+  {
+    "uuid": "c85cbf7fac7841498f53e322c36eb455",
+    "codigo": "LQG-20261005-093755-1940"
+  },
+  {
+    "uuid": "6e30693fe4fa479abee948cc198f4adb",
+    "codigo": "LQG-20261005-093755-1EFB"
+  },
+  {
+    "uuid": "6e44c2067c9b4e76adf18a4896f278b6",
+    "codigo": "LQG-20261005-093755-DB0E"
+  },
+  {
+    "uuid": "ad92db88210d4864a05a166989d7c4f6",
+    "codigo": "LQG-20261005-093755-BD8D"
+  },
+  {
+    "uuid": "b98c7911d7cc43059796a24d3e317d96",
+    "codigo": "LQG-20261005-093755-2BE4"
+  },
+  {
+    "uuid": "11b8d1ac8c6d4c85aac226c49d8c5283",
+    "codigo": "LQG-20261005-093756-8656"
+  },
+  {
+    "uuid": "1a013045ceee42118f1e8a38ec58e30b",
+    "codigo": "LQG-20261005-093756-4090"
+  },
+  {
+    "uuid": "6e542a78765849a482c3e936dd79d0a7",
+    "codigo": "LQG-20261005-093756-F929"
+  },
+  {
+    "uuid": "593b9e88b061454aa6d61915bb10d582",
+    "codigo": "LQG-20261005-093756-7EA9"
+  },
+  {
+    "uuid": "e659f2a68d5e44948ca4d4ad774817cf",
+    "codigo": "LQG-20261005-093756-4CAC"
+  },
+  {
+    "uuid": "22348ff144244104aabd940247e4ed01",
+    "codigo": "LQG-20261005-093757-A1A2"
+  },
+  {
+    "uuid": "d35942c76bc34550bce7bce4ce9ca7c9",
+    "codigo": "LQG-20261005-093757-CCB9"
+  },
+  {
+    "uuid": "ca98ef49196546c09cf302667fbf4d19",
+    "codigo": "LQG-20261005-093757-E622"
+  },
+  {
+    "uuid": "7aa912a653834ca1b77689003b3601c3",
+    "codigo": "LQG-20261005-093757-6B45"
+  },
+  {
+    "uuid": "b19842206c8f4e1c8197c63f79622f7e",
+    "codigo": "LQG-20261005-093758-F8CD"
+  },
+  {
+    "uuid": "d2153cbd53ef406ba380ae910be1dc4e",
+    "codigo": "LQG-20261005-093758-50D0"
+  },
+  {
+    "uuid": "085d6d5d497a435990cd481c4bb7bbcb",
+    "codigo": "LQG-20261005-093759-B459"
+  },
+  {
+    "uuid": "842ae28dd5da470a987ae85bb84024df",
+    "codigo": "LQG-20261005-093759-BD2C"
+  },
+  {
+    "uuid": "0c2377d2b7304396a545359ed260a5bd",
+    "codigo": "LQG-20261005-093759-D5CA"
+  },
+  {
+    "uuid": "79f9cb18453249eb97f1558f801dbf7e",
+    "codigo": "LQG-20261005-093759-221D"
+  },
+  {
+    "uuid": "62dfc0c57c814919813293c37a4b91d4",
+    "codigo": "LQG-20261005-093759-9604"
+  },
+  {
+    "uuid": "5ba80ec5caac49929332fdc395e9f9ef",
+    "codigo": "LQG-20261005-093800-60F4"
+  },
+  {
+    "uuid": "e950081dcddb4493a02eb9e1f57cd802",
+    "codigo": "LQG-20261005-093800-BBA1"
+  },
+  {
+    "uuid": "fd8cf4f080d143c2abc77e64843cf25b",
+    "codigo": "LQG-20261005-093800-3078"
+  },
+  {
+    "uuid": "c86157af3a3e4c53b8b165fe4f1de7da",
+    "codigo": "LQG-20261005-093800-6883"
+  },
+  {
+    "uuid": "c5c506bb7abd461cbf43b110918d1932",
+    "codigo": "LQG-20261005-093800-229E"
+  },
+  {
+    "uuid": "42a534bb51a84085a3eda2dc92c9b589",
+    "codigo": "LQG-20261005-093801-0342"
+  },
+  {
+    "uuid": "88c1f0d4638546768fd4f25ef2f8bd12",
+    "codigo": "LQG-20261005-093801-1262"
+  },
+  {
+    "uuid": "7230d8b8e3b84517ba2f1faa670f81bf",
+    "codigo": "LQG-20261005-093801-3452"
+  },
+  {
+    "uuid": "2c2c4018eb8e41d3926c98b6a14a521c",
+    "codigo": "LQG-20261005-093801-DF6B"
+  },
+  {
+    "uuid": "93f0e838bb2f48dd80d6619744e5503d",
+    "codigo": "LQG-20261005-093801-5683"
+  },
+  {
+    "uuid": "2be148d55d34443a88a1eb95e297dbb6",
+    "codigo": "LQG-20261005-093802-D625"
+  },
+  {
+    "uuid": "298aebe890334488a54ea700df19f31d",
+    "codigo": "LQG-20261005-093802-ABEB"
+  },
+  {
+    "uuid": "2c09f6ebd6c844ceaae8298b06bf9187",
+    "codigo": "LQG-20261005-093802-FDF1"
+  },
+  {
+    "uuid": "ac83892e4f8c48abab534a642905e8dd",
+    "codigo": "LQG-20261005-093802-774E"
+  },
+  {
+    "uuid": "6550932f0629475eaeb57dd906581bc7",
+    "codigo": "LQG-20261005-093802-B4BD"
+  },
+  {
+    "uuid": "f0d7f5ef8941414aa124969f17985e26",
+    "codigo": "LQG-20261005-093803-980B"
+  },
+  {
+    "uuid": "aaa34318602a4e50a1a2b7b72de70b04",
+    "codigo": "LQG-20261005-093803-04EF"
+  },
+  {
+    "uuid": "e51ef52634504f498025cfadf82c45ce",
+    "codigo": "LQG-20261005-093803-826D"
+  },
+  {
+    "uuid": "92ed8a4b3609446ba5dd562a368ac9c9",
+    "codigo": "LQG-20261005-093803-A373"
+  },
+  {
+    "uuid": "85c0d39a56c8437fabb701f3d0142e21",
+    "codigo": "LQG-20261005-093803-B1B6"
+  },
+  {
+    "uuid": "424d0f16fba64eddb90d1fd40d4051f5",
+    "codigo": "LQG-20261005-093803-2349"
+  },
+  {
+    "uuid": "517247f41463480491a3bede3d92236c",
+    "codigo": "LQG-20261005-093804-0AEC"
+  },
+  {
+    "uuid": "79858eba43b44b6bbec1f0cf03293bda",
+    "codigo": "LQG-20261005-093804-CF2D"
+  },
+  {
+    "uuid": "a1aa425538264ad0bdd621269a3c42b7",
+    "codigo": "LQG-20261005-093804-7AB3"
+  },
+  {
+    "uuid": "303f03d8c33a40afa5c6212a98071f56",
+    "codigo": "LQG-20261005-093804-C5BB"
+  },
+  {
+    "uuid": "604ccad5fb8343a9a30417c1c5294203",
+    "codigo": "LQG-20261005-093805-470C"
+  },
+  {
+    "uuid": "8a738c72c82c468e90a55233df3a19ed",
+    "codigo": "LQG-20261005-093805-3671"
+  },
+  {
+    "uuid": "e56cd2cfadbb480e8515e35614687169",
+    "codigo": "LQG-20261005-093805-1638"
+  },
+  {
+    "uuid": "7ac565e708384e1d89b556c4cf189916",
+    "codigo": "LQG-20261005-093806-922F"
+  },
+  {
+    "uuid": "c6d2c2700dcc4d4c9828c1935433f796",
+    "codigo": "LQG-20261005-093806-4D72"
+  },
+  {
+    "uuid": "66c04c1ddadf48b3b4cda616c3ec9cbd",
+    "codigo": "LQG-20261005-093806-1D2D"
+  },
+  {
+    "uuid": "e20737d144ce4dcebaa0396be6554aea",
+    "codigo": "LQG-20261005-093806-BC6B"
+  },
+  {
+    "uuid": "f0351ca56145423a9214f6f20948ea73",
+    "codigo": "LQG-20261005-093806-C731"
+  },
+  {
+    "uuid": "79bf640aeb8943d89f1f8fe558c5f799",
+    "codigo": "LQG-20261005-093807-7262"
+  },
+  {
+    "uuid": "afabed2969b0470facd5aec951460baa",
+    "codigo": "LQG-20261005-093807-BB1B"
+  },
+  {
+    "uuid": "7c56ce35ef58483fb19ee187f2f30aae",
+    "codigo": "LQG-20261005-093807-B667"
+  },
+  {
+    "uuid": "1ef14d8d44d248a4b9d67de551d29343",
+    "codigo": "LQG-20261005-093807-1B68"
+  },
+  {
+    "uuid": "61c1eab7ee304a89aaf846005234ce65",
+    "codigo": "LQG-20261005-093807-27E5"
+  },
+  {
+    "uuid": "dc72f4193a0f412495467752f42ff987",
+    "codigo": "LQG-20261005-093807-1565"
+  },
+  {
+    "uuid": "fdae5f6f98924bd798881378b63e008e",
+    "codigo": "LQG-20261005-093808-75EF"
+  },
+  {
+    "uuid": "de6ac9a79b61480ca137867776cfc272",
+    "codigo": "LQG-20261005-093808-3F18"
+  },
+  {
+    "uuid": "120bfd766a8b475d8b7f35b3e7d7c735",
+    "codigo": "LQG-20261005-093808-6851"
+  },
+  {
+    "uuid": "38cfcebe750c472c98feafc66587b9cd",
+    "codigo": "LQG-20261005-093808-D866"
+  },
+  {
+    "uuid": "f52e1f8363f54a129e0c195b854a449f",
+    "codigo": "LQG-20261005-093808-3676"
+  },
+  {
+    "uuid": "2928998373da49c9a8fd189c221d4dc6",
+    "codigo": "LQG-20261005-093808-BD83"
+  },
+  {
+    "uuid": "d2356926ba9d429a83837f86bc46004a",
+    "codigo": "LQG-20261005-093809-9DF1"
+  },
+  {
+    "uuid": "a8bb79227ed64cdb8da0839d3aadc0d2",
+    "codigo": "LQG-20261005-093809-E1F2"
+  },
+  {
+    "uuid": "026fbe6f21c14deea764177688f2f830",
+    "codigo": "LQG-20261005-093809-B0C9"
+  },
+  {
+    "uuid": "32fa240a7f1a4bddbbdfdebe7a76589a",
+    "codigo": "LQG-20261005-093809-776B"
+  },
+  {
+    "uuid": "751cc285038b467698f42af42fb34aff",
+    "codigo": "LQG-20261005-093809-E72E"
+  },
+  {
+    "uuid": "285657a6013c4f70a9c0f5c02266220b",
+    "codigo": "LQG-20261005-093810-A5F7"
+  },
+  {
+    "uuid": "c920ba3009a245568a198913b6c3db89",
+    "codigo": "LQG-20261005-093810-8A7D"
+  },
+  {
+    "uuid": "7084602c718e4c9e83b41998ef22c557",
+    "codigo": "LQG-20261005-093811-3999"
+  },
+  {
+    "uuid": "29c561577ae842bda718409f6549dfa9",
+    "codigo": "LQG-20261005-093811-85FD"
+  },
+  {
+    "uuid": "fb2d727090704d0eb95cd05b06c787e9",
+    "codigo": "LQG-20261005-093811-CA34"
+  },
+  {
+    "uuid": "a5191dc013784b4ea1483659759026a3",
+    "codigo": "LQG-20261005-093811-36E6"
+  },
+  {
+    "uuid": "3f7147a2233b43b5b46e1e72bf45df7c",
+    "codigo": "LQG-20261005-093811-0D7F"
+  },
+  {
+    "uuid": "7332b275703840b0977934b68cec3a00",
+    "codigo": "LQG-20261005-093811-8F55"
+  },
+  {
+    "uuid": "a931a6cb2ff14468862c271bf01f4037",
+    "codigo": "LQG-20261005-093812-5C64"
+  },
+  {
+    "uuid": "2631733b26fc4ee28d9d72de71bffa51",
+    "codigo": "LQG-20261005-093812-A257"
+  },
+  {
+    "uuid": "f1bc25662951479098278a868e081a73",
+    "codigo": "LQG-20261005-093812-AA9D"
+  },
+  {
+    "uuid": "ccfb2f9fb18443e6b7f1244347e94f72",
+    "codigo": "LQG-20261005-093812-260B"
+  },
+  {
+    "uuid": "05a39d086deb48089ca954475f5cc2ef",
+    "codigo": "LQG-20261005-093812-9E28"
+  },
+  {
+    "uuid": "7750bb3eb7a141d4b34a453a15fdffab",
+    "codigo": "LQG-20261005-093812-DF65"
+  },
+  {
+    "uuid": "f065835239ea4c168a3e82b37edb17c1",
+    "codigo": "LQG-20261005-093813-9776"
+  },
+  {
+    "uuid": "ebe4b2f1f43445d88e32a1acc3a8b2aa",
+    "codigo": "LQG-20261005-093813-E625"
+  },
+  {
+    "uuid": "86451f06b0b54b97b8073621817a7a19",
+    "codigo": "LQG-20261005-093813-711B"
+  },
+  {
+    "uuid": "a0ff06dd78134f909c7992bf447f7875",
+    "codigo": "LQG-20261005-093813-63F4"
+  },
+  {
+    "uuid": "4d73f810843c4c68befc615a65dd4fc2",
+    "codigo": "LQG-20261005-093814-1461"
+  },
+  {
+    "uuid": "1459d5bee4334d8db55c074eb93ad5be",
+    "codigo": "LQG-20261005-093814-1DBE"
+  },
+  {
+    "uuid": "74dbacdd26e6452f9e2405884339ca35",
+    "codigo": "LQG-20261005-093814-4A26"
+  },
+  {
+    "uuid": "6edc6849bc034241b639491cbdd77cd8",
+    "codigo": "LQG-20261005-093814-278B"
+  },
+  {
+    "uuid": "7e4c7d8a2e334b0ca451661249ade537",
+    "codigo": "LQG-20261005-093814-1AEF"
+  },
+  {
+    "uuid": "1ff8132619324933a0b930dbd93f4b8f",
+    "codigo": "LQG-20261005-093814-229E"
+  },
+  {
+    "uuid": "c7b7bee9855c4ced921596c0326805a7",
+    "codigo": "LQG-20261005-093815-1543"
+  },
+  {
+    "uuid": "b281f22c4ca3487c9f4369e413478adc",
+    "codigo": "LQG-20261005-093815-B8A1"
+  },
+  {
+    "uuid": "040197207b7945d7b73e148f86124071",
+    "codigo": "LQG-20261005-093815-057D"
+  },
+  {
+    "uuid": "4b06cd5868c74232abb53c10d10f12ba",
+    "codigo": "LQG-20261005-093815-926B"
+  },
+  {
+    "uuid": "991f90ddfad24ddba322ceccaaca69e2",
+    "codigo": "LQG-20261005-093815-FA9E"
+  },
+  {
+    "uuid": "a05a8a84a12249cda4d918b0cc1d8d01",
+    "codigo": "LQG-20261005-093816-11BE"
+  },
+  {
+    "uuid": "53dd6a654dd24d038fc5ddf869f6ad18",
+    "codigo": "LQG-20261005-093816-C29D"
+  },
+  {
+    "uuid": "bfc154a37c3d408d8510abb582b45dbc",
+    "codigo": "LQG-20261005-093816-A89F"
+  },
+  {
+    "uuid": "ce463ea1e4d34d35b6ce0f4257875528",
+    "codigo": "LQG-20261005-093816-52ED"
+  },
+  {
+    "uuid": "b24d8731a12b43388461175ad75b1aa7",
+    "codigo": "LQG-20261005-093817-6FBE"
+  },
+  {
+    "uuid": "689a7d88aef943a0b5f060f8ac342dca",
+    "codigo": "LQG-20261005-093817-A7C2"
+  },
+  {
+    "uuid": "94c6235c91104068865808c2607ab448",
+    "codigo": "LQG-20261005-093817-7B30"
+  },
+  {
+    "uuid": "d9e67768e07746ad89cacf77a736f5b0",
+    "codigo": "LQG-20261005-093817-D93F"
+  },
+  {
+    "uuid": "5e57b682608b46c691dcea72f9e7eca4",
+    "codigo": "LQG-20261005-093817-1F77"
+  },
+  {
+    "uuid": "b49bc09827934f66b5ea0aba2858512e",
+    "codigo": "LQG-20261005-093818-9F27"
+  },
+  {
+    "uuid": "61a6dcbc794241dd98480d87ddbde0aa",
+    "codigo": "LQG-20261005-093818-5C94"
+  },
+  {
+    "uuid": "9d5fa03028ba40bdbfe3c2a15a934d9c",
+    "codigo": "LQG-20261005-093818-E6E5"
+  },
+  {
+    "uuid": "130d78f1d81b4b61ae512f806ae06444",
+    "codigo": "LQG-20261005-093818-2F72"
+  },
+  {
+    "uuid": "e8cdcc34c3d642708229006f6ac1d224",
+    "codigo": "LQG-20261005-093818-8666"
+  },
+  {
+    "uuid": "80547acf2eae48ddab557d46fc0c509b",
+    "codigo": "LQG-20261005-093819-25EE"
+  },
+  {
+    "uuid": "14bef44169614a679ecce347f99f454f",
+    "codigo": "LQG-20261005-093819-A4DF"
+  },
+  {
+    "uuid": "9787b85e27924127a95507251a1a6b28",
+    "codigo": "LQG-20261005-093819-5AC6"
+  },
+  {
+    "uuid": "610b98a38b92478ba48d6781b6ae5fd8",
+    "codigo": "LQG-20261005-093819-E6EA"
+  },
+  {
+    "uuid": "a54b8a7fadaf4cec880193d28b1c0b7d",
+    "codigo": "LQG-20261005-093819-3F7A"
+  },
+  {
+    "uuid": "668356125dd64405812f07c145d1151f",
+    "codigo": "LQG-20261005-093820-3AB4"
+  },
+  {
+    "uuid": "6f587405a28647a68fa09b6df32221f5",
+    "codigo": "LQG-20261005-093820-AB88"
+  },
+  {
+    "uuid": "014c301d2097493eafe5751ac54dda01",
+    "codigo": "LQG-20261005-093820-FC19"
+  },
+  {
+    "uuid": "44f7e45fefcd41499aacdeb396f84715",
+    "codigo": "LQG-20261005-093820-9E48"
+  },
+  {
+    "uuid": "62ee845258c6458482dbe6d5cf060753",
+    "codigo": "LQG-20261005-093820-46BE"
+  },
+  {
+    "uuid": "86ed67b2f7804a148fb09d23314de193",
+    "codigo": "LQG-20261005-093821-4D6D"
+  },
+  {
+    "uuid": "865ecc2eab0b4058923693c4e9257c44",
+    "codigo": "LQG-20261005-093821-F5DF"
+  },
+  {
+    "uuid": "b42cae4bf8864af3b3996bde6bf3fd1d",
+    "codigo": "LQG-20261005-093821-B696"
+  },
+  {
+    "uuid": "77782cef739e40adb3662585a24e5b73",
+    "codigo": "LQG-20261005-093821-537E"
+  },
+  {
+    "uuid": "7ae456c85a3c44d3a7894f71a30eb9ec",
+    "codigo": "LQG-20261005-093822-C920"
+  },
+  {
+    "uuid": "921a818294b44a01ae67cd8c6c945974",
+    "codigo": "LQG-20261005-093822-38E2"
+  },
+  {
+    "uuid": "035ef075d4ce438ebbb89c59082246f0",
+    "codigo": "LQG-20261005-093822-B7A7"
+  },
+  {
+    "uuid": "2201dbf601e041bc930ccf58403348c9",
+    "codigo": "LQG-20261005-093822-4DA4"
+  },
+  {
+    "uuid": "35f8103f8e3f4b6696b3dcd31ce76bbe",
+    "codigo": "LQG-20261005-093822-A48E"
+  },
+  {
+    "uuid": "81c13a77da564a9fa76e2d16094006ac",
+    "codigo": "LQG-20261005-093822-A776"
+  },
+  {
+    "uuid": "65f1da1e272e4231b430207c388151f5",
+    "codigo": "LQG-20261005-093823-BBD9"
+  },
+  {
+    "uuid": "97a2b26dbe4a456b9d5e14ea6b02865f",
+    "codigo": "LQG-20261005-093823-5B1A"
+  },
+  {
+    "uuid": "8419f78717604b0f90d162a5dae66f1e",
+    "codigo": "LQG-20261005-093823-D860"
+  },
+  {
+    "uuid": "102fcab38f8e4c388ed67cd73cd4d253",
+    "codigo": "LQG-20261005-093823-34E2"
+  },
+  {
+    "uuid": "00052ff732004429956dc588b71e1edf",
+    "codigo": "LQG-20261005-093823-D83A"
+  },
+  {
+    "uuid": "bb7c51d63c7f4f6f95916ffb0f00ca1f",
+    "codigo": "LQG-20261005-093824-8203"
+  },
+  {
+    "uuid": "c567d5e9da1e401f8be1ce5fe1f437a5",
+    "codigo": "LQG-20261005-093824-11B9"
+  },
+  {
+    "uuid": "43b0f0f097f343bfa38f6a7a1dda2fe1",
+    "codigo": "LQG-20261005-093824-5B74"
+  },
+  {
+    "uuid": "8b4396b42c5f4aae80b866eb93434066",
+    "codigo": "LQG-20261005-093824-86F3"
+  },
+  {
+    "uuid": "141970ae4f0a4961abfc110b320afe41",
+    "codigo": "LQG-20261005-093824-7AF0"
+  },
+  {
+    "uuid": "95640f3d185e40a8854f4cb82bcae0b0",
+    "codigo": "LQG-20261005-093824-62D3"
+  },
+  {
+    "uuid": "28de450929554c8bafa32eb756047a67",
+    "codigo": "LQG-20261005-093825-39CF"
+  },
+  {
+    "uuid": "69fc113fbb6f416aa9ac1e44d00b9898",
+    "codigo": "LQG-20261005-093825-D82A"
+  },
+  {
+    "uuid": "41c6a72ab0844d648760cf21d19c95f7",
+    "codigo": "LQG-20261005-093825-3D36"
+  },
+  {
+    "uuid": "1973472f6e8d4279a46aae82eccccaab",
+    "codigo": "LQG-20261005-093825-73E7"
+  },
+  {
+    "uuid": "173edd6607374d3c850f3fe64144a5a4",
+    "codigo": "LQG-20261005-093825-6A60"
+  },
+  {
+    "uuid": "ab38c6e3dacd4c4ba3c46f7807d8cbad",
+    "codigo": "LQG-20261005-093826-0F9A"
+  },
+  {
+    "uuid": "ff22884400ec4e42838a8511c96fed7d",
+    "codigo": "LQG-20261005-093826-A880"
+  },
+  {
+    "uuid": "062e7374615245e8b0d8f7a7b6e16b83",
+    "codigo": "LQG-20261005-093826-BE1F"
+  },
+  {
+    "uuid": "f4ad5119eb9e445ca6fc01aea5d61e08",
+    "codigo": "LQG-20261005-093827-6C2A"
+  },
+  {
+    "uuid": "1b5b260f52a1466598cf0b85b1a252a0",
+    "codigo": "LQG-20261005-093827-DA99"
+  },
+  {
+    "uuid": "1ace9b62b2f848abbf2283350335ca9e",
+    "codigo": "LQG-20261005-093827-A37A"
+  },
+  {
+    "uuid": "18fb872cb687473181df5c013ab77d31",
+    "codigo": "LQG-20261005-093827-B94A"
+  },
+  {
+    "uuid": "e1e2ed431b3c46008e19589ffff83ff4",
+    "codigo": "LQG-20261005-093827-3A14"
+  },
+  {
+    "uuid": "62bba23c051245d5a8f10167dad40c8f",
+    "codigo": "LQG-20261005-093827-304D"
+  },
+  {
+    "uuid": "b1dd27c4fad94100869f46334d09aae0",
+    "codigo": "LQG-20261005-093828-8532"
+  },
+  {
+    "uuid": "887b6d4b3573499ca7fba144f16786cc",
+    "codigo": "LQG-20261005-093828-2363"
+  },
+  {
+    "uuid": "d9f3676134cf4239b1821abb404f533a",
+    "codigo": "LQG-20261005-093828-EC7C"
+  },
+  {
+    "uuid": "8946fb9ab95a43a59ab86b985c409f73",
+    "codigo": "LQG-20261005-093829-0103"
+  },
+  {
+    "uuid": "c16829e330f64e8d88524606e4f98891",
+    "codigo": "LQG-20261005-093829-0524"
+  },
+  {
+    "uuid": "045cb78345eb4cb3801d18754e03519a",
+    "codigo": "LQG-20261005-093829-86D3"
+  },
+  {
+    "uuid": "3e4b3a1b15b3409b904520bda6d2bac3",
+    "codigo": "LQG-20261005-093829-2845"
+  },
+  {
+    "uuid": "b855b9876998475c96120960541af0d3",
+    "codigo": "LQG-20261005-093830-3B92"
+  },
+  {
+    "uuid": "b48d62805d164f73bd299a3962be1569",
+    "codigo": "LQG-20261005-093830-D3AA"
+  },
+  {
+    "uuid": "5fd21f9f85a441caaad8e58559ea9a66",
+    "codigo": "LQG-20261005-093830-F850"
+  },
+  {
+    "uuid": "bdcdcd8790bc468b965b988d63e04d15",
+    "codigo": "LQG-20261005-093830-07FB"
+  },
+  {
+    "uuid": "1b36764c4fcd49edaca067c94a811529",
+    "codigo": "LQG-20261005-093830-D2CA"
+  },
+  {
+    "uuid": "808706c30b9c4bb7a4d5caa65d92a320",
+    "codigo": "LQG-20261005-093831-EB1E"
+  },
+  {
+    "uuid": "b20a3c98b07649ffa90a31cc87c5e508",
+    "codigo": "LQG-20261005-093831-D97D"
+  },
+  {
+    "uuid": "adad2d74a0e94a24b7cdc02c1fa6af14",
+    "codigo": "LQG-20261005-093831-5146"
+  },
+  {
+    "uuid": "825f6fb3d2764bfeae3e84f00b18308c",
+    "codigo": "LQG-20261005-093832-D969"
+  },
+  {
+    "uuid": "5387bacc7358400085356fa6dfa0da13",
+    "codigo": "LQG-20261005-093832-0249"
+  },
+  {
+    "uuid": "18792bed8cc949fd9b9a9e664b1c37e0",
+    "codigo": "LQG-20261005-093832-3732"
+  },
+  {
+    "uuid": "2d0c1d26636743998ab5d64a5f9a46b4",
+    "codigo": "LQG-20261005-093832-A5E2"
+  },
+  {
+    "uuid": "eb11c3fdda584ac7b4a73b29bf2c2cba",
+    "codigo": "LQG-20261005-093832-FD52"
+  },
+  {
+    "uuid": "0d78c962c47d44a39dd0caea89a08d3f",
+    "codigo": "LQG-20261005-093832-6D7C"
+  },
+  {
+    "uuid": "1cb0307059204f839be5b4ae1ed10b5c",
+    "codigo": "LQG-20261005-093832-ED33"
+  },
+  {
+    "uuid": "1a47134000fa419bbaaa8f8d537eb243",
+    "codigo": "LQG-20261005-093833-9C4D"
+  },
+  {
+    "uuid": "7dad05b1eea043a788ee885f160549a8",
+    "codigo": "LQG-20261005-093833-1C5E"
+  },
+  {
+    "uuid": "8d0113ac385c472f8a69da0bf835cfff",
+    "codigo": "LQG-20261005-093833-760D"
+  },
+  {
+    "uuid": "a2a6a7fb17064b4c9f3ecb47040fbb21",
+    "codigo": "LQG-20261005-093833-2B6A"
+  },
+  {
+    "uuid": "038a121fe4dd4cfea18e43620d9dc71b",
+    "codigo": "LQG-20261005-093833-182C"
+  },
+  {
+    "uuid": "c1e7e495e3404b139cb0276cd9b17f4e",
+    "codigo": "LQG-20261005-093834-43A2"
+  },
+  {
+    "uuid": "d7ff83e520e64ab0a39654bfba95ca66",
+    "codigo": "LQG-20261005-093834-55CE"
+  },
+  {
+    "uuid": "d904f5e7aa1a48bc8328c4719f897ccd",
+    "codigo": "LQG-20261005-093834-4211"
+  },
+  {
+    "uuid": "effd1dfac50c416590b02b260023dc99",
+    "codigo": "LQG-20261005-093834-E91E"
+  },
+  {
+    "uuid": "e8e0e83ea15e485c9213ae303629f13c",
+    "codigo": "LQG-20261005-093834-A884"
+  },
+  {
+    "uuid": "393cca0758b14e4da2dbe7aaae12d04a",
+    "codigo": "LQG-20261005-093835-7591"
+  },
+  {
+    "uuid": "b2e92c2e49334748adab8f57cc9411d7",
+    "codigo": "LQG-20261005-093835-8399"
+  },
+  {
+    "uuid": "7002a540a5ae4f9f9dad5e5785f706f6",
+    "codigo": "LQG-20261005-093835-D8F4"
+  },
+  {
+    "uuid": "7cc2c80910ea43c0a4703d70b8145b1d",
+    "codigo": "LQG-20261005-093835-B9FB"
+  },
+  {
+    "uuid": "0eefc54b0f034af0bc275051ae379647",
+    "codigo": "LQG-20261005-093835-FF61"
+  },
+  {
+    "uuid": "a56cfa2aaed0472ea4b0e23ee6ba2044",
+    "codigo": "LQG-20261005-093836-A65D"
+  },
+  {
+    "uuid": "2ce0410a5e5f4695ac5503495b333ab9",
+    "codigo": "LQG-20261005-093836-714D"
+  },
+  {
+    "uuid": "02cca928ea884dab84bb8cd4b583266a",
+    "codigo": "LQG-20261005-093836-DAE1"
+  },
+  {
+    "uuid": "f625238bdf7644749e0ec9654790ad30",
+    "codigo": "LQG-20261005-093836-DB39"
+  },
+  {
+    "uuid": "cca82b603e0f4885b07b8dad4dc6efc1",
+    "codigo": "LQG-20261005-093837-E996"
+  },
+  {
+    "uuid": "de509f4b74844310a907a76ae46c1d3b",
+    "codigo": "LQG-20261005-093837-BAB9"
+  },
+  {
+    "uuid": "c3011806040e4ac492ae7ad0f0de8bec",
+    "codigo": "LQG-20261005-093837-4426"
+  },
+  {
+    "uuid": "8e6d0e989d1b4e9a98a476eca2efb95d",
+    "codigo": "LQG-20261005-093837-C02E"
+  },
+  {
+    "uuid": "70f903789c364a06834480bd957547f1",
+    "codigo": "LQG-20261005-093837-A019"
+  },
+  {
+    "uuid": "757342ba816c4cee89bd89003f8bd9f3",
+    "codigo": "LQG-20261005-093838-C5EA"
+  },
+  {
+    "uuid": "005e0e45ce274ec6a06abefc16e034d3",
+    "codigo": "LQG-20261005-093838-1187"
+  },
+  {
+    "uuid": "83b90f54495645cda1d1e0ee6fb798e6",
+    "codigo": "LQG-20261005-093838-C44A"
+  },
+  {
+    "uuid": "42ccc3f2bb16411893d0044bdd24f8fe",
+    "codigo": "LQG-20261005-093838-549F"
+  },
+  {
+    "uuid": "cbb3d795d1674a8f960872381b24e81d",
+    "codigo": "LQG-20261005-093838-2AC2"
+  },
+  {
+    "uuid": "f2c8b166cc984a4eaa0b3803fdcfd80e",
+    "codigo": "LQG-20261005-093838-FB00"
+  },
+  {
+    "uuid": "7d5be704e8ff40f193a46459ba837db2",
+    "codigo": "LQG-20261005-093839-83A2"
+  },
+  {
+    "uuid": "705f4a7a2c6d49968670bf3f7b441e6b",
+    "codigo": "LQG-20261005-093839-AD62"
+  },
+  {
+    "uuid": "0e013c88cb084a07afcdd24e0282c492",
+    "codigo": "LQG-20261005-093839-3F0D"
+  },
+  {
+    "uuid": "497992e4da344f4dbb6ee09093a47d2f",
+    "codigo": "LQG-20261005-093839-13F5"
+  },
+  {
+    "uuid": "96d811eff1eb4be6b83e5ffd9369803f",
+    "codigo": "LQG-20261005-093840-470C"
+  },
+  {
+    "uuid": "56f064156c634efdadfee180b3f0647b",
+    "codigo": "LQG-20261005-093840-4EFB"
+  },
+  {
+    "uuid": "2db3d00cc6ff4437975b6bf29d709c44",
+    "codigo": "LQG-20261005-093840-226E"
+  },
+  {
+    "uuid": "4bfb1015430b4c52ab564fb643c9f4b0",
+    "codigo": "LQG-20261005-093840-E8FD"
+  },
+  {
+    "uuid": "790ae31956fa49e4811e5ec258ea5bc6",
+    "codigo": "LQG-20261005-093840-651D"
+  },
+  {
+    "uuid": "50fd887b10bf46108351c80958245517",
+    "codigo": "LQG-20261005-093841-8DDD"
+  },
+  {
+    "uuid": "b7f683d54a7d44b39e5a8fb263b3fd77",
+    "codigo": "LQG-20261005-093841-E5D9"
+  },
+  {
+    "uuid": "ee6491bc5db149348ef1563843c54766",
+    "codigo": "LQG-20261005-093841-CF40"
+  },
+  {
+    "uuid": "ba4b8280fdda4cdd9c45f749851900e7",
+    "codigo": "LQG-20261005-093841-1C60"
+  },
+  {
+    "uuid": "04fa3e088e064b97afe5e3cc55725330",
+    "codigo": "LQG-20261005-093841-4FBE"
+  },
+  {
+    "uuid": "e4f6b05088c645949ce0d707447ecaf6",
+    "codigo": "LQG-20261005-093841-E68C"
+  },
+  {
+    "uuid": "d33c7202d44f46a3928e877d5aa44b39",
+    "codigo": "LQG-20261005-093842-158A"
+  },
+  {
+    "uuid": "4edc41a6b08f4cf9888973ba16e4ede4",
+    "codigo": "LQG-20261005-093842-E050"
+  },
+  {
+    "uuid": "dbfab491e4e34e2692b5304c9d73a906",
+    "codigo": "LQG-20261005-093842-6265"
+  },
+  {
+    "uuid": "684565fb9ea34377a8dbc020f1faddfd",
+    "codigo": "LQG-20261005-093843-2330"
+  },
+  {
+    "uuid": "17334d8f37ea451ca51956d0837bcb06",
+    "codigo": "LQG-20261005-093843-16DC"
+  },
+  {
+    "uuid": "22888216f82947f1a06027f0e02eeefe",
+    "codigo": "LQG-20261005-093843-39C3"
+  },
+  {
+    "uuid": "b7727fc90f7e4f58ad33983d3e61f68e",
+    "codigo": "LQG-20261005-093843-3E38"
+  },
+  {
+    "uuid": "1c6f1a5fd94142a5b9b48ed260f18f41",
+    "codigo": "LQG-20261005-093843-0A7B"
+  },
+  {
+    "uuid": "47cd8eb174514dcb9c442cad22464ca8",
+    "codigo": "LQG-20261005-093844-39C7"
+  },
+  {
+    "uuid": "503cf42088654175baa8aabe8b37ddbb",
+    "codigo": "LQG-20261005-093844-84BC"
+  },
+  {
+    "uuid": "7d16bf80f9cf42a88db579b5f3411eb4",
+    "codigo": "LQG-20261005-093844-3F12"
+  },
+  {
+    "uuid": "8519c7b844754b72b94eb1e4c7b6e59a",
+    "codigo": "LQG-20261005-093844-25FB"
+  },
+  {
+    "uuid": "1c958609b3374fc49288a190b6af47a9",
+    "codigo": "LQG-20261005-093844-2792"
+  },
+  {
+    "uuid": "14aec6a5bd70484c85f68bfccf226eef",
+    "codigo": "LQG-20261005-093845-1A18"
+  },
+  {
+    "uuid": "4df2c138d172490c8263c7559af19172",
+    "codigo": "LQG-20261005-093845-4DEC"
+  },
+  {
+    "uuid": "19912c1f3ab44531a27a5a264f58ee1a",
+    "codigo": "LQG-20261005-093845-2BF6"
+  },
+  {
+    "uuid": "6564d47a2df3479cb8555dfa7324eeb7",
+    "codigo": "LQG-20261005-093845-2DFE"
+  },
+  {
+    "uuid": "c121f9bb898d41dfb9e66086f7339d71",
+    "codigo": "LQG-20261005-093846-490A"
+  },
+  {
+    "uuid": "ea65625b694843cb935241703f35f44a",
+    "codigo": "LQG-20261005-093846-763D"
+  },
+  {
+    "uuid": "5450136a0d304ceebe1392e2f81f218a",
+    "codigo": "LQG-20261005-093846-270B"
+  },
+  {
+    "uuid": "a44673751b7d43f19d4ac4973249d138",
+    "codigo": "LQG-20261005-093846-4809"
+  },
+  {
+    "uuid": "f8ed5933f6d749ea8afbe43b268410e1",
+    "codigo": "LQG-20261005-093846-F6F4"
+  },
+  {
+    "uuid": "750f6e06d0fa4f29ac3bc5264e18f38b",
+    "codigo": "LQG-20261005-093847-EC45"
+  },
+  {
+    "uuid": "ab40634845bd456c96274412a2921a5d",
+    "codigo": "LQG-20261005-093847-D20C"
+  },
+  {
+    "uuid": "a1de2833ddca4351bf343270c663f3f4",
+    "codigo": "LQG-20261005-093847-D214"
+  },
+  {
+    "uuid": "1ddbc6cdec8f480e81b019ad345b3e5c",
+    "codigo": "LQG-20261005-093847-56CA"
+  },
+  {
+    "uuid": "1fb7554979b644dba2f9a82346dfc578",
+    "codigo": "LQG-20261005-093847-A1A3"
+  },
+  {
+    "uuid": "2704d4a2678c4469a9857ced15cd16de",
+    "codigo": "LQG-20261005-093848-3F2F"
+  },
+  {
+    "uuid": "2514cf7d92f14821afe104c03d4b9e27",
+    "codigo": "LQG-20261005-093848-EB41"
+  },
+  {
+    "uuid": "0403cedc1bf6445b84f728bb58150634",
+    "codigo": "LQG-20261005-093848-1CF3"
+  },
+  {
+    "uuid": "4e0421fc44f442a787b6b3f71f53de19",
+    "codigo": "LQG-20261005-093848-8FA3"
+  },
+  {
+    "uuid": "03de307d44234585bb9d3e6c5724885d",
+    "codigo": "LQG-20261005-093849-94A3"
+  },
+  {
+    "uuid": "3e0a675cf82842a292cce75aca16ed7a",
+    "codigo": "LQG-20261005-093849-1306"
+  },
+  {
+    "uuid": "4c6cca15b6ff482bbfc017a6aab70a8d",
+    "codigo": "LQG-20261005-093849-95B2"
+  },
+  {
+    "uuid": "f7268f1f6e794968b6ecd48eed7c22db",
+    "codigo": "LQG-20261005-093849-2991"
+  },
+  {
+    "uuid": "0163e3504c73430993a472a75845beca",
+    "codigo": "LQG-20261005-093849-EAB9"
+  },
+  {
+    "uuid": "0370a02886df43e495e6af7044ece13b",
+    "codigo": "LQG-20261005-093850-1CE0"
+  },
+  {
+    "uuid": "35dd6aea7b324c3288486bf764d439ae",
+    "codigo": "LQG-20261005-093850-348C"
+  },
+  {
+    "uuid": "454988fcb5cf4e4c81c75c3e3aabcd43",
+    "codigo": "LQG-20261005-093850-C44F"
+  },
+  {
+    "uuid": "d663b0b13f6c4f138a552d772b880074",
+    "codigo": "LQG-20261005-093850-7BDD"
+  },
+  {
+    "uuid": "406ed4a525934f69aa4f482cf70e551a",
+    "codigo": "LQG-20261005-093850-36B1"
+  },
+  {
+    "uuid": "df744180b8034d54b8c74726de66e396",
+    "codigo": "LQG-20261005-093850-FDE9"
+  },
+  {
+    "uuid": "ea98b8d4064d400a9b820bb42820e0c9",
+    "codigo": "LQG-20261005-093851-CD0E"
+  },
+  {
+    "uuid": "206abcd027da4e25b0292b9f12fa8308",
+    "codigo": "LQG-20261005-093851-AA7F"
+  },
+  {
+    "uuid": "a7d2690b16984ba8b271b9b192c643f8",
+    "codigo": "LQG-20261005-093851-A871"
+  },
+  {
+    "uuid": "3f9e76a6dd764d0b95eec181fe82c3df",
+    "codigo": "LQG-20261005-093851-15B6"
+  },
+  {
+    "uuid": "da9801b2e57340af8ec8f4a3b6308010",
+    "codigo": "LQG-20261005-093851-121A"
+  },
+  {
+    "uuid": "1f1b3bcc9c42443c813a6962b3c62138",
+    "codigo": "LQG-20261005-093852-7A14"
+  },
+  {
+    "uuid": "06d581e7b08a4626891f3fc889b9c137",
+    "codigo": "LQG-20261005-093852-03C2"
+  },
+  {
+    "uuid": "157511a0eb75486e897707079e41d1ff",
+    "codigo": "LQG-20261005-093852-8189"
+  },
+  {
+    "uuid": "fd09ac82426c4e4da9592cbf2ed3773a",
+    "codigo": "LQG-20261005-093852-736F"
+  },
+  {
+    "uuid": "d855689116914cfe9ce9ea4c7d91de5d",
+    "codigo": "LQG-20261005-093852-D156"
+  },
+  {
+    "uuid": "c02a1b42c09f4faf9635712771d3683b",
+    "codigo": "LQG-20261005-093853-D9EE"
+  },
+  {
+    "uuid": "50012901f95f4337bffc996d7d1c26e3",
+    "codigo": "LQG-20261005-093853-DC36"
+  },
+  {
+    "uuid": "e30fc03295144e50bd152b48a225c0bf",
+    "codigo": "LQG-20261005-093853-F5D8"
+  },
+  {
+    "uuid": "29f82a9267c34ba2921065377ff44f33",
+    "codigo": "LQG-20261005-093854-4DA5"
+  },
+  {
+    "uuid": "a38a0f8ba44d446b8a15b86752dc03c5",
+    "codigo": "LQG-20261005-093854-38E0"
+  },
+  {
+    "uuid": "b7ffefd4714c4318858e501c13766243",
+    "codigo": "LQG-20261005-093854-F790"
+  },
+  {
+    "uuid": "612aad50aae049839b499e322a82ccfa",
+    "codigo": "LQG-20261005-093854-D151"
+  },
+  {
+    "uuid": "db6eb107d55545a98220190b9ff362e0",
+    "codigo": "LQG-20261005-093854-F871"
+  },
+  {
+    "uuid": "f3598dc6936a4f1487ccb506d883b746",
+    "codigo": "LQG-20261005-093854-3122"
+  },
+  {
+    "uuid": "685e895bbe224419b9e7a58b62055d95",
+    "codigo": "LQG-20261005-093855-96DC"
+  },
+  {
+    "uuid": "22ae1a2cb32346e3a4e8834dec42a3ee",
+    "codigo": "LQG-20261005-093855-7775"
+  },
+  {
+    "uuid": "4516c63974da4a01814bfb176d73fa70",
+    "codigo": "LQG-20261005-093855-782A"
+  },
+  {
+    "uuid": "e3d9a1ca5f1b4d1daffba6a1b624ec0b",
+    "codigo": "LQG-20261005-093855-97CD"
+  },
+  {
+    "uuid": "7cc2f9bd3da242c98abd96225f70c3a7",
+    "codigo": "LQG-20261005-093855-445F"
+  },
+  {
+    "uuid": "29afc7b9247146dfbcf0181388e3687b",
+    "codigo": "LQG-20261005-093855-2E85"
+  },
+  {
+    "uuid": "5baa289875ea43ef9b6c8b63b11d5276",
+    "codigo": "LQG-20261005-093856-2A72"
+  },
+  {
+    "uuid": "5c38000c54724ec69f513a8bf5fa0002",
+    "codigo": "LQG-20261005-093857-A9CA"
+  },
+  {
+    "uuid": "7438ddc12546490bafd384f8ec37d11a",
+    "codigo": "LQG-20261005-093857-94AC"
+  },
+  {
+    "uuid": "997d69817848447492c9e2a222f81524",
+    "codigo": "LQG-20261005-093857-64D8"
+  },
+  {
+    "uuid": "64fcc0ca09ab4096b52bee355705c3b6",
+    "codigo": "LQG-20261005-093857-1DA8"
+  },
+  {
+    "uuid": "0ab49fb1a73d4807b74c7bb078f71a58",
+    "codigo": "LQG-20261005-093857-F5EC"
+  },
+  {
+    "uuid": "791462e3e7df42a393db2fb55018e57e",
+    "codigo": "LQG-20261005-093858-28A9"
+  },
+  {
+    "uuid": "5b47cc1c179648a89a61d03a403a76a1",
+    "codigo": "LQG-20261005-093858-1240"
+  },
+  {
+    "uuid": "e2c0137e3cde45749e8370de0c3371bc",
+    "codigo": "LQG-20261005-093858-8574"
+  },
+  {
+    "uuid": "ad8e443fd7af40849ca8ba7fcad2ce08",
+    "codigo": "LQG-20261005-093858-72E9"
+  },
+  {
+    "uuid": "b514258b47f64560b569fb89445d6b8e",
+    "codigo": "LQG-20261005-093858-6CD3"
+  },
+  {
+    "uuid": "e1a5caee80f3436081ca7f6cfcd4deab",
+    "codigo": "LQG-20261005-093858-45B6"
+  },
+  {
+    "uuid": "7261186ed3a148398bd47a8a8f569725",
+    "codigo": "LQG-20261005-093900-E265"
+  },
+  {
+    "uuid": "1541a683b6a3452495b2f94752fa86ea",
+    "codigo": "LQG-20261005-093900-1216"
+  },
+  {
+    "uuid": "c937696ace734d26bf159d175fc12d61",
+    "codigo": "LQG-20261005-093900-C871"
+  },
+  {
+    "uuid": "70ac316c2bb14ea2b5cc1980894d8143",
+    "codigo": "LQG-20261005-093900-DBD7"
+  },
+  {
+    "uuid": "86ae2ae5d9b54c25a60b7787ff210134",
+    "codigo": "LQG-20261005-093900-678F"
+  },
+  {
+    "uuid": "df83f86ac744409a931e5901b882474e",
+    "codigo": "LQG-20261005-093901-0F8D"
+  },
+  {
+    "uuid": "f6b2bfaef31543309a5cdc85968ac160",
+    "codigo": "LQG-20261005-093901-4562"
+  },
+  {
+    "uuid": "6e9c765f53e44333997061fc1afaf26f",
+    "codigo": "LQG-20261005-093901-9977"
+  },
+  {
+    "uuid": "5d63b8c155ee4ce49de6eea2ca749c28",
+    "codigo": "LQG-20261005-093901-4132"
+  },
+  {
+    "uuid": "092d1e0f9c1e4a19b5e40f46b8275a36",
+    "codigo": "LQG-20261005-093901-6DE6"
+  },
+  {
+    "uuid": "2823cd67e1bf4b53be14bbe8ccb93a27",
+    "codigo": "LQG-20261005-093902-DB79"
+  },
+  {
+    "uuid": "31ef77ab9d0345948990000894f47a39",
+    "codigo": "LQG-20261005-093902-41CB"
+  },
+  {
+    "uuid": "ee69ff476fbd4e9f954f25be0fd6f133",
+    "codigo": "LQG-20261005-093902-22E8"
+  },
+  {
+    "uuid": "cbf80bf986044d29bdf60458d856a429",
+    "codigo": "LQG-20261005-093902-91B7"
+  },
+  {
+    "uuid": "efc065e522ce4eedba6426fe283fd31e",
+    "codigo": "LQG-20261005-093902-42E8"
+  },
+  {
+    "uuid": "c526ef65646b4f1383f94bbd56eb94ec",
+    "codigo": "LQG-20261005-093903-8D3C"
+  },
+  {
+    "uuid": "b32d5763bf3849a4a0a479cb90004b7f",
+    "codigo": "LQG-20261005-093903-1003"
+  },
+  {
+    "uuid": "7e6769391a774604a474ab473bf70cf0",
+    "codigo": "LQG-20261005-093903-A0F2"
+  },
+  {
+    "uuid": "ff85ad6c14674591a7aff9b5c99b5dfd",
+    "codigo": "LQG-20261005-093903-D582"
+  },
+  {
+    "uuid": "fc643f2f02c64812af19db730b01e659",
+    "codigo": "LQG-20261005-093903-34A2"
+  },
+  {
+    "uuid": "cdedb30194984c2f9c4f4b208631f908",
+    "codigo": "LQG-20261005-093903-C0EA"
+  },
+  {
+    "uuid": "e6b09b07e0984e53b61d8795c31d16ae",
+    "codigo": "LQG-20261005-093903-DC09"
+  },
+  {
+    "uuid": "b677ad2ed638461e8ba886a5262419b6",
+    "codigo": "LQG-20261005-093904-3995"
+  },
+  {
+    "uuid": "03d062f8ba12400f9df881e33877e407",
+    "codigo": "LQG-20261005-093904-FC6E"
+  },
+  {
+    "uuid": "eaa9b1c3a04a4f90838244aae3920a93",
+    "codigo": "LQG-20261005-093904-C094"
+  },
+  {
+    "uuid": "0919f00c23964589aefb12f20b502a47",
+    "codigo": "LQG-20261005-093905-F9D0"
+  },
+  {
+    "uuid": "f1f2181a854c47688e375213c82e2b74",
+    "codigo": "LQG-20261005-093905-40C5"
+  },
+  {
+    "uuid": "370da47567c8483cb5ac940d44620785",
+    "codigo": "LQG-20261005-093905-CE50"
+  },
+  {
+    "uuid": "c3408950ec7d47fcabafe1f8c439d78c",
+    "codigo": "LQG-20261005-093905-2AB1"
+  },
+  {
+    "uuid": "050fee2508e443f889f8b4e216e6e9ca",
+    "codigo": "LQG-20261005-093905-F927"
+  },
+  {
+    "uuid": "f4663e7acb1f45f69516b5f4bdaf877a",
+    "codigo": "LQG-20261005-093906-AC33"
+  },
+  {
+    "uuid": "71df39ca6ee04fb8b5cc4305f9ff3694",
+    "codigo": "LQG-20261005-093906-E016"
+  },
+  {
+    "uuid": "96e4dca6b3ad4c679556cb50369423a7",
+    "codigo": "LQG-20261005-093906-E55D"
+  },
+  {
+    "uuid": "110c82061a2948ecbf7b94bc8ec0ad81",
+    "codigo": "LQG-20261005-093906-01B9"
+  },
+  {
+    "uuid": "905cd662befe4dc4a1de18226df33c62",
+    "codigo": "LQG-20261005-093906-C95A"
+  },
+  {
+    "uuid": "c93ac4ee7fea4bff9d6290518ce5edd8",
+    "codigo": "LQG-20261005-093906-A87F"
+  },
+  {
+    "uuid": "cb01badcfac942b28b1f8cd70dcafcdc",
+    "codigo": "LQG-20261005-093907-7F1B"
+  },
+  {
+    "uuid": "bfa0a4030d9340cd8d3dff3e87c82604",
+    "codigo": "LQG-20261005-093907-019B"
+  },
+  {
+    "uuid": "db97671c632f49329d0a26be8d1b48d7",
+    "codigo": "LQG-20261005-093907-A874"
+  },
+  {
+    "uuid": "315c943d22e04dd4bab138470d8f7f9b",
+    "codigo": "LQG-20261005-093907-651D"
+  },
+  {
+    "uuid": "1033dc25e8f64ab1902033a60f58d424",
+    "codigo": "LQG-20261005-093907-B7FD"
+  },
+  {
+    "uuid": "8636479c6b2e44ab87d14074d9552bdb",
+    "codigo": "LQG-20261005-093908-130D"
+  },
+  {
+    "uuid": "a46763b8b2364296a8eeaf13dfa89b73",
+    "codigo": "LQG-20261005-093908-660D"
+  },
+  {
+    "uuid": "23ec401e646c4a8eb50e4ba553453d0c",
+    "codigo": "LQG-20261005-093908-9C0B"
+  },
+  {
+    "uuid": "f2daee15c2424076a68b2d69b55d13c7",
+    "codigo": "LQG-20261005-093908-BF90"
+  },
+  {
+    "uuid": "4d3e067a5a8d4097bea995d8e8b7921d",
+    "codigo": "LQG-20261005-093908-4EEC"
+  },
+  {
+    "uuid": "db8be93a512846cdbc50f05f7916c6ce",
+    "codigo": "LQG-20261005-093909-E446"
+  },
+  {
+    "uuid": "ed3095bb4abb462fb17e6de2ae57a436",
+    "codigo": "LQG-20261005-093909-407A"
+  },
+  {
+    "uuid": "f9c7e8919c9e4ecea5320e38f56dd2db",
+    "codigo": "LQG-20261005-093909-3B36"
+  },
+  {
+    "uuid": "31161b904600443a92d607ec127df469",
+    "codigo": "LQG-20261005-093909-6EE9"
+  },
+  {
+    "uuid": "7a7f9f6de95e41f4b886da47180e37a5",
+    "codigo": "LQG-20261005-093909-4D17"
+  },
+  {
+    "uuid": "efa881ed592042dc92be086b6d764d26",
+    "codigo": "LQG-20261005-093910-7C04"
+  },
+  {
+    "uuid": "dd50036034e94b8287897287ddc7f66c",
+    "codigo": "LQG-20261005-093910-FECF"
+  },
+  {
+    "uuid": "22e540ea2ccc47b18ca6c9f45e1deff1",
+    "codigo": "LQG-20261005-093910-E899"
+  },
+  {
+    "uuid": "6aadaa069e594b198ad15510e195f6b9",
+    "codigo": "LQG-20261005-093911-CABE"
+  },
+  {
+    "uuid": "d09278b78e0b402db4f8bafcb1f64978",
+    "codigo": "LQG-20261005-093911-8164"
+  },
+  {
+    "uuid": "9ea87fe973704a4990825365e7e7630d",
+    "codigo": "LQG-20261005-093911-CBFA"
+  },
+  {
+    "uuid": "f0e03cf78d744f7e82764ba48f90daab",
+    "codigo": "LQG-20261005-093911-18C2"
+  },
+  {
+    "uuid": "192db6658c664ac6bdeb8e17ef8854a8",
+    "codigo": "LQG-20261005-093912-3332"
+  },
+  {
+    "uuid": "d193d03eb96d4c47bfe8787b0235b1a0",
+    "codigo": "LQG-20261005-093912-6CD6"
+  },
+  {
+    "uuid": "b1cad59edb054105b1ff338bc83f9d55",
+    "codigo": "LQG-20261005-093912-9211"
+  },
+  {
+    "uuid": "0da3d87a77e14b4a98d3f03046271795",
+    "codigo": "LQG-20261005-093912-E0A9"
+  },
+  {
+    "uuid": "77b8e9b5e387420ca50150b201038027",
+    "codigo": "LQG-20261005-093913-0D20"
+  },
+  {
+    "uuid": "01ab797f7ef04c2286af0a7d64f3f934",
+    "codigo": "LQG-20261005-093913-97C1"
+  },
+  {
+    "uuid": "3dbd88f3012b4336939485de7d8ecd01",
+    "codigo": "LQG-20261005-093913-339C"
+  },
+  {
+    "uuid": "308460a1f6e449509233de971e9ae2d0",
+    "codigo": "LQG-20261005-093913-6A16"
+  },
+  {
+    "uuid": "f54b0d4f202e4cda91526dbb8ca2e331",
+    "codigo": "LQG-20261005-093913-4D6E"
+  },
+  {
+    "uuid": "9bdb713a18b044908445293146fcb3be",
+    "codigo": "LQG-20261005-093914-93AF"
+  },
+  {
+    "uuid": "eb74867f80d943f5a355cfd226e04f3e",
+    "codigo": "LQG-20261005-093914-F111"
+  },
+  {
+    "uuid": "1844e67f58af45c1878c9c5cd84fcd09",
+    "codigo": "LQG-20261005-093914-15C7"
+  },
+  {
+    "uuid": "e2770ed49e4c4817baabe20e096cda6f",
+    "codigo": "LQG-20261005-093914-E01C"
+  },
+  {
+    "uuid": "37094944e40a482bb07b55a09c016a68",
+    "codigo": "LQG-20261005-093915-3DD2"
+  },
+  {
+    "uuid": "e92a765fe31347eaa44dbb4a8387a32b",
+    "codigo": "LQG-20261005-093915-79B7"
+  },
+  {
+    "uuid": "1be8745818044f7c966baa6ead2b2cf8",
+    "codigo": "LQG-20261005-093915-E58A"
+  },
+  {
+    "uuid": "06dd09fb40a04c15b3e0ac38fa2fad45",
+    "codigo": "LQG-20261005-093916-A15A"
+  },
+  {
+    "uuid": "c4040b0f336b4148880ad447fac8ef8c",
+    "codigo": "LQG-20261005-093916-BAA2"
+  },
+  {
+    "uuid": "9a554c014de24d9a8d42508a07d940f8",
+    "codigo": "LQG-20261005-093916-9FBC"
+  },
+  {
+    "uuid": "0819e0cfde3849e48917145bcc30f667",
+    "codigo": "LQG-20261005-093917-9AB2"
+  },
+  {
+    "uuid": "141fad22f2ad4ac6a704b6aa1df57b5f",
+    "codigo": "LQG-20261005-093917-BA95"
+  },
+  {
+    "uuid": "15c6af31833248658d30fc8f6ff936be",
+    "codigo": "LQG-20261005-093917-96CB"
+  },
+  {
+    "uuid": "49eb3a53e7b34e8d8126661bf365de93",
+    "codigo": "LQG-20261005-093917-235F"
+  },
+  {
+    "uuid": "a99fa86045e04329b13a61edd250cf75",
+    "codigo": "LQG-20261005-093918-BF9C"
+  },
+  {
+    "uuid": "216a4ddc4ec7492fa76197ac1bac9a8c",
+    "codigo": "LQG-20261005-093918-C6CA"
+  },
+  {
+    "uuid": "dab66e7fc72b40f78ab9b621f90acdab",
+    "codigo": "LQG-20261005-093918-B61E"
+  },
+  {
+    "uuid": "7c23e149f872492f9e4a7ae83ab85f60",
+    "codigo": "LQG-20261005-093918-747C"
+  },
+  {
+    "uuid": "f98ea6c1518a47ee91fef6011548bdea",
+    "codigo": "LQG-20261005-093919-9E1E"
+  },
+  {
+    "uuid": "aecd14e3cfd847d5a0ddcb0a7d9be4ca",
+    "codigo": "LQG-20261005-093919-B191"
+  },
+  {
+    "uuid": "f7de036480344ca89b8d9f53f7213231",
+    "codigo": "LQG-20261005-093919-B40E"
+  },
+  {
+    "uuid": "b43ecb54fe0445b9bb8bb46058a10cd0",
+    "codigo": "LQG-20261005-093919-741E"
+  },
+  {
+    "uuid": "6f35584cf2804289b816f438806c93f3",
+    "codigo": "LQG-20261005-093919-52A4"
+  },
+  {
+    "uuid": "52641ee82c0e4a50a8f527966acbf6e2",
+    "codigo": "LQG-20261005-093920-FEBB"
+  },
+  {
+    "uuid": "ff15fdc9f4824c9fa5d3be9dad51ffb1",
+    "codigo": "LQG-20261005-093920-1A2E"
+  },
+  {
+    "uuid": "dbe2263d16ce4935bfd744fcc41a01e6",
+    "codigo": "LQG-20261005-093920-5246"
+  },
+  {
+    "uuid": "632668fb869e46ae99f69aad99bfd0a5",
+    "codigo": "LQG-20261005-093921-33BB"
+  },
+  {
+    "uuid": "2b231858e1344a78af92ef2e8e3e2c1a",
+    "codigo": "LQG-20261005-093921-D9BF"
+  },
+  {
+    "uuid": "e30fd4fe2b174a2fbb37c444e9007489",
+    "codigo": "LQG-20261005-093922-54EA"
+  },
+  {
+    "uuid": "9bd63102406746449a19f4380f350981",
+    "codigo": "LQG-20261005-093922-7E93"
+  },
+  {
+    "uuid": "f6cc2dfbe6c74a498102337c9118c662",
+    "codigo": "LQG-20261005-093922-E692"
+  },
+  {
+    "uuid": "fba5277b9bff4aa2b9e7ba10b3b94eab",
+    "codigo": "LQG-20261005-093922-D062"
+  },
+  {
+    "uuid": "6be6eb2099a8435394c717bd6b6810ca",
+    "codigo": "LQG-20261005-093922-C395"
+  },
+  {
+    "uuid": "e6b842ddabf9413aad036e435625773e",
+    "codigo": "LQG-20261005-093922-6F66"
+  },
+  {
+    "uuid": "0ccf321e855746d690778c27a2567ac3",
+    "codigo": "LQG-20261005-093923-1DBF"
+  },
+  {
+    "uuid": "438152d2ba8c4cf58e98f6e373144f8f",
+    "codigo": "LQG-20261005-093923-11A2"
+  },
+  {
+    "uuid": "5f5a8dabc7a842f4839bfcf7409c43f9",
+    "codigo": "LQG-20261005-093923-868E"
+  },
+  {
+    "uuid": "f18474d41a1b4532bacb3ec97ed72b5f",
+    "codigo": "LQG-20261005-093923-2E38"
+  },
+  {
+    "uuid": "029b330e1ce543dbaf4ca1ac58a37c60",
+    "codigo": "LQG-20261005-093923-7C4D"
+  },
+  {
+    "uuid": "1d7eedadac0b4f3da1ae1cd73d338d76",
+    "codigo": "LQG-20261005-093924-9BAF"
+  },
+  {
+    "uuid": "4043b1e5534447fda4df2d7475341b02",
+    "codigo": "LQG-20261005-093924-85A9"
+  },
+  {
+    "uuid": "a2a49dec76bf489da83c798fd1f806ed",
+    "codigo": "LQG-20261005-093924-F814"
+  },
+  {
+    "uuid": "844034df29824aa597f9bbcb6817464a",
+    "codigo": "LQG-20261005-093924-CC14"
+  },
+  {
+    "uuid": "fd025277a77247ef909b7b4068d2d280",
+    "codigo": "LQG-20261005-093924-6E06"
+  },
+  {
+    "uuid": "83a1b9234d314211b18ab18c7966ddc0",
+    "codigo": "LQG-20261005-093925-F019"
+  },
+  {
+    "uuid": "d487e24c0f3d48a2a5535f59a411ae4f",
+    "codigo": "LQG-20261005-093925-DE8C"
+  },
+  {
+    "uuid": "74bd43f0ddd94935b6caaaeb06f2efae",
+    "codigo": "LQG-20261005-093925-E0A1"
+  },
+  {
+    "uuid": "bcd055ba4a6240f48b3af36c6d503e83",
+    "codigo": "LQG-20261005-093925-03CB"
+  },
+  {
+    "uuid": "813577c3580d44f790e94370f006874d",
+    "codigo": "LQG-20261005-093925-CFD4"
+  },
+  {
+    "uuid": "9294add1c9b94d8c90addcb66ca04349",
+    "codigo": "LQG-20261005-093925-32E0"
+  },
+  {
+    "uuid": "ace34af9807c4105bd83088cecf96fe5",
+    "codigo": "LQG-20261005-093926-79F7"
+  },
+  {
+    "uuid": "673c5980bf944cc59526799e93bcb0b7",
+    "codigo": "LQG-20261005-093926-30C6"
+  },
+  {
+    "uuid": "85921835c94343249416433c53f2b8f9",
+    "codigo": "LQG-20261005-093926-4893"
+  },
+  {
+    "uuid": "24cda9c61acc4eb487bba93e86fba734",
+    "codigo": "LQG-20261005-093927-B0F8"
+  },
+  {
+    "uuid": "3ed4ef3d6a5746d289f3cc8f78896603",
+    "codigo": "LQG-20261005-093927-0742"
+  },
+  {
+    "uuid": "fddfaca541a64bc3b3284dd19a94b1c5",
+    "codigo": "LQG-20261005-093927-6C72"
+  },
+  {
+    "uuid": "9ad6f6c6315c4c8ba2bf780cf26495f4",
+    "codigo": "LQG-20261005-093927-4E01"
+  },
+  {
+    "uuid": "c3397091c8794dfd9ddd605ff78f45fa",
+    "codigo": "LQG-20261005-093927-3EB9"
+  },
+  {
+    "uuid": "23ed3e37b0334fadb4d9544813ac7341",
+    "codigo": "LQG-20261005-093928-8FE9"
+  },
+  {
+    "uuid": "1dd446457e9842ea9599e1a73fd903a9",
+    "codigo": "LQG-20261005-093928-4A02"
+  },
+  {
+    "uuid": "1c0d98ba6ec843b69dac040abfdf82c2",
+    "codigo": "LQG-20261005-093928-1B61"
+  },
+  {
+    "uuid": "a85463ee65004a0a9a19da968d07d8c3",
+    "codigo": "LQG-20261005-093928-AAE7"
+  },
+  {
+    "uuid": "99cd98818aca44758d39554fb6f62ff7",
+    "codigo": "LQG-20261005-093928-73C5"
+  },
+  {
+    "uuid": "fb6e0b07b3de413a9f28d2aeff1f3dd6",
+    "codigo": "LQG-20261005-093929-9703"
+  },
+  {
+    "uuid": "8a3f6b0d0a78465d9ac2c42bc00400a6",
+    "codigo": "LQG-20261005-093929-37CD"
+  },
+  {
+    "uuid": "2c2fe0a2da3e4f93b41f153c6df1c16e",
+    "codigo": "LQG-20261005-093929-3316"
+  },
+  {
+    "uuid": "d3edc9c2ce3c43b5ac9a33d74a87ceb2",
+    "codigo": "LQG-20261005-093929-22C6"
+  },
+  {
+    "uuid": "c6be416676374ed18a606e8303b7463f",
+    "codigo": "LQG-20261005-093929-70E4"
+  },
+  {
+    "uuid": "507b4a43d51e43b6a5c76e86a3622854",
+    "codigo": "LQG-20261005-093929-817B"
+  },
+  {
+    "uuid": "1c9a59618b904b818f1cd406e380ebd0",
+    "codigo": "LQG-20261005-093930-F0E7"
+  },
+  {
+    "uuid": "09df5e6021f947f1bbb90ec951ebf729",
+    "codigo": "LQG-20261005-093930-2447"
+  },
+  {
+    "uuid": "9e3567eb53704121b38762601ec4dfb3",
+    "codigo": "LQG-20261005-093931-487C"
+  },
+  {
+    "uuid": "f6842df1c7bc47c1be24ca71a1d9c163",
+    "codigo": "LQG-20261005-093931-A187"
+  },
+  {
+    "uuid": "736de35b44254014bc00eb08b8b043dd",
+    "codigo": "LQG-20261005-093931-A75C"
+  },
+  {
+    "uuid": "2577a5c08ffe49f8ad36afe0e2e4ced7",
+    "codigo": "LQG-20261005-093931-207A"
+  },
+  {
+    "uuid": "381a29c3588d47a989c1c25233418de0",
+    "codigo": "LQG-20261005-093932-EFD1"
+  },
+  {
+    "uuid": "56094ab1f9db4675a8f2626232c8e547",
+    "codigo": "LQG-20261005-093932-1E63"
+  },
+  {
+    "uuid": "7e3d9c9fb8a245da82bb334f1df170cc",
+    "codigo": "LQG-20261005-093932-944B"
+  },
+  {
+    "uuid": "eaa2b50a7b5048558cbb02c52d841c17",
+    "codigo": "LQG-20261005-093932-DF71"
+  },
+  {
+    "uuid": "42b9a1891f57488e8d6eef87c6e8c38f",
+    "codigo": "LQG-20261005-093932-27B9"
+  },
+  {
+    "uuid": "fdf9e78b268b43aaa5a96e3ae70015cd",
+    "codigo": "LQG-20261005-093933-125A"
+  },
+  {
+    "uuid": "c89c05c182a14e07aac274c8648f564a",
+    "codigo": "LQG-20261005-093933-6DE8"
+  },
+  {
+    "uuid": "56d6683769e343ca876b54a813a08830",
+    "codigo": "LQG-20261005-093933-5A48"
+  },
+  {
+    "uuid": "64774c7dc9dc430bb8426d40f9cc8d30",
+    "codigo": "LQG-20261005-093933-8C9C"
+  },
+  {
+    "uuid": "9aec520e25d9471a980a93ea104c0225",
+    "codigo": "LQG-20261005-093933-6D36"
+  },
+  {
+    "uuid": "c3c0f8adee6a4490ac31457ddbeb0277",
+    "codigo": "LQG-20261005-093934-6570"
+  },
+  {
+    "uuid": "4c92844ec8664a0eb1d1d0f6323c09b2",
+    "codigo": "LQG-20261005-093934-8C75"
+  },
+  {
+    "uuid": "797189793cd64d3683ed4ca791c0cefd",
+    "codigo": "LQG-20261005-093934-C44B"
+  },
+  {
+    "uuid": "630ccebe6369420fa76d5cd768bd4b00",
+    "codigo": "LQG-20261005-093934-5D57"
+  },
+  {
+    "uuid": "ade00d7f0e0d4203b35a227e098c9b29",
+    "codigo": "LQG-20261005-093934-0C5B"
+  },
+  {
+    "uuid": "bccb3bed5de940d8a5047add94636689",
+    "codigo": "LQG-20261005-093935-C6E8"
+  },
+  {
+    "uuid": "712ab62c634c42cfbdb2b3ec2b2242e5",
+    "codigo": "LQG-20261005-093935-AAEB"
+  },
+  {
+    "uuid": "ce09a1548ccd493ab440b2fdd28ea3f9",
+    "codigo": "LQG-20261005-093935-306A"
+  },
+  {
+    "uuid": "8e1f2dcefb18437eab06700ddefcaea9",
+    "codigo": "LQG-20261005-093935-7F3C"
+  },
+  {
+    "uuid": "4c83143f3b024b79a788a443d385ebaf",
+    "codigo": "LQG-20261005-093935-DD5C"
+  },
+  {
+    "uuid": "db719093e69a435cb6be7cf6a354b366",
+    "codigo": "LQG-20261005-093935-4345"
+  },
+  {
+    "uuid": "c08009857f504ebeb27269fda2a34696",
+    "codigo": "LQG-20261005-093936-093E"
+  },
+  {
+    "uuid": "546af52706824c2d89fa14dfd21fb62d",
+    "codigo": "LQG-20261005-093936-9BEA"
+  },
+  {
+    "uuid": "41edc18321674bccbc40e2430b9528b2",
+    "codigo": "LQG-20261005-093936-C309"
+  },
+  {
+    "uuid": "5b3bed90fc314998929f820a48528293",
+    "codigo": "LQG-20261005-093936-AFC5"
+  },
+  {
+    "uuid": "ebfffdff4ca846b594bad51fffe798f2",
+    "codigo": "LQG-20261005-093936-0779"
+  },
+  {
+    "uuid": "968af41a969442e8ad0d5dbe0dd0332d",
+    "codigo": "LQG-20261005-093936-3E41"
+  },
+  {
+    "uuid": "02e516b4653d44da827d110817ecf9b2",
+    "codigo": "LQG-20261005-093937-9B1D"
+  },
+  {
+    "uuid": "d8702edf6e6c41359ca028460e0e9bc4",
+    "codigo": "LQG-20261005-093937-8B17"
+  },
+  {
+    "uuid": "f36fbaffc1cb465b8176f73ee873ff12",
+    "codigo": "LQG-20261005-093937-4BF9"
+  },
+  {
+    "uuid": "ca18a8425fcd432691eba9f5eb2f0795",
+    "codigo": "LQG-20261005-093937-3C21"
+  },
+  {
+    "uuid": "5cc8e18da8e9448eab25f322c31d2959",
+    "codigo": "LQG-20261005-093938-524F"
+  },
+  {
+    "uuid": "f5765ba3876845449b52bdfdcfd2f88a",
+    "codigo": "LQG-20261005-093938-D883"
+  },
+  {
+    "uuid": "ba0dc4112a254b859c20642aaa7d21cc",
+    "codigo": "LQG-20261005-093938-3FAF"
+  },
+  {
+    "uuid": "44849f8be98f48da881e8811aa0ee305",
+    "codigo": "LQG-20261005-093939-10D5"
+  },
+  {
+    "uuid": "a46b54e1371e4430b666984d16390fae",
+    "codigo": "LQG-20261005-093939-1B07"
+  },
+  {
+    "uuid": "2cff2277ecc94c65a3c21c0af771aa25",
+    "codigo": "LQG-20261005-093939-58E9"
+  },
+  {
+    "uuid": "94cb07e88c8b4fee97d6490c1e29bc6b",
+    "codigo": "LQG-20261005-093939-0176"
+  },
+  {
+    "uuid": "69e627ee142a46c0b1b37e00d7fc1d96",
+    "codigo": "LQG-20261005-093939-22CB"
+  },
+  {
+    "uuid": "145af86d297d462b91c0165e03d9911f",
+    "codigo": "LQG-20261005-093940-2FB8"
+  },
+  {
+    "uuid": "24e6974559b14e1fae8256d748f1216d",
+    "codigo": "LQG-20261005-093940-268B"
+  },
+  {
+    "uuid": "8c4110b85d63478fb49c563de9aa1b19",
+    "codigo": "LQG-20261005-093940-2354"
+  },
+  {
+    "uuid": "deabae45d41a44c483e68f6e5fe3fdaa",
+    "codigo": "LQG-20261005-093940-9C2C"
+  },
+  {
+    "uuid": "cdb1c5d8aab54b8cbde5e2871049a806",
+    "codigo": "LQG-20261005-093940-034F"
+  },
+  {
+    "uuid": "bc1808d6e4bf4a2ea61c38d764f0981e",
+    "codigo": "LQG-20261005-093941-DB01"
+  },
+  {
+    "uuid": "5b18a49c8ebf43f7bef1bd6cc0f983cd",
+    "codigo": "LQG-20261005-093941-9F95"
+  },
+  {
+    "uuid": "566cf16c076c4318bf7ff90b62c054ea",
+    "codigo": "LQG-20261005-093941-6742"
+  },
+  {
+    "uuid": "35120b14f621402895fac6e8956f8b26",
+    "codigo": "LQG-20261005-093941-37BF"
+  },
+  {
+    "uuid": "89663c6822d144958e3e8d56915c0037",
+    "codigo": "LQG-20261005-093941-E3D2"
+  },
+  {
+    "uuid": "aa60d58eb7844b9f9f88d2c0d5697647",
+    "codigo": "LQG-20261005-093941-CDF8"
+  },
+  {
+    "uuid": "11fe23629b594cd3bd9c4248bfe73aab",
+    "codigo": "LQG-20261005-093942-AEC3"
+  },
+  {
+    "uuid": "c8434ae8b6964a1ba57bc7a82e616024",
+    "codigo": "LQG-20261005-093942-54F2"
+  },
+  {
+    "uuid": "107e4eb0af0b481798a36ae114de7649",
+    "codigo": "LQG-20261005-093942-9327"
+  },
+  {
+    "uuid": "bacbdf36fbca4aabb247e6a923765244",
+    "codigo": "LQG-20261005-093942-C53B"
+  },
+  {
+    "uuid": "c0bdb7ba591c4424b4be0e6898286ff2",
+    "codigo": "LQG-20261005-093942-B81E"
+  },
+  {
+    "uuid": "d066f7928e154786a95960a4bcb68b15",
+    "codigo": "LQG-20261005-093942-B01F"
+  },
+  {
+    "uuid": "85f17fc5b51040bd93eb36fbb7cfc693",
+    "codigo": "LQG-20261005-093943-84CC"
+  },
+  {
+    "uuid": "40c560ed486f4cbd88717da337230c47",
+    "codigo": "LQG-20261005-093943-FBEA"
+  },
+  {
+    "uuid": "adba053b4cf1477cbaae0f014c76c21c",
+    "codigo": "LQG-20261005-093943-6147"
+  },
+  {
+    "uuid": "07eaef4df903440f9d12318a6c5d4021",
+    "codigo": "LQG-20261005-093944-876B"
+  },
+  {
+    "uuid": "93eda23583e445289c18f1720829b605",
+    "codigo": "LQG-20261005-093944-8852"
+  },
+  {
+    "uuid": "93e879256cea4af0ab70d830b807634d",
+    "codigo": "LQG-20261005-093944-E451"
+  },
+  {
+    "uuid": "c981bfe392914cc1a4fa0b4a76f554d2",
+    "codigo": "LQG-20261005-093944-9FE5"
+  },
+  {
+    "uuid": "c79c1166e818424c9beaf688b9eaf379",
+    "codigo": "LQG-20261005-093944-D3CE"
+  },
+  {
+    "uuid": "ba55def1456e4a058980e18875703acc",
+    "codigo": "LQG-20261005-093945-7C99"
+  },
+  {
+    "uuid": "9b4721a11c554cc28a6ba559f1379603",
+    "codigo": "LQG-20261005-093945-F268"
+  },
+  {
+    "uuid": "fc7294c73fc243b5b3180c181017c9d3",
+    "codigo": "LQG-20261005-093945-E29D"
+  },
+  {
+    "uuid": "0eb6d9df6ee14fbeacb8bc7d27e01b98",
+    "codigo": "LQG-20261005-093945-3B18"
+  },
+  {
+    "uuid": "6ec78fc4c9104aef9f0ccde4b4787f30",
+    "codigo": "LQG-20261005-093945-C00E"
+  },
+  {
+    "uuid": "084995791ded4c7e83a5568557ed6503",
+    "codigo": "LQG-20261005-093946-F306"
+  },
+  {
+    "uuid": "6c356daf7fcf47cea20e7ab843d05c6c",
+    "codigo": "LQG-20261005-093946-6ABE"
+  },
+  {
+    "uuid": "2baba88d183e45ce8ec96d52995dc4eb",
+    "codigo": "LQG-20261005-093946-54C9"
+  },
+  {
+    "uuid": "bdd16ce78104479fa976350190ee3df8",
+    "codigo": "LQG-20261005-093946-5C6C"
+  },
+  {
+    "uuid": "52528c0d54224b1fad990b1d66b4627a",
+    "codigo": "LQG-20261005-093946-3AF3"
+  },
+  {
+    "uuid": "10aa2e9e01064c9d9e2e89f0f6c25115",
+    "codigo": "LQG-20261005-093947-E3DF"
+  },
+  {
+    "uuid": "7124ace6f5c6402db685c63c1f6da16d",
+    "codigo": "LQG-20261005-093947-3DCB"
+  },
+  {
+    "uuid": "f870eb55677d4617a81c66585c5989da",
+    "codigo": "LQG-20261005-093947-7CD8"
+  },
+  {
+    "uuid": "58678a1d1db847fb92062d4e6f44d5f1",
+    "codigo": "LQG-20261005-093947-F112"
+  },
+  {
+    "uuid": "26a08806599941a08bd0d9a72d7acecc",
+    "codigo": "LQG-20261005-093947-D2B3"
+  },
+  {
+    "uuid": "6a84cf8116ba4fe5b1a290cbb7e32ffe",
+    "codigo": "LQG-20261005-093947-347A"
+  },
+  {
+    "uuid": "8b858a802cc7452e9bd06789d509d663",
+    "codigo": "LQG-20261005-093948-72B8"
+  },
+  {
+    "uuid": "38b3a70ee77940f08b11f550de9c060b",
+    "codigo": "LQG-20261005-093948-4C30"
+  },
+  {
+    "uuid": "804fec9830ff48f4b87b7b2951b3235a",
+    "codigo": "LQG-20261005-093949-F4AB"
+  },
+  {
+    "uuid": "9b0c4c502ac944e59cc3bba857d841fe",
+    "codigo": "LQG-20261005-093949-0073"
+  },
+  {
+    "uuid": "b7d26403df6d401da3f1096fa245515e",
+    "codigo": "LQG-20261005-093949-E1F8"
+  },
+  {
+    "uuid": "652ff0315a1c49eb920456970887c9f2",
+    "codigo": "LQG-20261005-093949-B9AB"
+  },
+  {
+    "uuid": "97cc3cdcbc3c4330a8b5b049330b75e6",
+    "codigo": "LQG-20261005-093949-90D5"
+  },
+  {
+    "uuid": "033da2dd757249cf91d8a6f3b83193be",
+    "codigo": "LQG-20261005-093950-30A3"
+  },
+  {
+    "uuid": "44821fb8b2724f0c9451318b45e72448",
+    "codigo": "LQG-20261005-093950-A8FD"
+  },
+  {
+    "uuid": "f11d0fba8cda41dabd13bb33be189a64",
+    "codigo": "LQG-20261005-093950-FAE5"
+  },
+  {
+    "uuid": "efd5913ff92042728f5d1571b050af03",
+    "codigo": "LQG-20261005-093950-96CA"
+  },
+  {
+    "uuid": "a58d4ca4b611468ab0f026b57ccce088",
+    "codigo": "LQG-20261005-093950-3E73"
+  },
+  {
+    "uuid": "f01e91d3f23e44fbaad3984e57544667",
+    "codigo": "LQG-20261005-093951-B367"
+  },
+  {
+    "uuid": "0062fe6f132e4ff9bfba46420424990f",
+    "codigo": "LQG-20261005-093951-B58F"
+  },
+  {
+    "uuid": "de70e09e2c7e4232aec7abeb1e327635",
+    "codigo": "LQG-20261005-093951-4262"
+  },
+  {
+    "uuid": "cb9c44c559f84b05a25f06a92790c439",
+    "codigo": "LQG-20261005-093951-4361"
+  },
+  {
+    "uuid": "9361c0b995fb4186aba60dba17a53f97",
+    "codigo": "LQG-20261005-093952-DD0F"
+  },
+  {
+    "uuid": "4b62de902690475ca9165d6ee8638d7e",
+    "codigo": "LQG-20261005-093952-8A5C"
+  },
+  {
+    "uuid": "abb522a4d96f488db8cc9603030f0197",
+    "codigo": "LQG-20261005-093952-BA68"
+  },
+  {
+    "uuid": "90d3a7e41e0b4c89a1cb10bb3709688c",
+    "codigo": "LQG-20261005-093952-9372"
+  },
+  {
+    "uuid": "0279d1283f7543ef9d00f51e87bab772",
+    "codigo": "LQG-20261005-093952-AFC1"
+  },
+  {
+    "uuid": "060bd430fc124582bfeba85d97de25db",
+    "codigo": "LQG-20261005-093953-98ED"
+  },
+  {
+    "uuid": "aa6a6ee1ad3740a9898e9c5e9b2e357a",
+    "codigo": "LQG-20261005-093953-4B95"
+  },
+  {
+    "uuid": "9f152016387f4e5eb8391cfbc943d054",
+    "codigo": "LQG-20261005-093953-4D09"
+  },
+  {
+    "uuid": "bafc4de586334051b3200b37cfee4ffe",
+    "codigo": "LQG-20261005-093953-E31B"
+  },
+  {
+    "uuid": "1f6498bf3fcb425c89e839d47088c3cb",
+    "codigo": "LQG-20261005-093953-07E2"
+  },
+  {
+    "uuid": "f90ea7221b50409cac726718db13f619",
+    "codigo": "LQG-20261005-093954-1E7D"
+  },
+  {
+    "uuid": "7a4d9e6cdefc41f389042a6c98e6d920",
+    "codigo": "LQG-20261005-093954-BBDA"
+  },
+  {
+    "uuid": "5cd7881fcebf49899450bcad9c276f49",
+    "codigo": "LQG-20261005-093954-53F5"
+  },
+  {
+    "uuid": "d79a8004f04f4cf9aa496ca4defc258d",
+    "codigo": "LQG-20261005-093954-77D4"
+  },
+  {
+    "uuid": "733b1d09ee324d1bad65863db5d464bf",
+    "codigo": "LQG-20261005-093955-902B"
+  },
+  {
+    "uuid": "5a307c79a28748b88031cee01b1b2ac8",
+    "codigo": "LQG-20261005-093955-019D"
+  },
+  {
+    "uuid": "c28b94e333f1409087243dc1b9c50e31",
+    "codigo": "LQG-20261005-093955-D046"
+  },
+  {
+    "uuid": "6dc99f1ab7924229a0acd9bc784505b8",
+    "codigo": "LQG-20261005-093955-C03B"
+  },
+  {
+    "uuid": "68a7229b4af641d3b10bc4de95312daa",
+    "codigo": "LQG-20261005-093958-FB12"
+  },
+  {
+    "uuid": "b618c384d2374df49382b6e6af634d6b",
+    "codigo": "LQG-20261005-093959-704B"
+  },
+  {
+    "uuid": "16c52d74544a48d7b31e0b530eb1abce",
+    "codigo": "LQG-20261005-094000-C912"
+  },
+  {
+    "uuid": "3c6127e2d67e4f509055c5e9da1024ae",
+    "codigo": "LQG-20261005-094000-316F"
+  },
+  {
+    "uuid": "d6c484e5420f447ca1fbf5f52a8cc8e2",
+    "codigo": "LQG-20261005-094001-6F5D"
+  },
+  {
+    "uuid": "1e1958f487b546e7a67706ca4258b65a",
+    "codigo": "LQG-20261005-094001-74E4"
+  },
+  {
+    "uuid": "6c97230bf05c478dac8c5b30bc08527b",
+    "codigo": "LQG-20261005-094001-3DFE"
+  },
+  {
+    "uuid": "d11ab1d6acce47bc835c4740d1b752c6",
+    "codigo": "LQG-20261005-094002-40FC"
+  },
+  {
+    "uuid": "98c7dc75bb584f84a5393a85218ad1ac",
+    "codigo": "LQG-20261005-094002-E0CA"
+  },
+  {
+    "uuid": "efee8c21b9d74cf18d85e570cfce69f8",
+    "codigo": "LQG-20261005-094002-34FB"
+  },
+  {
+    "uuid": "966f0aa84ba44ad59eb4dc1f42b3b8b2",
+    "codigo": "LQG-20261005-094002-E761"
+  },
+  {
+    "uuid": "d55591a3034e45a8bc0eee702d044520",
+    "codigo": "LQG-20261005-094002-2BC8"
+  },
+  {
+    "uuid": "264daaeaea7d4466b2b7edab2b6290b3",
+    "codigo": "LQG-20261005-094003-08FF"
+  },
+  {
+    "uuid": "5fa2471a067649abaf155f4598d2c8a8",
+    "codigo": "LQG-20261005-094003-2C8A"
+  },
+  {
+    "uuid": "81f4352ce7fb4ad38883f930f45a8101",
+    "codigo": "LQG-20261005-094003-845B"
+  },
+  {
+    "uuid": "7ed1abe96fe34da88659c29127a9fb8f",
+    "codigo": "LQG-20261005-094003-9123"
+  },
+  {
+    "uuid": "1ed0a3a26d014703a7e9c96e02daa5f8",
+    "codigo": "LQG-20261005-094003-EC55"
+  },
+  {
+    "uuid": "9bf6a23a2b2b4fd0b5ee60bfd5309485",
+    "codigo": "LQG-20261005-094003-B811"
+  },
+  {
+    "uuid": "98470753f94144b69d4733f27fdc5bd8",
+    "codigo": "LQG-20261005-094004-01C4"
+  },
+  {
+    "uuid": "fa370d1808884fbaa7568c082936d4a3",
+    "codigo": "LQG-20261005-094004-AB1B"
+  },
+  {
+    "uuid": "38e1c9afec4a4bf0928598b9ba3fa5ee",
+    "codigo": "LQG-20261005-094004-CB6F"
+  },
+  {
+    "uuid": "a35fa2077cce4d2b93f3a70cfb668b74",
+    "codigo": "LQG-20261005-094004-801E"
+  },
+  {
+    "uuid": "6db31ee1a33140afaacd9bf1580bd430",
+    "codigo": "LQG-20261005-094005-1E62"
+  },
+  {
+    "uuid": "407a7b1367c9444c96dd9dd538aa9644",
+    "codigo": "LQG-20261005-094005-D609"
+  },
+  {
+    "uuid": "0d9a9126520b40f498c48846aefa7487",
+    "codigo": "LQG-20261005-094005-15B9"
+  },
+  {
+    "uuid": "dc6647dbc56c42c78e77cb36ddd42b42",
+    "codigo": "LQG-20261005-094005-B60F"
+  },
+  {
+    "uuid": "2830c2c2b1134ab3a5e485ba4dba5411",
+    "codigo": "LQG-20261005-094005-62DC"
+  },
+  {
+    "uuid": "b622a25ee59e4ffca71a929a899c20a9",
+    "codigo": "LQG-20261005-094005-31E1"
+  },
+  {
+    "uuid": "c97c7f70aaab4184abbd6326015eb713",
+    "codigo": "LQG-20261005-094006-3DB0"
+  },
+  {
+    "uuid": "07b537d44a8f4dd396f3b8e67e518264",
+    "codigo": "LQG-20261005-094006-B206"
+  },
+  {
+    "uuid": "62d40c0f7433460aa000d8c37bc28575",
+    "codigo": "LQG-20261005-094006-0EB3"
+  },
+  {
+    "uuid": "085d82c3f4324e258d833f18eca428ab",
+    "codigo": "LQG-20261005-094006-6183"
+  },
+  {
+    "uuid": "932ad206f2ac426cbf91aab0f6075788",
+    "codigo": "LQG-20261005-094006-4C59"
+  },
+  {
+    "uuid": "3847363237da42acaa9ed0b381df45b3",
+    "codigo": "LQG-20261005-094010-535D"
+  },
+  {
+    "uuid": "1cd5961302534a30817a24631c661216",
+    "codigo": "LQG-20261005-094013-B0E1"
+  },
+  {
+    "uuid": "e6b7982d60f041e2a676cfc0ec9ef70a",
+    "codigo": "LQG-20261005-094013-A302"
+  },
+  {
+    "uuid": "a883fecc65dc4128bc37844c9f58eb9e",
+    "codigo": "LQG-20261005-094013-DCCB"
+  },
+  {
+    "uuid": "28bf81c6d7d94f45afcbdfb6d5b2887b",
+    "codigo": "LQG-20261005-094014-D8A0"
+  },
+  {
+    "uuid": "48eaf4e699fb4154aac0454de11b1287",
+    "codigo": "LQG-20261005-094014-67C5"
+  },
+  {
+    "uuid": "066a1f1e2a174a809a3f07afb929aa87",
+    "codigo": "LQG-20261005-094014-C918"
+  },
+  {
+    "uuid": "fc941ef0f87a48b08aae9f67149aba6a",
+    "codigo": "LQG-20261005-094014-CFCE"
+  },
+  {
+    "uuid": "81d7825ee4674fd89af0e62ff3844f13",
+    "codigo": "LQG-20261005-094014-796D"
+  },
+  {
+    "uuid": "a005fcfdd8b2437fac167bd3ec6f55ef",
+    "codigo": "LQG-20261005-094014-53AF"
+  },
+  {
+    "uuid": "c7e38277d9474c30879b8c3d0759ffe4",
+    "codigo": "LQG-20261005-094015-829B"
+  },
+  {
+    "uuid": "a599380d0df14ffb84fd782a0244d89a",
+    "codigo": "LQG-20261005-094015-41FF"
+  },
+  {
+    "uuid": "9e9f1854073945ffb0a8825f61e43b0c",
+    "codigo": "LQG-20261005-094015-6153"
+  },
+  {
+    "uuid": "bfe1dce55193418aacd3fcecd1f59c35",
+    "codigo": "LQG-20261005-094015-FC01"
+  },
+  {
+    "uuid": "21eadf5a048e414c8c865d1989311a9a",
+    "codigo": "LQG-20261005-094016-D0C5"
+  },
+  {
+    "uuid": "fd7fb8a17fbb466a99638c2f006abb41",
+    "codigo": "LQG-20261005-094016-727B"
+  },
+  {
+    "uuid": "f2131eda75a84c6f9a818e24306fc55f",
+    "codigo": "LQG-20261005-094016-7645"
+  },
+  {
+    "uuid": "f2df4d3842d24a138dfef47f8c9ba4a7",
+    "codigo": "LQG-20261005-094016-6B19"
+  },
+  {
+    "uuid": "d91f39bea57e4698bc261d0c7a583710",
+    "codigo": "LQG-20261005-094017-6E7A"
+  },
+  {
+    "uuid": "14af5e9067bf4e758e203c8018f7d3ec",
+    "codigo": "LQG-20261005-094017-11BF"
+  },
+  {
+    "uuid": "b20f74d790a047a793cc9d8d004103ce",
+    "codigo": "LQG-20261005-094017-B820"
+  },
+  {
+    "uuid": "0d63270bec8f4fe6b8f6acf43b3c72bf",
+    "codigo": "LQG-20261005-094017-C36E"
+  },
+  {
+    "uuid": "874c9745d5a64cfd9ae0cd273cf53fa5",
+    "codigo": "LQG-20261005-094017-F1B5"
+  },
+  {
+    "uuid": "023692f6fe1345ee992a2a7a64835437",
+    "codigo": "LQG-20261005-094018-4AED"
+  },
+  {
+    "uuid": "819f4281803d48cd97dcef73825448e2",
+    "codigo": "LQG-20261005-094018-9966"
+  },
+  {
+    "uuid": "a0c1758f27284d598a719670773abeea",
+    "codigo": "LQG-20261005-094018-0964"
+  },
+  {
+    "uuid": "d9d0c7010c434f7b9b6672d66e475b1a",
+    "codigo": "LQG-20261005-094018-AF69"
+  },
+  {
+    "uuid": "bb8b165cc44547e1b106b8a7222fb182",
+    "codigo": "LQG-20261005-094018-037D"
+  },
+  {
+    "uuid": "ca78db8286bb448aa6bef6062235e3a4",
+    "codigo": "LQG-20261005-094018-9A5C"
+  },
+  {
+    "uuid": "e4c383e922c442e69386e1571ec43081",
+    "codigo": "LQG-20261005-094022-E932"
+  },
+  {
+    "uuid": "fd3e4bafb9504ba6b211eae3df949499",
+    "codigo": "LQG-20261005-094025-AD69"
+  },
+  {
+    "uuid": "bc5587a90bfd4e52814d2e0d01f43a0a",
+    "codigo": "LQG-20261005-094025-CDB2"
+  },
+  {
+    "uuid": "d8362aa3fb504da2b7c106291f36773f",
+    "codigo": "LQG-20261005-094025-2CD7"
+  },
+  {
+    "uuid": "046c98154b5e4275906c53edd82289e7",
+    "codigo": "LQG-20261005-094026-4AEC"
+  },
+  {
+    "uuid": "5c8adf5f6ece4a7f89d5eac1d2c97936",
+    "codigo": "LQG-20261005-094026-C723"
+  },
+  {
+    "uuid": "e582ed8a9f2a4e3a92136e8a75916c19",
+    "codigo": "LQG-20261005-094026-C9DD"
+  },
+  {
+    "uuid": "d74b3298e8ad49ccbf7e70e3ef022b6d",
+    "codigo": "LQG-20261005-094026-E7E0"
+  },
+  {
+    "uuid": "e13b8fce0f5a4bd9900ad62ed6bb5cb5",
+    "codigo": "LQG-20261005-094026-8F89"
+  },
+  {
+    "uuid": "d874e7c34e7144c6adad3bd58f713c71",
+    "codigo": "LQG-20261005-094027-4029"
+  },
+  {
+    "uuid": "f67507669fa54d9e973b854476e5c06d",
+    "codigo": "LQG-20261005-094027-592B"
+  },
+  {
+    "uuid": "f780c865199d4665a4d79b69e4eeca1b",
+    "codigo": "LQG-20261005-094027-57CE"
+  },
+  {
+    "uuid": "519257d4aab34804ae019fec025ca4da",
+    "codigo": "LQG-20261005-094027-6FD3"
+  },
+  {
+    "uuid": "ada4a8ca468744e792f16593b4d16581",
+    "codigo": "LQG-20261005-094027-1364"
+  },
+  {
+    "uuid": "a47361b1122c49019362bfb5eaef0b18",
+    "codigo": "LQG-20261005-094028-296C"
+  },
+  {
+    "uuid": "e0b5e70ddcba48d295c9c8fe3a16126b",
+    "codigo": "LQG-20261005-094028-2C1A"
+  },
+  {
+    "uuid": "b40f6b7800674f20b73ed86f11e68e85",
+    "codigo": "LQG-20261005-094031-C539"
+  },
+  {
+    "uuid": "c6999a2c64734e66a83b33b3d7251ff2",
+    "codigo": "LQG-20261005-094031-DAFB"
+  },
+  {
+    "uuid": "30ce0fc76ea946ada1f28a6dae966256",
+    "codigo": "LQG-20261005-094031-15F2"
+  },
+  {
+    "uuid": "dd2f2535a7ea4778b16afdb16fd54b2c",
+    "codigo": "LQG-20261005-094032-B442"
+  },
+  {
+    "uuid": "d5e03b88d1504c44ba1d55e547a9f8f4",
+    "codigo": "LQG-20261005-094032-97A1"
+  },
+  {
+    "uuid": "3388bedc188d4036ab99d46821205bd8",
+    "codigo": "LQG-20261005-094032-2AC3"
+  },
+  {
+    "uuid": "d4adb7b1aa4b479c892382dcff925bf8",
+    "codigo": "LQG-20261005-094036-7FBA"
+  },
+  {
+    "uuid": "6f0356cdabff41baadff886e1f47cbe1",
+    "codigo": "LQG-20261005-094036-5FDE"
+  },
+  {
+    "uuid": "d845df6c8d30492bb2d1cbd1983a47f5",
+    "codigo": "LQG-20261005-094036-296D"
+  },
+  {
+    "uuid": "5b8515f82d3a43a7bf11728764c2792c",
+    "codigo": "LQG-20261005-094036-FDFC"
+  },
+  {
+    "uuid": "83f9b9d1693e4e7e96d8b99e4467fdc3",
+    "codigo": "LQG-20261005-094039-24F2"
+  },
+  {
+    "uuid": "9dee0797f83d4ac0b16ccc2b507e9e43",
+    "codigo": "LQG-20261005-094040-DA07"
+  },
+  {
+    "uuid": "b682f291075d49c39060d0ae568bf9d6",
+    "codigo": "LQG-20261005-094040-CD6D"
+  },
+  {
+    "uuid": "0d5cf2d516964ea4ab16e81a1869d662",
+    "codigo": "LQG-20261005-094040-AA69"
+  },
+  {
+    "uuid": "f4d0fa0d2e46489ba6318ef87bd31c79",
+    "codigo": "LQG-20261005-094040-987B"
+  },
+  {
+    "uuid": "52988fee2eac4b73a6d7b5e1a00da948",
+    "codigo": "LQG-20261005-094040-33CC"
+  },
+  {
+    "uuid": "3b01f03d1bd440df8dc7f08e1ef37e7f",
+    "codigo": "LQG-20261005-094040-36D8"
+  },
+  {
+    "uuid": "816cb25c17f5431c8a8d7ec7fb41ccec",
+    "codigo": "LQG-20261005-094041-81D3"
+  },
+  {
+    "uuid": "85fabda4405c4728b6a38e76cb42d627",
+    "codigo": "LQG-20261005-094041-8C75"
+  },
+  {
+    "uuid": "c297b6eae2054128a16b5af2191005a6",
+    "codigo": "LQG-20261005-094041-D1F9"
+  },
+  {
+    "uuid": "918c81eae6244a549e96d4d17f04960c",
+    "codigo": "LQG-20261005-094041-3E8C"
+  },
+  {
+    "uuid": "026fa7e2e45843eaa307af354d284de5",
+    "codigo": "LQG-20261005-094041-4E92"
+  },
+  {
+    "uuid": "f90b2652cb75467abdd2b4a39a2fcd5f",
+    "codigo": "LQG-20261005-094042-FD60"
+  },
+  {
+    "uuid": "b63a490f5ef7416089ed57e49f542a86",
+    "codigo": "LQG-20261005-094042-4332"
+  },
+  {
+    "uuid": "0c721f0391e643f7b290450eddbe2b8b",
+    "codigo": "LQG-20261005-094042-109B"
+  },
+  {
+    "uuid": "077e74c79cd644c892280c07876780db",
+    "codigo": "LQG-20261005-094042-BC63"
+  },
+  {
+    "uuid": "c994ce1b21fe40478a5055c050915500",
+    "codigo": "LQG-20261005-094042-B2F6"
+  },
+  {
+    "uuid": "d9105801dd8e4f96ac2e4164c133a54d",
+    "codigo": "LQG-20261005-094043-BD64"
+  },
+  {
+    "uuid": "63ed3b1adf4f4af598d4040d7ddc000a",
+    "codigo": "LQG-20261005-094043-D1CB"
+  },
+  {
+    "uuid": "7a84681d43d841059d4fc5b228f08bd5",
+    "codigo": "LQG-20261005-094043-E972"
+  },
+  {
+    "uuid": "bdfc3b49206941f98c9f723dab83262c",
+    "codigo": "LQG-20261005-094044-DA69"
+  },
+  {
+    "uuid": "f6dc0ebf098e4dae8d926fb943824c87",
+    "codigo": "LQG-20261005-094044-158F"
+  },
+  {
+    "uuid": "f1f8533a09664ded86e33cf7dea534b4",
+    "codigo": "LQG-20261005-094044-6B7F"
+  },
+  {
+    "uuid": "f4cc0c94b1ba48829f6b9b5f8dfd894c",
+    "codigo": "LQG-20261005-094045-08DF"
+  },
+  {
+    "uuid": "e6a4ad18cae74c56b790c3a4552fe053",
+    "codigo": "LQG-20261005-094045-7818"
+  },
+  {
+    "uuid": "c829343df34c454385e2f58f4fc0652a",
+    "codigo": "LQG-20261005-094045-6D87"
+  },
+  {
+    "uuid": "70c67ceb806c453f93901a818edf487f",
+    "codigo": "LQG-20261005-094045-3361"
+  },
+  {
+    "uuid": "b67eec84f87d4da3a32a41c425ee58d2",
+    "codigo": "LQG-20261005-094046-EBEA"
+  },
+  {
+    "uuid": "086802425605488e9dda91d1009b87c6",
+    "codigo": "LQG-20261005-094046-A4AF"
+  },
+  {
+    "uuid": "ce972e4bd5b644a09fa16430ffa0ca74",
+    "codigo": "LQG-20261005-094046-10E3"
+  },
+  {
+    "uuid": "b35fc68e842149178ae114df0f88cef2",
+    "codigo": "LQG-20261005-094046-ACDE"
+  },
+  {
+    "uuid": "a4da9f6efe2c46b689d08af03d4ec888",
+    "codigo": "LQG-20261005-094046-CA92"
+  },
+  {
+    "uuid": "903ff5145afc4f03a4277e02e1327df9",
+    "codigo": "LQG-20261005-094046-FDDC"
+  },
+  {
+    "uuid": "66f7bf5638d1460193a9dfa66786f4ae",
+    "codigo": "LQG-20261005-094047-65F2"
+  },
+  {
+    "uuid": "3f3ee92697734767aef790de0f072f72",
+    "codigo": "LQG-20261005-094047-A628"
+  },
+  {
+    "uuid": "9f20c8bbb2d949afa88ce2636a84d49e",
+    "codigo": "LQG-20261005-094047-BD01"
+  },
+  {
+    "uuid": "e32733188ef14ad49692ac1dcaaf84af",
+    "codigo": "LQG-20261005-094047-2C0D"
+  },
+  {
+    "uuid": "5c827ea293bb48358a3211f773e2d26a",
+    "codigo": "LQG-20261005-094047-329B"
+  },
+  {
+    "uuid": "2e4d0606133f4d7ca9e1a578d5e842d9",
+    "codigo": "LQG-20261005-094047-FA41"
+  },
+  {
+    "uuid": "f7212eb0a50b4f5f9a3efa32babc029f",
+    "codigo": "LQG-20261005-094048-488D"
+  },
+  {
+    "uuid": "cdb72b2e40894ff5ab4cbdfef5e864e1",
+    "codigo": "LQG-20261005-094048-BD43"
+  },
+  {
+    "uuid": "bad60e49f1004e8faf23a94650e25781",
+    "codigo": "LQG-20261005-094048-0271"
+  },
+  {
+    "uuid": "41136880febb425e8a3e5da6fc84b41a",
+    "codigo": "LQG-20261005-094048-C2EA"
+  },
+  {
+    "uuid": "7c4182639b7e4a1699730177bcf800e2",
+    "codigo": "LQG-20261005-094048-39F8"
+  },
+  {
+    "uuid": "b41f090874fa436eaaa61c438af1a06c",
+    "codigo": "LQG-20261005-094049-3B28"
+  },
+  {
+    "uuid": "7849ae55ea3f41fd95203dd7323c5d2b",
+    "codigo": "LQG-20261005-094049-047F"
+  },
+  {
+    "uuid": "a9f02f44df99410d84b74aafd783e511",
+    "codigo": "LQG-20261005-094049-164F"
+  },
+  {
+    "uuid": "5d1fb53b97674f44b5b13182d400c6ed",
+    "codigo": "LQG-20261005-094049-7213"
+  },
+  {
+    "uuid": "a47d2ebc24b948d69e71b8fdb002960d",
+    "codigo": "LQG-20261005-094050-5311"
+  },
+  {
+    "uuid": "9e5220b88b0a4b36aa8aac1cd92b46c0",
+    "codigo": "LQG-20261005-094050-894D"
+  },
+  {
+    "uuid": "ef56abd1065f4d668e5e3af9abb3b181",
+    "codigo": "LQG-20261005-094050-1223"
+  },
+  {
+    "uuid": "58cb0b58849b4b3289a6b4f0b6fe9538",
+    "codigo": "LQG-20261005-094050-E8A6"
+  },
+  {
+    "uuid": "edc2fba8bcdb4766984b664102b4cb1e",
+    "codigo": "LQG-20261005-094050-6DB1"
+  },
+  {
+    "uuid": "e3886758c63c456996bef944776f6e9c",
+    "codigo": "LQG-20261005-094050-E889"
+  },
+  {
+    "uuid": "c6b3b9f819b049adb6f9645c6a7c3ebd",
+    "codigo": "LQG-20261005-094051-6856"
+  },
+  {
+    "uuid": "daff3e51a27e41c2920e6da7be693f43",
+    "codigo": "LQG-20261005-094052-E449"
+  },
+  {
+    "uuid": "c7b63ccae582422391220e5546a852bc",
+    "codigo": "LQG-20261005-094052-53F2"
+  },
+  {
+    "uuid": "411b48dc297d43bbaf5c901537b06d5b",
+    "codigo": "LQG-20261005-094052-746B"
+  },
+  {
+    "uuid": "4b10445b2a5246c2a4bbd9be89c5bc80",
+    "codigo": "LQG-20261005-094052-A4A1"
+  },
+  {
+    "uuid": "b3acbba51aa04b438a8f7c93d9628e1c",
+    "codigo": "LQG-20261005-094052-DAD0"
+  },
+  {
+    "uuid": "88acc1c12b8042ebbedf7621c30da586",
+    "codigo": "LQG-20261005-094053-884D"
+  },
+  {
+    "uuid": "3d1eacf110f748d08e8b85e7af7cbf07",
+    "codigo": "LQG-20261005-094053-D642"
+  },
+  {
+    "uuid": "c7ef4038b37445d6912c5fb96c971e66",
+    "codigo": "LQG-20261005-094053-BFFF"
+  },
+  {
+    "uuid": "915c2a75852a4a27b94b2b2a00eb9c6f",
+    "codigo": "LQG-20261005-094053-4BC1"
+  },
+  {
+    "uuid": "6062035fb14647d48f50b5bb70ab3aad",
+    "codigo": "LQG-20261005-094053-A2B5"
+  },
+  {
+    "uuid": "382c2d34bb2d44c9ad6d60a7ac9aed9e",
+    "codigo": "LQG-20261005-094054-FAF5"
+  },
+  {
+    "uuid": "87846ff1aabf4f99adef3d890b6eb81f",
+    "codigo": "LQG-20261005-094054-A2C7"
+  },
+  {
+    "uuid": "933e7c80876a4bc0bfc7ca830b282606",
+    "codigo": "LQG-20261005-094054-5EBE"
+  },
+  {
+    "uuid": "57daedb5985141a7b7d3c9bc0ee1addd",
+    "codigo": "LQG-20261005-094055-3830"
+  },
+  {
+    "uuid": "9eb573b5eb0d46128e5e440c9de866e0",
+    "codigo": "LQG-20261005-094055-3B9B"
+  },
+  {
+    "uuid": "f182b3662ee44c7089d8b23ed657a9e2",
+    "codigo": "LQG-20261005-094055-6A3A"
+  },
+  {
+    "uuid": "87b8e62db7344c279e9db4ba0d58a9d3",
+    "codigo": "LQG-20261005-094055-EB98"
+  },
+  {
+    "uuid": "9a9174fda1be4fa8b528bcb768963811",
+    "codigo": "LQG-20261005-094055-6B9D"
+  },
+  {
+    "uuid": "4a5df0c0ee5842f39d442fc48a7685db",
+    "codigo": "LQG-20261005-094055-29CB"
+  },
+  {
+    "uuid": "5d45439f2e994d139e48a9a44c362589",
+    "codigo": "LQG-20261005-094056-9ED3"
+  },
+  {
+    "uuid": "b57ee7fde071442ea5d7754b7030adf3",
+    "codigo": "LQG-20261005-094056-FBFE"
+  },
+  {
+    "uuid": "0f7af06ebe3a4c01936230a9d5cb8cf1",
+    "codigo": "LQG-20261005-094056-5321"
+  },
+  {
+    "uuid": "a52c83b565874826958de4a099f53895",
+    "codigo": "LQG-20261005-094056-916B"
+  },
+  {
+    "uuid": "07d980f1914747678804974f5218d0f5",
+    "codigo": "LQG-20261005-094056-2DD5"
+  },
+  {
+    "uuid": "6fb4fa74558745788bd9747877425dd1",
+    "codigo": "LQG-20261005-094056-69CD"
+  },
+  {
+    "uuid": "96616fa918a64434b7f2d71e1952255f",
+    "codigo": "LQG-20261005-094057-9B50"
+  },
+  {
+    "uuid": "a7e0ac36cf26422aac3da05dc9214587",
+    "codigo": "LQG-20261005-094057-5B55"
+  },
+  {
+    "uuid": "645e4a9f1394426dab9ec87c2e645846",
+    "codigo": "LQG-20261005-094057-947A"
+  },
+  {
+    "uuid": "ed8f2bfd47d646ff8b6c9e54d54898a8",
+    "codigo": "LQG-20261005-094057-4DFA"
+  },
+  {
+    "uuid": "63b39519db484a68a3a1ce7e95ebf888",
+    "codigo": "LQG-20261005-094057-201F"
+  },
+  {
+    "uuid": "c7c4321529d7439dad74a5e3d6e9e12d",
+    "codigo": "LQG-20261005-094058-77F2"
+  },
+  {
+    "uuid": "88773a523c9142939b2297f0002b1218",
+    "codigo": "LQG-20261005-094058-76E2"
+  },
+  {
+    "uuid": "4093e4b074e3407481f660a02115547e",
+    "codigo": "LQG-20261005-094058-F22B"
+  },
+  {
+    "uuid": "f258a6240b3646aa8c885f28bc9903d8",
+    "codigo": "LQG-20261005-094058-E5A9"
+  },
+  {
+    "uuid": "03bb17f729e54814b213a4e577a25035",
+    "codigo": "LQG-20261005-094058-102F"
+  },
+  {
+    "uuid": "b69d7447572d4597991bd4444b0400d4",
+    "codigo": "LQG-20261005-094058-FB04"
+  },
+  {
+    "uuid": "d1108826bb6a437aa0f779dc2f8e63e6",
+    "codigo": "LQG-20261005-094059-D744"
+  },
+  {
+    "uuid": "7905dd5662fd478e9424523b62597d35",
+    "codigo": "LQG-20261005-094059-AE9F"
+  },
+  {
+    "uuid": "f35c51b6f420476b82ddb47a967d69ce",
+    "codigo": "LQG-20261005-094059-3DD3"
+  },
+  {
+    "uuid": "82a249ca36124e41b829c6eff7e7d23c",
+    "codigo": "LQG-20261005-094059-B31F"
+  },
+  {
+    "uuid": "ff221270ff894c22bb66bde01cdb284a",
+    "codigo": "LQG-20261005-094059-ACD7"
+  },
+  {
+    "uuid": "d33e5a5e55224643888ab404cc0d40c0",
+    "codigo": "LQG-20261005-094100-7958"
+  },
+  {
+    "uuid": "17619451839d42f79f786d67b12d8028",
+    "codigo": "LQG-20261005-094100-4292"
+  },
+  {
+    "uuid": "653d0f9de2714ff48ae9b076ae570ea3",
+    "codigo": "LQG-20261005-094101-EB35"
+  },
+  {
+    "uuid": "5c656cf1c8874c50a4b8aed0e8b63c08",
+    "codigo": "LQG-20261005-094101-FAB9"
+  },
+  {
+    "uuid": "5aba3b1defb046b6a3524c3775ee5162",
+    "codigo": "LQG-20261005-094101-EC29"
+  },
+  {
+    "uuid": "e2308105424b4e6bbf58cc28187e3567",
+    "codigo": "LQG-20261005-094101-E32E"
+  },
+  {
+    "uuid": "f9bf71cd315743c589fcca0c04cefbf6",
+    "codigo": "LQG-20261005-094101-399E"
+  },
+  {
+    "uuid": "7770eced7377417dab5052d5edfcac86",
+    "codigo": "LQG-20261005-094102-F165"
+  },
+  {
+    "uuid": "7f45dc86d52741be805e360dde7ea561",
+    "codigo": "LQG-20261005-094102-3B19"
+  },
+  {
+    "uuid": "f873bd493c4844798c8b13154d389d7d",
+    "codigo": "LQG-20261005-094102-F6D6"
+  },
+  {
+    "uuid": "2a9e2eb81e31499d8c75598fc78e6050",
+    "codigo": "LQG-20261005-094102-FA34"
+  },
+  {
+    "uuid": "7f89dfc1225342708e3c47a48b7daf49",
+    "codigo": "LQG-20261005-094102-709D"
+  },
+  {
+    "uuid": "5401848c11b4418eb3b5ab6c711b91af",
+    "codigo": "LQG-20261005-094102-A2C1"
+  },
+  {
+    "uuid": "9c81cb64853a4677b22d7d43a222580e",
+    "codigo": "LQG-20261005-094103-60CD"
+  },
+  {
+    "uuid": "d6069e72231b44fd99501fd8179b86b6",
+    "codigo": "LQG-20261005-094103-CB19"
+  },
+  {
+    "uuid": "ea603e6ecaec4887bb41bce2edf44baa",
+    "codigo": "LQG-20261005-094103-5C31"
+  },
+  {
+    "uuid": "543a43537bd049ecb2dbfe08752fa73c",
+    "codigo": "LQG-20261005-094104-31AC"
+  },
+  {
+    "uuid": "1662ecfa8ba6409dab46895e0ee08906",
+    "codigo": "LQG-20261005-094104-F21E"
+  },
+  {
+    "uuid": "861261387cc74d52aececefbaaabfc5e",
+    "codigo": "LQG-20261005-094104-C922"
+  },
+  {
+    "uuid": "7f3c2aee584944bda0624392272ee573",
+    "codigo": "LQG-20261005-094104-B280"
+  },
+  {
+    "uuid": "27395cc4724a44b18ad9b6d662a42406",
+    "codigo": "LQG-20261005-094104-3895"
+  },
+  {
+    "uuid": "662fbe0a94a34627befc2d73cbc4eccd",
+    "codigo": "LQG-20261005-094105-B14C"
+  },
+  {
+    "uuid": "583db314327b4a6da216608f457e29f0",
+    "codigo": "LQG-20261005-094105-F780"
+  },
+  {
+    "uuid": "4fece6a80a364c97ba219e7995fa8c8f",
+    "codigo": "LQG-20261005-094105-4CED"
+  },
+  {
+    "uuid": "b72fd20e028f417aa23ba8e46bb22a05",
+    "codigo": "LQG-20261005-094105-F5B8"
+  },
+  {
+    "uuid": "cdc2545ff51c4208a0d1c9507643ffd7",
+    "codigo": "LQG-20261005-094106-19F1"
+  },
+  {
+    "uuid": "c1ba4e23b42a4bfeb134e36876b1582b",
+    "codigo": "LQG-20261005-094106-6B95"
+  },
+  {
+    "uuid": "0ef3c48a3add42fe8343d89e153543b0",
+    "codigo": "LQG-20261005-094106-E0EF"
+  },
+  {
+    "uuid": "3b400ab9ca0142b4bb3c5e611876f790",
+    "codigo": "LQG-20261005-094106-1986"
+  },
+  {
+    "uuid": "5551e370d30b4e1f95cf85c3f04a5f56",
+    "codigo": "LQG-20261005-094106-5C03"
+  },
+  {
+    "uuid": "e72f4f0c71e740e7bb3a86497a1d8631",
+    "codigo": "LQG-20261005-094107-F28D"
+  },
+  {
+    "uuid": "80f601e894de497ca207004e3cddd2e0",
+    "codigo": "LQG-20261005-094107-5352"
+  },
+  {
+    "uuid": "b653d843a7324f7eb148db5706e1a3c3",
+    "codigo": "LQG-20261005-094107-6B2F"
+  },
+  {
+    "uuid": "64a35e00668a4d129bdfd263f742fa57",
+    "codigo": "LQG-20261005-094107-F200"
+  },
+  {
+    "uuid": "6e5d1b99055540ac8c05261127758e68",
+    "codigo": "LQG-20261005-094107-C75A"
+  },
+  {
+    "uuid": "51e99777763d4e75b13177775557baa6",
+    "codigo": "LQG-20261005-094107-5922"
+  },
+  {
+    "uuid": "76c5ea918f814aef8320320269204df8",
+    "codigo": "LQG-20261005-094108-F18A"
+  },
+  {
+    "uuid": "4b7a0506f5d347c1b5f85b2b9182ddb4",
+    "codigo": "LQG-20261005-094108-887A"
+  },
+  {
+    "uuid": "289dd54858004229a0befc4e12ef95ba",
+    "codigo": "LQG-20261005-094108-6061"
+  },
+  {
+    "uuid": "37c522015f754934ad0df50fcea62aa5",
+    "codigo": "LQG-20261005-094108-E579"
+  },
+  {
+    "uuid": "88268283afea4124b4910831f8316502",
+    "codigo": "LQG-20261005-094108-4943"
+  },
+  {
+    "uuid": "e653a9ef2a444ce2885ebad2d1f9f966",
+    "codigo": "LQG-20261005-094108-402E"
+  },
+  {
+    "uuid": "4a4ae86468ef4fbeba57ab363612886e",
+    "codigo": "LQG-20261005-094109-AACF"
+  },
+  {
+    "uuid": "99c2d7d45e7940b0bd94214b119ccad7",
+    "codigo": "LQG-20261005-094109-236F"
+  },
+  {
+    "uuid": "1cf03197483f49e79ba4963dad482a31",
+    "codigo": "LQG-20261005-094109-02EF"
+  },
+  {
+    "uuid": "39faf5fa8feb45b0b60a5f109a1b6bd1",
+    "codigo": "LQG-20261005-094109-33E5"
+  },
+  {
+    "uuid": "ed4d85895efb4a1bbed6c066a61ea3ac",
+    "codigo": "LQG-20261005-094109-FEB8"
+  },
+  {
+    "uuid": "99eb284afdac461f95469ab766b27d81",
+    "codigo": "LQG-20261005-094109-F6E5"
+  },
+  {
+    "uuid": "8342fa464c2c498288839661b52a77d1",
+    "codigo": "LQG-20261005-094110-64E6"
+  },
+  {
+    "uuid": "3947ffcb23a24ad58f90c0354a12050d",
+    "codigo": "LQG-20261005-094110-5417"
+  },
+  {
+    "uuid": "4452dfb15f144caca482259d91fec0c0",
+    "codigo": "LQG-20261005-094110-77E8"
+  },
+  {
+    "uuid": "0168b7907fa34bc2bae9c2ba0f8ede5b",
+    "codigo": "LQG-20261005-094110-C3CD"
+  },
+  {
+    "uuid": "d8649d34d3f143368f1e62803ec66f38",
+    "codigo": "LQG-20261005-094110-2C94"
+  },
+  {
+    "uuid": "772ee15dd9dd4e07b33a3c7e5db6a3c4",
+    "codigo": "LQG-20261005-094111-F41A"
+  },
+  {
+    "uuid": "e0452d38910f4546b7919d1615c939f7",
+    "codigo": "LQG-20261005-094111-B119"
+  },
+  {
+    "uuid": "387e5e8b2da740b090a4f981337c5045",
+    "codigo": "LQG-20261005-094111-1467"
+  },
+  {
+    "uuid": "3302c168e6654f54a8eb1d19d1b7f64e",
+    "codigo": "LQG-20261005-094112-8581"
+  },
+  {
+    "uuid": "534e3657484f4748a9a6f2c2f7eaf4b0",
+    "codigo": "LQG-20261005-094112-B713"
+  },
+  {
+    "uuid": "471e6d4a0fe14e229da0e3bdc0bf1895",
+    "codigo": "LQG-20261005-094112-EE46"
+  },
+  {
+    "uuid": "aa09a16999214a838a98682fbbedc7a4",
+    "codigo": "LQG-20261005-094112-9522"
+  },
+  {
+    "uuid": "112da2743cac42e2886895c085cd55c4",
+    "codigo": "LQG-20261005-094113-211D"
+  },
+  {
+    "uuid": "c6c164386eb44eb0b7fedef99c808ca5",
+    "codigo": "LQG-20261005-094113-39CF"
+  },
+  {
+    "uuid": "ad9f9161bc5b4b11a929c8916eb50d95",
+    "codigo": "LQG-20261005-094113-ECD1"
+  },
+  {
+    "uuid": "1f122fe8150b4f7f8d6f43e56ff4bdd2",
+    "codigo": "LQG-20261005-094113-639A"
+  },
+  {
+    "uuid": "d29deb7b52f4467f921ceb77dab045ef",
+    "codigo": "LQG-20261005-094113-341B"
+  },
+  {
+    "uuid": "b742361b36f748d9adfec366377ba23c",
+    "codigo": "LQG-20261005-094113-339E"
+  },
+  {
+    "uuid": "43dc32381ba445eebeaa8d1de6e6bc3d",
+    "codigo": "LQG-20261005-094114-536A"
+  },
+  {
+    "uuid": "72a6f64e7b3c48e884db44cc41865019",
+    "codigo": "LQG-20261005-094114-F89F"
+  },
+  {
+    "uuid": "46f2c4b8ec824c1a87dff862c77b22c2",
+    "codigo": "LQG-20261005-094114-20A5"
+  },
+  {
+    "uuid": "fe542105618744f2a92cb7d21ea5aa3f",
+    "codigo": "LQG-20261005-094114-3129"
+  },
+  {
+    "uuid": "edf650369f3e4fbba6aba609303ed8ad",
+    "codigo": "LQG-20261005-094114-F1E4"
+  },
+  {
+    "uuid": "2785bbe34a804ac2af65d769ca15f5e2",
+    "codigo": "LQG-20261005-094114-7B8B"
+  },
+  {
+    "uuid": "f375b6bd583c4c6ea2e3c90c61650cdb",
+    "codigo": "LQG-20261005-094115-89D7"
+  },
+  {
+    "uuid": "4b2586fcdf55424ca8e18347bf98654b",
+    "codigo": "LQG-20261005-094115-A3C3"
+  },
+  {
+    "uuid": "ec6a1ced0f9342868baae790465fed54",
+    "codigo": "LQG-20261005-094115-7E2B"
+  },
+  {
+    "uuid": "77df2b96cc234c6cbe4770fe2ab530bc",
+    "codigo": "LQG-20261005-094115-07A9"
+  },
+  {
+    "uuid": "9cf8dc0ba0de45cd88851c39c3e0d1f3",
+    "codigo": "LQG-20261005-094115-9B89"
+  },
+  {
+    "uuid": "c351628b14034a47931e5eea9f0e8afe",
+    "codigo": "LQG-20261005-094115-B98B"
+  },
+  {
+    "uuid": "711a0e4294cc404584aace578c747bb2",
+    "codigo": "LQG-20261005-094116-0F0B"
+  },
+  {
+    "uuid": "e2707e861d8c4cccb46beafe17c3b7c3",
+    "codigo": "LQG-20261005-094116-C49B"
+  },
+  {
+    "uuid": "36e8454e922b4139ab85e8867a0d3645",
+    "codigo": "LQG-20261005-094116-6F7E"
+  },
+  {
+    "uuid": "bf93edd310984e15ab116630d16882a4",
+    "codigo": "LQG-20261005-094116-58A1"
+  },
+  {
+    "uuid": "c0115503592c4da090419ad04cf13c30",
+    "codigo": "LQG-20261005-094117-0298"
+  },
+  {
+    "uuid": "d4b43b27273843e1b93c7eb8ff5bf5b9",
+    "codigo": "LQG-20261005-094117-72DE"
+  },
+  {
+    "uuid": "5649077bda1b45fb85168516116b0eda",
+    "codigo": "LQG-20261005-094117-5CB4"
+  },
+  {
+    "uuid": "66cd1824449948aeb7905737d37f39b1",
+    "codigo": "LQG-20261005-094118-1DDA"
+  },
+  {
+    "uuid": "14225ff317a3404c97cac483d00d8232",
+    "codigo": "LQG-20261005-094118-F37A"
+  },
+  {
+    "uuid": "ab3cb4270db645a68b26b530cce1de76",
+    "codigo": "LQG-20261005-094118-7DC7"
+  },
+  {
+    "uuid": "66da971af2c04f98bedb8168e6de61fd",
+    "codigo": "LQG-20261005-094118-6A9A"
+  },
+  {
+    "uuid": "e6248a92c06e4e778866d9e573db8ba6",
+    "codigo": "LQG-20261005-094118-DC28"
+  },
+  {
+    "uuid": "9f3a447cb96d47f4baf08d819b76b69a",
+    "codigo": "LQG-20261005-094118-05E0"
+  },
+  {
+    "uuid": "6a3996d64d044ff68aa7f248032ea5ed",
+    "codigo": "LQG-20261005-094119-19C2"
+  },
+  {
+    "uuid": "0a3d4064b3d24fb6b2c3fb96080d7a76",
+    "codigo": "LQG-20261005-094119-C4D8"
+  },
+  {
+    "uuid": "87f101ce58c54b639a453c8094749f90",
+    "codigo": "LQG-20261005-094119-3ED2"
+  },
+  {
+    "uuid": "19ea38efd4d543c09543ef6526dc4720",
+    "codigo": "LQG-20261005-094119-5A1E"
+  },
+  {
+    "uuid": "a839ada359e04fc38d9f13a6d102eb7c",
+    "codigo": "LQG-20261005-094119-4DEC"
+  },
+  {
+    "uuid": "a78dcdd40a934fdb865f7803a2aa0dbf",
+    "codigo": "LQG-20261005-094120-F1E8"
+  },
+  {
+    "uuid": "2884a707ef10403282ce6062314c9cc0",
+    "codigo": "LQG-20261005-094120-2F92"
+  },
+  {
+    "uuid": "ab86ffa2d3584b8e845a4a6de56ed738",
+    "codigo": "LQG-20261005-094120-BF9F"
+  },
+  {
+    "uuid": "ebe9740f5b8c4c4eb84a6e4054f285bd",
+    "codigo": "LQG-20261005-094120-A5E5"
+  },
+  {
+    "uuid": "15009e9fec9c43d4994fe51efdd2c399",
+    "codigo": "LQG-20261005-094120-BB05"
+  },
+  {
+    "uuid": "c6bdef71daf143a9a174cbc147cb31ff",
+    "codigo": "LQG-20261005-094121-1A18"
+  },
+  {
+    "uuid": "c8671ec7d7c140b7bc8ff230a3c5a4d4",
+    "codigo": "LQG-20261005-094121-A59C"
+  },
+  {
+    "uuid": "cb895b30b48a4e95a23ff378f10cc55d",
+    "codigo": "LQG-20261005-094121-28B7"
+  },
+  {
+    "uuid": "85e1ff5541d54159b31fdd8e6c763984",
+    "codigo": "LQG-20261005-094121-056A"
+  },
+  {
+    "uuid": "d208a5090eee40b1b5cfc4b14c48c0b1",
+    "codigo": "LQG-20261005-094121-ECCF"
+  },
+  {
+    "uuid": "1f8b6b0f47854cb6a621f7739da0ec4f",
+    "codigo": "LQG-20261005-094122-260E"
+  },
+  {
+    "uuid": "39c368ce942244549ce19eff100d57bb",
+    "codigo": "LQG-20261005-094122-7A0A"
+  },
+  {
+    "uuid": "0551f0c3a1534f9bb7febdd43163ef9c",
+    "codigo": "LQG-20261005-094122-441A"
+  },
+  {
+    "uuid": "198c2c84933043609f969de6a6a17214",
+    "codigo": "LQG-20261005-094122-AC2B"
+  },
+  {
+    "uuid": "602da0a003af40deb7c2cc8184855746",
+    "codigo": "LQG-20261005-094123-9659"
+  },
+  {
+    "uuid": "b4c613bbd6634c18959a92091be87582",
+    "codigo": "LQG-20261005-094123-D973"
+  },
+  {
+    "uuid": "a37453cd115549f5a05122138ee0b1c8",
+    "codigo": "LQG-20261005-094123-B1E0"
+  },
+  {
+    "uuid": "cb39e01f84e444259ec4c4c9dc8fd455",
+    "codigo": "LQG-20261005-094123-8F21"
+  },
+  {
+    "uuid": "5ffa118d37514ae58fa9be01d83a0970",
+    "codigo": "LQG-20261005-094124-555E"
+  },
+  {
+    "uuid": "d089a54797004fb0827a93f944f24fba",
+    "codigo": "LQG-20261005-094124-68F0"
+  },
+  {
+    "uuid": "e73636f8f0834ffebcb90e2a8ce644f8",
+    "codigo": "LQG-20261005-194037-8EF9"
+  }
+]

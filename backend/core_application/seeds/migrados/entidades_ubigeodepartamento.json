@@ -1,0 +1,102 @@
+[
+  {
+    "uuid": "8c33a750e6564d6fa0e24c988aeee79f",
+    "nombre": "AMAZONAS"
+  },
+  {
+    "uuid": "8bcb4f25253a4d858cb00622ac9fc86f",
+    "nombre": "ANCASH"
+  },
+  {
+    "uuid": "354067ea6ac94e8d96d4cf77e1ead664",
+    "nombre": "APURIMAC"
+  },
+  {
+    "uuid": "a96be04c421d4282a5c34aea8a5b5a95",
+    "nombre": "AREQUIPA"
+  },
+  {
+    "uuid": "e416af5133194588b3bd2b59dd529abd",
+    "nombre": "AYACUCHO"
+  },
+  {
+    "uuid": "329d1311fc7a4e068e4059946c3aa031",
+    "nombre": "CAJAMARCA"
+  },
+  {
+    "uuid": "3a45672aed42443cbc35d3d838f12442",
+    "nombre": "CALLAO"
+  },
+  {
+    "uuid": "5b352379f1424a78bc10e99a3b1d2f4e",
+    "nombre": "CUSCO"
+  },
+  {
+    "uuid": "face4d0fe12544829911e3b9ae49ab16",
+    "nombre": "HUANCAVELICA"
+  },
+  {
+    "uuid": "1ac2f4495f0849cfbba86641302c9b49",
+    "nombre": "HUANUCO"
+  },
+  {
+    "uuid": "95204e83cd2f4a47bebb60a10a5cd412",
+    "nombre": "ICA"
+  },
+  {
+    "uuid": "ea4fc941aae04c74ba8b13217a03ed13",
+    "nombre": "JUNIN"
+  },
+  {
+    "uuid": "53e540c3317049ca9e0e9c7aea6f448c",
+    "nombre": "LA LIBERTAD"
+  },
+  {
+    "uuid": "85074a4d59c34d7bb7b1a931f08bd67f",
+    "nombre": "LAMBAYEQUE"
+  },
+  {
+    "uuid": "2f32a325c58f4b16948d989cd21e2004",
+    "nombre": "LIMA"
+  },
+  {
+    "uuid": "057fc38c8e3c426a87a0d0fd4f3e0aae",
+    "nombre": "LORETO"
+  },
+  {
+    "uuid": "42e872f972a34659a9f8391c913ebd6a",
+    "nombre": "MADRE DE DIOS"
+  },
+  {
+    "uuid": "ed7721c63fe4468fa484f53b5d9119a0",
+    "nombre": "MOQUEGUA"
+  },
+  {
+    "uuid": "47d782992f74465ab22dc2730900f6d9",
+    "nombre": "PASCO"
+  },
+  {
+    "uuid": "bbd30a7cc8b8476aa24bb19f4e29aa6f",
+    "nombre": "PIURA"
+  },
+  {
+    "uuid": "21dd2a7124b44c538e903278f2994c1d",
+    "nombre": "PUNO"
+  },
+  {
+    "uuid": "632e0e9084464a29a64d7f9b4c627fe2",
+    "nombre": "SAN MARTIN"
+  },
+  {
+    "uuid": "c30e1af5aac14acfa4dc034aff62582f",
+    "nombre": "TACNA"
+  },
+  {
+    "uuid": "8f2be0a92edb48ee9f650e223774af1b",
+    "nombre": "TUMBES"
+  },
+  {
+    "uuid": "687a40a235a2446bb94440322d82adf0",
+    "nombre": "UCAYALI"
+  }
+]

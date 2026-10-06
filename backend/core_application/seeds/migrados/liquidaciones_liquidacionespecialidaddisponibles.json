@@ -1,0 +1,66 @@
+[
+  {
+    "uuid": "cb810573df954067bea2e9a56c681c00",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "41248a73d7c847b9afabaa34e799b728",
+    "especialidad_uuid": "e3ac3edce90f404ca9325c771aa0cd21",
+    "activo": 1
+  },
+  {
+    "uuid": "7494f22424d74bd0bae5833ff943df09",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "41248a73d7c847b9afabaa34e799b728",
+    "especialidad_uuid": "34f39a134da045dda7fd67156d2a5290",
+    "activo": 1
+  },
+  {
+    "uuid": "122360d67072444899d8846923bb1262",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "41248a73d7c847b9afabaa34e799b728",
+    "especialidad_uuid": "3b4ad252f8dd4876a999b4f92d76427a",
+    "activo": 1
+  },
+  {
+    "uuid": "326426550221491c92a1463f91f10610",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": "2026-05-01",
+    "tipo_liquidacion_uuid": "41248a73d7c847b9afabaa34e799b728",
+    "especialidad_uuid": "e22fa2c9ea134ac9a06e2cf071e74065",
+    "activo": 1
+  },
+  {
+    "uuid": "18d1780da77247c79471de8fd78d88ed",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "0ef1521731c141538de6d25bffd269ee",
+    "especialidad_uuid": "e3ac3edce90f404ca9325c771aa0cd21",
+    "activo": 1
+  },
+  {
+    "uuid": "7291fc8e03824e6586840ac00bab837f",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "c8fe06ffb914407ba7aa7fe80d31c599",
+    "especialidad_uuid": "e3ac3edce90f404ca9325c771aa0cd21",
+    "activo": 1
+  },
+  {
+    "uuid": "599ca0e875984eb399fc2f608592a18b",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "57f7a9e86e364a718ab4a665335c242f",
+    "especialidad_uuid": "e3ac3edce90f404ca9325c771aa0cd21",
+    "activo": 1
+  },
+  {
+    "uuid": "beb00776c0fc4767ad29dfa21dc679de",
+    "periodo_inicio": "2000-01-01",
+    "periodo_fin": null,
+    "tipo_liquidacion_uuid": "dcb1fa01603242aba31dc621f15b1c06",
+    "especialidad_uuid": "e3ac3edce90f404ca9325c771aa0cd21",
+    "activo": 1
+  }
+]

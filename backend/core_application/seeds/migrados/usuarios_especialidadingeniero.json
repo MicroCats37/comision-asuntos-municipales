@@ -1,0 +1,86 @@
+[
+  {
+    "uuid": "dfc30af64c4648d28b4a086f333644ab",
+    "codigo": "01",
+    "nombre": "Especialidad 01",
+    "capitulo_uuid": "322c25267e764161b62b162f4ec157ba"
+  },
+  {
+    "uuid": "b8955470510a4b658d39b7570a222fc8",
+    "codigo": "01",
+    "nombre": "Especialidad 01",
+    "capitulo_uuid": "166409f24ae24561912b309159b22511"
+  },
+  {
+    "uuid": "59fe2e7faae14167988fa482e12f2631",
+    "codigo": "01",
+    "nombre": "Especialidad 01",
+    "capitulo_uuid": "2300a080d0e64c04bba7c0f319bb702c"
+  },
+  {
+    "uuid": "6c9ae0c643334ff2b5ed63ae66793106",
+    "codigo": "01",
+    "nombre": "Especialidad 01",
+    "capitulo_uuid": "c52557223dd7490091c8e9039a591694"
+  },
+  {
+    "uuid": "245bf6f3c35b4a249961fc351173945c",
+    "codigo": "02",
+    "nombre": "Especialidad 02",
+    "capitulo_uuid": "2300a080d0e64c04bba7c0f319bb702c"
+  },
+  {
+    "uuid": "f56842d9811e411a8ededcb6f409ecb2",
+    "codigo": "04",
+    "nombre": "Especialidad 04",
+    "capitulo_uuid": "d036e270556b4bab9c8299a4ef4ddb81"
+  },
+  {
+    "uuid": "69148a27af704958a3887558e578b764",
+    "codigo": "03",
+    "nombre": "Especialidad 03",
+    "capitulo_uuid": "dcf8462d36874e6fbdc3f8e701f99bb4"
+  },
+  {
+    "uuid": "167223f055094573a886cf8669c279fb",
+    "codigo": "01",
+    "nombre": "Especialidad 01",
+    "capitulo_uuid": "8d06755fb1924be599483196991e4303"
+  },
+  {
+    "uuid": "b7b58e2787fe4b0da4e2bd45210f5df9",
+    "codigo": "01",
+    "nombre": "Especialidad 01",
+    "capitulo_uuid": "c6060104c6a941f5a6aeaf7ab536a4ba"
+  },
+  {
+    "uuid": "7d38933cb07149a9a6b9f3cb2ac7076e",
+    "codigo": "10",
+    "nombre": "Especialidad 10",
+    "capitulo_uuid": "d036e270556b4bab9c8299a4ef4ddb81"
+  },
+  {
+    "uuid": "8275b7a5d9d445ae80c2d19ef19f66f8",
+    "codigo": "01",
+    "nombre": "Especialidad 01",
+    "capitulo_uuid": "d036e270556b4bab9c8299a4ef4ddb81"
+  },
+  {
+    "uuid": "519c9c47f2c44bc5b37dd460b648fe50",
+    "codigo": "00",
+    "nombre": "Especialidad 00",
+    "capitulo_uuid": "9ba9d06da49d4869bf11f58787fc29f5"
+  },
+  {
+    "uuid": "8f6b40e6088b4bdb977db0a591a0b277",
+    "codigo": "00",
+    "nombre": "Especialidad 00",
+    "capitulo_uuid": "4c70109fe15d4a73a86f64af134c32b3"
+  },
+  {
+    "uuid": "5ae89cec827b4c2687d929ea2a429b87",
+    "codigo": "00",
+    "nombre": "Especialidad 00",
+    "capitulo_uuid": "8d06755fb1924be599483196991e4303"
+  }
+]
