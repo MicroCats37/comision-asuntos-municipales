@@ -279,10 +279,10 @@ export function LiquidacionEdificacionFormModal(
           <CotizacionPorcentajeSmartField
             methods={methods}
             hasTipoTramite
-            {...(isEdit || isRevisionLike
+            tipo="edificaciones"
+            {...(isEdit
               ? {
                   mode: "edit",
-                  tipo: "edificaciones",
                   liquidacionId: sourceId,
                 }
               : {})}

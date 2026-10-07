@@ -42,6 +42,57 @@ import {
 const DEBUG_FORM = process.env.NEXT_PUBLIC_DEBUG_GENERIC_FORM_ERRORS === "true";
 
 // =====================================================================
+// FRIENDLY MESSAGE FALLBACK
+// =====================================================================
+// Schemas that don't set an explicit `{ error: "..." }` message leak raw Zod
+// strings like "Invalid input: expected string, received undefined" into the
+// UI. This helper detects those raw messages and, for fields marked
+// `required: true` in their FormField config, substitutes a friendly
+// "Requerido" via methods.setError — so EVERY form gets reasonable messages
+// out of the box, even before its schema is migrated to Zod v4's
+// `{ error: "..." }` API.
+
+const RAW_ZOD_MESSAGE_PATTERN = /^Invalid input:/;
+const FRIENDLY_REQUIRED_FALLBACK = "Requerido";
+
+function isRawZodMessage(message: unknown): message is string {
+  return typeof message === "string" && RAW_ZOD_MESSAGE_PATTERN.test(message);
+}
+
+/**
+ * Walks the Zod error tree and patches any leaf whose message is a raw Zod
+ * default and whose path corresponds to a required FormField. Sets the
+ * patched message via methods.setError so it propagates everywhere
+ * (inline display, showErrorsAsToasts, smart field consumers).
+ */
+function applyFriendlyRequiredFallback(
+  errNode: unknown,
+  fieldsByName: Map<string, FormField>,
+  methods: { setError: (name: string, err: { type?: string; message?: string }) => void },
+  pathPrefix = "",
+): void {
+  if (!errNode || typeof errNode !== "object") return;
+  const node = errNode as Record<string, unknown>;
+  if (
+    "message" in node &&
+    typeof node.message === "string" &&
+    pathPrefix !== ""
+  ) {
+    const field = fieldsByName.get(pathPrefix);
+    if (field?.required && isRawZodMessage(node.message)) {
+      methods.setError(pathPrefix, {
+        type: (node.type as string) ?? "required",
+        message: FRIENDLY_REQUIRED_FALLBACK,
+      });
+    }
+    return;
+  }
+  for (const [key, value] of Object.entries(node)) {
+    applyFriendlyRequiredFallback(value, fieldsByName, methods, pathPrefix ? `${pathPrefix}.${key}` : key);
+  }
+}
+
+// =====================================================================
 // INTERNAL DEFAULT WRAPPERS
 // =====================================================================
 
@@ -347,6 +398,13 @@ export const GenericForm = <T extends FieldValues>({
 
   const isLocked = isSubmitting || isLoading || isDisabled;
   const onSubmitFn = handleSubmit(handleFormSubmit, (errs) => {
+    // Friendly fallback: required FormFields → "Requerido" si Zod dio mensaje raw.
+    // Aplica antes del debug log y de los toasts para que ambos vean el mensaje parchado.
+    const fieldsByName = new Map(allFieldsFlat.map((f) => [f.name, f]));
+    applyFriendlyRequiredFallback(errs, fieldsByName, {
+      setError: (name, err) => methods.setError(name as never, err as never),
+    });
+
     if (DEBUG_FORM) {
       console.warn("[GenericForm] Zod validation error:", errs);
       // Recursive function to extract all error messages from a nested object
@@ -376,7 +434,9 @@ export const GenericForm = <T extends FieldValues>({
           showAllErrors(val);
         });
       };
-      showAllErrors(errs);
+      // Lee los errores ya parchados para que los toasts muestren "Requerido"
+      // y no los raw de Zod.
+      showAllErrors(methods.formState.errors);
     }
   });
 

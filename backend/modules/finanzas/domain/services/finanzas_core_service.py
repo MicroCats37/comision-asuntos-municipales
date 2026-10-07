@@ -1523,7 +1523,7 @@ class FinanzasCoreService:
         periodo: int | None = None,
         mes: int | None = None,
         municipalidad_id: uuid.UUID | None = None,
-        tipo_liquidacion_id: uuid.UUID | None = None,
+        tipo_liquidacion_codigo: str | None = None,
         numero_liquidacion: int | None = None,
     ) -> tuple[list["DetalleHonorarioDelegado"], int]:
         """
@@ -1538,11 +1538,11 @@ class FinanzasCoreService:
             delegado_id: Filter by delegado_id (from liquidacion_delegado.delegado).
             delegado_cip: Filter by CIP (from liquidacion_delegado.delegado.perfil_ingeniero.cip).
                 Takes precedence if both delegado_id and delegado_cip are set.
-            periodo: Filter by periodo (from liquidacion_delegado). REQUIRED.
+            periodo: Filter by periodo (from liquidacion_delegado). Optional.
             mes: Filter by mes (from liquidacion_delegado).
             municipalidad_id: Filter by liquidacion_delegado.liquidacion.municipalidad_id (from the Liquidacion).
-            tipo_liquidacion_id: Filter by liquidacion_delegado.liquidacion.tipo_liquidacion_id (from the Liquidacion). REQUIRED.
-            numero_liquidacion: Filter by the type-specific numero field. Requires tipo_liquidacion_id to resolve the correct relation path.
+            tipo_liquidacion_codigo: Filter by liquidacion_delegado.liquidacion.tipo_liquidacion.codigo (from the Liquidacion). REQUIRED.
+            numero_liquidacion: Filter by the type-specific numero field. Requires tipo_liquidacion_codigo to resolve the correct relation path.
 
         Returns:
             Tuple of (list of DetalleHonorarioDelegado, total count).
@@ -1569,47 +1569,30 @@ class FinanzasCoreService:
             qs = qs.filter(liquidacion_delegado__mes=mes)
         if municipalidad_id is not None:
             qs = qs.filter(liquidacion_delegado__liquidacion__municipalidad_id=municipalidad_id)
-        if tipo_liquidacion_id is not None:
-            qs = qs.filter(liquidacion_delegado__liquidacion__tipo_liquidacion_id=tipo_liquidacion_id)
+        if tipo_liquidacion_codigo is not None:
+            qs = qs.filter(liquidacion_delegado__liquidacion__tipo_liquidacion__codigo=tipo_liquidacion_codigo)
 
         # Apply numero_liquidacion filter using type-specific path.
-        # Requires tipo_liquidacion_id to resolve the correct relation.
-        if numero_liquidacion is not None and tipo_liquidacion_id is not None:
-            # Resolve the tipo liquidacion codigo from the ID to determine the filter path.
-            # Map: codigo -> django ORM path for the numero field on the specific liquidacion table.
-            from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacion_tipo import (
-                LiquidacionPorCategoriaVisitas,
-            )
-            tipo = getattr(tipo_liquidacion_id, "tipo_liquidacion", None)
-            if tipo is None:
-                # tipo_liquidacion_id was passed as UUID, do a quick lookup
-                from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion
-                try:
-                    tipo = TipoLiquidacion.objects.filter(id=tipo_liquidacion_id).values("codigo").first()
-                except Exception:
-                    tipo = None
-            codigo = tipo.codigo if tipo and hasattr(tipo, "codigo") else None
-            if codigo is None and isinstance(tipo, dict):
-                codigo = tipo.get("codigo")
-            if codigo:
-                # Map codigo to the specific numero field path
-                # EDIF/EDIFICACION -> liquidacion_delegado__liquidacion__edificaciones__numero
-                # HU/HABILITACION_URBANA -> liquidacion_delegado__liquidacion__habilitacion_urbana__numero
-                # IO/INSPECCION_OBRA -> liquidacion_delegado__liquidacion__inspeccion_obra__numero
-                # MECANICA_SUELOS -> liquidacion_delegado__liquidacion__mecanica_suelos__numero
-                # IMPACTO_VIAL -> liquidacion_delegado__liquidacion__impacto_vial__numero
-                # TALUDES -> liquidacion_delegado__liquidacion__taludes__numero
-                NUMERO_PATH_MAP = {
-                    "EDIFICACION": "liquidacion_delegado__liquidacion__edificaciones__numero",
-                    "HABILITACION_URBANA": "liquidacion_delegado__liquidacion__habilitacion_urbana__numero",
-                    "INSPECCION_OBRA": "liquidacion_delegado__liquidacion__inspeccion_obra__numero",
-                    "MECANICA_SUELOS": "liquidacion_delegado__liquidacion__mecanica_suelos__numero",
-                    "IMPACTO_VIAL": "liquidacion_delegado__liquidacion__impacto_vial__numero",
-                    "TALUDES": "liquidacion_delegado__liquidacion__taludes__numero",
-                }
-                numero_path = NUMERO_PATH_MAP.get(codigo)
-                if numero_path:
-                    qs = qs.filter(**{numero_path: numero_liquidacion})
+        # Requires tipo_liquidacion_codigo to resolve the correct relation.
+        if numero_liquidacion is not None and tipo_liquidacion_codigo is not None:
+            # Map codigo to the specific numero field path
+            # EDIFICACION -> liquidacion_delegado__liquidacion__edificaciones__numero
+            # HABILITACION_URBANA -> liquidacion_delegado__liquidacion__habilitacion_urbana__numero
+            # INSPECCION_OBRA -> liquidacion_delegado__liquidacion__inspeccion_obra__numero
+            # MECANICA_SUELOS -> liquidacion_delegado__liquidacion__mecanica_suelos__numero
+            # IMPACTO_VIAL -> liquidacion_delegado__liquidacion__impacto_vial__numero
+            # TALUDES -> liquidacion_delegado__liquidacion__taludes__numero
+            NUMERO_PATH_MAP = {
+                "EDIFICACION": "liquidacion_delegado__liquidacion__edificaciones__numero",
+                "HABILITACION_URBANA": "liquidacion_delegado__liquidacion__habilitacion_urbana__numero",
+                "INSPECCION_OBRA": "liquidacion_delegado__liquidacion__inspeccion_obra__numero",
+                "MECANICA_SUELOS": "liquidacion_delegado__liquidacion__mecanica_suelos__numero",
+                "IMPACTO_VIAL": "liquidacion_delegado__liquidacion__impacto_vial__numero",
+                "TALUDES": "liquidacion_delegado__liquidacion__taludes__numero",
+            }
+            numero_path = NUMERO_PATH_MAP.get(tipo_liquidacion_codigo)
+            if numero_path:
+                qs = qs.filter(**{numero_path: numero_liquidacion})
 
         total = qs.count()
         offset = (page - 1) * page_size

@@ -476,6 +476,7 @@ def test_detalle_delegado_filtro_por_cip(
         page=1,
         page_size=20,
         delegado_cip="118318",
+        tipo_liquidacion_codigo=TipoLiquidacionConst.EDIFICACION,
     )
 
     assert total == 1
@@ -573,6 +574,7 @@ def test_detalle_delegado_cip_toma_precedencia_sobre_delegado_id(
         page_size=20,
         delegado_id=delegado2_id,  # This is the OTHER delegado
         delegado_cip="118318",       # CIP 118318 = delegado1
+        tipo_liquidacion_codigo=TipoLiquidacionConst.EDIFICACION,
     )
 
     # Should return rows for CIP 118318, NOT for delegado2_id
@@ -663,6 +665,7 @@ def test_detalle_delegado_orchestrator_filtro_cip(
         page=1,
         page_size=20,
         delegado_cip="118318",
+        tipo_liquidacion_codigo=TipoLiquidacionConst.EDIFICACION,
     )
 
     assert total == 1
@@ -731,6 +734,7 @@ def test_detalle_delegado_filtra_por_municipalidad(
         page=1,
         page_size=20,
         municipalidad_id=municipalidad.id,
+        tipo_liquidacion_codigo=TipoLiquidacionConst.EDIFICACION,
     )
 
     assert total == 1
@@ -788,6 +792,7 @@ def test_detalle_delegado_filtro_cip_sin_resultados(
         page=1,
         page_size=20,
         delegado_cip="NONEXISTENT",
+        tipo_liquidacion_codigo=TipoLiquidacionConst.EDIFICACION,
     )
 
     assert total == 0

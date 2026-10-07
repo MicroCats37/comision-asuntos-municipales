@@ -9,7 +9,8 @@ from typing import Optional, Dict, List
 from datetime import date, datetime
 import uuid
 
-from django.db.models import F, Max, OuterRef, Prefetch, Q, Subquery
+from django.db.models import F, IntegerField, Max, OuterRef, Prefetch, Q, Subquery
+from django.db.models import Case, When, Value
 
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral, LiquidacionCodigo
 from modules.liquidaciones.domain.models.proyecto import Proyecto
@@ -359,6 +360,37 @@ class LiquidacionGeneralCoreService:
         ),
     }
 
+    def _annotate_numero_orden(self, qs):
+        """
+        Annotates a `numero_orden` integer on each LiquidacionGeneral by looking up
+        its tipo-specific `numero` field.
+
+        Used by the general (cross-tipo) listings to enable sorting by numero
+        when a single tipo is not enforced. For tipo-filtered listings, prefer
+        ordering by the FK lookup (e.g. `-edificaciones__numero`) directly.
+
+        Returns the modified queryset.
+        """
+        from importlib import import_module
+
+        whens = []
+        for tipo_codigo, (module_path, cls_name, _related_name) in self._NUMERO_SPECIFIC_MODEL_MAP.items():
+            module = import_module(module_path)
+            specific_cls = getattr(module, cls_name)
+            whens.append(
+                When(
+                    tipo_liquidacion__codigo=tipo_codigo,
+                    then=Subquery(
+                        specific_cls.objects.filter(
+                            liquidacion=OuterRef('pk')
+                        ).values('numero')[:1]
+                    ),
+                )
+            )
+        return qs.annotate(
+            numero_orden=Case(*whens, default=Value(0), output_field=IntegerField())
+        )
+
     def list_liquidaciones_paginated(
         self,
         tipo_liquidacion: str,
@@ -396,7 +428,14 @@ class LiquidacionGeneralCoreService:
             'contacto',
         ).prefetch_related(
             *self._PREFETCH_MAP[tipo_liquidacion]
-        ).order_by('-fecha_registro')
+        )
+
+        # Order by tipo-specific numero DESC, fecha_registro DESC as tie-breaker.
+        numero_lookup = self._NUMERO_FILTER_FIELD_MAP.get(tipo_liquidacion)
+        if numero_lookup:
+            qs = qs.order_by(f'-{numero_lookup}', '-fecha_registro')
+        else:
+            qs = qs.order_by('-fecha_registro')
 
         # Apply filters
         if municipalidad_id:
@@ -1219,7 +1258,10 @@ class LiquidacionGeneralCoreService:
                 Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
 
-        qs = qs.order_by('-fecha_registro')
+        # Order by tipo_liquidacion ASC, then tipo-specific numero DESC, fecha_registro DESC as tie-breaker.
+        qs = self._annotate_numero_orden(qs).order_by(
+            'tipo_liquidacion__codigo', '-numero_orden', '-fecha_registro',
+        )
 
         # Apply filters (only for non-None params)
         if tipo:
@@ -1322,7 +1364,10 @@ class LiquidacionGeneralCoreService:
                 Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
 
-        qs = qs.order_by('-fecha_registro')
+        # Order by tipo_liquidacion ASC, then tipo-specific numero DESC, fecha_registro DESC as tie-breaker.
+        qs = self._annotate_numero_orden(qs).order_by(
+            'tipo_liquidacion__codigo', '-numero_orden', '-fecha_registro',
+        )
 
         # Apply filters (only for non-None params)
         if tipo_codigos:

@@ -6,19 +6,25 @@ GET /finanzas/recibos-delegados/detalle
 Informational only — no POST/PUT/PATCH/DELETE.
 """
 import uuid
+
+from injector import inject
 from ninja import Query
+from ninja.errors import HttpError
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
-from injector import inject
-from ninja.errors import HttpError
 
-from core.responses import ApiResponse, success_response
 from core.pagination import PaginatedData
+from core.responses import ApiResponse, success_response
+from modules.finanzas.domain.services.finanzas_orchestrator import (
+    FinanzasOrchestrator,
+)
+from modules.finanzas.presentation.presenters.finanzas_presenter import (
+    FinanzasPresenter,
+)
 from modules.finanzas.presentation.schemas.finanzas_schemas import (
     DetalleDelegadoRowOut,
 )
-from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
-from modules.finanzas.presentation.presenters.finanzas_presenter import FinanzasPresenter
+from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
 @api_controller("/finanzas", tags=["Finanzas-RH-Delegado-Detalle"], permissions=[AllowAny])
@@ -46,28 +52,38 @@ class RHDelegadoDetalleController:
         page_size: int = Query(20, ge=1, le=100, description="Elementos por página (max 100)"),
         delegado_id: uuid.UUID | None = Query(None, description="UUID del delegado"),
         delegado_cip: str | None = Query(None, description="CIP del delegado"),
-        periodo: int | None = Query(None, ge=2000, le=2100, description="Año del periodo (e.g. 2026)"),
-        mes: int | None = Query(None, ge=1, le=12, description="Mes (1-12)"),
-        municipalidad_id: uuid.UUID | None = Query(None, description="UUID de la municipalidad (liquidacion source, not operation)"),
-        tipo_liquidacion_id: uuid.UUID | None = Query(None, description="UUID del tipo de liquidación (from Liquidacion)"),
-        numero_liquidacion: int | None = Query(None, description="Número de liquidación específico (requiere tipo_liquidacion_id)"),
+        periodo: int | None = Query(None, ge=2000, le=2100, description="Año del periodo (e.g. 2026). Opcional."),
+        mes: int | None = Query(None, ge=1, le=12, description="Mes (1-12). Opcional."),
+        municipalidad_id: uuid.UUID | None = Query(None, description="UUID de la municipalidad (liquidacion source, not operation). Opcional."),
+        tipo_liquidacion_codigo: str | None = Query(
+            None,
+            description=f"Código del tipo de liquidación. REQUERIDO. Valores válidos: {', '.join(TipoLiquidacion.values)}",
+        ),
+        numero_liquidacion: int | None = Query(
+            None,
+            description="Número de liquidación específico (requiere tipo_liquidacion_codigo). Opcional.",
+        ),
     ):
         """
         GET /finanzas/recibos-delegados/detalle — lista filas de DetalleHonorarioDelegado.
 
-        Filtros requeridos: periodo, tipo_liquidacion_id.
-        Filtros opcionales: delegado_id, delegado_cip, mes, municipalidad_id, numero_liquidacion.
-        delegadow_cip tiene precedencia sobre delegado_id si ambos están presentes.
-        municipalidad_id y tipo_liquidacion_id se filtran desde la Liquidacion (no desde la operación).
-        numero_liquidacion se interpreta según el tipo_liquidacion_id para buscar en la tabla específica.
+        Filtro requerido: tipo_liquidacion_codigo.
+        Filtros opcionales: delegado_id, delegado_cip, periodo, mes, municipalidad_id, numero_liquidacion.
+        delegado_cip tiene precedencia sobre delegado_id si ambos están presentes.
+        municipalidad_id y tipo_liquidacion_codigo se filtran desde la Liquidacion (no desde la operación).
+        numero_liquidacion se interpreta según el tipo_liquidacion_codigo para buscar en la tabla específica.
 
         Returns paginated list of detail rows.
         """
-        # Validate required filters
-        if periodo is None or tipo_liquidacion_id is None:
+        if tipo_liquidacion_codigo is None:
             raise HttpError(
                 400,
-                "Periodo y tipo de liquidación son obligatorios para consultar detalle RH.",
+                "tipo_liquidacion_codigo es obligatorio para consultar detalle RH.",
+            )
+        if tipo_liquidacion_codigo not in TipoLiquidacion.values:
+            raise HttpError(
+                400,
+                f"tipo_liquidacion_codigo inválido. Valores válidos: {', '.join(TipoLiquidacion.values)}",
             )
 
         domain_results, total = self.orchestrator.list_rh_detalle_delegados_proceso(
@@ -78,7 +94,7 @@ class RHDelegadoDetalleController:
             periodo=periodo,
             mes=mes,
             municipalidad_id=municipalidad_id,
-            tipo_liquidacion_id=tipo_liquidacion_id,
+            tipo_liquidacion_codigo=tipo_liquidacion_codigo,
             numero_liquidacion=numero_liquidacion,
         )
         presented = FinanzasPresenter.present_rh_detalle_delegados_list(

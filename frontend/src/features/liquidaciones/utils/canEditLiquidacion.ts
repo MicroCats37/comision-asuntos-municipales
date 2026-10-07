@@ -1,11 +1,12 @@
 /**
  * Editability helpers for liquidaciones.
  *
- * Rules:
- * - PAGADA liquidaciones cannot be edited at all.
- * - Proyecto/municipalidad/entity fields can only be edited when:
- *   numero_revision === 1.
- *   (liquidacion_raiz y LiquidacionRelacionada fueron removidos en desarrollo.)
+ * NOTA: Por requerimiento del usuario, `canEditProyecto` siempre retorna true
+ * — los campos de proyecto son editables en cualquier revisión. La regla
+ * original (numero_revision === 1) está deshabilitada. Si en el futuro hay que
+ * re-implementarla, cambiar la línea `const canEditProyecto = true;`.
+ *
+ * La regla PAGADA se mantiene: liquidaciones pagadas no son editables.
  */
 import type { LiquidacionGeneralOutput } from "../schemas/liquidacion-base.schema";
 
@@ -32,14 +33,13 @@ export function canEditLiquidacion(
     };
   }
 
-  const canEditProyecto = lg.numero_revision === 1;
+  // Hardcoded true: proyecto fields siempre editables (cualquier revisión).
+  const canEditProyecto = true;
 
   return {
     canEdit: true,
     canEditProyecto,
-    reason: canEditProyecto
-      ? undefined
-      : "El proyecto no es editable en revisiones posteriores",
+    reason: undefined,
   };
 }
 

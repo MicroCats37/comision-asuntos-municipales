@@ -202,7 +202,7 @@ class LiquidacionInspeccionObraController:
         return success_response(self.visitas_presenter.present_cotizacion(result))
 
     @route.post(
-        "/nueva-liquidacion",
+        "/relacionada",
         response={200: ApiResponse[LiquidacionInspeccionObraOutput]},
     )
     def crear_primera_revision_desde_previa(self, request, payload: LiquidacionInspeccionObraNuevaRevisionInput):

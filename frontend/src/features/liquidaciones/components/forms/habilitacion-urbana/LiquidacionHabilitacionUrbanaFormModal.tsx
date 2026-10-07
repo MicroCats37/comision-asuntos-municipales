@@ -215,7 +215,7 @@ export function LiquidacionHabilitacionUrbanaFormModal(
           <CotizacionM2SmartField
             methods={methods}
             tipo="habilitacion-urbana"
-            {...(isEdit || isRevisionLike
+            {...(isEdit
               ? {
                   mode: "edit",
                   liquidacionId: sourceItem?.liquidacion_general.id,

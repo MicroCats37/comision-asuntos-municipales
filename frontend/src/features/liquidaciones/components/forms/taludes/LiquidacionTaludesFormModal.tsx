@@ -226,7 +226,7 @@ export function LiquidacionTaludesFormModal(
           <CotizacionPorcentajeSmartField
             methods={methods}
             tipo="taludes"
-            {...(isEdit || isRevisionLike
+            {...(isEdit
               ? {
                   mode: "edit",
                   liquidacionId: sourceItem?.liquidacion_general.id,

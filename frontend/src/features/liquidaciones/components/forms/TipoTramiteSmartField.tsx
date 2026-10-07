@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronDown, FileText } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { type UseFormReturn, useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import type { TipoTramiteEdificaciones } from "../../schemas/tramite.schema";
 
 /** Labels for the 8 tipo_tramite options (Title Case matching backend display) */
@@ -116,15 +117,45 @@ export function TipoTramiteSmartField({
     name: "tipo_tramite",
   }) as TipoTramiteEdificaciones | undefined;
 
-  // Auto-fill denominacion cuando cambia tipo_tramite (también en mount para
-  // refrescar el valor pre-cargado de initialData).
+  // Lee el error de validación asociado a este campo. Como `tipo_tramite` es
+  // opcional en el schema (solo requerido en edificaciones), puede que no
+  // haya error; en ese caso no se muestra nada.
+  const tipoTramiteError = methods.formState.errors?.tipo_tramite as
+    | { message?: string }
+    | undefined;
+
+  // Trackea el último valor que ESTE smart field puso en denominacion, para
+  // distinguir "es mi auto-fill anterior" (sí reescribir si cambia tipo_tramite)
+  // de "el usuario tipeó algo encima" (no pisar).
+  // null = nunca auto-filleado en este mount.
+  const lastAutoFilledValueRef = useRef<string | null>(null);
+
+  // Auto-fill denominacion SOLO cuando:
+  //   (a) El campo está vacío (initial state o user lo borró).
+  //   (b) El campo todavía contiene nuestro auto-fill previo (cambió tipo_tramite
+  //       pero el user no tocó el texto — comportamiento esperado en create).
+  // En edit/nueva-revision, initialData trae denominacion del backend → ref=null
+  // y campo no vacío → no se sobreescribe (clave: respeta el valor del backend).
   useEffect(() => {
-    if (!tipoTramite) return;
+    if (!tipoTramite) {
+      lastAutoFilledValueRef.current = null;
+      return;
+    }
+
+    const currentValue = methods.getValues(denominationFieldName) ?? "";
+    const isEmpty = currentValue.trim().length === 0;
+    const stillOurPreviousAutoFill =
+      lastAutoFilledValueRef.current !== null &&
+      lastAutoFilledValueRef.current === currentValue;
+
+    if (!isEmpty && !stillOurPreviousAutoFill) return;
+
     const denominacion = buildDenominacion(tipoTramite, revisionNumber);
     methods.setValue(denominationFieldName, denominacion, {
       shouldDirty: false,
       shouldValidate: false,
     });
+    lastAutoFilledValueRef.current = denominacion;
   }, [tipoTramite, revisionNumber, denominationFieldName, methods]);
 
   const handleSelect = (value: TipoTramiteEdificaciones) => {
@@ -159,7 +190,15 @@ export function TipoTramiteSmartField({
               id="tipo_tramite"
               type="button"
               variant="outline"
-              className="h-8 w-fit justify-between pl-10 pr-3 font-normal gap-2"
+              className={cn(
+                "h-8 w-fit justify-between pl-10 pr-3 font-normal gap-2",
+                tipoTramiteError &&
+                  "border-destructive text-destructive focus-visible:border-destructive",
+              )}
+              aria-invalid={tipoTramiteError ? "true" : undefined}
+              aria-describedby={
+                tipoTramiteError ? "tipo_tramite-error" : undefined
+              }
             >
               <span>
                 {tipoTramite
@@ -182,6 +221,15 @@ export function TipoTramiteSmartField({
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+      {tipoTramiteError?.message && (
+        <p
+          id="tipo_tramite-error"
+          className="text-sm text-destructive font-medium"
+          role="alert"
+        >
+          {tipoTramiteError.message}
+        </p>
+      )}
     </div>
   );
 }

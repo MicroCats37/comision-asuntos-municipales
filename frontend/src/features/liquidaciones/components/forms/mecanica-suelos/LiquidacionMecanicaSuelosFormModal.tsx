@@ -206,7 +206,7 @@ export function LiquidacionMecanicaSuelosFormModal(
           <CotizacionM2SmartField
             methods={methods}
             tipo="mecanica-suelos"
-            {...(isEdit || isRevisionLike
+            {...(isEdit
               ? {
                   mode: "edit",
                   liquidacionId: sourceItem?.liquidacion_general.id,

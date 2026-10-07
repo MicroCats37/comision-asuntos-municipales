@@ -1,9 +1,9 @@
 /**
  * Hook para listar filas de DetalleHonorarioDelegado (detalle flat, sin agrupar por mes).
  * Endpoint: GET /finanzas/recibos-delegados/detalle
- * Filtros: delegado_id, periodo, mes, municipalidad_id, tipo_liquidacion_id, numero_liquidacion
+ * Filtros: delegado_id, periodo, mes, municipalidad_id, tipo_liquidacion_codigo, numero_liquidacion
  *
- * Nota: periodo y tipoLiquidacionId son obligatorios para habilitar la consulta.
+ * Nota: tipoLiquidacionCodigo es obligatorio para habilitar la consulta.
  */
 
 import { paginatedResponseSchema } from "@/features/liquidaciones/schemas/liquidacion-base.schema";
@@ -24,7 +24,7 @@ interface UseRHDetalleDelegadosProps {
   periodo?: number;
   mes?: number;
   municipalidadId?: string;
-  tipoLiquidacionId?: string;
+  tipoLiquidacionCodigo?: string;
   numeroLiquidacion?: number;
   enabled?: boolean;
 }
@@ -37,21 +37,28 @@ export function useRHDetalleDelegados({
   periodo,
   mes,
   municipalidadId,
-  tipoLiquidacionId,
+  tipoLiquidacionCodigo,
   numeroLiquidacion,
   enabled = true,
 }: UseRHDetalleDelegadosProps = {}) {
   const params: Record<string, string | number> = { page, page_size: pageSize };
-  if (delegadoCip) params.delegado_cip = delegadoCip;
-  else if (delegadoId) params.delegado_id = delegadoId;
+  if (delegadoCip) {
+    // CIP must be exactly 6 digits: pad with leading zeros on the request only,
+    // keep visual/URL state untouched.
+    const cipDigits = delegadoCip.replace(/\D/g, "");
+    params.delegado_cip = cipDigits.padStart(6, "0").slice(0, 6);
+  } else if (delegadoId) {
+    params.delegado_id = delegadoId;
+  }
   if (periodo) params.periodo = periodo;
   if (mes) params.mes = mes;
   if (municipalidadId) params.municipalidad_id = municipalidadId;
-  if (tipoLiquidacionId) params.tipo_liquidacion_id = tipoLiquidacionId;
+  if (tipoLiquidacionCodigo)
+    params.tipo_liquidacion_codigo = tipoLiquidacionCodigo;
   if (numeroLiquidacion) params.numero_liquidacion = numeroLiquidacion;
 
-  // Query is only enabled when required filters are present
-  const isEnabled = enabled && Boolean(periodo && tipoLiquidacionId);
+  // Query is only enabled when the required filter is present
+  const isEnabled = enabled && Boolean(tipoLiquidacionCodigo);
 
   const query = useApiQuery({
     queryKey: [
@@ -65,7 +72,7 @@ export function useRHDetalleDelegados({
       periodo,
       mes,
       municipalidadId,
-      tipoLiquidacionId,
+      tipoLiquidacionCodigo,
       numeroLiquidacion,
     ],
     url: "/finanzas/recibos-delegados/detalle",

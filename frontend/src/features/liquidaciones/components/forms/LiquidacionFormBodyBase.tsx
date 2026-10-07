@@ -205,7 +205,7 @@ export function NombrePropietarioInline({
 }: {
   control: Control<any>;
 }) {
-  const { field } = useController({
+  const { field, fieldState } = useController({
     name: "nombre_propietario",
     control,
     defaultValue: "",
@@ -221,6 +221,9 @@ export function NombrePropietarioInline({
         className="w-full"
         {...field}
       />
+      {fieldState.error && (
+        <p className="text-xs text-destructive">{fieldState.error.message}</p>
+      )}
     </div>
   );
 }
@@ -331,28 +334,21 @@ export function LiquidacionFormBodyBase({
 
   const { data: municipalidades } = useMunicipalidades();
   const municipalidadId = watch("municipalidad_id");
-  const currentDistritoId = watch("distrito_id");
 
-  // Autofill distrito when municipalidad_id changes and the selected municipalidad has a distrito.
+  // `distrito_id` siempre sigue a `municipalidad_id` (mando absoluto del municipio).
+  // - Cambio de municipio → distrito se actualiza al del nuevo municipio (o "" si no tiene)
+  // - Cambio manual posterior del distrito se preserva hasta el próximo cambio de municipio
+  // - Funciona en create / edit / nueva-revision / relacionada (sin restricción de canEditProyecto)
   useEffect(() => {
-    if (!canEditProyecto) return;
     if (!municipalidadId) return;
 
-    // Do not overwrite a manual selection or pre-existing edit data.
-    if (currentDistritoId) return;
-
     const selected = municipalidades?.find((m) => m.id === municipalidadId);
-    if (selected?.distrito?.id) {
-      setValue("distrito_id", selected.distrito.id, { shouldValidate: true });
-    }
-    // If municipalidad has no distrito, do nothing — keep current distrito list available.
-  }, [
-    municipalidadId,
-    currentDistritoId,
-    municipalidades,
-    canEditProyecto,
-    setValue,
-  ]);
+    setValue(
+      "distrito_id",
+      selected?.distrito?.id ?? "",
+      { shouldValidate: true },
+    );
+  }, [municipalidadId, municipalidades, setValue]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

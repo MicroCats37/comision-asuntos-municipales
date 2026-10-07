@@ -3,13 +3,14 @@
  * Ruta: /liquidaciones/recibos-delegados
  *
  * Usa PageHeader + cards pattern + paginación URL-driven.
- * Filtros: delegado_cip, municipalidad_id, periodo, mes (URL-driven)
+ * Filtros URL-driven: delegado_cip, municipalidad_id, periodo, mes.
+ * Arquitectura alineada con RHDetalleDelegadosView: chips removibles con FilterChip.
  */
 "use client";
 
 import type { LucideIcon } from "lucide-react";
 import { Filter, Plus, RefreshCw, User, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
@@ -18,9 +19,38 @@ import { RecibosDelegadosFiltroModal } from "@/features/finanzas/components/filt
 import { RhDelegadoMensualModal } from "@/features/finanzas/components/modals/RhDelegadoMensualModal";
 import { useRecibosDelegados } from "@/features/finanzas/hooks/useRecibosDelegados";
 import { useRecibosDelegadosFiltersUrl } from "@/features/finanzas/hooks/useRecibosDelegadosFiltersUrl";
+import { useMunicipalidades } from "@/features/liquidaciones/hooks/useMunicipalidades";
 import { useUrlPagination } from "@/hooks/system/useUrlPagination";
 
 const KIND_ICON: LucideIcon = User;
+
+/**
+ * Chip removible para un filtro activo individual. Click en la X quita SOLO ese filtro.
+ */
+function FilterChip({
+  label,
+  value,
+  onRemove,
+}: {
+  label: string;
+  value: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 pl-2.5 pr-1 py-1 text-xs font-medium">
+      <span className="text-foreground/70 font-semibold">{label}:</span>
+      <span className="font-bold">{value}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Quitar filtro ${label}: ${value}`}
+        className="inline-flex items-center justify-center h-5 w-5 rounded-full hover:bg-primary/20 text-primary transition-colors"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  );
+}
 
 export function RecibosDelegadosView() {
   const [rhModalOpen, setRhModalOpen] = useState(false);
@@ -28,14 +58,24 @@ export function RecibosDelegadosView() {
   const { page, pageSize, setPage, setPageSize } = useUrlPagination();
   const { filtros, setFiltros, clearFiltros } = useRecibosDelegadosFiltersUrl();
 
+  const { data: municipalidades = [] } = useMunicipalidades();
+  const municipalidadNombreById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of municipalidades) {
+      const codigoPrefix = m.codigo ? `${m.codigo} - ` : "";
+      map.set(m.id, `${codigoPrefix}${m.nombre}`);
+    }
+    return map;
+  }, [municipalidades]);
+
   const { items, total, totalPages, isLoading, isError, refetch } =
     useRecibosDelegados({
       page,
       pageSize,
       delegadoCip: filtros.delegado_cip,
       municipalidadId: filtros.municipalidad_id,
-      periodo: filtros.periodo ? parseInt(filtros.periodo, 10) : undefined,
-      mes: filtros.mes ? parseInt(filtros.mes, 10) : undefined,
+      periodo: filtros.periodo,
+      mes: filtros.mes,
     });
 
   const hasActiveFilters = Boolean(
@@ -44,6 +84,19 @@ export function RecibosDelegadosView() {
       filtros.periodo ||
       filtros.mes,
   );
+
+  const activeFilterCount = [
+    filtros.delegado_cip,
+    filtros.municipalidad_id,
+    filtros.periodo,
+    filtros.mes,
+  ].filter(Boolean).length;
+
+  const removeFilter = (key: keyof typeof filtros) => {
+    const next = { ...filtros };
+    delete next[key];
+    setFiltros(next);
+  };
 
   return (
     <div className="page-section">
@@ -63,14 +116,7 @@ export function RecibosDelegadosView() {
                 Filtros
                 {hasActiveFilters && (
                   <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-foreground/20 text-xs font-bold">
-                    {
-                      [
-                        filtros.delegado_cip,
-                        filtros.municipalidad_id,
-                        filtros.periodo,
-                        filtros.mes,
-                      ].filter(Boolean).length
-                    }
+                    {activeFilterCount}
                   </span>
                 )}
               </Button>
@@ -85,32 +131,45 @@ export function RecibosDelegadosView() {
           }
         />
 
-        {/* Filtros activos */}
+        {/* Filtros activos — cada chip removible individualmente */}
         {hasActiveFilters && (
           <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/20 rounded-xl border border-border/60">
             <span className="text-xs font-semibold text-muted-foreground">
               Filtros activos:
             </span>
+
             {filtros.delegado_cip && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-                CIP: {filtros.delegado_cip}
-              </span>
-            )}
-            {filtros.municipalidad_id && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-                Municipalidad ID: {filtros.municipalidad_id}
-              </span>
+              <FilterChip
+                label="CIP"
+                value={filtros.delegado_cip}
+                onRemove={() => removeFilter("delegado_cip")}
+              />
             )}
             {filtros.periodo && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-                Periodo: {filtros.periodo}
-              </span>
+              <FilterChip
+                label="Año"
+                value={String(filtros.periodo)}
+                onRemove={() => removeFilter("periodo")}
+              />
             )}
             {filtros.mes && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-                Mes: {filtros.mes}
-              </span>
+              <FilterChip
+                label="Mes"
+                value={String(filtros.mes)}
+                onRemove={() => removeFilter("mes")}
+              />
             )}
+            {filtros.municipalidad_id && (
+              <FilterChip
+                label="Municipalidad"
+                value={
+                  municipalidadNombreById.get(filtros.municipalidad_id) ??
+                  filtros.municipalidad_id
+                }
+                onRemove={() => removeFilter("municipalidad_id")}
+              />
+            )}
+
             <Button
               variant="ghost"
               size="sm"
@@ -118,7 +177,7 @@ export function RecibosDelegadosView() {
               className="h-7 px-2 gap-1 text-xs text-destructive"
             >
               <X className="h-3 w-3" />
-              Limpiar
+              Limpiar todo
             </Button>
           </div>
         )}

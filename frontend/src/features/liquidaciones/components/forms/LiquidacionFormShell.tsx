@@ -139,15 +139,11 @@ const defaultGetPreviousValues = <TItem extends LiquidacionSourceItem>(
 };
 
 const defaultComputeCanEditProyecto = <TItem extends LiquidacionSourceItem>(
-  mode: LiquidacionFormMode,
-  sourceItem: TItem | null,
+  _mode: LiquidacionFormMode,
+  _sourceItem: TItem | null,
 ): boolean => {
-  if (mode === "create" || mode === "nueva-revision") return true;
-  if (mode === "edit" && sourceItem) {
-    const n = Number(sourceItem.liquidacion_general.numero_revision);
-    return n <= 1;
-  }
-  return false;
+  // Hardcoded true: proyecto fields siempre editables (cualquier modo / revisión).
+  return true;
 };
 
 const defaultGetRevisionNumber = <TItem extends LiquidacionSourceItem>(

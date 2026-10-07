@@ -139,6 +139,7 @@ export function TarifasFiltroModal({
       schema={filtroSchema}
       initialData={initialData}
       onSubmit={handleSubmit}
+      preventClose={false}
       size="lg"
     >
       {({ methods }) => {

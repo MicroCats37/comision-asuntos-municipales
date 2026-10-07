@@ -15,13 +15,15 @@ export const edificacionesFormSchema = z.object({
   ...generalFormSchema.shape,
   // Especifica fields (motor PorcentajeObra)
   valor_declarado: z
-    .number()
+    .number({
+      error: "El valor declarado debe ser positivo",
+    })
     .positive("El valor declarado debe ser positivo")
     .max(9999999999.99, "El valor declarado excede el máximo permitido")
     .finite(),
-  /** Tipo de trámite de edificaciones — opcional. El usuario debe elegirlo explícitamente;
-   *  el smart field de tarifas muestra un mensaje informativo hasta que se setee. */
-  tipo_tramite: TipoTramiteEdificacionesSchema.optional(),
+  /** Tipo de trámite de edificaciones — requerido. El smart field de tarifas
+   *  muestra un mensaje informativo hasta que se setee. */
+  tipo_tramite: TipoTramiteEdificacionesSchema,
   // Smart Field outputs — set by Smart Fields via setValue
   /** ID de la única tarifa vigente de porcentaje de obra */
   tarifa_unica_id: z.string().optional(),

@@ -16,6 +16,7 @@ import { BadgeCheck, HardHat, Loader2, User } from "lucide-react";
  */
 import { useCallback, useEffect, useMemo } from "react";
 import type { UseFormReturn } from "react-hook-form";
+import { useController } from "react-hook-form";
 import type { InspectorVigente } from "@/features/inspectores/types/inspectores.types";
 import { useInspectoresVigentes } from "../../hooks/useInspectoresVigentes";
 import type { NuevaRevisionInspeccionObraFormData } from "../../schemas/liquidacion-nueva-revision-io.schema";
@@ -33,8 +34,13 @@ export function InspectorSeleccionableSmartField({
   // Categoría ya seleccionada en el form (smart field de tarifas) — la observamos con watch
   const categoria = methods.watch("categoria");
 
-  // Inspector seleccionado en RHF
-  const inspectorId = methods.watch("inspector_id");
+  // Inspector seleccionado en RHF (controller con error para display inline)
+  const inspectorCtrl = useController({
+    name: "inspector_id",
+    control: methods.control,
+    rules: { required: "Selecciona un inspector" },
+  });
+  const inspectorId = inspectorCtrl.field.value;
 
   // Consulta automática: enabled cuando hay tipo + categoría
   const canFetch = !!tipoLiquidacion && !!categoria;
@@ -53,12 +59,9 @@ export function InspectorSeleccionableSmartField({
 
   const handleSelect = useCallback(
     (id: string) => {
-      methods.setValue("inspector_id", id, {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
+      inspectorCtrl.field.onChange(id);
     },
-    [methods],
+    [inspectorCtrl],
   );
 
   // Limpiar inspector si ya no está en la lista de la categoría
@@ -66,12 +69,10 @@ export function InspectorSeleccionableSmartField({
     if (inspectorId && inspectores.length > 0) {
       const sigue = inspectores.some((i) => i.id === inspectorId);
       if (!sigue) {
-        methods.setValue("inspector_id", "", {
-          shouldValidate: true,
-        });
+        inspectorCtrl.field.onChange("");
       }
     }
-  }, [inspectorId, inspectores, methods]);
+  }, [inspectorId, inspectores, inspectorCtrl]);
 
   return (
     <div className="space-y-3">
@@ -163,6 +164,13 @@ export function InspectorSeleccionableSmartField({
       {inspectorId && inspectorSeleccionado && (
         <p className="text-xs text-green-600 dark:text-green-400">
           Inspector asignado: {inspectorSeleccionado.nombre_completo}
+        </p>
+      )}
+
+      {/* ── Error inline ── */}
+      {inspectorCtrl.fieldState.error && (
+        <p className="text-xs text-destructive font-medium">
+          {inspectorCtrl.fieldState.error.message}
         </p>
       )}
     </div>

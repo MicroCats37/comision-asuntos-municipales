@@ -6,8 +6,9 @@ import { useUrlFilters } from "@/hooks/system/useUrlFilters";
  * URL-driven filter state for RH Detalle Delegados listing.
  *
  * Thin wrapper around generic `useUrlFilters` hook.
- * Backend filters: delegado_cip (CIP string), periodo (int year), mes (int 1-12),
- * municipalidad_id (UUID), tipo_liquidacion_id (UUID), numero_liquidacion (int)
+ * Backend filters: delegado_cip (CIP string), periodo (int year, optional),
+ * mes (int 1-12, optional), municipalidad_id (UUID, optional),
+ * tipo_liquidacion_codigo (string, REQUIRED), numero_liquidacion (int, optional).
  *
  * URL params use the same name as the backend query params
  * for direct compatibility.
@@ -18,7 +19,7 @@ export function useRHDetalleDelegadosFiltersUrl(): {
     periodo?: number;
     mes?: number;
     municipalidad_id?: string;
-    tipo_liquidacion_id?: string;
+    tipo_liquidacion_codigo?: string;
     numero_liquidacion?: number;
   };
   setFiltros: (next: {
@@ -26,7 +27,7 @@ export function useRHDetalleDelegadosFiltersUrl(): {
     periodo?: number;
     mes?: number;
     municipalidad_id?: string;
-    tipo_liquidacion_id?: string;
+    tipo_liquidacion_codigo?: string;
     numero_liquidacion?: number;
   }) => void;
   clearFiltros: () => void;
@@ -36,7 +37,7 @@ export function useRHDetalleDelegadosFiltersUrl(): {
     periodo?: number;
     mes?: number;
     municipalidad_id?: string;
-    tipo_liquidacion_id?: string;
+    tipo_liquidacion_codigo?: string;
     numero_liquidacion?: number;
   }>({
     config: [
@@ -48,7 +49,10 @@ export function useRHDetalleDelegadosFiltersUrl(): {
       },
       { filterKey: "mes", paramKey: "mes", parse: (v) => parseInt(v, 10) },
       { filterKey: "municipalidad_id", paramKey: "municipalidad_id" },
-      { filterKey: "tipo_liquidacion_id", paramKey: "tipo_liquidacion_id" },
+      {
+        filterKey: "tipo_liquidacion_codigo",
+        paramKey: "tipo_liquidacion_codigo",
+      },
       {
         filterKey: "numero_liquidacion",
         paramKey: "numero_liquidacion",
@@ -64,7 +68,7 @@ export function useRHDetalleDelegadosFiltersUrl(): {
       periodo?: number;
       mes?: number;
       municipalidad_id?: string;
-      tipo_liquidacion_id?: string;
+      tipo_liquidacion_codigo?: string;
       numero_liquidacion?: number;
     },
     setFiltros,

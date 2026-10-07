@@ -4,8 +4,12 @@
  * RHDetalleInspectoresFiltroModal — Modal de filtros para Detalle RH Inspectores.
  * Usa AppFormModal como shell.
  *
- * Filtros: inspector_cip (CIP), periodo (año), mes (1-12), municipalidad_id (UUID),
- * tipo_liquidacion_id (UUID, requerido), numero_liquidacion (int, opcional).
+ * Patrón limpio alineado con RHDetalleDelegadosFiltroModal:
+ *   - SearchableSelect para año / mes / municipalidad / tipo de liquidación.
+ *   - Input con icono (UserRound / Hash) para cip y n° liquidación.
+ *
+ * Filtros: inspector_cip (CIP), periodo (año, REQUERIDO), mes (1-12), municipalidad_id,
+ * tipo_liquidacion_id (REQUERIDO), numero_liquidacion (int, opcional).
  */
 import { Building2, Calendar, Filter, Hash, UserRound } from "lucide-react";
 import { useCallback } from "react";
@@ -13,23 +17,73 @@ import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SearchableSelect,
+  type SearchableSelectOption,
+} from "@/components/ui/searchable-select";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { useMunicipalidades } from "@/features/liquidaciones/hooks/useMunicipalidades";
 import { useTiposLiquidacion } from "@/features/liquidaciones/hooks/useTiposLiquidacion";
 
+const MIN_YEAR = 2010;
+const MAX_YEAR = new Date().getFullYear();
+
+const MESES: SearchableSelectOption[] = [
+  { value: "1", label: "01 - Enero" },
+  { value: "2", label: "02 - Febrero" },
+  { value: "3", label: "03 - Marzo" },
+  { value: "4", label: "04 - Abril" },
+  { value: "5", label: "05 - Mayo" },
+  { value: "6", label: "06 - Junio" },
+  { value: "7", label: "07 - Julio" },
+  { value: "8", label: "08 - Agosto" },
+  { value: "9", label: "09 - Setiembre" },
+  { value: "10", label: "10 - Octubre" },
+  { value: "11", label: "11 - Noviembre" },
+  { value: "12", label: "12 - Diciembre" },
+];
+
+const ANIOS: SearchableSelectOption[] = Array.from(
+  { length: MAX_YEAR - MIN_YEAR + 1 },
+  (_, i) => ({
+    value: String(MIN_YEAR + i),
+    label: String(MIN_YEAR + i),
+  }),
+);
+
 const filtroSchema = z.object({
-  inspector_cip: z.string().optional(),
-  periodo: z.string().min(1, "Año es requerido"),
-  mes: z.string().optional(),
+  inspector_cip: z
+    .string()
+    .trim()
+    .optional()
+    .refine(
+      (v) => !v || /^\d{1,6}$/.test(v),
+      "CIP debe tener entre 1 y 6 dígitos",
+    ),
+  periodo: z
+    .string()
+    .min(1, "Año es requerido")
+    .refine((v) => {
+      const n = Number(v);
+      return Number.isInteger(n) && n >= MIN_YEAR && n <= MAX_YEAR;
+    }, `Año debe estar entre ${MIN_YEAR} y ${MAX_YEAR}`),
+  mes: z
+    .string()
+    .optional()
+    .refine((v) => {
+      if (!v) return true;
+      const n = Number(v);
+      return Number.isInteger(n) && n >= 1 && n <= 12;
+    }, "Mes debe estar entre 1 y 12"),
   municipalidad_id: z.string().optional(),
   tipo_liquidacion_id: z.string().min(1, "Tipo de liquidación es requerido"),
-  numero_liquidacion: z.string().optional(),
+  numero_liquidacion: z
+    .string()
+    .optional()
+    .refine((v) => {
+      if (!v) return true;
+      const n = Number(v);
+      return Number.isInteger(n) && n >= 1;
+    }, "N° Liquidación debe ser entero positivo"),
 });
 
 type FiltroFormData = z.infer<typeof filtroSchema>;
@@ -86,7 +140,7 @@ export function RHDetalleInspectoresFiltroModal({
         tipo_liquidacion_id?: string;
         numero_liquidacion?: number;
       } = {};
-      if (data.inspector_cip) filtros.inspector_cip = data.inspector_cip;
+      if (data.inspector_cip) filtros.inspector_cip = data.inspector_cip.trim();
       if (data.periodo) filtros.periodo = Number(data.periodo);
       if (data.mes) filtros.mes = Number(data.mes);
       if (data.municipalidad_id)
@@ -118,52 +172,40 @@ export function RHDetalleInspectoresFiltroModal({
       onSubmit={handleSubmit}
       showErrorsAsToasts
       disableBuildUpdatePayload
+      preventClose={false}
       size="lg"
     >
       {({ methods }) => (
         <div className="space-y-4">
-          {/* Fila 1: Año + Mes */}
+          {/* Fila 1: Año + Mes (ambos SearchableSelect) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Periodo (Año) */}
-            <div className="space-y-2">
-              <Label htmlFor="rh-inspector-detalle-filter-periodo">
-                Año <span className="text-destructive">*</span>
-              </Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
-                <Input
-                  id="rh-inspector-detalle-filter-periodo"
-                  type="number"
-                  placeholder="Ej. 2026"
-                  min={2000}
-                  max={2100}
-                  className="pl-10 w-full"
-                  {...methods.register("periodo")}
-                />
-              </div>
-            </div>
+            <SearchableSelect
+              id="rh-inspector-detalle-filter-periodo"
+              label="Año *"
+              value={methods.watch("periodo") || null}
+              onValueChange={(v) => methods.setValue("periodo", v ?? "")}
+              options={ANIOS}
+              placeholder="Buscar año..."
+              icon={Calendar}
+              showLabel
+              className="[--input-height:40px] [&_button]:rounded-xl [&_button]:font-semibold"
+            />
 
-            {/* Mes */}
-            <div className="space-y-2">
-              <Label htmlFor="rh-inspector-detalle-filter-mes">Mes</Label>
-              <div className="relative">
-                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
-                <Input
-                  id="rh-inspector-detalle-filter-mes"
-                  type="number"
-                  placeholder="1-12"
-                  min={1}
-                  max={12}
-                  className="pl-10 w-full"
-                  {...methods.register("mes")}
-                />
-              </div>
-            </div>
+            <SearchableSelect
+              id="rh-inspector-detalle-filter-mes"
+              label="Mes"
+              value={methods.watch("mes") || null}
+              onValueChange={(v) => methods.setValue("mes", v ?? "")}
+              options={MESES}
+              placeholder="Buscar mes..."
+              icon={Hash}
+              showLabel
+              className="[--input-height:40px] [&_button]:rounded-xl [&_button]:font-semibold"
+            />
           </div>
 
           {/* Fila 2: CIP + Número de Liquidación */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* CIP Inspector */}
             <div className="space-y-2">
               <Label htmlFor="rh-inspector-detalle-filter-cip">
                 CIP del Inspector
@@ -173,13 +215,14 @@ export function RHDetalleInspectoresFiltroModal({
                 <Input
                   id="rh-inspector-detalle-filter-cip"
                   placeholder="Ej. 118318"
+                  maxLength={6}
+                  inputMode="numeric"
                   className="pl-10 w-full"
                   {...methods.register("inspector_cip")}
                 />
               </div>
             </div>
 
-            {/* Número de Liquidación */}
             <div className="space-y-2">
               <Label htmlFor="rh-inspector-detalle-filter-numero-liquidacion">
                 N° Liquidación
@@ -198,71 +241,44 @@ export function RHDetalleInspectoresFiltroModal({
             </div>
           </div>
 
-          {/* Fila 3: Municipalidad */}
-          <div className="space-y-2">
-            <Label htmlFor="rh-inspector-detalle-filter-municipalidad">
-              Municipalidad
-            </Label>
-            <div className="relative">
-              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
-              <Select
-                value={methods.watch("municipalidad_id") || ""}
-                onValueChange={(v) => methods.setValue("municipalidad_id", v)}
-              >
-                <SelectTrigger
-                  id="rh-inspector-detalle-filter-municipalidad"
-                  className="pl-10 w-full h-10"
-                >
-                  <SelectValue
-                    placeholder={
-                      isLoadingMunicipalidades
-                        ? "Cargando..."
-                        : "Seleccionar municipalidad"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {(municipalidades || []).map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.codigo ? `${m.codigo} - ` : ""}
-                      {m.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          {/* Fila 3: Municipalidad (SearchableSelect) */}
+          <SearchableSelect
+            id="rh-inspector-detalle-filter-municipalidad"
+            label="Municipalidad"
+            value={methods.watch("municipalidad_id") || null}
+            onValueChange={(v) => methods.setValue("municipalidad_id", v ?? "")}
+            options={(municipalidades || []).map((m) => ({
+              value: m.id,
+              label: m.codigo ? `${m.codigo} - ${m.nombre}` : m.nombre,
+            }))}
+            placeholder={
+              isLoadingMunicipalidades
+                ? "Cargando municipalidades..."
+                : "Buscar municipalidad..."
+            }
+            icon={Building2}
+            disabled={isLoadingMunicipalidades}
+            showLabel
+            className="[--input-height:40px] [&_button]:rounded-xl [&_button]:font-semibold"
+          />
 
-          {/* Fila 4: Tipo de Liquidación */}
-          <div className="space-y-2">
-            <Label htmlFor="rh-inspector-detalle-filter-tipo-liquidacion">
-              Tipo de Liquidación <span className="text-destructive">*</span>
-            </Label>
-            <Select
-              value={methods.watch("tipo_liquidacion_id") || ""}
-              onValueChange={(v) => methods.setValue("tipo_liquidacion_id", v)}
-            >
-              <SelectTrigger
-                id="rh-inspector-detalle-filter-tipo-liquidacion"
-                className="w-full h-10"
-              >
-                <SelectValue
-                  placeholder={
-                    isLoadingTipos
-                      ? "Cargando tipos..."
-                      : "Seleccionar tipo de liquidación"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {tipos.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.codigo} · {t.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Fila 4: Tipo de Liquidación (SearchableSelect) */}
+          <SearchableSelect
+            id="rh-inspector-detalle-filter-tipo-liquidacion"
+            label="Tipo de Liquidación *"
+            value={methods.watch("tipo_liquidacion_id") || null}
+            onValueChange={(v) => methods.setValue("tipo_liquidacion_id", v ?? "")}
+            options={tipos.map((t) => ({
+              value: t.id,
+              label: `${t.codigo} · ${t.nombre}`,
+            }))}
+            placeholder={
+              isLoadingTipos ? "Cargando tipos..." : "Buscar tipo de liquidación..."
+            }
+            disabled={isLoadingTipos}
+            showLabel
+            className="[--input-height:40px] [&_button]:rounded-xl [&_button]:font-semibold"
+          />
         </div>
       )}
     </AppFormModal>

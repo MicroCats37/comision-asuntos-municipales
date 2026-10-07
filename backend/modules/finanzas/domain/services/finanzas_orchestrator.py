@@ -1133,7 +1133,7 @@ class FinanzasOrchestrator:
         periodo: int | None = None,
         mes: int | None = None,
         municipalidad_id: uuid.UUID | None = None,
-        tipo_liquidacion_id: uuid.UUID | None = None,
+        tipo_liquidacion_codigo: str | None = None,
         numero_liquidacion: int | None = None,
     ) -> tuple[list[DetalleDelegadoRowResult], int]:
         """
@@ -1144,11 +1144,11 @@ class FinanzasOrchestrator:
             page_size: Elementos por página (max 100).
             delegado_id: Filter by delegado UUID.
             delegado_cip: Filter by CIP (from perfil_ingeniero). Takes precedence if both are set.
-            periodo: Filter by año (from liquidacion_delegado). REQUIRED.
+            periodo: Filter by año (from liquidacion_delegado). Optional.
             mes: Filter by mes (1-12, from liquidacion_delegado).
             municipalidad_id: Filter by liquidacion.municipalidad_id (from the Liquidacion, not the operation).
-            tipo_liquidacion_id: Filter by liquidacion.tipo_liquidacion_id (from the Liquidacion). REQUIRED.
-            numero_liquidacion: Filter by the type-specific numero field. Requires tipo_liquidacion_id.
+            tipo_liquidacion_codigo: Filter by liquidacion.tipo_liquidacion.codigo (from the Liquidacion). REQUIRED.
+            numero_liquidacion: Filter by the type-specific numero field. Requires tipo_liquidacion_codigo.
 
         Returns:
             Tuple of (list of DetalleDelegadoRowResult, total count).
@@ -1164,7 +1164,7 @@ class FinanzasOrchestrator:
             periodo=periodo,
             mes=mes,
             municipalidad_id=municipalidad_id,
-            tipo_liquidacion_id=tipo_liquidacion_id,
+            tipo_liquidacion_codigo=tipo_liquidacion_codigo,
             numero_liquidacion=numero_liquidacion,
         )
 

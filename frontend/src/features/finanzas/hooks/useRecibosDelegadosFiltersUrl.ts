@@ -15,37 +15,38 @@ export function useRecibosDelegadosFiltersUrl(): {
   filtros: {
     delegado_cip?: string;
     municipalidad_id?: string;
-    periodo?: string;
-    mes?: string;
+    periodo?: number;
+    mes?: number;
   };
   setFiltros: (next: {
     delegado_cip?: string;
     municipalidad_id?: string;
-    periodo?: string;
-    mes?: string;
+    periodo?: number;
+    mes?: number;
   }) => void;
   clearFiltros: () => void;
 } {
   const { filtros, setFiltros, clearFiltros } = useUrlFilters<{
     delegado_cip?: string;
     municipalidad_id?: string;
-    periodo?: string;
-    mes?: string;
+    periodo?: number;
+    mes?: number;
   }>({
     config: [
       { filterKey: "delegado_cip", paramKey: "delegado_cip" },
       { filterKey: "municipalidad_id", paramKey: "municipalidad_id" },
-      { filterKey: "periodo", paramKey: "periodo" },
-      { filterKey: "mes", paramKey: "mes" },
+      { filterKey: "periodo", paramKey: "periodo", parse: (v) => parseInt(v, 10) },
+      { filterKey: "mes", paramKey: "mes", parse: (v) => parseInt(v, 10) },
     ],
+    numberKeys: new Set(["periodo", "mes"]),
   });
 
   return {
     filtros: filtros as {
       delegado_cip?: string;
       municipalidad_id?: string;
-      periodo?: string;
-      mes?: string;
+      periodo?: number;
+      mes?: number;
     },
     setFiltros,
     clearFiltros,

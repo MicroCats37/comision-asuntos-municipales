@@ -223,7 +223,7 @@ export function LiquidacionImpactoVialFormModal(
           <CotizacionPorcentajeSmartField
             methods={methods}
             tipo="impacto-vial"
-            {...(isEdit || isRevisionLike
+            {...(isEdit
               ? {
                   mode: "edit",
                   liquidacionId: sourceItem?.liquidacion_general.id,

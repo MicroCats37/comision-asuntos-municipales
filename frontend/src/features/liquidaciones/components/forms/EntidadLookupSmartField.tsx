@@ -83,6 +83,7 @@ export function EntidadLookupField({
     name: fn.tipoDocumento,
     control,
     defaultValue: "",
+    rules: { required: "Selecciona el tipo de documento" },
   });
   const numDocCtrl = useController({
     name: fn.numeroDocumento,
@@ -253,6 +254,11 @@ export function EntidadLookupField({
                 </div>
               ))}
             </RadioGroup>
+            {tipoDocCtrl.fieldState.error && (
+              <p className="text-sm text-destructive font-medium mt-2">
+                {tipoDocCtrl.fieldState.error.message}
+              </p>
+            )}
           </div>
 
           {/* ── Número de Documento + Buscar (único input, no duplicado) ──────── */}
