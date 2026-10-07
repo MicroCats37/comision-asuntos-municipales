@@ -70,7 +70,7 @@ class DelegadoMinimalOut(BaseSchema):
     """Delegado + PerfilIngeniero minimal for list item."""
     id: uuid.UUID
     cip: str
-    dni: str
+    dni: Optional[str] = None
     nombre_completo: str
 
 

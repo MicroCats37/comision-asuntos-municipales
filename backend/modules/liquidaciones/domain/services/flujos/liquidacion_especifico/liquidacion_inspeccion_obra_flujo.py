@@ -166,6 +166,140 @@ class LiquidacionInspeccionObraFlujo:
             usuario_id=usuario_id,
         )
 
+    @transaction.atomic()
+    def ejecutar_nueva_liquidacion(
+        self,
+        usuario_id: int,
+        data: InspeccionObraNuevaRevisionData,
+        inspector,
+    ) -> InspeccionObraPrimeraRevisionResult:
+        """
+        Crea una IO primera-revision SIN liquidación previa.
+        Entidad y Proyecto se crean desde cero a partir de los datos del usuario.
+        Numero_revision = 1. No requiere liquidacion_previa_id.
+
+        Diferencias respecto a ejecutar_primera_revision_desde_previa:
+        - Entidad y Proyecto se CREAN desde cero (no se heredan de previa).
+        - La especialidad_revision del inspector se resuelve usando INSPECCION_OBRA
+          como tipo de liquidación (los inspectores tienen operaciones registradas
+          con tipo INSPECCION_OBRA para este flujo).
+        """
+        from decimal import Decimal
+
+        # 1. Traer tarifa, UIT y IGV
+        tarifa = self.visitas_core.get_tarifa_por_id(data.liquidacion_especifica.tarifa.tarifa_visitas_id) if data.liquidacion_especifica.tarifa.tarifa_visitas_id else None
+        uit_vigente = self.general_core.get_uit_vigente()
+        igv_vigente = self.general_core.get_igv_vigente()
+
+        # 2. Calcular subtotal (si hay tarifa — legacy CATEGORIA=0 path may have None)
+        if tarifa:
+            subtotal = self.visitas_core.calcular_subtotal_visitas(
+                cantidad_visitas=data.liquidacion_especifica.datos.cantidad_visitas,
+                tarifa=tarifa,
+                uit_vigente=uit_vigente,
+            )
+        else:
+            # Legacy path: subtotal will be 0; caller should handle override via separate path
+            subtotal = Decimal("0")
+
+        # 3. Crear Entidad desde cero
+        gen_data = data.liquidacion_general
+        entidad = self.general_core.create_entidad(
+            tipo_documento=gen_data.proyecto.entidad.tipo_documento,
+            numero_documento=gen_data.proyecto.entidad.numero_documento,
+        )
+
+        # 4. Crear Proyecto desde cero
+        proyecto_data = {
+            "nombre_propietario": gen_data.proyecto.nombre_propietario,
+            "direccion": gen_data.proyecto.direccion,
+            "distrito_id": gen_data.proyecto.distrito_id,
+            "entidad_razon_social": gen_data.proyecto.entidad_razon_social,
+            "entidad_tipo_documento": gen_data.proyecto.entidad.tipo_documento,
+            "entidad_numero_documento": gen_data.proyecto.entidad.numero_documento,
+        }
+        proyecto = self.general_core.create_proyecto(proyecto_data, entidad)
+
+        # 5. Upsert contacto si está presente
+        contacto = None
+        if gen_data.contacto:
+            contacto = self.general_core.upsert_contacto(
+                gen_data.contacto.model_dump()
+                if hasattr(gen_data.contacto, "model_dump")
+                else gen_data.contacto.__dict__
+            )
+
+        # 6. Crear LiquidacionGeneral con totales (quote-first pattern)
+        from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
+        from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
+        from modules.liquidaciones.domain.models.inspector import LiquidacionInspector
+
+        total = subtotal * (1 + igv_vigente.valor)
+
+        liquidacion_general = self.general_core.create_liquidacion_general(
+            municipalidad_id=str(gen_data.municipalidad_id),
+            expediente=gen_data.expediente,
+            observacion=gen_data.observacion,
+            retencion=gen_data.retencion,
+            proyecto=proyecto,
+            tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.INSPECCION_OBRA),
+            numero_revision=1,
+            denominacion_de_proyecto=gen_data.denominacion_de_proyecto,
+            contacto=contacto,
+            sub_total=subtotal,
+            total=total,
+            igv_id=igv_vigente,
+            uit_id=uit_vigente,
+            usuario_creador_id=usuario_id,
+        )
+
+        # 7. Crear Tipo: LiquidacionPorCategoriaVisitas
+        liquidacion_visitas = self.visitas_core.crear_liquidacion_tipo_visitas(
+            liquidacion_general=liquidacion_general,
+            data=data.liquidacion_especifica,
+        )
+
+        # 8. Crear Específico: LiquidacionInspeccionObra
+        liquidacion_io = LiquidacionInspeccionObra.objects.create(
+            liquidacion=liquidacion_general,
+        )
+
+        # 9. Crear LiquidacionInspector
+        # La especialidad_revision se resuelve desde la operación del inspector con tipo INSPECCION_OBRA
+        from modules.liquidaciones.domain.models.inspector import InspectorOperacion
+
+        especialidad_revision = (
+            InspectorOperacion.objects
+            .filter(
+                inspector=inspector,
+                tipo_liquidacion__codigo=TipoLiquidacion.INSPECCION_OBRA,
+            )
+            .values_list("especialidad_revision_id", flat=True)
+            .first()
+        )
+        if not especialidad_revision:
+            raise HttpError(
+                400,
+                f"El inspector no tiene una operación vigente con especialidad "
+                f"para el tipo '{TipoLiquidacion.INSPECCION_OBRA}'.",
+            )
+        LiquidacionInspector.objects.create(
+            liquidacion=liquidacion_visitas,
+            inspector=inspector,
+            especialidad_revision_id=especialidad_revision,
+        )
+
+        # 10. Mapear a Result
+        liquidacion_general.refresh_from_db()
+        return self._build_result_from_orm(
+            liquidacion_general=liquidacion_general,
+            liquidacion_io=liquidacion_io,
+            liquidacion_visitas=liquidacion_visitas,
+            proyecto=proyecto,
+            entidad=entidad,
+            usuario_id=usuario_id,
+        )
+
     def _build_result_from_orm(
         self,
         liquidacion_general,

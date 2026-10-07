@@ -28,7 +28,7 @@ export const TipoLiquidacionMinimalSchema = z.object({
 export const DelegadoMinimalSchema = z.object({
   id: z.string(),
   cip: z.string(),
-  dni: z.string(),
+  dni: z.string().nullable(),
   nombre_completo: z.string(),
 });
 

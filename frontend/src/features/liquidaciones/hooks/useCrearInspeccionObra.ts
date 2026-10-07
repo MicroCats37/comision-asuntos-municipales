@@ -2,7 +2,7 @@
  * Hook para crear liquidaciones de Inspección de Obra (primera revisión).
  * Usa useLiquidacionesCreateMutation (cache manual reactivo) + useApiCreate interno.
  *
- * Endpoint: POST /liquidaciones/inspeccion-obra/primera-revision
+ * Endpoint: POST /liquidaciones/inspeccion-obra/nueva-liquidacion
  */
 import { useMemo } from "react";
 import type { VisitasFormData } from "../schemas/liquidacion-visitas-form.schema";
@@ -14,7 +14,11 @@ const LIST_KEY = ["liquidaciones", "inspeccion-obra"] as const;
 export function useCrearInspeccionObra() {
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_general: unknown;
-    liquidacion_especifica: unknown;
+    liquidacion_especifica: {
+      datos: { cantidad_visitas: number; categoria: string };
+      tarifa: { tarifa_visitas_id: string | undefined };
+      inspector_id: string | undefined;
+    };
   }>({
     tipoQueryKey: LIST_KEY,
     url: `${BASE_URL}/nueva-liquidacion`,
@@ -43,15 +47,16 @@ export function useCrearInspeccionObra() {
                 numero_documento: rest.entidad_numero_documento,
                 razon_social: rest.entidad_razon_social,
               },
-              ...(rest.contacto ? { contacto: rest.contacto } : {}),
             },
+            ...(rest.contacto ? { contacto: rest.contacto } : {}),
           },
           liquidacion_especifica: {
             datos: {
               cantidad_visitas,
               categoria,
             },
-            tarifas: tarifa_visitas_id ? [{ tarifa_visitas_id }] : [],
+            tarifa: { tarifa_visitas_id },
+            inspector_id: rest.inspector_id,
           },
         });
       },
@@ -73,15 +78,16 @@ export function useCrearInspeccionObra() {
                 numero_documento: rest.entidad_numero_documento,
                 razon_social: rest.entidad_razon_social,
               },
-              ...(rest.contacto ? { contacto: rest.contacto } : {}),
             },
+            ...(rest.contacto ? { contacto: rest.contacto } : {}),
           },
           liquidacion_especifica: {
             datos: {
               cantidad_visitas,
               categoria,
             },
-            tarifas: tarifa_visitas_id ? [{ tarifa_visitas_id }] : [],
+            tarifa: { tarifa_visitas_id },
+            inspector_id: rest.inspector_id,
           },
         });
       },

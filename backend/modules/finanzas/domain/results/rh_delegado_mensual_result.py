@@ -5,6 +5,7 @@ Results heredan de pydantic.BaseModel (no BaseSchema).
 """
 import uuid
 from decimal import Decimal
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -67,7 +68,7 @@ class DelegadoRHMinimalResult(BaseModel):
     id: str
     nombre_completo: str
     cip: str
-    dni: str
+    dni: Optional[str] = None
 
 
 class RHDelegadoVariablesCalculoResult(BaseModel):

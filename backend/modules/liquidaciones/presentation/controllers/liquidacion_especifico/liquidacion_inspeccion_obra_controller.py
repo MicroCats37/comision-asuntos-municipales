@@ -16,6 +16,7 @@ from modules.liquidaciones.domain.services.core.auth.auth_core_service import (
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_inspeccion_obra_schemas import (
     LiquidacionInspeccionObraOutput,
     LiquidacionInspeccionObraNuevaRevisionInput,
+    LiquidacionInspeccionObraNuevaLiquidacionInput,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_patch_visitas_schemas import (
     LiquidacionPatchVisitasIn,
@@ -213,6 +214,25 @@ class LiquidacionInspeccionObraController:
         usuario_id = self.auth_core_service.get_authenticated_user_id(request)
 
         domain_result = self.orchestrator.crear_primera_revision_desde_previa_proceso(
+            usuario_id=usuario_id,
+            payload_in=payload,
+        )
+
+        result = self.presenter.present_primera_revision(domain_result)
+        return success_response(result, message="Inspección de obra creada correctamente.")
+
+    @route.post(
+        "/nueva-liquidacion",
+        response={200: ApiResponse[LiquidacionInspeccionObraOutput]},
+    )
+    def crear_nueva_liquidacion(self, request, payload: LiquidacionInspeccionObraNuevaLiquidacionInput):
+        """
+        Crea una Inspección de Obra primera-revision SIN liquidación previa.
+        Entidad y Proyecto se crean desde cero a partir de los datos del usuario.
+        """
+        usuario_id = self.auth_core_service.get_authenticated_user_id(request)
+
+        domain_result = self.orchestrator.crear_nueva_liquidacion_proceso(
             usuario_id=usuario_id,
             payload_in=payload,
         )

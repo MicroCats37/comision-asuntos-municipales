@@ -1,5 +1,5 @@
 """
-Especifico Inspección de Obra schemas — Solo el payload final de primera-revisión.
+Especifico Inspección de Obra schemas — payloads de primera-revisión.
 """
 import uuid
 from typing import Optional, Union
@@ -9,6 +9,7 @@ from ninja import Field
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
     ContactoInlineSchema,
     LiquidacionGeneralOutput,
+    LiquidacionGeneralRevisionIn,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas import (
     LiquidacionTipoOutput,
@@ -68,6 +69,20 @@ class LiquidacionInspeccionObraNuevaRevisionEspecificaIn(BaseSchema):
     datos: LiquidacionInspeccionObraNuevaRevisionDatosIn
     tarifa: LiquidacionInspeccionObraNuevaRevisionTarifaIn
     inspector_id: uuid.UUID = Field(..., description="ID del inspector asignado")
+
+
+class LiquidacionInspeccionObraNuevaLiquidacionInput(BaseSchema):
+    """
+    Payload de entrada para crear una IO primera-revision SIN liquidación previa.
+    Entidad y Proyecto se crean desde cero a partir de los datos del usuario.
+    No requiere liquidacion_previa_id.
+    """
+    liquidacion_general: LiquidacionGeneralRevisionIn = Field(
+        ..., description="Datos generales con proyecto, entidad y municipalidad desde entrada del usuario"
+    )
+    liquidacion_especifica: LiquidacionInspeccionObraNuevaRevisionEspecificaIn = Field(
+        ..., description="Datos específicos IO: datos, tarifa e inspector_id"
+    )
 
 
 class LiquidacionInspeccionObraNuevaRevisionInput(BaseSchema):

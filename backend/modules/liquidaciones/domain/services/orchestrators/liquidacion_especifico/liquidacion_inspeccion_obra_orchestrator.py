@@ -344,6 +344,102 @@ class LiquidacionInspeccionObraOrchestrator:
             inspector=inspector,
         )
 
+    def crear_nueva_liquidacion_proceso(
+        self,
+        usuario_id: int,
+        payload_in,
+    ) -> InspeccionObraPrimeraRevisionResult:
+        """
+        Crea una IO primera-revision SIN liquidación previa.
+        Entidad y Proyecto se crean desde cero a partir de los datos del usuario.
+
+        Validations:
+        - UIT and IGV are configured
+        - tariff exists (if provided)
+        - inspector exists
+        """
+        from modules.liquidaciones.domain.constants import TipoLiquidacion
+
+        # Step 1: Pre-validate UIT and IGV
+        uit_vigente = self.general_core.get_uit_vigente()
+        if not uit_vigente:
+            raise HttpError(404, "No hay UIT vigente configurada.")
+
+        igv_vigente = self.general_core.get_igv_vigente()
+        if not igv_vigente:
+            raise HttpError(404, "No hay IGV vigente configurado.")
+
+        # Step 2: Pre-validate inspector exists
+        from modules.liquidaciones.domain.models.inspector import Inspector
+        try:
+            inspector = Inspector.objects.get(id=payload_in.liquidacion_especifica.inspector_id)
+        except ObjectDoesNotExist:
+            raise HttpError(404, "No se encontró el inspector.")
+
+        # Step 3: Pre-validate tariff (optional for legacy CATEGORIA=0 path)
+        tarifa_visitas_id = str(payload_in.liquidacion_especifica.tarifa.tarifa_visitas_id) if payload_in.liquidacion_especifica.tarifa.tarifa_visitas_id else None
+        tarifa = None
+        if tarifa_visitas_id:
+            tarifa = self.visitas_core.get_tarifa_por_id(tarifa_visitas_id)
+            if not tarifa:
+                raise HttpError(404, "No se encontró una tarifa válida.")
+
+        # Step 4: Build domain data from user input (entidad/proyecto created from scratch in flujo)
+        gen_data = payload_in.liquidacion_especifica
+        visitas_data = LiquidacionCategoriaVisitasData(
+            datos=DatosVisitas(
+                cantidad_visitas=gen_data.datos.cantidad_visitas,
+                categoria=gen_data.datos.categoria,
+            ),
+            tarifa=TarifaVisitas(
+                tarifa_visitas_id=tarifa_visitas_id
+            ) if tarifa_visitas_id else TarifaVisitas(tarifa_visitas_id=None),
+        )
+
+        # Build LiquidacionGeneralData from the user-provided liquidacion_general
+        lg_in = payload_in.liquidacion_general
+        domain_data = InspeccionObraNuevaRevisionData(
+            liquidacion_general=LiquidacionGeneralData(
+                municipalidad_id=str(lg_in.municipalidad_id),
+                expediente=lg_in.expediente,
+                observacion=lg_in.observacion,
+                retencion=getattr(lg_in, "retencion", False),
+                denominacion_de_proyecto=lg_in.denominacion_de_proyecto,
+                proyecto=ProyectoData(
+                    nombre_propietario=lg_in.proyecto.nombre_propietario,
+                    direccion=lg_in.proyecto.direccion,
+                    distrito_id=str(lg_in.proyecto.distrito_id) if lg_in.proyecto.distrito_id else None,
+                    entidad_razon_social=getattr(lg_in.proyecto.entidad, "razon_social", None),
+                    entidad=EntidadData(
+                        tipo_documento=getattr(lg_in.proyecto.entidad, "tipo_documento", None) or "",
+                        numero_documento=getattr(lg_in.proyecto.entidad, "numero_documento", None) or "",
+                    ),
+                ),
+                contacto=(
+                    ContactoData(
+                        nombres=lg_in.contacto.nombres,
+                        apellidos=lg_in.contacto.apellidos,
+                        dni=lg_in.contacto.dni,
+                        cargo=lg_in.contacto.cargo,
+                        telefono=lg_in.contacto.telefono,
+                        celular=lg_in.contacto.celular,
+                        email=lg_in.contacto.email,
+                    )
+                    if lg_in.contacto
+                    else None
+                ),
+            ),
+            liquidacion_especifica=visitas_data,
+            inspector_id=payload_in.liquidacion_especifica.inspector_id,
+        )
+
+        # Step 5: Execute in flujo
+        return self.flujo.ejecutar_nueva_liquidacion(
+            usuario_id=usuario_id,
+            data=domain_data,
+            inspector=inspector,
+        )
+
     def recalcular_visitas(
         self,
         liquidacion_id: uuid.UUID,

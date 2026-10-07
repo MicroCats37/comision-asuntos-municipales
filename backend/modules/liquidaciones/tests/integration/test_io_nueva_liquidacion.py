@@ -1,6 +1,6 @@
 """
 Integration tests for the Inspeccion Obra /nueva-liquidacion endpoint
-(IO desde una liquidación previa — el único flujo de creación de IO).
+(IO sin liquidación previa).
 
 Tests use Ninja's TestClient (not Django's Client) for proper async handling.
 All tests use @pytest.mark.django_db for database access.
@@ -157,11 +157,10 @@ def liquidacion_previa(db, municipalidad, create_user, tipo_edificacion, proyect
 
 
 @pytest.fixture
-def inspector(db, tipo_edificacion):
+def inspector(db, tipo_inspeccion_obra):
     """Crea un inspector con operación y especialidad para asignar a la IO.
 
-    La operación usa el tipo de la PREVIA (EDIFICACION) — los inspectores se
-    registran con el tipo del trámite que revisan, no con INSPECCION_OBRA.
+    La liquidación sin previa usa una operación del inspector para INSPECCION_OBRA.
     """
     from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
     from modules.liquidaciones.domain.models.inspector import InspectorOperacion
@@ -180,6 +179,33 @@ def inspector(db, tipo_edificacion):
     )
     InspectorOperacion.objects.create(
         inspector=inspector,
+        tipo_liquidacion=tipo_inspeccion_obra,
+        categoria="1",
+        especialidad_revision=esp_rev,
+    )
+    return inspector
+
+
+@pytest.fixture
+def inspector_edificacion(db, tipo_edificacion):
+    """Inspector válido para una IO relacionada con previa de Edificación."""
+    from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
+    from modules.liquidaciones.domain.models.inspector import InspectorOperacion
+
+    perfil = PerfilIngeniero.objects.create(
+        cip="445566",
+        dni="44556677",
+        nombres="Inspector",
+        apellido_paterno="Edificacion",
+        apellido_materno="Test",
+        correo_personal="inspector_edificacion_io_test@example.com",
+    )
+    inspector = Inspector.objects.create(perfil_ingeniero=perfil)
+    esp_rev = EspecialidadRevision.objects.create(
+        slug="edificacion", nombre="Edificación"
+    )
+    InspectorOperacion.objects.create(
+        inspector=inspector,
         tipo_liquidacion=tipo_edificacion,
         categoria="1",
         especialidad_revision=esp_rev,
@@ -188,9 +214,35 @@ def inspector(db, tipo_edificacion):
 
 
 @pytest.fixture
-def valid_payload(liquidacion_previa, valid_tarifa_visitas_id, inspector):
+def valid_payload(valid_municipalidad_id, valid_distrito_id, valid_tarifa_visitas_id, inspector):
     return {
-        "liquidacion_previa_id": str(liquidacion_previa.id),
+        "liquidacion_general": {
+            "municipalidad_id": valid_municipalidad_id,
+            "expediente": "EXP-IO-2024-001",
+            "observacion": "Observación IO sin previa",
+            "retencion": False,
+            "denominacion_de_proyecto": "Proyecto IO sin previa",
+            "proyecto": {
+                "nombre_propietario": "Propietario IO",
+                "direccion": "Av. Prueba 123",
+                "urbanizacion": "Urb. Test",
+                "distrito_id": valid_distrito_id,
+                "entidad": {
+                    "tipo_documento": "RUC",
+                    "numero_documento": "20123456789",
+                    "razon_social": "Entidad IO Test",
+                },
+            },
+            "contacto": {
+                "nombres": "Contacto",
+                "apellidos": "IO",
+                "dni": "12345678",
+                "cargo": "Responsable",
+                "telefono": "555-1234",
+                "celular": "999888777",
+                "email": "contacto.io@example.com",
+            },
+        },
         "liquidacion_especifica": {
             "datos": {
                 "cantidad_visitas": 3,
@@ -204,12 +256,29 @@ def valid_payload(liquidacion_previa, valid_tarifa_visitas_id, inspector):
     }
 
 
+@pytest.fixture
+def relacionada_payload(liquidacion_previa, valid_tarifa_visitas_id, inspector_edificacion):
+    return {
+        "liquidacion_previa_id": str(liquidacion_previa.id),
+        "liquidacion_especifica": {
+            "datos": {
+                "cantidad_visitas": 2,
+                "categoria": "INSPECCION",
+            },
+            "tarifa": {
+                "tarifa_visitas_id": valid_tarifa_visitas_id,
+            },
+            "inspector_id": str(inspector_edificacion.id),
+        },
+    }
+
+
 @pytest.mark.django_db
 def test_io_crear_primera_revision_success(
-    auth_client, valid_payload, liquidacion_previa, uit_vigente, igv_vigente
+    auth_client, valid_payload, uit_vigente, igv_vigente
 ):
     """
-    Test successful creation of a LiquidacionInspeccionObra desde una previa.
+    Test successful creation of a LiquidacionInspeccionObra sin previa.
     """
     response = auth_client.post(
         "/liquidaciones/inspeccion-obra/nueva-liquidacion",
@@ -222,11 +291,12 @@ def test_io_crear_primera_revision_success(
 
     result = data["data"]
 
-    # Verify General Structure (hereda expediente de la previa)
+    # Verify General Structure (uses user-provided wrapper data)
     general = result["liquidacion_general"]
-    assert general["expediente"] == liquidacion_previa.expediente
-    assert general["denominacion_de_proyecto"] == liquidacion_previa.denominacion_de_proyecto
+    assert general["expediente"] == valid_payload["liquidacion_general"]["expediente"]
+    assert general["denominacion_de_proyecto"] == valid_payload["liquidacion_general"]["denominacion_de_proyecto"]
     liquidacion_io = LiquidacionGeneral.objects.get(id=general["id"])
+    assert str(liquidacion_io.municipalidad_id) == valid_payload["liquidacion_general"]["municipalidad_id"]
 
     # Verify Specific Structure (identity wrapper after semantic fix)
     especifica = result["liquidacion_especifica"]
@@ -270,3 +340,19 @@ def test_io_crear_primera_revision_invalid_tarifa(auth_client, valid_payload, ui
 
     # Should raise a 400 or 404 HttpError handled by Ninja exception handler
     assert response.status_code in [400, 404]
+
+
+@pytest.mark.django_db
+def test_io_relacionada_desde_previa_sigue_funcionando(
+    auth_client, relacionada_payload, liquidacion_previa, uit_vigente, igv_vigente
+):
+    response = auth_client.post(
+        "/liquidaciones/inspeccion-obra/relacionada",
+        json=relacionada_payload,
+    )
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code} - {response.content}"
+    data = response.json()["data"]
+    general = data["liquidacion_general"]
+    assert general["expediente"] == liquidacion_previa.expediente
+    assert general["denominacion_de_proyecto"] == liquidacion_previa.denominacion_de_proyecto
