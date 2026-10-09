@@ -260,3 +260,123 @@ def test_e2e_inspeccion_obra_desde_previa_con_inspector(
     assert LiquidacionInspector.objects.filter(
         liquidacion_id=tipo_id, inspector=inspector
     ).exists()
+
+
+@pytest.mark.django_db
+def test_e2e_inspeccion_obra_nueva_liquidacion_sin_previa_con_inspector_operacion(
+    auth_client, municipalidad, igv_vigente, uit_vigente,
+    tarifa_visitas_io, ubigeo_distrito, tipo_edificacion, proyecto
+):
+    """
+    E2E flow: IO standalone /nueva-liquidacion (SIN liquidación previa)
+    con inspector que tiene operación EDIFICACION (NO INSPECCION_OBRA).
+
+    Este test prueba que el fix funciona: el endpoint YA NO requiere que el
+    inspector tenga una operación de tipo INSPECCION_OBRA. En cambio, acepta
+    inspector_operacion_id directamente (obtenido de /seleccionables) y deriva
+    especialidad_revision desde esa operación.
+
+    El inspector se registra con tipo EDIFICACION (típico en producción), y el
+    endpoint debe aceptar ese inspector sin fallar con error 400.
+    """
+    from modules.liquidaciones.domain.models.inspector import (
+        Inspector,
+        LiquidacionInspector,
+        InspectorOperacion,
+    )
+    from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero, EspecialidadRevision
+
+    esp_rev = EspecialidadRevision.objects.create(
+        slug="estructuras", nombre="Ingeniería de Estructuras"
+    )
+    tipo_hu = TipoLiquidacionModel.objects.get_or_create(
+        codigo="HABILITACION_URBANA", defaults={"nombre": "Habilitación Urbana"}
+    )[0]
+
+    # Crear inspector con operación SOLO de EDIFICACION (no tiene INSPECCION_OBRA)
+    perfil = PerfilIngeniero.objects.create(
+        cip="554433",
+        dni="55443322",
+        nombres="Ingeniero",
+        apellido_paterno="SinPrevia",
+        apellido_materno="Test",
+        correo_personal="sin_previa@test.com",
+    )
+    inspector = Inspector.objects.create(perfil_ingeniero=perfil)
+    inspector_operacion = InspectorOperacion.objects.create(
+        inspector=inspector,
+        tipo_liquidacion=tipo_edificacion,  # Solo EDIFICACION, NO INSPECCION_OBRA
+        categoria="1",
+        especialidad_revision=esp_rev,
+    )
+
+    # Step 1: GET tarifas vigentes
+    response = auth_client.get("/liquidaciones/inspeccion-obra/tarifas/vigentes")
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+    tarifa_id = response.json()["data"]["tarifas"][0]["id"]
+
+    # Step 2: POST /nueva-liquidacion (sin previa) con inspector_operacion_id
+    # El endpoint debe aceptar el inspector aunque no tenga INSPECCION_OBRA
+    payload = {
+        "liquidacion_general": {
+            "municipalidad_id": str(municipalidad.id),
+            "expediente": "EXP-IO-SIN-PREVIA-2024-001",
+            "denominacion_de_proyecto": "Proyecto Test Sin Previa",
+            "proyecto": {
+                "nombre_propietario": "Propietario Test",
+                "direccion": "Av. Test 123",
+                "distrito_id": str(ubigeo_distrito.id),
+                "entidad": {
+                    "tipo_documento": "RUC",
+                    "numero_documento": "20456789012",
+                    "razon_social": "Empresa Test SAC",
+                },
+            },
+            "observacion": "Test de IO sin previa",
+        },
+        "liquidacion_especifica": {
+            "datos": {
+                "cantidad_visitas": 3,
+                "categoria": "INSPECCION",
+            },
+            "tarifa": {
+                "tarifa_visitas_id": str(tarifa_id),
+            },
+            "inspector_id": str(inspector.id),
+            "inspector_operacion_id": str(inspector_operacion.id),
+        },
+    }
+
+    response = auth_client.post(
+        "/liquidaciones/inspeccion-obra/nueva-liquidacion",
+        json=payload,
+    )
+
+    assert response.status_code == 200, \
+        f"Expected 200 (inspector sin INSPECCION_OBRA fue rechazado). " \
+        f"Status={response.status_code}: {response.content}"
+
+    result = response.json()["data"]
+
+    # El inspector debe salir DENTRO de liquidacion_tipo
+    lt = result["liquidacion_tipo"]
+    assert "inspectores" in lt, "liquidacion_tipo should have 'inspectores'"
+    assert len(lt["inspectores"]) == 1, \
+        f"Expected 1 inspector, got {len(lt['inspectores'])}"
+
+    insp_out = lt["inspectores"][0]
+    assert insp_out["inspector_id"] == str(inspector.id)
+    assert insp_out["perfil_ingeniero"]["cip"] == "554433"
+    assert insp_out["especialidad_revision"] == {
+        "id": str(esp_rev.id),
+        "nombre": esp_rev.nombre,
+    }
+
+    # Verificar que la LiquidacionInspector fue creada con la operación correcta
+    tipo_id = result["liquidacion_tipo"]["id"]
+    li = LiquidacionInspector.objects.filter(
+        liquidacion_id=tipo_id, inspector=inspector
+    ).first()
+    assert li is not None, "LiquidacionInspector should be created"
+    assert li.inspector_operacion_id == inspector_operacion.id
+    assert li.especialidad_revision_id == esp_rev.id

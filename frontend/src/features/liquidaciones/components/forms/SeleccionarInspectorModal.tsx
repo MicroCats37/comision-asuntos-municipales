@@ -40,7 +40,7 @@ interface SeleccionarInspectorModalProps {
   categoriaForm?: string | null;
   /** Inspector ya seleccionado (para resaltarlo) */
   selectedId?: string;
-  onSelect: (inspectorId: string, nombreCompleto: string) => void;
+  onSelect: (inspectorId: string, nombreCompleto: string, inspectorOperacionId: string) => void;
 }
 
 export function SeleccionarInspectorModal({
@@ -137,7 +137,7 @@ export function SeleccionarInspectorModal({
   const handleConfirm = useCallback(() => {
     if (!pickedId) return;
     const picked = inspectores.find((i) => i.id === pickedId);
-    onSelect(pickedId, picked?.nombre_completo ?? "");
+    onSelect(pickedId, picked?.nombre_completo ?? "", picked?.inspector_operacion_id ?? "");
     onOpenChange(false);
   }, [pickedId, inspectores, onSelect, onOpenChange]);
 

@@ -13,7 +13,8 @@ Usage:
     pg_prueba pipeline            [--sqlite PATH] [--sqlite-sql PATH] [--final-sql PATH]
                                    [--test-target DSN] [--batch-size N]
                                    [--mode upsert|ignore|insert] [--apply-to-test]
-                                   [--via-docker] [--disable-triggers-for-test-sql]
+                                   [--via-docker] [--truncate-test]
+                                   [--disable-triggers-for-test-sql]
                                    [--disable-triggers-for-final-sql] [--truncate]
                                    [--dry-run]
 """
@@ -127,6 +128,11 @@ class Command(BaseCommand):
         )
         p.add_argument("--apply-to-test", action="store_true", help="Mutate PostgreSQL prueba after generation.")
         p.add_argument("--via-docker", action="store_true", help="When applying, run psql through docker compose.")
+        p.add_argument(
+            "--truncate-test",
+            action="store_true",
+            help="Include TRUNCATE only in the SQLite-generated SQL applied to PostgreSQL prueba.",
+        )
         p.add_argument(
             "--disable-triggers-for-test-sql",
             action="store_true",
@@ -349,7 +355,7 @@ class Command(BaseCommand):
                     "output": sqlite_sql,
                     "mode": options["mode"],
                     "batch_size": 250,
-                    "truncate": options["truncate"],
+                    "truncate": options["truncate"] or options["truncate_test"],
                     "disable_triggers": options["disable_triggers_for_test_sql"],
                 },
             ),

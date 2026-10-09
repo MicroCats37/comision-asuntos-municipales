@@ -7,6 +7,17 @@ from .descuento_inspector_admin import (
     ReciboHonorarioInspectorAdmin,
 )
 from .tasa_delegado_admin import TasaDelegadoAdmin
+from .rh_admin import (
+    DetalleHonorarioDelegadoInline,
+    DetalleHonorarioInspectorInline,
+    ReciboHonorarioDelegadoAdmin,
+    ReciboHonorarioDelegadoMensualAdmin,
+    ReciboHonorarioInspectorMensualAdmin,
+    RegistroPagoInspectorAdmin,
+    RHReparticionEstacionalAdmin,
+    RHReparticionEstacionalDelegadoInline,
+    RHReparticionEstacionalCapituloInline,
+)
 
 __all__ = [
     "IGVAdmin",
@@ -15,4 +26,13 @@ __all__ = [
     "RangoDescuentoInspectorAdmin",
     "ReciboHonorarioInspectorAdmin",
     "TasaDelegadoAdmin",
+    "DetalleHonorarioDelegadoInline",
+    "DetalleHonorarioInspectorInline",
+    "ReciboHonorarioDelegadoAdmin",
+    "ReciboHonorarioDelegadoMensualAdmin",
+    "ReciboHonorarioInspectorMensualAdmin",
+    "RegistroPagoInspectorAdmin",
+    "RHReparticionEstacionalAdmin",
+    "RHReparticionEstacionalDelegadoInline",
+    "RHReparticionEstacionalCapituloInline",
 ]

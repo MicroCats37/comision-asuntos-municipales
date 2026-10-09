@@ -809,6 +809,7 @@ class FinanzasPresenter:
                     id=uuid.UUID(lg.id),
                     expediente=lg.expediente,
                     numero_revision=lg.numero_revision,
+                    numero=lg.numero,
                     municipalidad=(
                         MunicipalidadNestedOut(
                             id=uuid.UUID(lg.municipalidad.id),
@@ -902,6 +903,7 @@ class FinanzasPresenter:
                     id=uuid.UUID(lg.id),
                     expediente=lg.expediente,
                     numero_revision=lg.numero_revision,
+                    numero=lg.numero,
                     nombre_propietario=lg.nombre_propietario,
                     municipalidad=(
                         MunicipalidadNestedOut(
@@ -941,10 +943,13 @@ class FinanzasPresenter:
                         dictamen_revision=ilq.dictamen_revision,
                         fecha_revision=ilq.fecha_revision,
                         fecha_presentacion=ilq.fecha_presentacion,
-                        inspector=InspectorMinimalOut(
-                            id=uuid.UUID(ilq.inspector.id),
-                            cip=ilq.inspector.cip,
-                            nombre_completo=ilq.inspector.nombre_completo,
+                        inspector=(
+                            InspectorMinimalOut(
+                                id=uuid.UUID(ilq.inspector.id),
+                                cip=ilq.inspector.cip,
+                                nombre_completo=ilq.inspector.nombre_completo,
+                            )
+                            if ilq.inspector else None
                         ),
                         liquidacion=lg_insp_out,
                     ),

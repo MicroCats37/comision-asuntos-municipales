@@ -8,7 +8,7 @@ from datetime import date
 from typing import Optional
 
 from decimal import Decimal
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 
 from modules.finanzas.domain.models.impuestos import IGV, UIT
 from modules.finanzas.domain.models.descuento_inspector import (
@@ -1547,6 +1547,22 @@ class FinanzasCoreService:
         Returns:
             Tuple of (list of DetalleHonorarioDelegado, total count).
         """
+        # Stable, cheap ordering: period first, then detail creation time.
+        # Avoid ordering by type-specific liquidacion numero because it adds heavy joins on large lists.
+        NUMERO_PATH_MAP = {
+            "EDIFICACION": "liquidacion_delegado__liquidacion__edificaciones__numero",
+            "HABILITACION_URBANA": "liquidacion_delegado__liquidacion__habilitacion_urbana__numero",
+            "INSPECCION_OBRA": "liquidacion_delegado__liquidacion__inspeccion_obra__numero",
+            "MECANICA_SUELOS": "liquidacion_delegado__liquidacion__mecanica_suelos__numero",
+            "IMPACTO_VIAL": "liquidacion_delegado__liquidacion__impacto_vial__numero",
+            "TALUDES": "liquidacion_delegado__liquidacion__taludes__numero",
+        }
+        order_fields = [
+            "-liquidacion_delegado__periodo",
+            "-liquidacion_delegado__mes",
+            "-created_at",
+            "id",
+        ]
         qs = (
             DetalleHonorarioDelegado.objects
             .select_related(
@@ -1556,7 +1572,7 @@ class FinanzasCoreService:
                 "liquidacion_delegado__liquidacion__municipalidad",
                 "liquidacion_delegado__liquidacion__tipo_liquidacion",
             )
-            .order_by("-liquidacion_delegado__periodo", "-liquidacion_delegado__mes")
+            .order_by(*order_fields)
         )
 
         if delegado_cip:
@@ -1575,21 +1591,6 @@ class FinanzasCoreService:
         # Apply numero_liquidacion filter using type-specific path.
         # Requires tipo_liquidacion_codigo to resolve the correct relation.
         if numero_liquidacion is not None and tipo_liquidacion_codigo is not None:
-            # Map codigo to the specific numero field path
-            # EDIFICACION -> liquidacion_delegado__liquidacion__edificaciones__numero
-            # HABILITACION_URBANA -> liquidacion_delegado__liquidacion__habilitacion_urbana__numero
-            # INSPECCION_OBRA -> liquidacion_delegado__liquidacion__inspeccion_obra__numero
-            # MECANICA_SUELOS -> liquidacion_delegado__liquidacion__mecanica_suelos__numero
-            # IMPACTO_VIAL -> liquidacion_delegado__liquidacion__impacto_vial__numero
-            # TALUDES -> liquidacion_delegado__liquidacion__taludes__numero
-            NUMERO_PATH_MAP = {
-                "EDIFICACION": "liquidacion_delegado__liquidacion__edificaciones__numero",
-                "HABILITACION_URBANA": "liquidacion_delegado__liquidacion__habilitacion_urbana__numero",
-                "INSPECCION_OBRA": "liquidacion_delegado__liquidacion__inspeccion_obra__numero",
-                "MECANICA_SUELOS": "liquidacion_delegado__liquidacion__mecanica_suelos__numero",
-                "IMPACTO_VIAL": "liquidacion_delegado__liquidacion__impacto_vial__numero",
-                "TALUDES": "liquidacion_delegado__liquidacion__taludes__numero",
-            }
             numero_path = NUMERO_PATH_MAP.get(tipo_liquidacion_codigo)
             if numero_path:
                 qs = qs.filter(**{numero_path: numero_liquidacion})
@@ -1608,7 +1609,6 @@ class FinanzasCoreService:
         periodo: int | None = None,
         mes: int | None = None,
         municipalidad_id: uuid.UUID | None = None,
-        tipo_liquidacion_id: uuid.UUID | None = None,
         numero_liquidacion: int | None = None,
     ) -> tuple[list["DetalleHonorarioInspector"], int]:
         """
@@ -1626,15 +1626,16 @@ class FinanzasCoreService:
             inspector_id: Filter by inspector_id (from parent ReciboHonorarioInspectorMensual).
             inspector_cip: Filter by CIP (from recibo_mensual__inspector__perfil_ingeniero__cip).
                 Takes precedence if both inspector_id and inspector_cip are set.
-            periodo: Filter by periodo (from parent ReciboHonorarioInspectorMensual). REQUIRED.
+            periodo: Filter by periodo (from parent ReciboHonorarioInspectorMensual).
             mes: Filter by mes (from parent ReciboHonorarioInspectorMensual).
             municipalidad_id: Filter by liquidacion_por_categoria_visitas.liquidacion_general.municipalidad_id.
-            tipo_liquidacion_id: Filter by liquidacion_por_categoria_visitas.liquidacion_general.tipo_liquidacion_id. REQUIRED.
-            numero_liquidacion: Filter by the type-specific numero field. Requires tipo_liquidacion_id to resolve the correct relation path.
+            numero_liquidacion: Filter by liquidacion_por_categoria_visitas.liquidacion_general.inspeccion_obra.numero.
 
         Returns:
             Tuple of (list of DetalleHonorarioInspector, total count).
         """
+        # Stable, cheap ordering: receipt period first, then detail creation time.
+        # Avoid ordering by IO numero because it adds a heavy join on large lists.
         qs = (
             DetalleHonorarioInspector.objects
             .select_related(
@@ -1643,54 +1644,43 @@ class FinanzasCoreService:
                 "liquidacion_por_categoria_visitas__liquidacion_general__municipalidad",
                 "liquidacion_por_categoria_visitas__liquidacion_general__tipo_liquidacion",
             )
+            .prefetch_related(
+                "liquidacion_por_categoria_visitas__inspectores__inspector__perfil_ingeniero",
+            )
             .order_by(
                 "-recibo_mensual__periodo",
                 "-recibo_mensual__mes",
+                "-created_at",
+                "id",
             )
         )
 
         if inspector_cip:
-            qs = qs.filter(recibo_mensual__inspector__perfil_ingeniero__cip=inspector_cip)
+            qs = qs.filter(
+                Q(recibo_mensual__inspector__perfil_ingeniero__cip=inspector_cip)
+                | Q(liquidacion_por_categoria_visitas__inspectores__inspector__perfil_ingeniero__cip=inspector_cip)
+            ).distinct()
         elif inspector_id is not None:
-            qs = qs.filter(recibo_mensual__inspector_id=inspector_id)
+            qs = qs.filter(
+                Q(recibo_mensual__inspector_id=inspector_id)
+                | Q(liquidacion_por_categoria_visitas__inspectores__inspector_id=inspector_id)
+            ).distinct()
         if periodo is not None:
-            qs = qs.filter(recibo_mensual__periodo=periodo)
+            qs = qs.filter(
+                Q(recibo_mensual__periodo=periodo)
+                | Q(liquidacion_por_categoria_visitas__inspectores__periodo=periodo)
+            ).distinct()
         if mes is not None:
-            qs = qs.filter(recibo_mensual__mes=mes)
+            qs = qs.filter(
+                Q(recibo_mensual__mes=mes)
+                | Q(liquidacion_por_categoria_visitas__inspectores__mes=mes)
+            ).distinct()
         if municipalidad_id is not None:
             qs = qs.filter(liquidacion_por_categoria_visitas__liquidacion_general__municipalidad_id=municipalidad_id)
-        if tipo_liquidacion_id is not None:
-            qs = qs.filter(liquidacion_por_categoria_visitas__liquidacion_general__tipo_liquidacion_id=tipo_liquidacion_id)
-
-        # Apply numero_liquidacion filter using type-specific path.
-        # Requires tipo_liquidacion_id to resolve the correct relation.
-        if numero_liquidacion is not None and tipo_liquidacion_id is not None:
-            # Resolve the tipo liquidacion codigo from the ID to determine the filter path.
-            from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion
-            try:
-                tipo = TipoLiquidacion.objects.filter(id=tipo_liquidacion_id).values("codigo").first()
-            except Exception:
-                tipo = None
-            codigo = tipo.get("codigo") if tipo else None
-            if codigo:
-                # Map codigo to the specific numero field path for inspectors.
-                # EDIF/EDIFICACION -> liquidacion_por_categoria_visitas__liquidacion_general__edificaciones__numero
-                # HU/HABILITACION_URBANA -> liquidacion_por_categoria_visitas__liquidacion_general__habilitacion_urbana__numero
-                # IO/INSPECCION_OBRA -> liquidacion_por_categoria_visitas__liquidacion_general__inspeccion_obra__numero
-                # MECANICA_SUELOS -> liquidacion_por_categoria_visitas__liquidacion_general__mecanica_suelos__numero
-                # IMPACTO_VIAL -> liquidacion_por_categoria_visitas__liquidacion_general__impacto_vial__numero
-                # TALUDES -> liquidacion_por_categoria_visitas__liquidacion_general__taludes__numero
-                NUMERO_INSPECTOR_PATH_MAP = {
-                    "EDIFICACION": "liquidacion_por_categoria_visitas__liquidacion_general__edificaciones__numero",
-                    "HABILITACION_URBANA": "liquidacion_por_categoria_visitas__liquidacion_general__habilitacion_urbana__numero",
-                    "INSPECCION_OBRA": "liquidacion_por_categoria_visitas__liquidacion_general__inspeccion_obra__numero",
-                    "MECANICA_SUELOS": "liquidacion_por_categoria_visitas__liquidacion_general__mecanica_suelos__numero",
-                    "IMPACTO_VIAL": "liquidacion_por_categoria_visitas__liquidacion_general__impacto_vial__numero",
-                    "TALUDES": "liquidacion_por_categoria_visitas__liquidacion_general__taludes__numero",
-                }
-                numero_path = NUMERO_INSPECTOR_PATH_MAP.get(codigo)
-                if numero_path:
-                    qs = qs.filter(**{numero_path: numero_liquidacion})
+        if numero_liquidacion is not None:
+            qs = qs.filter(
+                liquidacion_por_categoria_visitas__liquidacion_general__inspeccion_obra__numero=numero_liquidacion
+            )
 
         total = qs.count()
         offset = (page - 1) * page_size

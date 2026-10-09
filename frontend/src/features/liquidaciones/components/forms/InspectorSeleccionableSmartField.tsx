@@ -60,8 +60,15 @@ export function InspectorSeleccionableSmartField({
   const handleSelect = useCallback(
     (id: string) => {
       inspectorCtrl.field.onChange(id);
+      // Also set inspector_operacion_id from the selected inspector object
+      const inspectorObj = inspectores.find((i) => i.id === id);
+      if (inspectorObj) {
+        methods.setValue("inspector_operacion_id", inspectorObj.inspector_operacion_id, {
+          shouldValidate: true,
+        });
+      }
     },
-    [inspectorCtrl],
+    [inspectorCtrl, inspectores, methods],
   );
 
   // Limpiar inspector si ya no está en la lista de la categoría

@@ -281,12 +281,32 @@ class LiquidacionInspeccionObraOrchestrator:
         if not tarifa:
             raise HttpError(404, "No se encontró una tarifa válida.")
 
-        # Step 4: Pre-validate inspector exists
-        from modules.liquidaciones.domain.models.inspector import Inspector
+        # Step 4: Pre-validate inspector_operacion exists and matches tipo_previo
+        from modules.liquidaciones.domain.models.inspector import InspectorOperacion
         try:
-            inspector = Inspector.objects.get(id=payload_in.liquidacion_especifica.inspector_id)
+            inspector_operacion = InspectorOperacion.objects.get(
+                id=payload_in.liquidacion_especifica.inspector_operacion_id
+            )
         except ObjectDoesNotExist:
-            raise HttpError(404, "No se encontró el inspector.")
+            raise HttpError(404, "No se encontró la operación del inspector.")
+
+        # Validate tipo_liquidacion matches the previous liquidacion type
+        if inspector_operacion.tipo_liquidacion.codigo != tipo_previo:
+            raise HttpError(
+                400,
+                f"El inspector seleccionado no está registrado para el tipo de la "
+                f"liquidación previa. Inspector registrado para: "
+                f"{inspector_operacion.tipo_liquidacion.codigo}, "
+                f"liquidación previa es: {tipo_previo}",
+            )
+
+        # Cross-validate inspector_id if provided
+        inspector_id_input = getattr(payload_in.liquidacion_especifica, "inspector_id", None)
+        if inspector_id_input and inspector_operacion.inspector_id != inspector_id_input:
+            raise HttpError(
+                400,
+                "El inspector_id no coincide con la operación del inspector seleccionada.",
+            )
 
         # Step 5: Build domain data inheriting from previa
         # Entidad and Proyecto are reused from previa (not created new)
@@ -333,15 +353,14 @@ class LiquidacionInspeccionObraOrchestrator:
                 ),
             ),
             liquidacion_especifica=visitas_data,
-            inspector_id=payload_in.liquidacion_especifica.inspector_id,
         )
 
-        # Step 6: Execute in flujo
+        # Step 6: Execute in flujo — pass inspector_operacion for direct derivation
         return self.flujo.ejecutar_primera_revision_desde_previa(
             usuario_id=usuario_id,
             data=domain_data,
             liquidacion_previa=previa,
-            inspector=inspector,
+            inspector_operacion=inspector_operacion,
         )
 
     def crear_nueva_liquidacion_proceso(
@@ -357,6 +376,7 @@ class LiquidacionInspeccionObraOrchestrator:
         - UIT and IGV are configured
         - tariff exists (if provided)
         - inspector exists
+        - inspector_operacion belongs to inspector (if provided)
         """
         from modules.liquidaciones.domain.constants import TipoLiquidacion
 
@@ -369,12 +389,21 @@ class LiquidacionInspeccionObraOrchestrator:
         if not igv_vigente:
             raise HttpError(404, "No hay IGV vigente configurado.")
 
-        # Step 2: Pre-validate inspector exists
-        from modules.liquidaciones.domain.models.inspector import Inspector
+        # Step 2: inspector_operacion_id is now required in schema
+        from modules.liquidaciones.domain.models.inspector import InspectorOperacion
+        inspector_operacion_id = payload_in.liquidacion_especifica.inspector_operacion_id
         try:
-            inspector = Inspector.objects.get(id=payload_in.liquidacion_especifica.inspector_id)
-        except ObjectDoesNotExist:
-            raise HttpError(404, "No se encontró el inspector.")
+            inspector_operacion = InspectorOperacion.objects.get(id=inspector_operacion_id)
+        except InspectorOperacion.DoesNotExist:
+            raise HttpError(404, "No se encontró la operación del inspector.")
+
+        # Cross-validate inspector_id if provided (optional field for backward compat)
+        inspector_id_input = getattr(payload_in.liquidacion_especifica, "inspector_id", None)
+        if inspector_id_input and inspector_operacion.inspector_id != inspector_id_input:
+            raise HttpError(
+                400,
+                "El inspector_id no coincide con la operación del inspector seleccionada.",
+            )
 
         # Step 3: Pre-validate tariff (optional for legacy CATEGORIA=0 path)
         tarifa_visitas_id = str(payload_in.liquidacion_especifica.tarifa.tarifa_visitas_id) if payload_in.liquidacion_especifica.tarifa.tarifa_visitas_id else None
@@ -430,14 +459,14 @@ class LiquidacionInspeccionObraOrchestrator:
                 ),
             ),
             liquidacion_especifica=visitas_data,
-            inspector_id=payload_in.liquidacion_especifica.inspector_id,
         )
 
-        # Step 5: Execute in flujo
+        # Step 5: Execute in flujo — inspector derived from inspector_operacion
         return self.flujo.ejecutar_nueva_liquidacion(
             usuario_id=usuario_id,
             data=domain_data,
-            inspector=inspector,
+            inspector=inspector_operacion.inspector,
+            inspector_operacion=inspector_operacion,
         )
 
     def recalcular_visitas(

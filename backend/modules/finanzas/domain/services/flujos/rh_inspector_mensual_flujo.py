@@ -266,7 +266,7 @@ class RHInspectorMensualCotizarFlujo:
                     inspector.perfil_ingeniero.cip if inspector.perfil_ingeniero else ""
                 ),
                 dni=(
-                    inspector.perfil_ingeniero.dni if inspector.perfil_ingeniero else ""
+                    inspector.perfil_ingeniero.dni if inspector.perfil_ingeniero else None
                 ),
             ),
             periodo=header_periodo,
@@ -612,7 +612,7 @@ class RHInspectorMensualListFlujo:
                 id=str(recibo_mensual.inspector.id),
                 nombre_completo=inspector_perfil.nombre_completo,
                 cip=inspector_perfil.cip or "",
-                dni=inspector_perfil.dni or "",
+                dni=inspector_perfil.dni,
             ),
             totales=RHInspectorMensualTotalesResult(
                 inspecciones_programadas=total_inspecciones_programadas,
@@ -691,7 +691,7 @@ class RHInspectorMensualListFlujo:
             inspector_id=str(inspector.id),
             inspector_nombre=perfil.nombre_completo if perfil else "",
             inspector_cip=perfil.cip if perfil else "",
-            inspector_dni=perfil.dni if perfil else "",
+            inspector_dni=perfil.dni if perfil else None,
             periodo=periodo or "",
             candidatos=candidatos,
             total=len(candidatos),
@@ -783,7 +783,7 @@ class RHInspectorMensualListFlujo:
             inspector_id=str(inspector.id),
             inspector_nombre=perfil.nombre_completo if perfil else "",
             inspector_cip=perfil.cip if perfil else "",
-            inspector_dni=perfil.dni if perfil else "",
+            inspector_dni=perfil.dni if perfil else None,
             periodo=periodo or "",
             items=items,
             total=total,

@@ -7,36 +7,36 @@ Legacy RH rule:
 This command intentionally does NOT use LiquidacionPorcentajeObraDetalle for RH
 legacy. Legacy rounded each RH delegado detail directly and did not redistribute
 leftover cents.
+
+Curation mode (--curate-delegado):
+    Backfill null fields on LiquidacionDelegado from EDIF_ALL.csv DELEGADO slots.
 """
 
-import csv
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import Decimal
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
 from modules.finanzas.domain.models.detalle_honorario_delegado import DetalleHonorarioDelegado
-from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_edificaciones import LiquidacionEdificacion
+from modules.liquidaciones.domain.models.delegado import LiquidacionDelegado
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_edificaciones import (
+    LiquidacionEdificacion,
+)
 
-
-CENT = Decimal("0.01")
-
-
-def _money(value) -> Decimal:
-    if value is None:
-        return Decimal("0.00")
-    try:
-        return Decimal(str(value)).quantize(CENT, rounding=ROUND_HALF_UP)
-    except (InvalidOperation, ValueError):
-        return Decimal("0.00")
-
-
-def _round_money(value: Decimal) -> Decimal:
-    return value.quantize(CENT, rounding=ROUND_HALF_UP)
-
-
-def _diff(actual, expected) -> Decimal:
-    return abs(_money(actual) - expected)
+from .legacy_edif import (
+    curation_report_header,
+    curate_record,
+    extract_slot_fields,
+    money,
+    round_money,
+    money_diff,
+    load_source_csv,
+    write_csv as write_csv_file,
+    format_result_row,
+    SLOT_SPECIALTY_DB_MAP,
+)
+from .legacy_edif import extract_source_values, build_source_compare_row
 
 
 class Command(BaseCommand):
@@ -94,11 +94,20 @@ class Command(BaseCommand):
             action="store_true",
             help="Also repair recoverable shifted field: aporte_codemu <- current fondo_comun.",
         )
+        parser.add_argument(
+            "--curate-delegado",
+            action="store_true",
+            help=(
+                "Curation mode: backfill null fields on LiquidacionDelegado from "
+                "EDIF_ALL.csv DELEGADO slots (PERIODO, MES, FECHAPRES, FECHAREVI, "
+                "NROORDEN, DICTAMEN). Writes CSV report. Use --fix to apply changes."
+            ),
+        )
 
     def handle(self, *args, **options):
-        tolerance = _money(options["tolerance"])
-        sum_tolerance = _money(options["sum_tolerance"])
-        balance_tolerance = _money(options["balance_tolerance"])
+        tolerance = money(options["tolerance"])
+        sum_tolerance = money(options["sum_tolerance"])
+        balance_tolerance = money(options["balance_tolerance"])
         fix_mode = bool(options["fix"])
         fix_all = bool(options["all"])
         repair_shifted = bool(options["repair_shifted_fields"])
@@ -116,7 +125,22 @@ class Command(BaseCommand):
             raise CommandError("--fix requires --numero or --all")
         if fix_mode and fix_all and options["limit"] is not None:
             raise CommandError("--fix --all cannot be combined with --limit")
-        csv_rows_by_numero = self._load_source_csv(source_csv) if source_csv else {}
+        try:
+            csv_rows_by_numero = load_source_csv(source_csv) if source_csv else {}
+        except (FileNotFoundError, ValueError) as e:
+            raise CommandError(str(e))
+
+        # ── Curation mode ──────────────────────────────────────────────────────────
+        curate_mode = bool(options.get("curate_delegado"))
+        if curate_mode:
+            if not source_csv:
+                raise CommandError("--curate-delegado requires --source-csv")
+            self._handle_curate_delegado(
+                source_csv=source_csv,
+                csv_rows_by_numero=csv_rows_by_numero,
+                options=options,
+            )
+            return
 
         qs = (
             LiquidacionEdificacion.objects.filter(liquidacion__legacy=True)
@@ -196,7 +220,7 @@ class Command(BaseCommand):
                 rows.append(self._result_row(edificacion, liquidacion, None, "SIN_DETALLE"))
                 continue
 
-            subtotal = _money(liquidacion.sub_total)
+            subtotal = money(liquidacion.sub_total)
             if subtotal <= 0:
                 invalid += 1
                 for detail in details:
@@ -204,10 +228,10 @@ class Command(BaseCommand):
                 continue
 
             rh_count = len(details)
-            expected_bruto = _round_money(subtotal / Decimal(rh_count))
-            residual = _round_money(subtotal - (expected_bruto * rh_count))
-            actual_sum = _round_money(sum(_money(detail.imp_bruto) for detail in details))
-            expected_sum = _round_money(expected_bruto * rh_count)
+            expected_bruto = round_money(subtotal / Decimal(rh_count))
+            residual = round_money(subtotal - (expected_bruto * rh_count))
+            actual_sum = round_money(sum(money(detail.imp_bruto) for detail in details))
+            expected_sum = round_money(expected_bruto * rh_count)
             sum_diff_vs_subtotal = abs(actual_sum - subtotal)
             sum_diff_vs_legacy = abs(actual_sum - expected_sum)
             if validate_sums:
@@ -237,13 +261,13 @@ class Command(BaseCommand):
                 source_expected = None
                 source_needs_fix = False
                 if validate_balance:
-                    components_sum = _round_money(
-                        _money(detail.renta_cip)
-                        + _money(detail.aporte_codemu)
-                        + _money(detail.fondo_comun)
-                        + _money(detail.neto_honorario)
+                    components_sum = round_money(
+                        money(detail.renta_cip)
+                        + money(detail.aporte_codemu)
+                        + money(detail.fondo_comun)
+                        + money(detail.neto_honorario)
                     )
-                    balance_diff = abs(_money(detail.imp_bruto) - components_sum)
+                    balance_diff = abs(money(detail.imp_bruto) - components_sum)
                     balance_status = "OK" if balance_diff <= balance_tolerance else "MISMATCH"
                     if balance_status == "OK":
                         balance_ok += 1
@@ -258,20 +282,20 @@ class Command(BaseCommand):
                             "expediente": liquidacion.expediente or "",
                             "detalle_id": str(detail.id),
                             "especialidad": getattr(ld.especialidad_revision, "nombre", "") or "",
-                            "imp_bruto": str(_money(detail.imp_bruto)),
-                            "renta_cip": str(_money(detail.renta_cip)),
-                            "aporte_codemu": str(_money(detail.aporte_codemu)),
-                            "fondo_comun": str(_money(detail.fondo_comun)),
-                            "neto_honorario": str(_money(detail.neto_honorario)),
+                            "imp_bruto": str(money(detail.imp_bruto)),
+                            "renta_cip": str(money(detail.renta_cip)),
+                            "aporte_codemu": str(money(detail.aporte_codemu)),
+                            "fondo_comun": str(money(detail.fondo_comun)),
+                            "neto_honorario": str(money(detail.neto_honorario)),
                             "components_sum": str(components_sum),
                             "balance_diff": str(balance_diff),
                         }
                     )
 
                 if csv_row is not None:
-                    source_expected = self._source_values_for_detail(csv_row, detail)
+                    source_expected = extract_source_values(csv_row)
                     source_needs_fix = any(
-                        _diff(getattr(detail, field_name), expected_value) > tolerance
+                        money_diff(getattr(detail, field_name), expected_value) > tolerance
                         for field_name, expected_value in {
                             "imp_bruto": source_expected["imp_bruto"],
                             "renta_cip": source_expected["renta_cip"],
@@ -281,14 +305,14 @@ class Command(BaseCommand):
                         }.items()
                     )
                     source_rows.append(
-                        self._source_compare_row(edificacion, liquidacion, detail, source_expected)
+                        build_source_compare_row(edificacion, liquidacion, detail, source_expected)
                     )
 
                 bad_fields = []
-                if _diff(detail.imp_bruto, expected_bruto) > tolerance:
+                if money_diff(detail.imp_bruto, expected_bruto) > tolerance:
                     bad_fields.append("imp_bruto")
-                recovered_aporte = _money(detail.fondo_comun)
-                if repair_shifted and _diff(detail.aporte_codemu, recovered_aporte) > tolerance:
+                recovered_aporte = money(detail.fondo_comun)
+                if repair_shifted and money_diff(detail.aporte_codemu, recovered_aporte) > tolerance:
                     bad_fields.append("aporte_codemu_shifted")
 
                 status = "OK" if not bad_fields else "MISMATCH"
@@ -322,7 +346,7 @@ class Command(BaseCommand):
                             "neto_honorario": source_expected["neto_honorario"],
                         }
                         for field_name, expected_value in source_field_map.items():
-                            if _diff(getattr(detail, field_name), expected_value) > tolerance:
+                            if money_diff(getattr(detail, field_name), expected_value) > tolerance:
                                 setattr(detail, field_name, expected_value)
                                 update_fields.append(field_name)
                                 notes.append(f"{field_name} -> {expected_value}")
@@ -342,16 +366,16 @@ class Command(BaseCommand):
                         self.stdout.write(self.style.WARNING(f"  Fixed {detail.id}: {', '.join(notes)}"))
 
         if options["csv_output"]:
-            self._write_csv(Path(options["csv_output"]), rows)
+            write_csv_file(Path(options["csv_output"]), rows)
             if validate_sums:
                 sum_path = Path(options["csv_output"])
-                self._write_csv(sum_path.with_name(f"{sum_path.stem}_sumas{sum_path.suffix}"), sum_rows)
+                write_csv_file(sum_path.with_name(f"{sum_path.stem}_sumas{sum_path.suffix}"), sum_rows)
             if validate_balance:
                 balance_path = Path(options["csv_output"])
-                self._write_csv(balance_path.with_name(f"{balance_path.stem}_balance{balance_path.suffix}"), balance_rows)
+                write_csv_file(balance_path.with_name(f"{balance_path.stem}_balance{balance_path.suffix}"), balance_rows)
             if source_csv:
                 source_path = Path(options["csv_output"])
-                self._write_csv(source_path.with_name(f"{source_path.stem}_source{source_path.suffix}"), source_rows)
+                write_csv_file(source_path.with_name(f"{source_path.stem}_source{source_path.suffix}"), source_rows)
 
         printed = 0
         for row in rows:
@@ -360,7 +384,7 @@ class Command(BaseCommand):
             style = self.style.SUCCESS if row["status"] == "OK" else self.style.ERROR
             if row["status"] not in {"OK", "MISMATCH"}:
                 style = self.style.WARNING
-            self.stdout.write(style(self._format_row(row)))
+            self.stdout.write(style(format_result_row(row)))
             printed += 1
 
         if validate_sums:
@@ -442,103 +466,160 @@ class Command(BaseCommand):
             "liquidacion_id": str(liquidacion.id),
             "expediente": liquidacion.expediente or "",
             "fecha_registro": liquidacion.fecha_registro.date().isoformat() if liquidacion.fecha_registro else "",
-            "subtotal": str(_money(liquidacion.sub_total)),
+            "subtotal": str(money(liquidacion.sub_total)),
             "rh_detail_count": rh_count,
             "expected_imp_bruto_legacy": str(expected_bruto or ""),
             "residual_legacy_rounding": str(residual or ""),
             "detalle_id": str(detail.id) if detail else "",
             "especialidad": especialidad,
             "delegado": delegado,
-            "actual_imp_bruto": str(_money(detail.imp_bruto)) if detail else "",
-            "actual_renta_cip": str(_money(detail.renta_cip)) if detail else "",
-            "actual_aporte_codemu": str(_money(detail.aporte_codemu)) if detail else "",
-            "actual_fondo_comun": str(_money(detail.fondo_comun)) if detail else "",
-            "actual_neto_honorario": str(_money(detail.neto_honorario)) if detail else "",
+            "actual_imp_bruto": str(money(detail.imp_bruto)) if detail else "",
+            "actual_renta_cip": str(money(detail.renta_cip)) if detail else "",
+            "actual_aporte_codemu": str(money(detail.aporte_codemu)) if detail else "",
+            "actual_fondo_comun": str(money(detail.fondo_comun)) if detail else "",
+            "actual_neto_honorario": str(money(detail.neto_honorario)) if detail else "",
             "bad_fields": bad_fields,
         }
 
-    def _format_row(self, row):
-        base = (
-            f"{row['status']} numero={row['numero']} exp={row['expediente']} "
-            f"rh_count={row['rh_detail_count']} esp={row['especialidad']} bad={row['bad_fields'] or '-'}"
+    # ── Curation mode ────────────────────────────────────────────────────────────
+
+    def _handle_curate_delegado(self, source_csv, csv_rows_by_numero, options):
+        """
+        Curation mode: backfill null fields on LiquidacionDelegado from EDIF_ALL.csv.
+
+        Curation rules:
+            FILLED   — DB is null/empty and CSV has a valid parsed value
+            CONFLICT — DB has a value and CSV has a different value (never overwrites)
+            SKIP     — DB has a value matching CSV, or both are null
+        """
+        fix_mode = bool(options.get("fix"))
+        limit = options.get("limit")
+        numero_filter = options.get("numero")
+        expediente_filter = options.get("expediente")
+        csv_output = options.get("csv_output")
+        progress_every = int(options.get("progress_every", 500) or 0)
+
+        if not fix_mode:
+            self.stdout.write(self.style.WARNING("=== CURATION DRY RUN (no --fix passed) ==="))
+        else:
+            self.stdout.write(self.style.WARNING("=== CURATION FIX MODE ==="))
+
+        # Build slot_num -> especialidad_nombre map (DB canonical names)
+        slot_to_specialty = {slot: name for slot, name in SLOT_SPECIALTY_DB_MAP.items()}
+        specialty_to_slot = {name: slot for slot, name in SLOT_SPECIALTY_DB_MAP.items()}
+
+        # Pre-fetch EspecialidadRevision objects by nombre
+        specialty_qs = EspecialidadRevision.objects.filter(
+            nombre__in=list(slot_to_specialty.values())
         )
-        if row["status"] == "MISMATCH":
-            return f"{base} | bruto {row['actual_imp_bruto']}->{row['expected_imp_bruto_legacy']}"
-        return base
+        specialty_by_nombre = {s.nombre: s for s in specialty_qs}
 
-    def _write_csv(self, path: Path, rows: list[dict]):
-        if path.parent and not path.parent.exists():
-            path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w", newline="", encoding="utf-8-sig") as file:
-            writer = csv.DictWriter(file, fieldnames=list(rows[0].keys()) if rows else [])
-            if rows:
-                writer.writeheader()
-                writer.writerows(rows)
+        # Queryset
+        qs = (
+            LiquidacionEdificacion.objects.filter(liquidacion__legacy=True)
+            .select_related("liquidacion")
+            .order_by("numero")
+        )
+        if numero_filter is not None:
+            qs = qs.filter(numero=numero_filter)
+        if expediente_filter:
+            qs = qs.filter(liquidacion__expediente__icontains=expediente_filter.strip())
+        if limit is not None:
+            if limit < 1:
+                raise CommandError("--limit must be >= 1")
+            qs = qs[:limit]
 
-    def _load_source_csv(self, path: Path) -> dict[int, dict]:
-        if not path.exists():
-            raise CommandError(f"--source-csv not found: {path}")
-        with path.open("r", newline="", encoding="utf-8-sig") as file:
-            reader = csv.reader(file, delimiter=";")
-            header = next(reader, None)
-            if not header:
-                raise CommandError(f"--source-csv has no header: {path}")
-            rows = {}
-            for raw in reader:
-                if not raw:
+        total = qs.count()
+        self.stdout.write(f"Source CSV: {source_csv}")
+        self.stdout.write(f"Total liquidaciones to process: {total}")
+        self.stdout.write(f"Fix mode: {'YES' if fix_mode else 'NO (dry run)'}")
+
+        # Collect all curation report rows
+        curation_rows = []
+        checked = curated = conflicts = skipped = 0
+
+        for edificacion in qs:
+            checked += 1
+            if progress_every > 0 and (checked == 1 or checked % progress_every == 0):
+                pct = (Decimal(checked) / Decimal(total) * Decimal("100")) if total else Decimal("0")
+                self.stdout.write(
+                    f"  Progress: {checked}/{total} ({pct.quantize(Decimal('0.1'))}%)"
+                )
+
+            liquidacion = edificacion.liquidacion
+            csv_row = csv_rows_by_numero.get(edificacion.numero)
+
+            if csv_row is None:
+                skipped += 1
+                continue
+
+            # Get all LiquidacionDelegado for this liquidacion
+            ld_records = list(
+                LiquidacionDelegado.objects.filter(liquidacion=liquidacion)
+                .select_related("delegado__perfil_ingeniero", "especialidad_revision")
+            )
+
+            if not ld_records:
+                skipped += 1
+                continue
+
+            raw = csv_row["raw"]
+
+            for ld in ld_records:
+                esp_nombre = getattr(ld.especialidad_revision, "nombre", "") or ""
+                slot_num = specialty_to_slot.get(esp_nombre)
+                if slot_num is None:
+                    # Specialty not in our slot map — skip
+                    skipped += 1
                     continue
-                try:
-                    numero = int(float(str(raw[0]).strip()))
-                except (ValueError, TypeError):
-                    continue
-                rows[numero] = {"raw": raw, "header": header}
-        return rows
 
-    def _source_values_for_detail(self, csv_row: dict, detail: DetalleHonorarioDelegado) -> dict:
-        raw = csv_row["raw"]
-        # EDIF_ALL.csv monetary columns after DELEGADO1..4.
-        values = {
-            "imp_bruto": _money(raw[26] if len(raw) > 26 else None),
-            "renta_cip": _money(raw[72] if len(raw) > 72 else None),
-            "aporte_codemu": _money(raw[27] if len(raw) > 27 else None),
-            "fondo_comun": _money(raw[28] if len(raw) > 28 else None),
-            "neto_honorario": _money(raw[31] if len(raw) > 31 else None),
-        }
-        return values
+                slot_fields = extract_slot_fields(raw, slot_num)
+                slot_fields["slot_num"] = slot_num
 
-    def _source_compare_row(self, edificacion, liquidacion, detail, expected: dict) -> dict:
-        ld = detail.liquidacion_delegado
-        actual = {
-            "imp_bruto": _money(detail.imp_bruto),
-            "renta_cip": _money(detail.renta_cip),
-            "aporte_codemu": _money(detail.aporte_codemu),
-            "fondo_comun": _money(detail.fondo_comun),
-            "neto_honorario": _money(detail.neto_honorario),
-        }
-        diffs = {name: abs(actual[name] - expected[name]) for name in actual}
-        bad_fields = [name for name, value in diffs.items() if value > Decimal("0.00")]
-        return {
-            "status": "OK" if not bad_fields else "MISMATCH",
-            "numero": edificacion.numero,
-            "liquidacion_id": str(liquidacion.id),
-            "expediente": liquidacion.expediente or "",
-            "detalle_id": str(detail.id),
-            "especialidad": getattr(ld.especialidad_revision, "nombre", "") or "",
-            "delegado": getattr(getattr(ld.delegado, "perfil_ingeniero", None), "nombre_completo", "") or "",
-            "actual_imp_bruto": str(actual["imp_bruto"]),
-            "source_imp_bruto": str(expected["imp_bruto"]),
-            "diff_imp_bruto": str(diffs["imp_bruto"]),
-            "actual_renta_cip": str(actual["renta_cip"]),
-            "source_renta_cip": str(expected["renta_cip"]),
-            "diff_renta_cip": str(diffs["renta_cip"]),
-            "actual_aporte_codemu": str(actual["aporte_codemu"]),
-            "source_aporte_codemu": str(expected["aporte_codemu"]),
-            "diff_aporte_codemu": str(diffs["aporte_codemu"]),
-            "actual_fondo_comun": str(actual["fondo_comun"]),
-            "source_fondo_comun": str(expected["fondo_comun"]),
-            "diff_fondo_comun": str(diffs["fondo_comun"]),
-            "actual_neto_honorario": str(actual["neto_honorario"]),
-            "source_neto_honorario": str(expected["neto_honorario"]),
-            "diff_neto_honorario": str(diffs["neto_honorario"]),
-            "bad_fields": ",".join(bad_fields),
-        }
+                # Run curation (dry_run=not fix_mode)
+                results = curate_record(ld, slot_fields, edificacion.numero, dry_run=not fix_mode)
+
+                # Count actions
+                for r in results:
+                    curation_rows.append(r)
+                    if r["action"] == "FILLED":
+                        curated += 1
+                    elif r["action"] == "CONFLICT":
+                        conflicts += 1
+                    else:
+                        skipped += 1
+
+        # Write CSV report
+        if csv_output:
+            output_path = Path(csv_output)
+            write_csv_file(output_path, curation_rows)
+            self.stdout.write(f"CSV report: {output_path}")
+
+        # Console output
+        printed = 0
+        for r in curation_rows:
+            if options.get("only_mismatches") and r["action"] not in ("FILLED", "CONFLICT"):
+                continue
+            if r["action"] == "FILLED":
+                style = self.style.SUCCESS
+            elif r["action"] == "CONFLICT":
+                style = self.style.ERROR
+            else:
+                style = self.style.WARNING
+            self.stdout.write(
+                style(
+                    f"{r['action']} numero={r['numero']} slot={r['slot']} "
+                    f"delegado={r['delegado']} field={r['field']} "
+                    f"db={r['db_value'] or '(null)'} -> src={r['source_value'] or '(null)'}"
+                )
+            )
+            printed += 1
+
+        self.stdout.write(self.style.SUCCESS("\n=== Curation Summary ==="))
+        self.stdout.write(f"Liquidaciones checked:      {checked}")
+        self.stdout.write(f"Fields FILLED:              {curated}")
+        self.stdout.write(f"Fields CONFLICT:            {conflicts}")
+        self.stdout.write(f"Fields SKIPPED:             {skipped}")
+        self.stdout.write(f"Total field actions:        {len(curation_rows)}")
+        if csv_output:
+            self.stdout.write(f"CSV report:                 {csv_output}")

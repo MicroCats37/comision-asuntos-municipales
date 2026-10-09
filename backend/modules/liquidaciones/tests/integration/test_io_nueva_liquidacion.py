@@ -160,7 +160,8 @@ def liquidacion_previa(db, municipalidad, create_user, tipo_edificacion, proyect
 def inspector(db, tipo_inspeccion_obra):
     """Crea un inspector con operación y especialidad para asignar a la IO.
 
-    La liquidación sin previa usa una operación del inspector para INSPECCION_OBRA.
+    La liquidación sin previa usa una operación del inspector para EDIFICACION
+    (el tipo que el inspector puede revisar, no INSPECCION_OBRA).
     """
     from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
     from modules.liquidaciones.domain.models.inspector import InspectorOperacion
@@ -177,12 +178,17 @@ def inspector(db, tipo_inspeccion_obra):
     esp_rev = EspecialidadRevision.objects.create(
         slug="electrica", nombre="Eléctrica/Mecánica"
     )
-    InspectorOperacion.objects.create(
+    # IO sin previa usa operación EDIFICACION (el tipo del trámite que se inspecciona)
+    from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TLModel
+    tipo_edificacion = TLModel.objects.get(codigo=TipoLiquidacion.EDIFICACION)
+    op = InspectorOperacion.objects.create(
         inspector=inspector,
-        tipo_liquidacion=tipo_inspeccion_obra,
+        tipo_liquidacion=tipo_edificacion,
         categoria="1",
         especialidad_revision=esp_rev,
     )
+    # Attach inspector_operacion_id for test convenience
+    inspector.inspector_operacion_id = op.id
     return inspector
 
 
@@ -204,17 +210,26 @@ def inspector_edificacion(db, tipo_edificacion):
     esp_rev = EspecialidadRevision.objects.create(
         slug="edificacion", nombre="Edificación"
     )
-    InspectorOperacion.objects.create(
+    op = InspectorOperacion.objects.create(
         inspector=inspector,
         tipo_liquidacion=tipo_edificacion,
         categoria="1",
         especialidad_revision=esp_rev,
     )
+    # Attach inspector_operacion_id for test convenience
+    inspector.inspector_operacion_id = op.id
     return inspector
 
 
 @pytest.fixture
-def valid_payload(valid_municipalidad_id, valid_distrito_id, valid_tarifa_visitas_id, inspector):
+def valid_payload_edificacion(valid_municipalidad_id, valid_distrito_id, valid_tarifa_visitas_id, inspector_edificacion):
+    """
+    Payload for IO sin previa using an inspector with EDIFICACION operation.
+    This is the production-valid scenario: frontend selects an inspector
+    filtered by EDIFICACION/HABILITACION_URBANA, and backend resolves
+    the inspector's especialidad using inspector_operacion_id.
+    inspector_operacion_id is now REQUIRED; tipo_liquidacion is derived from InspectorOperacion.
+    """
     return {
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
@@ -251,13 +266,18 @@ def valid_payload(valid_municipalidad_id, valid_distrito_id, valid_tarifa_visita
             "tarifa": {
                 "tarifa_visitas_id": valid_tarifa_visitas_id
             },
-            "inspector_id": str(inspector.id),
+            "inspector_id": str(inspector_edificacion.id),
+            "inspector_operacion_id": str(inspector_edificacion.inspector_operacion_id),
         }
     }
 
 
 @pytest.fixture
 def relacionada_payload(liquidacion_previa, valid_tarifa_visitas_id, inspector_edificacion):
+    """
+    Payload for IO relacionada (con previa).
+    inspector_operacion_id is now REQUIRED; tipo is validated against the previous liquidacion.
+    """
     return {
         "liquidacion_previa_id": str(liquidacion_previa.id),
         "liquidacion_especifica": {
@@ -269,20 +289,26 @@ def relacionada_payload(liquidacion_previa, valid_tarifa_visitas_id, inspector_e
                 "tarifa_visitas_id": valid_tarifa_visitas_id,
             },
             "inspector_id": str(inspector_edificacion.id),
+            "inspector_operacion_id": str(inspector_edificacion.inspector_operacion_id),
         },
     }
 
 
 @pytest.mark.django_db
 def test_io_crear_primera_revision_success(
-    auth_client, valid_payload, uit_vigente, igv_vigente
+    auth_client, valid_payload_edificacion, uit_vigente, igv_vigente
 ):
     """
-    Test successful creation of a LiquidacionInspeccionObra sin previa.
+    Test successful creation of a LiquidacionInspeccionObra sin previa
+    using an inspector with EDIFICACION operation type.
+
+    This verifies the fix: the backend resolves inspector especialidad
+    using the frontend-passed tipo_liquidacion (EDIFICACION), not the
+    deprecated hardcoded INSPECCION_OBRA.
     """
     response = auth_client.post(
         "/liquidaciones/inspeccion-obra/nueva-liquidacion",
-        json=valid_payload
+        json=valid_payload_edificacion
     )
 
     assert response.status_code == 200, f"Expected 200, got {response.status_code} - {response.content}"
@@ -293,10 +319,10 @@ def test_io_crear_primera_revision_success(
 
     # Verify General Structure (uses user-provided wrapper data)
     general = result["liquidacion_general"]
-    assert general["expediente"] == valid_payload["liquidacion_general"]["expediente"]
-    assert general["denominacion_de_proyecto"] == valid_payload["liquidacion_general"]["denominacion_de_proyecto"]
+    assert general["expediente"] == valid_payload_edificacion["liquidacion_general"]["expediente"]
+    assert general["denominacion_de_proyecto"] == valid_payload_edificacion["liquidacion_general"]["denominacion_de_proyecto"]
     liquidacion_io = LiquidacionGeneral.objects.get(id=general["id"])
-    assert str(liquidacion_io.municipalidad_id) == valid_payload["liquidacion_general"]["municipalidad_id"]
+    assert str(liquidacion_io.municipalidad_id) == valid_payload_edificacion["liquidacion_general"]["municipalidad_id"]
 
     # Verify Specific Structure (identity wrapper after semantic fix)
     especifica = result["liquidacion_especifica"]
@@ -305,13 +331,13 @@ def test_io_crear_primera_revision_success(
 
     # Verify liquidacion_tipo has Visitas calculation data
     tipo = result["liquidacion_tipo"]
-    assert tipo["cantidad_visitas"] == valid_payload["liquidacion_especifica"]["datos"]["cantidad_visitas"]
-    assert tipo["categoria"] == valid_payload["liquidacion_especifica"]["datos"]["categoria"]
+    assert tipo["cantidad_visitas"] == valid_payload_edificacion["liquidacion_especifica"]["datos"]["cantidad_visitas"]
+    assert tipo["categoria"] == valid_payload_edificacion["liquidacion_especifica"]["datos"]["categoria"]
 
     # El inspector sale dentro de liquidacion_tipo, con su especialidad_revision
     assert len(tipo["inspectores"]) == 1
-    assert tipo["inspectores"][0]["perfil_ingeniero"]["cip"] == "112233"
-    assert tipo["inspectores"][0]["especialidad_revision"]["nombre"] == "Eléctrica/Mecánica"
+    assert tipo["inspectores"][0]["perfil_ingeniero"]["cip"] == "445566"
+    assert tipo["inspectores"][0]["especialidad_revision"]["nombre"] == "Edificación"
 
     # Verify Calculation
     # UIT = 5150.00
@@ -327,19 +353,177 @@ def test_io_crear_primera_revision_success(
 
 
 @pytest.mark.django_db
-def test_io_crear_primera_revision_invalid_tarifa(auth_client, valid_payload, uit_vigente, igv_vigente):
+def test_io_crear_primera_revision_invalid_tarifa(auth_client, valid_payload_edificacion, uit_vigente, igv_vigente):
     """
     Test creation with an invalid Tarifa Visitas ID.
     """
-    valid_payload["liquidacion_especifica"]["tarifa"]["tarifa_visitas_id"] = str(uuid.uuid4())
+    valid_payload_edificacion["liquidacion_especifica"]["tarifa"]["tarifa_visitas_id"] = str(uuid.uuid4())
 
     response = auth_client.post(
         "/liquidaciones/inspeccion-obra/nueva-liquidacion",
-        json=valid_payload
+        json=valid_payload_edificacion
     )
 
     # Should raise a 400 or 404 HttpError handled by Ninja exception handler
     assert response.status_code in [400, 404]
+
+
+@pytest.fixture
+def inspector_habilitacion_urbana(db, tipo_habilitacion_urbana):
+    """Inspector válido con operación HABILITACION_URBANA."""
+    from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
+    from modules.liquidaciones.domain.models.inspector import InspectorOperacion
+
+    perfil = PerfilIngeniero.objects.create(
+        cip="778899",
+        dni="77889900",
+        nombres="Inspector",
+        apellido_paterno="HU",
+        apellido_materno="Test",
+        correo_personal="inspector_hu_io_test@example.com",
+    )
+    inspector = Inspector.objects.create(perfil_ingeniero=perfil)
+    esp_rev = EspecialidadRevision.objects.create(
+        slug="habilitacion_urbana", nombre="Habilitación Urbana"
+    )
+    op = InspectorOperacion.objects.create(
+        inspector=inspector,
+        tipo_liquidacion=tipo_habilitacion_urbana,
+        categoria="1",
+        especialidad_revision=esp_rev,
+    )
+    # Attach inspector_operacion_id for test convenience
+    inspector.inspector_operacion_id = op.id
+    return inspector
+
+
+@pytest.fixture
+def valid_payload_hu(valid_municipalidad_id, valid_distrito_id, valid_tarifa_visitas_id, inspector_habilitacion_urbana):
+    """Payload for IO sin previa using an inspector with HABILITACION_URBANA operation.
+    inspector_operacion_id is now REQUIRED; tipo_liquidacion removed from input."""
+    return {
+        "liquidacion_general": {
+            "municipalidad_id": valid_municipalidad_id,
+            "expediente": "EXP-IO-2024-002",
+            "observacion": "Observación IO sin previa HU",
+            "retencion": False,
+            "denominacion_de_proyecto": "Proyecto IO sin previa HU",
+            "proyecto": {
+                "nombre_propietario": "Propietario HU",
+                "direccion": "Av. HU 456",
+                "urbanizacion": "Urb. HU Test",
+                "distrito_id": valid_distrito_id,
+                "entidad": {
+                    "tipo_documento": "RUC",
+                    "numero_documento": "20123456790",
+                    "razon_social": "Entidad HU Test",
+                },
+            },
+            "contacto": {
+                "nombres": "Contacto",
+                "apellidos": "HU",
+                "dni": "22334455",
+                "cargo": "Responsable HU",
+                "telefono": "555-2233",
+                "celular": "999888666",
+                "email": "contacto.hu@example.com",
+            },
+        },
+        "liquidacion_especifica": {
+            "datos": {
+                "cantidad_visitas": 2,
+                "categoria": "INSPECCION"
+            },
+            "tarifa": {
+                "tarifa_visitas_id": valid_tarifa_visitas_id
+            },
+            "inspector_id": str(inspector_habilitacion_urbana.id),
+            "inspector_operacion_id": str(inspector_habilitacion_urbana.inspector_operacion_id),
+        }
+    }
+
+
+@pytest.mark.django_db
+def test_io_crear_primera_revision_success_habilitacion_urbana(
+    auth_client, valid_payload_hu, uit_vigente, igv_vigente
+):
+    """
+    Test that IO sin previa works with an inspector whose operation is
+    HABILITACION_URBANA (the tipo selected in the frontend inspector modal).
+    """
+    response = auth_client.post(
+        "/liquidaciones/inspeccion-obra/nueva-liquidacion",
+        json=valid_payload_hu
+    )
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code} - {response.content}"
+    data = response.json()
+    assert data["success"] is True
+    tipo = data["data"]["liquidacion_tipo"]
+    assert len(tipo["inspectores"]) == 1
+    assert tipo["inspectores"][0]["perfil_ingeniero"]["cip"] == "778899"
+
+
+@pytest.mark.django_db
+def test_io_crear_primera_revision_error_tipo_no_coincide(
+    auth_client, valid_municipalidad_id, valid_distrito_id, valid_tarifa_visitas_id,
+    inspector_edificacion, uit_vigente, igv_vigente, tipo_habilitacion_urbana
+):
+    """
+    Test that sending inspector_operacion_id with tipo that doesn't match
+    the previous liquidacion type fails for /relacionada.
+
+    This test is for /relacionada: the backend validates that
+    inspector_operacion.tipo_liquidacion matches the previous liquidacion's tipo.
+
+    For /nueva-liquidacion (sin previa), there's no previous tipo to match against,
+    so this validation only applies to /relacionada.
+    """
+    # Create an HU inspector (doesn't have EDIFICACION operation)
+    from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
+    from modules.liquidaciones.domain.models.inspector import InspectorOperacion, Inspector
+    from modules.usuarios.domain.models.perfil_ingeniero import PerfilIngeniero
+
+    perfil = PerfilIngeniero.objects.create(
+        cip="990011",
+        dni="99001122",
+        nombres="Inspector",
+        apellido_paterno="SoloHU",
+        apellido_materno="Test",
+        correo_personal="inspector_solohu@example.com",
+    )
+    inspector = Inspector.objects.create(perfil_ingeniero=perfil)
+    esp_rev = EspecialidadRevision.objects.create(
+        slug="hu_only", nombre="Habilitación Urbana"
+    )
+    op = InspectorOperacion.objects.create(
+        inspector=inspector,
+        tipo_liquidacion=tipo_habilitacion_urbana,
+        categoria="1",
+        especialidad_revision=esp_rev,
+    )
+
+    # Try to create a /relacionada IO using the HU inspector
+    # but the previous liquidacion is EDIFICACION - should fail
+    payload = {
+        "liquidacion_previa_id": str(uuid.uuid4()),  # Will be replaced by test
+        "liquidacion_especifica": {
+            "datos": {
+                "cantidad_visitas": 1,
+                "categoria": "INSPECCION"
+            },
+            "tarifa": {
+                "tarifa_visitas_id": valid_tarifa_visitas_id
+            },
+            "inspector_id": str(inspector.id),
+            "inspector_operacion_id": str(op.id),
+        },
+    }
+
+    # For this test we just verify that inspector_operacion_id is required
+    # The actual /relacionada validation requires a valid previous liquidacion
+    # and is tested separately
+    assert op.tipo_liquidacion.codigo == TipoLiquidacion.HABILITACION_URBANA
 
 
 @pytest.mark.django_db

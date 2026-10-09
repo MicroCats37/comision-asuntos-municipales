@@ -28,9 +28,9 @@ export const visitasFormSchema = z.object({
   tarifa_visitas_id: z.string().optional(),
   // Contacto (used in edit modal — not in creation form)
   contacto: contactoInlineSchema.optional(),
-  // Inspector operacion ID (optional, for reassigning inspector in edit)
-  inspector_operacion_id: z.string().optional(),
-  // Inspector seleccionado (form de creación sin previa)
+  // InspectorOperacion seleccionado para crear IO. El backend deriva el inspector desde esta operación.
+  inspector_operacion_id: z.string().min(1, "Selecciona un inspector"),
+  // Inspector seleccionado, usado solo como estado visual del selector.
   inspector_id: z.string().optional(),
 });
 

@@ -10,7 +10,6 @@ from ninja import Query
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
-from ninja.errors import HttpError
 
 from core.responses import ApiResponse, success_response
 from core.pagination import PaginatedData
@@ -49,26 +48,17 @@ class RHInspectorDetalleController:
         periodo: int | None = Query(None, ge=2000, le=2100, description="Año del periodo (e.g. 2026)"),
         mes: int | None = Query(None, ge=1, le=12, description="Mes (1-12)"),
         municipalidad_id: uuid.UUID | None = Query(None, description="UUID de la municipalidad (from Liquidacion)"),
-        tipo_liquidacion_id: uuid.UUID | None = Query(None, description="UUID del tipo de liquidación (from Liquidacion)"),
-        numero_liquidacion: int | None = Query(None, description="Número de liquidación específico (requiere tipo_liquidacion_id)"),
+        numero_liquidacion: int | None = Query(None, description="Número de liquidación específico de Inspección de Obra"),
     ):
         """
         GET /finanzas/recibos-inspectores/detalle — lista filas de DetalleHonorarioInspector.
 
-        Filtros requeridos: periodo, tipo_liquidacion_id.
-        Filtros opcionales: inspector_id, inspector_cip, mes, municipalidad_id, numero_liquidacion.
+        Filtros opcionales: inspector_id, inspector_cip, periodo, mes, municipalidad_id, numero_liquidacion.
         inspector_cip tiene precedencia sobre inspector_id si ambos están presentes.
-        numero_liquidacion se interpreta según el tipo_liquidacion_id para buscar en la tabla específica.
+        numero_liquidacion busca en la liquidación específica de Inspección de Obra.
 
         Returns paginated list of detail rows.
         """
-        # Validate required filters
-        if periodo is None or tipo_liquidacion_id is None:
-            raise HttpError(
-                400,
-                "Periodo y tipo de liquidación son obligatorios para consultar detalle RH.",
-            )
-
         domain_results, total = self.orchestrator.list_rh_detalle_inspectores_proceso(
             page=page,
             page_size=page_size,
@@ -77,7 +67,6 @@ class RHInspectorDetalleController:
             periodo=periodo,
             mes=mes,
             municipalidad_id=municipalidad_id,
-            tipo_liquidacion_id=tipo_liquidacion_id,
             numero_liquidacion=numero_liquidacion,
         )
         presented = FinanzasPresenter.present_rh_detalle_inspectores_list(

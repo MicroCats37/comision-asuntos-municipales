@@ -97,7 +97,7 @@ function useDragScroll<T extends HTMLElement>() {
  *
  * Grid template:
  * [actions]160px [id]200px [expediente]minmax(160px,1fr) [inspector]minmax(200px,1.5fr)
- * [periodo]120px [insp_liq]100px [costo]120px [monto]120px [subtotal]120px [descuento]120px [honorarios]120px
+ * [periodo]120px [dictamen]120px [fecha_presentacion]120px [fecha_revision]120px [insp_liq]100px [costo]120px [monto]120px [subtotal]120px [descuento]120px [honorarios]120px
  */
 export function RHDetalleInspectoresTable({
   items,
@@ -143,6 +143,15 @@ export function RHDetalleInspectoresTable({
           </span>
           <span className="bg-table-header px-3 py-2.5 border-r border-border [text-wrap:balance] text-center">
             Período
+          </span>
+          <span className="bg-table-header px-3 py-2.5 border-r border-border [text-wrap:balance] text-center">
+            Dictamen
+          </span>
+          <span className="bg-table-header px-3 py-2.5 border-r border-border [text-wrap:balance] text-center">
+            F. Presentación
+          </span>
+          <span className="bg-table-header px-3 py-2.5 border-r border-border [text-wrap:balance] text-center">
+            F. Revisión
           </span>
           <span className="bg-table-header px-3 py-2.5 border-r border-border [text-wrap:balance] text-right">
             Insp. Liq.
@@ -193,7 +202,7 @@ export function RHDetalleInspectoresTable({
               >
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
                   <span className="font-mono text-sm font-bold tracking-tight truncate">
-                    {row.inspectorCip ?? "—"}
+                    {row.numero ?? "—"}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap min-w-0">
@@ -236,11 +245,48 @@ export function RHDetalleInspectoresTable({
               </div>
 
               {/* Período */}
-              <div className="flex items-center justify-center px-3 py-3.5">
+              <div className="flex flex-col items-center justify-center gap-0.5 px-3 py-3.5">
                 <span className="inline-flex items-center justify-center min-w-[2.5rem] h-7 rounded-md bg-muted text-foreground/85 font-mono text-sm font-bold tabular-nums px-2">
                   {row.periodo && row.mes != null
                     ? `${row.periodo}/${String(row.mes).padStart(2, "0")}`
                     : "—"}
+                </span>
+              </div>
+
+              {/* Dictamen */}
+              <div className="flex items-center justify-center px-3 py-3.5">
+                {row.dictamenRevision && (
+                  <span
+                    className={cn(
+                      "shrink-0 inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+                      row.dictamenRevision === "CONFORME"
+                        ? "border-green-600 text-green-700 bg-green-50"
+                        : row.dictamenRevision === "NO_CONFORME"
+                          ? "border-red-600 text-red-700 bg-red-50"
+                          : row.dictamenRevision === "PENDIENTE"
+                            ? "border-yellow-600 text-yellow-700 bg-yellow-50"
+                            : "border-blue-600 text-blue-700 bg-blue-50",
+                    )}
+                  >
+                    {row.dictamenRevision.replace("_", " ")}
+                  </span>
+                )}
+                {!row.dictamenRevision && (
+                  <span className="text-muted-foreground/50">—</span>
+                )}
+              </div>
+
+              {/* F. Presentación */}
+              <div className="flex items-center justify-center px-3 py-3.5 text-center">
+                <span className="font-mono text-[11px] font-semibold leading-none">
+                  {row.fechaPresentacion?.slice(0, 10) ?? "—"}
+                </span>
+              </div>
+
+              {/* F. Revisión */}
+              <div className="flex items-center justify-center px-3 py-3.5 text-center">
+                <span className="font-mono text-[11px] font-semibold leading-none">
+                  {row.fechaRevision?.slice(0, 10) ?? "—"}
                 </span>
               </div>
 

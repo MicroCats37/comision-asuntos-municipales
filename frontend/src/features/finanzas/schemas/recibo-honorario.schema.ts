@@ -70,7 +70,7 @@ export type ReciboHonorarioDelegado = z.infer<
 export const inspectorMinimalSchema = z.object({
   id: uuid(),
   cip: z.string(),
-  dni: z.string(),
+  dni: z.string().nullish(),
   nombre_completo: z.string(),
 });
 
@@ -266,6 +266,7 @@ const liquidacionGeneralNestedSchema = z.object({
   id: z.string(),
   expediente: z.string().nullish(),
   numero_revision: z.coerce.number().int().nullish(),
+  numero: z.coerce.number().int().nullish(),
   municipalidad: municipalidadNestedSchema.nullish(),
   tipo_liquidacion: tipoLiquidacionNestedSchema.nullish(),
 });
@@ -319,6 +320,7 @@ const liquidacionInspectorNestedSchema = z.object({
   id: z.string(),
   expediente: z.string().nullish(),
   numero_revision: z.coerce.number().int().nullish(),
+  numero: z.coerce.number().int().nullish(),
   nombre_propietario: z.string().nullish(),
   municipalidad: municipalidadNestedSchema.nullish(),
   tipo_liquidacion: tipoLiquidacionNestedSchema.nullish(),

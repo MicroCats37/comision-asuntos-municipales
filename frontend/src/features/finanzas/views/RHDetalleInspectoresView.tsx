@@ -3,16 +3,15 @@
  * Ruta: /liquidaciones/recibos-inspectores/detalle
  *
  * Tabla CSS-grid con paginación y filtros URL-driven.
- * Filtros: inspector_id, periodo, mes, municipalidad_id, tipo_liquidacion_id, numero_liquidacion
- *
- * Nota: periodo y tipo_liquidacion_id son obligatorios. Sin ellos se muestra estado vacío guiado.
+ * Filtros opcionales: inspector_cip, periodo, mes, municipalidad_id, numero_liquidacion.
  */
 "use client";
 
 import type { LucideIcon } from "lucide-react";
 import { Eye, Filter, RefreshCw, Users, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pagination } from "@/components/genericPagination/Pagination";
+import { FilterChip } from "@/components/ui/active-filters";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { RHDetalleVerDetalleModal } from "@/features/finanzas/components/detail/RHDetalleVerDetalleModal";
@@ -24,6 +23,7 @@ import type {
 } from "@/features/finanzas/components/tables/RHDetalleTable.types";
 import { useRHDetalleInspectores } from "@/features/finanzas/hooks/useRHDetalleInspectores";
 import { useRHDetalleInspectoresFiltersUrl } from "@/features/finanzas/hooks/useRHDetalleInspectoresFiltersUrl";
+import { useMunicipalidades } from "@/features/liquidaciones/hooks/useMunicipalidades";
 import { useUrlPagination } from "@/hooks/system/useUrlPagination";
 
 const KIND_ICON: LucideIcon = Users;
@@ -36,11 +36,6 @@ export function RHDetalleInspectoresView() {
   const { filtros, setFiltros, clearFiltros } =
     useRHDetalleInspectoresFiltersUrl();
 
-  // Required filters must be present to enable the query
-  const hasRequiredFilters = Boolean(
-    filtros.periodo && filtros.tipo_liquidacion_id,
-  );
-
   const { items, total, totalPages, isLoading, isError, refetch } =
     useRHDetalleInspectores({
       page,
@@ -49,17 +44,33 @@ export function RHDetalleInspectoresView() {
       periodo: filtros.periodo,
       mes: filtros.mes,
       municipalidadId: filtros.municipalidad_id,
-      tipoLiquidacionId: filtros.tipo_liquidacion_id,
       numeroLiquidacion: filtros.numero_liquidacion,
-      enabled: hasRequiredFilters,
     });
+
+  const { data: municipalidades = [] } = useMunicipalidades();
+  const municipalidadNombreById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of municipalidades) {
+      const codigoPrefix = m.codigo ? `${m.codigo} - ` : "";
+      map.set(m.id, `${codigoPrefix}${m.nombre}`);
+    }
+    return map;
+  }, [municipalidades]);
+
+  /**
+   * Quita un único filtro del estado URL-driven. Mantiene el resto.
+   */
+  const removeFilter = (key: keyof typeof filtros) => {
+    const next = { ...filtros };
+    delete next[key];
+    setFiltros(next);
+  };
 
   const hasActiveFilters = Boolean(
     filtros.inspector_cip ||
       filtros.periodo ||
       filtros.mes ||
       filtros.municipalidad_id ||
-      filtros.tipo_liquidacion_id ||
       filtros.numero_liquidacion,
   );
 
@@ -68,7 +79,6 @@ export function RHDetalleInspectoresView() {
     filtros.periodo,
     filtros.mes,
     filtros.municipalidad_id,
-    filtros.tipo_liquidacion_id,
     filtros.numero_liquidacion,
   ].filter(Boolean).length;
 
@@ -84,9 +94,6 @@ export function RHDetalleInspectoresView() {
       },
     ];
   };
-
-  // Guided empty state when required filters are missing
-  const showGuidedEmpty = !hasRequiredFilters && !isLoading;
 
   return (
     <div className="page-section">
@@ -119,34 +126,42 @@ export function RHDetalleInspectoresView() {
               Filtros activos:
             </span>
             {filtros.inspector_cip && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-                CIP: {filtros.inspector_cip}
-              </span>
+              <FilterChip
+                label="CIP"
+                value={filtros.inspector_cip}
+                onRemove={() => removeFilter("inspector_cip")}
+              />
             )}
             {filtros.periodo && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-                Año: {filtros.periodo}
-              </span>
+              <FilterChip
+                label="Año"
+                value={String(filtros.periodo)}
+                onRemove={() => removeFilter("periodo")}
+              />
             )}
             {filtros.mes && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-                Mes: {filtros.mes}
-              </span>
+              <FilterChip
+                label="Mes"
+                value={String(filtros.mes)}
+                onRemove={() => removeFilter("mes")}
+              />
             )}
             {filtros.municipalidad_id && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-                Municipalidad ID: {filtros.municipalidad_id}
-              </span>
-            )}
-            {filtros.tipo_liquidacion_id && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-                Tipo Liquidación ID: {filtros.tipo_liquidacion_id}
-              </span>
+              <FilterChip
+                label="Municipalidad"
+                value={
+                  municipalidadNombreById.get(filtros.municipalidad_id) ??
+                  filtros.municipalidad_id
+                }
+                onRemove={() => removeFilter("municipalidad_id")}
+              />
             )}
             {filtros.numero_liquidacion && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-                N° Liquidación: {filtros.numero_liquidacion}
-              </span>
+              <FilterChip
+                label="N° Liquidación"
+                value={String(filtros.numero_liquidacion)}
+                onRemove={() => removeFilter("numero_liquidacion")}
+              />
             )}
             <Button
               variant="ghost"
@@ -161,17 +176,6 @@ export function RHDetalleInspectoresView() {
         )}
 
         {/* Table */}
-        {showGuidedEmpty && (
-          <div className="border rounded-lg px-3 py-12 text-center">
-            <p className="text-muted-foreground font-medium mb-1">
-              Selecciona año y tipo de liquidación para consultar
-            </p>
-            <p className="text-muted-foreground text-sm">
-              Los filtros obligatorios no están completos. Aplica los filtros
-              para ver resultados.
-            </p>
-          </div>
-        )}
         {isLoading && (
           <div className="flex flex-col gap-4">
             {[1, 2, 3].map((i) => (
@@ -233,11 +237,7 @@ export function RHDetalleInspectoresView() {
       <RHDetalleInspectoresFiltroModal
         open={filtroModalOpen}
         onOpenChange={setFiltroModalOpen}
-        initialFiltros={{
-          ...filtros,
-          periodo: filtros.periodo ?? new Date().getFullYear(),
-          mes: filtros.mes ?? new Date().getMonth() + 1,
-        }}
+        initialFiltros={filtros}
         onApply={(nuevos) => {
           setFiltros(nuevos);
           setFiltroModalOpen(false);

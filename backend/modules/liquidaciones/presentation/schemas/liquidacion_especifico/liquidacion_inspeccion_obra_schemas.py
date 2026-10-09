@@ -63,12 +63,32 @@ class LiquidacionInspeccionObraNuevaRevisionTarifaIn(BaseSchema):
 
 class LiquidacionInspeccionObraNuevaRevisionEspecificaIn(BaseSchema):
     """
-    Payload específico para IO primera-revision desde previa.
-    Incluye inspector_id dentro de liquidacion_especifica (como lo solicitó el usuario).
+    Payload específico para IO primera-revision (con o sin previa).
+
+    Para sin previa (nueva-liquidacion): inspector_operacion_id es OBLIGATORIO.
+    La especialidad_revision se deriva de InspectorOperacion.especialidad_revision.
+    El inspector se deriva de InspectorOperacion.inspector.
+
+    Para con previa (relacionada): inspector_operacion_id es OBLIGATORIO.
+    Se valida que InspectorOperacion.tipo_liquidacion coincida con la previa.
+
+    inspector_id es OPCIONAL — se usa solo para cross-validación con
+    InspectorOperacion.inspector_id cuando ambos están presentes.
+    tipo_liquidacion ya no va en el input — se deriva de InspectorOperacion.
     """
     datos: LiquidacionInspeccionObraNuevaRevisionDatosIn
     tarifa: LiquidacionInspeccionObraNuevaRevisionTarifaIn
-    inspector_id: uuid.UUID = Field(..., description="ID del inspector asignado")
+    inspector_id: Optional[uuid.UUID] = Field(
+        None,
+        description="ID del inspector asignado. Opcional — se valida contra inspector_operacion si ambos presentes.",
+    )
+    inspector_operacion_id: uuid.UUID = Field(
+        ...,
+        description="ID de la InspectorOperacion del inspector seleccionado. "
+                    "Obligatorio para ambos flujos (nueva y relacionada). "
+                    "Se usa para derivar inspector, especialidad_revision y tipo_liquidacion. "
+                    "Obtenido del endpoint /seleccionables.",
+    )
 
 
 class LiquidacionInspeccionObraNuevaLiquidacionInput(BaseSchema):

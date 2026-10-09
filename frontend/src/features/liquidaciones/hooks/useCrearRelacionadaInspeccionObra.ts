@@ -8,7 +8,7 @@
  *   liquidacion_especifica: {
  *     datos: { cantidad_visitas: number, categoria: string },
  *     tarifa: { tarifa_visitas_id: string },
- *     inspector_id: string,
+ *     inspector_operacion_id: string,
  *   },
  *   contacto?: { nombres, apellidos, dni, cargo, telefono, celular, email },
  * }
@@ -39,7 +39,7 @@ export function useCrearRelacionadaInspeccionObra() {
     liquidacion_especifica: {
       datos: { cantidad_visitas: number; categoria: string };
       tarifa: { tarifa_visitas_id: string };
-      inspector_id: string;
+      inspector_operacion_id: string;
     };
     contacto?: {
       nombres: string;
@@ -81,7 +81,7 @@ export function useCrearRelacionadaInspeccionObra() {
         categoria: payload.categoria,
       },
       tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
-      inspector_id: payload.inspector_id,
+      inspector_operacion_id: payload.inspector_operacion_id,
     },
     contacto: payload.contacto ?? undefined,
   });

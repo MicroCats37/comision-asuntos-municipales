@@ -60,7 +60,7 @@ class InspectorRHMinimalResult(BaseModel):
     id: str
     nombre_completo: str
     cip: str
-    dni: str
+    dni: str | None = None
 
 
 class RangoDescuentoResult(BaseModel):

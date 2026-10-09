@@ -17,7 +17,7 @@ export function useCrearInspeccionObra() {
     liquidacion_especifica: {
       datos: { cantidad_visitas: number; categoria: string };
       tarifa: { tarifa_visitas_id: string | undefined };
-      inspector_id: string | undefined;
+      inspector_operacion_id: string;
     };
   }>({
     tipoQueryKey: LIST_KEY,
@@ -25,13 +25,21 @@ export function useCrearInspeccionObra() {
   });
 
   // Wrapper that formats payload as { liquidacion_general, liquidacion_especifica } for the API.
-  // tipo_liquidacion_id is NOT sent — it's only used in the frontend to filter the inspector modal.
+  // inspector_operacion_id is sent — the ID of the InspectorOperacion selected by the user
+  // in the modal (obtained from /seleccionables). This allows the backend to derive
+  // especialidad_revision directly from the operation instead of looking up by deprecated
+  // INSPECCION_OBRA tipo.
   const crearMutation = useMemo(
     () => ({
       ...mutation,
       mutate: (payload: VisitasFormData) => {
-        const { tarifa_visitas_id, cantidad_visitas, categoria, ...rest } =
-          payload;
+        const {
+          tarifa_visitas_id,
+          cantidad_visitas,
+          categoria,
+          inspector_operacion_id,
+          ...rest
+        } = payload;
         mutation.mutate({
           liquidacion_general: {
             municipalidad_id: rest.municipalidad_id,
@@ -56,13 +64,18 @@ export function useCrearInspeccionObra() {
               categoria,
             },
             tarifa: { tarifa_visitas_id },
-            inspector_id: rest.inspector_id,
+            inspector_operacion_id,
           },
         });
       },
       mutateAsync: async (payload: VisitasFormData) => {
-        const { tarifa_visitas_id, cantidad_visitas, categoria, ...rest } =
-          payload;
+        const {
+          tarifa_visitas_id,
+          cantidad_visitas,
+          categoria,
+          inspector_operacion_id,
+          ...rest
+        } = payload;
         return mutation.mutateAsync({
           liquidacion_general: {
             municipalidad_id: rest.municipalidad_id,
@@ -87,7 +100,7 @@ export function useCrearInspeccionObra() {
               categoria,
             },
             tarifa: { tarifa_visitas_id },
-            inspector_id: rest.inspector_id,
+            inspector_operacion_id,
           },
         });
       },

@@ -74,7 +74,7 @@ export type LiquidacionInspeccionObraFormModalProps =
 function buildInitialData(
   item: LiquidacionInspeccionObraListItem,
   options: { skipSmartFieldDefaults?: boolean } = {},
-): VisitasFormData {
+): Partial<VisitasFormData> {
   const { liquidacion_general: lg, liquidacion_tipo: lt } = item;
 
   // Normalizar categoría que viene del backend ("1" → "C1")
@@ -220,6 +220,7 @@ export function LiquidacionInspeccionObraFormModal(
       item: typeof sourceItem,
     ): boolean => {
       if (m === "create") return true;
+      if (m === "relacionada") return true;
       if (m === "edit" && item) {
         return canEditLiquidacion(item.liquidacion_general).canEditProyecto;
       }
@@ -309,13 +310,19 @@ export function LiquidacionInspeccionObraFormModal(
                     methods.setValue("tipo_liquidacion_id", id, {
                       shouldValidate: false,
                     });
+                    // Reset inspector selection when tipo changes — the inspector list
+                    // will be different for the new tipo, so the old selection is invalid.
+                    methods.setValue("inspector_id", "", { shouldValidate: false });
+                    methods.setValue("inspector_operacion_id", "", { shouldValidate: false });
+                    setInspectorNombre("");
                   },
                 }
               : {})}
             categoriaForm={categoriaWatch || null}
             selectedId={methods.watch("inspector_id") || undefined}
-            onSelect={(id, nombre) => {
+            onSelect={(id, nombre, inspectorOperacionId) => {
               methods.setValue("inspector_id", id, { shouldValidate: true });
+              methods.setValue("inspector_operacion_id", inspectorOperacionId, { shouldValidate: true });
               setInspectorNombre(nombre);
             }}
           />
@@ -360,7 +367,7 @@ export function LiquidacionInspeccionObraFormModal(
         cantidad_visitas: data.cantidad_visitas,
         categoria: data.categoria,
         tarifa_visitas_id: data.tarifa_visitas_id ?? "",
-        inspector_id: data.inspector_id ?? "",
+        inspector_operacion_id: data.inspector_operacion_id,
         contacto: data.contacto,
       });
     },

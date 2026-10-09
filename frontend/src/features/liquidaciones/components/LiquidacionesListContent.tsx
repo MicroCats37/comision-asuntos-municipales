@@ -1,8 +1,12 @@
 "use client";
 
-import { Filter, type LucideIcon, Plus, X } from "lucide-react";
-import { type ReactNode, Suspense, useState } from "react";
+import { Filter, type LucideIcon, Plus } from "lucide-react";
+import { type ReactNode, Suspense, useMemo, useState } from "react";
 import { Pagination } from "@/components/genericPagination/Pagination";
+import {
+  ActiveFiltersPanel,
+  type FilterEntry,
+} from "@/components/ui/active-filters";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { useUrlViewMode } from "@/hooks/system/useUrlViewMode";
@@ -69,6 +73,72 @@ function LiquidacionesListContentInner<TItem>({
   const list = useListData();
   const activeFilterCount = Object.values(filtros).filter(Boolean).length;
 
+  /**
+   * Quita un único filtro del estado URL-driven. Mantiene el resto.
+   */
+  const removeFilter = (key: keyof LiquidacionFiltros) => {
+    const next = { ...filtros };
+    delete next[key];
+    setFiltros(next);
+  };
+
+  /**
+   * Build entries for the shared ActiveFiltersPanel.
+   * Each entry carries the filter key, human-readable label, and already-formatted value.
+   * No data fetching here — caller resolves display values before passing.
+   */
+  const activeFilterEntries: FilterEntry<keyof LiquidacionFiltros>[] = useMemo(
+    () =>
+      [
+        filtros.propietario && {
+          key: "propietario" as const,
+          label: "Propietario",
+          value: filtros.propietario!,
+        },
+        filtros.razon_social && {
+          key: "razon_social" as const,
+          label: "Razón Social",
+          value: filtros.razon_social!,
+        },
+        filtros.entidad_id && {
+          key: "entidad_id" as const,
+          label: "Municipalidad",
+          value: filtros.entidad_id!,
+        },
+        filtros.fecha_desde && {
+          key: "fecha_desde" as const,
+          label: "Desde",
+          value: filtros.fecha_desde!,
+        },
+        filtros.fecha_hasta && {
+          key: "fecha_hasta" as const,
+          label: "Hasta",
+          value: filtros.fecha_hasta!,
+        },
+        filtros.creado_por && {
+          key: "creado_por" as const,
+          label: "Creado por",
+          value: filtros.creado_por!,
+        },
+        filtros.numero != null && {
+          key: "numero" as const,
+          label: "N°",
+          value: String(filtros.numero),
+        },
+        filtros.numero_revisiones != null && {
+          key: "numero_revisiones" as const,
+          label: "Rev",
+          value: String(filtros.numero_revisiones),
+        },
+        filtros.direccion && {
+          key: "direccion" as const,
+          label: "Dirección",
+          value: filtros.direccion!,
+        },
+      ].filter(Boolean) as FilterEntry<keyof LiquidacionFiltros>[],
+    [filtros],
+  );
+
   return (
     <div className="page-section">
       <div className="space-y-6">
@@ -102,10 +172,9 @@ function LiquidacionesListContentInner<TItem>({
         />
 
         <ActiveFiltersPanel
-          filtros={filtros}
-          onClear={() => {
-            clearFiltros();
-          }}
+          entries={activeFilterEntries}
+          onRemove={removeFilter}
+          onClearAll={clearFiltros}
         />
 
         {list.isLoading ? (
@@ -166,79 +235,6 @@ function LiquidacionesListContentInner<TItem>({
           setFiltroModalOpen(false);
         }}
       />
-    </div>
-  );
-}
-
-function ActiveFiltersPanel({
-  filtros,
-  onClear,
-}: {
-  filtros: LiquidacionFiltros;
-  onClear: () => void;
-}) {
-  const activeFilterCount = Object.values(filtros).filter(Boolean).length;
-  if (activeFilterCount === 0) return null;
-
-  return (
-    <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/20 rounded-xl border border-border/60">
-      <span className="text-xs font-semibold text-muted-foreground">
-        Filtros activos:
-      </span>
-      {filtros.propietario && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-          Propietario: {filtros.propietario}
-        </span>
-      )}
-      {filtros.razon_social && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-          Razón Social: {filtros.razon_social}
-        </span>
-      )}
-      {filtros.entidad_id && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-          Municipalidad
-        </span>
-      )}
-      {filtros.fecha_desde && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-          Desde: {filtros.fecha_desde}
-        </span>
-      )}
-      {filtros.fecha_hasta && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-          Hasta: {filtros.fecha_hasta}
-        </span>
-      )}
-      {filtros.creado_por && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-          Creado por: {filtros.creado_por}
-        </span>
-      )}
-      {filtros.numero != null && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-          N°: {filtros.numero}
-        </span>
-      )}
-      {filtros.numero_revisiones != null && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-          Rev: {filtros.numero_revisiones}
-        </span>
-      )}
-      {filtros.direccion && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-          Dirección: {filtros.direccion}
-        </span>
-      )}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onClear}
-        className="h-7 px-2 gap-1 text-xs text-destructive"
-      >
-        <X className="h-3 w-3" />
-        Limpiar
-      </Button>
     </div>
   );
 }

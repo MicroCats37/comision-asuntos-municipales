@@ -429,6 +429,251 @@ def _parse_nrofactura(raw) -> tuple[str | None, str | None, str]:
     return None, text, text
 
 
+# ── TPERSONA parsing (shared pattern with EDIF/HU) ────────────────────────────
+
+def _parse_tpersona(raw) -> tuple[str, str | None]:
+    """
+    Parse TPERSONA value into (nombres, apellidos).
+
+    Rules:
+        - 1 part  -> nombres=part[0], apellidos=None
+        - 2-3 parts -> nombres=part[0], apellidos=" ".join(rest)
+        - 4+ parts -> nombres=" ".join(part[0:2]), apellidos=" ".join(part[2:])
+        - empty/None -> (None, None)
+    """
+    if raw is None:
+        return None, None
+    text = str(raw).strip()
+    if not text or text.upper() == "NULL":
+        return None, None
+    parts = text.split()
+    if len(parts) == 1:
+        return parts[0], None
+    elif 2 <= len(parts) <= 3:
+        return parts[0], " ".join(parts[1:])
+    else:  # 4+
+        return " ".join(parts[:2]), " ".join(parts[2:])
+
+
+# ── Serie normalization for legacy IO invoices ─────────────────────────────────
+
+def _normalize_serie_factura(raw: str | None) -> str | None:
+    """
+    Normalize a numeric legacy invoice series to prefixed form.
+
+    Rules:
+        - Already prefixed (F003, F002, B001, etc.) -> uppercase, returned as-is
+        - Pure numeric (003, 002) -> prefixed with 'F' (F003, F002)
+        - Empty/invalid -> None
+    """
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    if not text or text.upper() in ("NULL", ""):
+        return None
+    upper = text.upper()
+    # Already has F or B prefix
+    if upper.startswith(("F", "B")):
+        return upper
+    # Pure numeric: 003 -> F003
+    if text.isdigit():
+        return f"F{text}"
+    return upper
+
+
+# ── LiquidacionComprobante helpers ───────────────────────────────────────────
+
+def _tipo_comprobante_from_serie(raw: str | None) -> str | None:
+    """
+    Map NROFACTURA prefix to TipoComprobante value.
+
+    Returns:
+        'FACTURA' if raw starts with 'F'
+        'BOLETA' if raw starts with 'B'
+        None otherwise
+    """
+    if not raw:
+        return None
+    upper = str(raw).strip().upper()
+    if upper.startswith("F"):
+        return "FACTURA"
+    if upper.startswith("B"):
+        return "BOLETA"
+    return None
+
+
+def _upsert_liquidacion_comprobante(
+    liquidacion: "LiquidacionGeneral",
+    nro_factura_raw: str | None,
+    fe_compro: "date | None",
+    total: "Decimal | None",
+    dry_run: bool = False,
+) -> tuple["LiquidacionComprobante | None", str]:
+    """
+    Create or update a LiquidacionComprobante for a LiquidacionGeneral.
+
+    Idempotency: finds existing active comprobante (activo=True) for this
+    liquidation and updates it in-place rather than creating a duplicate.
+
+    Args:
+        liquidacion: LiquidacionGeneral instance (same-row).
+        nro_factura_raw: Original NROFACTURA string from source.
+        fe_compro: Parsed date from FECOMPRO column.
+        total: Decimal total from legacy TOTAL column.
+        dry_run: If True, do not write to DB.
+
+    Returns:
+        (comprobante, status) where status is:
+            "CREADO"     - created new active comprobante
+            "ACTUALIZADO" - updated existing active comprobante
+            "OMITIDO"     - NROFACTURA blank/malformed; no comprobante created
+            "ERROR"       - unexpected failure
+    """
+    raw_nrofactura = nro_factura_raw or ""
+    # Parse into serie/numero
+    if "-" in raw_nrofactura:
+        parts = raw_nrofactura.split("-", 1)
+        serie_raw, numero = parts[0].strip(), parts[1].strip()
+    else:
+        serie_raw, numero = None, raw_nrofactura.strip()
+
+    # Normalize serie: numeric legacy series like 003 -> F003
+    serie = _normalize_serie_factura(serie_raw)
+    numero = numero.strip() if numero else None
+
+    # Skip if no usable NROFACTURA
+    if serie is None and numero is None:
+        return None, "OMITIDO"
+
+    if dry_run:
+        existing = LiquidacionComprobante.objects.filter(
+            liquidacion_general=liquidacion,
+            activo=True,
+        ).first()
+        if existing:
+            return existing, "ACTUALIZADO"
+        return None, "CREADO"
+
+    try:
+        existing = LiquidacionComprobante.objects.filter(
+            liquidacion_general=liquidacion,
+            activo=True,
+        ).first()
+
+        tipo = _tipo_comprobante_from_serie(serie or nro_factura_raw)
+
+        if existing:
+            # Update existing active comprobante in-place
+            existing.serie = serie
+            existing.numero = numero
+            existing.tipo_comprobante = tipo
+            existing.fecha_emision = fe_compro
+            existing.monto = total
+            existing.save()
+            return existing, "ACTUALIZADO"
+
+        # Create new comprobante
+        comp = LiquidacionComprobante.objects.create(
+            liquidacion_general=liquidacion,
+            tipo_comprobante=tipo,
+            serie=serie,
+            numero=numero,
+            fecha_emision=fe_compro,
+            monto=total,
+            activo=True,
+        )
+        return comp, "CREADO"
+    except Exception:  # noqa: BLE001
+        return None, "ERROR"
+
+
+# ── Contacto helpers ──────────────────────────────────────────────────────────
+
+def _upsert_contacto(
+    liquidacion: "LiquidacionGeneral",
+    nombres: str | None,
+    apellidos: str | None,
+    dni: str | None,
+    telefono: str | None,
+    dry_run: bool = False,
+) -> tuple["Contacto | None", str]:
+    """
+    Create or update a Contacto and attach it as principal to a LiquidacionGeneral.
+
+    Idempotency: if the liquidation already has a principal contact, update
+    missing fields only. If no principal contact exists, create and attach one.
+
+    Args:
+        liquidacion: LiquidacionGeneral instance.
+        nombres: Parsed nombres from TPERSONA.
+        apellidos: Parsed apellidos from TPERSONA.
+        dni: DNI from TDNI column (may be None).
+        telefono: Telefono from TFONO column (may be None).
+        dry_run: If True, do not write to DB.
+
+    Returns:
+        (contacto, status) where status is:
+            "CREADO"     - created new contacto and attached
+            "ACTUALIZADO" - updated existing principal contacto
+            "OMITIDO"    - no useful contact data (nombres and telefono both absent)
+            "ERROR"      - unexpected failure
+    """
+    # Must have at least nombres or telefono to create contact
+    has_nombres = nombres is not None and nombres != ""
+    has_telefono = telefono is not None and telefono != ""
+    if not has_nombres and not has_telefono:
+        return None, "OMITIDO"
+
+    if dry_run:
+        existing_principal = LiquidacionContacto.objects.filter(
+            liquidacion=liquidacion,
+            principal=True,
+        ).select_related("contacto").first()
+        if existing_principal:
+            return existing_principal.contacto, "ACTUALIZADO"
+        return None, "CREADO"
+
+    try:
+        # Check for existing principal contact
+        existing_lc = LiquidacionContacto.objects.filter(
+            liquidacion=liquidacion,
+            principal=True,
+        ).select_related("contacto").first()
+
+        if existing_lc:
+            # Update missing fields only
+            contacto = existing_lc.contacto
+            updated = False
+            if has_nombres and not contacto.nombres:
+                contacto.nombres = nombres
+                updated = True
+            if has_telefono and not contacto.telefono:
+                contacto.telefono = telefono
+                updated = True
+            if dni and not contacto.dni:
+                contacto.dni = dni
+                updated = True
+            if updated:
+                contacto.save()
+            return contacto, "ACTUALIZADO"
+
+        # Create new contacto
+        contacto = Contacto.objects.create(
+            nombres=nombres if has_nombres else None,
+            apellidos=apellidos,
+            dni=dni,
+            telefono=telefono if has_telefono else None,
+        )
+        LiquidacionContacto.objects.create(
+            liquidacion=liquidacion,
+            contacto=contacto,
+            principal=True,
+        )
+        return contacto, "CREADO"
+    except Exception:  # noqa: BLE001
+        return None, "ERROR"
+
+
 # ── Username normalization ──────────────────────────────────────────────────────
 
 def _normalize_usuario_to_username(usuario_raw) -> str | None:
@@ -1033,6 +1278,7 @@ from django.utils import timezone
 from modules.entidades.domain.models.entidad import Entidad
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.entidades.domain.models.ubigeo import UbigeoDistrito
+from modules.entidades.domain.models.contacto import Contacto
 from modules.finanzas.domain.models.detalle_honorario_inspector import (
     DetalleHonorarioInspector,
 )
@@ -1042,6 +1288,10 @@ from modules.liquidaciones.domain.constants import (
 )
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
     LiquidacionGeneral,
+    LiquidacionContacto,
+)
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.comprobante import (
+    LiquidacionComprobante,
 )
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_inspeccion_obra import (
     LiquidacionInspeccionObra,
@@ -1059,7 +1309,10 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
 )
 from modules.liquidaciones.domain.models.proyecto import Proyecto
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion
-from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
+from modules.usuarios.domain.models.perfil_ingeniero import (
+    EspecialidadRevision,
+    PerfilIngeniero,
+)
 from modules.usuarios.domain.services.core.perfil_ingeniero_core_service import (
     PerfilIngenieroCoreService,
 )
@@ -1264,7 +1517,7 @@ def _resolve_perfil_cip(
     """
     if cip is None:
         return None, "SIN_CIP"
-    cip_key = str(cip)
+    cip_key = _normalize_legacy_cip(cip)
     if cip_key in perfil_cache:
         return perfil_cache[cip_key]
     perfil, perfil_status = PerfilIngenieroCoreService().hydrate_perfil_from_cip(
@@ -1274,23 +1527,91 @@ def _resolve_perfil_cip(
     return perfil, perfil_status
 
 
+def _normalize_legacy_cip(cip: int | str) -> str:
+    digits = "".join(ch for ch in str(cip or "").strip() if ch.isdigit())
+    if not digits:
+        return ""
+    return digits.zfill(6)
+
+
+def _create_fallback_perfil_ingeniero(cip: int) -> PerfilIngeniero:
+    """
+    Create a temporary/permanent fallback PerfilIngeniero for legacy rows where
+    the CIP lookup returned SIN_COLEGIADO (404) or ERROR_CIP.
+
+    Fallback naming uses the CIP value itself so the record is searchable and
+    remappable later without inventing a real identity.
+
+    Args:
+        cip: The CIP number from the source row.
+
+    Returns:
+        PerfilIngeniero instance (created or pre-existing).
+    """
+    normalized_cip = _normalize_legacy_cip(cip)
+    perfil, created = PerfilIngeniero.objects.get_or_create(
+        cip=normalized_cip,
+        defaults={
+            "nombres": f"CIP {normalized_cip}",
+            "apellido_paterno": "CIP",
+            "apellido_materno": normalized_cip,
+        },
+    )
+    return perfil
+
+
+def _legacy_io_has_rh_detail(liquidacion_general: LiquidacionGeneral) -> bool:
+    return LiquidacionPorCategoriaVisitas.objects.filter(
+        liquidacion_general=liquidacion_general,
+        detalles_honorario__isnull=False,
+    ).exists()
+
+
 def _create_legacy_inspector_detail(
     command,
     row: "ParsedRow",
     liquidacion_visitas: LiquidacionPorCategoriaVisitas,
     perfil_cache: dict[str, tuple[object | None, str]],
-) -> tuple[bool, str]:
-    """Create/reuse inspector and attach it to the legacy IO visit detail."""
+    fallback_on_failure: bool = False,
+) -> tuple[bool, str, bool]:
+    """Create/reuse inspector and attach it to the legacy IO visit detail.
+
+    Idempotent: if the DetalleHonorarioInspector already exists, update missing
+    fields so re-runs repair incomplete data.
+
+    Args:
+        command: BaseCommand instance for logging.
+        row: ParsedRow with source data.
+        liquidacion_visitas: The LiquidacionPorCategoriaVisitas to attach to.
+        perfil_cache: Shared cache of CIP -> (PerfilIngeniero, status).
+        fallback_on_failure: If True, create a temporary/permanent fallback
+            PerfilIngeniero when CIP lookup fails (SIN_COLEGIADO or ERROR_CIP).
+            If False (default), skip inspector creation on lookup failure.
+
+    Returns:
+        (success, perfil_status, was_created) where was_created is True if
+        a new DetalleHonorarioInspector was created.
+    """
     if not row.delegado or row.cip is None:
-        return False, "SIN_CIP"
+        return False, "SIN_CIP", False
 
     perfil, perfil_status = _resolve_perfil_cip(row.cip, perfil_cache)
     if perfil is None:
-        command._log_warning(
-            f"  Fila {row.row_index}: no se pudo resolver PerfilIngeniero para CIP {row.cip} ({perfil_status}); "
-            "saltando inspector."
-        )
-        return False, perfil_status
+        if fallback_on_failure and perfil_status in ("SIN_COLEGIADO", "ERROR_CIP"):
+            # Fallback: create temporary/permanent profile from CIP for auditability
+            perfil = _create_fallback_perfil_ingeniero(row.cip)
+            perfil_status = f"FALLBACK_{perfil_status}"
+            perfil_cache[_normalize_legacy_cip(row.cip)] = (perfil, perfil_status)
+            command._log_warning(
+                f"  Fila {row.row_index}: CIP {row.cip} no resuelto ({perfil_status}); "
+                f"creando perfil fallback CIP {row.cip}."
+            )
+        else:
+            command._log_warning(
+                f"  Fila {row.row_index}: no se pudo resolver PerfilIngeniero para CIP {row.cip} ({perfil_status}); "
+                "saltando inspector."
+            )
+            return False, perfil_status, False
 
     inspector, _ = Inspector.objects.get_or_create(perfil_ingeniero=perfil)
     inspector_operacion = _resolve_inspector_operacion_for_legacy_io(inspector, row)
@@ -1305,7 +1626,9 @@ def _create_legacy_inspector_detail(
         },
     )
 
+    # ── Compute all DetalleHonorarioInspector fields ──────────────────────────
     inspecciones_liquidadas = int(row.nrorev or 0)
+    inspecciones_programadas = int(row.nrorev or 0)
     costo_por_inspeccion = row.subtotal_unitario_legacy or Decimal("0.00")
     importe_bruto = row.imp_bruto if row.imp_bruto is not None else (row.subtotal or Decimal("0.00"))
     monto_contribuido = row.subtotal or importe_bruto
@@ -1324,20 +1647,79 @@ def _create_legacy_inspector_detail(
     if honorarios is None:
         honorarios = importe_bruto - legacy_deducciones
     descuento = importe_bruto - honorarios
-    DetalleHonorarioInspector.objects.get_or_create(
+
+    # tasa_descuento = descuento / imp_bruto when IMPBRUTO > 0
+    tasa_descuento: Decimal | None = None
+    if importe_bruto and importe_bruto > 0:
+        try:
+            tasa_descuento = descuento / importe_bruto
+        except (InvalidOperation, ZeroDivisionError, TypeError):
+            tasa_descuento = None
+
+    # inspecciones_pagadas_hasta_mes_anterior: use PAGADAS when non-null in source
+    inspecciones_pagadas: int | None = None
+    pagadas_raw = row.pagadas  # _int already applied; 0 means absent
+    if pagadas_raw is not None and pagadas_raw != 0:
+        inspecciones_pagadas = int(pagadas_raw)
+
+    # saldo_restante: use DIFERENCIA when non-null in source
+    saldo_restante: Decimal | None = None
+    diferencia_raw = row.diferencia
+    if diferencia_raw is not None and diferencia_raw != 0:
+        saldo_restante = Decimal(int(diferencia_raw))
+
+    # ── Upsert DetalleHonorarioInspector (idempotent) ─────────────────────────
+    detalle = DetalleHonorarioInspector.objects.filter(
         liquidacion_por_categoria_visitas=liquidacion_visitas,
-        defaults={
-            "recibo_mensual": None,
+    ).first()
+
+    if detalle is None:
+        detalle = DetalleHonorarioInspector.objects.create(
+            liquidacion_por_categoria_visitas=liquidacion_visitas,
+            recibo_mensual=None,
+            inspecciones_liquidadas=inspecciones_liquidadas,
+            inspecciones_programadas=inspecciones_programadas,
+            costo_por_inspeccion=costo_por_inspeccion,
+            monto_contribuido=monto_contribuido,
+            sub_total=monto_contribuido,
+            importe_bruto=importe_bruto,
+            descuento=descuento,
+            honorarios=honorarios,
+            tasa_descuento=tasa_descuento,
+            inspecciones_pagadas_hasta_mes_anterior=inspecciones_pagadas,
+            saldo_restante=saldo_restante,
+        )
+        detalle_created = True
+    else:
+        # Update missing/outdated fields so re-runs repair incomplete data
+        detalle_updated = False
+        fields_to_update = {
             "inspecciones_liquidadas": inspecciones_liquidadas,
+            "inspecciones_programadas": inspecciones_programadas,
             "costo_por_inspeccion": costo_por_inspeccion,
             "monto_contribuido": monto_contribuido,
-            "importe_bruto": importe_bruto,
             "sub_total": monto_contribuido,
+            "importe_bruto": importe_bruto,
             "descuento": descuento,
             "honorarios": honorarios,
-        },
-    )
-    return True, perfil_status
+            "tasa_descuento": tasa_descuento,
+        }
+        for field, value in fields_to_update.items():
+            if getattr(detalle, field, None) is None and value is not None:
+                setattr(detalle, field, value)
+                detalle_updated = True
+        # Only update inspecciones_pagadas/saldo_restante if source is non-null
+        if inspecciones_pagadas is not None and detalle.inspecciones_pagadas_hasta_mes_anterior is None:
+            detalle.inspecciones_pagadas_hasta_mes_anterior = inspecciones_pagadas
+            detalle_updated = True
+        if saldo_restante is not None and detalle.saldo_restante is None:
+            detalle.saldo_restante = saldo_restante
+            detalle_updated = True
+        if detalle_updated:
+            detalle.save()
+        detalle_created = False
+
+    return True, perfil_status, detalle_created
 
 
 def _create_legacy_liquidations(
@@ -1370,6 +1752,8 @@ def _create_legacy_liquidations(
     """
     counters = {
         "created": 0,
+        "liquidaciones_nuevas": 0,
+        "liquidaciones_existentes": 0,
         "rechazadas_diff_alta": 0,
         "rechazadas_sin_tarifa": 0,
         "rechazadas_sin_datos": 0,
@@ -1378,6 +1762,15 @@ def _create_legacy_liquidations(
         "error_details": [],
         "inspectores_asociados": 0,
         "inspectores_saltados": 0,
+        "fallback_creados": 0,
+        "rh_detalles_creados": 0,
+        "rh_detalles_actualizados": 0,
+        "comprobantes_creados": 0,
+        "comprobantes_actualizados": 0,
+        "comprobantes_omitidos": 0,
+        "contactos_creados": 0,
+        "contactos_actualizados": 0,
+        "contactos_omitidos": 0,
     }
     perfil_cache: dict[str, tuple[object | None, str]] = {}
 
@@ -1394,20 +1787,20 @@ def _create_legacy_liquidations(
 
         # Check CATEGORIA=0 / null_tariff
         if row.categoria_status == "null_tariff":
-            if rechazar_sin_tarifa:
+            if rechazar_sin_tarifa and row.existing_liquidacion_general is None:
                 counters["rechazadas_sin_tarifa"] += 1
                 continue
             # CATEGORIA=0 without --rechazar-sin-tarifa → MANUAL (no tariff)
-            # Still process but with modo_calculo=MANUAL
+            # Existing rows are still processed so re-runs can repair inspector/RH detail.
             rows_to_process.append(row)
             continue
 
         # Check diff rejection (only for rows with valid tariff lookup)
         if row.validation_status in ("DIF_SUBTOTAL", "DIF_TOTAL"):
-            if rechazar_dif_alta:
+            if rechazar_dif_alta and row.existing_liquidacion_general is None:
                 counters["rechazadas_diff_alta"] += 1
                 continue
-            # Without rejection flag, diff-high rows still import (as MANUAL)
+            # Existing rows are still processed so re-runs can repair inspector/RH detail.
             rows_to_process.append(row)
             continue
 
@@ -1415,35 +1808,6 @@ def _create_legacy_liquidations(
 
     # Process rows in a transaction
     for row in rows_to_process:
-        # ── Pre-check CIP before creating liquidation (Case A/B) ─────────────────
-        # Case A: no delegate/CIP → PARCIAL (will create liquidation, no inspector)
-        # Case B: had CIP but couldn't resolve → NO (reject row entirely, re-submit later)
-        pre_check_perfil, pre_check_status = _resolve_perfil_cip(row.cip, perfil_cache)
-        if row.delegado and row.cip is not None and pre_check_perfil is None:
-            # Case B: had inspector/CIP but CIP doesn't resolve → reject
-            motivo = f"CIP no resuelto: {row.cip}"
-            rejected_rows.append({
-                "fila": row.row_index,
-                "row": row.raw,
-                "motivo": motivo,
-                "subido": "NO",
-            })
-            counters["rechazadas_cip_no_resuelto"] += 1
-            reporte_writer.writerow([
-                row.row_index,
-                row.nroexpdte or "",
-                motivo,
-                "NO",
-            ])
-            # ── Live write to joined/clean reports ───────────────────────────
-            if jw is not None:
-                jw.writerow([row.row_index, motivo, "NO"] + row.raw)
-                if joined_csv_file is not None:
-                    joined_csv_file.flush()
-            if ws_joined is not None:
-                ws_joined.append([row.row_index, motivo, "NO"] + row.raw)
-            continue
-
         try:
             with transaction.atomic():
                 # Lookup tariff if not CATEGORIA=0
@@ -1457,7 +1821,19 @@ def _create_legacy_liquidations(
                 else:
                     modo_calculo = ModoCalculoLiquidacion.TARIFA
 
-                # Build descripcion_legacy
+                # Determine if CIP lookup fallback should be applied.
+                # Fallback applies only when source row has both delegado and cip,
+                # and the lookup returns SIN_COLEGIADO (CIP 404) or ERROR_CIP.
+                # For rows with no CIP/delegado, keep PARCIAL behavior (no fallback).
+                pre_check_perfil, pre_check_status = _resolve_perfil_cip(row.cip, perfil_cache)
+                use_fallback = (
+                    row.delegado
+                    and row.cip is not None
+                    and pre_check_perfil is None
+                    and pre_check_status in ("SIN_COLEGIADO", "ERROR_CIP")
+                )
+
+                # Build descripcion_legacy (include fallback marker when applicable)
                 desc_parts = [
                     "IMPORT_LEGACY_IO",
                     f"FILA={row.row_index}",
@@ -1479,10 +1855,13 @@ def _create_legacy_liquidations(
                     desc_parts.append(f"UIT_VALIDACION_DETALLE={row.uit_validacion_detalle}")
                 if modo_calculo == ModoCalculoLiquidacion.MANUAL:
                     desc_parts.append("Importado como MANUAL por legacy/diff/sin tarifa")
+                if use_fallback:
+                    desc_parts.append(f"FALLBACK_CIP={row.cip} ({pre_check_status})")
                 descripcion = "\n".join(desc_parts)
 
                 if row.existing_liquidacion_general is not None:
                     lg = row.existing_liquidacion_general
+                    counters["liquidaciones_existentes"] += 1
                 else:
                     # Resolve entity/project/municipalidad
                     entidad, municipalidad, proyecto = _resolve_entidad_municipalidad_proyecto(row)
@@ -1508,6 +1887,7 @@ def _create_legacy_liquidations(
                     # numero=row.id_val preserves the historical legacy ID from source CSV col 0.
                     # AutoNumeroModel.save() respects a non-None numero (no auto-increment).
                     LiquidacionInspeccionObra.objects.create(liquidacion=lg, numero=row.id_val)
+                    counters["liquidaciones_nuevas"] += 1
 
                 # Create LiquidacionPorCategoriaVisitas (one per row)
                 liquidacion_visitas = LiquidacionPorCategoriaVisitas.objects.filter(
@@ -1522,14 +1902,33 @@ def _create_legacy_liquidations(
                         tarifa_aplicada=(tarifa if modo_calculo == ModoCalculoLiquidacion.TARIFA else None),
                     )
 
-                inspector_created, inspector_status = _create_legacy_inspector_detail(
+                inspector_created, inspector_status, detalle_created = _create_legacy_inspector_detail(
                     command=command,
                     row=row,
                     liquidacion_visitas=liquidacion_visitas,
                     perfil_cache=perfil_cache,
+                    fallback_on_failure=use_fallback,
                 )
                 if inspector_created:
                     counters["inspectores_asociados"] += 1
+                    if detalle_created:
+                        counters["rh_detalles_creados"] += 1
+                        command._log_success(
+                            f"  Fila {row.row_index}: RH detalle inspector CREADO para numero {row.id_val or ''}"
+                        )
+                    else:
+                        counters["rh_detalles_actualizados"] += 1
+                        command._log(
+                            f"  Fila {row.row_index}: RH detalle inspector ACTUALIZADO para numero {row.id_val or ''}"
+                        )
+                    if inspector_status.startswith("FALLBACK_"):
+                        counters["fallback_creados"] += 1
+                        reporte_writer.writerow([
+                            row.row_index,
+                            row.nroexpdte or "",
+                            f"FALLBACK ({inspector_status})",
+                            "CREADO",
+                        ])
                 else:
                     counters["inspectores_saltados"] += 1
                     if inspector_status == "SIN_CIP":
@@ -1542,6 +1941,46 @@ def _create_legacy_liquidations(
                         motivo,
                         "PARCIAL",
                     ])
+
+                # ── Upsert LiquidacionComprobante ───────────────────────────────
+                # Parse TPERSONA / TDNI / TFONO for contacto upsert below
+                nombres, apellidos = _parse_tpersona(
+                    row.raw[_COL_TPERSONA] if len(row.raw) > _COL_TPERSONA else None
+                )
+                dni_telefono_raw = row.raw[_COL_TDNI] if len(row.raw) > _COL_TDNI else None
+                telefono_raw = row.raw[_COL_TFONO] if len(row.raw) > _COL_TFONO else None
+                dni_val = str(dni_telefono_raw).strip() if dni_telefono_raw and str(dni_telefono_raw).strip().upper() not in ("NULL", "") else None
+                telefono_val = str(telefono_raw).strip() if telefono_raw and str(telefono_raw).strip().upper() not in ("NULL", "") else None
+
+                comp, comp_status = _upsert_liquidacion_comprobante(
+                    liquidacion=lg,
+                    nro_factura_raw=row.nro_factura,
+                    fe_compro=row.fe_factura,
+                    total=row.total,
+                    dry_run=command.dry_run,
+                )
+                if comp_status == "CREADO":
+                    counters["comprobantes_creados"] += 1
+                elif comp_status == "ACTUALIZADO":
+                    counters["comprobantes_actualizados"] += 1
+                elif comp_status == "OMITIDO":
+                    counters["comprobantes_omitidos"] += 1
+
+                # ── Upsert Contacto ─────────────────────────────────────────────
+                contacto, contacto_status = _upsert_contacto(
+                    liquidacion=lg,
+                    nombres=nombres,
+                    apellidos=apellidos,
+                    dni=dni_val,
+                    telefono=telefono_val,
+                    dry_run=command.dry_run,
+                )
+                if contacto_status == "CREADO":
+                    counters["contactos_creados"] += 1
+                elif contacto_status == "ACTUALIZADO":
+                    counters["contactos_actualizados"] += 1
+                elif contacto_status == "OMITIDO":
+                    counters["contactos_omitidos"] += 1
 
         except Exception as exc:
             counters["errors"] += 1
@@ -1743,15 +2182,16 @@ class Command(BaseCommand):
 
         for idx, raw_row in enumerate(rows, start=2):  # start=2: row 1 is header
             try:
+                # ── Always parse the row first ───────────────────────────────────
+                parsed, rechazo_motivo = _parse_row(raw_row, idx)
+
                 if self.fecha_desde is not None:
-                    fecha_row = _parse_fecha(raw_row[_COL_FECHA] if len(raw_row) > _COL_FECHA else None)
-                    if fecha_row is None or fecha_row < self.fecha_desde:
+                    if parsed.fecha is None or parsed.fecha < self.fecha_desde:
                         skipped_by_date += 1
                         continue
 
                 # ── Reusar liquidación existente y procesar inspector/RH ─────
-                id_raw = raw_row[_COL_ID] if len(raw_row) > _COL_ID else None
-                id_val = _int(id_raw)
+                id_val = parsed.id_val
                 existing_inspeccion = None
                 if id_val is not None and not self.reset:
                     existing_inspeccion = (
@@ -1759,15 +2199,37 @@ class Command(BaseCommand):
                         .filter(numero=id_val)
                         .first()
                     )
+
                 if existing_inspeccion is not None:
-                    skipped += 1
+                    lg = existing_inspeccion.liquidacion
+                    # ── Completeness check: skip only if ALL artifacts are complete ─
+                    # RH detail must have inspecciones_liquidadas populated
+                    rh_complete = DetalleHonorarioInspector.objects.filter(
+                        liquidacion_por_categoria_visitas__liquidacion_general=lg,
+                        inspecciones_liquidadas__isnull=False,
+                        inspecciones_liquidadas__gt=0,
+                    ).exists()
+                    # Comprobante must exist (active)
+                    has_comprobante = LiquidacionComprobante.objects.filter(
+                        liquidacion_general=lg,
+                        activo=True,
+                    ).exists()
+                    # Contacto principal must exist
+                    has_contacto = LiquidacionContacto.objects.filter(
+                        liquidacion=lg,
+                        principal=True,
+                    ).exists()
+
+                    if rh_complete and has_comprobante and has_contacto:
+                        skipped += 1
+                        continue
+                    # Row is incomplete — repair it
+                    parsed.existing_liquidacion_general = lg
                     self._log_warning(
-                        f"  EXISTENTE row {idx}: numero {id_val} ya existe; procesando inspector/RH"
+                        f"  INCOMPLETA row {idx}: numero {id_val} ya existe; "
+                        f"reparando (rh={rh_complete} comp={has_comprobante} contacto={has_contacto})"
                     )
 
-                parsed, rechazo_motivo = _parse_row(raw_row, idx)
-                if existing_inspeccion is not None:
-                    parsed.existing_liquidacion_general = existing_inspeccion.liquidacion
                 parsed_rows.append(parsed)
             except Exception as exc:  # noqa: BLE001
                 parse_errors += 1
@@ -1919,6 +2381,14 @@ class Command(BaseCommand):
                 1 for pr in parsed_rows
                 if pr.nro_factura and pr.nro_factura.strip() not in ("NULL", "")
             )
+            # Contacto candidates: TPERSONA or TFONO present in source
+            contacto_candidates = sum(
+                1 for pr in parsed_rows
+                if (
+                    (len(pr.raw) > _COL_TPERSONA and str(pr.raw[_COL_TPERSONA] or "").strip().upper() not in ("", "NULL"))
+                    or (len(pr.raw) > _COL_TFONO and str(pr.raw[_COL_TFONO] or "").strip().upper() not in ("", "NULL"))
+                )
+            )
             encoding_issues = sum(
                 1 for pr in parsed_rows
                 if any("Encoding issue" in a for a in pr.anomalies)
@@ -1938,12 +2408,23 @@ class Command(BaseCommand):
                 self._log(f"  Saltadas por fecha:             {skipped_by_date}")
             self._log(f"  Procesadas (total filas leídas): {processed}")
             if self.write_mode:
-                self._log(f"  Importadas (creadas en BD):      {db_counters.get('created', 0)}")
+                self._log(f"  Filas procesadas en BD:          {db_counters.get('created', 0)}")
+                self._log(f"  Liquidaciones nuevas creadas:    {db_counters.get('liquidaciones_nuevas', 0)}")
+                self._log(f"  Liquidaciones existentes usadas: {db_counters.get('liquidaciones_existentes', 0)}")
                 self._log(f"  Rechazadas (diff alta):          {db_counters.get('rechazadas_diff_alta', 0)}")
                 self._log(f"  Rechazadas (sin tarifa):         {db_counters.get('rechazadas_sin_tarifa', 0)}")
                 self._log(f"  Errores al crear:                {db_counters.get('errors', 0)}")
                 self._log(f"  Inspectores asociados:           {db_counters.get('inspectores_asociados', 0)}")
                 self._log(f"  Inspectores saltados:            {db_counters.get('inspectores_saltados', 0)}")
+                self._log(f"  Fallback CIP creados:            {db_counters.get('fallback_creados', 0)}")
+                self._log(f"  RH detalles creados:             {db_counters.get('rh_detalles_creados', 0)}")
+                self._log(f"  RH detalles actualizados:       {db_counters.get('rh_detalles_actualizados', 0)}")
+                self._log(f"  Comprobantes creados:           {db_counters.get('comprobantes_creados', 0)}")
+                self._log(f"  Comprobantes actualizados:     {db_counters.get('comprobantes_actualizados', 0)}")
+                self._log(f"  Comprobantes omitidos:         {db_counters.get('comprobantes_omitidos', 0)}")
+                self._log(f"  Contactos creados:              {db_counters.get('contactos_creados', 0)}")
+                self._log(f"  Contactos actualizados:        {db_counters.get('contactos_actualizados', 0)}")
+                self._log(f"  Contactos omitidos:            {db_counters.get('contactos_omitidos', 0)}")
             else:
                 self._log(f"  Importadas (creadas en BD):      0  ← modo dry-run")
             self._log(f"  Rechazadas (estructural):       {structurally_rejected}")
@@ -1952,6 +2433,7 @@ class Command(BaseCommand):
             self._log(f"  Errores de parseo:              {parse_errors}")
             self._log(f"  Inspector candidates (DELEGADO+CIP): {inspector_candidates}")
             self._log(f"  Factura candidates (NROFACTURA): {factura_candidates}")
+            self._log(f"  Contacto candidates (TPERSONA/TFONO): {contacto_candidates}")
             self._log(f"  Encoding issues:                 {encoding_issues}")
             self._log(f"")
             self._log(f"  Validación unitaria (batch 3c):")

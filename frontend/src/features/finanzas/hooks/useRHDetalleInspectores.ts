@@ -1,9 +1,7 @@
 /**
  * Hook para listar filas de DetalleHonorarioInspector (detalle flat, sin agrupar por mes).
  * Endpoint: GET /finanzas/recibos-inspectores/detalle
- * Filtros: inspector_id, periodo, mes, municipalidad_id, tipo_liquidacion_id, numero_liquidacion
- *
- * Nota: periodo y tipoLiquidacionId son obligatorios para habilitar la consulta.
+ * Filtros opcionales: inspector_id, inspector_cip, periodo, mes, municipalidad_id, numero_liquidacion
  */
 
 import { paginatedResponseSchema } from "@/features/liquidaciones/schemas/liquidacion-base.schema";
@@ -24,7 +22,6 @@ interface UseRHDetalleInspectoresProps {
   periodo?: number;
   mes?: number;
   municipalidadId?: string;
-  tipoLiquidacionId?: string;
   numeroLiquidacion?: number;
   enabled?: boolean;
 }
@@ -37,7 +34,6 @@ export function useRHDetalleInspectores({
   periodo,
   mes,
   municipalidadId,
-  tipoLiquidacionId,
   numeroLiquidacion,
   enabled = true,
 }: UseRHDetalleInspectoresProps = {}) {
@@ -47,11 +43,7 @@ export function useRHDetalleInspectores({
   if (periodo) params.periodo = periodo;
   if (mes) params.mes = mes;
   if (municipalidadId) params.municipalidad_id = municipalidadId;
-  if (tipoLiquidacionId) params.tipo_liquidacion_id = tipoLiquidacionId;
   if (numeroLiquidacion) params.numero_liquidacion = numeroLiquidacion;
-
-  // Query is only enabled when required filters are present
-  const isEnabled = enabled && Boolean(periodo && tipoLiquidacionId);
 
   const query = useApiQuery({
     queryKey: [
@@ -65,14 +57,13 @@ export function useRHDetalleInspectores({
       periodo,
       mes,
       municipalidadId,
-      tipoLiquidacionId,
       numeroLiquidacion,
     ],
     url: "/finanzas/recibos-inspectores/detalle",
     schema: paginatedSchema,
     params,
     queryOptions: {
-      enabled: isEnabled,
+      enabled,
       select: (data) => {
         if (!data?.data) {
           return {

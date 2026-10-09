@@ -56,7 +56,7 @@ class LiquidacionInspeccionObraFlujo:
         usuario_id: int,
         data: InspeccionObraNuevaRevisionData,
         liquidacion_previa,
-        inspector,
+        inspector_operacion,
     ) -> InspeccionObraPrimeraRevisionResult:
         """
         Crea una IO primera-revision heredando proyecto/municipalidad/entidad
@@ -67,6 +67,9 @@ class LiquidacionInspeccionObraFlujo:
         - numero_revision = 1 (siempre)
         - Se crea LiquidacionInspector para asociar el inspector
         - No se usa upsert_contacto (el contacto viene en el dominio, no se pide en el input)
+
+        inspector_operacion se pasa desde el orchestrator con la especialidad ya validada
+        contra el tipo de la liquidación previa. Ya no se hace lookup ambiguo con .first().
         """
         # 1. Traer tarifa, UIT y calcular
         tarifa = self.visitas_core.get_tarifa_por_id(data.liquidacion_especifica.tarifa.tarifa_visitas_id)
@@ -127,32 +130,13 @@ class LiquidacionInspeccionObraFlujo:
         )
 
         # 7. Crear LiquidacionInspector (asocia el inspector a la IO)
-        # La especialidad_revision se resuelve desde la operación del inspector
-        # para el TIPO DE LA LIQUIDACIÓN PREVIA (EDIFICACION/HABILITACION_URBANA).
-        # Los inspectores NO se registran con tipo INSPECCION_OBRA — se registran
-        # con el tipo del trámite que pueden revisar (el de la previa).
-        from modules.liquidaciones.domain.models.inspector import InspectorOperacion
-
-        tipo_previa = liquidacion_previa.tipo_liquidacion.codigo
-        especialidad_revision = (
-            InspectorOperacion.objects
-            .filter(
-                inspector=inspector,
-                tipo_liquidacion__codigo=tipo_previa,
-            )
-            .values_list("especialidad_revision_id", flat=True)
-            .first()
-        )
-        if not especialidad_revision:
-            raise HttpError(
-                400,
-                f"El inspector no tiene una operación vigente con especialidad "
-                f"para el tipo '{tipo_previa}' de la liquidación previa.",
-            )
+        # especialidad_revision, inspector y inspector_operacion vienen directamente
+        # de inspector_operacion (ya validado en el orchestrator contra tipo_previo).
         LiquidacionInspector.objects.create(
             liquidacion=liquidacion_visitas,
-            inspector=inspector,
-            especialidad_revision_id=especialidad_revision,
+            inspector=inspector_operacion.inspector,
+            inspector_operacion=inspector_operacion,
+            especialidad_revision_id=inspector_operacion.especialidad_revision_id,
         )
 
         # 8. Mapear a Result puro (reutiliza la lógica de mapeo de ejecutar_primera_revision)
@@ -172,6 +156,7 @@ class LiquidacionInspeccionObraFlujo:
         usuario_id: int,
         data: InspeccionObraNuevaRevisionData,
         inspector,
+        inspector_operacion=None,
     ) -> InspeccionObraPrimeraRevisionResult:
         """
         Crea una IO primera-revision SIN liquidación previa.
@@ -180,9 +165,11 @@ class LiquidacionInspeccionObraFlujo:
 
         Diferencias respecto a ejecutar_primera_revision_desde_previa:
         - Entidad y Proyecto se CREAN desde cero (no se heredan de previa).
-        - La especialidad_revision del inspector se resuelve usando INSPECCION_OBRA
-          como tipo de liquidación (los inspectores tienen operaciones registradas
-          con tipo INSPECCION_OBRA para este flujo).
+        - La especialidad_revision del inspector se resuelve desde inspector_operacion
+          cuando está disponible (passed from mutation input, obtained from
+          /seleccionables endpoint). Ya NO se consulta por tipo INSPECCION_OBRA.
+          Los inspectores NO se registran con tipo INSPECCION_OBRA — se registran
+          con el tipo del trámite que pueden revisar (EDIFICACION/HABILITACION_URBANA).
         """
         from decimal import Decimal
 
@@ -265,28 +252,17 @@ class LiquidacionInspeccionObraFlujo:
         )
 
         # 9. Crear LiquidacionInspector
-        # La especialidad_revision se resuelve desde la operación del inspector con tipo INSPECCION_OBRA
-        from modules.liquidaciones.domain.models.inspector import InspectorOperacion
-
-        especialidad_revision = (
-            InspectorOperacion.objects
-            .filter(
-                inspector=inspector,
-                tipo_liquidacion__codigo=TipoLiquidacion.INSPECCION_OBRA,
-            )
-            .values_list("especialidad_revision_id", flat=True)
-            .first()
-        )
-        if not especialidad_revision:
-            raise HttpError(
-                400,
-                f"El inspector no tiene una operación vigente con especialidad "
-                f"para el tipo '{TipoLiquidacion.INSPECCION_OBRA}'.",
-            )
+        # La especialidad_revision se resuelve desde inspector_operacion cuando
+        # está disponible (inyectado desde el input, obtenido de /seleccionables).
+        # Ya NO se consulta por tipo INSPECCION_OBRA.
         LiquidacionInspector.objects.create(
             liquidacion=liquidacion_visitas,
             inspector=inspector,
-            especialidad_revision_id=especialidad_revision,
+            inspector_operacion=inspector_operacion,
+            especialidad_revision_id=(
+                inspector_operacion.especialidad_revision_id
+                if inspector_operacion else None
+            ),
         )
 
         # 10. Mapear a Result

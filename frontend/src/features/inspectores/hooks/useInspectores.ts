@@ -1,11 +1,11 @@
 /**
  * Hook para lista de inspectores con paginación.
  * Usa useApiQuery genérico del proyecto.
+ * CONTROLADO: recibe page/pageSize como props (la vista los gestiona vía URL).
  * Endpoint: GET /inspectores/
  */
 
 import { useApiQuery } from "@/hooks";
-import { usePagination } from "@/hooks/system/usePagination";
 import {
   type InspectorOut,
   inspectoresListResponseSchema,
@@ -18,18 +18,20 @@ interface UseInspectoresProps {
 
 const BASE_URL = "/inspectores/";
 
-export function useInspectores(props: UseInspectoresProps = {}) {
-  const { page, pageSize, onPageChange, onPageSizeChange, paginationParams } =
-    usePagination({
-      initialPage: props.page ?? 1,
-      initialPageSize: props.pageSize ?? 10,
-    });
+export function useInspectores({
+  page = 1,
+  pageSize = 10,
+}: UseInspectoresProps = {}) {
+  const params: Record<string, string | number> = {
+    page,
+    page_size: pageSize,
+  };
 
   const query = useApiQuery({
     queryKey: ["inspectores", page, pageSize],
     url: BASE_URL,
     schema: inspectoresListResponseSchema,
-    params: paginationParams,
+    params,
     queryOptions: {
       select: (data) => {
         if (!data?.data) {
@@ -53,7 +55,5 @@ export function useInspectores(props: UseInspectoresProps = {}) {
     page: query.data?.page ?? page,
     pageSize: query.data?.page_size ?? pageSize,
     totalPages: query.data?.total_pages ?? 1,
-    setPage: onPageChange,
-    setPageSize: onPageSizeChange,
   };
 }

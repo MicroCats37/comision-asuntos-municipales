@@ -12,8 +12,9 @@ from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_visitas_d
 class InspeccionObraNuevaRevisionData(BaseModel):
     """
     Wrapper para Inspección de Obra primera-revision desde liquidación previa.
-    Incluye inspector_id para crear el registro LiquidacionInspector.
+    inspector_id es opcional — se valida contra inspector_operacion si ambos presentes.
+    El inspector real se deriva de inspector_operacion.inspector en el flujo.
     """
     liquidacion_general: LiquidacionGeneralData
     liquidacion_especifica: LiquidacionCategoriaVisitasData
-    inspector_id: uuid.UUID
+    inspector_id: Optional[uuid.UUID] = None

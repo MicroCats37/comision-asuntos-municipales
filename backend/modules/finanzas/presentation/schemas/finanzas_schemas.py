@@ -118,7 +118,7 @@ class InspectorMinimalOut(BaseSchema):
     """Inspector + PerfilIngeniero minimal for list item."""
     id: uuid.UUID
     cip: str
-    dni: str
+    dni: Optional[str] = None
     nombre_completo: str
 
 
@@ -232,7 +232,7 @@ class InspectorCandidataItemOut(BaseSchema):
     fecha_registro: str = Field(..., description="Fecha de registro (ISO)")
     inspector_nombre: str = Field(..., description="Nombre completo del inspector")
     inspector_cip: str = Field(..., description="CIP del inspector")
-    inspector_dni: str = Field(..., description="DNI del inspector")
+    inspector_dni: Optional[str] = Field(None, description="DNI del inspector")
     especialidad_nombre: str = Field(..., description="Nombre de la especialidad de revisión")
     nombre_propietario: str = Field(..., description="Nombre del propietario del proyecto")
     cantidad_visitas: int = Field(..., description="Visitas programadas en la IO")
@@ -248,7 +248,7 @@ class InspectorCandidatosOut(BaseSchema):
     inspector_id: uuid.UUID = Field(..., description="ID del inspector")
     inspector_nombre: str = Field(..., description="Nombre completo del inspector")
     inspector_cip: str = Field(..., description="CIP del inspector")
-    inspector_dni: str = Field(..., description="DNI del inspector")
+    inspector_dni: Optional[str] = Field(None, description="DNI del inspector")
     periodo: str = Field(..., description="Periodo (YYYY-MM)")
     candidatos: list[InspectorCandidataItemOut] = Field(default_factory=list, description="Lista de candidatas con saldo disponible")
     total: int = Field(..., description="Total de candidatas")
@@ -259,7 +259,7 @@ class InspectorCandidatosPaginatedOut(BaseSchema):
     inspector_id: uuid.UUID = Field(..., description="ID del inspector")
     inspector_nombre: str = Field(..., description="Nombre completo del inspector")
     inspector_cip: str = Field(..., description="CIP del inspector")
-    inspector_dni: str = Field(..., description="DNI del inspector")
+    inspector_dni: Optional[str] = Field(None, description="DNI del inspector")
     periodo: str = Field(..., description="Periodo (YYYY-MM)")
     items: list[InspectorCandidataItemOut] = Field(default_factory=list, description="Lista paginada de candidatas con saldo disponible")
     total: int = Field(..., description="Total de candidatas")

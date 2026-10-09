@@ -1196,6 +1196,7 @@ class FinanzasOrchestrator:
                     id=str(lg.id),
                     expediente=getattr(lg, "expediente", None) or None,
                     numero_revision=getattr(lg, "numero_revision", None),
+                    numero=_resolve_liquidacion_especifica_numero(lg),
                     municipalidad=municipalidad_nested,
                     tipo_liquidacion=tipo_liq_nested,
                 )
@@ -1245,7 +1246,6 @@ class FinanzasOrchestrator:
         periodo: int | None = None,
         mes: int | None = None,
         municipalidad_id: uuid.UUID | None = None,
-        tipo_liquidacion_id: uuid.UUID | None = None,
         numero_liquidacion: int | None = None,
     ) -> tuple[list[DetalleInspectorRowResult], int]:
         """
@@ -1257,11 +1257,10 @@ class FinanzasOrchestrator:
             inspector_id: Filter by inspector UUID (from parent receipt).
             inspector_cip: Filter by CIP (from inspector.perfil_ingeniero.cip).
                 Takes precedence if both inspector_id and inspector_cip are set.
-            periodo: Filter by año (from parent ReciboHonorarioInspectorMensual). REQUIRED.
+            periodo: Filter by año (from parent ReciboHonorarioInspectorMensual).
             mes: Filter by mes (1-12, from parent receipt).
             municipalidad_id: Filter by liquidacion_general.municipalidad_id.
-            tipo_liquidacion_id: Filter by liquidacion_general.tipo_liquidacion_id. REQUIRED.
-            numero_liquidacion: Filter by the type-specific numero field. Requires tipo_liquidacion_id.
+            numero_liquidacion: Filter by Inspección de Obra numero.
 
         Returns:
             Tuple of (list of DetalleInspectorRowResult, total count).
@@ -1277,7 +1276,6 @@ class FinanzasOrchestrator:
             periodo=periodo,
             mes=mes,
             municipalidad_id=municipalidad_id,
-            tipo_liquidacion_id=tipo_liquidacion_id,
             numero_liquidacion=numero_liquidacion,
         )
 
@@ -1285,7 +1283,14 @@ class FinanzasOrchestrator:
         for row in rows:
             lcv = row.liquidacion_por_categoria_visitas
             lg = lcv.liquidacion_general
-            inspector_perfil = row.recibo_mensual.inspector.perfil_ingeniero
+            liquidacion_inspector = lcv.inspectores.first()
+            if row.recibo_mensual:
+                inspector = row.recibo_mensual.inspector
+            elif liquidacion_inspector:
+                inspector = liquidacion_inspector.inspector
+            else:
+                inspector = None
+            inspector_perfil = inspector.perfil_ingeniero if inspector else None
 
             # Build nested LiquidacionInspectorNestedResult
             lg_insp_nested = None
@@ -1309,6 +1314,7 @@ class FinanzasOrchestrator:
                     id=str(lg.id),
                     expediente=getattr(lg, "expediente", None) or None,
                     numero_revision=getattr(lg, "numero_revision", None),
+                    numero=_resolve_liquidacion_especifica_numero(lg),
                     nombre_propietario=(
                         lg.proyecto.nombre_propietario
                         if getattr(lg, "proyecto", None) else None
@@ -1320,16 +1326,24 @@ class FinanzasOrchestrator:
             # Build nested InspectorLiquidacionResult
             ilq_nested = InspectorLiquidacionResult(
                 id=str(lcv.id),
-                periodo=row.recibo_mensual.periodo,
-                mes=row.recibo_mensual.mes,
-                dictamen_revision=getattr(lcv, "dictamen_revision", None) or None,
-                fecha_revision=str(lcv.fecha_revision.isoformat()) if getattr(lcv, "fecha_revision", None) else None,
-                fecha_presentacion=str(lcv.fecha_presentacion.isoformat()) if getattr(lcv, "fecha_presentacion", None) else None,
+                periodo=(row.recibo_mensual.periodo if row.recibo_mensual else getattr(liquidacion_inspector, "periodo", None)),
+                mes=(row.recibo_mensual.mes if row.recibo_mensual else getattr(liquidacion_inspector, "mes", None)),
+                dictamen_revision=(getattr(liquidacion_inspector, "dictamen_revision", None) or None),
+                fecha_revision=(
+                    str(liquidacion_inspector.fecha_revision.isoformat())
+                    if getattr(liquidacion_inspector, "fecha_revision", None)
+                    else None
+                ),
+                fecha_presentacion=(
+                    str(liquidacion_inspector.fecha_presentacion.isoformat())
+                    if getattr(liquidacion_inspector, "fecha_presentacion", None)
+                    else None
+                ),
                 inspector=InspectorMinimalResult(
-                    id=str(row.recibo_mensual.inspector_id),
+                    id=str(inspector.id),
                     cip=inspector_perfil.cip if inspector_perfil else None,
                     nombre_completo=inspector_perfil.nombre_completo if inspector_perfil else None,
-                ),
+                ) if inspector else None,
                 liquidacion=lg_insp_nested,
             )
 

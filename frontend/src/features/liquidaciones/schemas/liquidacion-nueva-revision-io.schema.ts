@@ -4,7 +4,7 @@
  *
  * Se hereda de la previa (NO viene en el input): proyecto, municipalidad, entidad,
  * expediente, observacion, retencion.
- * Se edita: cantidad_visitas, categoria, tarifa_visitas_id, inspector_id.
+ * Se edita: cantidad_visitas, categoria, tarifa_visitas_id, inspector_operacion_id.
  */
 import { z } from "zod";
 import { contactoInlineSchema } from "./liquidacion-form-base.schema";
@@ -17,8 +17,10 @@ export const nuevaRevisionInspeccionObraFormSchema = z.object({
   categoria: z.string().min(1, "Selecciona una categoría"),
   // Tarifa
   tarifa_visitas_id: z.string().min(1, "Selecciona una tarifa"),
-  // Inspector asignado
-  inspector_id: z.string().min(1, "Selecciona un inspector"),
+  // InspectorOperacion ID — obligatorio, obtenido del endpoint /seleccionables
+  inspector_operacion_id: z.string().min(1, "Selecciona un inspector"),
+  // Estado visual del selector; no forma parte del payload de creación.
+  inspector_id: z.string().optional(),
   // Contacto principal (opcional, gestionado via ContactoFormModal)
   contacto: contactoInlineSchema.optional(),
 });

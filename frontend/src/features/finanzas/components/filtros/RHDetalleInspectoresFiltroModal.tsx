@@ -5,11 +5,11 @@
  * Usa AppFormModal como shell.
  *
  * Patrón limpio alineado con RHDetalleDelegadosFiltroModal:
- *   - SearchableSelect para año / mes / municipalidad / tipo de liquidación.
+ *   - SearchableSelect para año / mes / municipalidad.
  *   - Input con icono (UserRound / Hash) para cip y n° liquidación.
  *
- * Filtros: inspector_cip (CIP), periodo (año, REQUERIDO), mes (1-12), municipalidad_id,
- * tipo_liquidacion_id (REQUERIDO), numero_liquidacion (int, opcional).
+ * Filtros opcionales: inspector_cip (CIP), periodo (año), mes (1-12), municipalidad_id,
+ * numero_liquidacion (int).
  */
 import { Building2, Calendar, Filter, Hash, UserRound } from "lucide-react";
 import { useCallback } from "react";
@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/searchable-select";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { useMunicipalidades } from "@/features/liquidaciones/hooks/useMunicipalidades";
-import { useTiposLiquidacion } from "@/features/liquidaciones/hooks/useTiposLiquidacion";
 
 const MIN_YEAR = 2010;
 const MAX_YEAR = new Date().getFullYear();
@@ -61,8 +60,9 @@ const filtroSchema = z.object({
     ),
   periodo: z
     .string()
-    .min(1, "Año es requerido")
+    .optional()
     .refine((v) => {
+      if (!v) return true;
       const n = Number(v);
       return Number.isInteger(n) && n >= MIN_YEAR && n <= MAX_YEAR;
     }, `Año debe estar entre ${MIN_YEAR} y ${MAX_YEAR}`),
@@ -75,7 +75,6 @@ const filtroSchema = z.object({
       return Number.isInteger(n) && n >= 1 && n <= 12;
     }, "Mes debe estar entre 1 y 12"),
   municipalidad_id: z.string().optional(),
-  tipo_liquidacion_id: z.string().min(1, "Tipo de liquidación es requerido"),
   numero_liquidacion: z
     .string()
     .optional()
@@ -96,7 +95,6 @@ interface RHDetalleInspectoresFiltroModalProps {
     periodo?: number;
     mes?: number;
     municipalidad_id?: string;
-    tipo_liquidacion_id?: string;
     numero_liquidacion?: number;
   };
   onApply: (filtros: {
@@ -104,7 +102,6 @@ interface RHDetalleInspectoresFiltroModalProps {
     periodo?: number;
     mes?: number;
     municipalidad_id?: string;
-    tipo_liquidacion_id?: string;
     numero_liquidacion?: number;
   }) => void;
 }
@@ -117,14 +114,12 @@ export function RHDetalleInspectoresFiltroModal({
 }: RHDetalleInspectoresFiltroModalProps) {
   const { data: municipalidades, isLoading: isLoadingMunicipalidades } =
     useMunicipalidades();
-  const { data: tipos = [], isLoading: isLoadingTipos } = useTiposLiquidacion();
 
   const initialData: FiltroFormData = {
     inspector_cip: initialFiltros?.inspector_cip ?? "",
     periodo: initialFiltros?.periodo ? String(initialFiltros.periodo) : "",
     mes: initialFiltros?.mes ? String(initialFiltros.mes) : "",
     municipalidad_id: initialFiltros?.municipalidad_id ?? "",
-    tipo_liquidacion_id: initialFiltros?.tipo_liquidacion_id ?? "",
     numero_liquidacion: initialFiltros?.numero_liquidacion
       ? String(initialFiltros.numero_liquidacion)
       : "",
@@ -137,7 +132,6 @@ export function RHDetalleInspectoresFiltroModal({
         periodo?: number;
         mes?: number;
         municipalidad_id?: string;
-        tipo_liquidacion_id?: string;
         numero_liquidacion?: number;
       } = {};
       if (data.inspector_cip) filtros.inspector_cip = data.inspector_cip.trim();
@@ -145,8 +139,6 @@ export function RHDetalleInspectoresFiltroModal({
       if (data.mes) filtros.mes = Number(data.mes);
       if (data.municipalidad_id)
         filtros.municipalidad_id = data.municipalidad_id;
-      if (data.tipo_liquidacion_id)
-        filtros.tipo_liquidacion_id = data.tipo_liquidacion_id;
       if (data.numero_liquidacion)
         filtros.numero_liquidacion = Number(data.numero_liquidacion);
       onApply(filtros);
@@ -159,7 +151,7 @@ export function RHDetalleInspectoresFiltroModal({
       open={open}
       onOpenChange={onOpenChange}
       title="Filtrar Detalle Inspectores"
-      description="Filtra por año, mes, municipalidad y tipo de liquidación"
+      description="Filtra por CIP, año, mes, municipalidad y número de liquidación"
       eyebrow="Finanzas"
       icon={<Filter className="h-5 w-5 text-primary" />}
       primaryLabel="Aplicar Filtros"
@@ -177,11 +169,11 @@ export function RHDetalleInspectoresFiltroModal({
     >
       {({ methods }) => (
         <div className="space-y-4">
-          {/* Fila 1: Año + Mes (ambos SearchableSelect) */}
+          {/* Fila 1: Año + Mes (ambos opcionales) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <SearchableSelect
               id="rh-inspector-detalle-filter-periodo"
-              label="Año *"
+              label="Año"
               value={methods.watch("periodo") || null}
               onValueChange={(v) => methods.setValue("periodo", v ?? "")}
               options={ANIOS}
@@ -258,24 +250,6 @@ export function RHDetalleInspectoresFiltroModal({
             }
             icon={Building2}
             disabled={isLoadingMunicipalidades}
-            showLabel
-            className="[--input-height:40px] [&_button]:rounded-xl [&_button]:font-semibold"
-          />
-
-          {/* Fila 4: Tipo de Liquidación (SearchableSelect) */}
-          <SearchableSelect
-            id="rh-inspector-detalle-filter-tipo-liquidacion"
-            label="Tipo de Liquidación *"
-            value={methods.watch("tipo_liquidacion_id") || null}
-            onValueChange={(v) => methods.setValue("tipo_liquidacion_id", v ?? "")}
-            options={tipos.map((t) => ({
-              value: t.id,
-              label: `${t.codigo} · ${t.nombre}`,
-            }))}
-            placeholder={
-              isLoadingTipos ? "Cargando tipos..." : "Buscar tipo de liquidación..."
-            }
-            disabled={isLoadingTipos}
             showLabel
             className="[--input-height:40px] [&_button]:rounded-xl [&_button]:font-semibold"
           />

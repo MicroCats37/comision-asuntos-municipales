@@ -45,6 +45,10 @@ export interface DetalleDelegadoRow {
     id: string;
     periodo?: number | null;
     mes?: number | null;
+    numero_rh?: string | null;
+    dictamen_revision?: string | null;
+    fecha_revision?: string | null;
+    fecha_presentacion?: string | null;
     delegado: RHDetallePersonaInfo;
     liquidacion: RHDetalleLiquidacionInfo;
     especialidad?: {
@@ -73,6 +77,13 @@ export interface RHDetalleDelegadoRow {
   aporteCodem: number | null;
   fondoComun: number | null;
   neto: number | null;
+  /** Metadata from LiquidacionDelegado */
+  numeroRh: string | null;
+  dictamenRevision: string | null;
+  fechaRevision: string | null;
+  fechaPresentacion: string | null;
+  /** Delegado-only: especialidad nombre */
+  especialidadNombre: string | null;
 }
 
 export function formatDelegadoRow(row: DetalleDelegadoRow): RHDetalleDelegadoRow {
@@ -95,6 +106,11 @@ export function formatDelegadoRow(row: DetalleDelegadoRow): RHDetalleDelegadoRow
     aporteCodem: row.aporte_codemu ?? null,
     fondoComun: row.fondo_comun ?? null,
     neto: row.neto_honorario ?? null,
+    numeroRh: dl?.numero_rh ?? null,
+    dictamenRevision: dl?.dictamen_revision ?? null,
+    fechaRevision: dl?.fecha_revision ?? null,
+    fechaPresentacion: dl?.fecha_presentacion ?? null,
+    especialidadNombre: dl?.especialidad?.nombre ?? null,
   };
 }
 
@@ -116,6 +132,9 @@ export interface DetalleInspectorRow {
     id: string;
     periodo?: number | null;
     mes?: number | null;
+    dictamen_revision?: string | null;
+    fecha_revision?: string | null;
+    fecha_presentacion?: string | null;
     inspector: RHDetallePersonaInfo;
     liquidacion: RHDetalleLiquidacionInfo;
   } | null;
@@ -130,8 +149,8 @@ export interface RHDetalleInspectorRow {
   numero: number | null;
   inspectorNombre: string | null;
   inspectorCip: string | null;
-    periodo: number | null;
-    mes: number | null;
+  periodo: number | null;
+  mes: number | null;
   municipalidadNombre: string | null;
   tipoCodigo: string | null;
   inspLiq: number | null;
@@ -140,6 +159,10 @@ export interface RHDetalleInspectorRow {
   subTotal: number | null;
   descuento: number | null;
   honorarios: number | null;
+  /** Metadata from LiquidacionInspector */
+  dictamenRevision: string | null;
+  fechaRevision: string | null;
+  fechaPresentacion: string | null;
 }
 
 export function formatInspectorRow(
@@ -164,6 +187,9 @@ export function formatInspectorRow(
     subTotal: row.sub_total ?? null,
     descuento: row.descuento ?? null,
     honorarios: row.honorarios ?? null,
+    dictamenRevision: il?.dictamen_revision ?? null,
+    fechaRevision: il?.fecha_revision ?? null,
+    fechaPresentacion: il?.fecha_presentacion ?? null,
   };
 }
 
@@ -173,10 +199,10 @@ export const RH_TABLE_COL_ACTIONS = 160;
 export const RH_TABLE_COL_ID = 200;
 
 export const RH_DELEGADOS_GRID_TEMPLATE =
-  `[actions]${RH_TABLE_COL_ACTIONS}px [id]${RH_TABLE_COL_ID}px [expediente]minmax(160px,1fr) [delegado]minmax(200px,1.5fr) [periodo]120px [imp_bruto]120px [renta_cip]120px [aporte_codemu]120px [fondo_comun]120px [neto]120px`;
+  `[actions]${RH_TABLE_COL_ACTIONS}px [id]${RH_TABLE_COL_ID}px [numero_rh]120px [expediente]minmax(160px,1fr) [delegado]minmax(200px,1.5fr) [periodo]120px [dictamen]120px [fecha_presentacion]120px [fecha_revision]120px [imp_bruto]120px [renta_cip]120px [aporte_codemu]120px [fondo_comun]120px [neto]120px`;
 
 export const RH_INSPECTORES_GRID_TEMPLATE =
-  `[actions]${RH_TABLE_COL_ACTIONS}px [id]${RH_TABLE_COL_ID}px [expediente]minmax(160px,1fr) [inspector]minmax(200px,1.5fr) [periodo]120px [insp_liq]100px [costo]120px [monto]120px [subtotal]120px [descuento]120px [honorarios]120px`;
+  `[actions]${RH_TABLE_COL_ACTIONS}px [id]${RH_TABLE_COL_ID}px [expediente]minmax(160px,1fr) [inspector]minmax(200px,1.5fr) [periodo]120px [dictamen]120px [fecha_presentacion]120px [fecha_revision]120px [insp_liq]100px [costo]120px [monto]120px [subtotal]120px [descuento]120px [honorarios]120px`;
 
 // ── Action button helpers ──────────────────────────────────────────────────────
 
