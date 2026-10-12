@@ -39,7 +39,7 @@ export function buildExtraFieldRows(
       rows.push(["PORCENTAJE", `${pct}%`]);
     }
     if (derechoMinimo > 0) {
-      rows.push(["DERECHO MINIMO", `${formatCurrency(derechoMinimo)} + IGV`]);
+      rows.push(["DERECHO MINIMO", `${formatCurrency(derechoMinimo)}`]);
     }
     return rows;
   }
@@ -53,7 +53,7 @@ export function buildExtraFieldRows(
       rows.push(["COSTO POR M2", formatCurrency(lt.costo_por_m2)]);
     }
     if (derechoMinimo > 0) {
-      rows.push(["DERECHO MINIMO", `${formatCurrency(derechoMinimo)} + IGV`]);
+      rows.push(["DERECHO MINIMO", `${formatCurrency(derechoMinimo)}`]);
     }
     return rows;
   }
@@ -75,14 +75,14 @@ export function buildExtraFieldRows(
       rows.push(["CIP", perfil.cip]);
     }
     if (derechoMinimo > 0) {
-      rows.push(["DERECHO MINIMO", `${formatCurrency(derechoMinimo)} + IGV`]);
+      rows.push(["DERECHO MINIMO", `${formatCurrency(derechoMinimo)}`]);
     }
     return rows;
   }
 
   // Tipo desconocido: solo derecho mínimo
   if (derechoMinimo > 0) {
-    rows.push(["DERECHO MINIMO", `${formatCurrency(derechoMinimo)} + IGV`]);
+    rows.push(["DERECHO MINIMO", `${formatCurrency(derechoMinimo)}`]);
   }
   return rows;
 }

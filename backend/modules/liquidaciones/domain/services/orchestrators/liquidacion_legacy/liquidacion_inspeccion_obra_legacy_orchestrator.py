@@ -115,6 +115,18 @@ class LiquidacionInspeccionObraLegacyOrchestrator:
         # Step 4: Resolve IGV/UIT by fecha_registro (same as crear_legacy_proceso step 5)
         igv = self.legacy_visitas_core.get_igv_por_fecha(fecha_registro)
         uit = self.legacy_visitas_core.get_uit_por_fecha(fecha_registro)
+        # Override UIT: same as crear_legacy_proceso step 4
+        if getattr(payload, "uit_valor_override", None) is not None:
+            uit = self.legacy_visitas_core.ensure_uit_for_legacy(
+                int(payload.uit_valor_override), fecha_registro
+            )
+        elif getattr(payload, "uit_id_override", None):
+            uit_valor_override = self.legacy_visitas_core.get_uit_by_id(payload.uit_id_override)
+            if uit_valor_override is None:
+                raise HttpError(400, f"UIT id {payload.uit_id_override} no encontrado en el map")
+            uit = self.legacy_visitas_core.ensure_uit_for_legacy(
+                uit_valor_override, fecha_registro
+            )
         if not igv:
             raise HttpError(404, "No hay IGV vigente para la fecha indicada")
         if not uit:
@@ -192,6 +204,22 @@ class LiquidacionInspeccionObraLegacyOrchestrator:
         # Step 4: Resolve IGV/UIT by fecha_registro (needed for FK links on LiquidacionGeneral)
         igv = self.legacy_visitas_core.get_igv_por_fecha(fecha_registro)
         uit = self.legacy_visitas_core.get_uit_por_fecha(fecha_registro)
+        # Override UIT: caller forces a specific valor (e.g., historical from Excel).
+        # We ensure a UIT record exists in BD with that valor (historical UITs are
+        # registered on-demand so FK uit_id is never NULL).
+        if payload.uit_valor_override is not None:
+            uit_real = self.legacy_visitas_core.ensure_uit_for_legacy(
+                int(payload.uit_valor_override), fecha_registro
+            )
+            uit = uit_real  # UIT ORM instance with real id
+        elif getattr(payload, "uit_id_override", None):
+            uit_valor_override = self.legacy_visitas_core.get_uit_by_id(payload.uit_id_override)
+            if uit_valor_override is None:
+                raise HttpError(400, f"UIT id {payload.uit_id_override} no encontrado en el map")
+            uit_real = self.legacy_visitas_core.ensure_uit_for_legacy(
+                uit_valor_override, fecha_registro
+            )
+            uit = uit_real
         if not igv:
             raise HttpError(404, "No hay IGV vigente para la fecha indicada")
         if not uit:

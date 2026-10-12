@@ -36,21 +36,11 @@ def extract_slot_fields(raw: list[str], slot_num: int) -> dict[str, any]:
         dict with keys: slot_num, periodo, mes, fecha_presentacion, fecha_revision,
         numero_rh, dictamen_revision, especialidad_nombre
     """
-    try:
-        
-
-        if slot_num == 1:
-            col_fecha_pres, col_fecha_rev, col_nro_orden, col_dictamen, col_periodo, col_mes = 36, 37, 38, 55, 62, 66
-        elif slot_num == 2:
-            col_fecha_pres, col_fecha_rev, col_nro_orden, col_dictamen, col_periodo, col_mes = 39, 40, 41, 56, 63, 67
-        elif slot_num == 3:
-            col_fecha_pres, col_fecha_rev, col_nro_orden, col_dictamen, col_periodo, col_mes = 42, 43, 44, 57, 64, 68
-        elif slot_num == 4:
-            col_fecha_pres, col_fecha_rev, col_nro_orden, col_dictamen, col_periodo, col_mes = 45, 46, 47, 58, 65, 69
-
-
-    except KeyError:
+    slot_tuple = DELEGADO_SLOT_COLUMNS.get(slot_num)
+    if slot_tuple is None:
         return {}
+    # DELEGADO_SLOT_COLUMNS[slot] = (DELEGADO, CIP, PERIODO, MES, FECHAPRES, FECHAREVI, NROORDEN, DICTAMEN, NRORH, NROMM)
+    _col_delegado, _col_cip, col_periodo, col_mes, col_fecha_pres, col_fecha_rev, col_nro_orden, col_dictamen, _col_nrorh, _col_nromm = slot_tuple
 
     def _col(idx: int):
         return raw[idx] if len(raw) > idx else None

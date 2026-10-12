@@ -18,6 +18,26 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  db_backup:
+    image: prodrigestivill/postgres-backup-local:16
+    container_name: cam_db_backup
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${DB_NAME:-cam_db}
+      POSTGRES_USER: ${DB_USER:-cam_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      SCHEDULE: ${DB_BACKUP_SCHEDULE:-0 3 * * *}
+      BACKUP_KEEP_DAYS: ${DB_BACKUP_KEEP_DAYS:-14}
+      BACKUP_KEEP_WEEKS: ${DB_BACKUP_KEEP_WEEKS:-4}
+      BACKUP_KEEP_MONTHS: ${DB_BACKUP_KEEP_MONTHS:-6}
+      HEALTHCHECK_PORT: 8080
+    volumes:
+      - ./backups/postgres:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
   scraper:
     build:
       context: worker/scraper

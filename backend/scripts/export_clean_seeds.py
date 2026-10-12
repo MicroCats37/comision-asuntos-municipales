@@ -133,15 +133,7 @@ SPECIAL_FK_RENAME: Dict[tuple, str] = {
 }
 
 # M2M junction tables: (parent_table, m2m_table, parent_fk_col, m2m_fk_col) -> m2m_field_name
-M2M_TABLES = [
-    (
-        "liquidaciones_liquidaciongeneral",
-        "liquidaciones_liquidaciongeneral_especialidades_revisadas",
-        "liquidaciongeneral_id",
-        "especialidadrevision_id",
-        "especialidades_revisadas",
-    ),
-]
+M2M_TABLES = []
 
 
 # ─── Core transformation ──────────────────────────────────────────────────────

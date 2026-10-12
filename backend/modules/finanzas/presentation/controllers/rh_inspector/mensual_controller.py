@@ -5,7 +5,7 @@ Endpoints for RH Inspector Mensual (cotizar/crear/candidatos and list).
 All delegation to FinanzasOrchestrator.
 """
 import uuid
-from ninja import Query
+from ninja import Query, Path
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
@@ -18,6 +18,7 @@ from modules.finanzas.presentation.schemas.finanzas_schemas import (
     InspectorCandidatosOut,
     InspectorCandidatosPaginatedOut,
     RHInspectorMensualListItemOut,
+    RHInspectorDeleteOut,
 )
 from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
 from modules.finanzas.presentation.presenters.finanzas_presenter import FinanzasPresenter
@@ -158,3 +159,20 @@ class RHInspectorMensualController:
             domain_results, total, page, page_size
         )
         return success_response(presented)
+
+    @route.delete(
+        "/recibos-inspectores/{id}/eliminar",
+        response={200: ApiResponse[RHInspectorDeleteOut]},
+        auth=None,
+    )
+    def eliminar_recibo_inspector(self, request, id: uuid.UUID = Path(...)):
+        """
+        DELETE /finanzas/recibos-inspectores/{id}/eliminar — elimina un ReciboHonorarioInspectorMensual.
+
+        Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
+        retorna success_response.
+        """
+        self.orchestrator.eliminar_rh_inspector_mensual_proceso(id)
+        return success_response(
+            RHInspectorDeleteOut(id=id, message="Recibo de inspector eliminado correctamente.")
+        )

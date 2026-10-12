@@ -64,6 +64,7 @@ COL_TOTAL = 11
 COL_FECHA = 12
 COL_DNI = 13
 COL_RAZONSOCIAL = 14
+COL_NROFACTURA = 15
 COL_CODPAGO = 16
 COL_NROEXPDTE = 17
 COL_NROREV = 18
@@ -189,3 +190,11 @@ SLOT_SPECIALTY_DB_MAP = {
 CIP_EMBEDDED_RE = re.compile(r'^\s*CIP\s+(\d{2,7})\b', re.IGNORECASE)
 
 COL_ESPECIALIDAD = 19
+
+# ── Limits / business constants ─────────────────────────────────────────────────
+
+# Max allowed numero_revision before it's flagged as anomalous.
+MAX_REVISIONES = 5
+
+COL_TASAUIT = 118
+COL_TASAIGV = 70

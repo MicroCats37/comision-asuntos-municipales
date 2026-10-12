@@ -33,13 +33,6 @@ class LiquidacionGeneral(BaseModel):
         verbose_name="Proyecto",
     )
 
-    especialidades_revisadas = models.ManyToManyField(
-        EspecialidadRevision,
-        related_name="liquidaciones_revisadas",
-        verbose_name="Especialidades Revisadas",
-        help_text="Especialidades de revisión que han sido revisadas en esta liquidación.",
-    )
-
     municipalidad = models.ForeignKey(
         "entidades.Municipalidad",
         on_delete=models.PROTECT,
@@ -530,4 +523,3 @@ class LiquidacionImpactoVialProxy(LiquidacionGeneral):
 
     def __str__(self):
         return f"[Proxy IV] {self.proyecto}"
-

@@ -236,13 +236,17 @@ class LiquidacionPorcentajeObraCoreService:
         # como (UIT * porcentaje_minimo_uit) + IGV vigente, sin hardcodear.
         derecho_minimo_calculado = (
             uit_valor * derecho.porcentaje_minimo_uit * (Decimal("1") + igv_porcentaje)
+        ).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
         )
+        derecho_minimo = derecho.derecho_minimo or derecho_minimo_calculado
+        derecho_minimo = derecho_minimo.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
         return CotizacionPorcentajeObraData(
             valor_declarado=valor_declarado,
             porcentaje_liquidacion=porcentaje_liquidacion,
             tipo_tramite=None,  # tipo_tramite se pasa directamente a create_liquidacion_porcentaje_obra
-            derecho_minimo=derecho.derecho_minimo or derecho_minimo_calculado,
+            derecho_minimo=derecho_minimo,
             derecho_maximo=derecho.derecho_maximo,
             porcentaje_minimo_uit=derecho.porcentaje_minimo_uit,
             derecho_aplicado_id=str(derecho.id),

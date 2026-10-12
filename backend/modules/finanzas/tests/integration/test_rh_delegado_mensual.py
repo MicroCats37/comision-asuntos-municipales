@@ -56,6 +56,7 @@ from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreS
 from modules.finanzas.domain.services.flujos.rh_delegado_mensual_flujo import (
     RHDelegadoMensualCotizarFlujo,
     RHDelegadoMensualCrearFlujo,
+    RHDelegadoMensualDeleteFlujo,
 )
 from modules.finanzas.domain.schemas import RHDelegadoCotizarIn, RHDelegadoCotizarItemIn
 from django.contrib.auth import get_user_model
@@ -2213,3 +2214,173 @@ def test_crear_m2_habilitacion_urbana_persiste_imp_bruto_subtotal(
     recibo = ReciboHonorarioDelegadoMensual.objects.first()
     assert recibo.sub_total == Decimal("5000.00")
     assert recibo.renta_cip == Decimal("1250.00")
+
+
+# ── Delete Tests ──────────────────────────────────────────────────────────────────
+
+@pytest.fixture
+def delete_flujo(core_service):
+    return RHDelegadoMensualDeleteFlujo(core=core_service)
+
+
+@pytest.mark.django_db
+def test_delete_rh_delegado_returns_200(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual recién creado.
+    WHEN: Se elimina via delete_flujo.eliminar().
+    THEN: Retorna sin excepción (200 equivalent) y el RH es borrado de BD.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026,
+                "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+    assert rh is not None
+
+    # Eliminar — no debe lanzar excepción
+    delete_flujo.eliminar(rh.id)
+
+    # RH borrado de BD
+    assert not ReciboHonorarioDelegadoMensual.objects.filter(id=rh.id).exists()
+
+
+@pytest.mark.django_db
+def test_delete_rh_delegado_deletes_recibo_honorario_delegado_mensual(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual.
+    WHEN: Se elimina.
+    THEN: ReciboHonorarioDelegadoMensual es eliminado de BD.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026,
+                "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+    rh_id = rh.id
+
+    delete_flujo.eliminar(rh_id)
+
+    assert ReciboHonorarioDelegadoMensual.objects.filter(id=rh_id).count() == 0
+
+
+@pytest.mark.django_db
+def test_delete_rh_delegado_cascades_to_detalle_honorario_delegado(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual con DetalleHonorarioDelegado.
+    WHEN: Se elimina el RH.
+    THEN: DetalleHonorarioDelegado es eliminado en cascada por Django.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026,
+                "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+    detalle_ids = list(rh.detalles.values_list("id", flat=True))
+    assert len(detalle_ids) > 0
+
+    delete_flujo.eliminar(rh.id)
+
+    assert DetalleHonorarioDelegado.objects.filter(id__in=detalle_ids).count() == 0
+
+
+@pytest.mark.django_db
+def test_delete_rh_delegado_preserves_liquidacion_delegado(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual con DetalleHonorarioDelegado + LiquidacionDelegado.
+    WHEN: Se elimina el RH.
+    THEN: LiquidacionDelegado NO es tocada (es una entidad independiente).
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026,
+                "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+    detalle_ids = list(rh.detalles.values_list("id", flat=True))
+    liquidacion_delegado_ids = list(
+        DetalleHonorarioDelegado.objects.filter(id__in=detalle_ids)
+        .values_list("liquidacion_delegado_id", flat=True)
+    )
+    assert len(liquidacion_delegado_ids) > 0
+
+    delete_flujo.eliminar(rh.id)
+
+    # LiquidacionDelegado sobrevive
+    for ld_id in liquidacion_delegado_ids:
+        assert LiquidacionDelegado.objects.filter(id=ld_id).exists()
+

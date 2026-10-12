@@ -58,7 +58,6 @@ BUSINESS_TABLES = [
     "liquidaciones_inspectoroperacionperiodo",
     "liquidaciones_proyecto",
     "liquidaciones_liquidaciongeneral",
-    "liquidaciones_liquidaciongeneral_especialidades_revisadas",
     "liquidaciones_liquidacionrelaciongrupo",
     "liquidaciones_liquidacionrelacionmiembro",
     "liquidaciones_liquidacioncontacto",

@@ -31,9 +31,7 @@ export const proyectoFormSchema = z.object({
   denominacion: z.string().optional(),
   nombre_propietario: z.string({ error: "Requerido" }).min(1, "Requerido"),
   direccion: z.string({ error: "Requerido" }).min(1, "Requerido"),
-  distrito_id: z
-    .string({ error: "Requerido" })
-    .min(1, "Requerido"),
+  distrito_id: z.string().optional().or(z.literal("")),
   urbanizacion: z.string().optional(),
   entidad_tipo_documento: z.enum(["RUC", "DNI"]).optional().or(z.literal("")),
   entidad_numero_documento: z

@@ -427,6 +427,7 @@ class FinanzasCoreService:
         periodo: int,
         mes: int,
         inspecciones_pagadas: int,
+        recibo_mensual_id: int | str | None = None,
     ) -> RegistroPagoInspector:
         """
         Create a RegistroPagoInspector row for one RH payment event.
@@ -436,6 +437,8 @@ class FinanzasCoreService:
             periodo: Year of the period (int, e.g. 2026).
             mes: Month of the period (int, 1-12).
             inspecciones_pagadas: Number of inspections paid in this RH.
+            recibo_mensual_id: Optional FK to ReciboHonorarioInspectorMensual
+                to link the payment record to its parent RH.
 
         Returns:
             Created RegistroPagoInspector instance.
@@ -446,6 +449,7 @@ class FinanzasCoreService:
             mes=mes,
             inspecciones_pagadas=inspecciones_pagadas,
             fecha_registro=date.today(),
+            recibo_mensual_id=recibo_mensual_id,
         )
 
     def crear_rh_inspector_mensual(
@@ -1324,6 +1328,95 @@ class FinanzasCoreService:
         objects = list(qs[offset:offset + page_size])
         return objects, total
 
+    # ── RH Inspector Mensual Delete ─────────────────────────────────────────────────
+
+    def get_rh_inspector_mensual_by_id(
+        self, rh_id: int | str,
+    ) -> Optional[ReciboHonorarioInspectorMensual]:
+        """
+        Get a ReciboHonorarioInspectorMensual by its primary key with relations prefetched.
+
+        Args:
+            rh_id: PK of the ReciboHonorarioInspectorMensual.
+
+        Returns:
+            ReciboHonorarioInspectorMensual instance or None if not found.
+        """
+        return (
+            ReciboHonorarioInspectorMensual.objects
+            .select_related("inspector", "escala_descuento")
+            .prefetch_related("detalles")
+            .filter(id=rh_id)
+            .first()
+        )
+
+    def get_latest_rh_inspector_for_inspector(
+        self, inspector_id: int | str,
+    ) -> Optional[ReciboHonorarioInspectorMensual]:
+        """
+        Get the latest ReciboHonorarioInspectorMensual for a given inspector
+        ordered by fecha_registro DESC.
+
+        Args:
+            inspector_id: FK to Inspector.
+
+        Returns:
+            ReciboHonorarioInspectorMensual instance or None if no receipts exist.
+        """
+        return (
+            ReciboHonorarioInspectorMensual.objects
+            .filter(inspector_id=inspector_id)
+            .order_by("-fecha_registro")
+            .first()
+        )
+
+    def get_registros_pago_by_recibo_mensual(
+        self, rh_id: int | str,
+    ) -> list[RegistroPagoInspector]:
+        """
+        Get all RegistroPagoInspector records linked to a given ReciboHonorarioInspectorMensual.
+
+        Returns only rows with recibo_mensual_id == rh_id (never returns legacy null-FK rows).
+
+        Args:
+            rh_id: PK of the ReciboHonorarioInspectorMensual.
+
+        Returns:
+            List of RegistroPagoInspector instances (may be empty).
+        """
+        return list(
+            RegistroPagoInspector.objects
+            .filter(recibo_mensual_id=rh_id)
+        )
+
+    def delete_registro_pago_inspector(
+        self, registro_id: int | str,
+    ) -> None:
+        """
+        Delete a single RegistroPagoInspector record.
+
+        Args:
+            registro_id: PK of the RegistroPagoInspector to delete.
+        """
+        RegistroPagoInspector.objects.filter(id=registro_id).delete()
+
+    def delete_rh_inspector_mensual(
+        self, rh_id: int | str,
+    ) -> None:
+        """
+        Delete a ReciboHonorarioInspectorMensual record.
+
+        CASCADE: DetalleHonorarioInspector records are deleted automatically
+        by Django's on_delete=CASCADE on the FK from DetalleHonorarioInspector
+        to ReciboHonorarioInspectorMensual.
+
+        Args:
+            rh_id: PK of the ReciboHonorarioInspectorMensual to delete.
+        """
+        ReciboHonorarioInspectorMensual.objects.filter(id=rh_id).delete()
+
+    # ── RH Inspector Mensual List Paginated ─────────────────────────────────────
+
     def list_rh_mensuales_inspectores_paginated(
         self,
         page: int,
@@ -1442,6 +1535,24 @@ class FinanzasCoreService:
             .filter(delegado_id=delegado_id, periodo=periodo, mes=mes)
             .first()
         )
+
+    def delete_rh_delegado_mensual(
+        self, rh_id: int | str,
+    ) -> None:
+        """
+        Delete a ReciboHonorarioDelegadoMensual record.
+
+        CASCADE: DetalleHonorarioDelegado records are deleted automatically
+        by Django's on_delete=CASCADE on the FK from DetalleHonorarioDelegado
+        to ReciboHonorarioDelegadoMensual.
+
+        LiquidacionDelegado rows are NOT deleted — they are independent entities
+        created alongside the RH and may be reused.
+
+        Args:
+            rh_id: PK of the ReciboHonorarioDelegadoMensual to delete.
+        """
+        ReciboHonorarioDelegadoMensual.objects.filter(id=rh_id).delete()
 
     # ── RH Inspector Mensual — Detail by ID ──────────────────────────────────────
 

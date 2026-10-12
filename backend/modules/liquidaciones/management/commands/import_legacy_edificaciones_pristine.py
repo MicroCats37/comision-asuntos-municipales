@@ -2441,12 +2441,14 @@ class Command(BaseCommand):
             id_val = None
         numero = id_val
 
-        # ── Contacto (TFONO + TPERSONA) ──────────────────────────────────────
+        # ── Contacto (TPERSONA + TFONO + TDNI) ──────────────────────────────
         tpersona_raw = row[COL_TPERSONA] if len(row) > COL_TPERSONA else None
         tfono_raw = row[COL_TFONO] if len(row) > COL_TFONO else None
+        tdni_raw = row[COL_TDNI] if len(row) > COL_TDNI else None
 
         nombres, apellidos = _parse_tpersona(tpersona_raw)
         telefono = str(tfono_raw).strip() if tfono_raw is not None and str(tfono_raw).strip() != "" and str(tfono_raw).strip().upper() != "NULL" else None
+        dni_contacto = str(tdni_raw).strip() if tdni_raw is not None and str(tdni_raw).strip() != "" and str(tdni_raw).strip().upper() != "NULL" else None
 
         contacto_inline = None
         has_nombres = nombres is not None and nombres != ""
@@ -2459,6 +2461,7 @@ class Command(BaseCommand):
                     nombres=nombres,
                     apellidos=apellidos,
                     telefono=telefono,
+                    dni=dni_contacto,
                 )
             elif has_telefono:
                 # TFONO present but TPERSONA empty — can't create contacto without nombre

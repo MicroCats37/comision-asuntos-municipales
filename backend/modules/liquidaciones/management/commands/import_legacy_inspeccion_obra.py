@@ -257,17 +257,20 @@ def _resolve_tipo_documento(dni_raw, ruc_raw) -> tuple[str, str]:
 
 # ── DELEGADO parsing (IO specific) ────────────────────────────────────────────
 
-_DELEGADO_RE = re.compile(r"^CIP\s+(\d+)\s*[-–—]\s*(.+)$", re.IGNORECASE)
+_DELEGADO_RE = re.compile(r"^CIP\s+(\d+)\b\s*(.*)$", re.IGNORECASE)
 
 
 def _parse_delegado_io(raw) -> tuple[int | None, str | None]:
     """
     Parse DELEGADO value from IO source.
 
-    Format: "CIP 072900-CASTAÑEDA AMES VIVIANA PAOLA"
+    Acepta ambos formatos reales:
+      - "CIP 072900-CASTAñEDA AMES VIVIANA PAOLA"      (con guion)
+      - "CIP 072900 Ing. Juan Ricardo Caceres Tejada"   (con " Ing. " u otra palabra)
 
     Returns (cip_number, nombre_completo). cip_number is int (without leading zeros).
     Returns (None, None) if unparseable.
+    Si el regex matchea CIP + algo, devuelve (cip, texto_despues_de_CIP).
     """
     if not raw:
         return None, None
@@ -278,7 +281,13 @@ def _parse_delegado_io(raw) -> tuple[int | None, str | None]:
     if match:
         cip_str = match.group(1).lstrip("0")
         cip = int(cip_str) if cip_str else int(match.group(1))
+        # Nombre es todo lo que viene despues del CIP (puede empezar con "-", "Ing.", etc.)
         nombre = match.group(2).strip()
+        # Limpiar prefijos comunes para mejor lectura
+        for prefix in ("-", "–", "—", "-"):
+            if nombre.startswith(prefix):
+                nombre = nombre[1:].strip()
+                break
         return cip, nombre
     return None, text
 
@@ -1091,10 +1100,15 @@ def _parse_row(fields: list, row_idx: int) -> tuple[ParsedRow, str]:
             row.anomalies.append("DELEGADO presente pero CIP no extraíble")
     else:
         row.delegado_nombre = ""
-        if raw_delegado:
-            rechazo.append("DELEGADO presente pero no parseable")
-        else:
-            rechazo.append("DELEGADO vacío")
+        # raw_delegado truthy después de strip-pero-blanco => whitespace-only.
+        # Trátalo como vacío si no aporta CIP ni patrón parseable.
+        if raw_delegado and str(raw_delegado).strip():
+            # Tiene contenido real pero el regex embedded no matchea.
+            # Si la col CIP separada trae valor, NO rechazar (es un falso rechazo).
+            if row.cip is None:
+                rechazo.append("DELEGADO presente pero no parseable")
+            # else: CIP ya viene de la col 53 — suficiente.
+        # else: real empty, sin rechazo específico (cae en otra validación más adelante).
 
     # ── CATEGORIA ────────────────────────────────────────────────────────────
     row.categoria_raw = _int(col(_COL_CATEGORIA))
@@ -1124,7 +1138,7 @@ def _parse_row(fields: list, row_idx: int) -> tuple[ParsedRow, str]:
             row.subtotal_unitario_legacy = None
             row.total_unitario_legacy = None
 
-    # Recalculated unitario from TASA * UIT
+    # Recalculated unitario from TASA * UIT (column UIT from Excel is the source of truth).
     if row.tasa is not None and row.tasa > 0 and row.uit is not None:
         try:
             row.subtotal_unitario_recalc_legacy = row.tasa * row.uit
@@ -1315,6 +1329,10 @@ from modules.usuarios.domain.models.perfil_ingeniero import (
 )
 from modules.usuarios.domain.services.core.perfil_ingeniero_core_service import (
     PerfilIngenieroCoreService,
+)
+from modules.finanzas.domain.models.impuestos import UIT as UITModel
+from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_legacy_por_visitas_core_service import (
+    LiquidacionLegacyPorVisitasCoreService as _LegacyVisitasCore,
 )
 # ── Report generation helpers ──────────────────────────────────────────────────
 
@@ -1866,6 +1884,16 @@ def _create_legacy_liquidations(
                     # Resolve entity/project/municipalidad
                     entidad, municipalidad, proyecto = _resolve_entidad_municipalidad_proyecto(row)
 
+                    # Resolve UIT: trust the Excel column (row.uit).
+                    # ensure_uit_for_legacy materializes the UIT record on-demand so
+                    # FK uit_id is never NULL.
+                    uit_a_usar = None
+                    if row.uit is not None:
+                        uit_a_usar = _LegacyVisitasCore.ensure_uit_for_legacy(
+                            int(row.uit),
+                            row.fecha,
+                        )
+
                     # Create LiquidacionGeneral
                     lg = LiquidacionGeneral.objects.create(
                         proyecto=proyecto,
@@ -1881,6 +1909,8 @@ def _create_legacy_liquidations(
                         observacion=f"Legacy IO import fila {row.row_index} ID {row.id_val or ''}".strip(),
                         denominacion_de_proyecto=row.nombre or row.razon_social or None,
                         legacy=True,
+                        uit_id=uit_a_usar,
+                        uit_snapshot=Decimal(str(uit_a_usar.valor)) if uit_a_usar else None,
                     )
 
                     # Create LiquidacionInspeccionObra

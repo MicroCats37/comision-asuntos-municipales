@@ -120,206 +120,121 @@ logger = logging.getLogger(__name__)
 # Default path to legacy data file
 DEFAULT_DATA_PATH = Path(__file__).resolve().parent.parent.parent.parent.parent / "core_application" / "seeds" / "historico" / "EDIF_ALL.csv"
 
-# CSV column indices — 0-indexed (list from csv.reader with delimiter ';')
-# Header (row 1): ID=0 NRO=1 RUC=2 NOMBRE=3 PROYECTO=4 DPTOPRDI=5 DIRECCION=6
-# VALOROBRA=7 PORCENTAJE=8 SUBTOTAL=9 IGV=10 TOTAL=11 FECHA=12 DNI=13
-# RAZONSOCIAL=14 NROFACTURA=15 CODPAGO=16 NROEXPDTE=17 NROREV=18 ESPECIALIDAD=19
-# NOTE: Many RH-slot and monetary indices changed vs old xlsx. See inline comments.
-COL_ID = 0           # A (ID auto-incremental histórico)
-COL_RUC = 2          # C
-COL_NRO = 1          # B (número secuencial de la liquidación específica)
-COL_NOMBRE = 3       # D
-COL_PROYECTO = 4     # E
-COL_DPTOPRDI = 5     # F
-COL_DIRECCION = 6    # G
-COL_VALOROBRA = 7    # H
-COL_PORCENTAJE = 8   # I
-COL_SUBTOTAL = 9     # J
-COL_IGV = 10         # K
-COL_TOTAL = 11       # L
-COL_FECHA = 12       # M
-COL_DNI = 13         # N
-COL_RAZONSOCIAL = 14 # O
-COL_CODPAGO = 16     # Q
-COL_NROEXPDTE = 17   # R
-COL_NROREV = 18      # S
-COL_ESPECIALIDAD = 19  # T
-COL_TFONO = 60         # was 60 in old xlsx (same index)
-COL_TPERSONA = 61      # was 61 in old xlsx (same index)
-COL_USUARIO = 32      # index 32 in EDIF_ALL.csv (was 32 in old xlsx — same)
-
-# Max revisions constant (from liquidacion constants)
-MAX_REVISIONES = 5
-
-# ── RH / Delegado slot column indices (0-indexed, from list(row) iter_rows) ──────
-# Header row: ID | NRO | RUC | NOMBRE | PROYECTO | DPTOPRDI | DIRECCION | VALOROBRA |
-#             PORCENTAJE | SUBTOTAL | IGV | TOTAL | FECHA | DNI | RAZONSOCIAL |
-#             NROFACTURA | CODPAGO | NROEXPDTE | NROREV | ESPECIALIDAD | ...
-#             (continues with RH slot columns for slots 1-4)
-#
-# Slot fields per slot n (1..4):
-#   DELEGADOn      – nombre del ingeniero CIP
-#   CIPn           – número CIP
-#   PERIODOn       – período (año) del RH
-#   MESn           – mes del RH
-#   FECHAPRESn     – fecha de presentación
-#   FECHAREVIn     – fecha de revisión
-#   NROORDENn      – número de orden
-#   DICTAMENn      – dictamen (texto)
-#   NRORHn         – número de RH
-#   NROMMn          – número de memorandum
-#
-# Shared monetary fields (same value for every active slot in the row):
-#   IMPBRUTO  | RENTACIP  | APORCODEMU | FONDOCOMUN | NETOHONORA
-#
-# Comprobante:
-#   NROFACTURA – serie + número (e.g. "001-00001")
-
-# Slot fields in the source CSV are grouped by field, not by slot.
-# Updated for EDIF_ALL.csv header (119 columns, delimiter ';', BOM UTF-8)
-COL_DELEGADO1 = 22
-COL_DELEGADO2 = 23
-COL_DELEGADO3 = 24
-COL_DELEGADO4 = 25
-COL_CIP1 = 79   # was 79 in old xlsx (same index)
-COL_CIP2 = 80   # was 80
-COL_CIP3 = 81   # was 81
-COL_CIP4 = 82   # was 82
-COL_PERIODO1 = 64  # was 62
-COL_PERIODO2 = 65  # was 63
-COL_PERIODO3 = 66  # was 64
-COL_PERIODO4 = 67  # was 65
-COL_MES1 = 68   # was 66
-COL_MES2 = 69    # was 67
-COL_MES3 = 70    # was 68
-COL_MES4 = 71    # was 69
-COL_FECHAPRES1 = 35  # was 36
-COL_FECHAPRES2 = 38  # was 39
-COL_FECHAPRES3 = 41  # was 42
-COL_FECHAPRES4 = 44  # was 45
-COL_FECHAREVI1 = 36  # was 37
-COL_FECHAREVI2 = 39  # was 40
-COL_FECHAREVI3 = 42  # was 43
-COL_FECHAREVI4 = 45  # was 46
-COL_NROORDEN1 = 37   # was 38
-COL_NROORDEN2 = 40   # was 41
-COL_NROORDEN3 = 43   # was 44
-COL_NROORDEN4 = 46   # was 47
-COL_DICTAMEN1 = 55
-COL_DICTAMEN2 = 56
-COL_DICTAMEN3 = 57
-COL_DICTAMEN4 = 58
-COL_NRORH1 = 87
-COL_NRORH2 = 88
-COL_NRORH3 = 89
-COL_NRORH4 = 90
-COL_NROMM1 = 91
-COL_NROMM2 = 92
-COL_NROMM3 = 93
-COL_NROMM4 = 94
-
-# Shared monetary fields (updated for EDIF_ALL.csv)
-COL_IMPBRUTO = 26
-COL_RENTACIP = 72   # was 72 (same index)
-COL_APORCODEMU = 27
-COL_FONDOCOMUN = 28
-COL_NETOHONORA = 31
-COL_SUBTOTAL = 9   # already defined above, listed here for completeness
-
-# Comprobante
-COL_NROFACTURA = 15
-COL_TOTAL = 11
-
-_RH_SLOT_COLUMNS = {
-    1: (COL_DELEGADO1, COL_CIP1, COL_PERIODO1, COL_MES1, COL_FECHAPRES1, COL_FECHAREVI1, COL_NROORDEN1, COL_DICTAMEN1, COL_NRORH1, COL_NROMM1),
-    2: (COL_DELEGADO2, COL_CIP2, COL_PERIODO2, COL_MES2, COL_FECHAPRES2, COL_FECHAREVI2, COL_NROORDEN2, COL_DICTAMEN2, COL_NRORH2, COL_NROMM2),
-    3: (COL_DELEGADO3, COL_CIP3, COL_PERIODO3, COL_MES3, COL_FECHAPRES3, COL_FECHAREVI3, COL_NROORDEN3, COL_DICTAMEN3, COL_NRORH3, COL_NROMM3),
-    4: (COL_DELEGADO4, COL_CIP4, COL_PERIODO4, COL_MES4, COL_FECHAPRES4, COL_FECHAREVI4, COL_NROORDEN4, COL_DICTAMEN4, COL_NRORH4, COL_NROMM4),
-}
-
-# ── Slot specialty mapping ────────────────────────────────────────────────────────
-# Maps slot number (1..4) to the legacy XLSX display name (used for lookup
-# before DB resolution, kept for readability in reports).
-_SLOT_SPECIALTY_MAP = {
-    1: "Estructuras / Civil",
-    2: "Instalaciones Sanitarias",
-    3: "Mecánico-Eléctricas",
-    4: "Electrónica",
-}
-
-# ── Slot → EspecialidadRevision.nombre (canonical DB names) ────────────────────
-# These are the actual EspecialidadRevision.nombre values in the DB.
-_SLOT_SPECIALTY_DB_MAP = {
-    1: "Ingeniería Civil",
-    2: "Ingeniería Sanitaria",
-    3: "Ingeniería Eléctrica y Mecánica Eléctrica",
-    4: "Ingeniería Electrónica",
-}
-
-# Some legacy rows embed the CIP inside the delegado text rather than in the
-# dedicated CIP column (e.g. "CIP 14720 Titular: ..."). This regex captures
-# the numeric CIP at the start of the name so we can still process the slot.
-_CIP_EMBEDDED_RE = re.compile(r'^\s*CIP\s+(\d{2,7})\b', re.IGNORECASE)
+# ── Modular constants and parsers from legacy_edif package ──────────────────────
+# Single source of truth lives in commands/legacy_edif/columns.py and
+# commands/legacy_edif/parsers.py. We re-export them here for backward
+# compatibility with the rest of this command's call sites.
+from .legacy_edif import (
+    CIP_EMBEDDED_RE as _CIP_EMBEDDED_RE,
+    COL_APORCODEMU,
+    COL_CIP1,
+    COL_CIP2,
+    COL_CIP3,
+    COL_CIP4,
+    COL_CODPAGO,
+    COL_DELEGADO1,
+    COL_DELEGADO2,
+    COL_DELEGADO3,
+    COL_DELEGADO4,
+    COL_DICTAMEN1,
+    COL_DICTAMEN2,
+    COL_DICTAMEN3,
+    COL_DICTAMEN4,
+    COL_DIRECCION,
+    COL_DNI,
+    COL_ESPECIALIDAD,
+    COL_FECHA,
+    COL_FECHAPRES1,
+    COL_FECHAPRES2,
+    COL_FECHAPRES3,
+    COL_FECHAPRES4,
+    COL_FECHAREVI1,
+    COL_FECHAREVI2,
+    COL_FECHAREVI3,
+    COL_FECHAREVI4,
+    COL_FONDOCOMUN,
+    COL_ID,
+    COL_IGV,
+    COL_IMPBRUTO,
+    COL_MES1,
+    COL_MES2,
+    COL_MES3,
+    COL_MES4,
+    COL_NETOHONORA,
+    COL_NOMBRE,
+    COL_NRO,
+    COL_NROEXPDTE,
+    COL_NROFACTURA,
+    COL_NROORDEN1,
+    COL_NROORDEN2,
+    COL_NROORDEN3,
+    COL_NROORDEN4,
+    COL_NROREV,
+    COL_NRORH1,
+    COL_NRORH2,
+    COL_NRORH3,
+    COL_NRORH4,
+    COL_NROMM1,
+    COL_NROMM2,
+    COL_NROMM3,
+    COL_NROMM4,
+    COL_PERIODO1,
+    COL_PERIODO2,
+    COL_PERIODO3,
+    COL_PERIODO4,
+    COL_PORCENTAJE,
+    COL_PROYECTO,
+    COL_RAZONSOCIAL,
+    COL_RENTACIP,
+    COL_RUC,
+    COL_SUBTOTAL,
+    COL_TASAIGV,
+    COL_TASAUIT,
+    COL_TFONO,
+    COL_TOTAL,
+    COL_TPERSONA,
+    COL_USUARIO,
+    COL_VALOROBRA,
+    MAX_REVISIONES,
+    RH_SLOT_COLUMNS as _RH_SLOT_COLUMNS,
+    SLOT_SPECIALTY_DB_MAP as _SLOT_SPECIALTY_DB_MAP,
+    _SLOT_SPECIALTY_MAP,
+    _parse_date as _parse_date_optional,
+    DISTRITO_SINONIMOS as _DISTRITO_SINONIMOS,
+    normalizar_distrito as _normalizar_distrito,
+    parse_tpersona as _parse_tpersona,
+    resolve_tipo_documento as _resolve_tipo_documento,
+    normalize_specialty as _normalize_specialty,
+    parse_comprobante as _parse_comprobante_pkg,
+    parse_rh_slot as _parse_rh_slot_pkg,
+    parse_row_monetary as _parse_row_monetary_pkg,
+    parse_total as _parse_total_pkg,
+    tipo_comprobante_from_nrofactura as _tipo_comprobante_from_nrofactura_pkg,
+    DIRECCION_FALTANTE_LEGACY,
+    DISTRITO_FALTANTE_LEGACY,
+    MUNICIPALIDAD_FALTANTE_LEGACY,
+    NOMBRE_FALTANTE_LEGACY,
+)
+# Legacy alias (maestro has historically used COL_DPTOPRDI; paquete uses the same
+# index but doesn't export it as a top-level name yet — provide it locally).
+COL_DPTOPRDI = 5
 
 
 def _parse_fecha(raw) -> date:
-    """Parse FECHA value (datetime object or string) -> date."""
+    """Parse FECHA value (datetime object or string) -> date.
+
+    Delegates to the package's _parse_date for the actual parsing, but
+    raises ValueError on failure (instead of returning None) to preserve
+    the existing call-site contract.
+    """
     if not raw:
         raise ValueError("FECHA is empty")
-    # openpyxl data_only=True returns datetime objects for date cells
-    if isinstance(raw, datetime):
-        return raw.date()
-    raw_str = str(raw).strip()
-    for fmt in ("%d/%m/%Y %H:%M", "%d/%m/%Y %H:%M:%S", "%d/%m/%Y", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-        try:
-            dt = datetime.strptime(raw_str, fmt)
-            return dt.date()
-        except ValueError:
-            pass
-    raise ValueError(f"Cannot parse fecha: {raw_str!r}")
-
-
-def _resolve_tipo_documento(dni: str) -> tuple[str, str]:
-    """
-    Return (tipo_documento, numero_documento) based on DNI content.
-
-    Rules:
-        - empty/blank -> SIN_DOCUMENTO, 00000000
-        - 8 chars (all digits) -> DNI, the value
-        - otherwise -> RUC, the value
-    """
-    dni = str(dni).strip() if dni else ""
-    if not dni:
-        return "SIN_DOCUMENTO", "00000000"
-    if len(dni) == 8 and dni.isdigit():
-        return "DNI", dni
-    return "RUC", dni
-
-
-# Mapeo regex → (nombre canónico de distrito, nombre de provincia) en UbigeoDistrito.
-# Los nombres históricos del Excel no siempre coinciden con la BD de ubigeo.
-# provincia=None cuando el nombre del distrito ya es único.
-_DISTRITO_SINONIMOS: list[tuple[str, tuple[str, str | None]]] = [
-    (r"^CERCADO\s+DE\s+LIMA$", ("LIMA", None)),
-    (r"^CENTRO\s+HIST[OÓ]RICO\s+DE\s+LIMA$", ("LIMA", None)),
-    (r"^LIMA\s+CERCADO\s+Y\s+PROVINCIAL\s+LIMA$", ("LIMA", None)),
-    (r"^ATE\s+VITARTE$", ("ATE", None)),
-    (r"^LURIGANCHO\s*[-–]\s*CHOSICA$", ("LURIGANCHO", None)),
-    (r"^BARRANCA\s*[-–]\s*NORTE$", ("BARRANCA", None)),
-    # "SAN ANTONIO" es ambiguo (6 distritos homónimos). Acá es el de la provincia HUAROCHIRI.
-    (r"^SAN\s+ANTONIO\s+DE\s+HUAROCHIRI$", ("SAN ANTONIO", "HUAROCHIRI")),
-]
-
-
-def _normalizar_distrito(nombre: str) -> tuple[str, str | None]:
-    """Normaliza un nombre histórico de distrito a (nombre canónico, provincia o None)."""
-    if not nombre:
-        return "", None
-    nombre = nombre.strip().upper()
-    for pattern, (canon, provincia) in _DISTRITO_SINONIMOS:
-        if re.match(pattern, nombre):
-            return canon, provincia
-    return nombre, None
+    parsed = _parse_date_optional(raw)
+    if parsed is None:
+        # Distinguish "absent" (which _parse_date_optional maps to None) from
+        # "unparseable" (also None) — for FECHA both are errors here.
+        raise ValueError(f"Cannot parse fecha: {raw!r}")
+    return parsed
 
 
 def _build_orchestrator() -> LiquidacionEdificacionesLegacyOrchestrator:
@@ -344,38 +259,9 @@ _ESPECIALIDAD_REVISION_MAP = {
     "Estructuras": "Ingeniería Civil",
     "Inst. Sanitarias": "Ingeniería Sanitaria",
     "Inst. Mecánico Eléctricas": "Ingeniería Eléctrica y Mecánica Eléctrica",
+    "Inst. Electrónicas": "Ingeniería Electrónica",
+    "Inst. Electronicas": "Ingeniería Electrónica",
 }
-
-
-def _normalize_specialty(value: str) -> str:
-    """Normaliza acentos/case para lookup robusto de ESPECIALIDAD."""
-    normalized = unicodedata.normalize("NFKD", value)
-    normalized = "".join(c for c in normalized if not unicodedata.combining(c))
-    return normalized.lower().strip()
-
-
-def _parse_tpersona(raw) -> tuple[str, str | None]:
-    """
-    Parse TPERSONA value into (nombres, apellidos).
-
-    Rules:
-        - 1 part  -> nombres=part[0], apellidos=None
-        - 2-3 parts -> nombres=part[0], apellidos=" ".join(rest)
-        - 4+ parts -> nombres=" ".join(part[0:2]), apellidos=" ".join(part[2:])
-        - empty/None -> (None, None)
-    """
-    if raw is None:
-        return None, None
-    text = str(raw).strip()
-    if not text or text.upper() == "NULL":
-        return None, None
-    parts = text.split()
-    if len(parts) == 1:
-        return parts[0], None
-    elif 2 <= len(parts) <= 3:
-        return parts[0], " ".join(parts[1:])
-    else:  # 4+
-        return " ".join(parts[:2]), " ".join(parts[2:])
 
 
 def _resolve_especialidad_revision(especialidad_str: str):
@@ -506,212 +392,35 @@ def _get_or_create_usuario_from_usuario(usuario_raw) -> Usuario:
 
 
 def _parse_comprobante(row: list) -> dict:
-    """
-    Parse NROFACTURA into serie and numero.
-
-    The legacy NROFACTURA format is typically '001-00001' (serie-numero).
-    Split on the first '-' found; strip whitespace.
-
-    Returns:
-        {"serie": str, "numero": str} if parseable.
-        {"serie": None, "numero": None, "raw": str} if empty/invalid.
-    """
-    raw = row[COL_NROFACTURA] if len(row) > COL_NROFACTURA else None
-    if raw is None:
-        return {"serie": None, "numero": None, "raw": None}
-    text = str(raw).strip()
-    if not text or text.upper() in ("NULL", ""):
-        return {"serie": None, "numero": None, "raw": text}
-
-    # Split on first '-'
-    if "-" in text:
-        parts = text.split("-", 1)
-        serie = parts[0].strip()
-        numero = parts[1].strip()
-        return {"serie": serie, "numero": numero, "raw": text}
-
-    # No separator — treat entire as numero, serie empty
-    return {"serie": None, "numero": text, "raw": text}
-
-
-def _coerce_int(raw) -> int | None:
-    """Coerce a raw cell value to int. Returns None if empty/invalid."""
-    if raw is None:
-        return None
-    text = str(raw).strip()
-    if not text or text.upper() == "NULL":
-        return None
-    try:
-        return int(float(text))
-    except (ValueError, TypeError):
-        return None
-
-
-def _coerce_month(raw) -> int | None:
-    """
-    Coerce MES cell value to int in range 1..12.
-
-    Returns None if absent, null, or out of range.
-    Never infers from FECHA.
-    """
-    val = _coerce_int(raw)
-    if val is None:
-        return None
-    if 1 <= val <= 12:
-        return val
-    return None  # invalid month — skip slot
+    """Wrapper for package parser. Imported from package."""
+    return _parse_comprobante_pkg(row, COL_NROFACTURA)
 
 
 def _parse_rh_slot(
     row: list,
     slot_num: int,
 ) -> dict | None:
-    """
-    Parse a single RH slot (1..4) from a row.
-
-    Returns None if the slot has no assigned delegate/CIP (skip signal).
-
-    Otherwise returns a dict with all slot fields:
-        {
-            "slot": int,
-            "specialty": str,
-            "delegado": str or None,       # raw nombre
-            "cip": int or None,
-            "periodo": int or None,         # PERIODO
-            "mes": int or None,             # 1..12 or None if invalid/absent
-            "fecha_presentacion": date or None,
-            "fecha_revision": date or None,
-            "nro_orden": int or None,
-            "dictamen": str or None,
-            "nro_rh": int or None,
-            "nro_mm": int or None,
-            "skip_reason": None,
-        }
-
-    Skip reasons (returns None):
-        - No CIP value present
-        - No DELEGADO value present
-
-    Monetary fields are NOT included — those are shared per row and parsed
-    separately via _parse_row_monetary().
-    """
-    try:
-        (
-            col_delegado,
-            col_cip,
-            col_periodo,
-            col_mes,
-            col_fecha_pres,
-            col_fecha_rev,
-            col_nro_orden,
-            col_dictamen,
-            col_nro_rh,
-            col_nro_mm,
-        ) = _RH_SLOT_COLUMNS[slot_num]
-    except KeyError:
-        return None
-
-    def _col(idx: int):
-        return row[idx] if len(row) > idx else None
-
-    cip_raw = _col(col_cip)
-    cip = _coerce_int(cip_raw)
-
-    delegado_raw = _col(col_delegado)
-    delegado_text = (
-        str(delegado_raw).strip()
-        if delegado_raw is not None
-        else None
+    """Wrapper for package parser. Imported from package."""
+    return _parse_rh_slot_pkg(
+        row,
+        slot_num,
+        _RH_SLOT_COLUMNS,
+        _CIP_EMBEDDED_RE,
+        _SLOT_SPECIALTY_MAP,
     )
-    if not delegado_text or delegado_text.upper() == "NULL":
-        # No delegate — skip slot
-        return None
-
-    # Fallback: some legacy rows embed the CIP inside the delegado text rather
-    # than in the dedicated CIP column (e.g. "CIP 14720 Titular: ..."). If the
-    # CIP column is missing, extract it from the name to avoid skipping slots
-    # that actually carry delegate data.
-    if cip is None:
-        embedded = _coerce_int(_CIP_EMBEDDED_RE.search(delegado_text).group(1)) if _CIP_EMBEDDED_RE.search(delegado_text) else None
-        if embedded is not None:
-            cip = embedded
-
-    if cip is None:
-        # No CIP — skip slot
-        return None
-
-    periodo = _coerce_int(_col(col_periodo))
-    mes = _coerce_month(_col(col_mes))
-
-    # Parse dates — return None if invalid/absent; never raise
-    def _parse_date(raw):
-        if raw is None:
-            return None
-        if isinstance(raw, datetime):
-            return raw.date()
-        text = str(raw).strip()
-        if not text or text.upper() == "NULL":
-            return None
-        for fmt in ("%d/%m/%Y", "%Y-%m-%d", "%d/%m/%Y %H:%M:%S"):
-            try:
-                return datetime.strptime(text, fmt).date()
-            except ValueError:
-                pass
-        return None  # invalid — include None in result, don't skip slot
-
-    return {
-        "slot": slot_num,
-        "specialty": _SLOT_SPECIALTY_MAP[slot_num],
-        "delegado": delegado_text,
-        "cip": cip,
-        "periodo": periodo,
-        "mes": mes,
-        "fecha_presentacion": _parse_date(_col(col_fecha_pres)),
-        "fecha_revision": _parse_date(_col(col_fecha_rev)),
-        "nro_orden": _coerce_int(_col(col_nro_orden)),
-        "dictamen": str(_col(col_dictamen)).strip() if _col(col_dictamen) is not None else None,
-        "nro_rh": _coerce_int(_col(col_nro_rh)),
-        "nro_mm": _coerce_int(_col(col_nro_mm)),
-        "skip_reason": None,
-    }
 
 
 def _parse_row_monetary(row: list) -> dict:
-    """
-    Parse shared monetary fields from a row.
-
-    These are fixed source values shared by all active slots in the same row:
-        IMPBRUTO, RENTACIP, APORCODEMU, FONDOCOMUN, NETOHONORA, SUBTOTAL.
-
-    Returns dict with Decimal values (or None if absent/invalid):
-        {
-            "imp_bruto": Decimal | None,
-            "renta_cip": Decimal | None,
-            "aporte_codemu": Decimal | None,
-            "fondo_comun": Decimal | None,
-            "neto_honorario": Decimal | None,
-            "subtotal": Decimal | None,
-        }
-    """
-    def _dec(raw):
-        if raw is None:
-            return None
-        text = str(raw).strip()
-        if not text or text.upper() == "NULL":
-            return None
-        try:
-            return Decimal(text)
-        except (InvalidOperation, ValueError):
-            return None
-
-    return {
-        "imp_bruto": _dec(row[COL_IMPBRUTO] if len(row) > COL_IMPBRUTO else None),
-        "renta_cip": _dec(row[COL_RENTACIP] if len(row) > COL_RENTACIP else None),
-        "aporte_codemu": _dec(row[COL_APORCODEMU] if len(row) > COL_APORCODEMU else None),
-        "fondo_comun": _dec(row[COL_FONDOCOMUN] if len(row) > COL_FONDOCOMUN else None),
-        "neto_honorario": _dec(row[COL_NETOHONORA] if len(row) > COL_NETOHONORA else None),
-        "subtotal": _dec(row[COL_SUBTOTAL] if len(row) > COL_SUBTOTAL else None),
-    }
+    """Wrapper for package parser. Imported from package."""
+    return _parse_row_monetary_pkg(
+        row,
+        COL_IMPBRUTO,
+        COL_RENTACIP,
+        COL_APORCODEMU,
+        COL_FONDOCOMUN,
+        COL_NETOHONORA,
+        COL_SUBTOTAL,
+    )
 
 
 # ── Phase 2: RH Delegado helpers (no DB writes in Phase 2; counters only) ────────
@@ -737,8 +446,9 @@ def _ensure_perfil_ingeniero_by_cip(cip: int, dry_run: bool = False) -> tuple[Pe
     PerfilIngenieroCoreService.hydrate_perfil_from_cip and creates a full profile
     from the response.
 
-    Does NOT create blank/minimal profiles — if the CIP endpoint returns no data
-    or is unavailable, returns SIN_COLEGIADO or ERROR_CIP and skips profile creation.
+    If the CIP endpoint returns no data (SIN_COLEGIADO), creates a minimal
+    placeholder profile marked as `pendiente_datos=True` so the import can
+    continue. This is the same pattern used by import_legacy_inspeccion_obra.
 
     Args:
         cip: Integer CIP number.
@@ -749,12 +459,33 @@ def _ensure_perfil_ingeniero_by_cip(cip: int, dry_run: bool = False) -> tuple[Pe
             "YA_EXISTE"            - found existing local profile, reused as-is
             "CREADO_DESDE_CIP"    - created new profile from CIP endpoint data
             "ACTUALIZADO_DESDE_CIP" - updated existing profile from CIP endpoint data
-            "SIN_COLEGIADO"       - CIP endpoint returned no data (404 or null)
+            "CREADO_PLACEHOLDER"   - created minimal placeholder (CIP endpoint unavailable)
+            "SIN_COLEGIADO"       - CIP endpoint returned no data (legacy: not used anymore)
             "ERROR_CIP"           - CIP service unavailable after retries
             "ERROR"               - unexpected failure (invalid CIP, DB error, etc.)
     """
     service = PerfilIngenieroCoreService()
-    return service.hydrate_perfil_from_cip(str(cip), dry_run=dry_run)
+    perfil, status = service.hydrate_perfil_from_cip(str(cip), dry_run=dry_run)
+    # Fallback: si el endpoint CIP no devolvió datos pero tampoco error de red,
+    # crear un placeholder mínimo para no bloquear la importación.
+    if perfil is None and status in ("SIN_COLEGIADO", "ERROR", "ERROR_CIP") and not dry_run:
+        try:
+            # Mismo patron que import_legacy_inspeccion_obra._create_fallback_perfil_ingeniero:
+            # nombres = "CIP <cip>" para que el placeholder sea buscable y
+            # corregible despues. Usamos get_or_create para idempotencia.
+            normalized_cip = str(cip).strip().zfill(6)[:6]
+            perfil, _ = PerfilIngeniero.objects.get_or_create(
+                cip=normalized_cip,
+                defaults={
+                    "nombres": f"CIP {normalized_cip}",
+                    "apellido_paterno": "CIP",
+                    "apellido_materno": normalized_cip,
+                },
+            )
+            return perfil, "CREADO_PLACEHOLDER"
+        except Exception:  # noqa: BLE001
+            return None, "ERROR"
+    return perfil, status
 
 
 def _ensure_delegado_for_perfil(
@@ -885,43 +616,13 @@ def _get_existing_delegado_operacion(
 
 
 def _parse_total(row: list) -> Decimal | None:
-    """
-    Parse TOTAL column from a legacy row into a Decimal.
-
-    Returns None if absent/invalid/zero.
-    """
-    if len(row) <= COL_TOTAL:
-        return None
-    raw = row[COL_TOTAL]
-    if raw is None:
-        return None
-    text = str(raw).strip()
-    if not text or text.upper() == "NULL":
-        return None
-    try:
-        val = Decimal(text)
-        return val if val != 0 else None
-    except (InvalidOperation, ValueError):
-        return None
+    """Wrapper for package parser."""
+    return _parse_total_pkg(row, COL_TOTAL)
 
 
 def _tipo_comprobante_from_nrofactura(raw: str | None) -> str | None:
-    """
-    Map NROFACTURA prefix to TipoComprobante value.
-
-    Returns:
-        'FACTURA' if raw starts with 'FAC'
-        'BOLETA' if raw starts with 'BOL'
-        None otherwise
-    """
-    if not raw:
-        return None
-    upper = str(raw).strip().upper()
-    if upper.startswith("FAC"):
-        return "FACTURA"
-    if upper.startswith("BOL"):
-        return "BOLETA"
-    return None
+    """Wrapper for package parser."""
+    return _tipo_comprobante_from_nrofactura_pkg(raw)
 
 
 def _upsert_liquidacion_comprobante(
@@ -1288,6 +989,12 @@ class Command(BaseCommand):
         if not data_path.exists():
             raise CommandError(f"Data file not found: {data_path}")
 
+        from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_legacy_por_visitas_core_service import (
+            LiquidacionLegacyPorVisitasCoreService,
+        )
+        self._uit_map = LiquidacionLegacyPorVisitasCoreService.get_uit_map_by_year()
+        logger.info("UIT map loaded: %d años", len(self._uit_map))
+
         self._log("\n[import_legacy_edificaciones] Starting...")
         self._log(f"  Source: {data_path}")
         if self.fecha_desde is not None:
@@ -1476,19 +1183,13 @@ class Command(BaseCommand):
                         self._log(self.style.WARNING(f"  RECHAZADO row {idx}: NRO == 0"))
                         continue
 
-                    # ── Rechazo: DPTOPRDI vacío (distrito obligatorio) ──────────
+                    # ── DPTOPRDI vacío: ya NO rechaza. _build_payload usa el distrito
+                    # de la municipalidad mapeada por CODPAGO como fallback.
                     dptoprdri = row[COL_DPTOPRDI]
                     if dptoprdri is None or str(dptoprdri).strip() == "":
-                        rejected_rows.append({"fila": idx, "row": row, "motivo": "Distrito vacío (DPTOPRDI)", "subido": "NO"})
-                        report_writer.writerow([idx, "", "Distrito vacío (DPTOPRDI)", "NO"])
-                        # ── Live write to joined CSV + Excel ─────────────────────────
-                        jw.writerow([idx, "Distrito vacío (DPTOPRDI)", "NO"] + row)
-                        joined_csv_file.flush()
-                        ws_joined.append([idx, "Distrito vacío (DPTOPRDI)", "NO"] + row)
-                        ws_clean.append(row)
-                        rejected += 1
-                        self._log(self.style.WARNING(f"  RECHAZADO row {idx}: DPTOPRDI vacío"))
-                        continue
+                        self._log(self.style.WARNING(
+                            f"  ANOMALIA row {idx}: DPTOPRDI vacío — usando fallback distrito de municipalidad"
+                        ))
 
                     # Build payload
                     payload, anomalies, _ = self._build_payload(row, idx, orchestrator)
@@ -1803,8 +1504,8 @@ class Command(BaseCommand):
                             # Case A: all slots had no CIP/delegate (Phase 1 skip for all slots)
                             fallback_motivo = "Sin delegado: liquidación creada, RH omitido"
                             reporte_subido = "PARCIAL"
-                        elif all_cip_slots_failed and slots_with_nonempty_delegate > 0:
-                            # Case B: had slots with CIP but ALL failed to resolve → reject
+                        elif all_cip_slots_failed and slots_with_nonempty_delegate > 0 and not self.dry_run:
+                            # Case B: had slots with CIP but ALL failed to resolve → reject (write mode only)
                             fallback_motivo = row_skip_motivo or "CIP no resuelto"
                             reporte_subido = "NO"
                             rejected_rows.append({
@@ -1823,7 +1524,8 @@ class Command(BaseCommand):
                                 f"  RECHAZADO row {idx}: {fallback_motivo}"
                             ))
                         else:
-                            # Should not happen: slots had candidates but none succeeded
+                            # Dry-run (or fallback): slots had delegates but Phase 2 was skipped →
+                            # treat as PARCIAL since the liquidación was already migrated.
                             fallback_motivo = row_skip_motivo or "Sin delegado: liquidación creada, RH omitido"
                             reporte_subido = "PARCIAL"
                         report_writer.writerow([
@@ -2294,7 +1996,14 @@ class Command(BaseCommand):
         # ── Especialidad ─────────────────────────────────────────────────────
         especialidad_raw = row[COL_ESPECIALIDAD]
         especialidad_str = str(especialidad_raw).strip() if especialidad_raw else ""
-        valid_esp = {"TODAS", "Estructuras", "Inst. Sanitarias", "Inst. Mecánico Eléctricas"}
+        valid_esp = {
+            "TODAS",
+            "Estructuras",
+            "Inst. Sanitarias",
+            "Inst. Mecánico Eléctricas",
+            "Inst. Electrónicas",
+            "Inst. Electronicas",
+        }
         if especialidad_str and especialidad_str not in valid_esp:
             anomalies.append(f"Especialidad no estándar: {especialidad_str}")
 
@@ -2324,58 +2033,77 @@ class Command(BaseCommand):
         codpago = row[COL_CODPAGO]
         codpago_str = str(codpago).strip().upper() if codpago is not None else ""
         if not codpago_str:
-            # CODPAGO no es necesario — no es error fatal, se anota y se usa fallback
-            anomalies.append("CodPago faltante")
-            municipalidad = Municipalidad.objects.first()
-            if not municipalidad:
-                raise ValueError("No hay municipalidades en la base de datos")
+            # CODPAGO vacío: no es error fatal, se anota y se rechaza la fila
+            # porque asignar una municipalidad arbitraria sería un dato falso.
+            raise ValueError("CodPago vacío: municipio desconocido — fila rechazada")
         else:
             try:
                 municipalidad = Municipalidad.objects.get(codigo=codpago_str)
             except ObjectDoesNotExist:
-                anomalies.append(f"CodPago no encontrado: {codpago_str}")
-                municipalidad = Municipalidad.objects.first()
-                if not municipalidad:
-                    raise ValueError(f"No se encontró municipalidad para {codpago_str!r} y no hay fallback")
+                # NO hacemos fallback al primer registro: sería un dato falso.
+                # La fila se rechaza para revisión manual.
+                raise ValueError(
+                    f"CodPago no encontrado: {codpago_str!r} — municipio desconocido, fila rechazada"
+                )
 
         municipalidad_id = municipalidad.id
 
-        # ── distrito: prefer the FK id to avoid one DB lookup per report row ──
+        # ── distrito ─────────────────────────────────────────────────────────
+        # Lógica:
+        #   1. Si la municipalidad mapeada por CODPAGO tiene distrito → usar ese.
+        #   2. Si DPTOPRDI tiene un nombre que matchea UbigeoDistrito → usar ese.
+        #   3. Si ninguno matchea → distrito_id = None (NULL en BD, sin fallback arbitrario).
+        # Está PROHIBIDO escribir un distrito cualquiera para llenar el campo.
+        dptoprdri = row[COL_DPTOPRDI]
         distrito_id = getattr(municipalidad, "distrito_id", None)
         if distrito_id:
-            pass
+            if dptoprdri is None or str(dptoprdri).strip() == "":
+                anomalies.append(
+                    f"DPTOPRDI vacío → distrito tomado de municipalidad {municipalidad.nombre}"
+                )
         else:
-            dptoprdri = row[COL_DPTOPRDI]
-            distrito_nombre = str(dptoprdri).split("/")[-1].strip() if dptoprdri else ""
-            distrito_nombre, provincia_nombre = _normalizar_distrito(distrito_nombre)
-            distrito_qs = UbigeoDistrito.objects.filter(nombre__iexact=distrito_nombre)
-            if provincia_nombre:
-                distrito_qs = distrito_qs.filter(provincia__nombre__iexact=provincia_nombre)
-            distrito = distrito_qs.first()
-            if distrito is not None and getattr(distrito, "id", None):
-                distrito_id = distrito.id
+            if dptoprdri is None or str(dptoprdri).strip() == "":
+                anomalies.append(
+                    f"DPTOPRDI vacío y municipalidad {municipalidad.nombre} sin distrito → distrito=NULL"
+                )
             else:
-                fallback = UbigeoDistrito.objects.first()
-                if fallback:
-                    distrito_id = fallback.id
-                    anomalies.append(f"Distrito no encontrado: {distrito_nombre}")
-                    self._log(self.style.WARNING(f"  WARNING: Distrito {distrito_nombre!r} not found, fallback to {fallback.nombre} (id={fallback.id})"))
+                distrito_nombre = str(dptoprdri).split("/")[-1].strip()
+                distrito_nombre, provincia_nombre = _normalizar_distrito(distrito_nombre)
+                distrito_qs = UbigeoDistrito.objects.filter(nombre__iexact=distrito_nombre)
+                if provincia_nombre:
+                    distrito_qs = distrito_qs.filter(provincia__nombre__iexact=provincia_nombre)
+                distrito = distrito_qs.first()
+                if distrito is not None and getattr(distrito, "id", None):
+                    distrito_id = distrito.id
                 else:
-                    raise ValueError("No UbigeoDistrito records found in database")
+                    anomalies.append(
+                        f"Distrito no encontrado en UbigeoDistrito: {distrito_nombre!r} → distrito=NULL"
+                    )
 
         # ── Proyecto ─────────────────────────────────────────────────────────
         # El campo del proyecto es razon_social. El Excel trae NOMBRE (col4) y
         # RAZONSOCIAL (col15). Usamos RAZONSOCIAL con fallback a NOMBRE.
+        # Si AMBOS están vacíos, aplicamos fallback al RUC/DNI o sentinel.
         razon_social = row[COL_RAZONSOCIAL]
         if razon_social is None or str(razon_social).strip() == "":
             razon_social = row[COL_NOMBRE]
         if razon_social is None or str(razon_social).strip() == "":
-            raise ValueError("RAZONSOCIAL/NOMBRE is empty")
+            # Fallback chain: RUC -> DNI -> sentinel
+            if ruc_str:
+                razon_social = f"RUC:{ruc_str}"
+                anomalies.append("RAZONSOCIAL/NOMBRE vacío → fallback RUC")
+            elif dni_str:
+                razon_social = f"DNI:{dni_str}"
+                anomalies.append("RAZONSOCIAL/NOMBRE vacío → fallback DNI")
+            else:
+                razon_social = NOMBRE_FALTANTE_LEGACY
+                anomalies.append(f"RAZONSOCIAL/NOMBRE vacío → sentinel {NOMBRE_FALTANTE_LEGACY!r}")
         razon_social_str = str(razon_social).strip()
 
         direccion = row[COL_DIRECCION]
         if direccion is None or str(direccion).strip() == "":
-            raise ValueError("DIRECCION is empty")
+            direccion = DIRECCION_FALTANTE_LEGACY
+            anomalies.append(f"DIRECCION vacía → sentinel {DIRECCION_FALTANTE_LEGACY!r}")
         direccion_str = str(direccion).strip()
 
         # ── Expediente ────────────────────────────────────────────────────────
@@ -2441,12 +2169,14 @@ class Command(BaseCommand):
             id_val = None
         numero = id_val
 
-        # ── Contacto (TFONO + TPERSONA) ──────────────────────────────────────
+        # ── Contacto (TPERSONA + TFONO + TDNI) ──────────────────────────────
         tpersona_raw = row[COL_TPERSONA] if len(row) > COL_TPERSONA else None
         tfono_raw = row[COL_TFONO] if len(row) > COL_TFONO else None
+        tdni_raw = row[COL_TDNI] if len(row) > COL_TDNI else None
 
         nombres, apellidos = _parse_tpersona(tpersona_raw)
         telefono = str(tfono_raw).strip() if tfono_raw is not None and str(tfono_raw).strip() != "" and str(tfono_raw).strip().upper() != "NULL" else None
+        dni_contacto = str(tdni_raw).strip() if tdni_raw is not None and str(tdni_raw).strip() != "" and str(tdni_raw).strip().upper() != "NULL" else None
 
         contacto_inline = None
         has_nombres = nombres is not None and nombres != ""
@@ -2459,6 +2189,7 @@ class Command(BaseCommand):
                     nombres=nombres,
                     apellidos=apellidos,
                     telefono=telefono,
+                    dni=dni_contacto,
                 )
             elif has_telefono:
                 # TFONO present but TPERSONA empty — can't create contacto without nombre
@@ -2545,6 +2276,21 @@ class Command(BaseCommand):
             numero_revision=nrorev_val,
             numero=numero,
         )
+
+        # ── UIT override (opcional): si el TASAUIT del Excel no coincide con
+        # la UIT vigente en BD para el año de fecha_registro, pasamos el valor
+        # del Excel al orchestrator. Esto permite usar UITs históricos que ya
+        # no están en el map actual.
+        tasauit_raw = row[COL_TASAUIT]
+        if tasauit_raw is not None and str(tasauit_raw).strip() != "":
+            try:
+                tasauit_valor = int(Decimal(str(tasauit_raw).strip()))
+            except (InvalidOperation, ValueError):
+                tasauit_valor = None
+            if tasauit_valor is not None and fecha_registro is not None:
+                map_entry = self._uit_map.get(fecha_registro.year)
+                if map_entry and map_entry["valor"] != tasauit_valor:
+                    payload.uit_valor_override = Decimal(tasauit_valor)
 
         # ── Pre-calculate (cotizar) ──────────────────────────────────────────
         unit_ambiguity = False

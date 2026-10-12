@@ -153,6 +153,20 @@ class ReciboHonorarioInspectorOut(BaseSchema):
     created_at: datetime
 
 
+# ── Delete response schemas ─────────────────────────────────────────────────────
+
+class RHInspectorDeleteOut(BaseSchema):
+    """Schema de salida para la eliminación de un ReciboHonorarioInspectorMensual."""
+    id: uuid.UUID = Field(..., description="ID del recibo eliminado")
+    message: str = Field(..., description="Mensaje de confirmación")
+
+
+class RHDelegadoDeleteOut(BaseSchema):
+    """Schema de salida para la eliminación de un ReciboHonorarioDelegadoMensual."""
+    id: uuid.UUID = Field(..., description="ID del recibo eliminado")
+    message: str = Field(..., description="Mensaje de confirmación")
+
+
 # ── RH Inspector Mensual (Cotización/Creación) ─────────────────────────────────
 
 class LiquidacionComprobanteMinimalOut(BaseSchema):

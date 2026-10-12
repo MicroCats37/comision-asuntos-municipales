@@ -90,7 +90,7 @@ export function ProyectoSmartField({ methods }: ProyectoSmartFieldProps) {
             type: "searchable-select",
             placeholder: "Seleccione distrito",
             icon: Building2,
-            required: true,
+            required: false,
             // Options would be populated via a query in a real implementation
             options: [],
           }}

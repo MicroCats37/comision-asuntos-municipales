@@ -5,21 +5,30 @@
  * Mensual del delegado.
  * Muestra: Periodo, Delegado, Neto a Pagar, número de liquidaciones y expedientes.
  */
-import { Banknote, Calendar, FileText, Printer, User } from "lucide-react";
+import {
+  Banknote,
+  Calendar,
+  FileText,
+  Printer,
+  Trash2,
+  User,
+} from "lucide-react";
+import { RhDelegadoVariablesCalculo } from "@/features/finanzas/components/RhDelegadoVariablesCalculo";
+import { printRhDelegadoMensual } from "@/features/finanzas/pdf/printRhDelegadoMensual";
 import type { ReciboHonorarioDelegadoMensual } from "@/features/finanzas/schemas/recibo-honorario.schema";
 import {
   formatCurrency,
   formatDate,
 } from "@/features/liquidaciones/components/liquidacion-ui";
-import { RhDelegadoVariablesCalculo } from "@/features/finanzas/components/RhDelegadoVariablesCalculo";
-import { printRhDelegadoMensual } from "@/features/finanzas/pdf/printRhDelegadoMensual";
 
 interface ReciboHonorarioDelegadoMensualCardProps {
   item: ReciboHonorarioDelegadoMensual;
+  onDelete?: (id: string) => void;
 }
 
 export function ReciboHonorarioDelegadoMensualCard({
   item,
+  onDelete,
 }: ReciboHonorarioDelegadoMensualCardProps) {
   const del = item.delegado;
   const totales = item.totales;
@@ -41,6 +50,10 @@ export function ReciboHonorarioDelegadoMensualCard({
     printRhDelegadoMensual(item);
   };
 
+  const handleDelete = () => {
+    onDelete?.(item.id);
+  };
+
   return (
     <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
       {/* Header */}
@@ -56,7 +69,18 @@ export function ReciboHonorarioDelegadoMensualCard({
             <Calendar className="h-3.5 w-3.5" />
             <span>{formatDate(item.fecha_registro)}</span>
           </div>
+          {onDelete && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 transition-colors"
+              title="Eliminar recibo"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
           <button
+            type="button"
             onClick={handlePrint}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             title="Imprimir"

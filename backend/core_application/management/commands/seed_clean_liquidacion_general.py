@@ -17,7 +17,6 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquida
 )
 from modules.liquidaciones.domain.models.proyecto import Proyecto
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion
-from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 
 
 class Command(BaseCleanSeedCommand):
@@ -66,7 +65,6 @@ class Command(BaseCleanSeedCommand):
                     for k, v in row.items()
                     if k not in (
                         "uuid",
-                        "especialidades_revisadas_uuids",
                         "usuario_creador_username",
                     )
                     and not k.endswith("_uuid")
@@ -106,12 +104,6 @@ class Command(BaseCleanSeedCommand):
                     id=row["uuid"], defaults=defaults
                 )
                 ctx.store(LiquidacionGeneral, obj.id, obj)
-
-                m2m_uuids = row.get("especialidades_revisadas_uuids") or []
-                if m2m_uuids:
-                    self.apply_m2m(
-                        obj, "especialidades_revisadas", m2m_uuids, ctx
-                    )
 
                 if was_created:
                     created += 1

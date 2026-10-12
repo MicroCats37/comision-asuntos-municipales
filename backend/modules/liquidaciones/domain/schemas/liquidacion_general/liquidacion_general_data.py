@@ -10,7 +10,7 @@ class EntidadData(BaseSchema):
 class ProyectoData(BaseSchema):
     nombre_propietario: str
     direccion: str
-    distrito_id: str
+    distrito_id: Optional[str] = None
     urbanizacion: Optional[str] = None
     entidad_razon_social: str
     entidad: EntidadData

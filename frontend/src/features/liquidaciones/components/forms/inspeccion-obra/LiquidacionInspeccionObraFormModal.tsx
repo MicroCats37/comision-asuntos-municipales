@@ -161,9 +161,10 @@ export function LiquidacionInspeccionObraFormModal(
   // ── Reset del state específico al abrir el modal ───────────────
   useEffect(() => {
     if (open) {
-      setInspectorNombre("");
+      const inspector = sourceItem?.liquidacion_tipo.inspectores?.[0];
+      setInspectorNombre(inspector?.perfil_ingeniero?.nombre_completo ?? "");
     }
-  }, [open]);
+  }, [open, sourceItem]);
 
   // ── Visual por mode ─────────────────────────────────────────────
   const icon =
@@ -251,6 +252,11 @@ export function LiquidacionInspeccionObraFormModal(
         categoriaInicial;
       const tipoLiquidacionIdWatch =
         (methods.watch("tipo_liquidacion_id") as string) ?? "";
+      const tipoLiquidacionIdSeleccionable = tipos.some(
+        (t) => t.id === tipoLiquidacionIdWatch,
+      )
+        ? tipoLiquidacionIdWatch
+        : "";
 
       const tramiteField = (
         <IncrementerInput
@@ -289,11 +295,12 @@ export function LiquidacionInspeccionObraFormModal(
             open={inspectorModalOpen}
             onOpenChange={setInspectorModalOpen}
             tiposLiquidacion={tipos}
-            tipoLiquidacionId={tipoLiquidacionIdWatch}
-            // En edit/relacionada el tipo de liquidación es fijo (heredado);
-            // solo en create se muestra el selector dentro del modal.
+            tipoLiquidacionId={tipoLiquidacionIdSeleccionable}
+            // En relacionada el tipo de liquidación es fijo (heredado de la previa).
+            // En create/edit se muestra selector porque IO necesita filtrar por
+            // EDIFICACION o HABILITACION_URBANA, no por INSPECCION_OBRA.
             fallbackTipoLiquidacionCodigo={
-              mode === "create"
+              mode === "create" || mode === "edit"
                 ? null
                 : ((
                     sourceItem?.liquidacion_general as {
@@ -301,10 +308,9 @@ export function LiquidacionInspeccionObraFormModal(
                     }
                   )?.tipo_liquidacion?.codigo ?? null)
             }
-            // Solo pasamos onTipoLiquidacionChange en create — su presencia en el
-            // modal hace que se muestre el selector de tipo. En edit/relacionada
-            // el tipo está fijo (heredado de la previa o del item), no debe mostrarse.
-            {...(mode === "create"
+            // Pasar onTipoLiquidacionChange hace visible el selector de tipo.
+            // Create y edit deben poder elegir EDIFICACION/HU para filtrar inspector.
+            {...(mode === "create" || mode === "edit"
               ? {
                   onTipoLiquidacionChange: (id: string) => {
                     methods.setValue("tipo_liquidacion_id", id, {
@@ -312,8 +318,12 @@ export function LiquidacionInspeccionObraFormModal(
                     });
                     // Reset inspector selection when tipo changes — the inspector list
                     // will be different for the new tipo, so the old selection is invalid.
-                    methods.setValue("inspector_id", "", { shouldValidate: false });
-                    methods.setValue("inspector_operacion_id", "", { shouldValidate: false });
+                    methods.setValue("inspector_id", "", {
+                      shouldValidate: false,
+                    });
+                    methods.setValue("inspector_operacion_id", "", {
+                      shouldValidate: false,
+                    });
                     setInspectorNombre("");
                   },
                 }
@@ -322,7 +332,9 @@ export function LiquidacionInspeccionObraFormModal(
             selectedId={methods.watch("inspector_id") || undefined}
             onSelect={(id, nombre, inspectorOperacionId) => {
               methods.setValue("inspector_id", id, { shouldValidate: true });
-              methods.setValue("inspector_operacion_id", inspectorOperacionId, { shouldValidate: true });
+              methods.setValue("inspector_operacion_id", inspectorOperacionId, {
+                shouldValidate: true,
+              });
               setInspectorNombre(nombre);
             }}
           />

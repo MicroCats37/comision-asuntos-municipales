@@ -92,8 +92,8 @@ class EspecialidadRevision(BaseModel):
     Especialidad de cálculo/tarifa para liquidaciones.
 
     Solo existen 3 registros: Civil, Sanitaria, Eléctrica/Mecánica.
-    Se usa en TarifaPorcentajeObra, LiquidacionPorcentajeObraDetalle,
-    LiquidacionEspecialidadDisponibles y LiquidacionGeneral.especialidades_revisadas.
+    Se usa en TarifaPorcentajeObra, LiquidacionPorcentajeObraDetalle
+    y LiquidacionEspecialidadDisponibles.
     """
     history = HistoricalRecords()
 

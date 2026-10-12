@@ -37,7 +37,7 @@ export function useCrearMecanicaSuelos() {
             proyecto: {
               nombre_propietario: rest.nombre_propietario,
               direccion: rest.direccion,
-              distrito_id: rest.distrito_id,
+              distrito_id: rest.distrito_id || undefined,
               urbanizacion: rest.urbanizacion || undefined,
               entidad: {
                 tipo_documento: rest.entidad_tipo_documento,
@@ -68,7 +68,7 @@ export function useCrearMecanicaSuelos() {
             proyecto: {
               nombre_propietario: rest.nombre_propietario,
               direccion: rest.direccion,
-              distrito_id: rest.distrito_id,
+              distrito_id: rest.distrito_id || undefined,
               urbanizacion: rest.urbanizacion || undefined,
               entidad: {
                 tipo_documento: rest.entidad_tipo_documento,

@@ -11,10 +11,12 @@ from modules.finanzas.domain.services.flujos.rh_inspector_mensual_flujo import (
     RHInspectorMensualCotizarFlujo,
     RHInspectorMensualCrearFlujo,
     RHInspectorMensualListFlujo,
+    RHInspectorMensualDeleteFlujo,
 )
 from modules.finanzas.domain.services.flujos.rh_delegado_mensual_flujo import (
     RHDelegadoMensualCotizarFlujo,
     RHDelegadoMensualCrearFlujo,
+    RHDelegadoMensualDeleteFlujo,
 )
 from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
 from modules.finanzas.domain.services.core.rh_reparticion_estacional_core_service import (
@@ -51,6 +53,8 @@ class FinanzasModule(Module):
         binder.bind(RHInspectorMensualListFlujo, to=RHInspectorMensualListFlujo, scope=singleton)
         binder.bind(RHDelegadoMensualCotizarFlujo, to=RHDelegadoMensualCotizarFlujo, scope=singleton)
         binder.bind(RHDelegadoMensualCrearFlujo, to=RHDelegadoMensualCrearFlujo, scope=singleton)
+        binder.bind(RHInspectorMensualDeleteFlujo, to=RHInspectorMensualDeleteFlujo, scope=singleton)
+        binder.bind(RHDelegadoMensualDeleteFlujo, to=RHDelegadoMensualDeleteFlujo, scope=singleton)
         binder.bind(FinanzasOrchestrator, to=FinanzasOrchestrator, scope=singleton)
         binder.bind(RHReparticionEstacionalCoreService, to=RHReparticionEstacionalCoreService, scope=singleton)
         binder.bind(RHReparticionEstacionalFlujo, to=RHReparticionEstacionalFlujo, scope=singleton)

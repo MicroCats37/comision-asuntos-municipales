@@ -280,7 +280,7 @@ export function DistritoField({
         type: "searchable-select",
         placeholder: isLoading ? "Cargando..." : "Seleccione distrito",
         icon: MapPin,
-        required: true,
+        required: false,
         options: (distritos || []).map((d) => ({
           label: `${d.nombre} - ${d.provinciaNombre}`,
           value: d.id,

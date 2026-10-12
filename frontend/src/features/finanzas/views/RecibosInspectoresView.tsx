@@ -13,12 +13,14 @@
 import type { LucideIcon } from "lucide-react";
 import { Filter, HardHat, Plus, RefreshCw, X } from "lucide-react";
 import { useState } from "react";
+import { useConfirmationDialog } from "@/components/confirmationDialog/useConfirmationDialog";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { ReciboHonorarioInspectorMensualCard } from "@/features/finanzas/components/cards/ReciboHonorarioInspectorMensualCard";
 import { RecibosInspectoresFiltroModal } from "@/features/finanzas/components/filtros";
 import { RhInspectorMensualModal } from "@/features/finanzas/components/modals/RhInspectorMensualModal";
+import { useEliminarReciboInspector } from "@/features/finanzas/hooks/useEliminarReciboInspector";
 import { useRecibosInspectores } from "@/features/finanzas/hooks/useRecibosInspectores";
 import { useRecibosInspectoresFiltersUrl } from "@/features/finanzas/hooks/useRecibosInspectoresFiltersUrl";
 import { useUrlPagination } from "@/hooks/system/useUrlPagination";
@@ -31,6 +33,8 @@ export function RecibosInspectoresView() {
   const { page, pageSize, setPage, setPageSize } = useUrlPagination();
   const { filtros, setFiltros, clearFiltros } =
     useRecibosInspectoresFiltersUrl();
+  const { confirm, Dialog } = useConfirmationDialog();
+  const eliminarMutation = useEliminarReciboInspector();
 
   const { items, total, totalPages, isLoading, isError, refetch } =
     useRecibosInspectores({
@@ -40,6 +44,20 @@ export function RecibosInspectoresView() {
     });
 
   const hasActiveFilters = Boolean(filtros.inspector_id);
+
+  const handleDelete = (id: string) => {
+    confirm({
+      title: "Eliminar recibo de inspector",
+      description:
+        "¿Estás seguro de que deseas eliminar este recibo de honorario mensual? Esta acción no se puede deshacer.",
+      confirmLabel: "Eliminar",
+      variant: "danger",
+    }).then((confirmed) => {
+      if (confirmed) {
+        eliminarMutation.eliminar(id);
+      }
+    });
+  };
 
   return (
     <div className="page-section">
@@ -141,6 +159,7 @@ export function RecibosInspectoresView() {
                   <ReciboHonorarioInspectorMensualCard
                     key={item.id}
                     item={item}
+                    onDelete={handleDelete}
                   />
                 ))}
               </div>
@@ -166,6 +185,8 @@ export function RecibosInspectoresView() {
           refetch();
         }}
       />
+
+      {Dialog}
 
       <RecibosInspectoresFiltroModal
         open={filtroModalOpen}

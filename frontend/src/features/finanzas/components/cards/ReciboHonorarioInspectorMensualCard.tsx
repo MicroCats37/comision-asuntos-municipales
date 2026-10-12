@@ -5,21 +5,30 @@
  * Mensual del inspector.
  * Muestra: Periodo, Inspector, Totales, número de IO y detalle de inspecciones.
  */
-import { Banknote, Calendar, FileText, Printer, User } from "lucide-react";
+import {
+  Banknote,
+  Calendar,
+  FileText,
+  Printer,
+  Trash2,
+  User,
+} from "lucide-react";
+import { RhInspectorVariablesCalculo } from "@/features/finanzas/components/RhInspectorVariablesCalculo";
+import { printRhInspectorMensual } from "@/features/finanzas/pdf/printRhInspectorMensual";
 import type { ReciboHonorarioInspectorMensual } from "@/features/finanzas/schemas/recibo-honorario.schema";
 import {
   formatCurrency,
   formatDate,
 } from "@/features/liquidaciones/components/liquidacion-ui";
-import { RhInspectorVariablesCalculo } from "@/features/finanzas/components/RhInspectorVariablesCalculo";
-import { printRhInspectorMensual } from "@/features/finanzas/pdf/printRhInspectorMensual";
 
 interface ReciboHonorarioInspectorMensualCardProps {
   item: ReciboHonorarioInspectorMensual;
+  onDelete?: (id: string) => void;
 }
 
 export function ReciboHonorarioInspectorMensualCard({
   item,
+  onDelete,
 }: ReciboHonorarioInspectorMensualCardProps) {
   const insp = item.inspector;
   const totales = item.totales;
@@ -28,6 +37,10 @@ export function ReciboHonorarioInspectorMensualCard({
 
   const handlePrint = () => {
     printRhInspectorMensual(item);
+  };
+
+  const handleDelete = () => {
+    onDelete?.(item.id);
   };
 
   return (
@@ -321,9 +334,21 @@ export function ReciboHonorarioInspectorMensualCard({
           )}
         </div>
 
-        {/* Print button */}
-        <div className="flex justify-end pt-2">
+        {/* Actions */}
+        <div className="flex justify-end gap-2 pt-2">
+          {onDelete && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/5 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+              title="Eliminar recibo"
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar
+            </button>
+          )}
           <button
+            type="button"
             onClick={handlePrint}
             className="flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
           >

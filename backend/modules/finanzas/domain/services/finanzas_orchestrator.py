@@ -14,11 +14,13 @@ from modules.finanzas.domain.services.flujos.rh_inspector_mensual_flujo import (
     RHInspectorMensualCotizarFlujo,
     RHInspectorMensualCrearFlujo,
     RHInspectorMensualListFlujo,
+    RHInspectorMensualDeleteFlujo,
 )
 from modules.finanzas.domain.services.flujos.rh_delegado_mensual_flujo import (
     RHDelegadoMensualCotizarFlujo,
     RHDelegadoMensualCrearFlujo,
     RHDelegadoMensualListFlujo,
+    RHDelegadoMensualDeleteFlujo,
 )
 from modules.finanzas.domain.schemas import VariablesVigentesResult
 from modules.finanzas.domain.schemas import RHInspectorCotizarIn
@@ -72,6 +74,8 @@ class FinanzasOrchestrator:
         rh_delegado_mensual_crear_flujo: RHDelegadoMensualCrearFlujo | None = None,
         rh_delegado_mensual_list_flujo: RHDelegadoMensualListFlujo | None = None,
         rh_inspector_mensual_list_flujo: RHInspectorMensualListFlujo | None = None,
+        rh_inspector_mensual_delete_flujo: RHInspectorMensualDeleteFlujo | None = None,
+        rh_delegado_mensual_delete_flujo: RHDelegadoMensualDeleteFlujo | None = None,
     ):
         self.flujo = flujo
         self.core = core
@@ -81,6 +85,8 @@ class FinanzasOrchestrator:
         self.rh_delegado_mensual_crear_flujo = rh_delegado_mensual_crear_flujo
         self.rh_delegado_mensual_list_flujo = rh_delegado_mensual_list_flujo
         self.rh_inspector_mensual_list_flujo = rh_inspector_mensual_list_flujo
+        self.rh_inspector_mensual_delete_flujo = rh_inspector_mensual_delete_flujo
+        self.rh_delegado_mensual_delete_flujo = rh_delegado_mensual_delete_flujo
 
     def obtener_variables_vigentes(self) -> VariablesVigentesResult:
         """
@@ -125,6 +131,22 @@ class FinanzasOrchestrator:
             RHInspectorCotizarResult con los datos persistidos.
         """
         resultado = self.rh_mensual_crear_flujo.crear(payload)
+        return resultado
+
+    def eliminar_rh_inspector_mensual_proceso(self, rh_id: int | str) -> None:
+        """
+        Elimina el RH mensual del inspector (y revierte RegistroPagoInspector).
+
+        Delega al RHInspectorMensualDeleteFlujo.
+
+        Args:
+            rh_id: PK del ReciboHonorarioInspectorMensual a eliminar.
+
+        Raises:
+            HttpError(404): RH no encontrado.
+            HttpError(409): RH no es el más reciente para ese inspector.
+        """
+        resultado = self.rh_inspector_mensual_delete_flujo.eliminar(rh_id)
         return resultado
 
     def list_candidatos_inspector_proceso(
@@ -571,6 +593,21 @@ class FinanzasOrchestrator:
             RHDelegadoCotizarResult con los datos persistidos.
         """
         resultado = self.rh_delegado_mensual_crear_flujo.crear(payload)
+        return resultado
+
+    def eliminar_rh_delegado_mensual_proceso(self, rh_id: int | str) -> None:
+        """
+        Elimina el RH mensual del delegado (CASCADE elimina DetalleHonorarioDelegado).
+
+        Delega al RHDelegadoMensualDeleteFlujo.
+
+        Args:
+            rh_id: PK del ReciboHonorarioDelegadoMensual a eliminar.
+
+        Raises:
+            HttpError(404): RH no encontrado.
+        """
+        resultado = self.rh_delegado_mensual_delete_flujo.eliminar(rh_id)
         return resultado
 
     def listar_rh_mensual_delegados_proceso(

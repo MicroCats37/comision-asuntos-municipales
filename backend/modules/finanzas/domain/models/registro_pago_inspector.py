@@ -36,6 +36,13 @@ class RegistroPagoInspector(BaseModel):
         blank=True,
         verbose_name="Fecha de Registro",
     )
+    recibo_mensual = models.ForeignKey(
+        "ReciboHonorarioInspectorMensual",
+        on_delete=models.CASCADE,
+        related_name="registros_pago",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         verbose_name = "Registro de Pago del Inspector"

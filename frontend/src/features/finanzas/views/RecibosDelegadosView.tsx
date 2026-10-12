@@ -11,12 +11,14 @@
 import type { LucideIcon } from "lucide-react";
 import { Filter, Plus, RefreshCw, User, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useConfirmationDialog } from "@/components/confirmationDialog/useConfirmationDialog";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { ReciboHonorarioDelegadoMensualCard } from "@/features/finanzas/components/cards/ReciboHonorarioDelegadoMensualCard";
 import { RecibosDelegadosFiltroModal } from "@/features/finanzas/components/filtros";
 import { RhDelegadoMensualModal } from "@/features/finanzas/components/modals/RhDelegadoMensualModal";
+import { useEliminarReciboDelegado } from "@/features/finanzas/hooks/useEliminarReciboDelegado";
 import { useRecibosDelegados } from "@/features/finanzas/hooks/useRecibosDelegados";
 import { useRecibosDelegadosFiltersUrl } from "@/features/finanzas/hooks/useRecibosDelegadosFiltersUrl";
 import { useMunicipalidades } from "@/features/liquidaciones/hooks/useMunicipalidades";
@@ -57,6 +59,8 @@ export function RecibosDelegadosView() {
   const [filtroModalOpen, setFiltroModalOpen] = useState(false);
   const { page, pageSize, setPage, setPageSize } = useUrlPagination();
   const { filtros, setFiltros, clearFiltros } = useRecibosDelegadosFiltersUrl();
+  const { confirm, Dialog } = useConfirmationDialog();
+  const eliminarMutation = useEliminarReciboDelegado();
 
   const { data: municipalidades = [] } = useMunicipalidades();
   const municipalidadNombreById = useMemo(() => {
@@ -84,6 +88,20 @@ export function RecibosDelegadosView() {
       filtros.periodo ||
       filtros.mes,
   );
+
+  const handleDelete = (id: string) => {
+    confirm({
+      title: "Eliminar recibo de delegado",
+      description:
+        "¿Estás seguro de que deseas eliminar este recibo de honorario mensual? Esta acción no se puede deshacer.",
+      confirmLabel: "Eliminar",
+      variant: "danger",
+    }).then((confirmed) => {
+      if (confirmed) {
+        eliminarMutation.eliminar(id);
+      }
+    });
+  };
 
   const activeFilterCount = [
     filtros.delegado_cip,
@@ -226,6 +244,7 @@ export function RecibosDelegadosView() {
                   <ReciboHonorarioDelegadoMensualCard
                     key={item.id}
                     item={item}
+                    onDelete={handleDelete}
                   />
                 ))}
               </div>
@@ -251,6 +270,8 @@ export function RecibosDelegadosView() {
           refetch();
         }}
       />
+
+      {Dialog}
 
       <RecibosDelegadosFiltroModal
         open={filtroModalOpen}

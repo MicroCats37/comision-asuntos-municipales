@@ -7,7 +7,6 @@ etc.) have FK back to it.
 """
 
 from django.contrib import admin
-from django.db.models import Q
 
 # Import from domain/models (re-exported via models.py)
 from modules.liquidaciones.models import (
@@ -361,33 +360,6 @@ class BaseLiquidacionProxyAdmin(admin.ModelAdmin):
                 inlines.append(self.calc_inline)
         return inlines
 
-    # ── Auto-populate especialidades_revisadas on creation ───────
-
-    def save_model(self, request, obj, form, change):
-        """Auto-populate especialidades_revisadas when empty and tipo_liquidacion is set."""
-        from datetime import date
-        from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
-            LiquidacionEspecialidadDisponibles,
-        )
-
-        super().save_model(request, obj, form, change)
-
-        # Only auto-populate on creation (not on edit), and only if empty
-        if (
-            not change
-            and not obj.especialidades_revisadas.exists()
-            and obj.tipo_liquidacion_id
-        ):
-            today = date.today()
-            disponibles = LiquidacionEspecialidadDisponibles.objects.filter(
-                tipo_liquidacion=obj.tipo_liquidacion_id,
-                activo=True,
-                periodo_inicio__lte=today,
-            ).filter(Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=today))
-            for disp in disponibles:
-                obj.especialidades_revisadas.add(disp.especialidad)
-
-
 # =============================================================================
 # PROXY ADMIN CLASSES
 # =============================================================================
@@ -572,30 +544,6 @@ class LiquidacionGeneralAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     ]
-
-    filter_horizontal = ["especialidades_revisadas"]
-
-    def save_model(self, request, obj, form, change):
-        """
-        Auto-populate especialidades_revisadas from LiquidacionEspecialidadDisponibles
-        when the field is empty and tipo_liquidacion is set.
-        """
-        from datetime import date
-        from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
-            LiquidacionEspecialidadDisponibles,
-        )
-
-        super().save_model(request, obj, form, change)
-
-        if not change and not obj.especialidades_revisadas.exists() and obj.tipo_liquidacion_id:
-            today = date.today()
-            disponibles = LiquidacionEspecialidadDisponibles.objects.filter(
-                tipo_liquidacion=obj.tipo_liquidacion_id,
-                activo=True,
-                periodo_inicio__lte=today,
-            ).filter(Q(periodo_fin__isnull=True) | Q(periodo_fin__gte=today))
-            for disp in disponibles:
-                obj.especialidades_revisadas.add(disp.especialidad)
 
     def get_inlines(self, request, obj):
         """

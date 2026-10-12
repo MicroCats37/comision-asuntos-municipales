@@ -73,7 +73,13 @@ class RealCipClient(ICipClient):
             response = httpx.get(url, timeout=self.timeout)
             if response.status_code == 200:
                 return response.json()
-            elif response.status_code == 404:
+            elif response.status_code in (400, 404):
+                # 400/404: el CIP no existe en el endpoint externo.
+                # Devolvemos None para que el caller cree un PerfilIngeniero
+                # placeholder en vez de fallar la importacion legacy.
+                logger.info(
+                    f"CIP API returned {response.status_code} for CIP {cip} (CIP no existe)"
+                )
                 return None
             else:
                 logger.warning(

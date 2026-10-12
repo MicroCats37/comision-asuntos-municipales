@@ -58,3 +58,11 @@ class LiquidacionInspeccionObraLegacyIn(BaseSchema):
         description="Legacy totals bypass — uses Excel sub_total/total directly, bypassing IO formula",
     )
     numero_revision: Optional[int] = Field(1, description="Número de revisión (default 1)")
+    uit_id_override: Optional[str] = Field(
+        None,
+        description="UIT id (string) — if set, the orchestrator uses the UIT with this id (resolved via the in-memory UIT map) instead of resolving by fecha_registro.",
+    )
+    uit_valor_override: Optional[Decimal] = Field(
+        None,
+        description="UIT valor (int) — if set, the orchestrator uses this valor directly in the calculation. Use this when the Excel's UIT differs from the DB's vigente UIT (historical values not in current map).",
+    )

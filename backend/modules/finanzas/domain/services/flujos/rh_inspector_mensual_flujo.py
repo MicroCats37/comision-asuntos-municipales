@@ -86,7 +86,7 @@ class RHInspectorMensualCotizarFlujo:
                         404,
                         "Liquidación general para IO no encontrada.",
                     )
-                exp_liqui = lg.expediente or ""
+                exp_liqui = str(lg.expediente or "")
             else:
                 # Flujo manual: buscar por expediente
                 if not item.exp_liqui:
@@ -388,6 +388,7 @@ class RHInspectorMensualCrearFlujo:
                 periodo=resultado.periodo,
                 mes=resultado.mes,
                 inspecciones_pagadas=item.inspecciones_liquidadas,
+                recibo_mensual_id=rh.id,
             )
             self.core.update_liquidacion_inspector_periodo_mes(
                 liquidacion_inspector_id=item.liquidacion_inspector_id,
@@ -791,3 +792,61 @@ class RHInspectorMensualListFlujo:
             page_size=page_size,
             total_pages=total_pages,
         )
+
+
+# ── RH Inspector Mensual Delete Flujo ───────────────────────────────────────────
+
+
+class RHInspectorMensualDeleteFlujo:
+    """
+    Elimina un ReciboHonorarioInspectorMensual de forma segura.
+
+    Reglas de negocio:
+    - Solo se puede eliminar el ÚLTIMO RH del inspector (por fecha_registro DESC).
+      Si no es el último, levanta HttpError 409.
+    - Los RegistroPagoInspector con recibo_mensual_id == rh.id son eliminados
+      (revierte el efecto de pago acumulado).
+    - Los DetalleHonorarioInspector se eliminan en CASCADE por Django.
+    - Los RegistroPagoInspector legacy con recibo_mensual=null NO son tocados.
+    - LiquidacionInspector NO es tocada (el saldo se recalcula dinámicamente
+      a partir de RegistroPagoInspector).
+    """
+
+    @inject
+    def __init__(self, core: FinanzasCoreService):
+        self.core = core
+
+    @transaction.atomic
+    def eliminar(self, rh_id: int | str) -> None:
+        """
+        Elimina un RH de inspector y revierte los RegistroPagoInspector asociados.
+
+        Args:
+            rh_id: PK del ReciboHonorarioInspectorMensual a eliminar.
+
+        Raises:
+            HttpError(404): RH no encontrado.
+            HttpError(409): RH no es el último para ese inspector.
+        """
+        # 1. Obtener RH — 404 si no existe
+        rh = self.core.get_rh_inspector_mensual_by_id(rh_id)
+        if not rh:
+            raise HttpError(404, f"Recibo de honorario mensual de inspector con id '{rh_id}' no encontrado")
+
+        # 2. Obtener el último RH del inspector — 409 si no es el último
+        latest_rh = self.core.get_latest_rh_inspector_for_inspector(rh.inspector_id)
+        if latest_rh is None or str(latest_rh.id) != str(rh.id):
+            raise HttpError(
+                409,
+                "Solo se puede eliminar el último recibo de honorario mensual del inspector. "
+                f"El recibo con id '{rh_id}' no es el más reciente.",
+            )
+
+        # 3. Eliminar RegistroPagoInspector vinculados (reversión de pago).
+        #    Solo los que tienen recibo_mensual_id == rh.id — los null-FK quedan intactos.
+        registros_pago = self.core.get_registros_pago_by_recibo_mensual(rh_id)
+        for registro in registros_pago:
+            self.core.delete_registro_pago_inspector(registro.id)
+
+        # 4. Eliminar el RH padre — CASCADE elimina DetalleHonorarioInspector
+        self.core.delete_rh_inspector_mensual(rh_id)

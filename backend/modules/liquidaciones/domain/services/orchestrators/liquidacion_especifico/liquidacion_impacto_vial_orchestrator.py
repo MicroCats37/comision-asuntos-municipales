@@ -57,6 +57,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_sche
 from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 from modules.liquidaciones.domain.services.orchestrators._shared import LiquidacionPOValidationMixin
 from modules.liquidaciones.domain.services.orchestrators._shared.vigencia_validation import validar_tarifa_unica_por_base
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 
 
 class LiquidacionImpactoVialOrchestrator(LiquidacionPOValidationMixin):
@@ -376,12 +377,18 @@ liquidacion_general=LiquidacionGeneralData(
         
         # Step 4: Build DTOs with explicit especialidad from input
         if tarifas_input:
+            especialidad_nombres = {
+                str(esp.id): esp.nombre
+                for esp in EspecialidadRevision.objects.filter(
+                    id__in=[t.especialidad_id for t in tarifas_input]
+                )
+            }
             tarifas_aplicadas = [
                 TarifaPorcentajeObraAplicada(
                     tarifa_id=str(t.tarifa_porcentaje_obra_id),
                     porcentaje_liquidacion=tarifa_map[str(t.tarifa_porcentaje_obra_id)].porcentaje_liquidacion,
                     especialidad_id=str(t.especialidad_id),
-                    especialidad_nombre=None,
+                    especialidad_nombre=especialidad_nombres.get(str(t.especialidad_id)),
                 )
                 for t in tarifas_input
             ]

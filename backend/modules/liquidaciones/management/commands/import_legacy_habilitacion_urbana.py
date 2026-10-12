@@ -202,6 +202,17 @@ COL_NETOHONORA = COL_NETOHONORA  # 26
 COL_NROFACTURA = COL_NROFACTURA  # 18
 
 
+# Sentinel usado por el fallback de razon_social cuando ni RAZONSOCIAL ni NOMBRE
+# ni RUC ni DNI traen un valor utilizable. Permite no bloquear la importación;
+# el nombre puede corregirse posteriormente.
+NOMBRE_FALTANTE_LEGACY = "SIN NOMBRE RAZON SOCIAL LEGACY"
+
+# Sentinel para DIRECCION vacía en el Excel legacy. Mismo patrón que
+# import_legacy_edificaciones (legacy_edif.fallbacks.DIRECCION_FALTANTE_LEGACY)
+# pero definido localmente para no acoplarse al paquete legacy_edif.
+DIRECCION_FALTANTE_LEGACY = "SIN DIRECCION LEGACY"
+
+
 # ── Parsing helpers ──────────────────────────────────────────────────────────────
 
 
@@ -480,10 +491,22 @@ def _parse_delegado_slot(row: list) -> dict | None:
         "subtotal": _dec(_col(COL_SUBTOTAL)),
     }
 
-    # Decision: NROMEMO(38) → numero_rh (CharField, the only field available in LiquidacionDelegado)
-    # NROMEMO is the RH memo/note number, stored as string in numero_rh
-    nromemo_raw = _col(COL_NROMEMO)
-    nromemo_str = str(nromemo_raw).strip() if nromemo_raw is not None and str(nromemo_raw).strip().upper() != "NULL" else None
+    # LiquidacionDelegado.numero_rh = NROORDEN (col 31) — número de orden/RH.
+    # NROMEMO (col 38) ya no se mapea aquí; si lo necesitas en el futuro,
+    # añádelo bajo una clave distinta (no pisar la semántica de numero_rh).
+    nroorden_raw = _col(COL_NROORDEN)
+    nroorden_str = (
+        str(nroorden_raw).strip()
+        if nroorden_raw is not None and str(nroorden_raw).strip().upper() != "NULL"
+        else None
+    )
+
+    dictamen_raw = _col(COL_DICTAMEN)
+    dictamen_str = (
+        str(dictamen_raw).strip()
+        if dictamen_raw is not None and str(dictamen_raw).strip().upper() != "NULL"
+        else None
+    )
 
     return {
         "delegado": delegado_text,
@@ -492,9 +515,10 @@ def _parse_delegado_slot(row: list) -> dict | None:
         "mes": mes,
         "fecha_presentacion": _parse_date(_col(COL_FECHAPRES)),
         "fecha_revision": _parse_date(_col(COL_FECHAREVI)),
-        "nro_orden": _coerce_int(_col(COL_NROORDEN)),
-        "dictamen": str(_col(COL_DICTAMEN)).strip() if _col(COL_DICTAMEN) is not None else None,
-        "numero_rh": nromemo_str,
+        # Legacy callers may inspect "dictamen" — keep both keys for compatibility.
+        "dictamen": dictamen_str,
+        "dictamen_revision": dictamen_str,
+        "numero_rh": nroorden_str,
         "monetary": monetary,
     }
 
@@ -502,16 +526,69 @@ def _parse_delegado_slot(row: list) -> dict | None:
 # ── Phase 2: RH Delegado helpers ────────────────────────────────────────────────
 
 
-def _ensure_perfil_ingeniero_by_cip(cip: int, dry_run: bool = False) -> tuple[PerfilIngeniero | None, str]:
+def _ensure_perfil_ingeniero_by_cip(cip: int, dry_run: bool = False, use_endpoint: bool = False) -> tuple[PerfilIngeniero | None, str]:
     """
-    Get or create a PerfilIngeniero by normalized CIP, hydrating from CIP endpoint.
+    Get or create a PerfilIngeniero by normalized CIP.
+
+    Speed:
+        Default `use_endpoint=False` — legacy imports skip the CIP endpoint
+        entirely. For each missing CIP we save 1-7s of network roundtrip +
+        retries/backoff. Local DB lookup is always O(1); placeholders created
+        via get_or_create are reused across rows with the same CIP.
+
+        Pass `use_endpoint=True` if you need fresh hydration from the CIP
+        service (e.g., a one-off sync of real-name data). Not recommended
+        for bulk legacy ingest.
 
     Returns (perfil, status) where status is one of:
         "YA_EXISTE", "CREADO_DESDE_CIP", "ACTUALIZADO_DESDE_CIP",
-        "SIN_COLEGIADO", "ERROR_CIP", "ERROR".
+        "CREADO_PLACEHOLDER", "SIN_COLEGIADO", "ERROR_CIP", "ERROR".
     """
     service = PerfilIngenieroCoreService()
-    return service.hydrate_perfil_from_cip(str(cip), dry_run=dry_run)
+    normalized = service._normalizar_cip(str(cip))
+    if not normalized:
+        return None, "ERROR"
+
+    # Local DB always wins (fast and definitive).
+    local = PerfilIngeniero.objects.filter(cip=normalized).first()
+    if local is not None:
+        return local, "YA_EXISTE"
+
+    # Dry-run: don't write, just report.
+    if dry_run:
+        return None, "SIN_COLEGIADO" if not use_endpoint else "DRY_PENDIENTE_HIDRATAR"
+
+    # Fast path: skip endpoint, create placeholder directly.
+    if not use_endpoint:
+        try:
+            perfil, _ = PerfilIngeniero.objects.get_or_create(
+                cip=normalized,
+                defaults={
+                    "nombres": f"CIP {normalized}",
+                    "apellido_paterno": "CIP",
+                    "apellido_materno": normalized,
+                },
+            )
+            return perfil, "CREADO_PLACEHOLDER"
+        except Exception:  # noqa: BLE001
+            return None, "ERROR"
+
+    # Slow path (opt-in): try endpoint before placeholder.
+    perfil, status = service.hydrate_perfil_from_cip(str(cip), dry_run=False)
+    if perfil is None and status in ("SIN_COLEGIADO", "ERROR", "ERROR_CIP"):
+        try:
+            perfil, _ = PerfilIngeniero.objects.get_or_create(
+                cip=normalized,
+                defaults={
+                    "nombres": f"CIP {normalized}",
+                    "apellido_paterno": "CIP",
+                    "apellido_materno": normalized,
+                },
+            )
+            return perfil, "CREADO_PLACEHOLDER"
+        except Exception:  # noqa: BLE001
+            return None, "ERROR"
+    return perfil, status
 
 
 def _ensure_delegado_for_perfil(
@@ -590,24 +667,68 @@ def _ensure_delegado_operacion(
 
 def _parse_comprobante(row: list) -> dict:
     """
-    Parse NROFACTURA into serie and numero.
+    Parse NROFACTURA into serie and numero, and DOC into tipo_doc.
 
-    Returns {"serie": str, "numero": str} or {"serie": None, "numero": None, "raw": str}.
+    Returns:
+        {
+            "serie":   str | None,
+            "numero":  str | None,
+            "raw":     str | None,        # original NROFACTURA
+            "doc_raw": str | None,        # original DOC (col 29)
+            "doc_tipo": str | None,       # FACTURA / BOLETA / NOTA_CREDITO / NOTA_DEBITO / None
+        }
     """
     raw = row[COL_NROFACTURA] if len(row) > COL_NROFACTURA else None
     if raw is None:
-        return {"serie": None, "numero": None, "raw": None}
-    text = str(raw).strip()
-    if not text or text.upper() in ("NULL", ""):
-        return {"serie": None, "numero": None, "raw": text}
+        serie, numero = None, None
+        text = None
+    else:
+        text = str(raw).strip()
+        if not text or text.upper() in ("NULL", ""):
+            serie, numero, text = None, None, text
+        elif "-" in text:
+            parts = text.split("-", 1)
+            serie, numero = parts[0].strip(), parts[1].strip()
+        else:
+            serie, numero = None, text
 
-    if "-" in text:
-        parts = text.split("-", 1)
-        serie = parts[0].strip()
-        numero = parts[1].strip()
-        return {"serie": serie, "numero": numero, "raw": text}
+    doc_raw = row[COL_DOC] if len(row) > COL_DOC else None
+    return {
+        "serie": serie,
+        "numero": numero,
+        "raw": text,
+        "doc_raw": doc_raw,
+        "doc_tipo": _tipo_from_doc(doc_raw),
+    }
 
-    return {"serie": None, "numero": text, "raw": text}
+
+def _tipo_from_doc(raw: str | None) -> str | None:
+    """
+    Map DOC column (col 29) value to TipoComprobante.
+
+    Recognized codes (case-insensitive, whitespace-stripped):
+        "F", "FA", "FAC", "FACT"  -> FACTURA
+        "B", "BO", "BOL"          -> BOLETA
+        "NC"                       -> NOTA_CREDITO
+        "ND"                       -> NOTA_DEBITO
+    Anything else (including None, "NULL", "", whitespace) -> None.
+
+    DOC is the source of truth for tipo_comprobante. NROFACTURA prefix only
+    validates against DOC; mismatch is reported as DOC_MISMATCH so the user
+    can fix the Excel row.
+    """
+    if not raw:
+        return None
+    code = str(raw).strip().upper()
+    if code in ("F", "FA", "FAC", "FACT"):
+        return "FACTURA"
+    if code in ("B", "BO", "BOL"):
+        return "BOLETA"
+    if code == "NC":
+        return "NOTA_CREDITO"
+    if code == "ND":
+        return "NOTA_DEBITO"
+    return None
 
 
 def _tipo_comprobante_from_nrofactura(raw: str | None) -> str | None:
@@ -656,11 +777,28 @@ def _upsert_liquidacion_comprobante(
     updates it in-place rather than creating a duplicate.
     """
     raw_nrofactura = comprobante_data.get("raw")
+    doc_raw = comprobante_data.get("doc_raw")
+    doc_tipo = comprobante_data.get("doc_tipo")
     serie = comprobante_data.get("serie")
     numero = comprobante_data.get("numero")
 
     if serie is None and numero is None:
         return None, "OMITIDO"
+
+    # DOC/NROFACTURA cross-check before touching the DB.
+    # DOC is the source of truth; if its implied tipo disagrees with the
+    # NROFACTURA prefix, refuse to write — caller surfaces it as
+    # DOC_MISMATCH for the user to fix in the Excel.
+    nrofac_tipo = _tipo_comprobante_from_nrofactura(raw_nrofactura)
+    if doc_tipo and nrofac_tipo and doc_tipo != nrofac_tipo:
+        motivo = (
+            f"DOC_MISMATCH: DOC={doc_raw!r}→{doc_tipo} "
+            f"vs NROFACTURA={raw_nrofactura!r}→{nrofac_tipo}"
+        )
+        return None, motivo
+
+    # Final tipo for the comprobante: prefer DOC, fall back to NROFACTURA.
+    tipo = doc_tipo or nrofac_tipo
 
     if dry_run:
         existing = LiquidacionComprobante.objects.filter(
@@ -676,8 +814,6 @@ def _upsert_liquidacion_comprobante(
             liquidacion_general=liquidacion,
             activo=True,
         ).first()
-
-        tipo = _tipo_comprobante_from_nrofactura(raw_nrofactura)
 
         if existing:
             existing.serie = serie
@@ -890,59 +1026,10 @@ class Command(BaseCommand):
             help="Procesar solo filas con FECHA mayor o igual a esta fecha (dd/mm/yyyy o yyyy-mm-dd)",
         )
         parser.add_argument(
-            "--reset",
-            action="store_true",
-            help="Eliminar TODAS las LiquidacionGeneral existentes (y registros de finanzas "
-                 "que bloquean su borrado) antes de importar",
-        )
-        parser.add_argument(
             "--solo-reporte",
             action="store_true",
             help="Solo generar reporte_legacy_detallado.csv/.xlsx sin importar ni tocar la BD",
         )
-
-    def _reset_liquidaciones(self) -> None:
-        """Elimina TODAS las LiquidacionGeneral y los registros de finanzas asociados."""
-        from modules.finanzas.domain.models.detalle_honorario_delegado import (
-            DetalleHonorarioDelegado,
-        )
-        from modules.finanzas.domain.models.detalle_honorario_inspector import (
-            DetalleHonorarioInspector,
-        )
-        from modules.finanzas.domain.models.recibo_honorario import (
-            ReciboHonorarioDelegado,
-        )
-        from modules.finanzas.domain.models.recibo_honorario_delegado_mensual import (
-            ReciboHonorarioDelegadoMensual,
-        )
-        from modules.finanzas.domain.models.recibo_honorario_inspector import (
-            ReciboHonorarioInspector,
-        )
-        from modules.finanzas.domain.models.recibo_honorario_inspector_mensual import (
-            ReciboHonorarioInspectorMensual,
-        )
-        from modules.finanzas.domain.models.registro_pago_inspector import (
-            RegistroPagoInspector,
-        )
-        from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
-            LiquidacionGeneral,
-        )
-
-        if self.dry_run:
-            self._log(self.style.WARNING(
-                f"  [DRY-RUN] Se eliminarían {LiquidacionGeneral.objects.count()} LiquidacionGeneral"
-            ))
-            return
-
-        DetalleHonorarioDelegado.objects.all().delete()
-        DetalleHonorarioInspector.objects.all().delete()
-        ReciboHonorarioDelegadoMensual.objects.all().delete()
-        ReciboHonorarioInspectorMensual.objects.all().delete()
-        ReciboHonorarioDelegado.objects.all().delete()
-        ReciboHonorarioInspector.objects.all().delete()
-        RegistroPagoInspector.objects.all().delete()
-        deleted, _ = LiquidacionGeneral.objects.all().delete()
-        self._log(f"  Eliminadas {deleted} filas (LiquidacionGeneral y relacionados).")
 
     def _log(self, msg):
         self.stdout.write(str(msg))
@@ -1040,19 +1127,33 @@ class Command(BaseCommand):
         if razon_social is None or str(razon_social).strip() == "":
             razon_social = row[COL_NOMBRE]
         if razon_social is None or str(razon_social).strip() == "":
-            raise ValueError("RAZONSOCIAL/NOMBRE is empty")
+            ruc_str = str(ruc_raw).strip() if ruc_raw is not None else ""
+            dni_str = str(dni_raw).strip() if dni_raw is not None else ""
+            if ruc_str and ruc_str.upper() != "NULL":
+                razon_social = f"RUC:{ruc_str}"
+                anomalies.append("RAZONSOCIAL/NOMBRE vacío → fallback RUC")
+            elif dni_str and dni_str.upper() != "NULL":
+                razon_social = f"DNI:{dni_str}"
+                anomalies.append("RAZONSOCIAL/NOMBRE vacío → fallback DNI")
+            else:
+                razon_social = NOMBRE_FALTANTE_LEGACY
+                anomalies.append(f"RAZONSOCIAL/NOMBRE vacío → sentinel {NOMBRE_FALTANTE_LEGACY!r}")
         razon_social_str = str(razon_social).strip()
 
         # ── Entidad / nombre_propietario ──────────────────────────────────────
+        # Igual que edificaciones: nombre_propietario toma NOMBRE si existe,
+        # si no cae al razon_social_str (que ya trae la cadena RUC/DNI/sentinel).
         nombre_propietario = row[COL_NOMBRE]
         if nombre_propietario is None or str(nombre_propietario).strip() == "":
-            raise ValueError("NOMBRE is empty")
+            nombre_propietario = razon_social_str
+            anomalies.append("NOMBRE vacío → fallback a razon_social")
         nombre_propietario_str = str(nombre_propietario).strip()
 
         # ── Entidad / direccion ────────────────────────────────────────────────
         direccion = row[COL_DIRECCION]
         if direccion is None or str(direccion).strip() == "":
-            raise ValueError("DIRECCION is empty")
+            direccion = DIRECCION_FALTANTE_LEGACY
+            anomalies.append(f"DIRECCION vacía → sentinel {DIRECCION_FALTANTE_LEGACY!r}")
         direccion_str = str(direccion).strip()
 
         # ── urbanizacion (from URBNZCION col 7) ───────────────────────────────
@@ -1121,12 +1222,14 @@ class Command(BaseCommand):
             elif retencion_text in ("NO", "0", "FALSE", "FALSO", ""):
                 retencion = False
 
-        # ── Contacto (TFONO + TPERSONA) ─────────────────────────────────────
+        # ── Contacto (TPERSONA + TFONO + TDNI) ─────────────────────────────
         tpersona_raw = row[COL_TPERSONA] if len(row) > COL_TPERSONA else None
         tfono_raw = row[COL_TFONO] if len(row) > COL_TFONO else None
+        tdni_raw = row[COL_TDNI] if len(row) > COL_TDNI else None
 
         nombres, apellidos = _parse_tpersona(tpersona_raw)
         telefono = str(tfono_raw).strip() if tfono_raw is not None and str(tfono_raw).strip() != "" and str(tfono_raw).strip().upper() != "NULL" else None
+        dni_contacto = str(tdni_raw).strip() if tdni_raw is not None and str(tdni_raw).strip() != "" and str(tdni_raw).strip().upper() != "NULL" else None
 
         contacto_inline = None
         has_nombres = nombres is not None and nombres != ""
@@ -1138,6 +1241,7 @@ class Command(BaseCommand):
                     nombres=nombres,
                     apellidos=apellidos,
                     telefono=telefono,
+                    dni=dni_contacto,
                 )
             elif has_telefono:
                 anomalies.append("TFONO presente sin TPERSONA — contacto no creado")
@@ -1364,7 +1468,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.dry_run = bool(options["dry_run"])
         self.batch_size = int(options["batch_size"])
-        self.reset = bool(options.get("reset", False))
         self.solo_reporte = bool(options.get("solo_reporte", False))
         self.rechazar_dif_alta = bool(options.get("rechazar_dif_alta", False))
         self.umbral_dif = Decimal(str(options.get("umbral_dif", 1.0)))
@@ -1412,12 +1515,6 @@ class Command(BaseCommand):
         # Resolve system user for fallback
         system_user = _get_or_create_system_user()
         self._log(f"  System user fallback: username={system_user.username}")
-
-        # Optional reset
-        if self.reset:
-            self._log(self.style.WARNING("  --reset: eliminando LiquidacionGeneral existentes..."))
-            self._reset_liquidaciones()
-            self._log(self.style.SUCCESS("  Reset completado."))
 
         # Each run writes to its own folder so migration reports are auditable.
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1493,6 +1590,7 @@ class Command(BaseCommand):
         rh_comp_actualizados = 0
         rh_comp_omitidos = 0
         rh_comp_errores = 0
+        rh_comp_doc_mismatch = 0
 
         # Pre-resolve TipoLiquidacion HU
         tipo_liq_hu = TipoLiquidacionModel.objects.filter(codigo=TipoLiquidacion.HABILITACION_URBANA).first()
@@ -1703,6 +1801,17 @@ class Command(BaseCommand):
                             rh_comp_actualizados += 1
                         elif comp_status == "OMITIDO":
                             rh_comp_omitidos += 1
+                        elif comp_status and comp_status.startswith("DOC_MISMATCH"):
+                            rh_comp_doc_mismatch += 1
+                            report_writer.writerow([
+                                idx,
+                                expediente or "",
+                                comp_status,
+                                "PARCIAL",
+                            ])
+                            self._log(self.style.WARNING(
+                                f"  DOC_MISMATCH row {idx}: {comp_status}"
+                            ))
                         else:
                             rh_comp_errores += 1
 
@@ -1882,6 +1991,7 @@ class Command(BaseCommand):
         self._log(f"  Comprobantes creados:        {rh_comp_creados}")
         self._log(f"  Comprobantes actualizados:   {rh_comp_actualizados}")
         self._log(f"  Comprobantes omitidos:       {rh_comp_omitidos}")
+        self._log(f"  Comprobantes doc_mismatch:   {rh_comp_doc_mismatch}")
         self._log(f"  Comprobantes errores:       {rh_comp_errores}")
         self._log(f"  Reportes en {result_dir}:")
         self._log(f"    reporte_ingesta_legacy.csv")

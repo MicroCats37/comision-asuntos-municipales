@@ -63,6 +63,7 @@ from modules.finanzas.domain.services.flujos.rh_inspector_mensual_flujo import (
     RHInspectorMensualCotizarFlujo,
     RHInspectorMensualCrearFlujo,
     RHInspectorMensualListFlujo,
+    RHInspectorMensualDeleteFlujo,
 )
 from modules.finanzas.domain.schemas import RHInspectorCotizarIn, RHInspectorCotizarItemIn
 from django.contrib.auth import get_user_model
@@ -1515,4 +1516,273 @@ def test_normal_creacion_rh_inspector_fk_establecido(
     # Verificar que el FK no es null
     assert detalle.recibo_mensual is not None
     assert detalle.recibo_mensual_id == rh.id
+
+
+# ── Delete Tests ──────────────────────────────────────────────────────────────────
+
+@pytest.fixture
+def delete_flujo(core_service):
+    return RHInspectorMensualDeleteFlujo(core=core_service)
+
+
+@pytest.mark.django_db
+def test_delete_latest_rh_inspector_returns_200(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Un RH Inspector Mensual recién creado (es el latest por fecha_registro).
+    WHEN: Se elimina via delete_flujo.eliminar().
+    THEN: Retorna sin excepción (200 equivalent) y el RH es borrado de BD.
+    """
+    # Crear RH (vínculo recibo_mensual establecido)
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+                "periodo": 2027,
+                "mes": 3,
+            }],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+    assert rh is not None
+
+    # Eliminar — no debe lanzar excepción
+    delete_flujo.eliminar(rh.id)
+
+    # RH borrado de BD
+    assert not ReciboHonorarioInspectorMensual.objects.filter(id=rh.id).exists()
+
+
+@pytest.mark.django_db
+def test_delete_latest_rh_deletes_recibo_honorario_inspector_mensual(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Un RH Inspector Mensual.
+    WHEN: Se elimina.
+    THEN: ReciboHonorarioInspectorMensual es eliminado de BD.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+                "periodo": 2027,
+                "mes": 3,
+            }],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+    rh_id = rh.id
+
+    delete_flujo.eliminar(rh_id)
+
+    assert ReciboHonorarioInspectorMensual.objects.filter(id=rh_id).count() == 0
+
+
+@pytest.mark.django_db
+def test_delete_latest_rh_cascades_to_detalle_honorario_inspector(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Un RH Inspector Mensual con DetalleHonorarioInspector.
+    WHEN: Se elimina el RH.
+    THEN: DetalleHonorarioInspector es eliminado en cascada por Django.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+                "periodo": 2027,
+                "mes": 3,
+            }],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+    detalle_ids = list(rh.detalles.values_list("id", flat=True))
+    assert len(detalle_ids) > 0
+
+    delete_flujo.eliminar(rh.id)
+
+    assert DetalleHonorarioInspector.objects.filter(id__in=detalle_ids).count() == 0
+
+
+@pytest.mark.django_db
+def test_delete_latest_rh_deletes_linked_registro_pago_inspector(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Un RH Inspector Mensual con RegistroPagoInspector vinculado (recibo_mensual_id set).
+    WHEN: Se elimina el RH.
+    THEN: El RegistroPagoInspector vinculado es eliminado.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+                "periodo": 2027,
+                "mes": 3,
+            }],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+
+    # Verificar que existe un RegistroPagoInspector vinculado
+    registro_ids = list(RegistroPagoInspector.objects.filter(
+        liquidacion_por_categoria_visitas=liquidacion_visitas,
+        periodo=2026,
+        mes=1,
+    ).values_list("id", flat=True))
+    assert len(registro_ids) > 0
+
+    delete_flujo.eliminar(rh.id)
+
+    # Los Registros de Pago vinculados fueron eliminados
+    assert RegistroPagoInspector.objects.filter(id__in=registro_ids).count() == 0
+
+
+@pytest.mark.django_db
+def test_delete_preserves_null_fk_legacy_registro_pago_inspector(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Un RegistroPagoInspector legacy con recibo_mensual=null.
+    WHEN: Se elimina el RH.
+    THEN: El RegistroPagoInspector legacy sobrevive (no es tocado).
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+                "periodo": 2027,
+                "mes": 3,
+            }],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+
+    # Crear un RegistroPagoInspector legacy (sin vínculo a recibo_mensual)
+    legacy_registro = RegistroPagoInspector.objects.create(
+        liquidacion_por_categoria_visitas=liquidacion_visitas,
+        periodo=2025,
+        mes=12,
+        inspecciones_pagadas=2,
+        # recibo_mensual=None (default)
+    )
+    legacy_registro_id = legacy_registro.id
+
+    delete_flujo.eliminar(rh.id)
+
+    # El registro legacy sobrevive
+    assert RegistroPagoInspector.objects.filter(id=legacy_registro_id).exists()
+
+
+@pytest.mark.django_db
+def test_delete_non_latest_rh_returns_conflict(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Dos RH Inspector Mensuales (mes 1 y mes 2).
+    WHEN: Se intenta eliminar el RH más antiguo (no el latest).
+    THEN: HttpError 409 — solo se puede eliminar el último.
+    """
+    from ninja.errors import HttpError
+
+    # Crear RH de mes 1
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+                "periodo": 2027,
+                "mes": 3,
+            }],
+        )
+    )
+    rh_mes1 = ReciboHonorarioInspectorMensual.objects.filter(mes=1).first()
+
+    # Crear RH de mes 2 (será el latest)
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=2,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 3,
+                "periodo": 2027,
+                "mes": 4,
+            }],
+        )
+    )
+
+    # Intentar eliminar mes 1 (no es el latest) → 409
+    with pytest.raises(HttpError) as excinfo:
+        delete_flujo.eliminar(rh_mes1.id)
+    assert excinfo.value.status_code == 409
+
 

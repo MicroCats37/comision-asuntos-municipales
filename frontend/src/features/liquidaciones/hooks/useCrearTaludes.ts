@@ -37,7 +37,7 @@ export function useCrearTaludes() {
             proyecto: {
               nombre_propietario: rest.nombre_propietario,
               direccion: rest.direccion,
-              distrito_id: rest.distrito_id,
+              distrito_id: rest.distrito_id || undefined,
               entidad: {
                 tipo_documento: rest.entidad_tipo_documento,
                 numero_documento: rest.entidad_numero_documento,
@@ -71,7 +71,7 @@ export function useCrearTaludes() {
             proyecto: {
               nombre_propietario: rest.nombre_propietario,
               direccion: rest.direccion,
-              distrito_id: rest.distrito_id,
+              distrito_id: rest.distrito_id || undefined,
               entidad: {
                 tipo_documento: rest.entidad_tipo_documento,
                 numero_documento: rest.entidad_numero_documento,

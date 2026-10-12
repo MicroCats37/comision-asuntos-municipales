@@ -180,7 +180,7 @@ class RHDelegadoMensualCotizarFlujo:
 
             items.append(
                 RHDelegadoCotizarItemResult(
-                    exp_liqui=lg.expediente or "",
+                    exp_liqui=str(lg.expediente or ""),
                     liquidacion_general_id=item.liquidacion_general_id,
                     especialidad_revision_id=item.especialidad_revision_id,
                     liquidacion_delegado_id=None,  # creado en crear()
@@ -540,6 +540,49 @@ class RHDelegadoMensualListFlujo:
             ),
             delegado_operacion_context=operatividad_context,
         )
+
+
+# ── RH Delegado Mensual Delete Flujo ───────────────────────────────────────────
+
+
+class RHDelegadoMensualDeleteFlujo:
+    """
+    Elimina un ReciboHonorarioDelegadoMensual de forma segura.
+
+    Reglas de negocio:
+    - Validación de existencia: 404 si no existe.
+    - Sin restricción latest-only para delegados (no hay efecto acumulativo
+      en LiquidacionDelegado como sí lo hay en LiquidacionInspector).
+    - Los DetalleHonorarioDelegado se eliminan en CASCADE por Django.
+    - LiquidacionDelegado NO es tocada — es una entidad independiente.
+    """
+
+    @inject
+    def __init__(self, core: FinanzasCoreService):
+        self.core = core
+
+    @transaction.atomic
+    def eliminar(self, rh_id: int | str) -> None:
+        """
+        Elimina un RH de delegado.
+
+        Args:
+            rh_id: PK del ReciboHonorarioDelegadoMensual a eliminar.
+
+        Raises:
+            HttpError(404): RH no encontrado.
+        """
+        # 1. Obtener RH — 404 si no existe
+        rh = self.core.get_rh_delegado_mensual_by_id(rh_id)
+        if not rh:
+            raise HttpError(
+                404,
+                f"Recibo de honorario mensual de delegado con id '{rh_id}' no encontrado",
+            )
+
+        # 2. Eliminar el RH padre — CASCADE elimina DetalleHonorarioDelegado
+        #    LiquidacionDelegado NO es tocada (es independiente)
+        self.core.delete_rh_delegado_mensual(rh_id)
 
 
 # ── Helper functions ────────────────────────────────────────────────────────────
