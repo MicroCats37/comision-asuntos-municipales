@@ -261,7 +261,7 @@ export function renderDetalle(
     appendReceiptRow(
       specificFields,
       "DERECHO MINIMO",
-      `${formatCurrency(derechoMinimo)} + IGV`,
+      `${formatCurrency(derechoMinimo)}`,
     );
   }
 

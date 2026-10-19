@@ -51,7 +51,7 @@ export function LiquidacionesTableRowActions({
     <div
       role="toolbar"
       aria-label="Acciones de la fila"
-      className="flex items-center justify-end gap-0.5"
+      className="grid grid-cols-3 gap-0.5 justify-items-center"
     >
       {visibleActions.map((action) => {
         const Icon = action.icon;

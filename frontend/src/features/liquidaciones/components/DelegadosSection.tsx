@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  UserCog,
   Users,
 } from "lucide-react";
 import { useId, useState } from "react";
@@ -700,25 +701,38 @@ export function DelegadosSection({
 // ── DelegadosListBySpecialty (card-face, compact, grouped by specialty) ─────────
 
 /**
- * DelegadosListBySpecialty — compact read-only display of delegates
- * grouped by specialty on the liquidacion card face.
+ * DelegadosListBySpecialty — Card-face display that mirrors the
+ * `DetalleCotizacionDelegadosSection` from the Ver-Detalle modal:
  *
- * Groups `delegados` (LiquidacionDelegadoEnGeneralOutput[]) by
- * delegado.especialidad.nombre and renders each group with a header.
+ *   Header
+ *   ─────────────────────────────────
+ *   ESPECIALIDAD  (chip único)   · sin delegado
+ *   ─────────────────────────────────
+ *   ESPECIALIDAD  (chip único)   · NOMBRE [TITULAR] [CIP]
+ *   ─────────────────────────────────
+ *   ESPECIALIDAD  (chip único)   · sin delegado
  *
- * Design: compact, text-sm, matches card row aesthetics.
- * Uses existing simple UI components (no new deps).
+ * Each ESPECE especialty appears ONCE — either as a single chip-style header
+ * (with a delegate row below it OR a "sin delegado" muted note). This avoids
+ * repeating the specialty name twice (previously: chip row + sub-header).
+ *
+ * Specialties come from the `especialidades` prop; if missing, we fall back
+ * to grouping `delegados` by `delegado.especialidad.nombre` (so card still
+ * works for snapshots that only carry delegates).
  */
 export function DelegadosListBySpecialty({
   delegados,
+  especialidades,
 }: {
   delegados: LiquidacionDelegadoEnGeneralOutput[];
+  /** Specialty names (e.g. from `lt.detalles[*].especialidad.nombre`). */
+  especialidades?: Array<string | null | undefined>;
 }) {
-  if (delegados.length === 0) {
-    return null;
-  }
+  const normalizedEspecialidades = (especialidades ?? []).filter(
+    (v): v is string => typeof v === "string" && v.trim() !== "",
+  );
 
-  // Group by specialty
+  // Group delegados by specialty — insertion order preserved.
   const bySpecialty = new Map<string, LiquidacionDelegadoEnGeneralOutput[]>();
   for (const d of delegados) {
     const specialty = d.delegado.especialidad?.nombre ?? "Sin especialidad";
@@ -727,37 +741,84 @@ export function DelegadosListBySpecialty({
     bySpecialty.set(specialty, existing);
   }
 
+  // Canonical list of specialty names to iterate in order.
+  // Prefer the explicit `especialidades` list (preserves the order on the
+  // tarifa table). Fall back to whatever specialties the delegados have.
+  const orderedEspecialidades =
+    normalizedEspecialidades.length > 0
+      ? normalizedEspecialidades
+      : Array.from(bySpecialty.keys());
+
+  if (orderedEspecialidades.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="space-y-2">
-      {Array.from(bySpecialty.entries()).map(([specialty, items]) => (
-        <div key={specialty}>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
-            {specialty}
-          </p>
-          <div className="space-y-0.5">
-            {items.map((d) => (
-              <div
-                key={d.delegado.id}
-                className="flex items-center gap-1.5 text-xs text-foreground"
-              >
-                <span className="text-muted-foreground/50 shrink-0">·</span>
-                <span className="font-medium truncate">
-                  {d.delegado.nombre_completo}
+    <section className="space-y-2">
+      {/* Header */}
+      <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+        <UserCog className="h-3 w-3" />
+        Delegados
+        <span className="text-muted-foreground/60 normal-case tracking-normal">
+          ({orderedEspecialidades.length} esp · {delegados.length} del)
+        </span>
+      </p>
+
+      {/* One row per specialty: chip header + delegate lines (or sin delegado). */}
+      <ul className="space-y-0 divide-y divide-border/30 rounded-lg border border-border/40 bg-card/30 overflow-hidden">
+        {orderedEspecialidades.map((specialty) => {
+          const items = bySpecialty.get(specialty) ?? [];
+          return (
+            <li
+              key={specialty}
+              className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5"
+            >
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200/80 text-[11px] font-bold leading-tight text-neutral-800 max-w-full whitespace-normal">
+                {specialty}
+              </span>
+              {items.length === 0 ? (
+                <span className="text-[11px] italic text-muted-foreground/60">
+                  — sin delegado
                 </span>
-                <span className="text-muted-foreground/70 shrink-0">
-                  (
-                  {d.delegado.tipo === "TITULAR"
-                    ? "Titular"
-                    : d.delegado.tipo === "ALTERNO"
-                      ? "Alterno"
-                      : d.delegado.tipo}
-                  )
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+              ) : (
+                <ul className="flex flex-col gap-1 min-w-0 flex-1">
+                  {items.map((d) => {
+                    const tipo = d.delegado.tipo;
+                    const isTitular = tipo === "TITULAR";
+                    return (
+                      <li
+                        key={d.delegado.id}
+                        className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground"
+                      >
+                        <span className="font-semibold truncate">
+                          {d.delegado.nombre_completo}
+                        </span>
+                        {tipo ? (
+                          <span
+                            className={
+                              "inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider " +
+                              (isTitular
+                                ? "bg-primary/10 text-primary border border-primary/20"
+                                : "bg-muted text-muted-foreground border border-border")
+                            }
+                          >
+                            {tipo}
+                          </span>
+                        ) : null}
+                        {d.delegado.cip ? (
+                          <span className="inline-flex items-center rounded-md bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                            CIP {d.delegado.cip}
+                          </span>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

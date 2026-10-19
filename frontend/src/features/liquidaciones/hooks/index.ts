@@ -20,4 +20,5 @@ export * from "./useLiquidacionesImpactoVial";
 export * from "./useLiquidacionesInspeccionObra";
 export * from "./useLiquidacionesMecanicaSuelos";
 export * from "./useLiquidacionesTaludes";
+export * from "./useLiquidacionCardState";
 export * from "./useLiquidacionList";

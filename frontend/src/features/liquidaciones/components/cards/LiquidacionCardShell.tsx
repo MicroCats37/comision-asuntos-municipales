@@ -12,11 +12,9 @@
  *      - financials 2-col (Subtotal | IGV)
  * 2. card-footer (Dirección | Acciones)
  *
- * La PARTE ESPECÍFICA por tipo se inyecta desde cada card via `delegadosSlot`
- * (renderiza un bloque custom con el detalle del cálculo según el motor:
- * PorcentajeObra (Edif/Taludes/IV) → Valor declarado + % Liquidación + Especialidades;
- * M2 (HU/MS) → Área + Costo por m²;
- * Visitas (IO) → Cantidad + Categoría + Inspector + CIP).
+ * La PARTE ESPECÍFICA por tipo se inyecta desde cada card via slots:
+ *  - `calculoSlot` → bloque del cálculo por motor (PorcentajeObra | M2 | Visitas).
+ *  - `delegadosSlot` → delegados + especialidades agrupados o registros_pago.
  *
  * Colores: rose/red para categorías (Contribuyente, Proyecto), emerald
  * para Comprobante, primary para badges.
@@ -31,13 +29,12 @@ import {
   type LucideIcon,
   MapPin,
   Receipt,
+  Trash2,
   User,
   XCircle,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import {
-  type CardActionItem,
-  CardActionsMenu,
   formatCurrency,
   formatDate,
   LiquidacionCardAction,
@@ -73,12 +70,11 @@ export function LiquidacionCardShell({
   onPrint,
   canEdit = false,
   onEdit,
+  onDelete,
   onComprobante,
   onVerDetalle,
   calculoSlot,
   delegadosSlot,
-  menuItems,
-  primaryAction,
 }: {
   kindIcon: LucideIcon;
   kindLabel?: string;
@@ -103,12 +99,11 @@ export function LiquidacionCardShell({
   onPrint?: () => void;
   canEdit?: boolean;
   onEdit?: () => void;
+  onDelete?: () => void;
   onComprobante?: () => void;
   onVerDetalle?: () => void;
   calculoSlot?: ReactNode;
   delegadosSlot?: ReactNode;
-  menuItems?: CardActionItem[];
-  primaryAction?: ReactNode;
 }) {
   const igvPct =
     subTotal != null && subTotal > 0 && total != null
@@ -396,53 +391,56 @@ export function LiquidacionCardShell({
           </span>
         )}
 
-        {menuItems && primaryAction ? (
-          <CardActionsMenu items={menuItems} primaryAction={primaryAction} />
-        ) : (
-          <div className="flex items-center gap-1.5 shrink-0">
-            {showDelegados && onDelegados && (
-              <LiquidacionCardAction
-                icon={<User className="h-3 w-3" />}
-                label={<span className="hidden sm:inline">Delegados</span>}
-                onAction={onDelegados}
-              />
-            )}
-            {onPrint && (
-              <LiquidacionCardAction
-                icon={<FileDown className="h-3 w-3" />}
-                label={<span className="hidden sm:inline">PDF</span>}
-                onAction={onPrint}
-              />
-            )}
-            {canEdit && onEdit && (
-              <LiquidacionCardAction
-                icon={<FilePenLine className="h-3 w-3" />}
-                label={<span className="hidden sm:inline">Editar</span>}
-                onAction={onEdit}
-              />
-            )}
-            {onComprobante && (
-              <LiquidacionCardAction
-                icon={<Receipt className="h-3 w-3" />}
-                label={
-                  <span className="hidden sm:inline">
-                    {comprobanteActivo
-                      ? "Reemplazar comprobante"
-                      : "Agregar comprobante"}
-                  </span>
-                }
-                onAction={onComprobante}
-              />
-            )}
-            {onVerDetalle && (
-              <LiquidacionCardAction
-                variant="primary"
-                label="Ver detalle"
-                onAction={onVerDetalle}
-              />
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+          {showDelegados && onDelegados && (
+            <LiquidacionCardAction
+              icon={<User className="h-3 w-3" />}
+              label={<span className="hidden sm:inline">Delegados</span>}
+              onAction={onDelegados}
+            />
+          )}
+          {onPrint && (
+            <LiquidacionCardAction
+              icon={<FileDown className="h-3 w-3" />}
+              label={<span className="hidden sm:inline">PDF</span>}
+              onAction={onPrint}
+            />
+          )}
+          {canEdit && onEdit && (
+            <LiquidacionCardAction
+              icon={<FilePenLine className="h-3 w-3" />}
+              label={<span className="hidden sm:inline">Editar</span>}
+              onAction={onEdit}
+            />
+          )}
+          {canEdit && onDelete && (
+            <LiquidacionCardAction
+              icon={<Trash2 className="h-3 w-3" />}
+              label={<span className="hidden sm:inline">Eliminar</span>}
+              onAction={onDelete}
+            />
+          )}
+          {onComprobante && (
+            <LiquidacionCardAction
+              icon={<Receipt className="h-3 w-3" />}
+              label={
+                <span className="hidden sm:inline">
+                  {comprobanteActivo
+                    ? "Reemplazar comprobante"
+                    : "Agregar comprobante"}
+                </span>
+              }
+              onAction={onComprobante}
+            />
+          )}
+          {onVerDetalle && (
+            <LiquidacionCardAction
+              variant="primary"
+              label="Ver detalle"
+              onAction={onVerDetalle}
+            />
+          )}
+        </div>
       </footer>
     </article>
   );

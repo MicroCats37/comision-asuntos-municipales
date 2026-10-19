@@ -507,7 +507,7 @@ export function buildLiquidacionPdfDom(
       );
     }
     if (derechoMinimo > 0) {
-      labelRow("DERECHO MINIMO", `${formatCurrency(derechoMinimo)} + IGV`);
+      labelRow("DERECHO MINIMO", `${formatCurrency(derechoMinimo)}`);
     }
   }
 

@@ -2,28 +2,32 @@
  * CalculoDetail — Bloque de detalle de cálculo específico por motor.
  *
  * Cada tipo de liquidación tiene su propio sub-componente que se renderiza
- * dentro del `delegadosSlot` del LiquidacionCardShell:
- * - PorcentajeObra (Edif/Taludes/IV) → Valor declarado + % + Especialidades
+ * dentro del `calculoSlot` del LiquidacionCardShell:
+ * - PorcentajeObra (Edif/Taludes/IV) → Valor declarado + % + Derecho mínimo
+ *   + UIT + % Mín. UIT
  * - M2 (HU/MS) → Área + Costo por m²
  * - Visitas (IO) → Cantidad + Categoría + Inspector + CIP
  *
- * Layout grid 4-col con título coloreado a la izquierda.
+ * Las ESPECIALIDADES no se renderizan aquí: viven en `DelegadosListBySpecialty`
+ * (mismo bloque que los delegados) para evitar duplicar el nombre de la
+ * especialidad como chip + sub-header.
+ *
+ * Layout: heading full-width + grid responsivo cuyo número de columnas escala
+ * con la cantidad de items y el viewport (`calculoGridCols(N)`).
  */
-import {
-  Banknote,
-  Calculator,
-  CheckCircle2,
-  MapPin,
-  Receipt,
-  User,
-} from "lucide-react";
+import { Calculator, MapPin, User } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { calculoGridCols } from "../../utils/calculoGridCols";
 
 export interface CalculoPorcentajeProps {
   motor: "porcentaje";
   valorDeclarado?: number | null;
   porcentajeLiquidacion?: number | null;
   derechoMinimo?: number | null;
-  especialidades?: string[];
+  /** Valor de la UIT vigente al registro (S/). Viene de `lg.uit.valor`. */
+  uit?: number | null;
+  /** % mínimo sobre la UIT configurado para esta liquidación (decimal 0-100). */
+  porcentajeMinimoUit?: number | null;
   formatCurrency: (v: number | null | undefined) => string;
   formatDecimalPercent: (v: number | null | undefined) => string;
 }
@@ -32,7 +36,8 @@ export function CalculoPorcentaje({
   valorDeclarado,
   porcentajeLiquidacion,
   derechoMinimo,
-  especialidades,
+  uit,
+  porcentajeMinimoUit,
   formatCurrency,
   formatDecimalPercent,
 }: CalculoPorcentajeProps) {
@@ -45,14 +50,26 @@ export function CalculoPorcentaje({
   }
   if (porcentajeLiquidacion != null) {
     items.push({
-      label: "Porcentaje de liquidación",
+      label: "% Liq.",
       value: formatDecimalPercent(porcentajeLiquidacion),
     });
   }
   if (derechoMinimo != null && derechoMinimo > 0) {
     items.push({
-      label: "Derecho mínimo",
+      label: "Der. Mín.",
       value: formatCurrency(derechoMinimo),
+    });
+  }
+  if (uit != null && uit > 0) {
+    items.push({
+      label: "UIT",
+      value: formatCurrency(uit),
+    });
+  }
+  if (porcentajeMinimoUit != null) {
+    items.push({
+      label: "% Mín. UIT",
+      value: formatDecimalPercent(porcentajeMinimoUit),
     });
   }
 
@@ -62,7 +79,6 @@ export function CalculoPorcentaje({
       titulo="Tarifas aplicadas"
       subtitulo="Resumen del cálculo"
       items={items}
-      especialidades={especialidades}
     />
   );
 }
@@ -161,101 +177,84 @@ interface CalculoDetailLayoutProps {
   titulo: string;
   subtitulo: string;
   items: Array<{ label: string; value: string }>;
-  especialidades?: string[];
 }
+
+/**
+ * Responsivo: el número de columnas crece con la cantidad de items y el
+ * viewport, manteniendo los bloques homogéneos (mismo ancho de celda) en
+ * cada breakpoint sin filas desbalanceadas.
+ *
+ * `calculoGridCols` lives in `utils/calculoGridCols.ts` so the detail
+ * modal can reuse the same distribution.
+ */
 
 function CalculoDetailLayout({
   icon,
   titulo,
   subtitulo,
   items,
-  especialidades,
 }: CalculoDetailLayoutProps) {
   return (
     <section
-      className="grid items-stretch"
-      style={{
-        marginTop: "14px",
-        gridTemplateColumns:
-          "minmax(180px, 1.15fr) repeat(2, 1fr) minmax(220px, 1.5fr)",
-        border: "1px solid #eadedf",
-        backgroundColor: "#fffafa",
-        borderRadius: "11px",
-        overflow: "hidden",
-      }}
+      className={cn(
+        "grid items-stretch overflow-hidden rounded-xl border border-rose-100 bg-rose-50/40 mt-3.5",
+        calculoGridCols(items.length),
+      )}
     >
-      {/* Col 1: heading */}
+      {/* Heading full-width */}
       <div
-        className="p-3.5 grid"
+        className="grid items-center gap-2 px-3.5 py-3 text-primary"
         style={{
+          gridColumn: "1 / -1",
           gridTemplateColumns: "auto 1fr",
-          columnGap: "7px",
-          alignContent: "center",
-          color: "#a90c24",
-          backgroundColor: "#fff4f3",
+          columnGap: "8px",
+          backgroundColor: "var(--color-rose-50, #fff4f3)",
+          borderBottom: "1px solid #edcfd1",
         }}
       >
-        <span style={{ color: "#a90c24", width: "18px", height: "18px" }}>
+        <span
+          aria-hidden
+          className="inline-flex items-center justify-center text-primary"
+          style={{ width: "18px", height: "18px" }}
+        >
           {icon}
         </span>
-        <div>
-          <strong className="text-[12px] uppercase tracking-wider font-bold">
+        <div className="min-w-0">
+          <strong className="block text-[12px] uppercase tracking-wider font-bold leading-tight">
             {titulo}
           </strong>
-          <span className="text-[10px] text-neutral-500 block mt-0.5">
+          <span className="block text-[10px] text-muted-foreground mt-0.5">
             {subtitulo}
           </span>
         </div>
       </div>
 
       {/* Items del cálculo */}
-      {items.map((item, i) => (
+      {items.length === 0 ? (
         <div
-          key={item.label}
-          className="p-3.5 flex flex-col justify-center"
-          style={{ borderLeft: "1px solid #eadedf" }}
+          className="px-3.5 py-3 text-[11px] italic text-muted-foreground"
+          style={{ gridColumn: "1 / -1" }}
         >
-          <span className="block uppercase text-[10px] font-bold tracking-wider text-neutral-500">
-            {item.label}
-          </span>
-          <strong className="block mt-1 text-[12px] font-bold text-neutral-900">
-            {item.value}
-          </strong>
+          Sin datos de cálculo registrados.
         </div>
-      ))}
-
-      {/* Último slot: Especialidades (chips) o vacío */}
-      <div
-        className="p-3.5 flex flex-col justify-center min-w-0"
-        style={{ borderLeft: "1px solid #eadedf" }}
-      >
-        <span className="block uppercase text-[10px] font-bold tracking-wider text-neutral-500 flex items-center gap-1">
-          <Receipt className="h-3 w-3" />
-          Especialidades
-        </span>
-        {especialidades && especialidades.length > 0 ? (
-          <div className="flex flex-wrap gap-1 mt-1">
-            {especialidades.map((esp) => (
-              <span
-                key={esp}
-                className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white border text-[11px] leading-tight"
-                style={{
-                  maxWidth: "100%",
-                  borderColor: "#e5c5c6",
-                  color: "#272124",
-                  whiteSpace: "normal",
-                }}
-              >
-                {esp}
-              </span>
-            ))}
+      ) : (
+        items.map((item, i) => (
+          <div
+            key={item.label}
+            className="px-3.5 py-3 flex flex-col justify-center min-w-0"
+            style={{
+              borderLeft: i === 0 ? "none" : "1px solid #edcfd1",
+            }}
+          >
+            <span className="block uppercase text-[10px] font-bold tracking-wider text-muted-foreground leading-tight">
+              {item.label}
+            </span>
+            <strong className="block mt-1 text-[12px] font-bold text-neutral-900 leading-tight">
+              {item.value}
+            </strong>
           </div>
-        ) : (
-          <span className="block mt-1 text-[11px] italic text-neutral-500">
-            Sin especialidades
-          </span>
-        )}
-      </div>
+        ))
+      )}
     </section>
   );
 }

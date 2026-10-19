@@ -42,8 +42,10 @@ function stripIngenieriaPrefix(name: string): string {
 
 /**
  * Numbered list of delegates, one row per delegado inside a chip-style
- * wrapper (bg-secondary + border) so each especialidad stands out at
- * a glance. Hover reveals nombre_completo + tipo + dictamen.
+ * wrapper (bg-secondary + border) so each especialidad stands out at a
+ * glance. The whole cell triggers a single consolidated tooltip listing
+ * every delegate with their full name, tipo + dictamen — fixes the prior
+ * "n tooltips overlap on hover" / "name missing" UX issues.
  */
 export function DelegadosCell({ delegados }: DelegadosCellProps) {
   const list = delegados ?? [];
@@ -60,20 +62,18 @@ export function DelegadosCell({ delegados }: DelegadosCellProps) {
   }
 
   return (
-    <div className="flex flex-col gap-1 justify-center px-3 py-3 min-w-0">
-      {list.map((d, i) => {
-        const cip = d.delegado?.cip;
-        const esp = stripIngenieriaPrefix(
-          d.delegado?.especialidad?.nombre ?? "Sin esp.",
-        );
-        const nombre = d.delegado?.nombre_completo;
-        const tipo = d.delegado?.tipo;
-        const dictamen = d.datos?.dictamen_revision;
-        const key = d.delegado?.id ?? `d-${i}`;
-        return (
-          <Tooltip key={key}>
-            <TooltipTrigger asChild>
+    <Tooltip delayDuration={150}>
+      <TooltipTrigger asChild>
+        <div className="flex flex-col gap-1 justify-center px-3 py-3 min-w-0 cursor-help">
+          {list.map((d, i) => {
+            const cip = d.delegado?.cip;
+            const esp = stripIngenieriaPrefix(
+              d.delegado?.especialidad?.nombre ?? "Sin esp.",
+            );
+            const key = d.delegado?.id ?? `d-${i}`;
+            return (
               <button
+                key={key}
                 type="button"
                 className="text-left flex items-center gap-1.5 rounded-md bg-secondary/40 border border-secondary/50 px-2 py-0.5 text-[10px] hover:bg-secondary/60 transition-colors min-w-0 w-full"
               >
@@ -84,32 +84,52 @@ export function DelegadosCell({ delegados }: DelegadosCellProps) {
                   CIP {cip ?? "—"}
                 </span>
               </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={6} className="max-w-xs">
-              {nombre && (
-                <div className="font-semibold text-foreground text-xs">
+            );
+          })}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={6}
+        className="max-w-sm p-3 bg-popover text-popover-foreground border border-border"
+      >
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+          Delegados ({list.length})
+        </p>
+        <ul className="space-y-1.5">
+          {list.map((d, i) => {
+            const nombre = d.delegado?.nombre_completo ?? "Sin nombre";
+            const tipo = d.delegado?.tipo;
+            const cip = d.delegado?.cip;
+            const esp = stripIngenieriaPrefix(
+              d.delegado?.especialidad?.nombre ?? "Sin esp.",
+            );
+            const dictamen = d.datos?.dictamen_revision;
+            const key = d.delegado?.id ?? `d-${i}`;
+            return (
+              <li key={key} className="flex flex-col gap-0.5">
+                <span className="text-sm font-semibold text-foreground leading-tight">
                   {nombre}
-                </div>
-              )}
-              {tipo && (
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
-                  Tipo: {tipo}
-                </div>
-              )}
-              {dictamen && (
-                <div className="font-mono text-[10px] text-muted-foreground mt-0.5">
-                  Dictamen {dictamen}
-                </div>
-              )}
-              {esp && (
-                <div className="text-[10px] text-muted-foreground/80 mt-1 italic">
-                  {esp}
-                </div>
-              )}
-            </TooltipContent>
-          </Tooltip>
-        );
-      })}
-    </div>
+                </span>
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+                  {tipo ? (
+                    <span className="inline-flex items-center rounded bg-primary/10 px-1 py-0.5 font-bold uppercase tracking-wider text-primary">
+                      {tipo}
+                    </span>
+                  ) : null}
+                  {cip ? <span className="font-mono">CIP {cip}</span> : null}
+                  <span className="italic">{esp}</span>
+                </span>
+                {dictamen ? (
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    Dictamen: {dictamen}
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </TooltipContent>
+    </Tooltip>
   );
 }

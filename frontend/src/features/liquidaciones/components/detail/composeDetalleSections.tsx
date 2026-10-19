@@ -5,11 +5,8 @@ import type {
   LiquidacionDelegadoEnGeneralOutput,
   LiquidacionGeneralOutput,
 } from "@/features/liquidaciones/schemas/liquidacion-base.schema";
-import type { M2DatosOut } from "@/features/liquidaciones/schemas/liquidacion-m2.schema";
 import type { PorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-porcentaje.schema";
-import type { VisitasDatosOut } from "@/features/liquidaciones/schemas/liquidacion-visitas.schema";
 import {
-  DetalleAreaTarifaSection,
   DetalleComercialSection,
   DetalleContactoSection,
   DetalleCotizacionDelegadosSection,
@@ -17,21 +14,17 @@ import {
   DetalleIdentidadSection,
   DetalleObservacionSection,
   DetalleProyectoSection,
-  DetalleVisitasSection,
 } from "./DetalleSections";
 
 interface ComposeProps {
   lg: LiquidacionGeneralOutput;
-  /** PorcentajeObra data (Edif / IV / Taludes). When present, the
-   *  Tarifas section is rendered side-by-side with Delegados. */
+  /** PorcentajeObra data (Edif / IV / Taludes). Drives whether the
+   *  `Cotización y Delegados` combined section is rendered. */
   lt?: PorcentajeObraDatosOut | null;
-  /** M2DatosOut (HU / MS). When present, renders the Área + Tarifa section. */
-  m2?: M2DatosOut | null;
-  /** VisitasDatosOut (IO). When present, renders the Visitas section
-   *  (count + categoría + inspectores summary). */
-  visitas?: VisitasDatosOut | null;
-  /** Tipo-specific section for non-PorcentajeObra tipos (currently unused —
-   *  kept for future tipo-specific content). */
+  /** Tipo-specific section rendered between `DetalleProyectoSection` and the
+   *  delegados section. Use the `LiquidacionDetalle<Domain>Section` for
+   *  your tipo (Edif / Taludes / IV / HU / MS / IO) — it already wraps the
+   *  shared `TarifaDetailSection` so the layout stays uniform across tipos. */
   tipoSection?: ReactNode;
   /** IO does not use delegados — pass `false` to skip. Defaults `true`. */
   showDelegados?: boolean;
@@ -41,12 +34,12 @@ interface ComposeProps {
 
 /**
  * Composes the standard area-stack of the Ver-Detalle modal:
- *   Identidad → Proyecto → [TipoSpec] → Tarifas|Delegados (parallel) → Comercial → Contacto → Observacion
+ *   Identidad → Proyecto → [TipoSpec] → [Cotización|Delegados] → Comercial → Contacto → Observación
  *
- * Tipo-specific sections:
- *   - `lt` (PorcentajeObra: Edif/IV/Taludes) → renders Tarifas section
- *   - `m2` (M2: HU/MS) → renders AreaTarifa section
- *   - `visitas` (IO) → renders Visitas section
+ * The `tipoSection` slot is the only place that varies per tipo — the caller
+ * passes one of the `LiquidacionDetalle<Domain>Section` components which
+ * internally use the shared `TarifaDetailSection` wrapper. This keeps the
+ * layout uniform across the 6 tipos (Edif / Taludes / IV / HU / MS / IO).
  *
  * Each card / view calls this helper and passes the result as `children` to
  * `<LiquidacionDetalleModal>`. Keeps the views thin and the order
@@ -55,9 +48,7 @@ interface ComposeProps {
 export function composeDetalleSections({
   lg,
   lt,
-  m2,
-  visitas,
-  tipoSection: _tipoSection,
+  tipoSection,
   showDelegados = true,
   delegados,
 }: ComposeProps): ReactNode {
@@ -68,12 +59,13 @@ export function composeDetalleSections({
       <DetalleIdentidadSection lg={lg} />
       <DetalleProyectoSection lg={lg} />
 
-      {/* Tipo-specific sections (each full-width at lg) */}
-      {m2 ? <DetalleAreaTarifaSection m2={m2} /> : null}
-      {visitas ? <DetalleVisitasSection visitas={visitas} /> : null}
+      {/* Per-tipo section (Edif / Taludes / IV / HU / MS / IO) — each caller
+          passes its own TarifaDetailSection-wrapped component. */}
+      {tipoSection}
 
       {/* Cotización + Delegados combined — one section that surfaces
-          the tarifa ↔ delegado ↔ especialidad relationship. */}
+          the tarifa ↔ delegado ↔ especialidad relationship. Only when
+          the liquidación has PorcentajeObra data (Edif / IV / Taludes). */}
       {lt ? (
         <div className="lg:col-span-12">
           <DetalleCotizacionDelegadosSection

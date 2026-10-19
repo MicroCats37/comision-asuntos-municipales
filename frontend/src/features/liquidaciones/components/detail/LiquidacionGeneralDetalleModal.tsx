@@ -1,24 +1,28 @@
 "use client";
 
-import { type LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useMemo } from "react";
+import type { LiquidacionGeneralItem } from "@/features/liquidaciones/hooks/useLiquidacionesGenerales";
+import { useLiquidacionGeneralDetalle } from "@/features/liquidaciones/hooks/useLiquidacionGeneralDetalle";
+import type { M2DatosOut } from "@/features/liquidaciones/schemas/liquidacion-m2.schema";
+import type { PorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-porcentaje.schema";
+import type { VisitasDatosOut } from "@/features/liquidaciones/schemas/liquidacion-visitas.schema";
 import {
+  formatPublicId,
+  getTipoSlugFromCodigo,
+} from "../../utils/formatPublicId";
+import {
+  getKindBadgeFromCodigo,
+  getKindIconFromCodigo,
+} from "../liquidacion-ui";
+import {
+  composeDetalleSections,
   LiquidacionDetalleEdificacionesSection,
   LiquidacionDetalleHabilitacionUrbanaSection,
   LiquidacionDetalleInspeccionObraSection,
+  LiquidacionDetalleModal,
   LiquidacionDetalleTaludesSection,
 } from "./index";
-import {
-  composeDetalleSections,
-  LiquidacionDetalleModal,
-} from "./index";
-import type { LiquidacionGeneralItem } from "@/features/liquidaciones/hooks/useLiquidacionesGenerales";
-import { useLiquidacionGeneralDetalle } from "@/features/liquidaciones/hooks/useLiquidacionGeneralDetalle";
-import { formatPublicId, getTipoSlugFromCodigo } from "../../utils/formatPublicId";
-import { getKindBadgeFromCodigo, getKindIconFromCodigo } from "../liquidacion-ui";
-import type { PorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-porcentaje.schema";
-import type { M2DatosOut } from "@/features/liquidaciones/schemas/liquidacion-m2.schema";
-import type { VisitasDatosOut } from "@/features/liquidaciones/schemas/liquidacion-visitas.schema";
 
 interface LiquidacionGeneralDetalleModalProps {
   item: LiquidacionGeneralItem;
@@ -42,8 +46,10 @@ export function LiquidacionGeneralDetalleModal({
 
   // NOTE: tipo_liquidacion type annotation workarounds a TypeScript module-resolution
   // quirk where item.tipo_liquidacion was incorrectly resolved as liquidacion_especifica.
-  const tipo_liquidacion: { codigo?: string | null | undefined } | null | undefined =
-    item.tipo_liquidacion;
+  const tipo_liquidacion:
+    | { codigo?: string | null | undefined }
+    | null
+    | undefined = item.tipo_liquidacion;
   const tipoCodigo = tipo_liquidacion?.codigo ?? null;
   const tipoSlug = getTipoSlugFromCodigo(tipoCodigo);
   const kindBadge = getKindBadgeFromCodigo(tipoCodigo);

@@ -1,11 +1,8 @@
-export { DetalleSection, DetalleField } from "./DetalleSection";
-export { DetalleIdentidadSection } from "./DetalleIdentidadSection";
-export { DetalleProyectoSection } from "./DetalleProyectoSection";
 export { DetalleComercialSection } from "./DetalleComercialSection";
-export { DetalleDelegadosSection } from "./DetalleDelegadosSection";
 export { DetalleContactoSection } from "./DetalleContactoSection";
-export { DetalleObservacionSection } from "./DetalleObservacionSection";
-export { DetalleTarifasSection } from "./DetalleTarifasSection";
-export { DetalleAreaTarifaSection } from "./DetalleAreaTarifaSection";
-export { DetalleVisitasSection } from "./DetalleVisitasSection";
 export { DetalleCotizacionDelegadosSection } from "./DetalleCotizacionDelegadosSection";
+export { DetalleDelegadosSection } from "./DetalleDelegadosSection";
+export { DetalleIdentidadSection } from "./DetalleIdentidadSection";
+export { DetalleObservacionSection } from "./DetalleObservacionSection";
+export { DetalleProyectoSection } from "./DetalleProyectoSection";
+export { DetalleField, DetalleSection } from "./DetalleSection";

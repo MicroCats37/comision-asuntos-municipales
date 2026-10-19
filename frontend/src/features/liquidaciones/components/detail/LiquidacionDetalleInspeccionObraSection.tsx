@@ -6,63 +6,72 @@ import type {
   VisitasDatosOut,
 } from "../../schemas/liquidacion-visitas.schema";
 import { formatEnumLabel } from "../liquidacion-ui";
+import { TarifaDetailSection, type TarifaParam } from "./TarifaDetailSection";
 
-interface LiquidacionDetalleInspeccionObraSectionProps {
-  /** Visitas data (liquidacion_tipo) */
+interface Props {
   liquidacionTipo: VisitasDatosOut;
 }
 
 /**
- * Compact Inspección de Obra-specific (Visitas) data for the detail modal.
- * Mirrors the compact layout of LiquidacionDetalleEdificacionesSection.
- * Shows categoria, cantidad_visitas, porcentaje_uit, and inspectores.
+ * Inspección de Obra-specific (Visitas) param block + inspectores +
+ * registros de pago tables. Uses the shared `TarifaDetailSection` wrapper
+ * for the params grid; renders the inspectores and registros_pago tables
+ * via the `children` slot.
+ *
+ * Note: IO does NOT use delegados (uses inspectores instead). That's why
+ * this section is more compact than the PorcentajeObra variants.
  */
 export function LiquidacionDetalleInspeccionObraSection({
   liquidacionTipo: lt,
-}: LiquidacionDetalleInspeccionObraSectionProps) {
+}: Props) {
+  const params: TarifaParam[] = [
+    {
+      label: "Categoría",
+      value: (
+        <span className="inline-flex items-center rounded bg-secondary px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider text-secondary-foreground">
+          {formatEnumLabel(lt.categoria) ?? "—"}
+        </span>
+      ),
+    },
+    {
+      label: "Cant. Visitas",
+      value: <span className="tabular-nums">{lt.cantidad_visitas ?? 0}</span>,
+    },
+    {
+      label: "% UIT",
+      value: (
+        <span className="font-mono font-bold text-primary tabular-nums">
+          {lt.porcentaje_uit?.toLocaleString("es-PE", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 4,
+          }) ?? "—"}
+          %
+        </span>
+      ),
+    },
+    ...(lt.tarifa_aplicada_id
+      ? [
+          {
+            label: "Tarifa",
+            value: (
+              <span className="font-mono text-xs">{lt.tarifa_aplicada_id}</span>
+            ),
+          },
+        ]
+      : []),
+  ];
+
+  const inspectoresCount = lt.inspectores?.length ?? 0;
+  const registrosCount = lt.registros_pago?.length ?? 0;
+
   return (
-    <div className="space-y-3">
-      {/* ── Section title ─── */}
-      <div className="flex items-center gap-2">
-        <ClipboardCheck className="h-3.5 w-3.5 text-primary/60" />
-        <h3 className="text-xs font-bold text-foreground uppercase tracking-wide">
-          Detalle técnico de Inspección de Obra
-        </h3>
-        <div className="flex-1 h-px bg-border/40" />
-      </div>
-
-      {/* ── Params strip: Liquidación params ─── */}
-      <div className="flex flex-wrap items-start gap-3 min-w-0">
-        {/* Liquidación params */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-border/50 bg-card px-3 py-2">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Categoría
-            </span>
-            <span className="text-xs font-medium text-foreground">
-              {formatEnumLabel(lt.categoria) ?? "—"}
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Cant. Visitas
-            </span>
-            <span className="text-xs font-medium text-foreground">
-              {lt.cantidad_visitas ?? 0}
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              % UIT
-            </span>
-            <span className="text-xs font-medium text-foreground">
-              {lt.porcentaje_uit ?? 0}%
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Inspectores table — compact ─── */}
+    <TarifaDetailSection
+      title="Detalle técnico de Inspección de Obra"
+      icon={ClipboardCheck}
+      params={params}
+      emptyText="Sin parámetros de visitas registrados."
+    >
+      {/* Inspectores table */}
       <div className="rounded-lg border border-border/50 bg-card overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40 bg-muted/20">
           <User className="h-3 w-3 text-muted-foreground/70" />
@@ -70,12 +79,11 @@ export function LiquidacionDetalleInspeccionObraSection({
             Inspectores asignados
           </h4>
           <span className="ml-1 inline-flex items-center justify-center h-3.5 w-3.5 rounded-full bg-muted text-[9px] font-bold text-muted-foreground">
-            {lt.inspectores?.length ?? 0}
+            {inspectoresCount}
           </span>
         </div>
-        {(lt.inspectores?.length ?? 0) > 0 ? (
+        {inspectoresCount > 0 ? (
           <div className="divide-y divide-border/20">
-            {/* Table header */}
             <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 px-3 py-1.5 bg-muted/15 min-w-0">
               <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
                 Nombre
@@ -87,7 +95,6 @@ export function LiquidacionDetalleInspeccionObraSection({
                 Categoría
               </span>
             </div>
-            {/* Table rows */}
             {lt.inspectores?.map((inspector) => (
               <div
                 key={inspector.id}
@@ -112,7 +119,7 @@ export function LiquidacionDetalleInspeccionObraSection({
         )}
       </div>
 
-      {/* ── Registros de pago table — compact ─── */}
+      {/* Registros de pago table */}
       <div className="rounded-lg border border-border/50 bg-card overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40 bg-muted/20">
           <Receipt className="h-3 w-3 text-muted-foreground/70" />
@@ -120,12 +127,11 @@ export function LiquidacionDetalleInspeccionObraSection({
             Registros de pago
           </h4>
           <span className="ml-1 inline-flex items-center justify-center h-3.5 w-3.5 rounded-full bg-muted text-[9px] font-bold text-muted-foreground">
-            {lt.registros_pago?.length ?? 0}
+            {registrosCount}
           </span>
         </div>
-        {(lt.registros_pago?.length ?? 0) > 0 ? (
+        {registrosCount > 0 ? (
           <div className="divide-y divide-border/20">
-            {/* Table header */}
             <div className="grid grid-cols-[auto_auto_1fr_auto] gap-x-4 px-3 py-1.5 bg-muted/15 min-w-0">
               <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider min-w-[3.5rem]">
                 Periodo
@@ -140,7 +146,6 @@ export function LiquidacionDetalleInspeccionObraSection({
                 Fecha registro
               </span>
             </div>
-            {/* Table rows — sorted by fecha_registro desc */}
             {(
               [...(lt.registros_pago ?? [])].sort((a, b) => {
                 const dateA = a.fecha_registro
@@ -186,6 +191,6 @@ export function LiquidacionDetalleInspeccionObraSection({
           </p>
         )}
       </div>
-    </div>
+    </TarifaDetailSection>
   );
 }

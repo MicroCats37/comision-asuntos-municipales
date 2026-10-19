@@ -1,12 +1,12 @@
 "use client";
 
 import { type PointerEvent as ReactPointerEvent, useRef } from "react";
-import { cn } from "@/lib/utils";
 import {
   formatCurrency,
   getKindBadgeFromCodigo,
 } from "@/features/liquidaciones/components/liquidacion-ui";
 import { LiquidacionesTableRowActions } from "@/features/liquidaciones/components/tables/LiquidacionesTableRowActions";
+import { cn } from "@/lib/utils";
 import type {
   DetalleDelegadoRow,
   RHDetalleDelegadoRow,
@@ -14,8 +14,8 @@ import type {
 } from "./RHDetalleTable.types";
 import {
   formatDelegadoRow,
-  RH_TABLE_COL_ACTIONS,
   RH_DELEGADOS_GRID_TEMPLATE,
+  RH_TABLE_COL_ACTIONS,
 } from "./RHDetalleTable.types";
 
 interface RHDetalleDelegadosTableProps {
@@ -88,7 +88,12 @@ function useDragScroll<T extends HTMLElement>() {
 
   return {
     ref,
-    handlers: { onPointerDown, onPointerMove, onPointerUp: endDrag, onPointerCancel: endDrag },
+    handlers: {
+      onPointerDown,
+      onPointerMove,
+      onPointerUp: endDrag,
+      onPointerCancel: endDrag,
+    },
   };
 }
 
@@ -115,7 +120,7 @@ export function RHDetalleDelegadosTable({
       className="bg-card rounded-xl border shadow-sm overflow-x-auto cursor-grab"
       {...dragHandlers}
     >
-      <div className="min-w-[1500px] divide-y divide-foreground/20">
+      <div className="min-w-[1500px] divide-y divide-border/40">
         {/* Header */}
         <div
           className="sticky top-0 z-40 grid items-stretch bg-table-header border-b-2 border-b-border text-[10px] font-bold uppercase tracking-wider text-foreground/85"
@@ -182,7 +187,7 @@ export function RHDetalleDelegadosTable({
           return (
             <div
               key={row.id}
-              className="grid items-stretch bg-card transition-colors hover:bg-muted/30 divide-x divide-foreground/20"
+              className="grid items-stretch bg-card transition-colors hover:bg-muted/30 divide-x divide-border/40"
               style={{ gridTemplateColumns: RH_DELEGADOS_GRID_TEMPLATE }}
             >
               {/* Sticky — Acción */}
@@ -223,7 +228,9 @@ export function RHDetalleDelegadosTable({
               {/* N° RH */}
               <div className="flex items-center px-3 py-3.5 min-w-0">
                 <span className="font-mono text-[11px] text-muted-foreground truncate">
-                  {row.numeroRh || <span className="text-muted-foreground/50">—</span>}
+                  {row.numeroRh || (
+                    <span className="text-muted-foreground/50">—</span>
+                  )}
                 </span>
               </div>
 

@@ -1,6 +1,7 @@
 // Barrel export for liquidacion forms.
 
 export { ComprobanteFormModal } from "./ComprobanteFormModal";
+export { EliminarLiquidacionModal } from "./EliminarLiquidacionModal";
 export { ContactoCard } from "./ContactoCard";
 export { ContactoFormModal } from "./ContactoFormModal";
 export { ContactoSmartField } from "./ContactoSmartField";
