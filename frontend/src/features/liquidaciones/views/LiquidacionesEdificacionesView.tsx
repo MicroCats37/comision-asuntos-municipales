@@ -170,7 +170,6 @@ export function LiquidacionesEdificacionesView() {
       {
         key: "pct",
         header: "% Liq.",
-        width: "120px",
         render: (item) => {
           const tipoTramite = item.liquidacion_tipo.tipo_tramite ?? undefined;
           const label = tipoTramite
@@ -187,19 +186,16 @@ export function LiquidacionesEdificacionesView() {
       {
         key: "valor",
         header: "Valor de Obra",
-        width: "150px",
         render: (item) => <ValorObraCell lt={item.liquidacion_tipo} />,
       },
       {
         key: "tarifa",
         header: "Tarifas",
-        width: "minmax(200px,1fr)",
         render: (item) => <TarifaCell lt={item.liquidacion_tipo} />,
       },
       {
         key: "delegados",
         header: "Delegados",
-        width: "minmax(220px,1fr)",
         render: (item) => (
           <DelegadosCell delegados={item.liquidacion_general.delegados} />
         ),

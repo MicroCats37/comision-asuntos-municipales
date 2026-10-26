@@ -1,22 +1,21 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { useLiquidacionGeneralDetalle } from "@/features/liquidaciones/hooks/useLiquidacionGeneralDetalle";
 import {
-  LiquidacionDetalleModal,
   composeDetalleSections,
+  getTipoDetalleSection,
+  LiquidacionDetalleModal,
 } from "@/features/liquidaciones/components/detail/index";
-import {
-  formatPublicId,
-  getTipoSlugFromCodigo,
-} from "@/features/liquidaciones/utils/formatPublicId";
 import {
   getKindBadgeFromCodigo,
   getKindIconFromCodigo,
 } from "@/features/liquidaciones/components/liquidacion-ui";
+import { useLiquidacionGeneralDetalle } from "@/features/liquidaciones/hooks/useLiquidacionGeneralDetalle";
 import type { PorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-porcentaje.schema";
-import type { M2DatosOut } from "@/features/liquidaciones/schemas/liquidacion-m2.schema";
-import type { VisitasDatosOut } from "@/features/liquidaciones/schemas/liquidacion-visitas.schema";
+import {
+  formatPublicId,
+  getTipoSlugFromCodigo,
+} from "@/features/liquidaciones/utils/formatPublicId";
 
 interface RHDetalleVerDetalleModalProps {
   liquidacionId: string | null;
@@ -75,15 +74,11 @@ export function RHDetalleVerDetalleModal({
             tipoCodigo === "TALUDES"
               ? (detalle.liquidacion_tipo as PorcentajeObraDatosOut)
               : null,
-          m2:
-            tipoCodigo === "HABILITACION_URBANA" ||
-            tipoCodigo === "MECANICA_SUELOS"
-              ? (detalle.liquidacion_tipo as M2DatosOut)
-              : null,
-          visitas:
-            tipoCodigo === "INSPECCION_OBRA"
-              ? (detalle.liquidacion_tipo as VisitasDatosOut)
-              : null,
+          tipoSection: getTipoDetalleSection(
+            tipoCodigo,
+            detalle.liquidacion_tipo,
+          ),
+          showDelegados: tipoCodigo !== "INSPECCION_OBRA",
         })
       ) : (
         <DetalleError />

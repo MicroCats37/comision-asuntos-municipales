@@ -503,7 +503,6 @@ export const HABILITACION_URBANA_CONFIG: LiquidacionCardConfig<LiquidacionHabili
       >
         {composeDetalleSections({
           lg: item.liquidacion_general,
-          m2: item.liquidacion_tipo,
           tipoSection: (
             <LiquidacionDetalleHabilitacionUrbanaSection
               liquidacionTipo={item.liquidacion_tipo}
@@ -579,7 +578,6 @@ export const MECANICA_SUELOS_CONFIG: LiquidacionCardConfig<LiquidacionMecanicaSu
       >
         {composeDetalleSections({
           lg: item.liquidacion_general,
-          m2: item.liquidacion_tipo,
           tipoSection: (
             <LiquidacionDetalleMecanicaSuelosSection
               liquidacionTipo={item.liquidacion_tipo}
@@ -637,7 +635,6 @@ export const INSPECCION_OBRA_CONFIG: LiquidacionCardConfig<LiquidacionInspeccion
       >
         {composeDetalleSections({
           lg: item.liquidacion_general,
-          visitas: item.liquidacion_tipo,
           tipoSection: (
             <LiquidacionDetalleInspeccionObraSection
               liquidacionTipo={item.liquidacion_tipo}

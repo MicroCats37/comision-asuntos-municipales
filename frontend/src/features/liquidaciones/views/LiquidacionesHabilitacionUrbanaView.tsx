@@ -149,13 +149,11 @@ export function LiquidacionesHabilitacionUrbanaView() {
       {
         key: "area",
         header: "Área",
-        width: "minmax(140px,auto)",
         render: (item) => <AreaCell lt={item.liquidacion_tipo} />,
       },
       {
         key: "tarifa",
         header: "Tarifa",
-        width: "minmax(160px,auto)",
         render: (item) => (
           <TarifaMCell costo_por_m2={item.liquidacion_tipo.costo_por_m2} />
         ),
@@ -163,7 +161,6 @@ export function LiquidacionesHabilitacionUrbanaView() {
       {
         key: "delegados",
         header: "Delegados",
-        width: "minmax(220px,1fr)",
         render: (item) => (
           <DelegadosCell delegados={item.liquidacion_general.delegados} />
         ),

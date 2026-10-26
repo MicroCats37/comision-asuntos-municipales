@@ -149,19 +149,16 @@ export function LiquidacionesImpactoVialView() {
       {
         key: "pct",
         header: "% Liq.",
-        width: "120px",
         render: (item) => <PorcentajeCell lt={item.liquidacion_tipo} />,
       },
       {
         key: "valor",
         header: "Valor de Obra",
-        width: "150px",
         render: (item) => <ValorObraCell lt={item.liquidacion_tipo} />,
       },
       {
         key: "delegados",
         header: "Delegados",
-        width: "minmax(220px,1fr)",
         render: (item) => (
           <DelegadosCell delegados={item.liquidacion_general.delegados} />
         ),

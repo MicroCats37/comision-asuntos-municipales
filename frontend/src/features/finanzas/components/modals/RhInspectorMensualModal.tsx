@@ -25,8 +25,8 @@ import {
   Loader2,
   Receipt,
   Search,
-  X,
   Trash2,
+  X,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import * as XLSX from "xlsx";
@@ -56,21 +56,23 @@ import {
   useCotizarRHInspector,
   useCrearRHInspector,
 } from "@/features/finanzas/hooks/useRHInspectorMensual";
-import {
-  useRHSelectionStore,
-  buildInspectorFlowKey,
-  type InspectorSelectionEntry,
-} from "@/features/finanzas/stores/rh-selection.store";
 import type {
   InspectorCandidataItem,
   RHInspectorCotizar,
   RHInspectorCotizarIn,
 } from "@/features/finanzas/schemas/rh-inspector-mensual.schema";
 import {
+  buildInspectorFlowKey,
+  type InspectorSelectionEntry,
+  useRHSelectionStore,
+} from "@/features/finanzas/stores/rh-selection.store";
+import {
   composeDetalleSections,
+  getTipoDetalleSection,
   LiquidacionDetalleModal,
 } from "@/features/liquidaciones/components/detail";
 import { useLiquidacionGeneralDetalle } from "@/features/liquidaciones/hooks/useLiquidacionGeneralDetalle";
+import type { PorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-porcentaje.schema";
 import { formatPublicId } from "@/features/liquidaciones/utils/formatPublicId";
 import { getLiquidacionTipoInfo } from "@/features/liquidaciones/utils/liquidacionTipoInfo";
 
@@ -224,6 +226,11 @@ export function RhInspectorMensualModal({
     useLiquidacionGeneralDetalle({
       id: detalleLiquidacionGeneralId,
     });
+
+  /** Tipo código of the liquidación previewed in the "Ver detalle" modal —
+   *  drives which tipo-specific detail section is rendered. */
+  const detalleTipoCodigo =
+    detalleData?.liquidacion_general.tipo_liquidacion?.codigo ?? null;
 
   // ── Selection store (Module 1) — replaces local selectedRows state ──────────
   const {
@@ -1140,110 +1147,106 @@ export function RhInspectorMensualModal({
                     Verifica estos datos antes de crear el RH mensual.
                   </p>
                 </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Inspector
-                      </p>
-                      <p className="font-semibold truncate">
-                        {cotizarResult.inspector.nombre_completo}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        CIP
-                      </p>
-                      <p className="font-semibold">
-                        {cotizarResult.inspector.cip}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Periodo
-                      </p>
-                      <p className="font-semibold">
-                        {cotizarResult.periodo != null &&
-                        cotizarResult.mes != null
-                          ? `${cotizarResult.periodo}-${String(cotizarResult.mes).padStart(2, "0")}`
-                          : "—"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Items
-                      </p>
-                      <p className="font-semibold">
-                        {cotizarResult.items.length}
-                      </p>
-                    </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Inspector
+                    </p>
+                    <p className="font-semibold truncate">
+                      {cotizarResult.inspector.nombre_completo}
+                    </p>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm border-t border-primary/20 pt-3">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Sub total
-                      </p>
-                      <p className="font-semibold">
-                        {formatCurrency(cotizarResult.totales.sub_total)}
-                      </p>
-                    </div>
-                    {(() => {
-                      const vc = cotizarResult.variables_calculo;
-                      const pct =
-                        vc.rango_aplicado?.porcentaje_descuento != null
-                          ? (
-                              vc.rango_aplicado.porcentaje_descuento * 100
-                            ).toFixed(0)
-                          : null;
-                      return (
-                        <div>
-                          <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                            Descuento{pct != null ? ` (${pct}%)` : ""}
-                          </p>
-                          <p className="font-semibold text-destructive">
-                            - {formatCurrency(cotizarResult.totales.descuento)}
-                          </p>
-                        </div>
-                      );
-                    })()}
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Tasa descuento
-                      </p>
-                      <p className="font-semibold">
-                        {cotizarResult.totales.tasa_descuento_aplicada.toFixed(
-                          2,
-                        )}
-                        %
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Honorarios
-                      </p>
-                      <p className="font-black text-primary">
-                        {formatCurrency(cotizarResult.totales.honorarios)}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      CIP
+                    </p>
+                    <p className="font-semibold">
+                      {cotizarResult.inspector.cip}
+                    </p>
                   </div>
-                  {/* Escala de descuento aplicada */}
-                  <RhInspectorVariablesCalculo
-                    escala_nombre={
-                      cotizarResult.variables_calculo.escala_nombre
-                    }
-                    porcentaje_descuento={
-                      cotizarResult.variables_calculo.rango_aplicado
-                        .porcentaje_descuento
-                    }
-                    monto_minimo={
-                      cotizarResult.variables_calculo.rango_aplicado
-                        .monto_minimo ?? undefined
-                    }
-                    monto_maximo={
-                      cotizarResult.variables_calculo.rango_aplicado
-                        .monto_maximo ?? undefined
-                    }
-                  />
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Periodo
+                    </p>
+                    <p className="font-semibold">
+                      {cotizarResult.periodo != null &&
+                      cotizarResult.mes != null
+                        ? `${cotizarResult.periodo}-${String(cotizarResult.mes).padStart(2, "0")}`
+                        : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Items
+                    </p>
+                    <p className="font-semibold">
+                      {cotizarResult.items.length}
+                    </p>
+                  </div>
                 </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm border-t border-primary/20 pt-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Sub total
+                    </p>
+                    <p className="font-semibold">
+                      {formatCurrency(cotizarResult.totales.sub_total)}
+                    </p>
+                  </div>
+                  {(() => {
+                    const vc = cotizarResult.variables_calculo;
+                    const pct =
+                      vc.rango_aplicado?.porcentaje_descuento != null
+                        ? (
+                            vc.rango_aplicado.porcentaje_descuento * 100
+                          ).toFixed(0)
+                        : null;
+                    return (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                          Descuento{pct != null ? ` (${pct}%)` : ""}
+                        </p>
+                        <p className="font-semibold text-destructive">
+                          - {formatCurrency(cotizarResult.totales.descuento)}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Tasa descuento
+                    </p>
+                    <p className="font-semibold">
+                      {cotizarResult.totales.tasa_descuento_aplicada.toFixed(2)}
+                      %
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Honorarios
+                    </p>
+                    <p className="font-black text-primary">
+                      {formatCurrency(cotizarResult.totales.honorarios)}
+                    </p>
+                  </div>
+                </div>
+                {/* Escala de descuento aplicada */}
+                <RhInspectorVariablesCalculo
+                  escala_nombre={cotizarResult.variables_calculo.escala_nombre}
+                  porcentaje_descuento={
+                    cotizarResult.variables_calculo.rango_aplicado
+                      .porcentaje_descuento
+                  }
+                  monto_minimo={
+                    cotizarResult.variables_calculo.rango_aplicado
+                      .monto_minimo ?? undefined
+                  }
+                  monto_maximo={
+                    cotizarResult.variables_calculo.rango_aplicado
+                      .monto_maximo ?? undefined
+                  }
+                />
+              </div>
               {/* Header info */}
               <div className="rounded-xl border border-border/50 bg-card p-4 space-y-2">
                 <div className="flex justify-between text-sm">
@@ -1554,39 +1557,20 @@ export function RhInspectorMensualModal({
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : detalleData ? (
-              (() => {
-                const codigo =
-                  detalleData.liquidacion_general.tipo_liquidacion?.codigo;
-                if (
-                  codigo === "EDIFICACION" ||
-                  codigo === "TALUDES" ||
-                  codigo === "IMPACTO_VIAL"
-                ) {
-                  return composeDetalleSections({
-                    lg: detalleData.liquidacion_general,
-                    lt: detalleData.liquidacion_tipo as Parameters<
-                      typeof composeDetalleSections
-                    >[0]["lt"],
-                  });
-                }
-                if (
-                  codigo === "HABILITACION_URBANA" ||
-                  codigo === "MECANICA_SUELOS"
-                ) {
-                  return composeDetalleSections({
-                    lg: detalleData.liquidacion_general,
-                    m2: detalleData.liquidacion_tipo as Parameters<
-                      typeof composeDetalleSections
-                    >[0]["m2"],
-                  });
-                }
-                return composeDetalleSections({
-                  lg: detalleData.liquidacion_general,
-                  visitas: detalleData.liquidacion_tipo as Parameters<
-                    typeof composeDetalleSections
-                  >[0]["visitas"],
-                });
-              })()
+              composeDetalleSections({
+                lg: detalleData.liquidacion_general,
+                lt:
+                  detalleTipoCodigo === "EDIFICACION" ||
+                  detalleTipoCodigo === "TALUDES" ||
+                  detalleTipoCodigo === "IMPACTO_VIAL"
+                    ? (detalleData.liquidacion_tipo as PorcentajeObraDatosOut)
+                    : null,
+                tipoSection: getTipoDetalleSection(
+                  detalleTipoCodigo,
+                  detalleData.liquidacion_tipo,
+                ),
+                showDelegados: detalleTipoCodigo !== "INSPECCION_OBRA",
+              })
             ) : (
               <div className="p-4 text-sm text-muted-foreground">
                 No se pudo cargar el detalle

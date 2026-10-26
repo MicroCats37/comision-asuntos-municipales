@@ -4,9 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { useMemo } from "react";
 import type { LiquidacionGeneralItem } from "@/features/liquidaciones/hooks/useLiquidacionesGenerales";
 import { useLiquidacionGeneralDetalle } from "@/features/liquidaciones/hooks/useLiquidacionGeneralDetalle";
-import type { M2DatosOut } from "@/features/liquidaciones/schemas/liquidacion-m2.schema";
 import type { PorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-porcentaje.schema";
-import type { VisitasDatosOut } from "@/features/liquidaciones/schemas/liquidacion-visitas.schema";
 import {
   formatPublicId,
   getTipoSlugFromCodigo,
@@ -17,11 +15,8 @@ import {
 } from "../liquidacion-ui";
 import {
   composeDetalleSections,
-  LiquidacionDetalleEdificacionesSection,
-  LiquidacionDetalleHabilitacionUrbanaSection,
-  LiquidacionDetalleInspeccionObraSection,
+  getTipoDetalleSection,
   LiquidacionDetalleModal,
-  LiquidacionDetalleTaludesSection,
 } from "./index";
 
 interface LiquidacionGeneralDetalleModalProps {
@@ -61,34 +56,10 @@ export function LiquidacionGeneralDetalleModal({
     item.liquidacion_especifica?.numero ?? null,
   );
 
-  const tipoSection = useMemo(() => {
-    if (!detalle) return null;
-    switch (tipoCodigo) {
-      case "EDIFICACION":
-      case "IMPACTO_VIAL":
-      case "TALUDES":
-        return (
-          <LiquidacionDetalleEdificacionesSection
-            liquidacionTipo={detalle.liquidacion_tipo as PorcentajeObraDatosOut}
-          />
-        );
-      case "HABILITACION_URBANA":
-      case "MECANICA_SUELOS":
-        return (
-          <LiquidacionDetalleHabilitacionUrbanaSection
-            liquidacionTipo={detalle.liquidacion_tipo as M2DatosOut}
-          />
-        );
-      case "INSPECCION_OBRA":
-        return (
-          <LiquidacionDetalleInspeccionObraSection
-            liquidacionTipo={detalle.liquidacion_tipo as VisitasDatosOut}
-          />
-        );
-      default:
-        return null;
-    }
-  }, [detalle, tipoCodigo]);
+  const tipoSection = useMemo(
+    () => getTipoDetalleSection(tipoCodigo, detalle?.liquidacion_tipo),
+    [detalle, tipoCodigo],
+  );
 
   return (
     <LiquidacionDetalleModal
@@ -110,16 +81,8 @@ export function LiquidacionGeneralDetalleModal({
             tipoCodigo === "TALUDES"
               ? (detalle.liquidacion_tipo as PorcentajeObraDatosOut)
               : null,
-          m2:
-            tipoCodigo === "HABILITACION_URBANA" ||
-            tipoCodigo === "MECANICA_SUELOS"
-              ? (detalle.liquidacion_tipo as M2DatosOut)
-              : null,
-          visitas:
-            tipoCodigo === "INSPECCION_OBRA"
-              ? (detalle.liquidacion_tipo as VisitasDatosOut)
-              : null,
           tipoSection,
+          showDelegados: tipoCodigo !== "INSPECCION_OBRA",
         })
       ) : (
         <DetalleError />

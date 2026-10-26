@@ -64,23 +64,25 @@ import {
   useCotizarRHDelegado,
   useCrearRHDelegado,
 } from "@/features/finanzas/hooks/useRHDelegadoMensual";
-import {
-  useRHSelectionStore,
-  buildDelegadoFlowKey,
-  type DelegadoSelectionEntry,
-} from "@/features/finanzas/stores/rh-selection.store";
 import type {
   CandidataDelegado,
   RHDelegadoCotizar,
   RHDelegadoCotizarIn,
 } from "@/features/finanzas/schemas/rh-delegado-mensual.schema";
 import {
+  buildDelegadoFlowKey,
+  type DelegadoSelectionEntry,
+  useRHSelectionStore,
+} from "@/features/finanzas/stores/rh-selection.store";
+import {
   composeDetalleSections,
+  getTipoDetalleSection,
   LiquidacionDetalleModal,
 } from "@/features/liquidaciones/components/detail";
 import { useLiquidacionGeneralDetalle } from "@/features/liquidaciones/hooks/useLiquidacionGeneralDetalle";
-import { getLiquidacionTipoInfo } from "@/features/liquidaciones/utils/liquidacionTipoInfo";
+import type { PorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-porcentaje.schema";
 import { formatPublicId } from "@/features/liquidaciones/utils/formatPublicId";
+import { getLiquidacionTipoInfo } from "@/features/liquidaciones/utils/liquidacionTipoInfo";
 
 interface RhDelegadoMensualModalProps {
   open: boolean;
@@ -308,9 +310,13 @@ export function RhDelegadoMensualModal({
     ? (candidatas.find((c) => c.id === detalleRowId) ?? null)
     : null;
 
+  /** Tipo código of the liquidación previewed in the "Ver detalle" modal —
+   *  drives which tipo-specific detail section is rendered. */
+  const detalleTipoCodigo = detalleRow?.tipo_liquidacion?.codigo ?? null;
+
   // ── Ver detalle hook (after detalleRow so we can derive id + tipoCodigo from it) ──
   // useLiquidacionGeneralDetalle is called above (before Selection store) since it only depends on detalleRowId.
-  // Note: tipo dispatch for composeDetalleSections is handled by reading detalleRow.tipo_liquidacion.codigo
+  // Note: tipo dispatch for composeDetalleSections is handled by detalleTipoCodigo
   //   in the modal render section below.
 
   // Sync delegadoOperacionId when selectedOperacion changes
@@ -1219,69 +1225,69 @@ export function RhDelegadoMensualModal({
                       {cotizarResult.delegado.nombre_completo}
                     </p>
                   </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        CIP
-                      </p>
-                      <p className="font-semibold">
-                        {cotizarResult.delegado.cip}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Periodo
-                      </p>
-                      <p className="font-semibold">
-                        {cotizarResult.periodo != null &&
-                        cotizarResult.mes != null
-                          ? `${cotizarResult.periodo}-${String(cotizarResult.mes).padStart(2, "0")}`
-                          : "—"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Items
-                      </p>
-                      <p className="font-semibold">
-                        {cotizarResult.items.length}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      CIP
+                    </p>
+                    <p className="font-semibold">
+                      {cotizarResult.delegado.cip}
+                    </p>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm border-t border-primary/20 pt-3">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Importe bruto
-                      </p>
-                      <p className="font-semibold">
-                        {formatCurrency(cotizarResult.totales.sub_total)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Renta CIP
-                      </p>
-                      <p className="font-semibold text-destructive">
-                        - {formatCurrency(cotizarResult.totales.renta_cip)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Aporte Codemu
-                      </p>
-                      <p className="font-semibold text-destructive">
-                        - {formatCurrency(cotizarResult.totales.aporte_codemu)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Neto honorario
-                      </p>
-                      <p className="font-black text-primary">
-                        {formatCurrency(cotizarResult.totales.neto_honorario)}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Periodo
+                    </p>
+                    <p className="font-semibold">
+                      {cotizarResult.periodo != null &&
+                      cotizarResult.mes != null
+                        ? `${cotizarResult.periodo}-${String(cotizarResult.mes).padStart(2, "0")}`
+                        : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Items
+                    </p>
+                    <p className="font-semibold">
+                      {cotizarResult.items.length}
+                    </p>
                   </div>
                 </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm border-t border-primary/20 pt-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Importe bruto
+                    </p>
+                    <p className="font-semibold">
+                      {formatCurrency(cotizarResult.totales.sub_total)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Renta CIP
+                    </p>
+                    <p className="font-semibold text-destructive">
+                      - {formatCurrency(cotizarResult.totales.renta_cip)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Aporte Codemu
+                    </p>
+                    <p className="font-semibold text-destructive">
+                      - {formatCurrency(cotizarResult.totales.aporte_codemu)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Neto honorario
+                    </p>
+                    <p className="font-black text-primary">
+                      {formatCurrency(cotizarResult.totales.neto_honorario)}
+                    </p>
+                  </div>
+                </div>
+              </div>
               {/* Header info */}
               <div className="rounded-xl border border-border/50 bg-card p-4 space-y-2">
                 <div className="flex justify-between text-sm">
@@ -1490,8 +1496,7 @@ export function RhDelegadoMensualModal({
               onClick={
                 step === 1
                   ? handleClose
-                  : () =>
-                      setStep((s) => (s === 3 ? 2 : 1) as Step)
+                  : () => setStep((s) => (s === 3 ? 2 : 1) as Step)
               }
               disabled={isPending}
               className="h-10 rounded-xl font-semibold"
@@ -1595,39 +1600,20 @@ export function RhDelegadoMensualModal({
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : detalleData ? (
-              (() => {
-                const codigo = detalleRow.tipo_liquidacion?.codigo;
-                if (
-                  codigo === "EDIFICACION" ||
-                  codigo === "TALUDES" ||
-                  codigo === "IMPACTO_VIAL"
-                ) {
-                  return composeDetalleSections({
-                    lg: detalleData.liquidacion_general,
-                    lt: detalleData.liquidacion_tipo as Parameters<
-                      typeof composeDetalleSections
-                    >[0]["lt"],
-                  });
-                }
-                if (
-                  codigo === "HABILITACION_URBANA" ||
-                  codigo === "MECANICA_SUELOS"
-                ) {
-                  return composeDetalleSections({
-                    lg: detalleData.liquidacion_general,
-                    m2: detalleData.liquidacion_tipo as Parameters<
-                      typeof composeDetalleSections
-                    >[0]["m2"],
-                  });
-                }
-                // INSPECCION_OBRA or unknown
-                return composeDetalleSections({
-                  lg: detalleData.liquidacion_general,
-                  visitas: detalleData.liquidacion_tipo as Parameters<
-                    typeof composeDetalleSections
-                  >[0]["visitas"],
-                });
-              })()
+              composeDetalleSections({
+                lg: detalleData.liquidacion_general,
+                lt:
+                  detalleTipoCodigo === "EDIFICACION" ||
+                  detalleTipoCodigo === "TALUDES" ||
+                  detalleTipoCodigo === "IMPACTO_VIAL"
+                    ? (detalleData.liquidacion_tipo as PorcentajeObraDatosOut)
+                    : null,
+                tipoSection: getTipoDetalleSection(
+                  detalleTipoCodigo,
+                  detalleData.liquidacion_tipo,
+                ),
+                showDelegados: detalleTipoCodigo !== "INSPECCION_OBRA",
+              })
             ) : (
               <div className="p-4 text-sm text-muted-foreground">
                 No se pudo cargar el detalle

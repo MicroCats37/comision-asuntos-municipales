@@ -149,13 +149,11 @@ export function LiquidacionesInspeccionObraView() {
       {
         key: "visitas",
         header: "Visitas",
-        width: "minmax(140px,auto)",
         render: (item) => <VisitasCell lt={item.liquidacion_tipo} />,
       },
       {
         key: "porcentaje",
         header: "% Visita",
-        width: "minmax(120px,auto)",
         render: (item) => (
           <VisitasPorcentajeCell
             porcentaje_uit={item.liquidacion_tipo.porcentaje_uit}
@@ -165,7 +163,6 @@ export function LiquidacionesInspeccionObraView() {
       {
         key: "costo",
         header: "Costo / Visita",
-        width: "minmax(140px,auto)",
         render: (item) => (
           <CostoPorVisitaCell
             uit={item.liquidacion_general.uit?.valor}
@@ -176,7 +173,6 @@ export function LiquidacionesInspeccionObraView() {
       {
         key: "inspectores",
         header: "Inspectores",
-        width: "minmax(220px,1fr)",
         render: (item) => (
           <InspectoresCell inspectores={item.liquidacion_tipo.inspectores} />
         ),

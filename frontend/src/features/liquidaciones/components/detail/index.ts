@@ -9,6 +9,10 @@ export {
   DetalleProyectoSection,
   DetalleSection,
 } from "./DetalleSections";
+export {
+  getTipoDetalleSection,
+  type TipoDetalleData,
+} from "./getTipoDetalleSection";
 export { LiquidacionDetalleEdificacionesSection } from "./LiquidacionDetalleEdificacionesSection";
 export { LiquidacionDetalleHabilitacionUrbanaSection } from "./LiquidacionDetalleHabilitacionUrbanaSection";
 export { LiquidacionDetalleImpactoVialSection } from "./LiquidacionDetalleImpactoVialSection";
