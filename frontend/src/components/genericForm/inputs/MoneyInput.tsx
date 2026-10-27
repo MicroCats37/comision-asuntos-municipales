@@ -87,10 +87,6 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
   // ── Ref for cursor restoration ──────────────────────────────────────────────
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // ── Sync flag: prevents circular RHF ↔ displayValue updates ───────────────
-  // When true, the sync effect skips updating displayValue to avoid loops
-  const isInternalUpdate = useRef(false);
-
   // ── Format a number with S/ prefix and space-separated thousands ───────────
   const formatDisplay = useCallback(
     (val: number | "" | null | undefined): string => {
@@ -114,10 +110,6 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
 
   // ── Sync displayValue from RHF field value (external changes: reset, defaultValues) ──
   useEffect(() => {
-    if (isInternalUpdate.current) {
-      isInternalUpdate.current = false;
-      return;
-    }
     const raw = field.value;
     // Only sync if field has a valid number
     if (raw === "" || raw === null || raw === undefined) {
@@ -144,7 +136,6 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
 
       // Empty → keep the numeric contract stable for schemas and cotización.
       if (stripped === "") {
-        isInternalUpdate.current = true;
         setDisplayValue(formatDisplay(0));
         field.onChange(0 as never);
         return;
@@ -158,7 +149,6 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
         const formattedInt = Math.round(parsedInt)
           .toString()
           .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-        isInternalUpdate.current = true;
         setDisplayValue(`S/ ${formattedInt}.`);
         return;
       }
@@ -176,7 +166,6 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
 
       // Update display with formatting
       const formatted = formatDisplay(clamped);
-      isInternalUpdate.current = true;
       setDisplayValue(formatted);
 
       // Restore cursor: maintain same distance from end
@@ -202,7 +191,6 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
         .replace(/[^\d.-]/g, "");
 
       if (stripped === "" || stripped === "-") {
-        isInternalUpdate.current = true;
         setDisplayValue(formatDisplay(0));
         field.onChange(0 as never);
       } else {
@@ -212,7 +200,6 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
             Number(min) || 0,
             Math.round(parsed * 100) / 100,
           );
-          isInternalUpdate.current = true;
           setDisplayValue(formatDisplay(clamped));
           // Also update field on blur with the clamped value
           field.onChange(clamped as never);

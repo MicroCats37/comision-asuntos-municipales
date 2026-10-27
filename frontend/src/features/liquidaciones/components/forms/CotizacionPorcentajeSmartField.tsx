@@ -179,6 +179,8 @@ export function CotizacionPorcentajeSmartField({
   const bloqueanteEspecialidades =
     !especialidadesSeleccionadas ||
     (especialidadesSeleccionadas as unknown[]).length === 0;
+  const bloqueanteTarifa =
+    typeof tarifaUnicaId !== "string" || tarifaUnicaId.trim() === "";
 
   const informativeMessage = bloqueanteTipoTramite
     ? "Selecciona un tipo de trámite para poder cotizar."
@@ -186,7 +188,9 @@ export function CotizacionPorcentajeSmartField({
       ? "Ingresa un valor declarado mayor a 0 para poder cotizar."
       : bloqueanteEspecialidades
         ? "Selecciona al menos una especialidad para poder cotizar."
-        : null;
+        : bloqueanteTarifa
+          ? "Esperando la tarifa vigente para poder cotizar."
+          : null;
 
   return (
     <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/[0.03] p-4 shadow-sm">

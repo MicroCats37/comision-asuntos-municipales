@@ -108,6 +108,10 @@ export function TarifasYEspecialidadesSmartField({
     control: methods.control,
     name: "especialidades_seleccionadas",
   }) as (string | number)[] | undefined;
+  const selectedTarifaId = useWatch({
+    control: methods.control,
+    name: "tarifa_unica_id",
+  }) as string | undefined;
   const selectedSet = new Set(selectedIds ?? []);
   const especialidadesAplicadas = especialidades.filter((e) =>
     selectedSet.has(e.id),
@@ -119,13 +123,13 @@ export function TarifasYEspecialidadesSmartField({
         especialidadesAplicadas.length
       : 0;
 
-  // Effect 1: set tarifa_unica_id whenever tariff changes
+  // Keep the derived tariff in RHF even if reactive initialData resets the form.
   useEffect(() => {
-    if (!tarifaUnica) return;
+    if (!tarifaUnica || selectedTarifaId === tarifaUnica.id) return;
     methods.setValue("tarifa_unica_id", tarifaUnica.id, {
       shouldValidate: false,
     });
-  }, [tarifaUnica, methods]);
+  }, [tarifaUnica, selectedTarifaId, methods]);
 
   // Effect 2: auto-select solo en modo compacto (variant="auto" + Group A / sin tipo_tramite),
   // en mode="create", y solo cuando NO hay selección previa (respeta la elección del usuario).
