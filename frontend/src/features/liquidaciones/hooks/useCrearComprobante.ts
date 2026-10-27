@@ -19,8 +19,10 @@ import type { AxiosError } from "axios";
 import { handleApiError, notify } from "@/errors";
 import api from "@/lib/api";
 import { buildApiPayload } from "@/utils";
-import type { LiquidacionGeneralOutput } from "../schemas/liquidacion-base.schema";
-import type { CrearComprobanteInput } from "../schemas/liquidacion-base.schema";
+import type {
+  CrearComprobanteInput,
+  LiquidacionGeneralOutput,
+} from "../schemas/liquidacion-base.schema";
 
 interface UseCrearComprobanteProps {
   /** ID de la liquidacion a la que se agrega el comprobante */

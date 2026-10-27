@@ -8,8 +8,10 @@
  * - PARTE BASE COMÚN: `buildLiquidacionPdfDom` renderiza header + título
  *   + campos comunes (RUC, RAZÓN, PROPIETARIO, PROYECTO, DPTO, DIR) +
  *   lower body + SUBTOTAL/IGV/TOTAL + TOTAL A PAGAR + footer.
- * - PARTE ESPECÍFICA: `extraFieldRows?: [label, value][]` se inserta en
- *   la columna izquierda del lower body, justo arriba del resumen.
+ * - PARTE ESPECÍFICA: la base delega SIEMPRE en `buildExtraFieldRows`
+ *   (módulo por motor: porcentaje / m2 / visitas), que devuelve las filas
+ *   `[label, value][]` de la columna izquierda del lower body, justo arriba
+ *   del resumen. La base no implementa lógica de tipo propia.
  *
  * Layout visual (igual al PDF legacy aprobado):
  * - Header: brand (logo circular + textos) | bloque amarillo con ⚠ SOLO aviso | caja CTA blanca con CTA/code/nro
@@ -21,21 +23,12 @@
  */
 import { createPdfFrame } from "@/components-app/pdf/pdfShell";
 import { printHtmlElement } from "@/components-app/pdf/printDocument";
-import type {
-  PdfLiquidacionItem,
-  PdfMotor,
-} from "./buildLiquidacionPdfElement";
-import { getPdfTitleByTipo } from "./buildLiquidacionPdfElement";
-
-// ── Tipos ────────────────────────────────────────────────────────────────
-
-export type PdfTipoSlug =
-  | "edificacion"
-  | "taludes"
-  | "impacto-vial"
-  | "habilitacion-urbana"
-  | "mecanica-suelos"
-  | "inspeccion-obra";
+import { buildExtraFieldRows } from "./liquidacionPdfHelpers";
+import {
+  getPdfTitleByTipo,
+  type PdfLiquidacionItem,
+  type PdfTipoSlug,
+} from "./pdfTypes";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -87,14 +80,8 @@ export function buildLiquidacionPdfDom(
   parent: HTMLElement,
   item: PdfLiquidacionItem,
   tipo: PdfTipoSlug,
-  /**
-   * PARTE ESPECÍFICA: filas extra del motor (porcentaje / m2 / visitas).
-   * Si no se pasan, fallback legacy según `liquidacion_tipo`.
-   */
-  extraFieldRows?: ReadonlyArray<readonly [string, string]>,
 ) {
   const lg = item.liquidacion_general;
-  const lt = item.liquidacion_tipo;
   const proyecto = lg.proyecto;
   const entidad = proyecto.entidad ?? null;
 
@@ -119,7 +106,6 @@ export function buildLiquidacionPdfDom(
   const total = lg.total ?? 0;
   const igvMonto = total - subTotal;
   const tieneIgv = total !== subTotal && igvMonto > 0;
-  const derechoMinimo = lt.derecho_minimo ?? 0;
 
   // ── Root container ──
   const root = append(parent, "div", {
@@ -490,25 +476,13 @@ export function buildLiquidacionPdfDom(
     );
   };
 
-  // PARTE ESPECÍFICA: si la card pasó filas extra, las uso. Si no,
-  // fallback legacy según el motor de liquidacion_tipo.
-  if (extraFieldRows && extraFieldRows.length > 0) {
-    for (const [label, value] of extraFieldRows) {
-      labelRow(label, value);
-    }
-  } else {
-    if (lt.valor_declarado && lt.valor_declarado > 0) {
-      labelRow("VALOR DE OBRA", formatCurrency(lt.valor_declarado));
-    }
-    if (lt.porcentaje_liquidacion != null) {
-      labelRow(
-        "PORCENTAJE",
-        `${(Number(lt.porcentaje_liquidacion) * 100).toFixed(2)}%`,
-      );
-    }
-    if (derechoMinimo > 0) {
-      labelRow("DERECHO MINIMO", `${formatCurrency(derechoMinimo)}`);
-    }
+  // PARTE ESPECÍFICA: el bloque por motor se delega SIEMPRE al módulo
+  // canónico (`buildExtraFieldRows`). La base no implementa lógica de tipo
+  // propia — así ningún call site puede producir un recibo con campos
+  // faltantes por olvidar un argumento.
+  const rows = buildExtraFieldRows(item, tipo);
+  for (const [label, value] of rows) {
+    labelRow(label, value);
   }
 
   // ── Resumen (cajita a la derecha con borders estilo legacy) ──
@@ -668,11 +642,10 @@ export function buildLiquidacionPdfDom(
 export async function printLiquidacionPreview(
   item: PdfLiquidacionItem,
   tipo: PdfTipoSlug,
-  extraFieldRows?: ReadonlyArray<readonly [string, string]>,
 ) {
   const { frame, frameDocument } = createPdfFrame();
   try {
-    buildLiquidacionPdfDom(frameDocument.body, item, tipo, extraFieldRows);
+    buildLiquidacionPdfDom(frameDocument.body, item, tipo);
     const pdfElement = frameDocument.querySelector(
       "[data-pdf-host]",
     ) as HTMLElement | null;
@@ -684,5 +657,3 @@ export async function printLiquidacionPreview(
     frame.remove();
   }
 }
-
-export type { PdfMotor };

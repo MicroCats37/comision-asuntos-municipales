@@ -133,11 +133,15 @@ export function CotizacionPorcentajeSmartField({
   useEffect(() => {
     const v = Number(debouncedValor);
     const espIds = (especialidadesSeleccionadas || []) as string[];
+    const tarifaId =
+      typeof tarifaUnicaId === "string" ? tarifaUnicaId.trim() : "";
 
-    // Do not quote without selected specialties; this avoids backend auto-fill.
+    // Wait until the tariff smart field has populated the form to avoid
+    // sending an empty UUID during its initial loading cycle.
     if (
       !v ||
       v <= 0 ||
+      !tarifaId ||
       espIds.length === 0 ||
       (mode === "edit" && !liquidacionId)
     ) {
@@ -148,7 +152,7 @@ export function CotizacionPorcentajeSmartField({
 
     cotizacionMutation.mutate({
       valor_declarado: v,
-      tarifa_id: tarifaUnicaId ?? "",
+      tarifa_id: tarifaId,
       especialidades_ids: espIds,
       tipo_tramite: tipoTramite,
     });

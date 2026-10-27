@@ -33,7 +33,9 @@ export function TipoLiquidacionField({
         label: "Tipo de Liquidación",
         type: "searchable-select",
         containerClassName: "sm:col-span-1",
-        placeholder: isLoading ? "Cargando..." : "Seleccione tipo de liquidación",
+        placeholder: isLoading
+          ? "Cargando..."
+          : "Seleccione tipo de liquidación",
         icon: Building2,
         required: true,
         options: tipos.map((t) => ({

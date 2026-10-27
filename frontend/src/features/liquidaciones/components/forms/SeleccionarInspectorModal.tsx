@@ -14,8 +14,8 @@ import { HardHat, Layers, UserCheck } from "lucide-react";
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { InspectorVigente } from "@/features/inspectores/types/inspectores.types";
+import { cn } from "@/lib/utils";
 import { useInspectoresVigentes } from "../../hooks/useInspectoresVigentes";
 import type { TipoLiquidacionMinimalSchema } from "../../schemas/liquidacion-base.schema";
 
@@ -40,7 +40,11 @@ interface SeleccionarInspectorModalProps {
   categoriaForm?: string | null;
   /** Inspector ya seleccionado (para resaltarlo) */
   selectedId?: string;
-  onSelect: (inspectorId: string, nombreCompleto: string, inspectorOperacionId: string) => void;
+  onSelect: (
+    inspectorId: string,
+    nombreCompleto: string,
+    inspectorOperacionId: string,
+  ) => void;
 }
 
 export function SeleccionarInspectorModal({
@@ -137,7 +141,11 @@ export function SeleccionarInspectorModal({
   const handleConfirm = useCallback(() => {
     if (!pickedId) return;
     const picked = inspectores.find((i) => i.id === pickedId);
-    onSelect(pickedId, picked?.nombre_completo ?? "", picked?.inspector_operacion_id ?? "");
+    onSelect(
+      pickedId,
+      picked?.nombre_completo ?? "",
+      picked?.inspector_operacion_id ?? "",
+    );
     onOpenChange(false);
   }, [pickedId, inspectores, onSelect, onOpenChange]);
 
@@ -284,13 +292,11 @@ export function SeleccionarInspectorModal({
               Cargando inspectores...
             </p>
           )}
-          {tipoLiquidacionCodigo &&
-            !isLoading &&
-            inspectores.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                No hay inspectores vigentes para este tipo de liquidación.
-              </p>
-            )}
+          {tipoLiquidacionCodigo && !isLoading && inspectores.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No hay inspectores vigentes para este tipo de liquidación.
+            </p>
+          )}
           {!isLoading && inspectores.length > 0 && filtrados.length === 0 && (
             <p className="text-sm text-muted-foreground">
               No hay inspectores con los filtros seleccionados.

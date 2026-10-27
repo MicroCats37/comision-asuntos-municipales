@@ -267,8 +267,9 @@ export function LiquidacionImpactoVialFormModal(
 
   const onSubmitEdit = useCallback(
     async (data: ImpactoVialFormData) => {
-      await editarMutation.mutateAsync(data);
+      const result = await editarMutation.mutateAsync(data);
       notify.success("Liquidación editada correctamente");
+      return result;
     },
     [editarMutation],
   );

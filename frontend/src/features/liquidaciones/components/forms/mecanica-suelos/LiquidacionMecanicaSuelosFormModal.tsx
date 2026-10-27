@@ -247,8 +247,9 @@ export function LiquidacionMecanicaSuelosFormModal(
 
   const onSubmitEdit = useCallback(
     async (data: MecanicaSuelosFormData) => {
-      await editarMutation.mutateAsync(data);
+      const result = await editarMutation.mutateAsync(data);
       notify.success("Liquidación editada correctamente");
+      return result;
     },
     [editarMutation],
   );

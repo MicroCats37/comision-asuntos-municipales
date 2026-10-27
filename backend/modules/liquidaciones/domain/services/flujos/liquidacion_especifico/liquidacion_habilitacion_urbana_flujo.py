@@ -360,6 +360,9 @@ class LiquidacionHabilitacionUrbanaFlujo(LiquidacionM2FlujoBase):
             usuario_id=usuario_id,
             contacto_result=contacto_result,
             delegados=delegados,
+            codigo_cta=self.general_core.get_codigo_cta(
+                liquidacion_general.tipo_liquidacion
+            ),
         )
 
         tipo_result = LiquidacionM2Result(
@@ -398,6 +401,9 @@ class LiquidacionHabilitacionUrbanaFlujo(LiquidacionM2FlujoBase):
             liquidacion_general=liquidacion_general,
             usuario_id=usuario_id,
             delegados=delegados,
+            codigo_cta=self.general_core.get_codigo_cta(
+                liquidacion_general.tipo_liquidacion
+            ),
         )
 
         tipo_result = LiquidacionM2Result(

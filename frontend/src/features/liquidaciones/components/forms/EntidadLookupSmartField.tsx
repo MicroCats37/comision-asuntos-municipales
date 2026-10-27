@@ -106,7 +106,7 @@ export function EntidadLookupField({
   // When true, the sync effect skips updating lookupState to avoid loops
   const isInternalUpdate = useRef(false);
 
-  // ── Sync RHF → lookupState for externally-restored values (e.g. Step1Proyecto) ──
+  // ── Sync RHF → lookupState for externally-restored values (e.g. edit) ────
   useEffect(() => {
     // Skip if this change originated from inside this component (avoid echo)
     if (isInternalUpdate.current) {
@@ -114,31 +114,27 @@ export function EntidadLookupField({
       return;
     }
 
-    // Sync tipo_documento when RHF value changes externally
+    const tipo = tipoDocCtrl.field.value;
+    const num = numDocCtrl.field.value;
+
+    if (tipo === undefined && num === undefined) return;
     if (
-      tipoDocCtrl.field.value !== undefined &&
-      tipoDocCtrl.field.value !== lookupState.tipo_documento
+      tipo === lookupState.tipo_documento &&
+      num === lookupState.numero_documento
     ) {
-      isInternalUpdate.current = true;
-      setLookupState((s) => ({
-        ...s,
-        tipo_documento: tipoDocCtrl.field.value,
-        numero_documento: "", // Reset number when type changes externally
-      }));
       return;
     }
 
-    // Sync numero_documento when RHF value changes externally (type unchanged)
-    if (
-      numDocCtrl.field.value !== undefined &&
-      numDocCtrl.field.value !== lookupState.numero_documento
-    ) {
-      isInternalUpdate.current = true;
-      setLookupState((s) => ({
-        ...s,
-        numero_documento: numDocCtrl.field.value,
-      }));
-    }
+    // Restaura tipo Y número JUNTOS. El número solo se limpia cuando el
+    // usuario cambia el tipo a mano (ver onValueChange del RadioGroup) —
+    // nunca cuando el valor viene del exterior (prefill al editar), que
+    // antes vaciaba el campo y hacía creer que no se heredaba nada.
+    isInternalUpdate.current = true;
+    setLookupState((s) => ({
+      ...s,
+      tipo_documento: tipo ?? s.tipo_documento,
+      numero_documento: num ?? s.numero_documento,
+    }));
   }, [
     tipoDocCtrl.field.value,
     numDocCtrl.field.value,

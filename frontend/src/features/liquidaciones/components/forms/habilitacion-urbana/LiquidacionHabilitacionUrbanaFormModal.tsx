@@ -257,8 +257,9 @@ export function LiquidacionHabilitacionUrbanaFormModal(
 
   const onSubmitEdit = useCallback(
     async (data: HabilitacionUrbanaFormData) => {
-      await editarMutation.mutateAsync(data);
+      const result = await editarMutation.mutateAsync(data);
       notify.success("Liquidación editada correctamente");
+      return result;
     },
     [editarMutation],
   );

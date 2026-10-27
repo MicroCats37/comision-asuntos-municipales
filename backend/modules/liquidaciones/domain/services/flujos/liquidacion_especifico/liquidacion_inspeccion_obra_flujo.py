@@ -309,6 +309,9 @@ class LiquidacionInspeccionObraFlujo:
             liquidacion_general=liquidacion_general,
             usuario_id=usuario_id,
             contacto_result=contacto_result,
+            codigo_cta=self.general_core.get_codigo_cta(
+                liquidacion_general.tipo_liquidacion
+            ),
         )
 
         tipo_result = LiquidacionVisitasResult(

@@ -16,10 +16,7 @@ import { useMemo } from "react";
 import { useApiUpdate } from "@/hooks/callsApi/useApiUpdate";
 import type { LiquidacionEdificacionesListItem } from "../schemas/liquidacion-edificaciones.schema";
 import type { EdificacionesFormData } from "../schemas/liquidacion-edificaciones-form.schema";
-import {
-  type PorcentajeObraEditPayload,
-  PorcentajeObraEditPayloadSchema,
-} from "../schemas/liquidacion-edit-payloads.schema";
+import type { PorcentajeObraEditPayload } from "../schemas/liquidacion-edit-payloads.schema";
 import { buildPOEditPayload } from "../schemas/liquidacion-po-edit.schema";
 import { getLiquidacionEditEndpoint } from "../utils/liquidacionEditEndpoints";
 
@@ -51,10 +48,17 @@ export function useEditarEdificaciones(id: string) {
   >({
     url: `${baseUrl}/${id}`,
     method: "PATCH",
-    schema: PorcentajeObraEditPayloadSchema,
+    // SIN schema de respuesta: el backend responde el envelope
+    // `{ success, data, message }` con la liquidación completa. Validarlo con
+    // el schema del REQUEST lo reduce a `{}` (Zod strip) y se pierden tanto el
+    // PDF como la sincronización del cache de detalle.
     options: {
       onSuccess: (rawUpdated) => {
-        const updatedItem = rawUpdated as LiquidacionEdificacionesListItem;
+        const envelope = rawUpdated as {
+          data?: LiquidacionEdificacionesListItem;
+        };
+        const updatedItem = envelope?.data;
+        if (!updatedItem) return;
         // List cache is keyed by [prefix, page, page_size, filtros]; the exact
         // key is unknown here, so invalidate the prefix to refetch all variants.
         queryClient.invalidateQueries({ queryKey: LIST_KEY });

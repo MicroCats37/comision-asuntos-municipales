@@ -22,9 +22,9 @@ import { useCallback, useState } from "react";
  */
 import type { UseFormReturn } from "react-hook-form";
 import { useController } from "react-hook-form";
+import type { ContactoInline } from "../../schemas/liquidacion-form-base.schema";
 import { ContactoCard } from "./ContactoCard";
 import { ContactoFormModal } from "./ContactoFormModal";
-import type { ContactoInline } from "../../schemas/liquidacion-form-base.schema";
 
 interface ContactoSmartFieldProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,7 +32,10 @@ interface ContactoSmartFieldProps {
   disabled?: boolean;
 }
 
-export function ContactoSmartField({ methods, disabled }: ContactoSmartFieldProps) {
+export function ContactoSmartField({
+  methods,
+  disabled,
+}: ContactoSmartFieldProps) {
   const { field } = useController({
     name: "contacto",
     control: methods.control,

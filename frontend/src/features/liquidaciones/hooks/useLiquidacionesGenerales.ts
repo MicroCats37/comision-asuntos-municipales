@@ -32,8 +32,21 @@ export interface LiquidacionGeneralItem {
   liquidacion_general: {
     id: string;
     estado?: string | null | undefined;
-    municipalidad?: { id: string; codigo: string | null; nombre: string } | null | undefined;
-    usuario_creador?: { id: string; nombres: string | null; apellidos: string | null; email: string | null; dni: string | null; username: string | null } | null | undefined;
+    municipalidad?:
+      | { id: string; codigo: string | null; nombre: string }
+      | null
+      | undefined;
+    usuario_creador?:
+      | {
+          id: string;
+          nombres: string | null;
+          apellidos: string | null;
+          email: string | null;
+          dni: string | null;
+          username: string | null;
+        }
+      | null
+      | undefined;
     fecha_registro: string;
     expediente?: string | null | undefined;
     observacion?: string | null | undefined;
@@ -43,27 +56,88 @@ export interface LiquidacionGeneralItem {
     retencion?: boolean;
     legacy?: boolean;
     codigo_cta?: string | null | undefined;
-    igv?: { id: string; valor: number; periodo_inicio: string | null } | null | undefined;
-    uit?: { id: string; valor: number; periodo_inicio: string | null } | null | undefined;
+    igv?:
+      | { id: string; valor: number; periodo_inicio: string | null }
+      | null
+      | undefined;
+    uit?:
+      | { id: string; valor: number; periodo_inicio: string | null }
+      | null
+      | undefined;
     proyecto: {
       id: string;
       nombre_propietario: string;
       direccion: string;
       urbanizacion?: string | null | undefined;
-      distrito?: { id: string; nombre: string; ubigeo: string | null; provincia?: { id: string; nombre: string } | null | undefined; departamento?: { id: string; nombre: string } | null | undefined } | null | undefined;
-      entidad?: { tipo_documento: string; numero_documento: string; razon_social: string } | null | undefined;
+      distrito?:
+        | {
+            id: string;
+            nombre: string;
+            ubigeo: string | null;
+            provincia?: { id: string; nombre: string } | null | undefined;
+            departamento?: { id: string; nombre: string } | null | undefined;
+          }
+        | null
+        | undefined;
+      entidad?:
+        | {
+            tipo_documento: string;
+            numero_documento: string;
+            razon_social: string;
+          }
+        | null
+        | undefined;
     };
     denominacion_de_proyecto?: string | null | undefined;
-    contacto?: { id: string; nombres: string | null; apellidos: string | null; dni: string | null; cargo: string | null; telefono: string | null; celular: string | null; email: string | null } | null | undefined;
-    tipo_liquidacion?: { codigo: string | null; nombre: string | null } | null | undefined;
+    contacto?:
+      | {
+          id: string;
+          nombres: string | null;
+          apellidos: string | null;
+          dni: string | null;
+          cargo: string | null;
+          telefono: string | null;
+          celular: string | null;
+          email: string | null;
+        }
+      | null
+      | undefined;
+    tipo_liquidacion?:
+      | { codigo: string | null; nombre: string | null }
+      | null
+      | undefined;
     delegados: Array<{
-      datos: { periodo?: number | null | undefined; mes?: number | null | undefined; dictamen_revision?: string | null | undefined; fecha_presentacion?: string | null | undefined; fecha_revision?: string | null | undefined };
-      delegado: { id: string; nombre_completo: string; cip: string; tipo: string; especialidad: { id: string; nombre: string } };
+      datos: {
+        periodo?: number | null | undefined;
+        mes?: number | null | undefined;
+        dictamen_revision?: string | null | undefined;
+        fecha_presentacion?: string | null | undefined;
+        fecha_revision?: string | null | undefined;
+      };
+      delegado: {
+        id: string;
+        nombre_completo: string;
+        cip: string;
+        tipo: string;
+        especialidad: { id: string; nombre: string };
+      };
     }>;
-    comprobantes: Array<{ id: string; tipo_comprobante?: string | null | undefined; serie?: string | null | undefined; numero?: string | null | undefined; fecha_emision?: string | null | undefined; monto?: number | null | undefined; activo: boolean; motivo_reemplazo?: string | null | undefined }>;
+    comprobantes: Array<{
+      id: string;
+      tipo_comprobante?: string | null | undefined;
+      serie?: string | null | undefined;
+      numero?: string | null | undefined;
+      fecha_emision?: string | null | undefined;
+      monto?: number | null | undefined;
+      activo: boolean;
+      motivo_reemplazo?: string | null | undefined;
+    }>;
     eliminado?: boolean;
   };
-  tipo_liquidacion?: { codigo?: string | null | undefined; nombre?: string | null | undefined } | null | undefined;
+  tipo_liquidacion?:
+    | { codigo?: string | null | undefined; nombre?: string | null | undefined }
+    | null
+    | undefined;
   liquidacion_especifica?: { id: string; numero: number } | null | undefined;
 }
 

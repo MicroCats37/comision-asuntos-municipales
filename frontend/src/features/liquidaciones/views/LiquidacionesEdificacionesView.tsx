@@ -51,8 +51,8 @@ import { LiquidacionesTableRowActions } from "../components/tables/Liquidaciones
 import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificaciones";
 import { useLiquidacionFiltersUrl } from "../hooks/useLiquidacionFiltersUrl";
 import type { UltimaRevisionGeneralItem } from "../hooks/useUltimaRevisionGeneral";
-import type { PdfLiquidacionItem } from "../pdf/buildLiquidacionPdfElement";
 import { printLiquidacionPreview } from "../pdf/LiquidacionPdfPreview";
+import type { PdfLiquidacionItem } from "../pdf/pdfTypes";
 import type { LiquidacionEdificacionesListItem } from "../schemas/liquidacion-edificaciones.schema";
 import { canEditLiquidacion } from "../utils/canEditLiquidacion";
 import { formatPublicId } from "../utils/formatPublicId";

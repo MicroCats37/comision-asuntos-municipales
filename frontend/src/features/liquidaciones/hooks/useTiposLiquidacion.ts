@@ -4,8 +4,8 @@
  */
 import { z } from "zod";
 import { useApiQuery } from "@/hooks";
-import { TipoLiquidacionMinimalSchema } from "../schemas/liquidacion-base.schema";
 import { apiResponseSchema } from "@/types/api.types";
+import { TipoLiquidacionMinimalSchema } from "../schemas/liquidacion-base.schema";
 
 const tiposLiquidacionResponseSchema = apiResponseSchema(
   z.object({

@@ -38,10 +38,8 @@ import {
 } from "../components/forms";
 import { GestionarDelegadosModal } from "../components/GestionarDelegadosModal";
 import { formatCurrency } from "../components/liquidacion-ui";
-import type { PdfLiquidacionItem } from "../pdf/buildLiquidacionPdfElement";
-import type { PdfTipoSlug } from "../pdf/LiquidacionPdfPreview";
 import { printLiquidacionPreview } from "../pdf/LiquidacionPdfPreview";
-import { buildExtraFieldRows } from "../pdf/liquidacionPdfHelpers";
+import type { PdfLiquidacionItem, PdfTipoSlug } from "../pdf/pdfTypes";
 import type { LiquidacionEdificacionesListItem } from "../schemas/liquidacion-edificaciones.schema";
 import type { LiquidacionHabilitacionUrbanaListItem } from "../schemas/liquidacion-habilitacion-urbana.schema";
 import type { LiquidacionImpactoVialListItem } from "../schemas/liquidacion-impacto-vial.schema";
@@ -697,11 +695,7 @@ export function useLiquidacionCardState<TItem extends LiquidacionCardItemLike>(
   const pdfItem = config.getPdfItem(item);
 
   const handlePrint = useCallback(() => {
-    void printLiquidacionPreview(
-      pdfItem,
-      config.tipoPdf,
-      buildExtraFieldRows(pdfItem, config.tipoPdf),
-    );
+    void printLiquidacionPreview(pdfItem, config.tipoPdf);
   }, [pdfItem, config.tipoPdf]);
 
   const comprobanteActivo = config.getComprobanteActivo(item);

@@ -42,8 +42,8 @@ import { LiquidacionesTableRowActions } from "../components/tables/Liquidaciones
 import { useLiquidacionesImpactoVial } from "../hooks/useLiquidacionesImpactoVial";
 import { useLiquidacionFiltersUrl } from "../hooks/useLiquidacionFiltersUrl";
 import type { UltimaRevisionGeneralItem } from "../hooks/useUltimaRevisionGeneral";
-import type { PdfLiquidacionItem } from "../pdf/buildLiquidacionPdfElement";
 import { printLiquidacionPreview } from "../pdf/LiquidacionPdfPreview";
+import type { PdfLiquidacionItem } from "../pdf/pdfTypes";
 import type { LiquidacionImpactoVialListItem } from "../schemas/liquidacion-impacto-vial.schema";
 import { canEditLiquidacion } from "../utils/canEditLiquidacion";
 import { formatPublicId } from "../utils/formatPublicId";

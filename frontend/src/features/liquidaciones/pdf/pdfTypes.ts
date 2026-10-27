@@ -1,22 +1,12 @@
 /**
- * buildLiquidacionPdfElement — Compositor del recibo oficial.
+ * pdfTypes — Tipos y metadatos compartidos por el recibo oficial de liquidación.
  *
- * Une las secciones (pdfSections) en orden, con el tema (pdfTheme) como
- * fuente de verdad de estilos. No hardcodea estilos ni contenido aquí.
+ * Módulo neutro (sin dependencias de DOM ni de otros módulos del PDF) para
+ * que tanto el módulo por motor (`liquidacionPdfHelpers`) como la base
+ * (`LiquidacionPdfPreview`) dependan de él sin ciclos.
  *
- * Orden: header → title → detalle (común + motor) → total a pagar → footer
+ * Forma mínima que necesita el recibo — datos del output del backend.
  */
-import { applyStyles } from "@/components-app/pdf/pdfShell";
-import {
-  renderDetalle,
-  renderFooter,
-  renderHeader,
-  renderTitle,
-  renderTotalPagar,
-} from "./pdfSections";
-import { pdfTheme } from "./pdfTheme";
-
-/** Forma mínima que necesita el recibo — datos del output del backend */
 export interface PdfLiquidacionItem {
   liquidacion_general: {
     id: string;
@@ -88,14 +78,16 @@ export interface PdfLiquidacionItem {
   };
 }
 
-export type PdfMotor = "porcentaje" | "m2" | "visitas";
+/** Slug del tipo de liquidación — 6 tipos, agrupados en 3 motores de cálculo. */
+export type PdfTipoSlug =
+  | "edificacion"
+  | "taludes"
+  | "impacto-vial"
+  | "habilitacion-urbana"
+  | "mecanica-suelos"
+  | "inspeccion-obra";
 
-export function getMotorByTipo(tipo: string): PdfMotor {
-  if (tipo === "habilitacion-urbana" || tipo === "mecanica-suelos") return "m2";
-  if (tipo === "inspeccion-obra") return "visitas";
-  return "porcentaje";
-}
-
+/** Título oficial del recibo, por tipo. */
 export function getPdfTitleByTipo(tipo: string): string {
   const TITLES: Record<string, string> = {
     edificacion:
@@ -107,30 +99,4 @@ export function getPdfTitleByTipo(tipo: string): string {
     "inspeccion-obra": "LIQUIDACION DE DERECHOS POR INSPECCION DE OBRA",
   };
   return TITLES[tipo] ?? tipo.replace(/[-_]/g, " ").toUpperCase();
-}
-
-export function buildLiquidacionPdfElement(
-  item: PdfLiquidacionItem,
-  tipo: string,
-  ownerDocument: Document,
-): HTMLElement {
-  const motor = getMotorByTipo(tipo);
-
-  // Root
-  const root = ownerDocument.createElement("div");
-  applyStyles(root, pdfTheme.root);
-
-  // Paper (borde del recibo)
-  const paper = ownerDocument.createElement("div");
-  applyStyles(paper, pdfTheme.paper);
-  root.appendChild(paper);
-
-  // Secciones en orden
-  renderHeader(paper, item);
-  renderTitle(paper, tipo);
-  renderDetalle(paper, item, motor);
-  renderTotalPagar(paper, item);
-  renderFooter(paper, item);
-
-  return root;
 }

@@ -13,10 +13,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useApiUpdate } from "@/hooks/callsApi/useApiUpdate";
-import {
-  type VisitasEditPayload,
-  VisitasEditPayloadSchema,
-} from "../schemas/liquidacion-edit-payloads.schema";
+import type { VisitasEditPayload } from "../schemas/liquidacion-edit-payloads.schema";
 import type { LiquidacionInspeccionObraListItem } from "../schemas/liquidacion-inspeccion-obra.schema";
 import { buildVisitasEditPayload } from "../schemas/liquidacion-visitas-edit.schema";
 import type { VisitasFormData } from "../schemas/liquidacion-visitas-form.schema";
@@ -36,10 +33,17 @@ export function useEditarInspeccionObra(id: string) {
   const mutation = useApiUpdate<unknown, VisitasEditPayload>({
     url: `${baseUrl}/${id}`,
     method: "PATCH",
-    schema: VisitasEditPayloadSchema,
+    // SIN schema de respuesta: el backend responde el envelope
+    // `{ success, data, message }` con la liquidación completa. Validarlo con
+    // el schema del REQUEST lo reduce a `{}` (Zod strip) y se pierden tanto el
+    // PDF como la sincronización del cache de detalle.
     options: {
       onSuccess: (rawUpdated) => {
-        const updatedItem = rawUpdated as LiquidacionInspeccionObraListItem;
+        const envelope = rawUpdated as {
+          data?: LiquidacionInspeccionObraListItem;
+        };
+        const updatedItem = envelope?.data;
+        if (!updatedItem) return;
         // List cache is keyed by [prefix, page, page_size, filtros]; the exact
         // key is unknown here, so invalidate the prefix to refetch all variants.
         queryClient.invalidateQueries({ queryKey: LIST_KEY });

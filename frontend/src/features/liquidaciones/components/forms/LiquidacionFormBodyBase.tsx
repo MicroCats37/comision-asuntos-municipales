@@ -343,11 +343,9 @@ export function LiquidacionFormBodyBase({
     if (!municipalidadId) return;
 
     const selected = municipalidades?.find((m) => m.id === municipalidadId);
-    setValue(
-      "distrito_id",
-      selected?.distrito?.id ?? "",
-      { shouldValidate: true },
-    );
+    setValue("distrito_id", selected?.distrito?.id ?? "", {
+      shouldValidate: true,
+    });
   }, [municipalidadId, municipalidades, setValue]);
 
   return (

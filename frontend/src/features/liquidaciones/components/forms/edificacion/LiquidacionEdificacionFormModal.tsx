@@ -330,8 +330,9 @@ export function LiquidacionEdificacionFormModal(
 
   const onSubmitEdit = useCallback(
     async (data: EdificacionesFormData, canEditProyecto: boolean) => {
-      await editarMutation.mutateAsync(data, canEditProyecto);
+      const result = await editarMutation.mutateAsync(data, canEditProyecto);
       notify.success("Liquidación editada correctamente");
+      return result;
     },
     [editarMutation],
   );

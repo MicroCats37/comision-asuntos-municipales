@@ -364,8 +364,9 @@ export function LiquidacionInspeccionObraFormModal(
 
   const onSubmitEdit = useCallback(
     async (data: VisitasFormData) => {
-      await editarMutation.mutateAsync(data);
+      const result = await editarMutation.mutateAsync(data);
       notify.success("Liquidación editada correctamente");
+      return result;
     },
     [editarMutation],
   );

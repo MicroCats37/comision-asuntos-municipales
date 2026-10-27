@@ -190,6 +190,7 @@ from .legacy_edif import (
     COL_SUBTOTAL,
     COL_TASAIGV,
     COL_TASAUIT,
+    COL_TDNI,
     COL_TFONO,
     COL_TOTAL,
     COL_TPERSONA,

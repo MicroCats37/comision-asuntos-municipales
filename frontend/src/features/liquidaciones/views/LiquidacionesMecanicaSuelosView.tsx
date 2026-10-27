@@ -42,8 +42,8 @@ import { LiquidacionesTableRowActions } from "../components/tables/Liquidaciones
 import { useLiquidacionesMecanicaSuelos } from "../hooks/useLiquidacionesMecanicaSuelos";
 import { useLiquidacionFiltersUrl } from "../hooks/useLiquidacionFiltersUrl";
 import type { UltimaRevisionGeneralItem } from "../hooks/useUltimaRevisionGeneral";
-import type { PdfLiquidacionItem } from "../pdf/buildLiquidacionPdfElement";
 import { printLiquidacionPreview } from "../pdf/LiquidacionPdfPreview";
+import type { PdfLiquidacionItem } from "../pdf/pdfTypes";
 import type { LiquidacionMecanicaSuelosListItem } from "../schemas/liquidacion-mecanica-suelos.schema";
 import { canEditLiquidacion } from "../utils/canEditLiquidacion";
 import { formatPublicId } from "../utils/formatPublicId";

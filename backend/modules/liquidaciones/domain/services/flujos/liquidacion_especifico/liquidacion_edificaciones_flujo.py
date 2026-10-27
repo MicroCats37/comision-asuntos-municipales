@@ -148,6 +148,9 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
             usuario_id=usuario_id,
             contacto_result=contacto_result,
             delegados=delegados,
+            codigo_cta=self.general_core.get_codigo_cta(
+                liquidacion_general.tipo_liquidacion
+            ),
         )
 
         return LiquidacionEspecificaPrimeraRevisionResult(

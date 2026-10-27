@@ -63,9 +63,13 @@ export function InspectorSeleccionableSmartField({
       // Also set inspector_operacion_id from the selected inspector object
       const inspectorObj = inspectores.find((i) => i.id === id);
       if (inspectorObj) {
-        methods.setValue("inspector_operacion_id", inspectorObj.inspector_operacion_id, {
-          shouldValidate: true,
-        });
+        methods.setValue(
+          "inspector_operacion_id",
+          inspectorObj.inspector_operacion_id,
+          {
+            shouldValidate: true,
+          },
+        );
       }
     },
     [inspectorCtrl, inspectores, methods],

@@ -28,8 +28,8 @@ import {
 } from "../components/detail";
 import { ComprobanteFormModal } from "../components/forms/ComprobanteFormModal";
 import { EliminarLiquidacionModal } from "../components/forms/EliminarLiquidacionModal";
-import { LiquidacionTaludesFormModal } from "../components/forms/taludes/LiquidacionTaludesFormModal";
 import { SeleccionarPreviaModal } from "../components/forms/SeleccionarPreviaModal";
+import { LiquidacionTaludesFormModal } from "../components/forms/taludes/LiquidacionTaludesFormModal";
 import { GestionarDelegadosModal } from "../components/GestionarDelegadosModal";
 import {
   LiquidacionesListContent,
@@ -42,8 +42,8 @@ import { LiquidacionesTableRowActions } from "../components/tables/Liquidaciones
 import { useLiquidacionesTaludes } from "../hooks/useLiquidacionesTaludes";
 import { useLiquidacionFiltersUrl } from "../hooks/useLiquidacionFiltersUrl";
 import type { UltimaRevisionGeneralItem } from "../hooks/useUltimaRevisionGeneral";
-import type { PdfLiquidacionItem } from "../pdf/buildLiquidacionPdfElement";
 import { printLiquidacionPreview } from "../pdf/LiquidacionPdfPreview";
+import type { PdfLiquidacionItem } from "../pdf/pdfTypes";
 import type { LiquidacionTaludesListItem } from "../schemas/liquidacion-taludes.schema";
 import { canEditLiquidacion } from "../utils/canEditLiquidacion";
 import { formatPublicId } from "../utils/formatPublicId";

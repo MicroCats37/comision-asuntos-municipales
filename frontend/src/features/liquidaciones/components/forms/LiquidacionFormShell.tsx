@@ -266,6 +266,19 @@ export function LiquidacionFormShell<
     />
   );
 
+  // ── Impresión del recibo — único punto de entrada para los 4 modos ──────
+  // El Dialog cierra con una animación de salida (~100ms, `duration-100` en
+  // dialog.tsx). window.print() es síncrono y congelaría esa animación si se
+  // llamara antes de que termine, dejando el modal atascado a medio cerrar.
+  // Por eso se cierra primero el modal y se difiere la impresión justo por
+  // encima de la animación.
+  const schedulePrint = useCallback(
+    (result: unknown) => {
+      setTimeout(() => onAfterSubmit?.(mode, result), 150);
+    },
+    [mode, onAfterSubmit],
+  );
+
   // ── Submission con 4 ramas ─────────────────────────────────────────
   const handleSubmit = useCallback(
     async (data: T) => {
@@ -276,19 +289,14 @@ export function LiquidacionFormShell<
         const result = await onSubmitCreate(data);
         onSuccess?.();
         onOpenChange(false);
-        // El Dialog cierra con una animación de salida (~100ms, `duration-100` en
-        // dialog.tsx). window.print() es síncrono y congelaría esa animación si se
-        // llamara antes de que termine, dejando el modal atascado a medio cerrar.
-        // Diferir la impresión justo por encima de la animación garantiza que el
-        // modal ya esté cerrado cuando se abre el diálogo de impresión.
-        setTimeout(() => onAfterSubmit?.(mode, result), 150);
+        schedulePrint(result);
         return;
       }
       if (mode === "edit" && onSubmitEdit) {
-        await onSubmitEdit(data, canEditProyecto);
+        const result = await onSubmitEdit(data, canEditProyecto);
         notify.success(success.edit);
-        onAfterSubmit?.(mode, null);
         onSuccess?.();
+        schedulePrint(result);
         return;
       }
       if (mode === "nueva-revision" && onSubmitNuevaRevision) {
@@ -296,8 +304,8 @@ export function LiquidacionFormShell<
         if (!prevId) return;
         const result = await onSubmitNuevaRevision(data, prevId);
         notify.success(success.nuevaRevision);
-        onAfterSubmit?.(mode, result);
         onSuccess?.();
+        schedulePrint(result);
         return;
       }
       if (mode === "relacionada" && onSubmitRelacionada) {
@@ -305,8 +313,8 @@ export function LiquidacionFormShell<
         if (!prevId) return;
         const result = await onSubmitRelacionada(data, prevId);
         notify.success(success.relacionada);
-        onAfterSubmit?.(mode, result);
         onSuccess?.();
+        schedulePrint(result);
         return;
       }
     },
@@ -321,7 +329,7 @@ export function LiquidacionFormShell<
       success.edit,
       success.nuevaRevision,
       success.relacionada,
-      onAfterSubmit,
+      schedulePrint,
       onSuccess,
       onOpenChange,
     ],

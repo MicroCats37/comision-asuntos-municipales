@@ -7,11 +7,11 @@
  * - habilitacion-urbana / mecanica-suelos → "m2"
  * - inspeccion-obra → "visitas"
  *
- * Devuelve un array `[[label, value], ...]` listo para pasar como
- * cuarto argumento a `printLiquidacionPreview(item, tipo, extraFieldRows)`.
+ * Este es el ÚNICO lugar donde se decide qué filas van en el bloque
+ * específico del recibo. La base (`LiquidacionPdfPreview`) siempre delega
+ * aquí — no hay implementación paralela.
  */
-import type { PdfLiquidacionItem } from "./buildLiquidacionPdfElement";
-import type { PdfTipoSlug } from "./LiquidacionPdfPreview";
+import type { PdfLiquidacionItem, PdfTipoSlug } from "./pdfTypes";
 
 function formatCurrency(value: number | undefined | null): string {
   if (value == null || Number.isNaN(value)) return "S/ 0.00";

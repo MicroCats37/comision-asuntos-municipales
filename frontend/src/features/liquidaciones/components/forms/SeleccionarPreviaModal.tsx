@@ -481,29 +481,30 @@ export function SeleccionarPreviaModal({
 
       {/* Modal de detalle — se abre desde el botón "Ver detalle" de cada card.
           Auto-determina el tipo a partir del codigo (el caller no lo pasa). */}
-      {detalleItem !== null && (() => {
-        const tipoInfo = getLiquidacionTipoInfo(
-          detalleItem.liquidacion_general.tipo_liquidacion?.codigo,
-        );
-        return (
-          <LiquidacionDetalleModal
-            open
-            onOpenChange={(open) => {
-              if (!open) setDetalleItem(null);
-            }}
-            kindBadge={tipoInfo.label}
-            publicId={detalleItem.liquidacion_general.expediente ?? "—"}
-            estado={detalleItem.liquidacion_general.estado ?? null}
-            kindIcon={tipoInfo.icon}
-          >
-            {composeDetalleSections({
-              lg: detalleItem.liquidacion_general,
-              lt: detalleItem.liquidacion_tipo as never,
-              showDelegados: false,
-            })}
-          </LiquidacionDetalleModal>
-        );
-      })()}
+      {detalleItem !== null &&
+        (() => {
+          const tipoInfo = getLiquidacionTipoInfo(
+            detalleItem.liquidacion_general.tipo_liquidacion?.codigo,
+          );
+          return (
+            <LiquidacionDetalleModal
+              open
+              onOpenChange={(open) => {
+                if (!open) setDetalleItem(null);
+              }}
+              kindBadge={tipoInfo.label}
+              publicId={detalleItem.liquidacion_general.expediente ?? "—"}
+              estado={detalleItem.liquidacion_general.estado ?? null}
+              kindIcon={tipoInfo.icon}
+            >
+              {composeDetalleSections({
+                lg: detalleItem.liquidacion_general,
+                lt: detalleItem.liquidacion_tipo as never,
+                showDelegados: false,
+              })}
+            </LiquidacionDetalleModal>
+          );
+        })()}
     </>
   );
 }
