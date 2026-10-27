@@ -56,10 +56,12 @@ export function MunicipalidadField({
   register,
   control,
   errors,
+  disabled,
 }: {
   register: any;
   control: any;
   errors: FieldErrors<any>;
+  disabled?: boolean;
 }) {
   const { data: municipalidades, isLoading } = useMunicipalidades();
   return (
@@ -72,6 +74,7 @@ export function MunicipalidadField({
         placeholder: isLoading ? "Cargando..." : "Seleccione municipalidad",
         icon: Building2,
         required: true,
+        disabled,
         options: (municipalidades || []).map((m) => ({
           label: m.codigo ? `${m.codigo} - ${m.nombre}` : m.nombre,
           value: m.id,
@@ -366,6 +369,7 @@ export function LiquidacionFormBodyBase({
                 register={register}
                 control={control}
                 errors={errors}
+                disabled={!canEditProyecto}
               />
               <ExpedienteField control={control} />
             </div>

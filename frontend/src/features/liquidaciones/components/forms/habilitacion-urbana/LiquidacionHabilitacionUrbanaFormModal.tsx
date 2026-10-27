@@ -78,7 +78,7 @@ export type LiquidacionHabilitacionUrbanaFormModalProps =
 
 function buildInitialData(
   item: LiquidacionHabilitacionUrbanaListItem,
-): HabilitacionUrbanaFormData {
+): Partial<HabilitacionUrbanaFormData> {
   const { liquidacion_general: lg, liquidacion_tipo: lt } = item;
   return {
     denominacion: lg.denominacion_de_proyecto ?? "",

@@ -11,12 +11,13 @@ import { Banknote, CircleCheck, MapPin, Square } from "lucide-react";
  * }
  * Single select — setValue("tarifa_m2_id", id)
  */
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { UseFormReturn } from "react-hook-form";
+import { useWatch } from "react-hook-form";
 import { useTarifasVigentesM2 } from "../../hooks/useTarifasVigentes";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface TarifasM2SmartFieldProps {
+  // biome-ignore lint/suspicious/noExplicitAny: HU and MS share these fields but use distinct form schemas.
   methods: UseFormReturn<any>;
   tipo?: "habilitacion-urbana" | "mecanica-suelos";
 }
@@ -28,25 +29,25 @@ export function TarifasM2SmartField({
   methods,
   tipo = "habilitacion-urbana",
 }: TarifasM2SmartFieldProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
   const { data, isLoading } = useTarifasVigentesM2(tipo);
+  const selectedId = useWatch({
+    control: methods.control,
+    name: "tarifa_m2_id",
+  }) as string | undefined;
 
   const tarifa = data?.tarifa_vigente?.datos;
   const derecho = data?.derecho_vigente?.datos;
 
   // Auto-select the single tariff on load
   useEffect(() => {
-    if (tarifa?.id && !selectedId) {
-      setSelectedId(tarifa.id);
+    if (tarifa?.id && selectedId !== tarifa.id) {
       methods.setValue("tarifa_m2_id", tarifa.id, { shouldValidate: true });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tarifa?.id]);
+  }, [tarifa?.id, selectedId, methods]);
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <label className="text-sm font-medium">Tarifa Vigente</label>
+        <div className="text-sm font-medium">Tarifa Vigente</div>
         <div className="rounded-xl border border-border bg-card p-4 space-y-3 animate-pulse">
           <div className="h-4 w-40 bg-muted rounded" />
           <div className="h-4 w-24 bg-muted rounded" />
@@ -58,7 +59,7 @@ export function TarifasM2SmartField({
   if (!tarifa?.id) {
     return (
       <div className="space-y-2">
-        <label className="text-sm font-medium">Tarifa Vigente</label>
+        <div className="text-sm font-medium">Tarifa Vigente</div>
         <p className="text-sm text-muted-foreground text-center py-4">
           No hay tarifa M2 vigente disponible
         </p>
@@ -70,7 +71,8 @@ export function TarifasM2SmartField({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">
+      <input type="hidden" {...methods.register("tarifa_m2_id")} />
+      <div className="text-sm font-medium">
         Tarifa Vigente
         {isSelected && (
           <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
@@ -78,13 +80,11 @@ export function TarifasM2SmartField({
             Seleccionada
           </span>
         )}
-      </label>
+      </div>
       <button
         type="button"
         onClick={() => {
-          const next = isSelected ? null : (tarifa.id ?? null);
-          setSelectedId(next);
-          methods.setValue("tarifa_m2_id", next ?? undefined, {
+          methods.setValue("tarifa_m2_id", tarifa.id, {
             shouldValidate: true,
           });
         }}

@@ -525,21 +525,6 @@ class LiquidacionGeneralOrchestrator:
         codigo_cta = codigo_cta_map.get(refreshed.tipo_liquidacion.codigo) if refreshed.tipo_liquidacion else None
         return self._build_general_result(refreshed, codigo_cta)
 
-    def _can_edit_proyecto_municipalidad(self, liquidacion) -> bool:
-        """
-        Determina si las ediciones de proyecto y municipalidad están permitidas para una liquidación.
-
-        Regla: editable solo cuando numero_revision == 1.
-        (liquidacion_raiz y LiquidacionRelacionada fueron removidos en desarrollo.)
-
-        Args:
-            liquidacion: Instancia ORM de LiquidacionGeneral.
-
-        Returns:
-            True si las ediciones de proyecto/municipalidad están permitidas.
-        """
-        return liquidacion.numero_revision == 1
-
     def actualizar_liquidacion_general_proyecto_municipalidad(
         self,
         liquidacion_id: Optional[uuid.UUID] = None,
@@ -560,7 +545,7 @@ class LiquidacionGeneralOrchestrator:
 
         Reglas de negocio (impuestas aquí, no en el controller):
         - Solo permitido cuando estado == PENDIENTE (ConflictError si PAGADA).
-        - Solo permitido cuando numero_revision == 1 (ConflictError si > 1).
+        - Proyecto y municipalidad son editables en cualquier número de revisión.
         - Actualizaciones de Entidad: nunca mutar la fila Entidad existente.
 
         Args:
@@ -600,19 +585,6 @@ class LiquidacionGeneralOrchestrator:
             raise ConflictError(
                 message="No se puede editar una liquidación en estado PAGADA. Solo las liquidaciones PENDIENTE son editables.",
                 code="LIQUIDACION_PAGADA_NOT_EDITABLE",
-            )
-
-        has_proyecto_municipalidad = municipalidad_id is not None or proyecto_data is not None
-
-        # Guard: revision rule — only applies when proyecto/municipalidad are edited.
-        # Generic fields remain editable while PENDIENTE regardless of revision chain.
-        if has_proyecto_municipalidad and not self._can_edit_proyecto_municipalidad(liquidacion):
-            raise ConflictError(
-                message=(
-                    "No se puede editar el proyecto o municipalidad en esta revisión. "
-                    "Solo es editable cuando numero_revision == 1 y no existen liquidaciones previas."
-                ),
-                code="LIQUIDACION_REVISION_NO_EDITABLE",
             )
 
         # Update generic fields if any are provided

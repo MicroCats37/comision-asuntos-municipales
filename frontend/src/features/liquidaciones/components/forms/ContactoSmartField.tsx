@@ -45,15 +45,23 @@ export function ContactoSmartField({
 
   const handleSaved = useCallback(
     (contacto: ContactoInline) => {
-      field.onChange(contacto);
+      methods.setValue("contacto", contacto, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
       setOpen(false);
     },
-    [field],
+    [methods],
   );
 
   const handleRemove = useCallback(() => {
-    field.onChange(undefined);
-  }, [field]);
+    methods.setValue("contacto", undefined, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+  }, [methods]);
 
   const value: ContactoInline | null = field.value ?? null;
 

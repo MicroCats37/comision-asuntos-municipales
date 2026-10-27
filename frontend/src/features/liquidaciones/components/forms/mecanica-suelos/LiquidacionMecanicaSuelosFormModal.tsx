@@ -69,7 +69,7 @@ export type LiquidacionMecanicaSuelosFormModalProps =
 
 function buildInitialData(
   item: LiquidacionMecanicaSuelosListItem,
-): MecanicaSuelosFormData {
+): Partial<MecanicaSuelosFormData> {
   const { liquidacion_general: lg, liquidacion_tipo: lt } = item;
   return {
     denominacion: lg.denominacion_de_proyecto ?? "",

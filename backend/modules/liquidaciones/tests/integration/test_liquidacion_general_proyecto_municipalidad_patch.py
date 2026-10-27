@@ -5,9 +5,7 @@ Tests use Ninja's TestClient for proper async handling.
 All tests use @pytest.mark.django_db for database access.
 
 Tests cover:
-- First revision (numero_revision==1) with no previas: allows proyecto/municipalidad edit
-- Revision > 1: rejects proyecto/municipalidad edit with 409
-- Has liquidaciones_previas: rejects proyecto/municipalidad edit with 409
+- Proyecto/municipalidad edits on any pending revision
 - Changing entidad numero_documento: find-or-create Entidad, reassign FK
 - Changing only entidad razon_social: updates Proyecto snapshot only
 - PAGADA: still blocks all edits (including proyecto/municipalidad)
@@ -49,7 +47,7 @@ def liquidacion_pendiente_rev1_sin_previas(
 ):
     """
     Create a LiquidacionGeneral in PENDIENTE, numero_revision=1, with NO liquidaciones_previas.
-    This is the ONLY case where proyecto/municipalidad edits ARE allowed.
+    Proyecto/municipalidad edits are allowed while the liquidation is pending.
     """
     user = create_user
 
@@ -104,7 +102,7 @@ def liquidacion_pendiente_rev2(
 ):
     """
     Create a LiquidacionGeneral in PENDIENTE, numero_revision=2.
-    proyecto/municipalidad edits should be REJECTED.
+    Proyecto/municipalidad edits should be allowed.
     """
     user = create_user
 
@@ -287,21 +285,21 @@ def test_primer_revision_sin_previas_actualiza_proyecto_en_db(
     assert lg.proyecto.direccion == "Nueva Direccion 456"
 
 
-# ── Tests: Revision Rule Rejects Edits ─────────────────────────────────────────
+# ── Tests: Later Revisions Allow Edits ─────────────────────────────────────────
 
 @pytest.mark.django_db
-def test_revision_mayor_a_1_rechaza_edicion_proyecto(
+def test_revision_mayor_a_1_permite_edicion_proyecto(
     auth_client,
     liquidacion_pendiente_rev2,
 ):
     """
-    PATCH with proyecto fields returns 409 when numero_revision > 1.
+    PATCH with proyecto fields succeeds when numero_revision > 1.
     """
     liquidacion_id = liquidacion_pendiente_rev2.id
 
     patch_payload = {
         "proyecto": {
-            "denominacion": "Nombre Intentado",
+            "nombre_propietario": "Propietario Revision 2",
         }
     }
 
@@ -310,18 +308,20 @@ def test_revision_mayor_a_1_rechaza_edicion_proyecto(
         json=patch_payload,
     )
 
-    assert response.status_code == 409, \
-        f"Expected 409 Conflict, got {response.status_code}: {response.content}"
+    assert response.status_code == 200, \
+        f"Expected 200, got {response.status_code}: {response.content}"
+    liquidacion_pendiente_rev2.proyecto.refresh_from_db()
+    assert liquidacion_pendiente_rev2.proyecto.nombre_propietario == "Propietario Revision 2"
 
 
 @pytest.mark.django_db
-def test_revision_mayor_a_1_rechaza_edicion_municipalidad(
+def test_revision_mayor_a_1_permite_edicion_municipalidad(
     auth_client,
     liquidacion_pendiente_rev2,
     municipalidad_2,
 ):
     """
-    PATCH with municipalidad_id returns 409 when numero_revision > 1.
+    PATCH with municipalidad_id succeeds when numero_revision > 1.
     """
     liquidacion_id = liquidacion_pendiente_rev2.id
 
@@ -334,12 +334,14 @@ def test_revision_mayor_a_1_rechaza_edicion_municipalidad(
         json=patch_payload,
     )
 
-    assert response.status_code == 409, \
-        f"Expected 409 Conflict, got {response.status_code}: {response.content}"
+    assert response.status_code == 200, \
+        f"Expected 200, got {response.status_code}: {response.content}"
+    liquidacion_pendiente_rev2.refresh_from_db()
+    assert liquidacion_pendiente_rev2.municipalidad_id == municipalidad_2.id
 
 
 @pytest.mark.django_db
-def test_edicion_rechazada_si_numero_revision_mayor_a_1(
+def test_edicion_permitida_si_numero_revision_mayor_a_1(
     db,
     auth_client,
     municipalidad,
@@ -351,8 +353,7 @@ def test_edicion_rechazada_si_numero_revision_mayor_a_1(
     derecho_porcentaje_vigente,
 ):
     """
-    PATCH with proyecto fields returns 409 when numero_revision > 1.
-    La regla ahora es simply: numero_revision == 1 puede editarse.
+    PATCH with proyecto fields succeeds when numero_revision > 1.
     """
     user = create_user
 
@@ -374,7 +375,7 @@ def test_edicion_rechazada_si_numero_revision_mayor_a_1(
 
     patch_payload = {
         "proyecto": {
-            "denominacion": "Intento de Editar",
+            "direccion": "Direccion Revision 3",
         }
     }
 
@@ -383,8 +384,10 @@ def test_edicion_rechazada_si_numero_revision_mayor_a_1(
         json=patch_payload,
     )
 
-    assert response.status_code == 409, \
-        f"Expected 409 Conflict for revision > 1, got {response.status_code}: {response.content}"
+    assert response.status_code == 200, \
+        f"Expected 200 for revision > 1, got {response.status_code}: {response.content}"
+    lg.proyecto.refresh_from_db()
+    assert lg.proyecto.direccion == "Direccion Revision 3"
 
 
 # ── Tests: Entidad Reassignment ─────────────────────────────────────────────────

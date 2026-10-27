@@ -168,9 +168,7 @@ class LiquidacionGeneralUpdateIn(BaseSchema):
     Only editable while estado == PENDIENTE.
     General fields: expediente, observacion, retencion, denominacion_de_proyecto, contacto.
 
-    Conditionally editable (revision rule):
-    - municipalidad_id: editable only when numero_revision == 1
-    - proyecto: editable fields only when numero_revision == 1
+    Proyecto y municipalidad son editables en cualquier revisión PENDIENTE.
 
     Excludes: estado, tipo_liquidacion, numero_revision, sub_total, total, igv, uit,
     fecha_registro (those require explicit state transitions or recalculation).
@@ -181,14 +179,13 @@ class LiquidacionGeneralUpdateIn(BaseSchema):
     denominacion_de_proyecto: Optional[str] = Field(None, description="Denominación del proyecto (opcional)")
     contacto: Optional[ContactoInlineSchema] = Field(None, description="Contacto principal (opcional)")
 
-    # Conditionally editable — revision rule applies (see orchestrator)
     municipalidad_id: Optional[uuid.UUID] = Field(
         None,
-        description="ID de municipalidad (solo editable si revision==1)",
+        description="ID de municipalidad",
     )
     proyecto: Optional[ProyectoUpdateSchema] = Field(
         None,
-        description="Datos del proyecto (parcial, solo editable si revision==1)",
+        description="Datos del proyecto (parcial)",
     )
 
 class UsuarioCreadorOutput(BaseSchema):

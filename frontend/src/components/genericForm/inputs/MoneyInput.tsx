@@ -9,6 +9,18 @@ import { useController } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
+function normalizeMoneyText(raw: string): string {
+  const cleaned = raw
+    .replace(/S\/\s*/g, "")
+    .replace(/\s/g, "")
+    .replace(/,/g, ".")
+    .replace(/[^\d.]/g, "");
+  const hasDecimalSeparator = cleaned.includes(".");
+  const [integerPart = "", ...decimalParts] = cleaned.split(".");
+  const decimals = decimalParts.join("").slice(0, 2);
+  return `${integerPart || "0"}${hasDecimalSeparator ? `.${decimals}` : ""}`;
+}
+
 interface MoneyInputProps<TFieldValues extends FieldValues = FieldValues> {
   /** Field name */
   name: FieldPath<TFieldValues>;
@@ -92,7 +104,7 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
     (val: number | "" | null | undefined): string => {
       if (val === "" || val === null || val === undefined) return "S/ 0";
       const num = Number(val);
-      if (isNaN(num) || !isFinite(num)) return "S/ 0";
+      if (!Number.isFinite(num)) return "S/ 0";
 
       const fixed = num.toFixed(2);
       const [intPart, decPart] = fixed.split(".");
@@ -127,12 +139,7 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
       const prevCursor = input.selectionStart ?? raw.length;
       const distFromEnd = raw.length - prevCursor;
 
-      // Strip S/, spaces, commas (decimal separator) → raw numeric string
-      const stripped = raw
-        .replace(/S\/\s*/g, "")
-        .replace(/\s/g, "")
-        .replace(/,/g, ".") // allow comma as decimal
-        .replace(/[^\d.]/g, ""); // keep only digits and dot (no minus)
+      const stripped = normalizeMoneyText(raw);
 
       // Empty → keep the numeric contract stable for schemas and cotización.
       if (stripped === "") {
@@ -141,20 +148,8 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
         return;
       }
 
-      // Allow typing decimal point: show partial input like "S/ 1 000." without parsing
-      if (stripped.endsWith(".")) {
-        const intPart = stripped.slice(0, -1) || "0";
-        const parsedInt = parseFloat(intPart);
-        if (isNaN(parsedInt)) return;
-        const formattedInt = Math.round(parsedInt)
-          .toString()
-          .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-        setDisplayValue(`S/ ${formattedInt}.`);
-        return;
-      }
-
       const parsed = parseFloat(stripped);
-      if (isNaN(parsed) || !isFinite(parsed)) {
+      if (!Number.isFinite(parsed)) {
         return;
       }
 
@@ -164,8 +159,14 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
         Math.round(parsed * 100) / 100,
       );
 
-      // Update display with formatting
-      const formatted = formatDisplay(clamped);
+      const [integerPart, decimalPart] = stripped.split(".");
+      const formattedInteger = String(Number(integerPart || "0")).replace(
+        /\B(?=(\d{3})+(?!\d))/g,
+        " ",
+      );
+      const formatted = stripped.includes(".")
+        ? `S/ ${formattedInteger}.${decimalPart ?? ""}`
+        : `S/ ${formattedInteger}`;
       setDisplayValue(formatted);
 
       // Restore cursor: maintain same distance from end
@@ -185,17 +186,14 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
   // ── Handle blur (re-format on leave) ──────────────────────────────────────
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
-      const stripped = e.target.value
-        .replace(/S\/\s*/g, "")
-        .replace(/\s/g, "")
-        .replace(/[^\d.-]/g, "");
+      const stripped = normalizeMoneyText(e.target.value);
 
       if (stripped === "" || stripped === "-") {
         setDisplayValue(formatDisplay(0));
         field.onChange(0 as never);
       } else {
         const parsed = parseFloat(stripped);
-        if (!isNaN(parsed)) {
+        if (Number.isFinite(parsed)) {
           const clamped = Math.max(
             Number(min) || 0,
             Math.round(parsed * 100) / 100,

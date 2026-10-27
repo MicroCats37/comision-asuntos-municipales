@@ -20,7 +20,7 @@ import { Calculator, HardHat, Loader2 } from "lucide-react";
  *
  * Endpoint: POST /liquidaciones/inspeccion-obra/cotizar
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -90,12 +90,19 @@ export function TarifasVisitasSinPreviaSmartField({
   // Tarifas para mostrar info de la categoría seleccionada
   const { data: tarifasData, isLoading: isTarifasLoading } =
     useTarifasVigentesVisitas();
-  const tarifas = tarifasData?.tarifas ?? [];
+  const tarifas = useMemo(
+    () => tarifasData?.tarifas ?? [],
+    [tarifasData?.tarifas],
+  );
 
   // Categorías únicas (orden estable: C1, C2, C3, C4)
-  const categorias = Array.from(
-    new Set(tarifas.map((t) => normalizeCategoria(t.categoria))),
-  ).sort();
+  const categorias = useMemo(
+    () =>
+      Array.from(
+        new Set(tarifas.map((t) => normalizeCategoria(t.categoria))),
+      ).sort(),
+    [tarifas],
+  );
 
   // Auto-seleccionar primera categoría si no hay
   useEffect(() => {
@@ -104,12 +111,12 @@ export function TarifasVisitasSinPreviaSmartField({
         shouldValidate: false,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tarifas]);
+  }, [tarifas, categoria, categorias, methods]);
 
   // Tarifas que coinciden con la categoría seleccionada
-  const tarifasDeCategoria = tarifas.filter(
-    (t) => normalizeCategoria(t.categoria) === categoria,
+  const tarifasDeCategoria = useMemo(
+    () => tarifas.filter((t) => normalizeCategoria(t.categoria) === categoria),
+    [tarifas, categoria],
   );
 
   // Auto-seleccionar primera tarifa cuando cambia la categoría
@@ -123,8 +130,7 @@ export function TarifasVisitasSinPreviaSmartField({
         shouldValidate: false,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoria, tarifasDeCategoria]);
+  }, [categoria, tarifasDeCategoria, tarifaVisitasId, methods]);
 
   const tarifaSeleccionada = tarifas.find((t) => t.id === tarifaVisitasId);
 
@@ -180,13 +186,19 @@ export function TarifasVisitasSinPreviaSmartField({
       categoria: categoriaNorm,
       tarifa_visitas_id: tarifaVisitasId,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedCantidad, tarifaVisitasId, categoriaNorm]);
+  }, [
+    debouncedCantidad,
+    tarifaVisitasId,
+    categoriaNorm,
+    cotizacionMutation.mutate,
+  ]);
 
   const isCalculating = cotizacionMutation.isPending;
 
   return (
     <div className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4 shadow-sm">
+      <input type="hidden" {...methods.register("categoria")} />
+      <input type="hidden" {...methods.register("tarifa_visitas_id")} />
       <div className="flex items-center gap-2">
         <Calculator className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
@@ -238,8 +250,6 @@ export function TarifasVisitasSinPreviaSmartField({
             return (
               <label
                 key={cat}
-                role="radio"
-                aria-checked={isSelected}
                 className={cn(
                   "rounded-lg border bg-background px-3 py-2 transition-all duration-200 text-left flex-1 min-w-[100px] flex items-center justify-center cursor-pointer text-sm font-semibold",
                   isSelected

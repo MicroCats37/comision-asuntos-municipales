@@ -25,7 +25,7 @@ export const visitasFormSchema = z.object({
     message: "Categoría es requerida",
   }),
   // Smart Field outputs (set by Smart Fields via setValue)
-  tarifa_visitas_id: z.string().optional(),
+  tarifa_visitas_id: z.string().min(1, "No se pudo cargar la tarifa vigente"),
   // Contacto (used in edit modal — not in creation form)
   contacto: contactoInlineSchema.optional(),
   // InspectorOperacion seleccionado para crear IO. El backend deriva el inspector desde esta operación.

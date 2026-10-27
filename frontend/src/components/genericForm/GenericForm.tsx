@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import type { ComponentType, FC, ReactNode } from "react";
+import type { ComponentType, FC, FormEvent, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
   type DefaultValues,
@@ -68,7 +68,9 @@ function isRawZodMessage(message: unknown): message is string {
 function applyFriendlyRequiredFallback(
   errNode: unknown,
   fieldsByName: Map<string, FormField>,
-  methods: { setError: (name: string, err: { type?: string; message?: string }) => void },
+  methods: {
+    setError: (name: string, err: { type?: string; message?: string }) => void;
+  },
   pathPrefix = "",
 ): void {
   if (!errNode || typeof errNode !== "object") return;
@@ -88,7 +90,12 @@ function applyFriendlyRequiredFallback(
     return;
   }
   for (const [key, value] of Object.entries(node)) {
-    applyFriendlyRequiredFallback(value, fieldsByName, methods, pathPrefix ? `${pathPrefix}.${key}` : key);
+    applyFriendlyRequiredFallback(
+      value,
+      fieldsByName,
+      methods,
+      pathPrefix ? `${pathPrefix}.${key}` : key,
+    );
   }
 }
 
@@ -440,11 +447,22 @@ export const GenericForm = <T extends FieldValues>({
     }
   });
 
+  const handleSubmitEvent = (event: FormEvent<HTMLFormElement>) => {
+    // Portaled sub-modals remain children in React's event tree. Prevent their
+    // submit events from also submitting an enclosing form.
+    event.stopPropagation();
+    void onSubmitFn(event);
+  };
+
   // A. MANUAL MODE (TOTAL USER CONTROL)
   if (children) {
     return (
       <Form {...methods}>
-        <form id={formId} onSubmit={onSubmitFn} className={formClassName}>
+        <form
+          id={formId}
+          onSubmit={handleSubmitEvent}
+          className={formClassName}
+        >
           {children({
             methods,
             isSubmitting: isLocked,
@@ -490,11 +508,11 @@ export const GenericForm = <T extends FieldValues>({
         <Form {...methods}>
           <form
             id={formId}
-            onSubmit={onSubmitFn}
+            onSubmit={handleSubmitEvent}
             className={`space-y-4 ${formClassName || ""}`}
           >
             <fieldset disabled={isLocked} className="space-y-4">
-              {normalizedSections.map((section, idx) => {
+              {normalizedSections.map((section) => {
                 // Wrapper Priority: Global -> Section -> Default (Card/Ghost)
                 const Container =
                   globalSectionWrapper ||
@@ -509,7 +527,7 @@ export const GenericForm = <T extends FieldValues>({
 
                 return (
                   <Container
-                    key={`section-${idx}`}
+                    key={`${section.title}:${section.fields.map((field) => field.name).join("|")}`}
                     title={section.title}
                     description={section.description}
                     icon={section.icon}

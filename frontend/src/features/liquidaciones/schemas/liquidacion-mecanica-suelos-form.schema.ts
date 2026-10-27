@@ -19,7 +19,7 @@ export const mecanicaSuelosFormSchema = z.object({
     .max(9999999999.99, "El área solicitada excede el máximo permitido")
     .finite(),
   // Smart Field outputs (set by Smart Fields via setValue)
-  tarifa_m2_id: z.string().optional(),
+  tarifa_m2_id: z.string().min(1, "No se pudo cargar la tarifa vigente"),
   // Contacto principal (singular, managed via ContactoFormModal)
   contacto: contactoInlineSchema.optional(),
 });

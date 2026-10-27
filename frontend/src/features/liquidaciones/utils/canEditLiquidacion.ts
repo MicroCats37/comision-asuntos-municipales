@@ -1,11 +1,6 @@
 /**
  * Editability helpers for liquidaciones.
  *
- * NOTA: Por requerimiento del usuario, `canEditProyecto` siempre retorna true
- * — los campos de proyecto son editables en cualquier revisión. La regla
- * original (numero_revision === 1) está deshabilitada. Si en el futuro hay que
- * re-implementarla, cambiar la línea `const canEditProyecto = true;`.
- *
  * La regla PAGADA se mantiene: liquidaciones pagadas no son editables.
  */
 import type { LiquidacionGeneralOutput } from "../schemas/liquidacion-base.schema";
@@ -33,7 +28,6 @@ export function canEditLiquidacion(
     };
   }
 
-  // Hardcoded true: proyecto fields siempre editables (cualquier revisión).
   const canEditProyecto = true;
 
   return {
