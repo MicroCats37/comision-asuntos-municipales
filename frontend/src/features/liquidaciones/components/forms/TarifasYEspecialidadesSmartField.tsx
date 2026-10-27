@@ -201,6 +201,7 @@ export function TarifasYEspecialidadesSmartField({
 
   return (
     <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/[0.03] p-4 shadow-sm">
+      <input type="hidden" {...methods.register("tarifa_unica_id")} />
       <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -271,9 +272,11 @@ export function TarifasYEspecialidadesSmartField({
                   <span className="text-sm font-medium truncate">
                     {esp.nombre}
                   </span>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    ({esp.codigo})
-                  </span>
+                  {esp.codigo && (
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      ({esp.codigo})
+                    </span>
+                  )}
                   <input
                     type="checkbox"
                     className="sr-only"
@@ -302,8 +305,12 @@ export function TarifasYEspecialidadesSmartField({
             >
               <Layers className="h-3 w-3 text-primary/60" />
               {esp.nombre}
-              <span className="text-muted-foreground">·</span>
-              <span className="font-bold text-primary">{esp.codigo}</span>
+              {esp.codigo && (
+                <>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="font-bold text-primary">{esp.codigo}</span>
+                </>
+              )}
             </span>
           ))}
           {especialidadesAplicadas.length === 0 && (

@@ -65,7 +65,7 @@ function buildPayload(
         valor_declarado: rest.valor_declarado,
       },
       tarifas: espIds.map((espId) => ({
-        tarifa_porcentaje_obra_id: tarifa_unica_id as string,
+        tarifa_porcentaje_obra_id: tarifa_unica_id,
         especialidad_id: espId,
       })),
     },

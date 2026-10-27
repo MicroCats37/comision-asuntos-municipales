@@ -26,7 +26,7 @@ export const edificacionesFormSchema = z.object({
   tipo_tramite: TipoTramiteEdificacionesSchema,
   // Smart Field outputs — set by Smart Fields via setValue
   /** ID de la única tarifa vigente de porcentaje de obra */
-  tarifa_unica_id: z.string().optional(),
+  tarifa_unica_id: z.string().min(1, "No se pudo cargar la tarifa vigente"),
   /** IDs de especialidades seleccionadas por el usuario — al menos una */
   especialidades_seleccionadas: z
     .array(z.string())

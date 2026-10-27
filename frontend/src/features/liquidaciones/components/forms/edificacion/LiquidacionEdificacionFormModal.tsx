@@ -92,7 +92,7 @@ export type LiquidacionEdificacionFormModalProps =
 function buildInitialDataFromItem(
   item: UltimaRevisionGeneralItem,
   options: { skipSmartFieldDefaults?: boolean } = {},
-): EdificacionesFormData {
+): Partial<EdificacionesFormData> {
   const { liquidacion_general: lg, liquidacion_tipo: lt } =
     item as LiquidacionEdificacionesListItem;
   return {
