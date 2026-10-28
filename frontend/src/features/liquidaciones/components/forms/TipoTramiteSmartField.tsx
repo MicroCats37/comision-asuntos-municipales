@@ -160,7 +160,7 @@ export function TipoTramiteSmartField({
 
   const handleSelect = (value: TipoTramiteEdificaciones) => {
     // El useEffect se encarga del auto-fill; solo seteamos el tipo_tramite aquí.
-    methods.setValue("tipo_tramite", value, { shouldValidate: true });
+    methods.setValue("tipo_tramite", value, { shouldValidate: false });
   };
 
   const renderItem = (value: TipoTramiteEdificaciones) => {

@@ -346,7 +346,9 @@ def test_recalcular_changes_tarifa_explicit_id_and_updates_porcentaje_totals(
     liq_visitas = liq_io_2024["liq_visitas"]
 
     patch = PatchVisitasInput(
-        cantidad_visitas=None, categoria=None, tarifa_visitas_id=str(tarifa_visitas_c2_2024.id)
+        cantidad_visitas=None,
+        categoria="4",
+        tarifa_visitas_id=str(tarifa_visitas_c2_2024.id),
     )
 
     svc.recalcular(lg, patch)

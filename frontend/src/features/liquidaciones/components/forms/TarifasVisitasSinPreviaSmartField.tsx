@@ -6,7 +6,7 @@ import { Calculator, HardHat, Loader2 } from "lucide-react";
  * TarifasVisitasSinPreviaSmartField — Smart field de IO sin liquidación previa.
  *
  * Incluye dentro del mismo card-wrapper:
- *  · Selector de categoría (C1/C2/C3/C4) — radio group
+ *  · Selector de categoría (1/2/3/4) — radio group
  *  · Botón "Inspector Asignado" — abre SeleccionarInspectorModal via callback
  *  · Tarifa informativa
  *  · Cotización auto-debounceada (400ms)
@@ -25,6 +25,7 @@ import type { UseFormReturn } from "react-hook-form";
 import { useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { useDebounce } from "@/hooks/system/useDebounce";
+import { useLatestRequestGuard } from "@/hooks/system/useLatestRequestGuard";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useTarifasVigentesVisitas } from "../../hooks/useTarifasVigentes";
@@ -60,9 +61,21 @@ const formatSoles = (value: unknown): string =>
   `S/ ${toNumber(value).toFixed(2)}`;
 
 const normalizeCategoria = (cat: string): string => {
-  if (["1", "2", "3", "4"].includes(cat)) return `C${cat}`;
+  if (["C1", "C2", "C3", "C4"].includes(cat)) return cat.slice(1);
   return cat;
 };
+
+export function buildCotizacionVisitasPayload(
+  cantidadVisitas: number,
+  tarifaVisitasId: string,
+) {
+  return {
+    liquidacion_especifica: {
+      datos: { cantidad_visitas: cantidadVisitas },
+      tarifa: { tarifa_visitas_id: tarifaVisitasId },
+    },
+  };
+}
 
 export function TarifasVisitasSinPreviaSmartField({
   methods,
@@ -72,6 +85,7 @@ export function TarifasVisitasSinPreviaSmartField({
 }: TarifasVisitasSinPreviaSmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionVisitasOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const requestGuard = useLatestRequestGuard();
 
   // Lee del form (sin local state, sin bridge)
   const cantidadVisitasForm = useWatch({
@@ -95,7 +109,7 @@ export function TarifasVisitasSinPreviaSmartField({
     [tarifasData?.tarifas],
   );
 
-  // Categorías únicas (orden estable: C1, C2, C3, C4)
+  // Categorías únicas (orden estable: 1, 2, 3, 4)
   const categorias = useMemo(
     () =>
       Array.from(
@@ -136,29 +150,26 @@ export function TarifasVisitasSinPreviaSmartField({
 
   const cotizacionMutation = useMutation({
     mutationFn: async (payload: {
+      requestId: number;
       cantidad_visitas: number;
-      categoria: string;
       tarifa_visitas_id: string;
     }): Promise<CotizacionVisitasOutput> => {
       const { data } = await api.post(
         "/liquidaciones/inspeccion-obra/cotizar",
-        {
-          liquidacion_especifica: {
-            datos: {
-              cantidad_visitas: payload.cantidad_visitas,
-              categoria: payload.categoria,
-            },
-            tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
-          },
-        },
+        buildCotizacionVisitasPayload(
+          payload.cantidad_visitas,
+          payload.tarifa_visitas_id,
+        ),
       );
       return data.data as CotizacionVisitasOutput;
     },
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
+      if (!requestGuard.isLatest(variables.requestId)) return;
       setQuote(result);
       setError(null);
     },
-    onError: (err) => {
+    onError: (err, variables) => {
+      if (!requestGuard.isLatest(variables.requestId)) return;
       setQuote(null);
       setError(
         err instanceof Error ? err.message : "Error al calcular cotización",
@@ -177,20 +188,24 @@ export function TarifasVisitasSinPreviaSmartField({
       !tarifaVisitasId ||
       !categoriaNorm
     ) {
+      requestGuard.invalidate();
       setQuote(null);
       setError(null);
       return;
     }
+    const requestId = requestGuard.begin();
     cotizacionMutation.mutate({
+      requestId,
       cantidad_visitas: debouncedCantidad,
-      categoria: categoriaNorm,
       tarifa_visitas_id: tarifaVisitasId,
     });
+    return () => requestGuard.invalidate();
   }, [
     debouncedCantidad,
     tarifaVisitasId,
     categoriaNorm,
     cotizacionMutation.mutate,
+    requestGuard,
   ]);
 
   const isCalculating = cotizacionMutation.isPending;
@@ -265,7 +280,7 @@ export function TarifasVisitasSinPreviaSmartField({
                   checked={isSelected}
                   onChange={() => {
                     methods.setValue("categoria", cat as never, {
-                      shouldValidate: true,
+                      shouldValidate: false,
                     });
                   }}
                 />

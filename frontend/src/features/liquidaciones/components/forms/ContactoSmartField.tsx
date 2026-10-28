@@ -48,7 +48,7 @@ export function ContactoSmartField({
       methods.setValue("contacto", contacto, {
         shouldDirty: true,
         shouldTouch: true,
-        shouldValidate: true,
+        shouldValidate: false,
       });
       setOpen(false);
     },
@@ -59,7 +59,7 @@ export function ContactoSmartField({
     methods.setValue("contacto", undefined, {
       shouldDirty: true,
       shouldTouch: true,
-      shouldValidate: true,
+      shouldValidate: false,
     });
   }, [methods]);
 

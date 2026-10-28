@@ -589,6 +589,10 @@ def test_inspeccion_obra_cotizar_edicion_returns_200_liquidacion_tipo_only(
     # IO response has datos and calculo
     assert "datos" in result
     assert "calculo" in result
+    assert (
+        result["datos"]["entrada"]["datos"]["categoria"]
+        == lvisitas.tarifa_aplicada.categoria_visitas
+    )
 
 
 @pytest.mark.django_db

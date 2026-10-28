@@ -157,6 +157,19 @@ export const LiquidacionComprobanteOutputSchema = z.object({
   motivo_reemplazo: z.string().nullish(),
 });
 
+/** Full enum — used for backend compatibility and output display */
+export const TIPO_COMPROBANTE_ENUM = [
+  "FACTURA",
+  "BOLETA",
+  "NOTA_CREDITO",
+  "NOTA_DEBITO",
+] as const;
+
+/** UI-only enum — restricted to the two types users can create via the form */
+export const TIPO_COMPROBANTE_UI_ENUM = ["FACTURA", "BOLETA"] as const;
+
+export type TipoComprobante = (typeof TIPO_COMPROBANTE_ENUM)[number];
+
 // LiquidacionGeneralOutput — matches backend EXACTLY (rich fields), tolerant to nulls/strings
 export const LiquidacionGeneralOutputSchema = z.object({
   id: uuid(),
@@ -169,7 +182,6 @@ export const LiquidacionGeneralOutputSchema = z.object({
   numero_revision: z.coerce.number().int(),
   sub_total: num(),
   total: num(),
-  retencion: z.boolean().optional(),
   legacy: z.boolean().optional(),
   codigo_cta: z.string().nullish(),
   igv: IgvOutputSchema.nullish(),
@@ -221,19 +233,6 @@ export type LiquidacionComprobanteOutput = z.infer<
 >;
 
 // ── Input schema for creating/replacing a comprobante ─────────────────────────
-
-/** Full enum — used for backend compatibility and output display */
-export const TIPO_COMPROBANTE_ENUM = [
-  "FACTURA",
-  "BOLETA",
-  "NOTA_CREDITO",
-  "NOTA_DEBITO",
-] as const;
-
-/** UI-only enum — restricted to the two types users can create via the form */
-export const TIPO_COMPROBANTE_UI_ENUM = ["FACTURA", "BOLETA"] as const;
-
-export type TipoComprobante = (typeof TIPO_COMPROBANTE_ENUM)[number];
 
 /**
  * Schema for creating/replacing a comprobante.

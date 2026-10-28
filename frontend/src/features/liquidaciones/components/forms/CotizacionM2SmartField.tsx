@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useWatch } from "react-hook-form";
 import { useDebounce } from "@/hooks/system/useDebounce";
+import { useLatestRequestGuard } from "@/hooks/system/useLatestRequestGuard";
 import api from "@/lib/api";
 
 interface CotizacionM2Output {
@@ -56,9 +57,11 @@ export function CotizacionM2SmartField({
 }: CotizacionM2SmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionM2Output | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const requestGuard = useLatestRequestGuard();
 
   const cotizacionMutation = useMutation({
     mutationFn: async (payload: {
+      requestId: number;
       area_solicitada: number;
       tarifa_m2_id: string;
     }): Promise<CotizacionM2Output> => {
@@ -82,11 +85,13 @@ export function CotizacionM2SmartField({
       const { data } = await api.post(endpoint, body);
       return data.data;
     },
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
+      if (!requestGuard.isLatest(variables.requestId)) return;
       setQuote(result);
       setError(null);
     },
-    onError: (err) => {
+    onError: (err, variables) => {
+      if (!requestGuard.isLatest(variables.requestId)) return;
       setQuote(null);
       setError(
         err instanceof Error ? err.message : "Error al calcular cotización",
@@ -114,15 +119,19 @@ export function CotizacionM2SmartField({
       !tarifaM2Id ||
       (mode === "edit" && !liquidacionId)
     ) {
+      requestGuard.invalidate();
       setQuote(null);
       setError(null);
       return;
     }
 
+    const requestId = requestGuard.begin();
     cotizacionMutation.mutate({
+      requestId,
       area_solicitada: area,
       tarifa_m2_id: tarifaM2Id,
     });
+    return () => requestGuard.invalidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     debouncedArea,
@@ -130,6 +139,7 @@ export function CotizacionM2SmartField({
     mode,
     liquidacionId,
     cotizacionMutation.mutate,
+    requestGuard,
   ]);
 
   const isLoading = cotizacionMutation.isPending;

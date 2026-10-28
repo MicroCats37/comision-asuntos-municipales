@@ -33,6 +33,9 @@ export type TipoDetalleData =
 export function getTipoDetalleSection(
   tipoCodigo: string | null | undefined,
   liquidacionTipo: TipoDetalleData | null | undefined,
+  /** Valor del UIT de la liquidación — lo necesita el motor de visitas
+   *  (Inspección de Obra) para derivar el costo por visita. */
+  uit?: number | null,
 ): ReactNode {
   if (!liquidacionTipo) return null;
 
@@ -71,6 +74,7 @@ export function getTipoDetalleSection(
       return (
         <LiquidacionDetalleInspeccionObraSection
           liquidacionTipo={liquidacionTipo as VisitasDatosOut}
+          uit={uit}
         />
       );
     default:

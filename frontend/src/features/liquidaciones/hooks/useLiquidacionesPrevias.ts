@@ -1,15 +1,7 @@
 /**
- * Hook para listar las ÚLTIMAS revisiones de liquidaciones GENERALES.
- * Endpoint: GET /liquidaciones/generales/ultimas-revisiones
- *
- * Soporta múltiples tipos de liquidación como parámetros repetidos:
- * ?tipo_liquidacion=EDIFICACION&tipo_liquidacion=TALUDES
- *
- * Si no se especifica ningún tipo, devuelve todos los tipos soportados.
- *
- * Agrupa por:
- * - (grupo_id, relacion_key) para liquidaciones relacionadas
- * - (proyecto_id, tipo_liquidacion) para liquidaciones no relacionadas
+ * Hook para buscar liquidaciones previas en el listado paginado de cada tipo.
+ * Devuelve todas las revisiones; el endpoint de creación valida si la previa
+ * seleccionada puede generar una nueva revisión.
  */
 import { z } from "zod";
 import { useApiQuery } from "@/hooks";
@@ -40,7 +32,7 @@ import {
   liquidacionTaludesListItemSchema,
 } from "../schemas/liquidacion-taludes.schema";
 
-export type UltimaRevisionGeneralItem =
+export type LiquidacionPreviaItem =
   | LiquidacionEdificacionesListItem
   | LiquidacionHabilitacionUrbanaListItem
   | LiquidacionMecanicaSuelosListItem
@@ -48,7 +40,7 @@ export type UltimaRevisionGeneralItem =
   | LiquidacionImpactoVialListItem
   | LiquidacionInspeccionObraListItem;
 
-const ultimaRevisionGeneralItemSchema = z.union([
+const liquidacionPreviaItemSchema = z.union([
   liquidacionEdificacionesListItemSchema,
   liquidacionHabilitacionUrbanaListItemSchema,
   liquidacionMecanicaSuelosListItemSchema,
@@ -58,14 +50,28 @@ const ultimaRevisionGeneralItemSchema = z.union([
 ]);
 
 const paginatedSchema = apiResponseSchema(
-  paginatedResponseSchema(ultimaRevisionGeneralItemSchema),
+  paginatedResponseSchema(liquidacionPreviaItemSchema),
 );
 
-interface UseUltimaRevisionGeneralProps {
+const ENDPOINT_BY_TIPO: Record<string, string> = {
+  EDIFICACION: "/liquidaciones/edificaciones/",
+  HABILITACION_URBANA: "/liquidaciones/habilitacion-urbana/",
+  MECANICA_SUELOS: "/liquidaciones/mecanica-suelos/",
+  TALUDES: "/liquidaciones/taludes/",
+  IMPACTO_VIAL: "/liquidaciones/impacto-vial/",
+};
+
+export function getLiquidacionesPreviasEndpoint(
+  tipoLiquidacion?: string,
+): string | undefined {
+  return tipoLiquidacion ? ENDPOINT_BY_TIPO[tipoLiquidacion] : undefined;
+}
+
+interface UseLiquidacionesPreviasProps {
   page?: number;
   pageSize?: number;
-  /** Lista de códigos de tipo_liquidacion. Si no se provee, incluye todos los tipos. */
-  tipoLiquidacion?: string[];
+  /** Código de tipo_liquidacion usado para resolver su endpoint específico. */
+  tipoLiquidacion?: string;
   /** Si false, la query NO se dispara (espera a que el usuario busque) */
   enabled?: boolean;
   /** Filter by entidad razon_social (icontains) */
@@ -82,7 +88,7 @@ interface UseUltimaRevisionGeneralProps {
   nombrePropietario?: string;
 }
 
-export function useUltimaRevisionGeneral({
+export function useLiquidacionesPrevias({
   page = 1,
   pageSize = 10,
   tipoLiquidacion,
@@ -93,33 +99,28 @@ export function useUltimaRevisionGeneral({
   expediente,
   direccion,
   nombrePropietario,
-}: UseUltimaRevisionGeneralProps = {}) {
+}: UseLiquidacionesPreviasProps = {}) {
   const params = new URLSearchParams();
   params.set("page", String(page));
   params.set("page_size", String(pageSize));
 
-  if (tipoLiquidacion && tipoLiquidacion.length > 0) {
-    for (const tipo of tipoLiquidacion) {
-      params.append("tipo_liquidacion", tipo);
-    }
-  }
   if (razonSocial) params.set("razon_social", razonSocial);
-  if (numeroDocumento) params.set("numero_documento", numeroDocumento);
+  if (numeroDocumento) params.set("documento", numeroDocumento);
   if (numero !== undefined) params.set("numero", String(numero));
   if (expediente) params.set("expediente", expediente);
   if (direccion) params.set("direccion", direccion);
   if (nombrePropietario) params.set("nombre_propietario", nombrePropietario);
 
   const queryString = params.toString();
+  const endpoint = getLiquidacionesPreviasEndpoint(tipoLiquidacion);
 
   const query = useApiQuery({
     queryKey: [
       "liquidaciones",
-      "generales",
-      "ultimas-revisiones",
+      "previas",
+      tipoLiquidacion,
       page,
       pageSize,
-      tipoLiquidacion ? tipoLiquidacion.join(",") : "all",
       razonSocial,
       numeroDocumento,
       numero,
@@ -127,14 +128,14 @@ export function useUltimaRevisionGeneral({
       direccion,
       nombrePropietario,
     ],
-    url: `/liquidaciones/generales/ultimas-revisiones?${queryString}`,
+    url: `${endpoint ?? "/liquidaciones/edificaciones/"}?${queryString}`,
     schema: paginatedSchema,
     queryOptions: {
-      enabled,
+      enabled: enabled && endpoint !== undefined,
       select: (data) => {
         if (!data?.data) {
           return {
-            items: [] as UltimaRevisionGeneralItem[],
+            items: [] as LiquidacionPreviaItem[],
             total: 0,
             page,
             page_size: pageSize,

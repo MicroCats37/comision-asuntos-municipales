@@ -18,6 +18,7 @@ import { FilePenLine, FileText, Link2 } from "lucide-react";
  * La lógica `nueva-revision` (revision N+2) no aplica a IO porque siempre arranca en 1.
  */
 import { useCallback, useEffect, useState } from "react";
+import type { UseFormReturn } from "react-hook-form";
 import { IncrementerInput } from "@/components/genericForm/inputs/IncrementerInput";
 import { notify } from "@/errors";
 import {
@@ -28,9 +29,9 @@ import {
 import { useCrearInspeccionObra } from "../../../hooks/useCrearInspeccionObra";
 import { useCrearRelacionadaInspeccionObra } from "../../../hooks/useCrearRelacionadaInspeccionObra";
 import { useEditarInspeccionObra } from "../../../hooks/useEditarInspeccionObra";
+import type { LiquidacionPreviaItem } from "../../../hooks/useLiquidacionesPrevias";
 import { useLiquidacionPdfOnAfter } from "../../../hooks/useLiquidacionPdfOnAfter";
 import { useTiposLiquidacion } from "../../../hooks/useTiposLiquidacion";
-import type { UltimaRevisionGeneralItem } from "../../../hooks/useUltimaRevisionGeneral";
 import type { LiquidacionInspeccionObraListItem } from "../../../schemas/liquidacion-inspeccion-obra.schema";
 import {
   type VisitasFormData,
@@ -60,10 +61,10 @@ type EditProps = BaseProps & {
 };
 type RelacionadaProps = BaseProps & {
   mode: "relacionada";
-  // SeleccionarPreviaModal devuelve UltimaRevisionGeneralItem (union de todos los
+  // SeleccionarPreviaModal devuelve LiquidacionPreviaItem (union de todos los
   // tipos, con la forma { liquidacion_general, liquidacion_especifica, liquidacion_tipo }).
   // En IO no pre-llenamos categoria/tarifa/inspector — el usuario los elige fresh.
-  previa: UltimaRevisionGeneralItem;
+  previa: LiquidacionPreviaItem;
 };
 
 export type LiquidacionInspeccionObraFormModalProps =
@@ -71,23 +72,39 @@ export type LiquidacionInspeccionObraFormModalProps =
   | EditProps
   | RelacionadaProps;
 
+function DefaultTipoLiquidacionSync({
+  methods,
+  tipoEdificacionId,
+  enabled,
+}: {
+  methods: UseFormReturn<VisitasFormData>;
+  tipoEdificacionId?: string;
+  enabled: boolean;
+}) {
+  useEffect(() => {
+    if (!enabled || !tipoEdificacionId) return;
+    if (methods.getValues("tipo_liquidacion_id")) return;
+    methods.setValue("tipo_liquidacion_id", tipoEdificacionId, {
+      shouldValidate: false,
+      shouldDirty: false,
+    });
+  }, [enabled, methods, tipoEdificacionId]);
+
+  return null;
+}
+
 function buildInitialData(
   item: LiquidacionInspeccionObraListItem,
   options: { skipSmartFieldDefaults?: boolean } = {},
 ): Partial<VisitasFormData> {
   const { liquidacion_general: lg, liquidacion_tipo: lt } = item;
 
-  // Normalizar categoría que viene del backend ("1" → "C1")
+  // Compatibilidad al editar registros históricos que todavía tengan C1-C4.
   let catNormalizada = String(lt.categoria);
-  if (
-    catNormalizada === "1" ||
-    catNormalizada === "2" ||
-    catNormalizada === "3" ||
-    catNormalizada === "4"
-  ) {
-    catNormalizada = `C${catNormalizada}`;
+  if (["C1", "C2", "C3", "C4"].includes(catNormalizada)) {
+    catNormalizada = catNormalizada.slice(1);
   }
-  const categoriaValida = ["C1", "C2", "C3", "C4"].includes(catNormalizada)
+  const categoriaValida = ["1", "2", "3", "4"].includes(catNormalizada)
     ? catNormalizada
     : undefined;
 
@@ -96,7 +113,6 @@ function buildInitialData(
     municipalidad_id: lg.municipalidad?.id ?? "",
     expediente: lg.expediente ?? "",
     observacion: lg.observacion ?? "",
-    retencion: lg.retencion ?? false,
     nombre_propietario: lg.proyecto.nombre_propietario,
     direccion: lg.proyecto.direccion,
     distrito_id: lg.proyecto.distrito?.id ?? "",
@@ -149,7 +165,7 @@ export function LiquidacionInspeccionObraFormModal(
   );
 
   // sourceItem: en edit es el list item completo. En relacionada es un
-  // UltimaRevisionGeneralItem (que ya tiene la forma { liquidacion_general, ... })
+  // LiquidacionPreviaItem (que ya tiene la forma { liquidacion_general, ... })
   // — se pasa directo al shell que extrae previousValues/revisionNumber.
   const sourceItem: LiquidacionInspeccionObraListItem | null =
     mode === "edit"
@@ -282,6 +298,13 @@ export function LiquidacionInspeccionObraFormModal(
 
       return (
         <>
+          <DefaultTipoLiquidacionSync
+            methods={methods}
+            tipoEdificacionId={
+              tipos.find((tipo) => tipo.codigo === "EDIFICACION")?.id
+            }
+            enabled={mode === "create"}
+          />
           <LiquidacionFormBodyBase
             control={methods.control as never}
             methods={methods}
@@ -331,9 +354,9 @@ export function LiquidacionInspeccionObraFormModal(
             categoriaForm={categoriaWatch || null}
             selectedId={methods.watch("inspector_id") || undefined}
             onSelect={(id, nombre, inspectorOperacionId) => {
-              methods.setValue("inspector_id", id, { shouldValidate: true });
+              methods.setValue("inspector_id", id, { shouldValidate: false });
               methods.setValue("inspector_operacion_id", inspectorOperacionId, {
-                shouldValidate: true,
+                shouldValidate: false,
               });
               setInspectorNombre(nombre);
             }}
@@ -378,7 +401,6 @@ export function LiquidacionInspeccionObraFormModal(
       return await relacionadaMutation.mutateAsync({
         liquidacion_previa_id: liquidacionPreviaId,
         cantidad_visitas: data.cantidad_visitas,
-        categoria: data.categoria,
         tarifa_visitas_id: data.tarifa_visitas_id ?? "",
         inspector_operacion_id: data.inspector_operacion_id,
         contacto: data.contacto,

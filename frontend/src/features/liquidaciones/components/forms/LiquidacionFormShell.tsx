@@ -270,11 +270,11 @@ export function LiquidacionFormShell<
   // El Dialog cierra con una animación de salida (~100ms, `duration-100` en
   // dialog.tsx). window.print() es síncrono y congelaría esa animación si se
   // llamara antes de que termine, dejando el modal atascado a medio cerrar.
-  // Por eso se cierra primero el modal y se difiere la impresión justo por
-  // encima de la animación.
+  // Por eso se cierra primero el modal y se difiere la impresión hasta que la
+  // animación y el commit de React hayan terminado.
   const schedulePrint = useCallback(
     (result: unknown) => {
-      setTimeout(() => onAfterSubmit?.(mode, result), 150);
+      setTimeout(() => onAfterSubmit?.(mode, result), 250);
     },
     [mode, onAfterSubmit],
   );
@@ -296,6 +296,7 @@ export function LiquidacionFormShell<
         const result = await onSubmitEdit(data, canEditProyecto);
         notify.success(success.edit);
         onSuccess?.();
+        onOpenChange(false);
         schedulePrint(result);
         return;
       }
@@ -305,6 +306,7 @@ export function LiquidacionFormShell<
         const result = await onSubmitNuevaRevision(data, prevId);
         notify.success(success.nuevaRevision);
         onSuccess?.();
+        onOpenChange(false);
         schedulePrint(result);
         return;
       }
@@ -314,6 +316,7 @@ export function LiquidacionFormShell<
         const result = await onSubmitRelacionada(data, prevId);
         notify.success(success.relacionada);
         onSuccess?.();
+        onOpenChange(false);
         schedulePrint(result);
         return;
       }

@@ -196,6 +196,8 @@ class LiquidacionGeneralCoreService:
         tipo_liquidacion: str,
         numero_revision: int = 1,
         contacto=None,
+        # `retencion` es el seam legacy: solo lo usan los flujos legacy.
+        # El camino normal ya no lo propaga (ver actualizar_liquidacion_general).
         retencion: bool = False,
         denominacion_de_proyecto: Optional[str] = None,
         descripcion_legacy: Optional[str] = None,
@@ -405,6 +407,8 @@ class LiquidacionGeneralCoreService:
         numero=None,
         numero_revision=None,
         direccion=None,
+        documento=None,
+        expediente=None,
         **kwargs
     ) -> tuple:
         """
@@ -412,7 +416,7 @@ class LiquidacionGeneralCoreService:
 
         Applies the same filter set and pagination as the 6 legacy methods
         (municipalidad_id, propietario, razon_social, creador_username, fecha_desde,
-        fecha_hasta, numero, numero_revision).
+        fecha_hasta, numero, numero_revision, direccion, documento, expediente).
         Uses conditional prefetch_related based on tipo_liquidacion.
         Returns (queryset, total_count).
         """
@@ -456,6 +460,10 @@ class LiquidacionGeneralCoreService:
             qs = qs.filter(numero_revision=numero_revision)
         if direccion:
             qs = qs.filter(proyecto__direccion__icontains=direccion)
+        if documento:
+            qs = qs.filter(proyecto__entidad_numero_documento__icontains=documento)
+        if expediente:
+            qs = qs.filter(expediente__icontains=expediente)
 
         total = qs.count()
         offset = (page - 1) * page_size
@@ -475,6 +483,8 @@ class LiquidacionGeneralCoreService:
         numero=None,
         numero_revision=None,
         direccion=None,
+        documento=None,
+        expediente=None,
         **kwargs
     ) -> tuple:
         """
@@ -494,6 +504,8 @@ class LiquidacionGeneralCoreService:
             numero=numero,
             numero_revision=numero_revision,
             direccion=direccion,
+            documento=documento,
+            expediente=expediente,
         )
 
     def list_liquidaciones_hu_paginated(
@@ -509,6 +521,8 @@ class LiquidacionGeneralCoreService:
         numero=None,
         numero_revision=None,
         direccion=None,
+        documento=None,
+        expediente=None,
         **kwargs
     ) -> tuple:
         """
@@ -528,6 +542,8 @@ class LiquidacionGeneralCoreService:
             numero=numero,
             numero_revision=numero_revision,
             direccion=direccion,
+            documento=documento,
+            expediente=expediente,
         )
 
     def list_liquidaciones_ms_paginated(
@@ -543,6 +559,8 @@ class LiquidacionGeneralCoreService:
         numero=None,
         numero_revision=None,
         direccion=None,
+        documento=None,
+        expediente=None,
         **kwargs
     ) -> tuple:
         """
@@ -562,6 +580,8 @@ class LiquidacionGeneralCoreService:
             numero=numero,
             numero_revision=numero_revision,
             direccion=direccion,
+            documento=documento,
+            expediente=expediente,
         )
 
     def list_liquidaciones_taludes_paginated(
@@ -577,6 +597,8 @@ class LiquidacionGeneralCoreService:
         numero=None,
         numero_revision=None,
         direccion=None,
+        documento=None,
+        expediente=None,
         **kwargs
     ) -> tuple:
         """
@@ -596,6 +618,8 @@ class LiquidacionGeneralCoreService:
             numero=numero,
             numero_revision=numero_revision,
             direccion=direccion,
+            documento=documento,
+            expediente=expediente,
         )
 
     def list_liquidaciones_io_paginated(
@@ -611,6 +635,8 @@ class LiquidacionGeneralCoreService:
         numero=None,
         numero_revision=None,
         direccion=None,
+        documento=None,
+        expediente=None,
         **kwargs
     ) -> tuple:
         """
@@ -630,6 +656,8 @@ class LiquidacionGeneralCoreService:
             numero=numero,
             numero_revision=numero_revision,
             direccion=direccion,
+            documento=documento,
+            expediente=expediente,
         )
 
     def list_liquidaciones_iv_paginated(
@@ -645,6 +673,8 @@ class LiquidacionGeneralCoreService:
         numero=None,
         numero_revision=None,
         direccion=None,
+        documento=None,
+        expediente=None,
         **kwargs
     ) -> tuple:
         """
@@ -664,6 +694,8 @@ class LiquidacionGeneralCoreService:
             numero=numero,
             numero_revision=numero_revision,
             direccion=direccion,
+            documento=documento,
+            expediente=expediente,
         )
 
     # ── Detail (GET /{id}) methods ─────────────────────────────────────────────────
@@ -1475,7 +1507,6 @@ class LiquidacionGeneralCoreService:
         liquidacion: LiquidacionGeneral,
         expediente: Optional[str] = None,
         observacion: Optional[str] = None,
-        retencion: Optional[bool] = None,
         denominacion_de_proyecto: Optional[str] = None,
         contacto_data: Optional[dict] = None,
     ) -> LiquidacionGeneral:
@@ -1489,7 +1520,6 @@ class LiquidacionGeneralCoreService:
             liquidacion: LiquidacionGeneral ORM instance (must be saved by caller).
             expediente: New expediente value (None = no change).
             observacion: New observacion value (None = no change).
-            retencion: New retencion value (None = no change).
             denominacion_de_proyecto: New denominacion value (None = no change).
             contacto_data: Contacto upsert data dict; if provided, upserts Contacto
                           and assigns it to liquidacion.contacto.
@@ -1501,8 +1531,6 @@ class LiquidacionGeneralCoreService:
             liquidacion.expediente = expediente
         if observacion is not None:
             liquidacion.observacion = observacion
-        if retencion is not None:
-            liquidacion.retencion = retencion
         if denominacion_de_proyecto is not None:
             liquidacion.denominacion_de_proyecto = denominacion_de_proyecto
         if contacto_data is not None:

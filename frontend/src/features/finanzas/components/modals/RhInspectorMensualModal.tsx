@@ -1568,6 +1568,7 @@ export function RhInspectorMensualModal({
                 tipoSection: getTipoDetalleSection(
                   detalleTipoCodigo,
                   detalleData.liquidacion_tipo,
+                  detalleData.liquidacion_general.uit?.valor,
                 ),
                 showDelegados: detalleTipoCodigo !== "INSPECCION_OBRA",
               })

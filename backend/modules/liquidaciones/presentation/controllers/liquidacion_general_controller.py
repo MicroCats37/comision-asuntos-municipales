@@ -171,7 +171,7 @@ class LiquidacionGeneralController:
         Solo editable cuando estado == PENDIENTE.
         Si estado == PAGADA, retorna 409 Conflict.
 
-        Campos siempre editables: expediente, observacion, retencion, contacto.
+        Campos siempre editables: expediente, observacion, contacto.
 
         Campos condicionalmente editables (requieren revision rule):
         - municipalidad_id: solo si numero_revision == 1 y no hay liquidaciones previas
@@ -208,7 +208,6 @@ class LiquidacionGeneralController:
                 liquidacion_id=liquidacion_id,
                 expediente=data.expediente,
                 observacion=data.observacion,
-                retencion=data.retencion,
                 denominacion_de_proyecto=data.denominacion_de_proyecto,
                 contacto_data=contacto_data,
             )
@@ -235,7 +234,6 @@ class LiquidacionGeneralController:
                 proyecto_data=proyecto_data,
                 expediente=data.expediente,
                 observacion=data.observacion,
-                retencion=data.retencion,
                 denominacion_de_proyecto=data.denominacion_de_proyecto,
                 contacto_data=contacto_data,
             )

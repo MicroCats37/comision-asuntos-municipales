@@ -5,11 +5,14 @@ import type {
   RegistroPagoOut,
   VisitasDatosOut,
 } from "../../schemas/liquidacion-visitas.schema";
-import { formatEnumLabel } from "../liquidacion-ui";
+import { formatCurrency, formatEnumLabel } from "../liquidacion-ui";
 import { TarifaDetailSection, type TarifaParam } from "./TarifaDetailSection";
 
 interface Props {
   liquidacionTipo: VisitasDatosOut;
+  /** Valor del UIT vigente de la liquidación (`liquidacion_general.uit.valor`).
+   *  Necesario para derivar el costo por visita: UIT × porcentaje_uit. */
+  uit?: number | null;
 }
 
 /**
@@ -23,7 +26,12 @@ interface Props {
  */
 export function LiquidacionDetalleInspeccionObraSection({
   liquidacionTipo: lt,
+  uit,
 }: Props) {
+  // Costo por visita = UIT × porcentaje_uit (porcentaje_uit ya es fracción).
+  const costoPorVisita =
+    uit != null && lt.porcentaje_uit != null ? uit * lt.porcentaje_uit : null;
+
   const params: TarifaParam[] = [
     {
       label: "Categoría",
@@ -49,12 +57,14 @@ export function LiquidacionDetalleInspeccionObraSection({
         </span>
       ),
     },
-    ...(lt.tarifa_aplicada_id
+    ...(costoPorVisita != null
       ? [
           {
-            label: "Tarifa",
+            label: "Costo / Visita",
             value: (
-              <span className="font-mono text-xs">{lt.tarifa_aplicada_id}</span>
+              <span className="font-bold text-primary tabular-nums">
+                {formatCurrency(costoPorVisita)}
+              </span>
             ),
           },
         ]
@@ -107,7 +117,7 @@ export function LiquidacionDetalleInspeccionObraSection({
                   {inspector.perfil_ingeniero.cip}
                 </span>
                 <span className="text-xs text-muted-foreground text-right min-w-[5rem]">
-                  {inspector.categoria ?? "—"}
+                  {inspector.categoria ?? lt.categoria ?? "—"}
                 </span>
               </div>
             ))}

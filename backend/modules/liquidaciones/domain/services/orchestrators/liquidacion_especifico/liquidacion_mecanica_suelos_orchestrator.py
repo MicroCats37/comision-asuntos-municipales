@@ -425,6 +425,8 @@ class LiquidacionMecanicaSuelosOrchestrator:
         numero=None,
         numero_revision=None,
         direccion=None,
+        documento=None,
+        expediente=None,
     ) -> tuple[List[MecanicaSuelosPrimeraRevisionResult], int]:
         """
         Returns paginated MecanicaSuelosPrimeraRevisionResult list.
@@ -451,6 +453,8 @@ class LiquidacionMecanicaSuelosOrchestrator:
             numero=numero,
             numero_revision=numero_revision,
             direccion=direccion,
+            documento=documento,
+            expediente=expediente,
         )
 
         # Build MecanicaSuelosPrimeraRevisionResult domain DTOs from ORM objects
@@ -612,7 +616,6 @@ class LiquidacionMecanicaSuelosOrchestrator:
                     liquidacion=lg,
                     expediente=liquidacion_general.get("expediente"),
                     observacion=liquidacion_general.get("observacion"),
-                    retencion=liquidacion_general.get("retencion"),
                     municipalidad_id=liquidacion_general.get("municipalidad_id"),
                     proyecto_data=liquidacion_general.get("proyecto"),
                     denominacion_de_proyecto=liquidacion_general.get("denominacion_de_proyecto"),

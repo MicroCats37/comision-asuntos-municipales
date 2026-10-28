@@ -36,7 +36,6 @@ export function useCrearEdificaciones() {
             municipalidad_id: rest.municipalidad_id,
             expediente: rest.expediente,
             observacion: rest.observacion,
-            retencion: rest.retencion ?? false,
             denominacion_de_proyecto: rest.denominacion || undefined,
             proyecto: {
               nombre_propietario: rest.nombre_propietario,
@@ -75,7 +74,6 @@ export function useCrearEdificaciones() {
             municipalidad_id: rest.municipalidad_id,
             expediente: rest.expediente,
             observacion: rest.observacion,
-            retencion: rest.retencion ?? false,
             denominacion_de_proyecto: rest.denominacion || undefined,
             proyecto: {
               nombre_propietario: rest.nombre_propietario,

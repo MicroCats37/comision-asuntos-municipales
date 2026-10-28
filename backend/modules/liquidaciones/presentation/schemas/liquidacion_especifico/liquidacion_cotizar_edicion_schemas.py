@@ -116,8 +116,7 @@ class CotizarEdicionVisitasDatosIn(BaseSchema):
     )
     categoria: Optional[str] = Field(
         None,
-        description="Categoría de visita (e.g., 'CATE_A', 'CATE_B'). Optional — "
-                    "if omitted, the stored category is used.",
+        description="Categoría legacy opcional. La tarifa seleccionada siempre tiene precedencia.",
     )
 
 

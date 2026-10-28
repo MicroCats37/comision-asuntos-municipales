@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import type { InspectorVigente } from "@/features/inspectores/types/inspectores.types";
 import { cn } from "@/lib/utils";
 import { useInspectoresVigentes } from "../../hooks/useInspectoresVigentes";
-import type { TipoLiquidacionMinimalSchema } from "../../schemas/liquidacion-base.schema";
 
 type TipoLiquidacionMinimal = {
   id: string;
@@ -46,6 +45,12 @@ interface SeleccionarInspectorModalProps {
     inspectorOperacionId: string,
   ) => void;
 }
+
+const normalizeCategoria = (cat: string | null): string => {
+  if (!cat) return "";
+  if (["C1", "C2", "C3", "C4"].includes(cat)) return cat.slice(1);
+  return cat;
+};
 
 export function SeleccionarInspectorModal({
   open,
@@ -101,13 +106,6 @@ export function SeleccionarInspectorModal({
       ].sort(),
     [inspectores],
   );
-
-  // Normaliza la categoría del inspector para que haga match con el filtro (que viene en formato "C1", "C2"…)
-  const normalizeCategoria = (cat: string | null): string => {
-    if (!cat) return "";
-    if (["1", "2", "3", "4"].includes(cat)) return `C${cat}`;
-    return cat;
-  };
 
   // Filtrado en el FRONTEND: por categoría FIJA + especialidad + búsqueda CIP/nombre
   const filtrados = useMemo(() => {

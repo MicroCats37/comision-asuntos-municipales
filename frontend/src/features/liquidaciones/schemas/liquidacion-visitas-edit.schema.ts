@@ -21,7 +21,6 @@ export function buildVisitasGeneralPayload(
     municipalidad_id,
     expediente,
     observacion,
-    retencion,
     denominacion,
     nombre_propietario,
     direccion,
@@ -37,7 +36,6 @@ export function buildVisitasGeneralPayload(
     generalFields.municipalidad_id = municipalidad_id;
   if (expediente !== undefined) generalFields.expediente = expediente;
   if (observacion !== undefined) generalFields.observacion = observacion;
-  if (retencion !== undefined) generalFields.retencion = retencion;
   if (denominacion !== undefined)
     generalFields.denominacion_de_proyecto = denominacion;
   // contacto fix: include contacto when present (was silently dropped)
@@ -80,20 +78,13 @@ export function buildVisitasGeneralPayload(
 export function buildVisitasTipoPayload(
   data: VisitasFormData,
 ): VisitasEditPayload["liquidacion_tipo"] {
-  const {
-    cantidad_visitas,
-    categoria,
-    tarifa_visitas_id,
-    inspector_operacion_id,
-  } = data;
+  const { cantidad_visitas, tarifa_visitas_id, inspector_operacion_id } = data;
 
   const tipoFields: VisitasEditPayload["liquidacion_tipo"] = {};
 
-  if (cantidad_visitas !== undefined || categoria !== undefined) {
+  if (cantidad_visitas !== undefined) {
     tipoFields.datos = {};
-    if (cantidad_visitas !== undefined)
-      tipoFields.datos.cantidad_visitas = cantidad_visitas;
-    if (categoria !== undefined) tipoFields.datos.categoria = categoria;
+    tipoFields.datos.cantidad_visitas = cantidad_visitas;
   }
 
   if (tarifa_visitas_id !== undefined) {

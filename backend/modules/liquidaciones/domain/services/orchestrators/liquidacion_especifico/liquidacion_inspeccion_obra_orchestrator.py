@@ -68,7 +68,6 @@ class LiquidacionInspeccionObraOrchestrator:
     def cotizar_proceso(
         self,
         cantidad_visitas: int,
-        categoria: str,
         tarifa_id: str,
     ) -> CotizacionVisitasResult:
         """
@@ -89,7 +88,6 @@ class LiquidacionInspeccionObraOrchestrator:
 
         result = self.visitas_core.calcular_cotizacion_visitas(
             cantidad_visitas=cantidad_visitas,
-            categoria=categoria,
             tarifa_visitas_id=tarifa_id,
             uit_vigente=uit_vigente,
             igv_vigente=igv_vigente,
@@ -314,7 +312,7 @@ class LiquidacionInspeccionObraOrchestrator:
         visitas_data = LiquidacionCategoriaVisitasData(
             datos=DatosVisitas(
                 cantidad_visitas=gen_data.datos.cantidad_visitas,
-                categoria=gen_data.datos.categoria,
+                categoria=tarifa.categoria_visitas,
             ),
             tarifa=TarifaVisitas(
                 tarifa_visitas_id=str(gen_data.tarifa.tarifa_visitas_id)
@@ -326,7 +324,6 @@ class LiquidacionInspeccionObraOrchestrator:
                 municipalidad_id=str(previa.municipalidad_id),
                 expediente=previa.expediente,
                 observacion=previa.observacion,
-                retencion=previa.retencion,
                 denominacion_de_proyecto=previa.denominacion_de_proyecto,
                 proyecto=ProyectoData(
                     nombre_propietario=previa.proyecto.nombre_propietario,
@@ -418,7 +415,7 @@ class LiquidacionInspeccionObraOrchestrator:
         visitas_data = LiquidacionCategoriaVisitasData(
             datos=DatosVisitas(
                 cantidad_visitas=gen_data.datos.cantidad_visitas,
-                categoria=gen_data.datos.categoria,
+                categoria=tarifa.categoria_visitas if tarifa else None,
             ),
             tarifa=TarifaVisitas(
                 tarifa_visitas_id=tarifa_visitas_id
@@ -432,7 +429,6 @@ class LiquidacionInspeccionObraOrchestrator:
                 municipalidad_id=str(lg_in.municipalidad_id),
                 expediente=lg_in.expediente,
                 observacion=lg_in.observacion,
-                retencion=getattr(lg_in, "retencion", False),
                 denominacion_de_proyecto=lg_in.denominacion_de_proyecto,
                 proyecto=ProyectoData(
                     nombre_propietario=lg_in.proyecto.nombre_propietario,
@@ -553,7 +549,6 @@ class LiquidacionInspeccionObraOrchestrator:
                     liquidacion=lg,
                     expediente=liquidacion_general.get("expediente"),
                     observacion=liquidacion_general.get("observacion"),
-                    retencion=liquidacion_general.get("retencion"),
                     municipalidad_id=liquidacion_general.get("municipalidad_id"),
                     proyecto_data=liquidacion_general.get("proyecto"),
                     denominacion_de_proyecto=liquidacion_general.get("denominacion_de_proyecto"),
@@ -648,7 +643,6 @@ class LiquidacionInspeccionObraOrchestrator:
 
         patch_input = CotizarEdicionVisitasInput(
             cantidad_visitas=cantidad_visitas,
-            categoria=tipo_datos.categoria,
             tarifa_visitas_id=str(tipo_tarifa.tarifa_visitas_id) if tipo_tarifa.tarifa_visitas_id else None,
         )
 

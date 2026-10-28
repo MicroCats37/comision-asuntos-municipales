@@ -32,16 +32,17 @@ class LiquidacionInspeccionObraOutput(BaseSchema):
 # =============================================================================
 class LiquidacionInspeccionObraNuevaRevisionDatosIn(BaseSchema):
     """
-    Datos específicos de la revisión IO: cantidad de visitas y categoría.
+    Datos específicos de la revisión IO.
 
     categoria is nullable — for the legacy/manual path (CATEGORIA=0), no valid
     tariff category exists, so categoria is stored as null along with a null tarifa.
-    Normal UI path should still enforce a valid categoria.
+    Normal requests derive it from tarifa_visitas_id; the optional input is kept
+    only for legacy compatibility and is never authoritative when a tariff exists.
     """
     cantidad_visitas: int = Field(..., description="Cantidad de visitas solicitadas")
     categoria: Optional[str] = Field(
         None,
-        description="Categoría seleccionada (ej. A, B, C). Null for legacy CATEGORIA=0 records.",
+        description="Categoría legacy opcional. Se deriva de la tarifa cuando existe.",
     )
 
 

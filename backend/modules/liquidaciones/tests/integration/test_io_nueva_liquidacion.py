@@ -98,7 +98,7 @@ def tarifa_visitas_io(db, tarifa_liquidacion_base_io):
     return TarifaPorCategoriaVisitas.objects.create(
         tarifa_base=tarifa_liquidacion_base_io,
         porcentaje_uit=Decimal("0.05"),  # 5% of UIT
-        categoria_visitas="INSPECCION",
+        categoria_visitas="2",
     )
 
 
@@ -261,7 +261,6 @@ def valid_payload_edificacion(valid_municipalidad_id, valid_distrito_id, valid_t
         "liquidacion_especifica": {
             "datos": {
                 "cantidad_visitas": 3,
-                "categoria": "INSPECCION"
             },
             "tarifa": {
                 "tarifa_visitas_id": valid_tarifa_visitas_id
@@ -283,7 +282,6 @@ def relacionada_payload(liquidacion_previa, valid_tarifa_visitas_id, inspector_e
         "liquidacion_especifica": {
             "datos": {
                 "cantidad_visitas": 2,
-                "categoria": "INSPECCION",
             },
             "tarifa": {
                 "tarifa_visitas_id": valid_tarifa_visitas_id,
@@ -296,7 +294,11 @@ def relacionada_payload(liquidacion_previa, valid_tarifa_visitas_id, inspector_e
 
 @pytest.mark.django_db
 def test_io_crear_primera_revision_success(
-    auth_client, valid_payload_edificacion, uit_vigente, igv_vigente
+    auth_client,
+    valid_payload_edificacion,
+    tarifa_visitas_io,
+    uit_vigente,
+    igv_vigente,
 ):
     """
     Test successful creation of a LiquidacionInspeccionObra sin previa
@@ -332,7 +334,8 @@ def test_io_crear_primera_revision_success(
     # Verify liquidacion_tipo has Visitas calculation data
     tipo = result["liquidacion_tipo"]
     assert tipo["cantidad_visitas"] == valid_payload_edificacion["liquidacion_especifica"]["datos"]["cantidad_visitas"]
-    assert tipo["categoria"] == valid_payload_edificacion["liquidacion_especifica"]["datos"]["categoria"]
+    assert tipo["categoria"] == tarifa_visitas_io.categoria_visitas
+    assert liquidacion_io.liquidacion_visitas.get().categoria == tarifa_visitas_io.categoria_visitas
 
     # El inspector sale dentro de liquidacion_tipo, con su especialidad_revision
     assert len(tipo["inspectores"]) == 1
@@ -350,6 +353,31 @@ def test_io_crear_primera_revision_success(
 
     assert general["sub_total"] == 772.50
     assert general["total"] == 911.55
+
+
+@pytest.mark.django_db
+def test_io_crear_ignora_categoria_cliente_si_hay_tarifa(
+    auth_client,
+    valid_payload_edificacion,
+    tarifa_visitas_io,
+    uit_vigente,
+    igv_vigente,
+):
+    valid_payload_edificacion["liquidacion_especifica"]["datos"]["categoria"] = "4"
+
+    response = auth_client.post(
+        "/liquidaciones/inspeccion-obra/nueva-liquidacion",
+        json=valid_payload_edificacion,
+    )
+
+    assert response.status_code == 200, response.content
+    result = response.json()["data"]
+    liquidacion = LiquidacionGeneral.objects.get(
+        id=result["liquidacion_general"]["id"]
+    )
+    visitas = liquidacion.liquidacion_visitas.get()
+    assert result["liquidacion_tipo"]["categoria"] == tarifa_visitas_io.categoria_visitas
+    assert visitas.categoria == tarifa_visitas_io.categoria_visitas
 
 
 @pytest.mark.django_db
@@ -432,7 +460,6 @@ def valid_payload_hu(valid_municipalidad_id, valid_distrito_id, valid_tarifa_vis
         "liquidacion_especifica": {
             "datos": {
                 "cantidad_visitas": 2,
-                "categoria": "INSPECCION"
             },
             "tarifa": {
                 "tarifa_visitas_id": valid_tarifa_visitas_id
@@ -528,7 +555,12 @@ def test_io_crear_primera_revision_error_tipo_no_coincide(
 
 @pytest.mark.django_db
 def test_io_relacionada_desde_previa_sigue_funcionando(
-    auth_client, relacionada_payload, liquidacion_previa, uit_vigente, igv_vigente
+    auth_client,
+    relacionada_payload,
+    liquidacion_previa,
+    tarifa_visitas_io,
+    uit_vigente,
+    igv_vigente,
 ):
     response = auth_client.post(
         "/liquidaciones/inspeccion-obra/relacionada",
@@ -540,3 +572,4 @@ def test_io_relacionada_desde_previa_sigue_funcionando(
     general = data["liquidacion_general"]
     assert general["expediente"] == liquidacion_previa.expediente
     assert general["denominacion_de_proyecto"] == liquidacion_previa.denominacion_de_proyecto
+    assert data["liquidacion_tipo"]["categoria"] == tarifa_visitas_io.categoria_visitas

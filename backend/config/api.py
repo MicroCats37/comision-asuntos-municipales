@@ -3,9 +3,10 @@ Instancia central de NinjaExtraAPI.
 Aquí se registran todos los routers y controllers del proyecto.
 """
 
-from ninja_extra import NinjaExtraAPI
+from ninja_extra import NinjaExtraAPI, api_controller
+from ninja_extra.permissions import AllowAny
 from ninja_jwt.authentication import JWTAuth
-from ninja_jwt.controller import NinjaJWTDefaultController
+from ninja_jwt.controller import NinjaJWTDefaultController, TokenBlackListController
 
 from core.exceptions import register_exception_handlers
 from modules.usuarios.presentation.controllers.auth_controller import AuthLoginController
@@ -123,8 +124,16 @@ else:
         docs_url="/docs",
     )
 
-# ── Controllers JWT (token/pair, token/refresh, token/verify) ─
+@api_controller("/token", permissions=[AllowAny], tags=["token"], auth=None)
+class NinjaJWTBlacklistController(TokenBlackListController):
+    """Expose django-ninja-jwt refresh-token revocation."""
+
+    auto_import = False
+
+
+# ── Controllers JWT (token/pair, token/refresh, token/verify, token/blacklist) ─
 api.register_controllers(NinjaJWTDefaultController)
+api.register_controllers(NinjaJWTBlacklistController)
 
 # ── Auth Controllers (modular login by username/dni/email) ─
 api.register_controllers(AuthLoginController)

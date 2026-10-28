@@ -1,9 +1,16 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { deleteCookie, setCookie } from "cookies-next";
+import { setCookie } from "cookies-next";
 import { api } from "@/lib/api";
-import { AUTH_COOKIES } from "@/lib/auth";
+import {
+  AUTH_COOKIES,
+  accessTokenCookieOptions,
+  expiresAtCookieOptions,
+  refreshTokenCookieOptions,
+  userSessionCookieOptions,
+} from "@/lib/auth";
+import { clearAuthSessionAndRedirect } from "@/lib/auth/session-client";
 import type { ApiResponse } from "@/types/api.types";
 import type {
   LoginDniFormData,
@@ -96,19 +103,18 @@ async function loginWithEmail(
 function persistAuthAndReturnUser(loginData: LoginResponse): MeResponse {
   const { access_token, refresh_token, expires_at, user } = loginData;
 
-  // Set cookies client-side using cookies-next
-  const cookieOptions = {
-    path: "/",
-    secure: process.env.NEXT_PUBLIC_COOKIE_SECURE === "true",
-    sameSite: "lax" as const,
-    maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
-    httpOnly: false, // client-side cookies — httpOnly no funciona desde cliente
-  };
-
-  setCookie(AUTH_COOKIES.ACCESS_TOKEN, access_token, cookieOptions);
-  setCookie(AUTH_COOKIES.REFRESH_TOKEN, refresh_token, cookieOptions);
-  setCookie(AUTH_COOKIES.EXPIRES_AT, expires_at, cookieOptions);
-  setCookie(AUTH_COOKIES.USER_SESSION, JSON.stringify(user), cookieOptions);
+  setCookie(AUTH_COOKIES.ACCESS_TOKEN, access_token, accessTokenCookieOptions);
+  setCookie(
+    AUTH_COOKIES.REFRESH_TOKEN,
+    refresh_token,
+    refreshTokenCookieOptions,
+  );
+  setCookie(AUTH_COOKIES.EXPIRES_AT, expires_at, expiresAtCookieOptions);
+  setCookie(
+    AUTH_COOKIES.USER_SESSION,
+    JSON.stringify(user),
+    userSessionCookieOptions,
+  );
 
   return user;
 }
@@ -119,10 +125,7 @@ function persistAuthAndReturnUser(loginData: LoginResponse): MeResponse {
 export function useLogout() {
   return useMutation<void, Error, void>({
     mutationFn: async () => {
-      deleteCookie(AUTH_COOKIES.ACCESS_TOKEN);
-      deleteCookie(AUTH_COOKIES.REFRESH_TOKEN);
-      deleteCookie(AUTH_COOKIES.EXPIRES_AT);
-      deleteCookie(AUTH_COOKIES.USER_SESSION);
+      await clearAuthSessionAndRedirect();
     },
   });
 }

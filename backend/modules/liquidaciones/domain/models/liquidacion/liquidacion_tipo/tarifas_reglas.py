@@ -13,7 +13,7 @@ from core.models import BaseModel
 from decimal import Decimal
 from core_application.models import VigenciaModel
 
-from modules.liquidaciones.domain.constants import TramiteAccion, TipoLiquidacion
+from modules.liquidaciones.domain.constants import CategoriaIO, TipoLiquidacion
 from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 
 
@@ -107,7 +107,7 @@ class TarifaPorCategoriaVisitas(BaseModel):
 
     categoria_visitas = models.CharField(
         max_length=50,
-        choices=TramiteAccion.choices,
+        choices=CategoriaIO.choices,
         verbose_name="Categoría de Visitas",
         help_text="Categoría de visitas según el tipo de trámite/acción.",
     )

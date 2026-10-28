@@ -41,7 +41,7 @@ export function TarifasM2SmartField({
   // Auto-select the single tariff on load
   useEffect(() => {
     if (tarifa?.id && selectedId !== tarifa.id) {
-      methods.setValue("tarifa_m2_id", tarifa.id, { shouldValidate: true });
+      methods.setValue("tarifa_m2_id", tarifa.id, { shouldValidate: false });
     }
   }, [tarifa?.id, selectedId, methods]);
   if (isLoading) {
@@ -85,7 +85,7 @@ export function TarifasM2SmartField({
         type="button"
         onClick={() => {
           methods.setValue("tarifa_m2_id", tarifa.id, {
-            shouldValidate: true,
+            shouldValidate: false,
           });
         }}
         className={[

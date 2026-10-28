@@ -1,6 +1,6 @@
 /**
  * Zod schema for Visitas creation forms (Inspeccion Obra).
- * Uses cantidad_visitas + categoria + tarifa_visitas_id.
+ * Keeps categoria as derived visual state; backend payloads use tarifa_visitas_id.
  */
 import { z } from "zod";
 import {
@@ -17,11 +17,16 @@ export const visitasFormSchema = z.object({
   tipo_liquidacion_id: z.string().optional(),
   // Especifica fields
   cantidad_visitas: z
-    .number()
-    .int()
+    .number({
+      error: (issue) =>
+        issue.input === undefined || issue.input === null || issue.input === ""
+          ? "La cantidad de visitas es requerida"
+          : "La cantidad de visitas debe ser un número válido",
+    })
+    .int("La cantidad de visitas debe ser un número entero")
     .positive("La cantidad de visitas debe ser positiva")
     .max(9999, "La cantidad de visitas excede el máximo permitido"),
-  categoria: z.enum(["C1", "C2", "C3", "C4"], {
+  categoria: z.enum(["1", "2", "3", "4"], {
     message: "Categoría es requerida",
   }),
   // Smart Field outputs (set by Smart Fields via setValue)

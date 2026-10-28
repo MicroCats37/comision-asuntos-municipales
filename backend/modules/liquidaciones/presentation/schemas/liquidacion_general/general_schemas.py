@@ -111,7 +111,6 @@ class LiquidacionGeneralRevisionIn(BaseSchema):
     municipalidad_id: uuid.UUID = Field(..., description="ID de la municipalidad")
     expediente: Optional[str] = Field(None, description="Número de expediente")
     observacion: Optional[str] = Field(None, description="Observación opcional")
-    retencion: Optional[bool] = Field(False, description="Indica si la liquidación tiene retención")
     denominacion_de_proyecto: Optional[str] = Field(None, description="Denominación del proyecto (opcional)")
     proyecto: ProyectoCotizarSchema = Field(..., description="Datos del proyecto")
     contacto: Optional[ContactoInlineSchema] = Field(None, description="Contacto principal (se crea inline)")
@@ -166,7 +165,7 @@ class LiquidacionGeneralUpdateIn(BaseSchema):
     Schema for PATCH updates to general liquidacion fields.
 
     Only editable while estado == PENDIENTE.
-    General fields: expediente, observacion, retencion, denominacion_de_proyecto, contacto.
+    General fields: expediente, observacion, denominacion_de_proyecto, contacto.
 
     Proyecto y municipalidad son editables en cualquier revisión PENDIENTE.
 
@@ -175,7 +174,6 @@ class LiquidacionGeneralUpdateIn(BaseSchema):
     """
     expediente: Optional[str] = Field(None, description="Número de expediente")
     observacion: Optional[str] = Field(None, description="Observación")
-    retencion: Optional[bool] = Field(None, description="Indica si la liquidación tiene retención")
     denominacion_de_proyecto: Optional[str] = Field(None, description="Denominación del proyecto (opcional)")
     contacto: Optional[ContactoInlineSchema] = Field(None, description="Contacto principal (opcional)")
 
@@ -236,7 +234,6 @@ class LiquidacionGeneralOutput(BaseSchema):
     numero_revision: int = Field(..., description="Número de revisión")
     sub_total: float = Field(..., description="Subtotal")
     total: float = Field(..., description="Total")
-    retencion: bool = Field(False, description="Indica si la liquidación tiene retención")
     legacy: bool = Field(False, description="Indica si la liquidación fue migrada del sistema legacy")
     codigo_cta: Optional[str] = Field(None, description="Código de cuenta associated con el tipo de liquidación (output only)")
     igv: Optional[IgvOutput] = Field(None, description="IGV aplicado")

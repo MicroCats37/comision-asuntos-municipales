@@ -171,6 +171,7 @@ def test_hu_nueva_revision_crea_rev3_y_mismo_grupo(
         "/liquidaciones/habilitacion-urbana/nueva-liquidacion/primera-revision",
         primera_payload,
     )
+    assert primera["liquidacion_general"]["contacto"]["dni"] == "12345678"
     primera_id = uuid.UUID(primera["liquidacion_general"]["id"])
 
     response = auth_client.post(
@@ -234,6 +235,7 @@ def test_ms_nueva_revision_crea_rev3_y_mismo_grupo(
         "/liquidaciones/mecanica-suelos/nueva-liquidacion/primera-revision",
         primera_payload,
     )
+    assert primera["liquidacion_general"]["contacto"]["dni"] == "12345678"
     primera_id = uuid.UUID(primera["liquidacion_general"]["id"])
 
     response = auth_client.post(

@@ -166,7 +166,6 @@ class LiquidacionPatchVisitasService:
         # ── 6. Recalculate via existing pure arithmetic ─────────────────────────
         cotizacion = self._visitas_core.calcular_cotizacion_visitas(
             cantidad_visitas=cantidad_visitas,
-            categoria=categoria,
             tarifa_visitas_id=str(tarifa.id),
             uit_vigente=uit,
             igv_vigente=igv,

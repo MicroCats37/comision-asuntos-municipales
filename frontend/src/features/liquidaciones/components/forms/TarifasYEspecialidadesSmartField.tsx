@@ -287,7 +287,7 @@ export function TarifasYEspecialidadesSmartField({
                         ? current.filter((id) => id !== esp.id)
                         : [...current, esp.id];
                       methods.setValue("especialidades_seleccionadas", next, {
-                        shouldValidate: true,
+                        shouldValidate: false,
                       });
                     }}
                   />

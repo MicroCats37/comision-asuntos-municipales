@@ -12,10 +12,9 @@ import {
 } from "lucide-react";
 /**
  * SeleccionarPreviaModal — Modal general para buscar/seleccionar una liquidación
- * previa usando el endpoint de últimas revisiones.
+ * previa usando el listado paginado del tipo correspondiente.
  *
- * Endpoint: GET /liquidaciones/generales/ultimas-revisiones
- * - `tipo_liquidacion` se envía como params repetidos (array)
+ * Endpoint: GET /liquidaciones/{tipo}/
  * - Soporta filtros: numero_documento, razon_social, nombre_propietario, direccion, expediente, numero
  * - Restringe a los tipos permitidos (ej. IO → EDIFICACION + HU)
  *
@@ -32,20 +31,20 @@ import {
   LiquidacionDetalleModal,
 } from "../../components/detail";
 import {
-  type UltimaRevisionGeneralItem,
-  useUltimaRevisionGeneral,
-} from "../../hooks/useUltimaRevisionGeneral";
+  type LiquidacionPreviaItem,
+  useLiquidacionesPrevias,
+} from "../../hooks/useLiquidacionesPrevias";
 import { getLiquidacionTipoInfo } from "../../utils/liquidacionTipoInfo";
 
 interface SeleccionarPreviaModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Tipos permitidos como previa (códigos tipo_liquidacion) — ej. ["EDIFICACION", "HABILITACION_URBANA"] */
-  tiposPermitidos?: string[];
+  /** Código del tipo de liquidación cuyo listado se consultará. */
+  tipoPermitido?: string;
   /** Título del modal */
   title?: string;
   description?: string;
-  onSelect: (previa: UltimaRevisionGeneralItem) => void;
+  onSelect: (previa: LiquidacionPreviaItem) => void;
   /** Si se pasa, muestra un botón "Crear sin liquidación previa" en el footer
    * que invoca este callback en lugar de seleccionar una previa. */
   onCreateSinPrevia?: () => void;
@@ -56,7 +55,7 @@ interface SeleccionarPreviaModalProps {
 export function SeleccionarPreviaModal({
   open,
   onOpenChange,
-  tiposPermitidos,
+  tipoPermitido,
   title = "Nueva Revisión",
   description = "Busca la liquidación previa para crear una nueva revisión",
   onSelect,
@@ -69,8 +68,9 @@ export function SeleccionarPreviaModal({
   const [direccion, setDireccion] = useState("");
   const [searched, setSearched] = useState(false);
   const [page, setPage] = useState(1);
-  const [detalleItem, setDetalleItem] =
-    useState<UltimaRevisionGeneralItem | null>(null);
+  const [detalleItem, setDetalleItem] = useState<LiquidacionPreviaItem | null>(
+    null,
+  );
 
   const isDocumentoValid =
     !documento.trim() ||
@@ -87,19 +87,16 @@ export function SeleccionarPreviaModal({
     isNumeroValid;
 
   // IMPORTANTE: cuando tiposPermitidos es vacío, NO disparar query — evita el 422 del backend.
-  const tiposParaBuscar =
-    tiposPermitidos && tiposPermitidos.length > 0 ? tiposPermitidos : undefined;
-
   const { items, total, totalPages, pageSize, isLoading, isError, refetch } =
-    useUltimaRevisionGeneral({
+    useLiquidacionesPrevias({
       page,
       pageSize: 10,
-      tipoLiquidacion: tiposParaBuscar,
+      tipoLiquidacion: tipoPermitido,
       numeroDocumento: documento || undefined,
       numero: numeroValue,
       nombrePropietario: propietario || undefined,
       direccion: direccion || undefined,
-      enabled: searched && open && tiposParaBuscar !== undefined,
+      enabled: searched && open && tipoPermitido !== undefined,
     });
 
   const handleSearch = useCallback(() => {

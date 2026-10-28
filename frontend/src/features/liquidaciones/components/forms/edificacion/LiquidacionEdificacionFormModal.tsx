@@ -36,8 +36,8 @@ import { useCrearEdificaciones } from "../../../hooks/useCrearEdificaciones";
 import { useCrearNuevaRevisionEdificaciones } from "../../../hooks/useCrearNuevaRevisionEdificaciones";
 import { useCrearRelacionadaEdificaciones } from "../../../hooks/useCrearRelacionadaEdificaciones";
 import { useEditarEdificaciones } from "../../../hooks/useEditarEdificaciones";
+import type { LiquidacionPreviaItem } from "../../../hooks/useLiquidacionesPrevias";
 import { useLiquidacionPdfOnAfter } from "../../../hooks/useLiquidacionPdfOnAfter";
-import type { UltimaRevisionGeneralItem } from "../../../hooks/useUltimaRevisionGeneral";
 import type { LiquidacionEdificacionesListItem } from "../../../schemas/liquidacion-edificaciones.schema";
 import {
   type EdificacionesFormData,
@@ -46,6 +46,7 @@ import {
 import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
 import { formatPublicId } from "../../../utils/formatPublicId";
+import { toFiniteNumber } from "../../../utils/toFiniteNumber";
 import { CotizacionPorcentajeSmartField } from "../CotizacionPorcentajeSmartField";
 import { LiquidacionFormBodyBase } from "../LiquidacionFormBodyBase";
 import { LiquidacionFormShell } from "../LiquidacionFormShell";
@@ -68,11 +69,11 @@ type EditProps = BaseProps & {
 };
 type NuevaRevisionProps = BaseProps & {
   mode: "nueva-revision";
-  previa: UltimaRevisionGeneralItem;
+  previa: LiquidacionPreviaItem;
 };
 type RelacionadaProps = BaseProps & {
   mode: "relacionada";
-  previa: UltimaRevisionGeneralItem;
+  previa: LiquidacionPreviaItem;
 };
 
 export type LiquidacionEdificacionFormModalProps =
@@ -90,7 +91,7 @@ export type LiquidacionEdificacionFormModalProps =
  *   debe elegir explícitamente las especialidades (no se heredan de la previa).
  */
 function buildInitialDataFromItem(
-  item: UltimaRevisionGeneralItem,
+  item: LiquidacionPreviaItem,
   options: { skipSmartFieldDefaults?: boolean } = {},
 ): Partial<EdificacionesFormData> {
   const { liquidacion_general: lg, liquidacion_tipo: lt } =
@@ -100,7 +101,6 @@ function buildInitialDataFromItem(
     municipalidad_id: lg.municipalidad?.id ?? "",
     expediente: lg.expediente ?? "",
     observacion: lg.observacion ?? "",
-    retencion: lg.retencion ?? false,
     nombre_propietario: lg.proyecto.nombre_propietario,
     direccion: lg.proyecto.direccion,
     distrito_id: lg.proyecto.distrito?.id ?? "",
@@ -109,7 +109,7 @@ function buildInitialDataFromItem(
       lg.proyecto.entidad?.tipo_documento === "DNI" ? "DNI" : "RUC",
     entidad_numero_documento: lg.proyecto.entidad?.numero_documento ?? "",
     entidad_razon_social: lg.proyecto.entidad?.razon_social ?? "",
-    valor_declarado: lt.valor_declarado,
+    valor_declarado: toFiniteNumber(lt.valor_declarado),
     tipo_tramite: lt.tipo_tramite as EdificacionesFormData["tipo_tramite"],
     tarifa_unica_id: options.skipSmartFieldDefaults
       ? undefined
@@ -130,7 +130,7 @@ export function LiquidacionEdificacionFormModal(
   // ── sourceItem: item (edit) o previa (nueva-revision/relacionada) o null (create)
   const sourceItem:
     | LiquidacionEdificacionesListItem
-    | UltimaRevisionGeneralItem
+    | LiquidacionPreviaItem
     | null =
     mode === "edit" ? props.item : mode !== "create" ? props.previa : null;
 
@@ -193,9 +193,9 @@ export function LiquidacionEdificacionFormModal(
 
   const description =
     mode === "nueva-revision" || mode === "relacionada"
-      ? (props.previa as UltimaRevisionGeneralItem).liquidacion_general
+      ? (props.previa as LiquidacionPreviaItem).liquidacion_general
           .denominacion_de_proyecto
-        ? `Sobre: ${(props.previa as UltimaRevisionGeneralItem).liquidacion_general.denominacion_de_proyecto}`
+        ? `Sobre: ${(props.previa as LiquidacionPreviaItem).liquidacion_general.denominacion_de_proyecto}`
         : undefined
       : undefined;
 
@@ -206,7 +206,7 @@ export function LiquidacionEdificacionFormModal(
       : mode === "nueva-revision" || mode === "relacionada"
         ? (() => {
             const n = Number(
-              (props.previa as UltimaRevisionGeneralItem).liquidacion_general
+              (props.previa as LiquidacionPreviaItem).liquidacion_general
                 .numero_revision,
             );
             return Number.isFinite(n) ? n + 2 : undefined;
@@ -360,7 +360,7 @@ export function LiquidacionEdificacionFormModal(
   // ── Datos del item/previa para "Ver detalle" ─────────────────────────────
   const previaParaDetalle =
     mode === "nueva-revision" || mode === "relacionada"
-      ? (props.previa as UltimaRevisionGeneralItem)
+      ? (props.previa as LiquidacionPreviaItem)
       : null;
 
   const detallePublicId = previaParaDetalle
@@ -376,7 +376,7 @@ export function LiquidacionEdificacionFormModal(
     <>
       <LiquidacionFormShell<
         EdificacionesFormData,
-        LiquidacionEdificacionesListItem | UltimaRevisionGeneralItem
+        LiquidacionEdificacionesListItem | LiquidacionPreviaItem
       >
         open={open}
         onOpenChange={onOpenChange}
@@ -430,6 +430,6 @@ export function LiquidacionEdificacionFormModal(
   );
 }
 
-// ── Local type alias (UltimaRevisionGeneralItem structurally matches EdificacionesListItem)
+// ── Local type alias (LiquidacionPreviaItem structurally matches EdificacionesListItem)
 // biome-ignore lint/suspicious/noExplicitAny: structural compat alias for type narrowing
 type UltimaRevisionGenericItem = any;

@@ -70,7 +70,6 @@ class LiquidacionGeneralNuevaRevisionIn(BaseSchema):
     """Input reducido para nueva revisión — solo campos editables (sin municipalidad/proyecto)."""
     expediente: Optional[str] = Field(None, description="Número de expediente")
     observacion: Optional[str] = Field(None, description="Observación opcional")
-    retencion: bool = Field(False, description="Indica si la liquidación tiene retención")
     denominacion_de_proyecto: Optional[str] = Field(None, description="Denominación del proyecto (opcional, hereda de la previa si no se provee)")
     contacto: Optional[ContactoInlineSchema] = Field(None, description="Contacto principal (se crea inline)")
 
@@ -91,7 +90,7 @@ class LiquidacionEdificacionesNuevaRevisionInput(BaseSchema):
     """Input para /nueva-revision — schema específico reducido.
 
     Hereda de la liquidación previa: proyecto, municipalidad, valor_declarado.
-    Solo se editan: expediente, observacion, retencion, contacto y tarifas.
+    Solo se editan: expediente, observacion, contacto y tarifas.
     """
     liquidacion_previa_id: uuid.UUID
     liquidacion_general: LiquidacionGeneralNuevaRevisionIn

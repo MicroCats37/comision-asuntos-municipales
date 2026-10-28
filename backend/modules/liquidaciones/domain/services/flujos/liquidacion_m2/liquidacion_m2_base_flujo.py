@@ -109,6 +109,15 @@ class LiquidacionM2FlujoBase:
         tipo_liquidacion = TipoLiquidacionModel.objects.get(
             codigo=self._get_tipo_liquidacion_code()
         )
+        contacto = None
+        if gen_data.contacto:
+            contacto_data = (
+                gen_data.contacto.model_dump()
+                if hasattr(gen_data.contacto, "model_dump")
+                else gen_data.contacto.__dict__
+            )
+            contacto = self.general_core.create_contacto(contacto_data)
+
         liquidacion_general = self.general_core.create_liquidacion_general(
             municipalidad_id=gen_data.municipalidad_id,
             expediente=gen_data.expediente,
@@ -116,6 +125,7 @@ class LiquidacionM2FlujoBase:
             proyecto=proyecto,
             tipo_liquidacion=tipo_liquidacion,
             numero_revision=1,
+            contacto=contacto,
             denominacion_de_proyecto=getattr(gen_data, 'denominacion_de_proyecto', None),
             sub_total=Decimal(str(cotizacion.subtotal)),
             total=Decimal(str(cotizacion.total)),

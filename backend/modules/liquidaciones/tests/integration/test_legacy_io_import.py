@@ -148,7 +148,7 @@ class TestMapCategoriaIO:
         assert status == "null_tariff"
 
     def test_categoria_1_to_4(self):
-        expected = {1: "C1", 2: "C2", 3: "C3", 4: "C4"}
+        expected = {1: "1", 2: "2", 3: "3", 4: "4"}
         for val, expected_cat in expected.items():
             cat, status = _map_categoria_io(val)
             assert cat == expected_cat, f"CATEGORIA={val}"
@@ -156,7 +156,7 @@ class TestMapCategoriaIO:
 
     def test_categoria_string(self):
         cat, status = _map_categoria_io("3")
-        assert cat == "C3"
+        assert cat == "3"
         assert status == "mapped"
 
     def test_categoria_invalid(self):
@@ -526,7 +526,7 @@ class TestParseRow:
         assert pr.dptoprdri == "LIMA/MAGDALENA DEL MAR"
         assert pr.cip == 72900
         assert pr.delegado_nombre == "CASTAÑEDA AMES VIVIANA PAOLA"
-        assert pr.categoria_mapped == "C3"
+        assert pr.categoria_mapped == "3"
         assert pr.categoria_status == "mapped"
         assert pr.modo_calculo == "TARIFA"
         assert pr.fecha == date(2026, 8, 20)

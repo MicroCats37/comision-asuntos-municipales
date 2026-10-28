@@ -300,10 +300,10 @@ def _map_categoria_io(categoria_raw) -> tuple[str | None, str]:
 
     Returns (mapped_category, status) where:
         - CATEGORIA=0 -> (None, 'null_tariff')  — no corresponding tariff
-        - CATEGORIA=1 -> ('C1', 'mapped')
-        - CATEGORIA=2 -> ('C2', 'mapped')
-        - CATEGORIA=3 -> ('C3', 'mapped')
-        - CATEGORIA=4 -> ('C4', 'mapped')
+        - CATEGORIA=1 -> ('1', 'mapped')
+        - CATEGORIA=2 -> ('2', 'mapped')
+        - CATEGORIA=3 -> ('3', 'mapped')
+        - CATEGORIA=4 -> ('4', 'mapped')
         - invalid/other -> (str(value), 'anomaly')
     """
     val = _int(categoria_raw)
@@ -311,14 +311,8 @@ def _map_categoria_io(categoria_raw) -> tuple[str | None, str]:
         return None, "anomaly"
     if val == 0:
         return None, "null_tariff"
-    if val == 1:
-        return "C1", "mapped"
-    if val == 2:
-        return "C2", "mapped"
-    if val == 3:
-        return "C3", "mapped"
-    if val == 4:
-        return "C4", "mapped"
+    if val in {1, 2, 3, 4}:
+        return str(val), "mapped"
     return str(val), "anomaly"
 
 
@@ -1493,10 +1487,16 @@ def _resolve_inspector_operacion_for_legacy_io(
         TipoLiquidacionConstants.HABILITACION_URBANA,
         TipoLiquidacionConstants.INSPECCION_OBRA,
     ]
+    categoria = (
+        row.categoria_mapped
+        if row.categoria_mapped in {"1", "2", "3", "4"}
+        else "1"
+    )
     existing = (
         InspectorOperacion.objects.filter(
             inspector=inspector,
             tipo_liquidacion__codigo__in=preferred_codes,
+            categoria=categoria,
         )
         .select_related("especialidad_revision", "tipo_liquidacion")
         .order_by("tipo_liquidacion__codigo", "categoria")
@@ -1506,7 +1506,6 @@ def _resolve_inspector_operacion_for_legacy_io(
         return existing
 
     tipo_io = TipoLiquidacion.objects.get(codigo=TipoLiquidacionConstants.INSPECCION_OBRA)
-    categoria = row.categoria_mapped if row.categoria_mapped in {"1", "2", "3", "4"} else "1"
     especialidad = _get_or_create_io_especialidad_revision()
     existing_io = InspectorOperacion.objects.filter(
         inspector=inspector,

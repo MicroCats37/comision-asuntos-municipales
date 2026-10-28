@@ -31,7 +31,6 @@ class LiquidacionGeneralData(BaseSchema):
     municipalidad_id: str
     expediente: Optional[str] = None
     observacion: Optional[str] = None
-    retencion: bool = False
     proyecto: ProyectoData
     contacto: Optional[ContactoData] = None
     denominacion_de_proyecto: Optional[str] = None

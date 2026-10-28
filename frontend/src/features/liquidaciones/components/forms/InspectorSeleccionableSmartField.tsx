@@ -67,7 +67,7 @@ export function InspectorSeleccionableSmartField({
           "inspector_operacion_id",
           inspectorObj.inspector_operacion_id,
           {
-            shouldValidate: true,
+            shouldValidate: false,
           },
         );
       }

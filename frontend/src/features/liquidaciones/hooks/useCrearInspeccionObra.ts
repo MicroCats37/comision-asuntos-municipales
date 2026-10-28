@@ -11,11 +11,45 @@ import { useLiquidacionesCreateMutation } from "./cache";
 const BASE_URL = "/liquidaciones/inspeccion-obra";
 const LIST_KEY = ["liquidaciones", "inspeccion-obra"] as const;
 
+export function buildCrearInspeccionObraPayload(payload: VisitasFormData) {
+  const {
+    tarifa_visitas_id,
+    cantidad_visitas,
+    inspector_operacion_id,
+    ...rest
+  } = payload;
+
+  return {
+    liquidacion_general: {
+      municipalidad_id: rest.municipalidad_id,
+      expediente: rest.expediente,
+      observacion: rest.observacion,
+      denominacion_de_proyecto: rest.denominacion || undefined,
+      proyecto: {
+        nombre_propietario: rest.nombre_propietario,
+        direccion: rest.direccion,
+        distrito_id: rest.distrito_id || undefined,
+        entidad: {
+          tipo_documento: rest.entidad_tipo_documento,
+          numero_documento: rest.entidad_numero_documento,
+          razon_social: rest.entidad_razon_social,
+        },
+      },
+      ...(rest.contacto ? { contacto: rest.contacto } : {}),
+    },
+    liquidacion_especifica: {
+      datos: { cantidad_visitas },
+      tarifa: { tarifa_visitas_id },
+      inspector_operacion_id,
+    },
+  };
+}
+
 export function useCrearInspeccionObra() {
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_general: unknown;
     liquidacion_especifica: {
-      datos: { cantidad_visitas: number; categoria: string };
+      datos: { cantidad_visitas: number };
       tarifa: { tarifa_visitas_id: string | undefined };
       inspector_operacion_id: string;
     };
@@ -33,76 +67,10 @@ export function useCrearInspeccionObra() {
     () => ({
       ...mutation,
       mutate: (payload: VisitasFormData) => {
-        const {
-          tarifa_visitas_id,
-          cantidad_visitas,
-          categoria,
-          inspector_operacion_id,
-          ...rest
-        } = payload;
-        mutation.mutate({
-          liquidacion_general: {
-            municipalidad_id: rest.municipalidad_id,
-            expediente: rest.expediente,
-            observacion: rest.observacion,
-            denominacion_de_proyecto: rest.denominacion || undefined,
-            proyecto: {
-              nombre_propietario: rest.nombre_propietario,
-              direccion: rest.direccion,
-              distrito_id: rest.distrito_id || undefined,
-              entidad: {
-                tipo_documento: rest.entidad_tipo_documento,
-                numero_documento: rest.entidad_numero_documento,
-                razon_social: rest.entidad_razon_social,
-              },
-            },
-            ...(rest.contacto ? { contacto: rest.contacto } : {}),
-          },
-          liquidacion_especifica: {
-            datos: {
-              cantidad_visitas,
-              categoria,
-            },
-            tarifa: { tarifa_visitas_id },
-            inspector_operacion_id,
-          },
-        });
+        mutation.mutate(buildCrearInspeccionObraPayload(payload));
       },
       mutateAsync: async (payload: VisitasFormData) => {
-        const {
-          tarifa_visitas_id,
-          cantidad_visitas,
-          categoria,
-          inspector_operacion_id,
-          ...rest
-        } = payload;
-        return mutation.mutateAsync({
-          liquidacion_general: {
-            municipalidad_id: rest.municipalidad_id,
-            expediente: rest.expediente,
-            observacion: rest.observacion,
-            denominacion_de_proyecto: rest.denominacion || undefined,
-            proyecto: {
-              nombre_propietario: rest.nombre_propietario,
-              direccion: rest.direccion,
-              distrito_id: rest.distrito_id || undefined,
-              entidad: {
-                tipo_documento: rest.entidad_tipo_documento,
-                numero_documento: rest.entidad_numero_documento,
-                razon_social: rest.entidad_razon_social,
-              },
-            },
-            ...(rest.contacto ? { contacto: rest.contacto } : {}),
-          },
-          liquidacion_especifica: {
-            datos: {
-              cantidad_visitas,
-              categoria,
-            },
-            tarifa: { tarifa_visitas_id },
-            inspector_operacion_id,
-          },
-        });
+        return mutation.mutateAsync(buildCrearInspeccionObraPayload(payload));
       },
     }),
     [mutation],

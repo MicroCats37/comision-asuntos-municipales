@@ -1,5 +1,5 @@
 /**
- * liquidacionPdfHelpers — Construye las filas extra específicas del PDF
+ * liquidacionPdfHelpers — Construye las filas del recibo de liquidación
  * según el tipo de liquidación.
  *
  * Cada tipo tiene campos específicos en `liquidacion_tipo`:
@@ -7,9 +7,9 @@
  * - habilitacion-urbana / mecanica-suelos → "m2"
  * - inspeccion-obra → "visitas"
  *
- * Este es el ÚNICO lugar donde se decide qué filas van en el bloque
- * específico del recibo. La base (`LiquidacionPdfPreview`) siempre delega
- * aquí — no hay implementación paralela.
+ * Este es el ÚNICO lugar donde se decide qué filas van en el recibo. La base
+ * (`LiquidacionPdfPreview`) siempre delega aquí — no hay implementación
+ * paralela ni decisiones de tipo dentro de la base.
  */
 import type { PdfLiquidacionItem, PdfTipoSlug } from "./pdfTypes";
 
@@ -19,6 +19,53 @@ function formatCurrency(value: number | undefined | null): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+/**
+ * Costo por visita = UIT × porcentaje_uit.
+ * `porcentaje_uit` ya es una proporción (decimal 0-1, ej. 0.05 = 5 %).
+ * Devuelve null cuando falta el UIT de la liquidación o el porcentaje.
+ */
+function calcCostoPorVisita(item: PdfLiquidacionItem): number | null {
+  const uit = item.liquidacion_general.uit?.valor;
+  const porcentaje = item.liquidacion_tipo.porcentaje_uit;
+  if (uit == null || porcentaje == null) return null;
+  const costo = Number(uit) * Number(porcentaje);
+  return Number.isFinite(costo) ? costo : null;
+}
+
+/**
+ * Filas del bloque de detalle común (parte base del recibo).
+ *
+ * El tipo decide si el nombre del proyecto se imprime: en Inspección de Obra
+ * no aplica — la liquidación de inspección hereda el nombre del proyecto de
+ * la liquidación previa y no describe la obra inspeccionada.
+ */
+export function buildCommonFieldRows(
+  item: PdfLiquidacionItem,
+  tipo: PdfTipoSlug,
+): ReadonlyArray<readonly [string, string]> {
+  const lg = item.liquidacion_general;
+  const proyecto = lg.proyecto;
+  const entidad = proyecto.entidad ?? null;
+
+  const rows: Array<[string, string]> = [
+    ["RUC", entidad?.numero_documento ?? ""],
+    ["RAZON SOCIAL", entidad?.razon_social ?? ""],
+    [
+      "NOMBRE DEL PROPIETARIO",
+      proyecto.nombre_propietario || entidad?.razon_social || "",
+    ],
+  ];
+
+  if (tipo !== "inspeccion-obra") {
+    rows.push(["NOMBRE DEL PROYECTO", lg.denominacion_de_proyecto ?? ""]);
+  }
+
+  rows.push(["DPTO. / PROV. / DISTRITO", lg.municipalidad?.nombre ?? ""]);
+  rows.push(["DIRECCION DE LA OBRA", proyecto.direccion ?? ""]);
+
+  return rows;
 }
 
 export function buildExtraFieldRows(
@@ -62,6 +109,10 @@ export function buildExtraFieldRows(
     // Motor visitas
     if (lt.cantidad_visitas && lt.cantidad_visitas > 0) {
       rows.push(["CANTIDAD DE VISITAS", `${lt.cantidad_visitas}`]);
+    }
+    const costoPorVisita = calcCostoPorVisita(item);
+    if (costoPorVisita != null) {
+      rows.push(["COSTO POR VISITA", formatCurrency(costoPorVisita)]);
     }
     if (lt.categoria) {
       rows.push(["CATEGORIA", lt.categoria]);

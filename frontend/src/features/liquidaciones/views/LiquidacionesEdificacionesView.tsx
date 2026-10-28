@@ -49,8 +49,8 @@ import type { TableColumn } from "../components/tables/LiquidacionesTable";
 import type { LiquidacionRowAction } from "../components/tables/LiquidacionesTableRowActions";
 import { LiquidacionesTableRowActions } from "../components/tables/LiquidacionesTableRowActions";
 import { useLiquidacionesEdificaciones } from "../hooks/useLiquidacionesEdificaciones";
+import type { LiquidacionPreviaItem } from "../hooks/useLiquidacionesPrevias";
 import { useLiquidacionFiltersUrl } from "../hooks/useLiquidacionFiltersUrl";
-import type { UltimaRevisionGeneralItem } from "../hooks/useUltimaRevisionGeneral";
 import { printLiquidacionPreview } from "../pdf/LiquidacionPdfPreview";
 import type { PdfLiquidacionItem } from "../pdf/pdfTypes";
 import type { LiquidacionEdificacionesListItem } from "../schemas/liquidacion-edificaciones.schema";
@@ -95,7 +95,7 @@ export function LiquidacionesEdificacionesView() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [selectPreviaOpen, setSelectPreviaOpen] = useState(false);
   const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
-  const [previa, setPrevia] = useState<UltimaRevisionGeneralItem | null>(null);
+  const [previa, setPrevia] = useState<LiquidacionPreviaItem | null>(null);
 
   // Lifted modals — fired by Table view's row actions.
   const [detalleItem, setDetalleItem] =
@@ -254,7 +254,7 @@ export function LiquidacionesEdificacionesView() {
       <SeleccionarPreviaModal
         open={selectPreviaOpen}
         onOpenChange={setSelectPreviaOpen}
-        tiposPermitidos={["EDIFICACION"]}
+        tipoPermitido="EDIFICACION"
         onSelect={(p) => {
           setPrevia(p);
           setSelectPreviaOpen(false);

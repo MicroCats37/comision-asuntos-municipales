@@ -39,9 +39,9 @@ import {
 import type { TableColumn } from "../components/tables/LiquidacionesTable";
 import type { LiquidacionRowAction } from "../components/tables/LiquidacionesTableRowActions";
 import { LiquidacionesTableRowActions } from "../components/tables/LiquidacionesTableRowActions";
+import type { LiquidacionPreviaItem } from "../hooks/useLiquidacionesPrevias";
 import { useLiquidacionesTaludes } from "../hooks/useLiquidacionesTaludes";
 import { useLiquidacionFiltersUrl } from "../hooks/useLiquidacionFiltersUrl";
-import type { UltimaRevisionGeneralItem } from "../hooks/useUltimaRevisionGeneral";
 import { printLiquidacionPreview } from "../pdf/LiquidacionPdfPreview";
 import type { PdfLiquidacionItem } from "../pdf/pdfTypes";
 import type { LiquidacionTaludesListItem } from "../schemas/liquidacion-taludes.schema";
@@ -73,7 +73,7 @@ export function LiquidacionesTaludesView() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [selectPreviaOpen, setSelectPreviaOpen] = useState(false);
   const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
-  const [previa, setPrevia] = useState<UltimaRevisionGeneralItem | null>(null);
+  const [previa, setPrevia] = useState<LiquidacionPreviaItem | null>(null);
 
   const [detalleItem, setDetalleItem] =
     useState<LiquidacionTaludesListItem | null>(null);
@@ -209,7 +209,7 @@ export function LiquidacionesTaludesView() {
       <SeleccionarPreviaModal
         open={selectPreviaOpen}
         onOpenChange={setSelectPreviaOpen}
-        tiposPermitidos={["TALUDES"]}
+        tipoPermitido="TALUDES"
         onSelect={(p) => {
           setPrevia(p);
           setSelectPreviaOpen(false);

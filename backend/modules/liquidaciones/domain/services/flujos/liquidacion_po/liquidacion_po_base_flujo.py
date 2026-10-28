@@ -297,7 +297,7 @@ class LiquidacionPOBaseFlujo:
         """
         Shared legacy first revision skeleton.
         Subclass overrides _crear_liquidacion_general to add type-specific fields
-        (e.g. retencion for Edificaciones).
+        (e.g. descripcion_legacy for Edificaciones).
         """
         gen_data = data.liquidacion_general
         po_data = data.liquidacion_especifica
@@ -437,13 +437,14 @@ class LiquidacionPOBaseFlujo:
 
         Default implementation handles the common fields present in all PO flows.
         Subclasses may override to add type-specific fields (e.g. Edificaciones
-        adds retencion).
+        adds descripcion_legacy).
 
         Pass sub_total and total for quote-first creation (avoids zero-fill pattern).
         The default creates with numero_revision=1 (primera revision).
         For legacy flows, pass numero_revision explicitly.
         FKs (igv_id, uit_id, usuario_creador_id), fecha_registro, modo_calculo,
-        contacto, and descripcion_legacy are forwarded to create_liquidacion_general when provided.
+        contacto and descripcion_legacy are forwarded to
+        create_liquidacion_general when provided.
         """
         return self.general_core.create_liquidacion_general(
             municipalidad_id=gen_data.municipalidad_id,

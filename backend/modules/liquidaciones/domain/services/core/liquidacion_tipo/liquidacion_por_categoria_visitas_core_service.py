@@ -61,7 +61,6 @@ class LiquidacionPorCategoriaVisitasCoreService:
     def calcular_cotizacion_visitas(
         self,
         cantidad_visitas: int,
-        categoria: str,
         tarifa_visitas_id: str,
         uit_vigente: UIT,
         igv_vigente: "IGV",
@@ -112,14 +111,16 @@ class LiquidacionPorCategoriaVisitasCoreService:
         tarifa = None
         porcentaje_uit = None
         categoria = data.datos.categoria
+        if categoria in {"C1", "C2", "C3", "C4"}:
+            categoria = categoria[1:]
 
         if data.tarifa and data.tarifa.tarifa_visitas_id:
             tarifa = self.get_tarifa_por_id(data.tarifa.tarifa_visitas_id)
             if tarifa:
                 porcentaje_uit = tarifa.porcentaje_uit
-                # Fall back to tariff's categoria if not provided in data
-                if not categoria:
-                    categoria = tarifa.categoria_visitas
+                categoria = tarifa.categoria_visitas
+                if categoria in {"C1", "C2", "C3", "C4"}:
+                    categoria = categoria[1:]
 
         liquidacion_visitas = LiquidacionPorCategoriaVisitas.objects.create(
             liquidacion_general=liquidacion_general,

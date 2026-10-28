@@ -319,7 +319,6 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
             proyecto=proyecto,
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.EDIFICACION),
             numero_revision=1,  # Always revision 1 for /relacionada
-            retencion=gen_data.retencion,
             contacto=contacto,
             denominacion_de_proyecto=getattr(gen_data, 'denominacion_de_proyecto', None),
             sub_total=cotizacion.total_subtotal,
@@ -405,7 +404,6 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
             municipalidad_id=str(liquidacion_previa.municipalidad_id),
             expediente=gen_data.expediente,
             observacion=gen_data.observacion,
-            retencion=gen_data.retencion,
             proyecto=proyecto,
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.EDIFICACION),
             numero_revision=nueva_revision_numero,

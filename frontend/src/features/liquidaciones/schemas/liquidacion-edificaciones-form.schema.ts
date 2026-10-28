@@ -16,11 +16,14 @@ export const edificacionesFormSchema = z.object({
   // Especifica fields (motor PorcentajeObra)
   valor_declarado: z
     .number({
-      error: "El valor declarado debe ser positivo",
+      error: (issue) =>
+        issue.input === undefined || issue.input === null || issue.input === ""
+          ? "El valor declarado es requerido"
+          : "El valor declarado debe ser un número válido",
     })
     .positive("El valor declarado debe ser positivo")
     .max(9999999999.99, "El valor declarado excede el máximo permitido")
-    .finite(),
+    .finite("El valor declarado debe ser un número válido"),
   /** Tipo de trámite de edificaciones — requerido. El smart field de tarifas
    *  muestra un mensaje informativo hasta que se setee. */
   tipo_tramite: TipoTramiteEdificacionesSchema,

@@ -171,15 +171,15 @@ class LiquidacionInspeccionObraController:
     def cotizar(self, payload: CotizarPorCategoriaVisitasInputSchema):
         """
         Calculates a quote for Inspeccion Obra liquidacion.
+
+        The selected tariff is the source of truth for the category.
         """
         le = payload.liquidacion_especifica
         cantidad_visitas = le.datos.cantidad_visitas
-        categoria = le.datos.categoria
         tarifa_visitas_id = le.tarifa.tarifa_visitas_id
 
         result = self.orchestrator.cotizar_proceso(
             cantidad_visitas=cantidad_visitas,
-            categoria=categoria,
             tarifa_id=str(tarifa_visitas_id),
         )
 

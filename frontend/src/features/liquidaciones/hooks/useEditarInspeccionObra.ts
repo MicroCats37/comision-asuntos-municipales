@@ -4,7 +4,7 @@
  * Endpoint: PATCH /liquidaciones/inspeccion-obra/{id}
  * Payload:   { liquidacion_general?, liquidacion_tipo? }
  *
- * Motor Visitas: liquidacion_tipo { datos: { cantidad_visitas, categoria }, tarifa: { tarifa_visitas_id } }
+ * Motor Visitas: liquidacion_tipo { datos: { cantidad_visitas }, tarifa: { tarifa_visitas_id } }
  *
  * onSuccess.sync: sincroniza el item actualizado en cache de lista y detalle,
  * reemplazando el objeto antiguo (comportamiento homogeneizado con creación).

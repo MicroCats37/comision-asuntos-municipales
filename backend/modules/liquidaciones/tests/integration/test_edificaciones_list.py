@@ -178,6 +178,28 @@ def test_list_pagination_params_work(auth_client, liquidacion_edificacion_create
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("query", "expected_total"),
+    [
+        ("documento=20456789012", 1),
+        ("documento=00000000", 0),
+        ("expediente=EDIF-2024", 1),
+        ("expediente=NO-EXISTE", 0),
+    ],
+)
+def test_list_filters_by_general_liquidation_fields(
+    auth_client,
+    liquidacion_edificacion_created,
+    query,
+    expected_total,
+):
+    response = auth_client.get(f"/liquidaciones/edificaciones/?{query}")
+
+    assert response.status_code == 200
+    assert response.json()["data"]["total"] == expected_total
+
+
+@pytest.mark.django_db
 def test_list_empty_returns_empty_items(auth_client, db):
     """
     When no liquidaciones exist, returns empty items array with total=0.

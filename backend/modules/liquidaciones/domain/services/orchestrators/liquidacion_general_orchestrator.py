@@ -467,12 +467,11 @@ class LiquidacionGeneralOrchestrator:
         liquidacion_id: uuid.UUID,
         expediente: Optional[str] = None,
         observacion: Optional[str] = None,
-        retencion: Optional[bool] = None,
         denominacion_de_proyecto: Optional[str] = None,
         contacto_data: Optional[dict] = None,
     ) -> LiquidacionGeneralResult:
         """
-        Actualiza campos genéricos editables (expediente, observacion, retencion, denominacion_de_proyecto, contacto)
+        Actualiza campos genéricos editables (expediente, observacion, denominacion_de_proyecto, contacto)
         de una LiquidacionGeneral.
 
         Regla de negocio: solo permitido cuando estado == PENDIENTE (ConflictError si PAGADA).
@@ -481,7 +480,6 @@ class LiquidacionGeneralOrchestrator:
             liquidacion_id: UUID de la liquidación a actualizar.
             expediente: Nuevo valor de expediente (None = sin cambio).
             observacion: Nuevo valor de observación (None = sin cambio).
-            retencion: Nuevo valor de retención (None = sin cambio).
             denominacion_de_proyecto: Nuevo valor de denominación (None = sin cambio).
             contacto_data: Dict de datos upsert de Contacto.
 
@@ -512,7 +510,6 @@ class LiquidacionGeneralOrchestrator:
             liquidacion=liquidacion,
             expediente=expediente,
             observacion=observacion,
-            retencion=retencion,
             denominacion_de_proyecto=denominacion_de_proyecto,
             contacto_data=contacto_data,
         )
@@ -532,7 +529,6 @@ class LiquidacionGeneralOrchestrator:
         proyecto_data: Optional[dict] = None,
         expediente: Optional[str] = None,
         observacion: Optional[str] = None,
-        retencion: Optional[bool] = None,
         denominacion_de_proyecto: Optional[str] = None,
         contacto_data: Optional[dict] = None,
         liquidacion: Optional["LiquidacionGeneral"] = None,
@@ -556,7 +552,6 @@ class LiquidacionGeneralOrchestrator:
                 - entidad: dict con tipo_documento, numero_documento, razon_social
             expediente: Nuevo valor de expediente (None = sin cambio).
             observacion: Nuevo valor de observacion (None = sin cambio).
-            retencion: Nuevo valor de retencion (None = sin cambio).
             denominacion_de_proyecto: Nuevo valor de denominacion (None = sin cambio).
             contacto_data: Dict de datos upsert de Contacto (None = sin cambio).
             liquidacion: Instancia ORM de LiquidacionGeneral pre-cargada (opcional, evita re-fetch).
@@ -588,13 +583,12 @@ class LiquidacionGeneralOrchestrator:
             )
 
         # Update generic fields if any are provided
-        has_generic = expediente is not None or observacion is not None or retencion is not None or denominacion_de_proyecto is not None or contacto_data is not None
+        has_generic = expediente is not None or observacion is not None or denominacion_de_proyecto is not None or contacto_data is not None
         if has_generic:
             self.general_core_service.actualizar_liquidacion_general(
                 liquidacion=liquidacion,
                 expediente=expediente,
                 observacion=observacion,
-                retencion=retencion,
                 denominacion_de_proyecto=denominacion_de_proyecto,
                 contacto_data=contacto_data,
             )

@@ -31,7 +31,10 @@ class LiquidacionPorCategoriaVisitasDatosIn(BaseSchema):
         le=9999,
         description="Cantidad de visitas solicitadas (1-9999)",
     )
-    categoria: str = Field(..., description="Categoría seleccionada (ej. A, B, C)")
+    categoria: Optional[str] = Field(
+        None,
+        description="Categoría derivada de la tarifa. Se acepta opcionalmente por compatibilidad legacy.",
+    )
 
 
 class LiquidacionPorCategoriaVisitasTarifaIn(BaseSchema):
@@ -93,7 +96,7 @@ class TarifaVigenteVisitasDatos(BaseSchema):
     categoria: str
 
 class TarifasVigentesPorCategoriaVisitasOutputSchema(BaseSchema):
-    """Devuelve la lista de tarifas vigentes por cada categoría (A, B, C, etc)."""
+    """Devuelve las tarifas vigentes agrupables por categoría 1, 2, 3 o 4."""
     tarifas: list[TarifaVigenteVisitasDatos]
 
 

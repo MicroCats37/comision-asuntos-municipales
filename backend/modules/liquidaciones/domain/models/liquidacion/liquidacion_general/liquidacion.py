@@ -140,7 +140,7 @@ class LiquidacionGeneral(BaseModel):
         verbose_name="¿Retención?",
         help_text="Indica si la liquidación tiene retención.",
     )
-    
+
     contacto = models.ForeignKey(
         "entidades.Contacto",
         on_delete=models.PROTECT,

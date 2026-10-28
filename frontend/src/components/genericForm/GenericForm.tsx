@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import type { ComponentType, FC, FormEvent, ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   type DefaultValues,
   type FieldValues,
@@ -40,6 +40,46 @@ import {
 // Safe by default (false) — only logs when explicitly enabled.
 
 const DEBUG_FORM = process.env.NEXT_PUBLIC_DEBUG_GENERIC_FORM_ERRORS === "true";
+
+function isDeepEqual(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true;
+  if (left instanceof Date && right instanceof Date) {
+    return left.getTime() === right.getTime();
+  }
+  if (Array.isArray(left) && Array.isArray(right)) {
+    return (
+      left.length === right.length &&
+      left.every((value, index) => isDeepEqual(value, right[index]))
+    );
+  }
+  if (
+    !left ||
+    !right ||
+    typeof left !== "object" ||
+    typeof right !== "object" ||
+    Array.isArray(left) ||
+    Array.isArray(right) ||
+    Object.getPrototypeOf(left) !== Object.getPrototypeOf(right)
+  ) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(left);
+  if (prototype !== Object.prototype && prototype !== null) return false;
+
+  const leftRecord = left as Record<string, unknown>;
+  const rightRecord = right as Record<string, unknown>;
+  const leftKeys = Object.keys(leftRecord);
+  const rightKeys = Object.keys(rightRecord);
+  return (
+    leftKeys.length === rightKeys.length &&
+    leftKeys.every(
+      (key) =>
+        Object.hasOwn(rightRecord, key) &&
+        isDeepEqual(leftRecord[key], rightRecord[key]),
+    )
+  );
+}
 
 // =====================================================================
 // FRIENDLY MESSAGE FALLBACK
@@ -269,11 +309,30 @@ export const GenericForm = <T extends FieldValues>({
     }
   }
 
+  const initialDefaultsRef = useRef<DefaultValues<T> | null>(null);
+  if (initialDefaultsRef.current === null) {
+    initialDefaultsRef.current = defaults;
+  }
+
   const internalMethods = useForm<T>({
     resolver: zodResolver(schema),
-    defaultValues: defaults,
-    values: initialData as any, // Reinitializes form when async initialData arrives
+    defaultValues: initialDefaultsRef.current,
   });
+  const previousDefaultsRef = useRef(initialDefaultsRef.current);
+  // RHF requires dirtyFields to be subscribed for keepDirtyValues to work.
+  void internalMethods.formState.dirtyFields;
+
+  useEffect(() => {
+    if (formMethods || isDeepEqual(previousDefaultsRef.current, defaults))
+      return;
+
+    previousDefaultsRef.current = defaults;
+    internalMethods.reset(defaults, {
+      keepDirtyValues: true,
+      keepErrors: true,
+      keepTouched: true,
+    });
+  }, [defaults, formMethods, internalMethods]);
 
   const methods =
     (formMethods as UseFormReturn<T>) || (internalMethods as UseFormReturn<T>);
@@ -300,7 +359,7 @@ export const GenericForm = <T extends FieldValues>({
     }
   }, [watch, onFieldChange]);
 
-  const formValues = watch();
+  const formValues = children ? ({} as T) : watch();
 
   const isHidden = (field: FormField) => {
     if (typeof field.hidden === "function") {

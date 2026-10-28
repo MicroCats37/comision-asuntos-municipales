@@ -34,6 +34,7 @@ import {
 import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
 import { formatPublicId } from "../../../utils/formatPublicId";
+import { toFiniteNumber } from "../../../utils/toFiniteNumber";
 import { CotizacionPorcentajeSmartField } from "../CotizacionPorcentajeSmartField";
 import { LiquidacionFormBodyBase } from "../LiquidacionFormBodyBase";
 import { LiquidacionFormShell } from "../LiquidacionFormShell";
@@ -77,7 +78,6 @@ function buildInitialData(
     municipalidad_id: lg.municipalidad?.id ?? "",
     expediente: lg.expediente ?? "",
     observacion: lg.observacion ?? "",
-    retencion: lg.retencion ?? false,
     nombre_propietario: lg.proyecto.nombre_propietario,
     direccion: lg.proyecto.direccion,
     distrito_id: lg.proyecto.distrito?.id ?? "",
@@ -86,7 +86,7 @@ function buildInitialData(
       lg.proyecto.entidad?.tipo_documento === "DNI" ? "DNI" : "RUC",
     entidad_numero_documento: lg.proyecto.entidad?.numero_documento ?? "",
     entidad_razon_social: lg.proyecto.entidad?.razon_social ?? "",
-    valor_declarado: lt.valor_declarado,
+    valor_declarado: toFiniteNumber(lt.valor_declarado) ?? 0,
     tarifa_unica_id: options.skipSmartFieldDefaults
       ? undefined
       : (lt.detalles[0]?.tarifa_aplicada_id ?? undefined),

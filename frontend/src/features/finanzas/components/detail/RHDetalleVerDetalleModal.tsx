@@ -77,6 +77,7 @@ export function RHDetalleVerDetalleModal({
           tipoSection: getTipoDetalleSection(
             tipoCodigo,
             detalle.liquidacion_tipo,
+            detalle.liquidacion_general.uit?.valor,
           ),
           showDelegados: tipoCodigo !== "INSPECCION_OBRA",
         })

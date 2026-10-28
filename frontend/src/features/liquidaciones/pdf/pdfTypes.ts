@@ -21,7 +21,6 @@ export interface PdfLiquidacionItem {
     numero_revision?: number;
     sub_total?: number;
     total?: number;
-    retencion?: boolean;
     igv?: { valor?: number } | null;
     uit?: { valor?: number } | null;
     proyecto: {
@@ -57,6 +56,8 @@ export interface PdfLiquidacionItem {
     area_m2?: number;
     costo_por_m2?: number;
     cantidad_visitas?: number;
+    /** Proporción de UIT por visita (decimal 0-1, ej. 0.05 = 5 %) */
+    porcentaje_uit?: number | null;
     categoria?: string;
     derecho_minimo?: number;
     derecho_maximo?: number;

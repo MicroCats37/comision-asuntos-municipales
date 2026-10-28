@@ -10,12 +10,13 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { MeResponse } from "@/features/auth/schemas/auth.types";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { clearAuthSessionAndRedirect } from "@/lib/auth/session-client";
 import { cn } from "@/lib/utils";
 
 /**
@@ -129,7 +130,6 @@ const recibosGroup = {
  */
 export function ProtectedSidebar({ user }: { user: MeResponse }) {
   const pathname = usePathname();
-  const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -139,16 +139,8 @@ export function ProtectedSidebar({ user }: { user: MeResponse }) {
   const [recibosOpen, setRecibosOpen] = useState(true);
 
   const handleLogout = async () => {
-    try {
-      const { clearAuthCookies } = await import("@/lib/auth");
-      await clearAuthCookies();
-      logout();
-      router.push("/login");
-    } catch {
-      // If clearAuthCookies fails, still logout locally
-      logout();
-      router.push("/login");
-    }
+    logout();
+    await clearAuthSessionAndRedirect();
   };
 
   const handleNavClick = () => {

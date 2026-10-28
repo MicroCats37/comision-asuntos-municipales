@@ -24,26 +24,29 @@ export const COOKIE_OPTIONS = {
   path: "/",
 };
 
-/** Access token cookie — same lifetime as refresh for consistency */
+export const ACCESS_TOKEN_MAX_AGE = 12 * 60 * 60;
+export const REFRESH_TOKEN_MAX_AGE = 30 * 24 * 60 * 60;
+
+/** Access token cookie */
 export const accessTokenCookieOptions = {
   ...COOKIE_OPTIONS,
-  maxAge: 30 * 24 * 60 * 60, // 30 days
+  maxAge: ACCESS_TOKEN_MAX_AGE,
 };
 
 /** Refresh token cookie */
 export const refreshTokenCookieOptions = {
   ...COOKIE_OPTIONS,
-  maxAge: 7 * 24 * 60 * 60, // 7 days
+  maxAge: REFRESH_TOKEN_MAX_AGE,
 };
 
 /** Access token expiry — client-readable for proactive refresh checks */
 export const expiresAtCookieOptions = {
   ...COOKIE_OPTIONS,
-  maxAge: 7 * 24 * 60 * 60,
+  maxAge: ACCESS_TOKEN_MAX_AGE,
 };
 
 /** User session cookie for client hydration */
 export const userSessionCookieOptions = {
   ...COOKIE_OPTIONS,
-  maxAge: 7 * 24 * 60 * 60,
+  maxAge: REFRESH_TOKEN_MAX_AGE,
 };

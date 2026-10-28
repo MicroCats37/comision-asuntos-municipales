@@ -168,7 +168,6 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                   municipalidad_id=str(payload_in.liquidacion_general.municipalidad_id),
                   expediente=payload_in.liquidacion_general.expediente,
                   observacion=payload_in.liquidacion_general.observacion,
-                  retencion=getattr(payload_in.liquidacion_general, "retencion", False),
                   denominacion_de_proyecto=payload_in.liquidacion_general.denominacion_de_proyecto,
                 proyecto=ProyectoData(
                     nombre_propietario=payload_in.liquidacion_general.proyecto.nombre_propietario,
@@ -353,6 +352,8 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         numero=None,
         numero_revision=None,
         direccion=None,
+        documento=None,
+        expediente=None,
     ) -> tuple[List[LiquidacionEspecificaPrimeraRevisionResult], int]:
         """
         Returns paginated LiquidacionEspecificaPrimeraRevisionResult list.
@@ -380,6 +381,8 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             numero=numero,
             numero_revision=numero_revision,
             direccion=direccion,
+            documento=documento,
+            expediente=expediente,
         )
 
         # Build LiquidacionEspecificaPrimeraRevisionResult domain DTOs from ORM objects
@@ -593,7 +596,6 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                 municipalidad_id=str(previa.municipalidad_id),
                 expediente=payload_in.liquidacion_general.expediente or previa.expediente,
                 observacion=payload_in.liquidacion_general.observacion,
-                retencion=getattr(payload_in.liquidacion_general, "retencion", False),
                 denominacion_de_proyecto=payload_in.liquidacion_general.denominacion_de_proyecto
                 if payload_in.liquidacion_general.denominacion_de_proyecto is not None
                 else previa.denominacion_de_proyecto,
@@ -777,7 +779,6 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                     liquidacion=lg,
                     expediente=liquidacion_general.get("expediente"),
                     observacion=liquidacion_general.get("observacion"),
-                    retencion=liquidacion_general.get("retencion"),
                     municipalidad_id=liquidacion_general.get("municipalidad_id"),
                     proyecto_data=liquidacion_general.get("proyecto"),
                     denominacion_de_proyecto=liquidacion_general.get("denominacion_de_proyecto"),
@@ -943,7 +944,6 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                 municipalidad_id=str(payload_in.liquidacion_general.municipalidad_id),
                 expediente=payload_in.liquidacion_general.expediente,
                 observacion=payload_in.liquidacion_general.observacion,
-                retencion=getattr(payload_in.liquidacion_general, "retencion", False),
                 denominacion_de_proyecto=payload_in.liquidacion_general.denominacion_de_proyecto,
                 proyecto=ProyectoData(
                     nombre_propietario=payload_in.liquidacion_general.proyecto.nombre_propietario,
@@ -1036,7 +1036,6 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                 municipalidad_id=str(payload_in.liquidacion_general.municipalidad_id),
                 expediente=payload_in.liquidacion_general.expediente,
                 observacion=payload_in.liquidacion_general.observacion,
-                retencion=getattr(payload_in.liquidacion_general, "retencion", False),
                 denominacion_de_proyecto=payload_in.liquidacion_general.denominacion_de_proyecto,
                 proyecto=ProyectoData(
                     nombre_propietario=payload_in.liquidacion_general.proyecto.nombre_propietario,

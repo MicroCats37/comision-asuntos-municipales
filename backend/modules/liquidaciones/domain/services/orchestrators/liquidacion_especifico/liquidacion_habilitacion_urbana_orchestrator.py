@@ -425,6 +425,8 @@ class LiquidacionHabilitacionUrbanaOrchestrator:
         numero=None,
         numero_revision=None,
         direccion=None,
+        documento=None,
+        expediente=None,
     ) -> tuple[List[HabilitacionUrbanaPrimeraRevisionResult], int]:
         """
         Returns paginated HabilitacionUrbanaPrimeraRevisionResult list.
@@ -451,6 +453,8 @@ class LiquidacionHabilitacionUrbanaOrchestrator:
             numero=numero,
             numero_revision=numero_revision,
             direccion=direccion,
+            documento=documento,
+            expediente=expediente,
         )
 
         # Build HabilitacionUrbanaPrimeraRevisionResult domain DTOs from ORM objects
@@ -613,7 +617,6 @@ class LiquidacionHabilitacionUrbanaOrchestrator:
                     liquidacion=lg,
                     expediente=liquidacion_general.get("expediente"),
                     observacion=liquidacion_general.get("observacion"),
-                    retencion=liquidacion_general.get("retencion"),
                     municipalidad_id=liquidacion_general.get("municipalidad_id"),
                     proyecto_data=liquidacion_general.get("proyecto"),
                     denominacion_de_proyecto=liquidacion_general.get("denominacion_de_proyecto"),

@@ -40,8 +40,8 @@ import type { TableColumn } from "../components/tables/LiquidacionesTable";
 import type { LiquidacionRowAction } from "../components/tables/LiquidacionesTableRowActions";
 import { LiquidacionesTableRowActions } from "../components/tables/LiquidacionesTableRowActions";
 import { useLiquidacionesImpactoVial } from "../hooks/useLiquidacionesImpactoVial";
+import type { LiquidacionPreviaItem } from "../hooks/useLiquidacionesPrevias";
 import { useLiquidacionFiltersUrl } from "../hooks/useLiquidacionFiltersUrl";
-import type { UltimaRevisionGeneralItem } from "../hooks/useUltimaRevisionGeneral";
 import { printLiquidacionPreview } from "../pdf/LiquidacionPdfPreview";
 import type { PdfLiquidacionItem } from "../pdf/pdfTypes";
 import type { LiquidacionImpactoVialListItem } from "../schemas/liquidacion-impacto-vial.schema";
@@ -75,7 +75,7 @@ export function LiquidacionesImpactoVialView() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [selectPreviaOpen, setSelectPreviaOpen] = useState(false);
   const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
-  const [previa, setPrevia] = useState<UltimaRevisionGeneralItem | null>(null);
+  const [previa, setPrevia] = useState<LiquidacionPreviaItem | null>(null);
 
   const [detalleItem, setDetalleItem] =
     useState<LiquidacionImpactoVialListItem | null>(null);
@@ -211,7 +211,7 @@ export function LiquidacionesImpactoVialView() {
       <SeleccionarPreviaModal
         open={selectPreviaOpen}
         onOpenChange={setSelectPreviaOpen}
-        tiposPermitidos={["IMPACTO_VIAL"]}
+        tipoPermitido="IMPACTO_VIAL"
         onSelect={(p) => {
           setPrevia(p);
           setSelectPreviaOpen(false);

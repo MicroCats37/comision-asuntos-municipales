@@ -53,7 +53,6 @@ export interface LiquidacionGeneralItem {
     numero_revision: number;
     sub_total: number;
     total: number;
-    retencion?: boolean;
     legacy?: boolean;
     codigo_cta?: string | null | undefined;
     igv?:

@@ -1,7 +1,6 @@
 """
 Development settings.
 """
-from datetime import timedelta
 from .base import *  # noqa
 
 DEBUG = True
@@ -45,13 +44,6 @@ INTERNAL_IPS = ['127.0.0.1']
 
 # ── Email ────────────────────────────────────────────────────
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# ── JWT — Tokens de larga duración para desarrollo fácil ─────
-NINJA_JWT = {
-    **NINJA_JWT,
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=90),
-}
 
 # ── CIP — Usar cliente real en desarrollo (no el simulador) ──
 # Tests siguen usando CIP_USE_SIMULATOR=True en test.py

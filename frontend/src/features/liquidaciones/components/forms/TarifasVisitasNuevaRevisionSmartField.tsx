@@ -5,12 +5,12 @@ import { Calculator, Loader2, Minus, Plus } from "lucide-react";
 /**
  * TarifasVisitasNuevaRevisionSmartField — Smart Field de tarifas para nueva revisión de IO.
  *
- * VARÍA POR 2 VALORES: cantidad_visitas + categoria (el costo_por_visita depende de la
- * categoría, y el total = cantidad_visitas × costo_por_visita + IGV).
+ * VARÍA POR cantidad_visitas + tarifa_visitas_id (la tarifa determina la categoría
+ * y el costo_por_visita; el total = cantidad_visitas × costo_por_visita + IGV).
  *
  * NOTA: el numero_revision NO altera el monto en IO — el flujo backend lo fija en 1
  * y el endpoint /cotizar no lo recibe. Este smart field calcula con lo que el backend
- * realmente cotiza (cantidad_visitas + categoria).
+ * realmente cotiza (cantidad_visitas + tarifa_visitas_id).
  *
  * Endpoints:
  * - GET /liquidaciones/inspeccion-obra/tarifas/vigentes → { tarifas: [{ id, costo_por_visita, categoria }] }
@@ -68,11 +68,26 @@ const toNumber = (value: unknown): number => {
 const formatSoles = (value: unknown): string =>
   `S/ ${toNumber(value).toFixed(2)}`;
 
-/** Normaliza categoría del API: puede venir como "1" o "C1" → siempre devuelve "C1", "C2", etc. */
+/** Compatibilidad con respuestas históricas C1-C4; el valor canónico es 1-4. */
 const normalizeCategoria = (cat: string): string => {
-  if (["1", "2", "3", "4"].includes(cat)) return `C${cat}`;
+  if (["C1", "C2", "C3", "C4"].includes(cat)) return cat.slice(1);
   return cat;
 };
+
+export function buildCotizacionNuevaRevisionVisitasPayload(
+  cantidadVisitas: number,
+  tarifaVisitasId: string,
+  mode: "create" | "edit",
+) {
+  const liquidacionTipo = {
+    datos: { cantidad_visitas: cantidadVisitas },
+    tarifa: { tarifa_visitas_id: tarifaVisitasId },
+  };
+
+  return mode === "edit"
+    ? { liquidacion_tipo: liquidacionTipo }
+    : { liquidacion_especifica: liquidacionTipo };
+}
 
 export function TarifasVisitasNuevaRevisionSmartField({
   cantidadVisitas,
@@ -90,7 +105,7 @@ export function TarifasVisitasNuevaRevisionSmartField({
   const { data: tarifasData, isLoading } = useTarifasVigentesVisitas();
   const tarifas = tarifasData?.tarifas ?? [];
 
-  // Categorías únicas disponibles (orden estable: C1, C2, C3, C4)
+  // Categorías únicas disponibles (orden estable: 1, 2, 3, 4)
   const categorias = useMemo(
     () =>
       [
@@ -130,12 +145,14 @@ export function TarifasVisitasNuevaRevisionSmartField({
         if (primeraCategoria) {
           onCategoriaChange(primeraCategoria);
           const tarifaPrimera = tarifas.find(
-            (t) => t.categoria === primeraCategoria,
+            (t) => normalizeCategoria(t.categoria) === primeraCategoria,
           );
           if (tarifaPrimera) onTarifaChange(tarifaPrimera.id);
         }
       } else if (!tarifaVisitasId) {
-        const tarifaCategoria = tarifas.find((t) => t.categoria === categoria);
+        const tarifaCategoria = tarifas.find(
+          (t) => normalizeCategoria(t.categoria) === categoria,
+        );
         if (tarifaCategoria) onTarifaChange(tarifaCategoria.id);
       }
     }
@@ -145,7 +162,6 @@ export function TarifasVisitasNuevaRevisionSmartField({
   const cotizacionMutation = useMutation({
     mutationFn: async (payload: {
       cantidad_visitas: number;
-      categoria: string;
       tarifa_visitas_id: string;
     }): Promise<CotizacionVisitasOutput> => {
       const isEdit = mode === "edit" && liquidacionId;
@@ -153,25 +169,11 @@ export function TarifasVisitasNuevaRevisionSmartField({
         ? `/liquidaciones/inspeccion-obra/${liquidacionId}/cotizar-edicion`
         : "/liquidaciones/inspeccion-obra/cotizar";
 
-      const body = isEdit
-        ? {
-            liquidacion_tipo: {
-              datos: {
-                cantidad_visitas: payload.cantidad_visitas,
-                categoria: payload.categoria,
-              },
-              tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
-            },
-          }
-        : {
-            liquidacion_especifica: {
-              datos: {
-                cantidad_visitas: payload.cantidad_visitas,
-                categoria: payload.categoria,
-              },
-              tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
-            },
-          };
+      const body = buildCotizacionNuevaRevisionVisitasPayload(
+        payload.cantidad_visitas,
+        payload.tarifa_visitas_id,
+        isEdit ? "edit" : "create",
+      );
 
       const { data } = await api.post(endpoint, body);
       return data.data;
@@ -203,11 +205,10 @@ export function TarifasVisitasNuevaRevisionSmartField({
 
     cotizacionMutation.mutate({
       cantidad_visitas: v,
-      categoria,
       tarifa_visitas_id: debouncedTarifa,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedTarifa, debouncedCantidad, categoria]);
+  }, [debouncedTarifa, debouncedCantidad]);
 
   const isCalculating = cotizacionMutation.isPending;
 

@@ -40,8 +40,8 @@ import type { TableColumn } from "../components/tables/LiquidacionesTable";
 import type { LiquidacionRowAction } from "../components/tables/LiquidacionesTableRowActions";
 import { LiquidacionesTableRowActions } from "../components/tables/LiquidacionesTableRowActions";
 import { useLiquidacionesHabilitacionUrbana } from "../hooks/useLiquidacionesHabilitacionUrbana";
+import type { LiquidacionPreviaItem } from "../hooks/useLiquidacionesPrevias";
 import { useLiquidacionFiltersUrl } from "../hooks/useLiquidacionFiltersUrl";
-import type { UltimaRevisionGeneralItem } from "../hooks/useUltimaRevisionGeneral";
 import { printLiquidacionPreview } from "../pdf/LiquidacionPdfPreview";
 import type { PdfLiquidacionItem } from "../pdf/pdfTypes";
 import type { LiquidacionHabilitacionUrbanaListItem } from "../schemas/liquidacion-habilitacion-urbana.schema";
@@ -75,7 +75,7 @@ export function LiquidacionesHabilitacionUrbanaView() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [selectPreviaOpen, setSelectPreviaOpen] = useState(false);
   const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
-  const [previa, setPrevia] = useState<UltimaRevisionGeneralItem | null>(null);
+  const [previa, setPrevia] = useState<LiquidacionPreviaItem | null>(null);
 
   const [detalleItem, setDetalleItem] =
     useState<LiquidacionHabilitacionUrbanaListItem | null>(null);
@@ -213,7 +213,7 @@ export function LiquidacionesHabilitacionUrbanaView() {
       <SeleccionarPreviaModal
         open={selectPreviaOpen}
         onOpenChange={setSelectPreviaOpen}
-        tiposPermitidos={["HABILITACION_URBANA"]}
+        tipoPermitido="HABILITACION_URBANA"
         onSelect={(p) => {
           setPrevia(p);
           setSelectPreviaOpen(false);

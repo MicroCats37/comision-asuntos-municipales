@@ -14,10 +14,15 @@ export const m2FormSchema = z.object({
   ...generalFormSchema.shape,
   // Especifica fields
   area_solicitada: z
-    .number()
+    .number({
+      error: (issue) =>
+        issue.input === undefined || issue.input === null || issue.input === ""
+          ? "El área solicitada es requerida"
+          : "El área solicitada debe ser un número válido",
+    })
     .positive("El área solicitada debe ser positiva")
     .max(9999999999.99, "El área solicitada excede el máximo permitido")
-    .finite(),
+    .finite("El área solicitada debe ser un número válido"),
   // Smart Field outputs (set by Smart Fields via setValue)
   tarifa_m2_id: z.string().optional(),
   // Contacto principal (singular, managed via ContactoFormModal)

@@ -14,11 +14,26 @@ function normalizeMoneyText(raw: string): string {
     .replace(/S\/\s*/g, "")
     .replace(/\s/g, "")
     .replace(/,/g, ".")
-    .replace(/[^\d.]/g, "");
-  const hasDecimalSeparator = cleaned.includes(".");
-  const [integerPart = "", ...decimalParts] = cleaned.split(".");
+    .replace(/[^\d.-]/g, "");
+  const isNegative = cleaned.startsWith("-");
+  const unsigned = cleaned.replace(/-/g, "");
+  if (unsigned === "") return isNegative ? "-" : "";
+
+  const hasDecimalSeparator = unsigned.includes(".");
+  const [rawIntegerPart = "", ...decimalParts] = unsigned.split(".");
+  const integerPart = rawIntegerPart.replace(/^0+(?=\d)/, "");
   const decimals = decimalParts.join("").slice(0, 2);
-  return `${integerPart || "0"}${hasDecimalSeparator ? `.${decimals}` : ""}`;
+  return `${isNegative ? "-" : ""}${integerPart || "0"}${
+    hasDecimalSeparator ? `.${decimals}` : ""
+  }`;
+}
+
+function parseMoneyText(value: string): number | undefined {
+  if (value === "" || value === "-" || value === "." || value === "-.") {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 interface MoneyInputProps<TFieldValues extends FieldValues = FieldValues> {
@@ -34,8 +49,6 @@ interface MoneyInputProps<TFieldValues extends FieldValues = FieldValues> {
   disabled?: boolean;
   /** Required field */
   required?: boolean;
-  /** Minimum value */
-  min?: number;
   /** Additional CSS classes for the input element */
   className?: string;
   /** CSS classes for the container */
@@ -72,7 +85,6 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
   placeholder = "S/ 0.00",
   disabled,
   required,
-  min = 0,
   className,
   containerClassName,
   error,
@@ -87,9 +99,6 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
   } = useController({
     name,
     control,
-    rules: {
-      min: min as number,
-    },
     defaultValue: defaultValue as never,
   });
 
@@ -98,13 +107,14 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
 
   // ── Ref for cursor restoration ──────────────────────────────────────────────
   const inputRef = useRef<HTMLInputElement>(null);
+  const isFocusedRef = useRef(false);
 
   // ── Format a number with S/ prefix and space-separated thousands ───────────
   const formatDisplay = useCallback(
     (val: number | "" | null | undefined): string => {
-      if (val === "" || val === null || val === undefined) return "S/ 0";
+      if (val === "" || val === null || val === undefined) return "";
       const num = Number(val);
-      if (!Number.isFinite(num)) return "S/ 0";
+      if (!Number.isFinite(num)) return "";
 
       const fixed = num.toFixed(2);
       const [intPart, decPart] = fixed.split(".");
@@ -122,13 +132,9 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
 
   // ── Sync displayValue from RHF field value (external changes: reset, defaultValues) ──
   useEffect(() => {
+    if (isFocusedRef.current) return;
     const raw = field.value;
-    // Only sync if field has a valid number
-    if (raw === "" || raw === null || raw === undefined) {
-      setDisplayValue(formatDisplay(0));
-    } else {
-      setDisplayValue(formatDisplay(raw));
-    }
+    setDisplayValue(formatDisplay(raw));
   }, [field.value, formatDisplay]);
 
   // ── Handle user typing ─────────────────────────────────────────────────────
@@ -137,78 +143,41 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
       const input = e.target;
       const raw = input.value;
       const prevCursor = input.selectionStart ?? raw.length;
-      const distFromEnd = raw.length - prevCursor;
-
       const stripped = normalizeMoneyText(raw);
-
-      // Empty → keep the numeric contract stable for schemas and cotización.
-      if (stripped === "") {
-        setDisplayValue(formatDisplay(0));
-        field.onChange(0 as never);
-        return;
-      }
-
-      const parsed = parseFloat(stripped);
-      if (!Number.isFinite(parsed)) {
-        return;
-      }
-
-      // Clamp to 2 decimal places
-      const clamped = Math.max(
-        Number(min) || 0,
-        Math.round(parsed * 100) / 100,
-      );
-
-      const [integerPart, decimalPart] = stripped.split(".");
-      const formattedInteger = String(Number(integerPart || "0")).replace(
-        /\B(?=(\d{3})+(?!\d))/g,
-        " ",
-      );
-      const formatted = stripped.includes(".")
-        ? `S/ ${formattedInteger}.${decimalPart ?? ""}`
-        : `S/ ${formattedInteger}`;
+      const formatted = stripped === "" ? "" : `S/ ${stripped}`;
       setDisplayValue(formatted);
 
-      // Restore cursor: maintain same distance from end
-      const newCursor = Math.max(0, formatted.length - distFromEnd);
+      const normalizedBeforeCursor = normalizeMoneyText(
+        raw.slice(0, prevCursor),
+      );
+      const newCursor =
+        normalizedBeforeCursor === "" ? 0 : 3 + normalizedBeforeCursor.length;
       requestAnimationFrame(() => {
         if (inputRef.current) {
           inputRef.current.setSelectionRange(newCursor, newCursor);
         }
       });
 
-      // Call field.onChange with the NUMBER — safe conversion happens HERE
-      field.onChange(clamped as never);
+      field.onChange(parseMoneyText(stripped) as never);
     },
-    [field, formatDisplay, min],
+    [field],
   );
 
   // ── Handle blur (re-format on leave) ──────────────────────────────────────
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       const stripped = normalizeMoneyText(e.target.value);
-
-      if (stripped === "" || stripped === "-") {
-        setDisplayValue(formatDisplay(0));
-        field.onChange(0 as never);
-      } else {
-        const parsed = parseFloat(stripped);
-        if (Number.isFinite(parsed)) {
-          const clamped = Math.max(
-            Number(min) || 0,
-            Math.round(parsed * 100) / 100,
-          );
-          setDisplayValue(formatDisplay(clamped));
-          // Also update field on blur with the clamped value
-          field.onChange(clamped as never);
-        }
-      }
+      const parsed = parseMoneyText(stripped);
+      isFocusedRef.current = false;
+      setDisplayValue(formatDisplay(parsed));
+      field.onChange(parsed as never);
       field.onBlur();
     },
-    [field, formatDisplay, min],
+    [field, formatDisplay],
   );
 
   const hasIcon = !!Icon;
+  const visibleError = error ?? rhfError;
 
   const inputElement = (
     <input
@@ -218,7 +187,8 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
       inputMode="decimal"
       placeholder={placeholder}
       disabled={disabled}
-      aria-invalid={!!error || !!rhfError}
+      aria-invalid={!!visibleError}
+      aria-describedby={visibleError ? `${name}-error` : undefined}
       className={cn(
         "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
         "ring-offset-background placeholder:text-muted-foreground",
@@ -226,12 +196,15 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
         "disabled:cursor-not-allowed disabled:opacity-50",
         "transition-colors duration-200",
         hasIcon ? "pl-10" : "",
-        error
+        visibleError
           ? "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20"
           : "",
         className ?? "",
       )}
       value={displayValue}
+      onFocus={() => {
+        isFocusedRef.current = true;
+      }}
       onChange={handleChange}
       onBlur={handleBlur}
       onKeyDown={(e) => {
@@ -252,7 +225,7 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
           htmlFor={name}
           className={cn(
             "text-sm font-medium ",
-            error ? "text-destructive" : "leading-none",
+            visibleError ? "text-destructive" : "leading-none",
           )}
         >
           {label}
@@ -264,7 +237,7 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
           <div
             className={cn(
               "absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-200 pointer-events-none z-10",
-              error ? "text-destructive" : "text-primary",
+              visibleError ? "text-destructive" : "text-primary",
             )}
           >
             {Icon && <Icon className="h-4 w-4" />}
@@ -274,8 +247,14 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
       ) : (
         inputElement
       )}
-      {error && (
-        <p className="text-xs text-destructive font-medium">{error.message}</p>
+      {visibleError?.message && (
+        <p
+          id={`${name}-error`}
+          className="text-xs text-destructive font-medium"
+          role="alert"
+        >
+          {visibleError.message}
+        </p>
       )}
     </div>
   );

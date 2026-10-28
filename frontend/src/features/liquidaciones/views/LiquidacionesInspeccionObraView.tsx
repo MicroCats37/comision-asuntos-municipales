@@ -2,10 +2,8 @@
  * Vista para lista de Liquidaciones de Inspección de Obra.
  * Ruta: /liquidaciones/inspeccion-obra
  *
- * Flujo de creación (gateway único):
- *  - "Nueva Liquidación" abre InspeccionObraNuevaLiquidacionChoiceModal
- *  - "Sin previa"  → LiquidacionInspeccionObraFormModal mode='create'
- *  - "Con previa"  → SeleccionarPreviaModal → LiquidacionInspeccionObraFormModal mode='relacionada'
+ * Flujo de creación:
+ *  - "Nueva Liquidación" abre directamente el formulario mode='create'.
  *
  * Tabla: NO incluye la acción "Delegados" — Inspección de Obra tiene flujo
  * propio de asignación de inspectores, no delegados.
@@ -34,9 +32,7 @@ import {
 } from "../components/detail";
 import { ComprobanteFormModal } from "../components/forms/ComprobanteFormModal";
 import { EliminarLiquidacionModal } from "../components/forms/EliminarLiquidacionModal";
-import { InspeccionObraNuevaLiquidacionChoiceModal } from "../components/forms/InspeccionObraNuevaLiquidacionChoiceModal";
 import { LiquidacionInspeccionObraFormModal } from "../components/forms/inspeccion-obra/LiquidacionInspeccionObraFormModal";
-import { SeleccionarPreviaModal } from "../components/forms/SeleccionarPreviaModal";
 import {
   LiquidacionesListContent,
   NuevaLiquidacionButton,
@@ -47,7 +43,6 @@ import type { LiquidacionRowAction } from "../components/tables/LiquidacionesTab
 import { LiquidacionesTableRowActions } from "../components/tables/LiquidacionesTableRowActions";
 import { useLiquidacionesInspeccionObra } from "../hooks/useLiquidacionesInspeccionObra";
 import { useLiquidacionFiltersUrl } from "../hooks/useLiquidacionFiltersUrl";
-import type { UltimaRevisionGeneralItem } from "../hooks/useUltimaRevisionGeneral";
 import { printLiquidacionPreview } from "../pdf/LiquidacionPdfPreview";
 import type { PdfLiquidacionItem } from "../pdf/pdfTypes";
 import type { LiquidacionInspeccionObraListItem } from "../schemas/liquidacion-inspeccion-obra.schema";
@@ -78,11 +73,7 @@ function buildPdfItem(
 }
 
 export function LiquidacionesInspeccionObraView() {
-  const [choiceOpen, setChoiceOpen] = useState(false);
-  const [selectPreviaOpen, setSelectPreviaOpen] = useState(false);
-  const [relacionadaOpen, setRelacionadaOpen] = useState(false);
   const [createSinPreviaOpen, setCreateSinPreviaOpen] = useState(false);
-  const [previa, setPrevia] = useState<UltimaRevisionGeneralItem | null>(null);
 
   const [detalleItem, setDetalleItem] =
     useState<LiquidacionInspeccionObraListItem | null>(null);
@@ -186,7 +177,7 @@ export function LiquidacionesInspeccionObraView() {
         title="Liquidaciones — Inspección de Obra"
         description="Listado de liquidaciones de Inspección de Obra"
         primaryAction={
-          <NuevaLiquidacionButton onClick={() => setChoiceOpen(true)}>
+          <NuevaLiquidacionButton onClick={() => setCreateSinPreviaOpen(true)}>
             Nueva Liquidación
           </NuevaLiquidacionButton>
         }
@@ -206,43 +197,6 @@ export function LiquidacionesInspeccionObraView() {
           <LiquidacionesTableRowActions actions={buildRowActions(item)} />
         )}
       />
-
-      <InspeccionObraNuevaLiquidacionChoiceModal
-        open={choiceOpen}
-        onOpenChange={setChoiceOpen}
-        onChoose={(kind) => {
-          setChoiceOpen(false);
-          if (kind === "con-previa") setSelectPreviaOpen(true);
-          else setCreateSinPreviaOpen(true);
-        }}
-      />
-
-      <SeleccionarPreviaModal
-        open={selectPreviaOpen}
-        onOpenChange={setSelectPreviaOpen}
-        tiposPermitidos={["EDIFICACION", "HABILITACION_URBANA"]}
-        title="Nueva Liquidación"
-        description="Busca la liquidación previa (Edificación o Habilitación Urbana) para crear la primera liquidación de Inspección de Obra"
-        onCreateSinPrevia={() => setCreateSinPreviaOpen(true)}
-        onSelect={(p) => {
-          setPrevia(p);
-          setSelectPreviaOpen(false);
-          setRelacionadaOpen(true);
-        }}
-      />
-
-      {previa && (
-        <LiquidacionInspeccionObraFormModal
-          mode="relacionada"
-          open={relacionadaOpen}
-          onOpenChange={setRelacionadaOpen}
-          previa={previa}
-          onSuccess={() => {
-            setRelacionadaOpen(false);
-            setPrevia(null);
-          }}
-        />
-      )}
 
       <LiquidacionInspeccionObraFormModal
         mode="create"
@@ -269,6 +223,7 @@ export function LiquidacionesInspeccionObraView() {
             tipoSection: (
               <LiquidacionDetalleInspeccionObraSection
                 liquidacionTipo={detalleItem.liquidacion_tipo}
+                uit={detalleItem.liquidacion_general.uit?.valor}
               />
             ),
             showDelegados: false,

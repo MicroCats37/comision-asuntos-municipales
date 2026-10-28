@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
  * LiquidacionFormBodyBase — Body GENERAL reutilizable para los 6 forms de liquidación.
  *
  * Renderiza UNA vez:
- *  - Columna izquierda: Datos del Trámite (municipalidad, expediente, retención, observación)
+ *  - Columna izquierda: Datos del Trámite (municipalidad, expediente, observación)
  *    + slot `specificSection` (la parte del motor: tarifas + cotización)
  *  - Columna derecha: Datos del Proyecto (entidad, denominación, distrito, dirección) + Contacto
  *
@@ -16,7 +16,6 @@ import { useEffect } from "react";
 import type { Control, FieldErrors, UseFormReturn } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { GenericInput } from "@/components/genericForm/GenericInput";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -103,32 +102,6 @@ export function ObservacionField({ control }: { control: Control<any> }) {
         rows={2}
         {...field}
       />
-    </div>
-  );
-}
-
-export function RetencionField({ control }: { control: Control<any> }) {
-  const { field } = useController({
-    name: "retencion",
-    control,
-    defaultValue: false,
-  });
-  return (
-    <div className="space-y-2">
-      <Label>Retención</Label>
-      <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-background px-3 h-8">
-        <Checkbox
-          id="retencion"
-          checked={!!field.value}
-          onCheckedChange={(checked) => field.onChange(!!checked)}
-        />
-        <Label
-          htmlFor="retencion"
-          className="text-sm font-medium cursor-pointer"
-        >
-          ¿La liquidación tiene retención?
-        </Label>
-      </div>
     </div>
   );
 }
@@ -347,7 +320,7 @@ export function LiquidacionFormBodyBase({
 
     const selected = municipalidades?.find((m) => m.id === municipalidadId);
     setValue("distrito_id", selected?.distrito?.id ?? "", {
-      shouldValidate: true,
+      shouldValidate: false,
     });
   }, [municipalidadId, municipalidades, setValue]);
 
@@ -375,7 +348,6 @@ export function LiquidacionFormBodyBase({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {tramiteField}
-              <RetencionField control={control} />
             </div>
             <ObservacionField control={control} />
           </div>

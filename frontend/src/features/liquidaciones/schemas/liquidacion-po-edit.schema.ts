@@ -66,7 +66,6 @@ export function buildPOGeneralPayload(
     municipalidad_id,
     expediente,
     observacion,
-    retencion,
     denominacion,
     nombre_propietario,
     direccion,
@@ -82,7 +81,6 @@ export function buildPOGeneralPayload(
     generalFields.municipalidad_id = municipalidad_id;
   if (expediente !== undefined) generalFields.expediente = expediente;
   if (observacion !== undefined) generalFields.observacion = observacion;
-  if (retencion !== undefined) generalFields.retencion = retencion;
   if (denominacion !== undefined)
     generalFields.denominacion_de_proyecto = denominacion;
   if (contacto !== undefined) generalFields.contacto = contacto;

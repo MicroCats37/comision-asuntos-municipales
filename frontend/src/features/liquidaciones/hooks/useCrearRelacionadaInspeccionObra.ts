@@ -6,7 +6,7 @@
  * {
  *   liquidacion_previa_id: uuid,
  *   liquidacion_especifica: {
- *     datos: { cantidad_visitas: number, categoria: string },
+ *     datos: { cantidad_visitas: number },
  *     tarifa: { tarifa_visitas_id: string },
  *     inspector_operacion_id: string,
  *   },
@@ -14,7 +14,7 @@
  * }
  *
  * Crea una liquidación con numero_revision = 1, heredando proyecto, municipalidad,
- * entidad, expediente, observacion, retencion de la previa.
+ * entidad, expediente y observacion de la previa.
  *
  * Usa useLiquidacionesCreateMutation (cache manual reactivo) con lógica de ultimas-revisiones.
  */
@@ -30,6 +30,25 @@ const BASE_URL = "/liquidaciones/inspeccion-obra";
 const LIST_KEY = ["liquidaciones", "inspeccion-obra"] as const;
 const TIPO_KEY = "inspeccion-obra";
 
+type CrearRelacionadaInspeccionObraData = Omit<
+  NuevaRevisionInspeccionObraFormData,
+  "categoria"
+>;
+
+export function buildCrearRelacionadaInspeccionObraPayload(
+  payload: CrearRelacionadaInspeccionObraData,
+) {
+  return {
+    liquidacion_previa_id: payload.liquidacion_previa_id,
+    liquidacion_especifica: {
+      datos: { cantidad_visitas: payload.cantidad_visitas },
+      tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
+      inspector_operacion_id: payload.inspector_operacion_id,
+    },
+    contacto: payload.contacto ?? undefined,
+  };
+}
+
 export function useCrearRelacionadaInspeccionObra() {
   const previousIdRef = useRef<string | null>(null);
   const cacheUtils = useLiquidacionesCacheUtils();
@@ -37,7 +56,7 @@ export function useCrearRelacionadaInspeccionObra() {
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_previa_id: string;
     liquidacion_especifica: {
-      datos: { cantidad_visitas: number; categoria: string };
+      datos: { cantidad_visitas: number };
       tarifa: { tarifa_visitas_id: string };
       inspector_operacion_id: string;
     };
@@ -73,30 +92,18 @@ export function useCrearRelacionadaInspeccionObra() {
     },
   });
 
-  const buildPayload = (payload: NuevaRevisionInspeccionObraFormData) => ({
-    liquidacion_previa_id: payload.liquidacion_previa_id,
-    liquidacion_especifica: {
-      datos: {
-        cantidad_visitas: payload.cantidad_visitas,
-        categoria: payload.categoria,
-      },
-      tarifa: { tarifa_visitas_id: payload.tarifa_visitas_id },
-      inspector_operacion_id: payload.inspector_operacion_id,
-    },
-    contacto: payload.contacto ?? undefined,
-  });
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: buildPayload is stable
   const crearMutation = useMemo(
     () => ({
       ...mutation,
-      mutate: (payload: NuevaRevisionInspeccionObraFormData) => {
+      mutate: (payload: CrearRelacionadaInspeccionObraData) => {
         previousIdRef.current = payload.liquidacion_previa_id;
-        mutation.mutate(buildPayload(payload));
+        mutation.mutate(buildCrearRelacionadaInspeccionObraPayload(payload));
       },
-      mutateAsync: async (payload: NuevaRevisionInspeccionObraFormData) => {
+      mutateAsync: async (payload: CrearRelacionadaInspeccionObraData) => {
         previousIdRef.current = payload.liquidacion_previa_id;
-        return mutation.mutateAsync(buildPayload(payload));
+        return mutation.mutateAsync(
+          buildCrearRelacionadaInspeccionObraPayload(payload),
+        );
       },
     }),
     [mutation],

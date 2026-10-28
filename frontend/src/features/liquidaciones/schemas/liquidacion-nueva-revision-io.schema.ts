@@ -3,8 +3,9 @@
  * Schema PROPIO y reducido del endpoint /nueva-liquidacion/primera-revision-desde-previa.
  *
  * Se hereda de la previa (NO viene en el input): proyecto, municipalidad, entidad,
- * expediente, observacion, retencion.
- * Se edita: cantidad_visitas, categoria, tarifa_visitas_id, inspector_operacion_id.
+ * expediente y observacion.
+ * Se edita: cantidad_visitas, tarifa/categoría visual e inspector_operacion_id.
+ * La categoría se deriva de la tarifa y no forma parte del payload HTTP.
  */
 import { z } from "zod";
 import { contactoInlineSchema } from "./liquidacion-form-base.schema";

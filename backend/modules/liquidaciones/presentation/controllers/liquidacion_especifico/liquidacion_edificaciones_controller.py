@@ -101,6 +101,8 @@ class LiquidacionEdificacionesController:
         creado_por: str = Query(default=None, description="Filter by usuario_creador username (icontains)"),
         numero_revisiones: int = Query(default=None, description="Filter by numero_revision (exact)"),
         direccion: str = Query(default=None, description="Filter by proyecto direccion (icontains)"),
+        documento: str = Query(default=None, description="Filter by entidad numero_documento (icontains)"),
+        expediente: str = Query(default=None, description="Filter by expediente (icontains)"),
     ):
         """
         Returns a paginated list of Edificaciones liquidaciones with optional filters.
@@ -117,6 +119,8 @@ class LiquidacionEdificacionesController:
             numero=numero,
             numero_revision=numero_revisiones,
             direccion=direccion,
+            documento=documento,
+            expediente=expediente,
         )
         result = self.presenter.present_list(
             liquidaciones=liquidaciones,

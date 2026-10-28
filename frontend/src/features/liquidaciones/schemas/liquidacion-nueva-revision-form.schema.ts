@@ -3,7 +3,7 @@
  * Schema PROPIO y reducido del endpoint /nueva-revision.
  *
  * Se hereda de la previa (NO viene en el input): valor_declarado, municipalidad_id, proyecto.
- * Se edita: expediente, observacion, retencion, contacto, tarifas.
+ * Se edita: expediente, observacion, contacto, tarifas.
  */
 import { z } from "zod";
 import { contactoInlineSchema } from "./liquidacion-form-base.schema";
@@ -17,7 +17,6 @@ export const nuevaRevisionEdificacionesFormSchema = z.object({
   /** Denominación del proyecto — editable, prefill from previa */
   denominacion_de_proyecto: z.string().optional(),
   observacion: z.string().optional(),
-  retencion: z.boolean().optional(),
   /** Tipo de trámite de edificaciones — sin default; debe ser elegido explícitamente */
   tipo_tramite: TipoTramiteEdificacionesSchema,
   // Contacto principal (singular)

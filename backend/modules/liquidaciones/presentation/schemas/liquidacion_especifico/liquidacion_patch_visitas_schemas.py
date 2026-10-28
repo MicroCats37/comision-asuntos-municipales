@@ -64,7 +64,6 @@ class LiquidacionPatchVisitasGeneralIn(BaseSchema):
     """
     expediente: Optional[str] = Field(None, description="Número de expediente")
     observacion: Optional[str] = Field(None, description="Observación")
-    retencion: Optional[bool] = Field(None, description="Indica si la retención es obligatoria")
     denominacion_de_proyecto: Optional[str] = Field(None, description="Denominación del proyecto (opcional)")
     contacto: Optional[ContactoInlineSchema] = Field(
         None,

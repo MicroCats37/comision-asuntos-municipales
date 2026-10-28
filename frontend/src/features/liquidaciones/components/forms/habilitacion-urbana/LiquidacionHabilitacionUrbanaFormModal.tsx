@@ -43,6 +43,7 @@ import {
 import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
 import { formatPublicId } from "../../../utils/formatPublicId";
+import { toFiniteNumber } from "../../../utils/toFiniteNumber";
 import { CotizacionM2SmartField } from "../CotizacionM2SmartField";
 import { LiquidacionFormBodyBase } from "../LiquidacionFormBodyBase";
 import { LiquidacionFormShell } from "../LiquidacionFormShell";
@@ -85,7 +86,6 @@ function buildInitialData(
     municipalidad_id: lg.municipalidad?.id ?? "",
     expediente: lg.expediente ?? "",
     observacion: lg.observacion ?? "",
-    retencion: lg.retencion ?? false,
     nombre_propietario: lg.proyecto.nombre_propietario,
     direccion: lg.proyecto.direccion,
     distrito_id: lg.proyecto.distrito?.id ?? "",
@@ -94,7 +94,7 @@ function buildInitialData(
       lg.proyecto.entidad?.tipo_documento === "DNI" ? "DNI" : "RUC",
     entidad_numero_documento: lg.proyecto.entidad?.numero_documento ?? "",
     entidad_razon_social: lg.proyecto.entidad?.razon_social ?? "",
-    area_solicitada: lt.area_m2,
+    area_solicitada: toFiniteNumber(lt.area_m2),
     tarifa_m2_id: lt.tarifa_aplicada_id ?? undefined,
     contacto: toContactoInline(lg.contacto),
   };
@@ -203,7 +203,6 @@ export function LiquidacionHabilitacionUrbanaFormModal(
           label="Área Solicitada (m²)"
           required
           control={methods.control}
-          min={0}
           defaultValue={isEdit || isRevisionLike ? areaInicial : 0}
           className="w-full"
         />

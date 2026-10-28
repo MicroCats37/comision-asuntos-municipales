@@ -20,13 +20,12 @@ import { contactoInlineSchema } from "./liquidacion-form-base.schema";
  * All fields optional — only send what changed.
  *
  * Editability rules (enforced by backend):
- * - expediente, observacion, retencion, contacto: always editable (estado !== PAGADA)
+ * - expediente, observacion, contacto: always editable (estado !== PAGADA)
  * - proyecto.*, municipalidad_id: only when numero_revision == 1
  */
 export const LiquidacionGeneralEditSchema = z.object({
   expediente: z.string().optional(),
   observacion: z.string().optional(),
-  retencion: z.boolean().optional(),
   contacto: contactoInlineSchema.optional(),
   denominacion_de_proyecto: z.string().optional(),
   // Proyecto edit (only when canEditProyecto is true)
@@ -104,7 +103,6 @@ export const VisitasTipoEditSchema = z.object({
   datos: z
     .object({
       cantidad_visitas: z.number().optional(),
-      categoria: z.string().optional(),
     })
     .optional(),
   tarifa: z

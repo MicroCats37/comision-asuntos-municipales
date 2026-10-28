@@ -12,9 +12,11 @@
  *   (módulo por motor: porcentaje / m2 / visitas), que devuelve las filas
  *   `[label, value][]` de la columna izquierda del lower body, justo arriba
  *   del resumen. La base no implementa lógica de tipo propia.
+ * - Las filas del bloque común también las decide el módulo por tipo
+ *   (`buildCommonFieldRows`), para que ninguna regla por tipo viva en la base.
  *
  * Layout visual (igual al PDF legacy aprobado):
- * - Header: brand (logo circular + textos) | bloque amarillo con ⚠ SOLO aviso | caja CTA blanca con CTA/code/nro
+ * - Header: brand (logo circular + textos) | bloque amarillo con ⚠ SOLO aviso | caja CTA blanca con Nro/código de pago/CTA
  * - Título pill gris con bordes laterales negros
  * - Campos comunes en lista vertical con label bold + value
  * - Lower body: 2 columnas (specific fields + resumen con borders)
@@ -23,7 +25,10 @@
  */
 import { createPdfFrame } from "@/components-app/pdf/pdfShell";
 import { printHtmlElement } from "@/components-app/pdf/printDocument";
-import { buildExtraFieldRows } from "./liquidacionPdfHelpers";
+import {
+  buildCommonFieldRows,
+  buildExtraFieldRows,
+} from "./liquidacionPdfHelpers";
 import {
   getPdfTitleByTipo,
   type PdfLiquidacionItem,
@@ -132,20 +137,23 @@ export function buildLiquidacionPdfDom(
     gap: "10px",
   });
 
-  // ── Header: brand | notice amarilla SOLO aviso | caja CTA blanca ──
+  // ── Header: brand | caja CTA blanca ──
   const header = append(paper, "div", {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1.1fr) minmax(0, 1fr)",
+    gridTemplateColumns: "minmax(0, 1.7fr) minmax(0, 1fr)",
     gap: "12px",
     alignItems: "stretch",
   });
 
   // ── Brand: logo circular + textos institucionales ──
+  // Centrado en las dos ejes: el bloque (logo + textos) queda al centro de
+  // la celda del header y los textos se centran contra el logo.
   const brand = append(header, "div", {
     display: "grid",
     gridTemplateColumns: "82px minmax(0, 1fr)",
     gap: "14px",
-    alignItems: "start",
+    alignItems: "center",
+    alignContent: "center",
   });
   const doc = parent.ownerDocument;
   const logoBox = append(brand, "div", {
@@ -232,64 +240,9 @@ export function buildLiquidacionPdfDom(
     "COMISIÓN DE ASUNTOS MUNICIPALES",
   );
 
-  // ── Notice amarilla SOLO con el aviso + icono ⚠ ──
-  const noticeBox = append(header, "div", {
-    border: "2px solid #b45309",
-    backgroundColor: "#fef3c7",
-    borderRadius: "8px",
-    padding: "14px 14px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    textAlign: "center",
-    gap: "8px",
-  });
-  const iconRow = append(noticeBox, "div", {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "6px",
-  });
-  append(
-    iconRow,
-    "span",
-    {
-      fontSize: "28px",
-      lineHeight: "1",
-      color: "#7c2d12",
-      fontWeight: "900",
-    },
-    "⚠",
-  );
-  append(
-    noticeBox,
-    "p",
-    {
-      margin: "0",
-      fontWeight: "900",
-      color: "#7c2d12",
-      fontSize: "20px",
-      lineHeight: "1.25",
-      letterSpacing: "0.02em",
-    },
-    "IMPORTANTE: ESTA LIQUIDACIÓN DEBERÁ",
-  );
-  append(
-    noticeBox,
-    "p",
-    {
-      margin: "0",
-      fontWeight: "900",
-      color: "#7c2d12",
-      fontSize: "20px",
-      lineHeight: "1.25",
-      letterSpacing: "0.02em",
-    },
-    "ADJUNTARLA AL COMPROBANTE DE PAGO",
-  );
-
-  // ── Caja CTA blanca (separada, FUERA del bloque amarillo) ──
+  // ── Caja CTA blanca ──
+  // El Nro ocupa el slot grande y el código CTA el slot chico: intercambian
+  // tamaño y lugar respecto al recibo legacy.
   const ctaBox = append(header, "div", {
     border: "2px solid #111827",
     borderRadius: "8px",
@@ -313,7 +266,7 @@ export function buildLiquidacionPdfDom(
       letterSpacing: "0.08em",
       textTransform: "uppercase",
     },
-    "CTA",
+    "Nro",
   );
   append(
     ctaBox,
@@ -326,7 +279,9 @@ export function buildLiquidacionPdfDom(
       letterSpacing: "0.12em",
       lineHeight: "1",
     },
-    lg.codigo_cta ?? "46201",
+    item.liquidacion_especifica?.numero != null
+      ? `${item.liquidacion_especifica.numero}`
+      : "—",
   );
   append(
     ctaBox,
@@ -350,7 +305,7 @@ export function buildLiquidacionPdfDom(
       fontWeight: "900",
       letterSpacing: "0.08em",
     },
-    `Nro: ${item.liquidacion_especifica?.numero ?? "—"}`,
+    `CTA: ${lg.codigo_cta ?? "46201"}`,
   );
 
   // ── Título oficial (pill gris con bordes negros laterales) ──
@@ -376,6 +331,7 @@ export function buildLiquidacionPdfDom(
   );
 
   // ── Detalle común (RUC, RAZÓN, PROPIETARIO, PROYECTO, DPTO, DIR) ──
+  // Las filas las decide el módulo por tipo (`buildCommonFieldRows`).
   const detailsBox = append(paper, "div", {
     display: "flex",
     flexDirection: "column",
@@ -417,15 +373,9 @@ export function buildLiquidacionPdfDom(
       `: ${value || "—"}`,
     );
   };
-  fieldRow("RUC", entidad?.numero_documento ?? "");
-  fieldRow("RAZON SOCIAL", entidad?.razon_social ?? "");
-  fieldRow(
-    "NOMBRE DEL PROPIETARIO",
-    proyecto.nombre_propietario || entidad?.razon_social || "",
-  );
-  fieldRow("NOMBRE DEL PROYECTO", lg.denominacion_de_proyecto ?? "");
-  fieldRow("DPTO. / PROV. / DISTRITO", lg.municipalidad?.nombre ?? "");
-  fieldRow("DIRECCION DE LA OBRA", proyecto.direccion ?? "");
+  for (const [label, value] of buildCommonFieldRows(item, tipo)) {
+    fieldRow(label, value);
+  }
 
   // ── Lower body: específicos (izq) | resumen (der) ──
   const lowerBody = append(paper, "div", {
@@ -593,25 +543,47 @@ export function buildLiquidacionPdfDom(
         : "TELÉFONO      —",
   );
 
-  // Center: ESTE DOCUMENTO NO ES
+  // Center: sección amarilla fusionada con la instrucción de adjuntar.
+  // El aviso va arriba y la instrucción debajo, en tamaño mayor.
+  const centerBox = append(footer, "div", {
+    whiteSpace: "pre-line",
+    textAlign: "center",
+    border: "2px solid #b45309",
+    backgroundColor: "#fef3c7",
+    borderRadius: "8px",
+    padding: "12px 16px",
+    alignSelf: "stretch",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+  });
   append(
-    footer,
-    "div",
+    centerBox,
+    "p",
     {
-      whiteSpace: "pre-line",
-      textAlign: "center",
-      fontSize: "12px",
+      margin: "0",
       fontWeight: "900",
-      lineHeight: "1.3",
-      border: "1.5px solid #111827",
-      borderRadius: "4px",
-      padding: "10px 14px",
-      alignSelf: "stretch",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+      color: "#7c2d12",
+      fontSize: "13px",
+      lineHeight: "1.25",
+      letterSpacing: "0.02em",
     },
-    "ESTE DOCUMENTO NO ES\nCOMPROBANTE DE PAGO",
+    "⚠ ESTE NO ES UN COMPROBANTE DE PAGO",
+  );
+  append(
+    centerBox,
+    "p",
+    {
+      margin: "0",
+      fontWeight: "900",
+      color: "#7c2d12",
+      fontSize: "15px",
+      lineHeight: "1.3",
+      letterSpacing: "0.04em",
+    },
+    "ESTE SE DEBERÁ DE ADJUNTAR\nJUNTO AL COMPROBANTE\nDE PAGO",
   );
 
   // Right

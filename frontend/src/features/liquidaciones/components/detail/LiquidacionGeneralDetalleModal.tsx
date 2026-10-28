@@ -57,7 +57,12 @@ export function LiquidacionGeneralDetalleModal({
   );
 
   const tipoSection = useMemo(
-    () => getTipoDetalleSection(tipoCodigo, detalle?.liquidacion_tipo),
+    () =>
+      getTipoDetalleSection(
+        tipoCodigo,
+        detalle?.liquidacion_tipo,
+        detalle?.liquidacion_general.uit?.valor,
+      ),
     [detalle, tipoCodigo],
   );
 
