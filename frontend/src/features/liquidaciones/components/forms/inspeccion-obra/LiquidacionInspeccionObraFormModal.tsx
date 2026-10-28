@@ -261,11 +261,6 @@ export function LiquidacionInspeccionObraFormModal(
           })
         : null;
       const cantidadInicial = initialData?.cantidad_visitas ?? 1;
-      const categoriaInicial = initialData?.categoria ?? "";
-
-      const categoriaWatch =
-        (methods.watch("categoria") as VisitasFormData["categoria"]) ??
-        categoriaInicial;
       const tipoLiquidacionIdWatch =
         (methods.watch("tipo_liquidacion_id") as string) ?? "";
       const tipoLiquidacionIdSeleccionable = tipos.some(
@@ -292,7 +287,6 @@ export function LiquidacionInspeccionObraFormModal(
           methods={methods}
           inspectorNombre={inspectorNombre}
           onOpenInspector={() => setInspectorModalOpen(true)}
-          disabled={!categoriaWatch}
         />
       );
 
@@ -351,7 +345,6 @@ export function LiquidacionInspeccionObraFormModal(
                   },
                 }
               : {})}
-            categoriaForm={categoriaWatch || null}
             selectedId={methods.watch("inspector_id") || undefined}
             onSelect={(id, nombre, inspectorOperacionId) => {
               methods.setValue("inspector_id", id, { shouldValidate: false });

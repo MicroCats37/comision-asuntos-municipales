@@ -8,7 +8,7 @@ import { HardHat, Layers, UserCheck } from "lucide-react";
  * - Selector de Tipo de Liquidación DENTRO del modal (chips seleccionables).
  * - Consulta GET /liquidaciones/inspectores/seleccionables?tipo_liquidacion=
  *   (carga solo después de que el usuario selecciona un tipo)
- * - Filtros SEPARADOS en el frontend: por especialidad y por categoría
+ * - Filtros independientes en el frontend: categoría, especialidad y búsqueda
  * - Lista agrupada por especialidad, single-select
  * - Adjunta inspector_id al form (react-hook-form) al confirmar
  */
@@ -35,8 +35,6 @@ interface SeleccionarInspectorModalProps {
   onTipoLiquidacionChange?: (id: string) => void;
   /** Fallback: codigo del tipo cuando no hay selector visible (ej. edit form con tipo fijo) */
   fallbackTipoLiquidacionCodigo?: string | null;
-  /** Categoría seleccionada en el form (dinámica via watch) — precarga el filtro */
-  categoriaForm?: string | null;
   /** Inspector ya seleccionado (para resaltarlo) */
   selectedId?: string;
   onSelect: (
@@ -45,6 +43,8 @@ interface SeleccionarInspectorModalProps {
     inspectorOperacionId: string,
   ) => void;
 }
+
+const CATEGORIAS_INSPECTOR = ["1", "2", "3", "4"] as const;
 
 const normalizeCategoria = (cat: string | null): string => {
   if (!cat) return "";
@@ -59,16 +59,13 @@ export function SeleccionarInspectorModal({
   tipoLiquidacionId,
   onTipoLiquidacionChange,
   fallbackTipoLiquidacionCodigo,
-  categoriaForm,
   selectedId,
   onSelect,
 }: SeleccionarInspectorModalProps) {
+  const [categoria, setCategoria] = useState("all");
   const [especialidad, setEspecialidad] = useState("all");
   const [q, setQ] = useState("");
   const [pickedId, setPickedId] = useState<string>(selectedId ?? "");
-
-  // La categoría es FIJA: viene de la selección del form (no editable en el modal)
-  const categoria = categoriaForm ?? "all";
 
   // Resolver el codigo del tipo seleccionado.
   // Prioridad: lookup por id en tipos → fallback directo.
@@ -86,10 +83,11 @@ export function SeleccionarInspectorModal({
     open && !!tipoLiquidacionCodigo,
   );
 
-  // Reset al abrir — mantiene la categoría del form (fija)
+  // Reset de filtros al abrir. La categoría del inspector es independiente de la tarifa.
   const prevOpen = usePrevious(open);
   useEffect(() => {
     if (open && !prevOpen) {
+      setCategoria("all");
       setEspecialidad("all");
       setQ("");
       setPickedId(selectedId ?? "");
@@ -107,7 +105,7 @@ export function SeleccionarInspectorModal({
     [inspectores],
   );
 
-  // Filtrado en el FRONTEND: por categoría FIJA + especialidad + búsqueda CIP/nombre
+  // Filtrado local; no modifica la categoría de tarifa del formulario.
   const filtrados = useMemo(() => {
     const query = q.trim().toLowerCase();
     return inspectores.filter((i) => {
@@ -232,14 +230,42 @@ export function SeleccionarInspectorModal({
               />
             </div>
 
-            {/* Categoría FIJA (de la selección del form) + filtro por especialidad */}
+            {/* Filtro independiente por categoría del inspector */}
             <div className="flex flex-wrap items-center gap-2">
-              {categoria !== "all" && (
-                <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                  Categoría {categoria} (seleccionada)
-                </span>
-              )}
+              <span className="text-xs font-semibold text-muted-foreground">
+                Categoría:
+              </span>
+              <button
+                type="button"
+                onClick={() => setCategoria("all")}
+                className={cn(
+                  "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  categoria === "all"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/40",
+                )}
+              >
+                Todas
+              </button>
+              {CATEGORIAS_INSPECTOR.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategoria(cat)}
+                  className={cn(
+                    "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                    categoria === cat
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:border-primary/40",
+                  )}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
 
+            {/* Filtro por especialidad */}
+            <div className="flex flex-wrap items-center gap-2">
               {especialidades.length > 1 && (
                 <>
                   <span className="text-xs font-semibold text-muted-foreground">

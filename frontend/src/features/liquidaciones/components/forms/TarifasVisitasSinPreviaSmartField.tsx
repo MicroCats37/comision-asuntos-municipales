@@ -49,8 +49,6 @@ interface TarifasVisitasSinPreviaSmartFieldProps {
   inspectorNombre?: string;
   /** Callback al hacer click en el botón "Inspector Asignado" */
   onOpenInspector: () => void;
-  /** Deshabilita el botón si no hay categoría seleccionada */
-  disabled?: boolean;
 }
 
 const toNumber = (value: unknown): number => {
@@ -81,7 +79,6 @@ export function TarifasVisitasSinPreviaSmartField({
   methods,
   inspectorNombre,
   onOpenInspector,
-  disabled,
 }: TarifasVisitasSinPreviaSmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionVisitasOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -237,7 +234,6 @@ export function TarifasVisitasSinPreviaSmartField({
           variant="outline"
           size="sm"
           onClick={onOpenInspector}
-          disabled={disabled}
           className="w-full gap-1"
         >
           <HardHat className="h-3 w-3" />
