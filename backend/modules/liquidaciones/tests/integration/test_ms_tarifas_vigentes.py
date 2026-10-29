@@ -9,14 +9,11 @@ import uuid
 from decimal import Decimal
 from datetime import date
 
-from ninja.testing import TestClient
-from config.api import api
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorMetroCuadrado,
     DerechoPorMetroCuadrado,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
 @pytest.fixture
@@ -48,12 +45,6 @@ def derecho_m2_vigente(db):
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
-
-
-@pytest.fixture
-def api_client(db):
-    """Ninja TestClient for testing Ninja endpoints with proper async handling."""
-    return TestClient(api)
 
 
 @pytest.mark.django_db

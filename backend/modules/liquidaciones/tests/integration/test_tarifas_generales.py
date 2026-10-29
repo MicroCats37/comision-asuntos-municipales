@@ -12,8 +12,6 @@ import pytest
 from decimal import Decimal
 from datetime import date
 
-from ninja.testing import TestClient
-from config.api import api
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorMetroCuadrado,
@@ -25,11 +23,6 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquida
 )
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion
 from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
-
-
-@pytest.fixture
-def api_client(db):
-    return TestClient(api)
 
 
 @pytest.fixture

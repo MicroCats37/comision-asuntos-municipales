@@ -7,9 +7,6 @@ import pytest
 from decimal import Decimal
 from datetime import date
 
-from ninja.testing import TestClient
-from config.api import api
-from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision as Especialidad, EspecialidadRevision
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
     TarifaPorMetroCuadrado,
@@ -18,13 +15,6 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     DerechoPorMetroCuadrado,
     DerechoPorcentajeObra,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
-
-
-@pytest.fixture
-def api_client(db):
-    """Ninja TestClient for testing Ninja endpoints."""
-    return TestClient(api)
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────

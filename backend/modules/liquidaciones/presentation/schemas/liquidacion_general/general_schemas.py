@@ -235,11 +235,20 @@ class ProyectoUpdateSchema(BaseSchema):
 
 class LiquidacionEliminarIn(BaseSchema):
     """Payload for PATCH /liquidaciones/generales/{id}/eliminar — marks a liquidacion as eliminated/anulled."""
-    motivo: Optional[str] = Field(
-        None,
+    motivo: str = Field(
+        ...,
+        min_length=1,
         max_length=500,
-        description="Motivo de la eliminación/anulación (auditable).",
+        description="Motivo obligatorio de la eliminación/anulación (auditable).",
     )
+
+    @field_validator("motivo")
+    @classmethod
+    def validar_motivo(cls, value: str) -> str:
+        motivo = value.strip()
+        if not motivo:
+            raise ValueError("El motivo de eliminación es obligatorio.")
+        return motivo
 
 
 class LiquidacionGeneralUpdateIn(NumeroRevisionOpcionalMixin):

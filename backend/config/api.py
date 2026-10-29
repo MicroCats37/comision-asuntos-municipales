@@ -3,12 +3,15 @@ Instancia central de NinjaExtraAPI.
 Aquí se registran todos los routers y controllers del proyecto.
 """
 
-from ninja_extra import NinjaExtraAPI, api_controller
+from ninja_extra import ControllerBase, NinjaExtraAPI, api_controller, http_post
 from ninja_extra.permissions import AllowAny
 from ninja_jwt.authentication import JWTAuth
-from ninja_jwt.controller import NinjaJWTDefaultController, TokenBlackListController
+from ninja_jwt.controller import TokenBlackListController, TokenVerificationController
+from ninja_jwt.schema_control import SchemaControl
+from ninja_jwt.settings import api_settings as ninja_jwt_api_settings
 
 from core.exceptions import register_exception_handlers
+from core.security import jwt_required_docs
 from modules.usuarios.presentation.controllers.auth_controller import AuthLoginController
 from modules.usuarios.presentation.controllers.ingeniero_habilitado_controller import IngenieroHabilitadoController
 from modules.entidades.presentation.controllers.entidad_controller import EntidadesController
@@ -87,6 +90,13 @@ import os
 api_version = "2.0.0"
 api_namespace = "api"
 
+# ── Autenticación global ─────────────────────────────────────────────────────
+# `auth=JWTAuth()` es la ÚNICA fuente de autenticación del API: toda operación
+# que no declare `auth=None` de forma explícita hereda este JWTAuth.
+# La allowlist pública se declara exclusivamente en los controllers marcados
+# con `auth=None` (login modular + ciclo de vida técnico del token).
+_jwt_schema = SchemaControl(ninja_jwt_api_settings)
+
 if os.environ.get("PYTEST_CURRENT_TEST"):
     import sys
     from ninja.errors import ConfigError
@@ -103,6 +113,7 @@ if os.environ.get("PYTEST_CURRENT_TEST"):
                 description="Generic API Boilerplate",
                 auth=JWTAuth(),
                 docs_url="/docs",
+                docs_decorator=jwt_required_docs,
             )
         except ConfigError:
             api = NinjaExtraAPI(
@@ -112,6 +123,7 @@ if os.environ.get("PYTEST_CURRENT_TEST"):
                 description="Generic API Boilerplate",
                 auth=JWTAuth(),
                 docs_url="/docs",
+                docs_decorator=jwt_required_docs,
             )
         sys._ninja_api_instance = api
 else:
@@ -122,7 +134,50 @@ else:
         description="Generic API Boilerplate",
         auth=JWTAuth(),
         docs_url="/docs",
+        docs_decorator=jwt_required_docs,
     )
+
+
+@api_controller("/token", permissions=[AllowAny], tags=["token"], auth=None)
+class NinjaJWTPublicTokenController(ControllerBase, TokenVerificationController):
+    """Operaciones públicas del ciclo de vida del token: ``refresh`` y ``verify``.
+
+    ``POST /token/pair`` de django-ninja-jwt **no** se expone: la aplicación ya
+    tiene su propia superficie de login en ``/auth/login/{username,dni,email}``
+    y un segundo camino público de credenciales sería una entrada redundante y
+    no deseable. ``/token/refresh`` y ``/token/verify`` sí son técnicos e
+    indispensables: el cliente presenta el refresh token en el body (sin access
+    token todavía) y la verificación opera sobre el valor del token.
+    """
+
+    auto_import = False
+
+    @http_post(
+        "/refresh",
+        response=_jwt_schema.obtain_pair_refresh_schema.get_response_schema(),
+        url_name="token_refresh",
+        operation_id="token_refresh",
+    )
+    def refresh_token(self, refresh_token: _jwt_schema.obtain_pair_refresh_schema):
+        return refresh_token.to_response_schema()
+
+
+@api_controller("/token", tags=["token"])
+class NinjaJWTProtectedTokenController(ControllerBase):
+    """Credential exchange retained behind the API's global JWT auth."""
+
+    auto_import = False
+
+    @http_post(
+        "/pair",
+        response=_jwt_schema.obtain_pair_schema.get_response_schema(),
+        url_name="token_obtain_pair",
+        operation_id="token_obtain_pair",
+    )
+    def obtain_token(self, user_token: _jwt_schema.obtain_pair_schema):
+        user_token.check_user_authentication_rule()
+        return user_token.to_response_schema()
+
 
 @api_controller("/token", permissions=[AllowAny], tags=["token"], auth=None)
 class NinjaJWTBlacklistController(TokenBlackListController):
@@ -131,8 +186,9 @@ class NinjaJWTBlacklistController(TokenBlackListController):
     auto_import = False
 
 
-# ── Controllers JWT (token/pair, token/refresh, token/verify, token/blacklist) ─
-api.register_controllers(NinjaJWTDefaultController)
+# ── Controllers JWT ─
+api.register_controllers(NinjaJWTPublicTokenController)
+api.register_controllers(NinjaJWTProtectedTokenController)
 api.register_controllers(NinjaJWTBlacklistController)
 
 # ── Auth Controllers (modular login by username/dni/email) ─

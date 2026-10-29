@@ -2,7 +2,7 @@
  * Hook para eliminar (soft-delete) una liquidacion general.
  *
  * Endpoint: PATCH /liquidaciones/generales/{id}/eliminar
- * Payload:   { motivo?: string }
+ * Payload:   { motivo: string }
  *
  * Usa useApiUpdate en modo directo (PATCH) con payload builder.
  * NO usa invalidateQueries — actualiza el cache manualmente con useLiquidacionesCacheUtils.
@@ -14,7 +14,11 @@ import { useApiUpdate } from "@/hooks/callsApi/useApiUpdate";
 import { useLiquidacionesCacheUtils } from "./cache";
 
 const EliminarLiquidacionSchema = z.object({
-  motivo: z.string().max(500).optional(),
+  motivo: z
+    .string()
+    .trim()
+    .min(1, "El motivo de eliminación es obligatorio")
+    .max(500, "El motivo no puede superar los 500 caracteres"),
 });
 export type EliminarLiquidacionPayload = z.infer<
   typeof EliminarLiquidacionSchema

@@ -5,13 +5,9 @@ Tests use Ninja's TestClient (not Django's Client) for proper async handling.
 All tests use @pytest.mark.django_db for database access.
 """
 import pytest
-import uuid
 from decimal import Decimal
 from datetime import date
 
-from ninja.testing import TestClient
-from ninja_jwt.tokens import AccessToken
-from config.api import api
 from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
@@ -19,7 +15,6 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     TarifaPorMetroCuadrado,
     DerechoPorMetroCuadrado,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
 @pytest.fixture
@@ -63,16 +58,6 @@ def create_user(db):
 
 
 @pytest.fixture
-def auth_client(api_client, create_user):
-    """Authenticate the test client using JWT token."""
-    user = create_user
-    token = AccessToken.for_user(user)
-    api_client.headers.update({"Authorization": f"Bearer {token}"})
-    api_client.user = user
-    return api_client
-
-
-@pytest.fixture
 def municipalidad(db, ubigeo_distrito):
     """Create a municipalidad for testing."""
     return Municipalidad.objects.create(
@@ -111,12 +96,6 @@ def derecho_m2_vigente(db):
         periodo_inicio=date(2024, 1, 1),
         periodo_fin=None,
     )
-
-
-@pytest.fixture
-def api_client(db):
-    """Ninja TestClient for testing Ninja endpoints with proper async handling."""
-    return TestClient(api)
 
 
 @pytest.fixture

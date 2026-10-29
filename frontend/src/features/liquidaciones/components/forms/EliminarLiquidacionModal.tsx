@@ -10,7 +10,11 @@ import { notify } from "@/errors";
 import { useEliminarLiquidacion } from "../../hooks/useEliminarLiquidacion";
 
 export const EliminarLiquidacionSchema = z.object({
-  motivo: z.string().max(500).optional(),
+  motivo: z
+    .string()
+    .trim()
+    .min(1, "El motivo de eliminación es obligatorio")
+    .max(500, "El motivo no puede superar los 500 caracteres"),
 });
 export type EliminarLiquidacionData = z.infer<typeof EliminarLiquidacionSchema>;
 
@@ -71,15 +75,13 @@ export function EliminarLiquidacionModal({
       {({ methods }) => (
         <div className="space-y-2">
           <Label htmlFor="motivo">
-            Motivo de eliminación{" "}
-            <span className="text-muted-foreground font-normal">
-              (opcional)
-            </span>
+            Motivo de eliminación <span className="text-destructive">*</span>
           </Label>
           <Textarea
             id="motivo"
-            placeholder="Ingresa el motivo de la eliminación (opcional, máximo 500 caracteres)"
+            placeholder="Ingresa el motivo de la eliminación (máximo 500 caracteres)"
             rows={3}
+            aria-invalid={Boolean(methods.formState.errors.motivo)}
             {...methods.register("motivo")}
           />
           {methods.formState.errors.motivo && (

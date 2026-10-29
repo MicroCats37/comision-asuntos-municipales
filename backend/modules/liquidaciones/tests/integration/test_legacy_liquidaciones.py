@@ -16,11 +16,8 @@ import pytest
 from decimal import Decimal
 from datetime import date
 
-from ninja.testing import TestClient
-from ninja_jwt.tokens import AccessToken
 from django.contrib.auth import get_user_model
 
-from config.api import api
 from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.finanzas.domain.models.impuestos import UIT, IGV
@@ -63,19 +60,6 @@ def ubigeo_distrito(db, ubigeo_provincia):
 def create_user(db):
     User = get_user_model()
     return User.objects.create_user(username="testuser_legacy", email="test_legacy@example.com", password="testpass123", dni="12345678")
-
-
-@pytest.fixture
-def api_client_fixture(db):
-    return TestClient(api)
-
-
-@pytest.fixture
-def auth_client(api_client_fixture, create_user):
-    token = AccessToken.for_user(create_user)
-    api_client_fixture.headers.update({"Authorization": f"Bearer {token}"})
-    api_client_fixture.user = create_user
-    return api_client_fixture
 
 
 @pytest.fixture
@@ -283,7 +267,6 @@ def inspector_fixture(db, tipo_edificacion):
 
 @pytest.fixture
 def liquidacion_previa_fixture(db, municipalidad, create_user, tipo_edificacion, proyecto):
-    from modules.liquidaciones.domain.constants import TipoLiquidacion
     return LiquidacionGeneral.objects.create(
         proyecto=proyecto,
         municipalidad=municipalidad,

@@ -63,7 +63,6 @@ class LiquidacionEdificacionesController:
     @route.get(
         "/tarifas/vigentes",
         response={200: ApiResponse[dict]},
-        auth=None,
     )
     def get_tarifas_vigentes(
         self,
@@ -128,7 +127,6 @@ class LiquidacionEdificacionesController:
     @route.get(
         "/{uuid:liquidacion_id}",
         response={200: ApiResponse[LiquidacionEdificacionesOutput]},
-        auth=None,
     )
     def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
         """
@@ -236,7 +234,6 @@ class LiquidacionEdificacionesController:
     @route.post(
         "/cotizar",
         response={200: ApiResponse[LiquidacionEdificacionesCotizarOutput]},
-        auth=None,
     )
     def cotizar(self, payload: LiquidacionEdificacionesCotizarInput):
         """

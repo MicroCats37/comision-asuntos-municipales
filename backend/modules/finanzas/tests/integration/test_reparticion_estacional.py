@@ -15,11 +15,8 @@ import pytest
 from datetime import date
 from decimal import Decimal
 
-from ninja.testing import TestClient
-from ninja_jwt.tokens import AccessToken
 from django.contrib.auth import get_user_model
 
-from config.api import api
 from modules.usuarios.domain.models.perfil_ingeniero import (
     EspecialidadRevision,
     EspecialidadRevisionCapitulo,
@@ -48,12 +45,6 @@ from modules.finanzas.domain.services.orchestrators.rh_reparticion_estacional_or
 # ── Fixtures ────────────────────────────────────────────────────────────────────
 
 @pytest.fixture
-def api_client(db):
-    """Ninja TestClient for testing Ninja endpoints."""
-    return TestClient(api)
-
-
-@pytest.fixture
 def create_user(db):
     """Create a test user."""
     User = get_user_model()
@@ -63,16 +54,6 @@ def create_user(db):
         password="testpass123",
         dni="12345671",
     )
-
-
-@pytest.fixture
-def auth_client(api_client, create_user):
-    """JWT-authenticated test client."""
-    user = create_user
-    token = AccessToken.for_user(user)
-    api_client.headers.update({"Authorization": f"Bearer {token}"})
-    api_client.user = user
-    return api_client
 
 
 @pytest.fixture

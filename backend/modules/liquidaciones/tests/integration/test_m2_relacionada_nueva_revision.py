@@ -11,10 +11,7 @@ from decimal import Decimal
 import uuid
 
 import pytest
-from ninja.testing import TestClient
-from ninja_jwt.tokens import AccessToken
 
-from config.api import api
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoDistrito, UbigeoProvincia
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion_relacion_miembro import (
@@ -32,11 +29,6 @@ from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
 @pytest.fixture
-def api_client(db):
-    return TestClient(api)
-
-
-@pytest.fixture
 def create_user(db):
     from django.contrib.auth import get_user_model
 
@@ -47,14 +39,6 @@ def create_user(db):
         password="testpass123",
         dni="87654321",
     )
-
-
-@pytest.fixture
-def auth_client(api_client, create_user):
-    token = AccessToken.for_user(create_user)
-    api_client.headers.update({"Authorization": f"Bearer {token}"})
-    api_client.user = create_user
-    return api_client
 
 
 @pytest.fixture

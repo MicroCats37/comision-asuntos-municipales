@@ -18,10 +18,15 @@ from modules.usuarios.presentation.presenters.auth_presenter import AuthPresente
 from modules.usuarios.domain.services.orchestrators.auth_orchestrator import AuthOrchestrator
 
 
-@api_controller("/auth/login", tags=["Autenticación"], permissions=[AllowAny])
+@api_controller("/auth/login", tags=["Autenticación"], permissions=[AllowAny], auth=None)
 class AuthLoginController:
     """
     Controlador para login JWT modular por username, DNI o email.
+
+    `auth=None` a nivel de controller declara explícitamente la superficie
+    pública del API: el login es la única operación que debe ser alcanzable
+    sin credenciales previas. El resto de controllers heredan el `JWTAuth()`
+    global de `config.api`.
 
     Cada endpoint:
     1. Recibe el payload
@@ -34,7 +39,7 @@ class AuthLoginController:
     def __init__(self, auth_orchestrator: AuthOrchestrator):
         self.auth_orchestrator = auth_orchestrator
 
-    @route.post("/username", response={200: ApiResponse[LoginTokenOut]}, auth=None)
+    @route.post("/username", response={200: ApiResponse[LoginTokenOut]})
     async def login_username(self, payload: LoginUsernameIn):
         """
         Login con username + password.
@@ -47,7 +52,7 @@ class AuthLoginController:
         )
         return success_response(AuthPresenter.present_login(result))
 
-    @route.post("/dni", response={200: ApiResponse[LoginTokenOut]}, auth=None)
+    @route.post("/dni", response={200: ApiResponse[LoginTokenOut]})
     async def login_dni(self, payload: LoginDniIn):
         """
         Login con DNI + password.
@@ -60,7 +65,7 @@ class AuthLoginController:
         )
         return success_response(AuthPresenter.present_login(result))
 
-    @route.post("/email", response={200: ApiResponse[LoginTokenOut]}, auth=None)
+    @route.post("/email", response={200: ApiResponse[LoginTokenOut]})
     async def login_email(self, payload: LoginEmailIn):
         """
         Login con email + password.

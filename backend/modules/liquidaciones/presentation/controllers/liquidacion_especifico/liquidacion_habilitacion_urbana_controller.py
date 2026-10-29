@@ -69,7 +69,6 @@ class LiquidacionHabilitacionUrbanaController:
     @route.get(
         "/tarifas/vigentes",
         response={200: ApiResponse[TarifasVigentesPorMetroCuadradoOutputSchema]},
-        auth=None,
     )
     def get_tarifas_vigentes(self):
         """
@@ -83,7 +82,6 @@ class LiquidacionHabilitacionUrbanaController:
     @route.get(
         "/",
         response={200: ApiResponse[PaginatedData[LiquidacionHabilitacionUrbanaOutput]]},
-        auth=None,
     )
     def list_liquidaciones(
         self,
@@ -130,7 +128,6 @@ class LiquidacionHabilitacionUrbanaController:
     @route.get(
         "/{uuid:liquidacion_id}",
         response={200: ApiResponse[LiquidacionHabilitacionUrbanaOutput]},
-        auth=None,
     )
     def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
         """
@@ -236,7 +233,6 @@ class LiquidacionHabilitacionUrbanaController:
     @route.post(
         "/cotizar",
         response={200: ApiResponse[CotizarPorMetroCuadradoOutputSchema]},
-        auth=None,
     )
     def cotizar(self, payload: CotizarPorMetroCuadradoInputSchema):
         """

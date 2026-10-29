@@ -55,7 +55,6 @@ class InspectorController:
     @route.get(
         "/",
         response={200: ApiResponse[InspectorListOut]},
-        auth=None,
     )
     def list_inspectores(self, page: int = 1, page_size: int = 10):
         """
@@ -70,7 +69,6 @@ class InspectorController:
     @route.get(
         "/vigentes",
         response={200: ApiResponse[InspectorVigenteListOut]},
-        auth=None,
     )
     def list_inspectores_vigentes(
         self,
@@ -92,7 +90,6 @@ class InspectorController:
     @route.get(
         "/{inspector_id}",
         response={200: ApiResponse[InspectorDetailOut]},
-        auth=None,
     )
     def obtener_inspector(self, inspector_id: uuid.UUID):
         """
@@ -128,7 +125,6 @@ class LiquidacionInspectorController:
     @route.get(
         "/seleccionables",
         response={200: ApiResponse[InspectoresSeleccionablesOut]},
-        auth=None,
     )
     def listar_inspectores_seleccionables(
         self,
@@ -154,7 +150,6 @@ class LiquidacionInspectorController:
     @route.get(
         "/inspectores-asignaciones",
         response={200: ApiResponse[PaginatedData[LiquidacionInspectorAsignacionOut]]},
-        auth=None,
     )
     def listar_asignaciones_inspectores(
         self,
@@ -186,7 +181,6 @@ class LiquidacionInspectorController:
     @route.patch(
         "/{liquidacion_id}/inspectores",
         response={200: ApiResponse[LiquidacionInspectorBatchOut]},
-        auth=None,
     )
     def batch_inspectores(
         self,

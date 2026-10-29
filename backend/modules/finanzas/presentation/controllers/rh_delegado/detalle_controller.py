@@ -43,7 +43,6 @@ class RHDelegadoDetalleController:
     @route.get(
         "/recibos-delegados/detalle",
         response={200: ApiResponse[PaginatedData[DetalleDelegadoRowOut]]},
-        auth=None,
     )
     def listar_rh_delegado_detalle(
         self,

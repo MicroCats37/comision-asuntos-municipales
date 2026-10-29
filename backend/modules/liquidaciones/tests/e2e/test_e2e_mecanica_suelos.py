@@ -12,11 +12,8 @@ import pytest
 from decimal import Decimal
 from datetime import date
 
-from ninja.testing import TestClient
-from ninja_jwt.tokens import AccessToken
 from django.contrib.auth import get_user_model
 
-from config.api import api
 from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.finanzas.domain.models.impuestos import IGV, UIT
@@ -131,22 +128,6 @@ def create_user(db):
         password="testpass123",
         dni="12345678",
     )
-
-
-@pytest.fixture
-def api_client(db):
-    """Ninja TestClient for testing Ninja endpoints."""
-    return TestClient(api)
-
-
-@pytest.fixture
-def auth_client(api_client, create_user):
-    """Authenticate the test client using JWT token."""
-    user = create_user
-    token = AccessToken.for_user(user)
-    api_client.headers.update({"Authorization": f"Bearer {token}"})
-    api_client.user = user
-    return api_client
 
 
 # ── E2E Test ────────────────────────────────────────────────────────────────────

@@ -36,7 +36,6 @@ class RHInspectorDetalleController:
     @route.get(
         "/recibos-inspectores/detalle",
         response={200: ApiResponse[PaginatedData[DetalleInspectorRowOut]]},
-        auth=None,
     )
     def listar_rh_inspector_detalle(
         self,

@@ -29,7 +29,7 @@ class VariablesController:
     def __init__(self, orchestrator: FinanzasOrchestrator):
         self.orchestrator = orchestrator
 
-    @route.get("/variables/vigentes", response={200: ApiResponse[VariablesFinancierasOut]}, auth=None)
+    @route.get("/variables/vigentes", response={200: ApiResponse[VariablesFinancierasOut]})
     def obtener_variables_vigentes(self):
         """
         Obtiene las variables financieras vigentes (IGV y UIT) para mostrar en formulario.

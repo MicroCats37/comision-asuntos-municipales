@@ -43,7 +43,6 @@ class RHInspectorMensualController:
     @route.post(
         "/recibos-inspectores/cotizar",
         response={200: ApiResponse[RHInspectorCotizarOut]},
-        auth=None,
     )
     def cotizar_rh_inspector_mensual(self, request, payload: RHInspectorCotizarIn):
         """
@@ -58,7 +57,6 @@ class RHInspectorMensualController:
     @route.post(
         "/recibos-inspectores/crear",
         response={200: ApiResponse[RHInspectorCotizarOut]},
-        auth=None,
     )
     def crear_rh_inspector_mensual(self, request, payload: RHInspectorCotizarIn):
         """
@@ -73,7 +71,6 @@ class RHInspectorMensualController:
     @route.get(
         "/recibos-inspectores/candidatos",
         response={200: ApiResponse[InspectorCandidatosPaginatedOut]},
-        auth=None,
     )
     def listar_candidatas_inspector(
         self,
@@ -135,7 +132,6 @@ class RHInspectorMensualController:
     @route.get(
         "/recibos-inspectores",
         response={200: ApiResponse[PaginatedData[RHInspectorMensualListItemOut]]},
-        auth=None,
     )
     def listar_recibos_inspectores(
         self,
@@ -163,7 +159,6 @@ class RHInspectorMensualController:
     @route.delete(
         "/recibos-inspectores/{id}/eliminar",
         response={200: ApiResponse[RHInspectorDeleteOut]},
-        auth=None,
     )
     def eliminar_recibo_inspector(self, request, id: uuid.UUID = Path(...)):
         """

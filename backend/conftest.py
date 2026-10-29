@@ -16,6 +16,19 @@ os.environ["CIP_USE_SIMULATOR"] = "True"
 import pytest
 from pathlib import Path
 
+# ── Shared auth fixtures (canonical JWT pattern) ─────────────────────
+# Imported here so every backend test module can use `api_client`,
+# `create_user`, `auth_client`, `auth_headers` and `usuario_admin` without
+# duplicating the `AccessToken.for_user` + `Authorization: Bearer` logic.
+from core.testing.auth_fixtures import (  # noqa: F401
+    api_client,
+    auth_client,
+    auth_headers,
+    auth_token,
+    create_user,
+    usuario_admin,
+)
+
 
 # ── Test database cleanup ───────────────────────────────────────────
 @pytest.fixture(scope="session", autouse=True)

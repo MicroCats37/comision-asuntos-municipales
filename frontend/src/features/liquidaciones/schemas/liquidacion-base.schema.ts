@@ -193,6 +193,7 @@ export const LiquidacionGeneralOutputSchema = z.object({
   delegados: z.array(LiquidacionDelegadoEnGeneralOutputSchema).default([]),
   comprobantes: z.array(LiquidacionComprobanteOutputSchema).default([]),
   eliminado: z.boolean().optional(),
+  motivo_eliminacion: z.string().max(500).nullish(),
 });
 
 // Paginated response helper (items directly, without ApiResponse wrapper)

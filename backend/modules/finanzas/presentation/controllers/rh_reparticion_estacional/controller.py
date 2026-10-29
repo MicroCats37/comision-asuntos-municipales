@@ -49,7 +49,6 @@ class RHReparticionEstacionalController:
     @route.post(
         "/reparticiones-estacionales/cotizar",
         response={200: ApiResponse[RHReparticionEstacionalCotizarOut]},
-        auth=None,
     )
     def cotizar(self, request, payload: RHReparticionEstacionalCotizarIn):
         """
@@ -63,7 +62,6 @@ class RHReparticionEstacionalController:
     @route.post(
         "/reparticiones-estacionales",
         response={200: ApiResponse[RHReparticionEstacionalCotizarOut]},
-        auth=None,
     )
     def crear(self, request, payload: RHReparticionEstacionalCrearIn):
         """
@@ -77,7 +75,6 @@ class RHReparticionEstacionalController:
     @route.get(
         "/reparticiones-estacionales",
         response={200: ApiResponse[list[RHReparticionEstacionalListItemOut]]},
-        auth=None,
     )
     def listar(
         self,
@@ -100,7 +97,6 @@ class RHReparticionEstacionalController:
     @route.get(
         "/reparticiones-estacionales/{reparticion_id}",
         response={200: ApiResponse[RHReparticionEstacionalDetalleOut]},
-        auth=None,
     )
     def obtener_detalle(self, request, reparticion_id: str):
         """
@@ -114,7 +110,6 @@ class RHReparticionEstacionalController:
     @route.delete(
         "/reparticiones-estacionales/{reparticion_id}",
         response={200: ApiResponse[RHReparticionEstacionalDeleteOut]},
-        auth=None,
     )
     def eliminar(self, request, reparticion_id: str):
         """

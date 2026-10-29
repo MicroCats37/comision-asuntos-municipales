@@ -8,15 +8,7 @@ import pytest
 from decimal import Decimal
 from datetime import date
 
-from ninja.testing import TestClient
-from config.api import api
 from modules.finanzas.domain.models import IGV, UIT
-
-
-@pytest.fixture
-def api_client(db):
-    """Ninja TestClient for testing Ninja endpoints with proper async handling."""
-    return TestClient(api)
 
 
 @pytest.fixture

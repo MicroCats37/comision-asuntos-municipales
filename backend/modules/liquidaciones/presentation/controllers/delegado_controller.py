@@ -52,7 +52,6 @@ class DelegadoController:
     @route.get(
         "/",
         response={200: ApiResponse[DelegadoListOut]},
-        auth=None,
     )
     def list_delegados(
         self,
@@ -83,7 +82,6 @@ class DelegadoController:
     @route.get(
         "/{delegado_id}/municipalidades",
         response={200: ApiResponse[DelegadoMunicipalidadesOut]},
-        auth=None,
     )
     def obtener_municipalidades(self, delegado_id: uuid.UUID):
         """
@@ -98,7 +96,6 @@ class DelegadoController:
     @route.get(
         "/municipalidad/{municipalidad_id}",
         response={200: ApiResponse[DelegadosPorMunicipalidadOut]},
-        auth=None,
     )
     def list_delegados_por_municipalidad(
         self,
@@ -124,7 +121,6 @@ class DelegadoController:
     @route.get(
         "/candidatas",
         response={200: ApiResponse[DelegadoCandidatasPaginatedOut]},
-        auth=None,
     )
     def list_candidatas(
         self,
@@ -200,7 +196,6 @@ class DelegadoController:
     @route.get(
         "/tipos-liquidacion",
         response={200: ApiResponse[DelegadoTiposLiquidacionOut]},
-        auth=None,
     )
     def list_tipos_liquidacion(self):
         """
@@ -213,7 +208,6 @@ class DelegadoController:
     @route.get(
         "/operatividades-vigentes",
         response={200: ApiResponse[DelegadoOperatividadesVigentesOut]},
-        auth=None,
     )
     def list_operatividades_vigentes(self, cip: str):
         """

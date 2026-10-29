@@ -89,8 +89,13 @@ def derecho_m2_vigente(db):
 
 
 @pytest.fixture
-def api_client(db):
-    """Django AsyncClient for testing Ninja endpoints."""
+def django_async_client(db):
+    """Django AsyncClient for testing Ninja endpoints.
+
+    Named apart from the shared ``api_client`` (Ninja TestClient) so the
+    canonical ``auth_client``/``api_client`` fixtures stay available here.
+    Authentication is injected with the shared ``auth_headers`` fixture.
+    """
     return AsyncClient()
 
 
@@ -102,7 +107,7 @@ def valid_tarifa_m2_id(tarifa_m2_hu):
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_hu_primera_revision_happy_path(api_client, municipalidad, derecho_m2_vigente, valid_tarifa_m2_id, ubigeo_distrito):
+async def test_hu_primera_revision_happy_path(django_async_client, auth_headers, municipalidad, derecho_m2_vigente, valid_tarifa_m2_id, ubigeo_distrito):
     """
     POST with valid data returns 200 and correct structure.
 
@@ -120,10 +125,11 @@ async def test_hu_primera_revision_happy_path(api_client, municipalidad, derecho
         },
     }
 
-    response = await api_client.post(
+    response = await django_async_client.post(
         "/api/liquidaciones/habilitacion-urbana/cotizar",
         data=payload,
         content_type="application/json",
+        headers=auth_headers,
     )
 
     assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
@@ -137,7 +143,7 @@ async def test_hu_primera_revision_happy_path(api_client, municipalidad, derecho
 
 @pytest.mark.django_db
 @pytest.mark.asyncio
-async def test_hu_primera_revision_area_zero_returns_400(api_client, valid_tarifa_m2_id):
+async def test_hu_primera_revision_area_zero_returns_400(django_async_client, auth_headers, valid_tarifa_m2_id):
     """
     area_solicitada = 0 returns 400 error.
 
@@ -154,10 +160,11 @@ async def test_hu_primera_revision_area_zero_returns_400(api_client, valid_tarif
         },
     }
 
-    response = await api_client.post(
+    response = await django_async_client.post(
         "/api/liquidaciones/habilitacion-urbana/cotizar",
         data=payload,
         content_type="application/json",
+        headers=auth_headers,
     )
 
     assert response.status_code == 400, f"Expected 400 for area=0, got {response.status_code}: {response.content}"
@@ -165,7 +172,7 @@ async def test_hu_primera_revision_area_zero_returns_400(api_client, valid_tarif
 
 @pytest.mark.django_db
 @pytest.mark.asyncio
-async def test_hu_primera_revision_area_negative_returns_400(api_client, valid_tarifa_m2_id):
+async def test_hu_primera_revision_area_negative_returns_400(django_async_client, auth_headers, valid_tarifa_m2_id):
     """
     area_solicitada = -10 returns 400 error.
 
@@ -182,10 +189,11 @@ async def test_hu_primera_revision_area_negative_returns_400(api_client, valid_t
         },
     }
 
-    response = await api_client.post(
+    response = await django_async_client.post(
         "/api/liquidaciones/habilitacion-urbana/cotizar",
         data=payload,
         content_type="application/json",
+        headers=auth_headers,
     )
 
     assert response.status_code == 400, f"Expected 400 for negative area, got {response.status_code}: {response.content}"
@@ -193,7 +201,7 @@ async def test_hu_primera_revision_area_negative_returns_400(api_client, valid_t
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_hu_response_has_three_wrappers(api_client, municipalidad, derecho_m2_vigente, valid_tarifa_m2_id, ubigeo_distrito):
+async def test_hu_response_has_three_wrappers(django_async_client, auth_headers, municipalidad, derecho_m2_vigente, valid_tarifa_m2_id, ubigeo_distrito):
     """
     Verify the output JSON has liquidacion_general, liquidacion_tipo, liquidacion_especifica.
 
@@ -213,10 +221,11 @@ async def test_hu_response_has_three_wrappers(api_client, municipalidad, derecho
         },
     }
 
-    response = await api_client.post(
+    response = await django_async_client.post(
         "/api/liquidaciones/habilitacion-urbana/cotizar",
         data=payload,
         content_type="application/json",
+        headers=auth_headers,
     )
 
     assert response.status_code == 200
@@ -237,7 +246,7 @@ async def test_hu_response_has_three_wrappers(api_client, municipalidad, derecho
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_hu_no_usuario_creador_in_input(api_client, derecho_m2_vigente, valid_tarifa_m2_id):
+async def test_hu_no_usuario_creador_in_input(django_async_client, auth_headers, derecho_m2_vigente, valid_tarifa_m2_id):
     """
     Verify the orchestrator handles a payload that does NOT contain usuario_creador.
 
@@ -258,10 +267,11 @@ async def test_hu_no_usuario_creador_in_input(api_client, derecho_m2_vigente, va
     # Ensure usuario_creador is NOT in payload
     assert "usuario_creador" not in str(payload)
 
-    response = await api_client.post(
+    response = await django_async_client.post(
         "/api/liquidaciones/habilitacion-urbana/cotizar",
         data=payload,
         content_type="application/json",
+        headers=auth_headers,
     )
 
     assert response.status_code == 200, f"Expected 200 without usuario_creador, got {response.status_code}: {response.content}"

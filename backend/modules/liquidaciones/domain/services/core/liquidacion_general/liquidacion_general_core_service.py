@@ -1220,7 +1220,7 @@ class LiquidacionGeneralCoreService:
         self,
         liquidacion: "LiquidacionGeneral",
         user_id: Optional[int],
-        motivo: Optional[str],
+        motivo: str,
     ) -> "LiquidacionGeneral":
         """
         Marks a LiquidacionGeneral as eliminated/anulled.
@@ -1237,7 +1237,7 @@ class LiquidacionGeneralCoreService:
         Args:
             liquidacion: LiquidacionGeneral ORM instance.
             user_id: ID of the user performing the elimination (optional).
-            motivo: Reason for elimination (optional).
+            motivo: Required reason for elimination.
 
         Returns:
             The same liquidacion instance with elimination fields updated.

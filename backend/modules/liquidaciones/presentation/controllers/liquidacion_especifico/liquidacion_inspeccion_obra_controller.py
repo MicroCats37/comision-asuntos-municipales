@@ -62,7 +62,6 @@ class LiquidacionInspeccionObraController:
     @route.get(
         "/tarifas/vigentes",
         response={200: ApiResponse[TarifasVigentesPorCategoriaVisitasOutputSchema]},
-        auth=None,
     )
     def get_tarifas_vigentes(self):
         """
@@ -76,7 +75,6 @@ class LiquidacionInspeccionObraController:
     @route.get(
         "/",
         response={200: ApiResponse[PaginatedData[LiquidacionInspeccionObraOutput]]},
-        auth=None,
     )
     def list_liquidaciones(
         self,
@@ -119,7 +117,6 @@ class LiquidacionInspeccionObraController:
     @route.get(
         "/{uuid:liquidacion_id}",
         response={200: ApiResponse[LiquidacionInspeccionObraOutput]},
-        auth=None,
     )
     def obtener_liquidacion(self, liquidacion_id: uuid.UUID):
         """
@@ -166,7 +163,6 @@ class LiquidacionInspeccionObraController:
     @route.post(
         "/cotizar",
         response={200: ApiResponse[CotizarPorCategoriaVisitasOutputSchema]},
-        auth=None,
     )
     def cotizar(self, payload: CotizarPorCategoriaVisitasInputSchema):
         """

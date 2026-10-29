@@ -40,7 +40,6 @@ class RHDelegadoMensualController:
     @route.post(
         "/recibos-delegados/cotizar",
         response={200: ApiResponse[RHDelegadoCotizarOut]},
-        auth=None,
     )
     def cotizar_rh_delegado_mensual(self, request, payload: RHDelegadoCotizarIn):
         """
@@ -55,7 +54,6 @@ class RHDelegadoMensualController:
     @route.post(
         "/recibos-delegados/crear",
         response={200: ApiResponse[RHDelegadoCotizarOut]},
-        auth=None,
     )
     def crear_rh_delegado_mensual(self, request, payload: RHDelegadoCotizarIn):
         """
@@ -70,7 +68,6 @@ class RHDelegadoMensualController:
     @route.get(
         "/recibos-delegados",
         response={200: ApiResponse[PaginatedData[RHDelegadoMensualListItemOut]]},
-        auth=None,
     )
     def listar_recibos_delegados(
         self,
@@ -106,7 +103,6 @@ class RHDelegadoMensualController:
     @route.delete(
         "/recibos-delegados/{id}/eliminar",
         response={200: ApiResponse[RHDelegadoDeleteOut]},
-        auth=None,
     )
     def eliminar_recibo_delegado(self, request, id: uuid.UUID = Path(...)):
         """

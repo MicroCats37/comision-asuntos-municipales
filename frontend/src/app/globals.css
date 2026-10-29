@@ -535,6 +535,30 @@ button {
   @apply absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full transition-all;
 }
 
+/* Sidebar scrollbar — tinted for the wine gradient surface (gold thumb) */
+@utility sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.78 0.14 85 / 0.45) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: oklch(0.78 0.14 85 / 0.35);
+    border-radius: 9999px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.78 0.14 85 / 0.65);
+  }
+}
+
 /* Dashboard surface — subtle card-like background */
 @utility dashboard-surface {
   @apply bg-background rounded-xl border border-border shadow-sm;
@@ -837,6 +861,32 @@ button {
 
   .animate-firefly-glow {
     opacity: 0.15;
+  }
+}
+
+/* === CORPORATE BUTTON — Wine gradient hover === */
+
+/* Primary button wine gradient hover effect */
+@utility btn-wine-gradient-hover {
+  background: linear-gradient(
+    135deg,
+    oklch(0.42 0.16 22) 0%,
+    oklch(0.38 0.14 25) 100%
+  );
+  box-shadow: 0 4px 12px oklch(0.42 0.16 22 / 0.25);
+
+  &:hover {
+    background: linear-gradient(
+      135deg,
+      oklch(0.38 0.14 22) 0%,
+      oklch(0.35 0.13 25) 100%
+    );
+    box-shadow: 0 6px 16px oklch(0.42 0.16 22 / 0.3);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
 

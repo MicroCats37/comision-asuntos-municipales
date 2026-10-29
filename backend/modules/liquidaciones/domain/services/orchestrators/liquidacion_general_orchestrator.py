@@ -776,8 +776,8 @@ class LiquidacionGeneralOrchestrator:
     def eliminar_liquidacion(
         self,
         liquidacion_id: uuid.UUID,
+        motivo: str,
         usuario_id: Optional[int] = None,
-        motivo: Optional[str] = None,
     ) -> LiquidacionGeneralResult:
         """
         Marca una LiquidacionGeneral como eliminada/anulada.
@@ -791,7 +791,7 @@ class LiquidacionGeneralOrchestrator:
         Args:
             liquidacion_id: UUID de la liquidación a eliminar.
             usuario_id: ID del usuario que elimina (opcional, para auditabilidad).
-            motivo: Motivo de la eliminación (opcional, para auditabilidad).
+            motivo: Motivo obligatorio de la eliminación, para auditabilidad.
 
         Returns:
             LiquidacionGeneralResult con campos de eliminación expuestos.

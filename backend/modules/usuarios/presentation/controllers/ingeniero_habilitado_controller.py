@@ -26,7 +26,7 @@ class IngenieroHabilitadoController:
     def __init__(self, orchestrator: IngenieroHabilitadoOrchestrator):
         self.orchestrator = orchestrator
 
-    @route.get("/habilitados/{cip}", response={200: ApiResponse[IngenieroHabilitadoOut]}, auth=None)
+    @route.get("/habilitados/{cip}", response={200: ApiResponse[IngenieroHabilitadoOut]})
     async def obtener_ingeniero_habilitado(self, cip: str):
         """
         Obtiene datos del ingeniero habilitado por CIP.

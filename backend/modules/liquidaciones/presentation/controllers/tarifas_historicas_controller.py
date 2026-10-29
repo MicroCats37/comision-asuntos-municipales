@@ -53,7 +53,6 @@ class TarifasHistoricasController:
     @route.get(
         "/{tipo}/tarifas/historicas",
         response={200: ApiResponse[PaginatedData[TarifaHistoricaPeriodoSchema]]},
-        auth=None,
     )
     def get_tarifas_historicas(
         self,
@@ -94,7 +93,6 @@ class TarifasHistoricasController:
     @route.get(
         "/derechos/historicos",
         response={200: ApiResponse[DerechosHistoricosResponseSchema]},
-        auth=None,
     )
     def get_derechos_historicos(
         self,
@@ -127,7 +125,6 @@ class TarifasHistoricasController:
             TarifaM2ItemSchema,
             TarifaVisitasItemSchema,
         ]]]},
-        auth=None,
     )
     def get_tarifas_generales(
         self,

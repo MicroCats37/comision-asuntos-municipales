@@ -1,10 +1,13 @@
 from typing import List, Union, Any
 import warnings
+from functools import wraps
 
 from django.db import models
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from ninja_extra import permissions
 from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.controller import NinjaJWTDefaultController
+from ninja_jwt.exceptions import AuthenticationFailed, TokenError
 
 
 class OptionalJWTAuth(JWTAuth):
@@ -97,11 +100,41 @@ class CheckPermission(permissions.BasePermission):
         return verify_user_permissions(user, self.permisos, self.requerir_todos)
 
 
+# ── Swagger / OpenAPI protection ──────────────────────────────────────────────
+
+_jwt_docs_auth = JWTAuth()
+
+
+def jwt_required_docs(view):
+    """django-ninja ``docs_decorator`` — exige JWT para /docs y /openapi.json.
+
+    django-ninja sirve la documentación Swagger y el esquema OpenAPI como vistas
+    Django simples, fuera del mecanismo de autenticación de los controllers, por
+    lo que quedan públicas por defecto. El hook oficial ``docs_decorator``
+    permite envolver esas vistas; aquí se reutiliza el mismo ``JWTAuth`` global
+    de la API para que la documentación tenga exactamente el mismo requisito de
+    credencial que el resto de operaciones.
+    """
+
+    @wraps(view)
+    def _wrapped(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        try:
+            user = _jwt_docs_auth(request)
+        except (AuthenticationFailed, TokenError):
+            return JsonResponse({"detail": "Unauthorized"}, status=401)
+        if user is None:
+            return JsonResponse({"detail": "Unauthorized"}, status=401)
+        return view(request, *args, **kwargs)
+
+    return _wrapped
+
+
 __all__ = [
     "JWTAuth",
     "NinjaJWTDefaultController",
     "OptionalJWTAuth",
     "CheckPermission",
+    "jwt_required_docs",
     "verify_user_permissions",
     "verificar_permisos_usuario",
 ]

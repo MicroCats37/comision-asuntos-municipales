@@ -333,3 +333,20 @@ def test_eliminar_liquidacion_marks_deleted_and_nulls_specific_numero(
     data = response.json()["data"]
     assert data["eliminado"] is True
     assert data["motivo_eliminacion"] == "Registro creado por error en prueba"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("payload", [{}, {"motivo": ""}, {"motivo": "   "}])
+def test_eliminar_liquidacion_requires_non_empty_motivo(
+    auth_client,
+    liquidacion_pendiente,
+    payload,
+):
+    response = auth_client.patch(
+        f"/liquidaciones/generales/{liquidacion_pendiente.id}/eliminar",
+        json=payload,
+    )
+
+    assert response.status_code == 422
+    liquidacion_pendiente.refresh_from_db()
+    assert liquidacion_pendiente.eliminado is False

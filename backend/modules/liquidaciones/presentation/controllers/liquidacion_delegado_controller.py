@@ -54,7 +54,6 @@ class LiquidacionDelegadoController:
     @route.get(
         "/delegados/vigentes",
         response={200: ApiResponse[DelegadosVigentesOut]},
-        auth=None,
     )
     def list_delegados_vigentes(
         self,
@@ -85,7 +84,6 @@ class LiquidacionDelegadoController:
     @route.get(
         "/delegados-asignaciones",
         response={200: ApiResponse[PaginatedData[LiquidacionDelegadoOut]]},
-        auth=None,
     )
     def list_delegados_asignaciones(
         self,
@@ -114,7 +112,6 @@ class LiquidacionDelegadoController:
     @route.get(
         "/especialidades-revision",
         response={200: ApiResponse[EspecialidadesRevisionOut]},
-        auth=None,
     )
     def list_especialidades_revision(self):
         """
@@ -131,7 +128,6 @@ class LiquidacionDelegadoController:
     @route.get(
         "/delegados/vigentes-por-especialidad",
         response={200: ApiResponse[DelegadosVigentesOut]},
-        auth=None,
     )
     def list_delegados_vigentes_por_especialidad(
         self,
@@ -158,7 +154,6 @@ class LiquidacionDelegadoController:
     @route.patch(
         "/{liquidacion_id}/delegados",
         response={200: ApiResponse[LiquidacionDelegadoBatchOut]},
-        auth=None,
     )
     def batch_delegados(
         self,

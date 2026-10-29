@@ -47,7 +47,7 @@ class EntidadesController:
         self.orchestrator = orchestrator
         self.presenter = presenter
 
-    @route.post("/instituciones", response={200: ApiResponse[EntidadUpsertResponseOut]}, auth=None)
+    @route.post("/instituciones", response={200: ApiResponse[EntidadUpsertResponseOut]})
     async def crear_institucion(self, payload: EntidadInstitucionIn):
         """
         Crear o actualizar una institución (entidad con RUC).
@@ -67,7 +67,7 @@ class EntidadesController:
             message="Institución creada correctamente.",
         )
 
-    @route.post("/personas-naturales", response={200: ApiResponse[EntidadUpsertResponseOut]}, auth=None)
+    @route.post("/personas-naturales", response={200: ApiResponse[EntidadUpsertResponseOut]})
     async def crear_persona_natural(self, payload: EntidadPersonaNaturalIn):
         """
         Crear o actualizar una persona natural (entidad con DNI).
@@ -87,7 +87,7 @@ class EntidadesController:
             message="Persona natural creada correctamente.",
         )
 
-    @route.get("/buscar", response={200: ApiResponse[EntidadOut]}, auth=None)
+    @route.get("/buscar", response={200: ApiResponse[EntidadOut]})
     async def buscar_por_documento(self, numero_documento: str):
         """
         Buscar una entidad por su número de documento (RUC o DNI).
@@ -97,7 +97,7 @@ class EntidadesController:
             self.presenter.present_buscar(result)
         )
 
-    @route.get("/ubigeo/distritos", response={200: ApiResponse[DistritosResponseOut]}, auth=None)
+    @route.get("/ubigeo/distritos", response={200: ApiResponse[DistritosResponseOut]})
     async def obtener_distritos(
         self,
         search: Optional[str] = Query(None, description="Texto para filtrar por nombre de distrito"),
@@ -124,7 +124,7 @@ class EntidadesController:
             self.presenter.present_distritos(distritos)
         )
 
-    @route.get("/municipalidades", response={200: ApiResponse[list[MunicipalidadesResponseOut]]}, auth=None)
+    @route.get("/municipalidades", response={200: ApiResponse[list[MunicipalidadesResponseOut]]})
     async def obtener_municipalidades(self):
         """Obtiene lista de todas las municipalidades."""
         municipalidades = await self.orchestrator.obtener_municipalidades()

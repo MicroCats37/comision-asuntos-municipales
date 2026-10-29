@@ -36,7 +36,7 @@ class ConsultaController:
         self.orchestrator = orchestrator
         self.presenter = presenter
 
-    @route.get("/consulta/{documento}", response={200: ApiResponse[DocumentoConsultaOut]}, auth=None)
+    @route.get("/consulta/{documento}", response={200: ApiResponse[DocumentoConsultaOut]})
     async def consultar_documento(
         self,
         documento: str = Path(
