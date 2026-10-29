@@ -215,8 +215,10 @@ class LiquidacionGeneral(BaseModel):
         verbose_name_plural = "Liquidaciones"
         ordering = ["proyecto", "-fecha_registro"]
         indexes = [
-            # Covers the latest-revisions subquery: MAX(numero_revision) per (proyecto, tipo)
-            # Also covers the ORDER BY on proyecto + fecha_registro
+            # Covers the per-tipo listing filters/ordering by (proyecto, tipo, numero_revision).
+            # Also covers the ORDER BY on proyecto + fecha_registro.
+            # NOTE: there is no "latest revision" subquery anymore — `numero_revision` is an
+            # editable label, so the index serves the exact-revision filters, not a reduction.
             models.Index(fields=["proyecto", "tipo_liquidacion", "-numero_revision"]),
             # Covers eliminado filter in active-list queries
             models.Index(fields=["eliminado"]),

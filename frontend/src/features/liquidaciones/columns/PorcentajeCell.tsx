@@ -1,11 +1,12 @@
 "use client";
 
 import { formatDecimalPercent } from "@/utils/number-formatter";
+import type { EdificacionesPorcentajeObraDatosOut } from "../schemas/liquidacion-edificaciones.schema";
 import type { PorcentajeObraDatosOut } from "../schemas/liquidacion-porcentaje.schema";
 
 interface PorcentajeCellProps {
   /** PorcentajeObra data (Edif / IV / Taludes) */
-  lt: PorcentajeObraDatosOut;
+  lt: PorcentajeObraDatosOut | EdificacionesPorcentajeObraDatosOut;
   /** Optional badge above the % (e.g. "AMPLIACIÓN" for Edif). */
   tipoTramiteLabel?: string;
 }

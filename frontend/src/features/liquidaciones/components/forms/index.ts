@@ -9,6 +9,10 @@ export { CotizacionNuevaRevisionSmartField } from "./CotizacionNuevaRevisionSmar
 export { CotizacionPorcentajeSmartField } from "./CotizacionPorcentajeSmartField";
 export { EliminarLiquidacionModal } from "./EliminarLiquidacionModal";
 export { EntidadLookupField } from "./EntidadLookupSmartField";
+export {
+  EstrategiaCotizacionField,
+  EstrategiaValorField,
+} from "./EstrategiaCotizacionField";
 export { LiquidacionEdificacionFormModal } from "./edificacion/LiquidacionEdificacionFormModal";
 export { LiquidacionHabilitacionUrbanaFormModal } from "./habilitacion-urbana/LiquidacionHabilitacionUrbanaFormModal";
 export { InspeccionObraNuevaLiquidacionChoiceModal } from "./InspeccionObraNuevaLiquidacionChoiceModal";

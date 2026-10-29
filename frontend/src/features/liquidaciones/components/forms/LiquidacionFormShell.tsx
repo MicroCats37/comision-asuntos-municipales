@@ -1,17 +1,19 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import type { FieldValues, UseFormReturn } from "react-hook-form";
 import type { ZodType } from "zod";
 import type { GenericModalSize } from "@/components/genericModal/GenericModal";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
 import { notify } from "@/errors";
+import { NUMERO_REVISION_FIJA } from "../../utils/numeroRevision";
 import {
   LiquidacionFormHeader,
   type LiquidacionFormMode,
 } from "./LiquidacionFormHeader";
+import { NumeroRevisionWatcher } from "./NumeroRevisionWatcher";
 
 /**
  * Item shape mínimo que el shell necesita. Los tipos reales (Edif, Taludes, IV, HU, MS)
@@ -110,11 +112,6 @@ export interface LiquidacionFormShellProps<
   getPreviousValues?: (
     sourceItem: TItem | null,
   ) => { subTotal: number; total: number } | undefined;
-  /** Default: edit → numero_revision; nueva-revision → previa.revision + 2; relacionada → 1 (vinculada, no incrementa). */
-  getRevisionNumber?: (
-    mode: LiquidacionFormMode,
-    sourceItem: TItem | null,
-  ) => number | undefined;
 
   // ── Ver detalle (solo nueva-revision / relacionada) ───────────────
   onVerDetalle?: () => void;
@@ -146,33 +143,13 @@ const defaultComputeCanEditProyecto = <TItem extends LiquidacionSourceItem>(
   return true;
 };
 
-const defaultGetRevisionNumber = <TItem extends LiquidacionSourceItem>(
-  mode: LiquidacionFormMode,
-  sourceItem: TItem | null,
-): number | undefined => {
-  if (!sourceItem) return undefined;
-  if (mode === "edit") {
-    return Number(sourceItem.liquidacion_general.numero_revision);
-  }
-  if (mode === "nueva-revision") {
-    // Siguiente revisión (skip pares): previa=N → nueva=N+2
-    const n = Number(sourceItem.liquidacion_general.numero_revision);
-    return Number.isFinite(n) ? n + 2 : undefined;
-  }
-  if (mode === "relacionada") {
-    // Vinculada a una previa: siempre arranca en revisión 1 (no incrementa)
-    return 1;
-  }
-  return undefined;
-};
-
 /**
  * LiquidacionFormShell — Wrapper genérico para los 4 modes de liquidación.
  *
  * Encapsula toda la lógica repetida entre tipos:
  *  - State: contacto, contactoModalOpen
  *  - Pre-fill de contacto desde sourceItem
- *  - Header con badge + valores previos + botón "Ver detalle"
+ *  - Header con badge (número de revisión VIVO del formulario) + valores previos + botón "Ver detalle"
  *  - AppFormModal wrapper
  *  - Submission con 4 ramas (create/edit/nueva-revision/relacionada)
  *  - ContactoFormModal sibling
@@ -213,11 +190,21 @@ export function LiquidacionFormShell<
     onAfterSubmit,
     computeCanEditProyecto = defaultComputeCanEditProyecto as never,
     getPreviousValues = defaultGetPreviousValues as never,
-    getRevisionNumber = defaultGetRevisionNumber as never,
     onVerDetalle,
   } = props;
 
   const success = { ...DEFAULT_SUCCESS, ...successMessages };
+
+  // ── Número de revisión VIVO ──────────────────────────────────────────
+  // El badge de la cabecera refleja el valor del campo `numero_revision` del
+  // formulario (única fuente de verdad). El watcher se monta dentro del form
+  // (el header del modal vive fuera del FormProvider) y publica el valor.
+  // Cuando el formulario no tiene el campo (Inspección de Obra) se mantiene
+  // la revisión fija (1).
+  const [liveRevision, setLiveRevision] = useState<number | undefined>(
+    undefined,
+  );
+  const revisionNumber = liveRevision ?? NUMERO_REVISION_FIJA;
 
   // ── Cómputos derivados (valores pasados por header y body) ──────────
   const previousValues = useMemo(
@@ -228,17 +215,6 @@ export function LiquidacionFormShell<
         ) => { subTotal: number; total: number } | undefined
       )(sourceItem),
     [sourceItem, getPreviousValues],
-  );
-
-  const revisionNumber = useMemo(
-    () =>
-      (
-        getRevisionNumber as (
-          m: LiquidacionFormMode,
-          s: TItem | null,
-        ) => number | undefined
-      )(mode, sourceItem),
-    [mode, sourceItem, getRevisionNumber],
   );
 
   const canEditProyecto = useMemo(
@@ -358,15 +334,21 @@ export function LiquidacionFormShell<
         headerActions={headerActions}
         size={size}
       >
-        {({ methods }) =>
-          renderBody({
-            methods: methods as UseFormReturn<T>,
-            isEdit,
-            isRevisionLike,
-            sourceItem,
-            canEditProyecto,
-          })
-        }
+        {({ methods }) => (
+          <>
+            <NumeroRevisionWatcher
+              control={methods.control}
+              onChange={setLiveRevision}
+            />
+            {renderBody({
+              methods: methods as UseFormReturn<T>,
+              isEdit,
+              isRevisionLike,
+              sourceItem,
+              canEditProyecto,
+            })}
+          </>
+        )}
       </AppFormModal>
     </>
   );

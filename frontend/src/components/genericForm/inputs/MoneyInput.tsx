@@ -8,6 +8,7 @@ import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { formatCurrencyTrimmed } from "@/utils/number-formatter";
 
 function normalizeMoneyText(raw: string): string {
   const cleaned = raw
@@ -116,16 +117,7 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
       const num = Number(val);
       if (!Number.isFinite(num)) return "";
 
-      const fixed = num.toFixed(2);
-      const [intPart, decPart] = fixed.split(".");
-
-      // Space as thousand separator (e.g. 1 000 000)
-      const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-
-      // Only show decimal part when non-zero
-      if (decPart === "00") return `S/ ${formattedInt}`;
-      if (decPart[1] === "0") return `S/ ${formattedInt}.${decPart[0]}`;
-      return `S/ ${formattedInt}.${decPart}`;
+      return formatCurrencyTrimmed(num, 2);
     },
     [],
   );

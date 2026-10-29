@@ -28,6 +28,7 @@ from modules.liquidaciones.models import (
     LiquidacionPorCategoriaVisitas,
     LiquidacionPorcentajeObra,
     LiquidacionPorcentajeObraDetalle,
+    LiquidacionPorcentajeObraAcumulacion,
     # Inspector
     LiquidacionInspector,
     # Proxy models
@@ -169,7 +170,9 @@ class LiquidacionPorcentajeObraInline(admin.StackedInline):
 
     model = LiquidacionPorcentajeObra
     extra = 0
-    readonly_fields = ["created_at", "updated_at"]
+    # `estrategia_cotizacion` es un snapshot persistido: lo fija el motor de
+    # cotización, no el operador del admin.
+    readonly_fields = ["estrategia_cotizacion", "created_at", "updated_at"]
 
 
 class LiquidacionPorcentajeObraDetalleInline(admin.TabularInline):
@@ -627,6 +630,9 @@ admin.site.register(LiquidacionMecanicaSuelos, HiddenWrapperAdmin)
 admin.site.register(LiquidacionTaludes, HiddenWrapperAdmin)
 admin.site.register(LiquidacionInspeccionObra, HiddenWrapperAdmin)
 admin.site.register(LiquidacionImpactoVial, HiddenWrapperAdmin)
+# La acumulación es una proyección referencial del PO: se administra desde el
+# inline del padre, no desde la barra lateral.
+admin.site.register(LiquidacionPorcentajeObraAcumulacion, HiddenWrapperAdmin)
 
 
 # =============================================================================

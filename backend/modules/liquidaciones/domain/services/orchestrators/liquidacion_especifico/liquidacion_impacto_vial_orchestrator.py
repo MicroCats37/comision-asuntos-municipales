@@ -163,6 +163,7 @@ liquidacion_general=LiquidacionGeneralData(
                 expediente=payload_in.liquidacion_general.expediente,
                 observacion=payload_in.liquidacion_general.observacion,
                 denominacion_de_proyecto=payload_in.liquidacion_general.denominacion_de_proyecto,
+                numero_revision=payload_in.numero_revision,
                 proyecto=ProyectoData(
                     nombre_propietario=payload_in.liquidacion_general.proyecto.nombre_propietario,
                     direccion=payload_in.liquidacion_general.proyecto.direccion,
@@ -197,18 +198,16 @@ liquidacion_general=LiquidacionGeneralData(
         liquidacion_previa_id: uuid.UUID,
     ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
-        Valida y crea una nueva revisión (3 o 5) para una liquidación de Impacto Vial.
+        Valida y crea una nueva revisión para una liquidación de Impacto Vial.
+
+        `numero_revision` llega del cliente (validado contra {1, 3, 5} y
+        MAX_REVISIONES por el contrato de entrada). El backend nunca lo deriva de la
+        previa ni rechaza un número de revisión repetido.
         """
         try:
             previa = self.general_core.get_liquidacion_iv_by_id(liquidacion_previa_id)
         except ObjectDoesNotExist:
             raise HttpError(404, "Liquidación previa no encontrada.")
-
-        nueva_revision_numero = previa.numero_revision + 2
-        if nueva_revision_numero > 5:
-            raise HttpError(400, f"MAX_REVISIONES=5 excedido. No se puede crear revisión {nueva_revision_numero}")
-        if nueva_revision_numero % 2 == 0:
-            raise HttpError(400, f"Solo se permiten revisiones impares (1, 3, 5). No se puede crear revisión {nueva_revision_numero}")
 
         # valor_declarado is inherited from the previous liquidacion — not in the nueva-revision schema
         valor_declarado = previa.liquidacion_porcentaje_obra.valor_declarado
@@ -271,6 +270,7 @@ liquidacion_general=LiquidacionGeneralData(
                     if payload_in.liquidacion_general.denominacion_de_proyecto is not None
                     else previa.denominacion_de_proyecto
                 ),
+                numero_revision=payload_in.numero_revision,
                 proyecto=ProyectoData(
                     nombre_propietario=previa.proyecto.nombre_propietario,
                     direccion=previa.proyecto.direccion,
@@ -681,6 +681,7 @@ liquidacion_general=LiquidacionGeneralData(
                     proyecto_data=liquidacion_general.get("proyecto"),
                     denominacion_de_proyecto=liquidacion_general.get("denominacion_de_proyecto"),
                     contacto_data=liquidacion_general.get("contacto"),
+                    numero_revision=liquidacion_general.get("numero_revision"),
                 )
 
             # 4b. Update tipo fields if provided
@@ -766,11 +767,12 @@ liquidacion_general=LiquidacionGeneralData(
         liquidacion_previa_id: uuid.UUID,
     ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
-        Validates and creates a related liquidacion with numero_revision=1
-        for an existing Impacto Vial liquidacion.
+        Validates and creates a related liquidacion for an existing Impacto Vial
+        liquidacion.
 
-        The new liquidacion is related to the previous one via the relation group,
-        but has its own numero_revision=1 (not a subsequent revision).
+        The new liquidacion joins the relation group of the previous one, using the
+        `numero_revision` chosen by the client (validated against {1, 3, 5} and
+        MAX_REVISIONES by the input contract).
 
         Validations:
         - liquidacion_previa_id exists and is Impacto Vial
@@ -842,6 +844,7 @@ liquidacion_general=LiquidacionGeneralData(
                 expediente=payload_in.liquidacion_general.expediente,
                 observacion=payload_in.liquidacion_general.observacion,
                 denominacion_de_proyecto=payload_in.liquidacion_general.denominacion_de_proyecto,
+                numero_revision=payload_in.numero_revision,
                 proyecto=ProyectoData(
                     nombre_propietario=payload_in.liquidacion_general.proyecto.nombre_propietario,
                     direccion=payload_in.liquidacion_general.proyecto.direccion,

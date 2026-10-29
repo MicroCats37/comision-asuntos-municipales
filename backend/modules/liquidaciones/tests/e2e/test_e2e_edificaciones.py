@@ -251,6 +251,7 @@ def test_e2e_edificaciones_flow(
     # Step 3: Construct payload using explicit mode (tarifas array)
     # New contract: one tarifa repeated with each especialidad_id
     payload = {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": municipalidad_id,
             "expediente": "EXP-E2E-EDIF-2024-001",

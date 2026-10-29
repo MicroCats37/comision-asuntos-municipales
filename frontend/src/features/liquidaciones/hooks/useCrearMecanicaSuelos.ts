@@ -12,10 +12,52 @@ import { useLiquidacionesCreateMutation } from "./cache";
 const BASE_URL = "/liquidaciones/mecanica-suelos";
 const LIST_KEY = ["liquidaciones", "mecanica-suelos"] as const;
 
+/**
+ * Payload de creación (primera-revisión) de Mecánica de Suelos.
+ *
+ * `numero_revision` viaja en el TOP LEVEL del body (contrato backend
+ * `LiquidacionMecanicaSuelosInput` = `NumeroRevisionRequeridoMixin` +
+ * wrappers): es obligatorio y lo elige el usuario.
+ */
+export function buildCrearMecanicaSuelosPayload(
+  payload: MecanicaSuelosFormData,
+) {
+  const { tarifa_m2_id, area_solicitada, numero_revision, ...rest } = payload;
+  return {
+    numero_revision,
+    liquidacion_general: {
+      municipalidad_id: rest.municipalidad_id,
+      expediente: rest.expediente,
+      observacion: rest.observacion,
+      denominacion_de_proyecto: rest.denominacion || undefined,
+      proyecto: {
+        nombre_propietario: rest.nombre_propietario,
+        direccion: rest.direccion,
+        distrito_id: rest.distrito_id || undefined,
+        urbanizacion: rest.urbanizacion || undefined,
+        entidad: {
+          tipo_documento: rest.entidad_tipo_documento,
+          numero_documento: rest.entidad_numero_documento,
+          razon_social: rest.entidad_razon_social,
+        },
+      },
+      // Contacto principal (singular, opcional)
+      ...(rest.contacto ? { contacto: rest.contacto } : {}),
+    },
+    liquidacion_especifica: {
+      datos: {
+        area_solicitada,
+      },
+      tarifa: tarifa_m2_id ? { tarifa_m2_id } : { tarifa_m2_id: "" },
+    },
+  };
+}
+
 export function useCrearMecanicaSuelos() {
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_general: unknown;
     liquidacion_especifica: unknown;
+    numero_revision: number;
   }>({
     tipoQueryKey: LIST_KEY,
     url: `${BASE_URL}/nueva-liquidacion/primera-revision`,
@@ -26,64 +68,10 @@ export function useCrearMecanicaSuelos() {
     () => ({
       ...mutation,
       mutate: (payload: MecanicaSuelosFormData) => {
-        const { tarifa_m2_id, area_solicitada, ...rest } = payload;
-        mutation.mutate({
-          liquidacion_general: {
-            municipalidad_id: rest.municipalidad_id,
-            expediente: rest.expediente,
-            observacion: rest.observacion,
-            denominacion_de_proyecto: rest.denominacion || undefined,
-            proyecto: {
-              nombre_propietario: rest.nombre_propietario,
-              direccion: rest.direccion,
-              distrito_id: rest.distrito_id || undefined,
-              urbanizacion: rest.urbanizacion || undefined,
-              entidad: {
-                tipo_documento: rest.entidad_tipo_documento,
-                numero_documento: rest.entidad_numero_documento,
-                razon_social: rest.entidad_razon_social,
-              },
-            },
-            // Contacto principal (singular, opcional)
-            ...(rest.contacto ? { contacto: rest.contacto } : {}),
-          },
-          liquidacion_especifica: {
-            datos: {
-              area_solicitada,
-            },
-            tarifa: tarifa_m2_id ? { tarifa_m2_id } : { tarifa_m2_id: "" },
-          },
-        });
+        mutation.mutate(buildCrearMecanicaSuelosPayload(payload));
       },
       mutateAsync: async (payload: MecanicaSuelosFormData) => {
-        const { tarifa_m2_id, area_solicitada, ...rest } = payload;
-        return mutation.mutateAsync({
-          liquidacion_general: {
-            municipalidad_id: rest.municipalidad_id,
-            expediente: rest.expediente,
-            observacion: rest.observacion,
-            denominacion_de_proyecto: rest.denominacion || undefined,
-            proyecto: {
-              nombre_propietario: rest.nombre_propietario,
-              direccion: rest.direccion,
-              distrito_id: rest.distrito_id || undefined,
-              urbanizacion: rest.urbanizacion || undefined,
-              entidad: {
-                tipo_documento: rest.entidad_tipo_documento,
-                numero_documento: rest.entidad_numero_documento,
-                razon_social: rest.entidad_razon_social,
-              },
-            },
-            // Contacto principal (singular, opcional)
-            ...(rest.contacto ? { contacto: rest.contacto } : {}),
-          },
-          liquidacion_especifica: {
-            datos: {
-              area_solicitada,
-            },
-            tarifa: tarifa_m2_id ? { tarifa_m2_id } : { tarifa_m2_id: "" },
-          },
-        });
+        return mutation.mutateAsync(buildCrearMecanicaSuelosPayload(payload));
       },
     }),
     [mutation],

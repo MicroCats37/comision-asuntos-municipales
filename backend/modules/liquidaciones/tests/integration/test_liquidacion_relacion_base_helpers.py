@@ -3,11 +3,16 @@ Integration tests for PO and M2 base flujo relation helpers.
 
 Tests the reusable helper methods added in Phase 2:
 - LiquidacionPOBaseFlujo: _crear_relacion_grupo_primera_revision,
-  _calcular_siguiente_numero_revision, _crear_relacion_grupo_nueva_revision
+  _crear_relacion_grupo_nueva_revision
 - LiquidacionM2FlujoBase: same helpers (no tipo_tramite variant)
 
 These tests verify the helpers work correctly at the flujo level without
 going through controller endpoints.
+
+The revision number is an EDITABLE LABEL chosen by the client: the flows never
+derive it. `_calcular_siguiente_numero_revision` was removed, and the relation
+member is always stored with the very same `numero_revision` persisted on the
+LiquidacionGeneral — even when it diverges from the legacy `previa + 2` rule.
 
 Fixtures: the test uses the actual flow classes with real DI services.
 """
@@ -51,16 +56,18 @@ def _make_proyecto(ubigeo_distrito, seq):
 # ── LiquidacionPOBaseFlujo helper tests ────────────────────────────────────────
 
 @pytest.mark.django_db
-def test_po_base_calcular_siguiente_numero_revision_1_to_3(
+def test_po_base_nueva_revision_no_deriva_numero_revision(
     tipo_edificacion,
     municipalidad,
     ubigeo_distrito,
     proyecto,
 ):
     """
-    GIVEN: a liquidacion with numero_revision=1
-    WHEN: _calcular_siguiente_numero_revision is called
-    THEN: it returns 3
+    GIVEN: a previa with numero_revision=1
+    WHEN: _crear_relacion_grupo_nueva_revision is called for a liquidacion whose
+          numero_revision is 5
+    THEN: the member stores 5 — the value chosen by the client — and NOT the
+          legacy derived value (previa + 2 = 3)
     """
     from modules.liquidaciones.domain.services.flujos.liquidacion_po.liquidacion_po_base_flujo import (
         LiquidacionPOBaseFlujo,
@@ -94,7 +101,7 @@ def test_po_base_calcular_siguiente_numero_revision_1_to_3(
         relacion_core=LiquidacionRelacionCoreService(),
     )
 
-    lg = LiquidacionGeneral.objects.create(
+    lg_previa = LiquidacionGeneral.objects.create(
         municipalidad=municipalidad,
         proyecto=proyecto,
         tipo_liquidacion=tipo_edificacion,
@@ -102,66 +109,29 @@ def test_po_base_calcular_siguiente_numero_revision_1_to_3(
         sub_total=Decimal("0"),
         total=Decimal("0"),
     )
-
-    siguiente = flujo._calcular_siguiente_numero_revision(lg)
-    assert siguiente == 3
-
-
-@pytest.mark.django_db
-def test_po_base_calcular_siguiente_numero_revision_3_to_5(
-    tipo_edificacion,
-    municipalidad,
-    ubigeo_distrito,
-    proyecto,
-):
-    """
-    GIVEN: a liquidacion with numero_revision=3
-    WHEN: _calcular_siguiente_numero_revision is called
-    THEN: it returns 5
-    """
-    from modules.liquidaciones.domain.services.flujos.liquidacion_po.liquidacion_po_base_flujo import (
-        LiquidacionPOBaseFlujo,
-    )
-    from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_relacion_core_service import (
-        LiquidacionRelacionCoreService,
-    )
-    from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_porcentaje_obra_core_service import (
-        LiquidacionPorcentajeObraCoreService,
-    )
-    from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
-        LiquidacionGeneralCoreService,
-    )
-
-    class ConcretePOBase(LiquidacionPOBaseFlujo):
-        def _get_tipo_liquidacion_code(self):
-            return "EDIFICACION"
-
-        def _crear_wrapper(self, liquidacion_general):
-            pass
-
-        def _build_result(self, **kwargs):
-            pass
-
-        def _calcular_cotizacion(self, **kwargs):
-            pass
-
-    flujo = ConcretePOBase(
-        porcentaje_core=LiquidacionPorcentajeObraCoreService(),
-        general_core=LiquidacionGeneralCoreService(),
-        relacion_core=LiquidacionRelacionCoreService(),
-    )
-
-    lg = LiquidacionGeneral.objects.create(
+    lg_nueva = LiquidacionGeneral.objects.create(
         municipalidad=municipalidad,
-        proyecto=proyecto,
+        proyecto=_make_proyecto(ubigeo_distrito, seq=2),
         tipo_liquidacion=tipo_edificacion,
-        numero_revision=3,
+        numero_revision=5,
         sub_total=Decimal("0"),
         total=Decimal("0"),
     )
 
-    siguiente = flujo._calcular_siguiente_numero_revision(lg)
-    assert siguiente == 5
+    # Previa creates group
+    flujo._crear_relacion_grupo_primera_revision(
+        liquidacion_general=lg_previa,
+        tipo_tramite="OBRA_NUEVA",
+    )
+
+    miembro_nuevo, _ = flujo._crear_relacion_grupo_nueva_revision(
+        liquidacion_previa=lg_previa,
+        liquidacion_general=lg_nueva,
+        tipo_tramite="OBRA_NUEVA",
+    )
+
+    assert miembro_nuevo.numero_revision == 5
+    assert miembro_nuevo.numero_revision != 3  # NOT the legacy previa + 2
 
 
 @pytest.mark.django_db
@@ -241,7 +211,8 @@ def test_po_base_crear_relacion_grupo_nueva_revision_adds_to_existing_group(
     """
     GIVEN: liquidacion_previa has an existing group with relacion_key EDIFICACION-OBRA
     WHEN: _crear_relacion_grupo_nueva_revision is called for a new liquidacion
-    THEN: the new liquidacion is added to the same group with next revision number
+    THEN: the new liquidacion is added to the same group with ITS OWN revision
+          number (never derived from the previa)
     """
     from modules.liquidaciones.domain.services.flujos.liquidacion_po.liquidacion_po_base_flujo import (
         LiquidacionPOBaseFlujo,
@@ -318,16 +289,18 @@ def test_po_base_crear_relacion_grupo_nueva_revision_adds_to_existing_group(
 # ── LiquidacionM2FlujoBase helper tests ────────────────────────────────────────
 
 @pytest.mark.django_db
-def test_m2_base_calcular_siguiente_numero_revision_1_to_3(
+def test_m2_base_nueva_revision_no_deriva_numero_revision(
     tipo_habilitacion_urbana,
     municipalidad,
     ubigeo_distrito,
     proyecto,
 ):
     """
-    GIVEN: a liquidacion with numero_revision=1
-    WHEN: _calcular_siguiente_numero_revision is called
-    THEN: it returns 3
+    GIVEN: a previa with numero_revision=1
+    WHEN: _crear_relacion_grupo_nueva_revision is called for a liquidacion whose
+          numero_revision is 5
+    THEN: the member stores 5 — the value chosen by the client — and NOT the
+          legacy derived value (previa + 2 = 3)
     """
     from modules.liquidaciones.domain.services.flujos.liquidacion_m2.liquidacion_m2_base_flujo import (
         LiquidacionM2FlujoBase,
@@ -361,7 +334,7 @@ def test_m2_base_calcular_siguiente_numero_revision_1_to_3(
         relacion_core=LiquidacionRelacionCoreService(),
     )
 
-    lg = LiquidacionGeneral.objects.create(
+    lg_previa = LiquidacionGeneral.objects.create(
         municipalidad=municipalidad,
         proyecto=proyecto,
         tipo_liquidacion=tipo_habilitacion_urbana,
@@ -369,9 +342,25 @@ def test_m2_base_calcular_siguiente_numero_revision_1_to_3(
         sub_total=Decimal("0"),
         total=Decimal("0"),
     )
+    lg_nueva = LiquidacionGeneral.objects.create(
+        municipalidad=municipalidad,
+        proyecto=_make_proyecto(ubigeo_distrito, seq=2),
+        tipo_liquidacion=tipo_habilitacion_urbana,
+        numero_revision=5,
+        sub_total=Decimal("0"),
+        total=Decimal("0"),
+    )
 
-    siguiente = flujo._calcular_siguiente_numero_revision(lg)
-    assert siguiente == 3
+    # Previa creates group
+    flujo._crear_relacion_grupo_primera_revision(liquidacion_general=lg_previa)
+
+    miembro_nuevo, _ = flujo._crear_relacion_grupo_nueva_revision(
+        liquidacion_previa=lg_previa,
+        liquidacion_general=lg_nueva,
+    )
+
+    assert miembro_nuevo.numero_revision == 5
+    assert miembro_nuevo.numero_revision != 3  # NOT the legacy previa + 2
 
 
 @pytest.mark.django_db
@@ -448,7 +437,8 @@ def test_m2_base_crear_relacion_grupo_nueva_revision_adds_to_existing_group(
     """
     GIVEN: liquidacion_previa has an existing group with relacion_key HU
     WHEN: _crear_relacion_grupo_nueva_revision is called for a new liquidacion
-    THEN: the new liquidacion is added to the same group with next revision number
+    THEN: the new liquidacion is added to the same group with ITS OWN revision
+          number (never derived from the previa)
     """
     from modules.liquidaciones.domain.services.flujos.liquidacion_m2.liquidacion_m2_base_flujo import (
         LiquidacionM2FlujoBase,

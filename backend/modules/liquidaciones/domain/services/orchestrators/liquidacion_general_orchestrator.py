@@ -9,8 +9,7 @@ import uuid
 from injector import inject
 
 from core.exceptions import ConflictError, NotFoundError
-from ninja.errors import HttpError
-from modules.liquidaciones.domain.constants import EstadoLiquidacion
+from modules.liquidaciones.domain.constants import EstadoLiquidacion, TIPOS_CON_REVISION_EDITABLE
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
 )
@@ -248,7 +247,7 @@ class LiquidacionGeneralOrchestrator:
         hidratadas, usando el builder polimórfico correspondiente al tipo de liquidación.
 
         Cada elemento incluye liquidacion_general, liquidacion_especifica y liquidacion_tipo
-        — exactamente como los endpoints GET by ID específicos o ultimas-revisiones.
+        — exactamente como los endpoints GET by ID específicos.
 
         Args:
             liquidacion_general_id: UUID de la liquidación general a obtener.
@@ -295,86 +294,6 @@ class LiquidacionGeneralOrchestrator:
             codigo_cta_map = self.general_core_service.get_codigo_cta_map([codigo])
             codigo_cta = codigo_cta_map.get(codigo) if codigo else None
             return self._build_general_result(lg, codigo_cta)
-
-    def listar_ultimas_liquidaciones_generales(
-        self,
-        page: int,
-        page_size: int,
-        tipo_liquidacion: list[str],
-        documento=None,
-        razon_social=None,
-        propietario=None,
-        expediente=None,
-        nombre_propietario=None,
-        numero=None,
-        direccion=None,
-    ) -> tuple[List, int]:
-        """
-        Retorna lista paginada de resultadospolimórficos (LiquidacionEspecificaPrimeraRevisionResult,
-        HabilitacionUrbanaPrimeraRevisionResult, etc.) conteniendo únicamente la última revisión
-        por cada par (proyecto, tipo_liquidacion).
-
-        Cada elemento incluye liquidacion_general, liquidacion_especifica y liquidacion_tipo
-        completamente poblados, exactamente como los endpoints GET by ID específicos.
-
-        NOTE: tipo_liquidacion filter is MANDATORY. Raises HttpError 400 if not provided.
-        """
-        if not tipo_liquidacion:
-            raise HttpError(400, "El filtro tipo_liquidacion es obligatorio para listar últimas revisiones.")
-
-        # Pagination boundary defaults
-        if page < 1:
-            page = 1
-        if page_size < 1:
-            page_size = 10
-        if page_size > 100:
-            page_size = 100
-
-        # tipo_liquidacion is a list of codes to filter by
-        orm_objects, total = self.general_core_service.list_liquidaciones_ultimas_generales_paginated(
-            page=page,
-            page_size=page_size,
-            tipo=tipo_liquidacion,
-            documento=documento,
-            razon_social=razon_social,
-            propietario=propietario,
-            expediente=expediente,
-            nombre_propietario=nombre_propietario,
-            numero=numero,
-            direccion=direccion,
-        )
-
-        # Build polymorphic domain DTOs from ORM objects by delegating to specific builders.
-        # Circular dep规避: use object.__new__ + set minimal attrs instead of __init__.
-        from modules.liquidaciones.domain.constants import TipoLiquidacion
-        domain_results: List = []
-        for lg in orm_objects:
-            codigo = lg.tipo_liquidacion.codigo if lg.tipo_liquidacion else None
-            if codigo == TipoLiquidacion.EDIFICACION:
-                builder = self._get_edificaciones_builder()
-                domain_results.append(builder(lg))
-            elif codigo == TipoLiquidacion.HABILITACION_URBANA:
-                builder = self._get_habilitacion_urbana_builder()
-                domain_results.append(builder(lg))
-            elif codigo == TipoLiquidacion.MECANICA_SUELOS:
-                builder = self._get_mecanica_suelos_builder()
-                domain_results.append(builder(lg))
-            elif codigo == TipoLiquidacion.TALUDES:
-                builder = self._get_taludes_builder()
-                domain_results.append(builder(lg))
-            elif codigo == TipoLiquidacion.IMPACTO_VIAL:
-                builder = self._get_impacto_vial_builder()
-                domain_results.append(builder(lg))
-            elif codigo == TipoLiquidacion.INSPECCION_OBRA:
-                builder = self._get_inspeccion_obra_builder()
-                domain_results.append(builder(lg))
-            else:
-                # Fallback to flat general result for unknown types
-                codigo_cta_map = self.general_core_service.get_codigo_cta_map([codigo])
-                codigo_cta = codigo_cta_map.get(codigo) if codigo else None
-                domain_results.append(self._build_general_result(lg, codigo_cta))
-
-        return domain_results, total
 
     def _get_edificaciones_builder(self):
         """Returns a callable that builds LiquidacionEspecificaPrimeraRevisionResult for EDIFICACION."""
@@ -462,6 +381,17 @@ class LiquidacionGeneralOrchestrator:
 
         return build
 
+    def _revision_editable(self, liquidacion) -> bool:
+        """
+        Indica si el tipo de la liquidación admite revisión editable.
+
+        Inspección de Obra es revision-less: su `numero_revision` permanece fija
+        en 1 y queda fuera del cambio de revisión editable (constante
+        `TIPOS_CON_REVISION_EDITABLE`).
+        """
+        tipo = liquidacion.tipo_liquidacion.codigo if liquidacion.tipo_liquidacion else None
+        return tipo in TIPOS_CON_REVISION_EDITABLE
+
     def actualizar_liquidacion_general(
         self,
         liquidacion_id: uuid.UUID,
@@ -469,12 +399,18 @@ class LiquidacionGeneralOrchestrator:
         observacion: Optional[str] = None,
         denominacion_de_proyecto: Optional[str] = None,
         contacto_data: Optional[dict] = None,
+        numero_revision: Optional[int] = None,
     ) -> LiquidacionGeneralResult:
         """
-        Actualiza campos genéricos editables (expediente, observacion, denominacion_de_proyecto, contacto)
-        de una LiquidacionGeneral.
+        Actualiza campos genéricos editables (expediente, observacion, denominacion_de_proyecto,
+        contacto, numero_revision) de una LiquidacionGeneral.
 
         Regla de negocio: solo permitido cuando estado == PENDIENTE (ConflictError si PAGADA).
+
+        `numero_revision` es una ETIQUETA EDITABLE elegida por el cliente: el valor se
+        aplica tal cual (nunca se deriva ni se recalcula) y se sincroniza con el miembro
+        de relación dentro de la MISMA transacción. Si la liquidación no tiene miembro de
+        relación, solo se actualiza la cabecera — no se inventa linaje.
 
         Args:
             liquidacion_id: UUID de la liquidación a actualizar.
@@ -482,6 +418,7 @@ class LiquidacionGeneralOrchestrator:
             observacion: Nuevo valor de observación (None = sin cambio).
             denominacion_de_proyecto: Nuevo valor de denominación (None = sin cambio).
             contacto_data: Dict de datos upsert de Contacto.
+            numero_revision: Nuevo número de revisión (None = sin cambio).
 
         Returns:
             LiquidacionGeneralResult con valores actualizados.
@@ -505,14 +442,28 @@ class LiquidacionGeneralOrchestrator:
                 code="LIQUIDACION_PAGADA_NOT_EDITABLE",
             )
 
-        # Update generic fields
-        self.general_core_service.actualizar_liquidacion_general(
-            liquidacion=liquidacion,
-            expediente=expediente,
-            observacion=observacion,
-            denominacion_de_proyecto=denominacion_de_proyecto,
-            contacto_data=contacto_data,
-        )
+        # IO es revision-less: su número de revisión permanece fija en 1.
+        if numero_revision is not None and not self._revision_editable(liquidacion):
+            numero_revision = None
+
+        # Update generic fields. Header + relation member are written atomically
+        # with the SAME submitted revision number.
+        from django.db import transaction
+
+        with transaction.atomic():
+            self.general_core_service.actualizar_liquidacion_general(
+                liquidacion=liquidacion,
+                expediente=expediente,
+                observacion=observacion,
+                denominacion_de_proyecto=denominacion_de_proyecto,
+                contacto_data=contacto_data,
+                numero_revision=numero_revision,
+            )
+            if numero_revision is not None:
+                self.relacion_core_service.actualizar_numero_revision_miembro(
+                    liquidacion=liquidacion,
+                    numero_revision=numero_revision,
+                )
 
         # Re-fetch with full prefetch for result building
         refreshed = self.general_core_service.get_liquidacion_general_by_id(liquidacion_id)
@@ -531,6 +482,7 @@ class LiquidacionGeneralOrchestrator:
         observacion: Optional[str] = None,
         denominacion_de_proyecto: Optional[str] = None,
         contacto_data: Optional[dict] = None,
+        numero_revision: Optional[int] = None,
         liquidacion: Optional["LiquidacionGeneral"] = None,
     ) -> LiquidacionGeneralResult:
         """
@@ -543,6 +495,10 @@ class LiquidacionGeneralOrchestrator:
         - Solo permitido cuando estado == PENDIENTE (ConflictError si PAGADA).
         - Proyecto y municipalidad son editables en cualquier número de revisión.
         - Actualizaciones de Entidad: nunca mutar la fila Entidad existente.
+        - `numero_revision` es una ETIQUETA EDITABLE elegida por el cliente: se aplica
+          tal cual (nunca se deriva ni se recalcula) y se sincroniza con el miembro de
+          relación dentro de la MISMA transacción. Sin miembro de relación, solo se
+          actualiza la cabecera — no se inventa linaje.
 
         Args:
             liquidacion_id: UUID de la liquidacion a actualizar (ignorado si se proporciona liquidacion).
@@ -554,6 +510,7 @@ class LiquidacionGeneralOrchestrator:
             observacion: Nuevo valor de observacion (None = sin cambio).
             denominacion_de_proyecto: Nuevo valor de denominacion (None = sin cambio).
             contacto_data: Dict de datos upsert de Contacto (None = sin cambio).
+            numero_revision: Nuevo número de revisión (None = sin cambio).
             liquidacion: Instancia ORM de LiquidacionGeneral pre-cargada (opcional, evita re-fetch).
 
         Returns:
@@ -582,16 +539,37 @@ class LiquidacionGeneralOrchestrator:
                 code="LIQUIDACION_PAGADA_NOT_EDITABLE",
             )
 
+        # IO es revision-less: su número de revisión permanece fija en 1.
+        if numero_revision is not None and not self._revision_editable(liquidacion):
+            numero_revision = None
+
         # Update generic fields if any are provided
-        has_generic = expediente is not None or observacion is not None or denominacion_de_proyecto is not None or contacto_data is not None
+        has_generic = (
+            expediente is not None
+            or observacion is not None
+            or denominacion_de_proyecto is not None
+            or contacto_data is not None
+            or numero_revision is not None
+        )
         if has_generic:
-            self.general_core_service.actualizar_liquidacion_general(
-                liquidacion=liquidacion,
-                expediente=expediente,
-                observacion=observacion,
-                denominacion_de_proyecto=denominacion_de_proyecto,
-                contacto_data=contacto_data,
-            )
+            # Header + relation member are written atomically with the SAME
+            # submitted revision number.
+            from django.db import transaction
+
+            with transaction.atomic():
+                self.general_core_service.actualizar_liquidacion_general(
+                    liquidacion=liquidacion,
+                    expediente=expediente,
+                    observacion=observacion,
+                    denominacion_de_proyecto=denominacion_de_proyecto,
+                    contacto_data=contacto_data,
+                    numero_revision=numero_revision,
+                )
+                if numero_revision is not None:
+                    self.relacion_core_service.actualizar_numero_revision_miembro(
+                        liquidacion=liquidacion,
+                        numero_revision=numero_revision,
+                    )
 
         # Update municipalidad if provided
         if municipalidad_id is not None:

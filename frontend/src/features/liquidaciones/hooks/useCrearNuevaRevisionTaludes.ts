@@ -12,25 +12,36 @@
  * El form data tiene la misma forma que create/edit (TaludesFormData);
  * el `liquidacion_previa_id` se pasa como argumento separado.
  *
- * Usa useLiquidacionesCreateMutation (cache manual reactivo) con lógica de ultimas-revisiones.
+ * Usa useLiquidacionesCreateMutation (cache manual reactivo). La liquidación devuelta se inserta/actualiza en las listas visibles; la revisión previa permanece en la lista (ya no hay revisión canónica).
  */
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import type { TaludesFormData } from "../schemas/liquidacion-taludes-form.schema";
-import type { LiquidacionWrapper } from "./cache";
-import {
-  useLiquidacionesCacheUtils,
-  useLiquidacionesCreateMutation,
-} from "./cache";
+import { useLiquidacionesCreateMutation } from "./cache";
 
 const BASE_URL = "/liquidaciones/taludes";
 const LIST_KEY = ["liquidaciones", "taludes"] as const;
-const TIPO_KEY = "taludes";
 
-function buildPayload(data: TaludesFormData, liquidacionPreviaId: string) {
-  const { tarifa_unica_id, especialidades_seleccionadas, ...rest } = data;
+/**
+ * Payload de nueva revisión de Taludes.
+ *
+ * `numero_revision` viaja en el TOP LEVEL del body (contrato backend
+ * `LiquidacionTaludesNuevaRevisionInput` = `NumeroRevisionRequeridoMixin` +
+ * wrappers): es obligatorio y lo elige el usuario (etiqueta editable).
+ */
+export function buildCrearNuevaRevisionTaludesPayload(
+  data: TaludesFormData,
+  liquidacionPreviaId: string,
+) {
+  const {
+    tarifa_unica_id,
+    especialidades_seleccionadas,
+    numero_revision,
+    ...rest
+  } = data;
   const espIds = especialidades_seleccionadas ?? [];
   return {
     liquidacion_previa_id: liquidacionPreviaId,
+    numero_revision,
     liquidacion_general: {
       municipalidad_id: rest.municipalidad_id,
       expediente: rest.expediente,
@@ -61,49 +72,31 @@ function buildPayload(data: TaludesFormData, liquidacionPreviaId: string) {
 }
 
 export function useCrearNuevaRevisionTaludes() {
-  const previousIdRef = useRef<string | null>(null);
-  const cacheUtils = useLiquidacionesCacheUtils();
-
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_general: unknown;
     liquidacion_especifica: unknown;
     liquidacion_previa_id: string;
+    numero_revision: number;
   }>({
     tipoQueryKey: LIST_KEY,
     url: `${BASE_URL}/nueva-revision`,
-    options: {
-      onSuccess: (rawResult) => {
-        const response = rawResult as { data?: LiquidacionWrapper };
-        const newItem: LiquidacionWrapper =
-          response?.data ?? (rawResult as LiquidacionWrapper);
-        if (!newItem?.liquidacion_general?.id) return;
-
-        cacheUtils.insertCreatedItem(newItem, { tipoKey: TIPO_KEY });
-
-        const prevId = previousIdRef.current;
-        if (prevId) {
-          cacheUtils.replaceLatestRevision(newItem, {
-            tipoKey: TIPO_KEY,
-            previousId: prevId,
-          });
-        }
-      },
-    },
   });
 
   const crearMutation = useMemo(
     () => ({
       ...mutation,
       mutate: (data: TaludesFormData, liquidacionPreviaId: string) => {
-        previousIdRef.current = liquidacionPreviaId;
-        mutation.mutate(buildPayload(data, liquidacionPreviaId));
+        mutation.mutate(
+          buildCrearNuevaRevisionTaludesPayload(data, liquidacionPreviaId),
+        );
       },
       mutateAsync: async (
         data: TaludesFormData,
         liquidacionPreviaId: string,
       ) => {
-        previousIdRef.current = liquidacionPreviaId;
-        return mutation.mutateAsync(buildPayload(data, liquidacionPreviaId));
+        return mutation.mutateAsync(
+          buildCrearNuevaRevisionTaludesPayload(data, liquidacionPreviaId),
+        );
       },
     }),
     [mutation],

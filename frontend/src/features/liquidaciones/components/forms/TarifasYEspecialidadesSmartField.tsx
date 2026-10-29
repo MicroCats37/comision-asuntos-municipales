@@ -7,7 +7,12 @@ import { useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTarifasVigentesPorcentaje } from "../../hooks/useTarifasVigentes";
+import {
+  ESTRATEGIA_NORMAL,
+  type EstrategiaCotizacionPO,
+} from "../../schemas/liquidacion-po-estrategia.schema";
 import type { TipoTramiteEdificaciones } from "../../schemas/tramite.schema";
+import { EstrategiaCotizacionField } from "./EstrategiaCotizacionField";
 
 const TIPO_GRUPO_A: TipoTramiteEdificaciones[] = [
   "OBRA_NUEVA",
@@ -85,6 +90,22 @@ export function TarifasYEspecialidadesSmartField({
     name: "tipo_tramite",
   }) as TipoTramiteEdificaciones | undefined;
 
+  /**
+   * Estrategia de cotización activa (solo Edificaciones; en el resto de
+   * motores PO el campo no existe y queda NORMAL_SELECCIONADAS).
+   *
+   * En NORMAL_SELECCIONADAS el padre cobra exactamente las seleccionadas, así
+   * que el badge `tarifa × N esp.` es exacto. En las otras dos estrategias el
+   * padre se calcula sobre H habilitadas (o sobre el total autoritativo), por
+   * lo que ese badge sería engañoso: se muestra la estrategia en su lugar.
+   */
+  const estrategia =
+    (useWatch({
+      control: methods.control,
+      name: "estrategia_cotizacion",
+    }) as EstrategiaCotizacionPO | undefined) ?? ESTRATEGIA_NORMAL;
+  const esEstrategiaNormal = estrategia === ESTRATEGIA_NORMAL;
+
   const tarifas = data?.tarifas ?? [];
   const especialidades = data?.especialidades_disponibles ?? [];
   const tarifaUnica = tarifas[0];
@@ -134,12 +155,16 @@ export function TarifasYEspecialidadesSmartField({
   // Effect 2: auto-select solo en modo compacto (variant="auto" + Group A / sin tipo_tramite),
   // en mode="create", y solo cuando NO hay selección previa (respeta la elección del usuario).
   // En nueva-revision / relacionada / edit: NUNCA auto-select (el usuario debe elegir).
+  // En las estrategias distintas de NORMAL_SELECCIONADAS tampoco: el padre cobra
+  // H habilitadas (o el total autoritativo), así que la selección de participantes
+  // debe ser explícita para que la diferencia tenga sentido.
   useEffect(() => {
     const hasSelection = selectedIds && selectedIds.length > 0;
     if (!tarifaUnica || especialidades.length === 0) return;
     if (startExpanded) return;
     if (hasSelection) return;
     if (mode !== "create") return;
+    if (!esEstrategiaNormal) return;
 
     if (grupoA) {
       methods.setValue(
@@ -155,6 +180,7 @@ export function TarifasYEspecialidadesSmartField({
     grupoA,
     startExpanded,
     mode,
+    esEstrategiaNormal,
     methods,
   ]);
 
@@ -210,13 +236,20 @@ export function TarifasYEspecialidadesSmartField({
           </h3>
         </div>
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-bold text-primary">
-            <Percent className="h-3 w-3" />
-            {formatPercent(totalAplicado)}
-            <span className="font-normal text-primary/70">
-              × {especialidadesAplicadas.length} esp.
+          {tipo === "edificaciones" ? (
+            <EstrategiaCotizacionField methods={methods} />
+          ) : null}
+          {esEstrategiaNormal ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-bold text-primary">
+              <Percent className="h-3 w-3" />
+              <>
+                {formatPercent(totalAplicado)}
+                <span className="font-normal text-primary/70">
+                  × {especialidadesAplicadas.length} esp.
+                </span>
+              </>
             </span>
-          </span>
+          ) : null}
           {!startExpanded &&
             (expanded ? (
               <Button

@@ -13,11 +13,19 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { formatDecimalPercent } from "@/utils/number-formatter";
 import type {
   ContactoOutput,
   LiquidacionDelegadoEnGeneralOutput,
 } from "../schemas/liquidacion-base.schema";
+import type { LiquidacionEdificacionesDetalleItem } from "../schemas/liquidacion-edificaciones.schema";
 import type { LiquidacionDetalleItem } from "../schemas/liquidacion-detail.schemas";
+import {
+  ESTRATEGIA_COTIZACION_LABELS,
+  ESTRATEGIA_NORMAL,
+  type EstrategiaCotizacionPO,
+} from "../schemas/liquidacion-po-estrategia.schema";
+import { leerContextoEstrategia } from "../utils/estrategiaCotizacion";
 import { formatPublicId } from "../utils/formatPublicId";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -237,10 +245,90 @@ function ContactosSection({
   );
 }
 
+// ── Cotización Section ─────────────────────────────────────────────────────────
+
+/**
+ * Contexto de la estrategia de cotización PO.
+ *
+ * SOLO Edificaciones expone estrategia, snapshots y proyección de
+ * acumulación. Los demás motores (Taludes, Impacto Vial, edge, M2, visitas)
+ * no tienen esos campos: la sección simplemente no se renderiza y su
+ * contrato de UI queda intacto.
+ */
+function CotizacionEstrategiaSection({
+  liquidacionTipo,
+}: {
+  liquidacionTipo: unknown;
+}) {
+  const contexto = leerContextoEstrategia(liquidacionTipo);
+  if (!contexto) return null;
+
+  const estrategia = contexto.estrategia_cotizacion ?? "";
+  const etiquetaEstrategia =
+    ESTRATEGIA_COTIZACION_LABELS[estrategia as EstrategiaCotizacionPO] ??
+    estrategia;
+  const cobraUniversoCompleto = estrategia !== ESTRATEGIA_NORMAL;
+
+  const celdas: Array<{ label: string; value: string }> = [
+    { label: "Estrategia", value: etiquetaEstrategia },
+  ];
+
+  if (cobraUniversoCompleto && contexto.count_habilitadas != null) {
+    celdas.push({
+      label: "Habilitadas (H)",
+      value: `${contexto.count_habilitadas}`,
+    });
+  }
+  if (cobraUniversoCompleto && contexto.porcentaje_tarifa != null) {
+    celdas.push({
+      label: "% Tarifa",
+      value: formatDecimalPercent(contexto.porcentaje_tarifa),
+    });
+  }
+  if (contexto.acumulacion) {
+    const porcentaje =
+      contexto.acumulacion.porcentaje_acumulado != null
+        ? ` (${formatDecimalPercent(contexto.acumulacion.porcentaje_acumulado)})`
+        : "";
+    celdas.push({
+      label: "Acumulación (informativa)",
+      value: `${formatCurrency(contexto.acumulacion.subtotal_acumulado)}${porcentaje}`,
+    });
+  }
+
+  return (
+    <>
+      <hr className="border-border" />
+      <PageSection className="py-4">
+        <SectionLabel>Cotización</SectionLabel>
+        <div className="grid grid-auto-fill-sm gap-x-6 gap-y-2">
+          {celdas.map((celda) => (
+            <div key={celda.label}>
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                {celda.label}
+              </span>
+              <span className="text-sm font-medium text-foreground ml-2">
+                {celda.value}
+              </span>
+            </div>
+          ))}
+        </div>
+        {contexto.acumulacion ? (
+          <p className="text-xs leading-relaxed text-muted-foreground mt-2">
+            La acumulación es informativa: muestra la diferencia entre el
+            subtotal liquidado y la suma de las especialidades participantes.
+            No se distribuye ni se cobra como honorario.
+          </p>
+        ) : null}
+      </PageSection>
+    </>
+  );
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 interface LiquidacionDetalleCompletaProps {
-  item: LiquidacionDetalleItem | null;
+  item: LiquidacionDetalleItem | LiquidacionEdificacionesDetalleItem | null;
   isLoading?: boolean;
   isError?: boolean;
   onBack?: () => void;
@@ -503,6 +591,9 @@ export function LiquidacionDetalleCompleta({
           </div>
         </div>
       </PageSection>
+
+      {/* ── Cotización (estrategia PO) — SOLO Edificaciones ───────────────── */}
+      <CotizacionEstrategiaSection liquidacionTipo={item.liquidacion_tipo} />
 
       <hr className="border-border" />
 

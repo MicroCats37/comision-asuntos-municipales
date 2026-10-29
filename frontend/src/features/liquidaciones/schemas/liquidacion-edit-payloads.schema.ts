@@ -12,6 +12,7 @@
  */
 import { z } from "zod";
 import { contactoInlineSchema } from "./liquidacion-form-base.schema";
+import { estrategiaCotizacionSchema } from "./liquidacion-po-estrategia.schema";
 
 // ── General edit payload (shared across all types) ──────────────────────────
 
@@ -51,6 +52,28 @@ export type LiquidacionGeneralEdit = z.infer<
   typeof LiquidacionGeneralEditSchema
 >;
 
+/**
+ * Bloque `liquidacion_general` del PATCH para los tipos con revisión editable
+ * (Edificaciones, Taludes, Impacto Vial, Habilitación Urbana, Mecánica de
+ * Suelos).
+ *
+ * Añade `numero_revision`, que el contrato backend expone como OPCIONAL en
+ * el bloque general del PATCH (`NumeroRevisionOpcionalMixin`): si se omite se
+ * conserva el valor almacenado. El formulario siempre lo envía porque el
+ * campo es obligatorio en el form.
+ *
+ * Inspección de Obra NO usa este bloque: es revision-less y su PATCH no
+ * expone el campo.
+ */
+export const LiquidacionGeneralRevisionEditSchema =
+  LiquidacionGeneralEditSchema.extend({
+    numero_revision: z.number().optional(),
+  });
+
+export type LiquidacionGeneralRevisionEdit = z.infer<
+  typeof LiquidacionGeneralRevisionEditSchema
+>;
+
 // ── PO edit payload (Edificaciones, Impacto Vial, Taludes) ───────────────────
 
 /** Tarifa row for PO (PorcentajeObra) edit payload */
@@ -63,11 +86,23 @@ export type PorcentajeObraTarifaEdit = z.infer<
   typeof PorcentajeObraTarifaEditSchema
 >;
 
-/** liquidacion_tipo payload for PO types */
+/**
+ * liquidacion_tipo payload for PO types.
+ *
+ * `estrategia_cotizacion` SOLO aplica a Edificaciones (único motor con
+ * estrategias): si se omite, el backend conserva la estrategia persistida.
+ * Taludes e Impacto Vial nunca lo envían y su contrato queda intacto.
+ *
+ * `valor_declarado` aplica a todas las estrategias. TOTAL_EXPLICITO añade el
+ * total final autoritativo.
+ */
 export const PorcentajeObraTipoEditSchema = z.object({
+  estrategia_cotizacion: estrategiaCotizacionSchema.optional(),
+  tipo_tramite: z.string().optional(),
   datos: z
     .object({
       valor_declarado: z.number().optional(),
+      total_explicito: z.number().optional(),
       tipo_tramite: z.string().optional(),
     })
     .optional(),
@@ -119,7 +154,7 @@ export type VisitasTipoEdit = z.infer<typeof VisitasTipoEditSchema>;
 
 /** Full PATCH payload for PO types (Edificaciones, IV, Taludes) */
 export const PorcentajeObraEditPayloadSchema = z.object({
-  liquidacion_general: LiquidacionGeneralEditSchema.optional(),
+  liquidacion_general: LiquidacionGeneralRevisionEditSchema.optional(),
   liquidacion_tipo: PorcentajeObraTipoEditSchema.optional(),
 });
 
@@ -129,13 +164,13 @@ export type PorcentajeObraEditPayload = z.infer<
 
 /** Full PATCH payload for M2 types (HU, MS) */
 export const M2EditPayloadSchema = z.object({
-  liquidacion_general: LiquidacionGeneralEditSchema.optional(),
+  liquidacion_general: LiquidacionGeneralRevisionEditSchema.optional(),
   liquidacion_tipo: M2TipoEditSchema.optional(),
 });
 
 export type M2EditPayload = z.infer<typeof M2EditPayloadSchema>;
 
-/** Full PATCH payload for Visitas (IO) */
+/** Full PATCH payload for Visitas (IO) — sin `numero_revision` (revision-less) */
 export const VisitasEditPayloadSchema = z.object({
   liquidacion_general: LiquidacionGeneralEditSchema.optional(),
   liquidacion_tipo: VisitasTipoEditSchema.optional(),

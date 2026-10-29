@@ -141,6 +141,7 @@ def valid_distrito_id(ubigeo_distrito):
 def valid_payload(valid_municipalidad_id, valid_tarifa_m2_id, valid_distrito_id):
     """Return a valid full payload for primera-revision endpoint."""
     return {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
             "expediente": "EXP-MS-2024-001",
@@ -225,6 +226,7 @@ def test_ms_nueva_liquidacion_area_zero_returns_400(
     The orchestrator validates that area_solicitada must be > 0.
     """
     payload = {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
             "expediente": "EXP-MS-2024-002",
@@ -269,6 +271,7 @@ def test_ms_nueva_liquidacion_area_negative_returns_400(
     The orchestrator validates that area_solicitada must be > 0.
     """
     payload = {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
             "expediente": "EXP-MS-2024-003",
@@ -357,6 +360,7 @@ def test_ms_nueva_liquidacion_no_usuario_creador_in_input(
     the input payload (usuario_id is extracted from token).
     """
     payload = {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
             "expediente": "EXP-MS-2024-004",
@@ -509,6 +513,7 @@ def test_ms_nueva_liquidacion_clamping_minimo(
     Expected: sub_total and total should be clamped to derecho_minimo.
     """
     payload = {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
             "expediente": "EXP-MS-2024-CLAMP-MIN",
@@ -564,6 +569,7 @@ def test_ms_nueva_liquidacion_clamping_maximo(
     Expected: sub_total and total should be clamped to derecho_maximo.
     """
     payload = {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
             "expediente": "EXP-MS-2024-CLAMP-MAX",

@@ -3,6 +3,10 @@ import uuid
 from decimal import Decimal
 from typing import Optional, List
 
+from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
+    AcumulacionPorcentajeObraResult,
+)
+
 
 class EspecialidadResult(BaseModel):
     """Domain DTO for nested especialidad in cotizacion detail."""
@@ -57,3 +61,9 @@ class CotizacionPorcentajeObraResult(BaseModel):
     detalles: List[CotizacionPorcentajeObraDetalleResult]
     total_subtotal: Decimal
     total: Decimal
+    # ── Estrategia PO (Edificaciones). Los demás motores los dejan en None. ──
+    estrategia_cotizacion: Optional[str] = None
+    count_habilitadas: Optional[int] = None
+    total_explicito: Optional[Decimal] = None
+    porcentaje_tarifa: Optional[Decimal] = None
+    acumulacion: Optional[AcumulacionPorcentajeObraResult] = None

@@ -125,6 +125,24 @@ TIPO_LIQUIDACION_TO_KIND_SLUG: dict[str, str] = {v: k for k, v in KIND_SLUG_TO_T
 # Maximum number of revisions allowed for any liquidacion (odd numbers: 1, 3, 5)
 MAX_REVISIONES = 5
 
+# Allowed revision numbers — single source of truth for backend validation.
+# `numero_revision` is an editable classification chosen by the user, restricted to the
+# odd sequence 1 → 3 → 5 (never above MAX_REVISIONES).
+NUMERO_REVISION_PERMITIDOS: tuple[int, ...] = (1, 3, 5)
+
+# ── Tipos con revisión editable ─────────────────────────────────────────────────
+# Tipos cuyo `numero_revision` es una ETIQUETA EDITABLE elegida por el usuario
+# (se puede editar mientras la liquidación esté PENDIENTE).
+# Inspección de Obra es revision-less: su `numero_revision` permanece FIJA en 1
+# y queda fuera del cambio de revisión editable.
+TIPOS_CON_REVISION_EDITABLE: set[str] = {
+    TipoLiquidacion.EDIFICACION,
+    TipoLiquidacion.HABILITACION_URBANA,
+    TipoLiquidacion.MECANICA_SUELOS,
+    TipoLiquidacion.IMPACTO_VIAL,
+    TipoLiquidacion.TALUDES,
+}
+
 
 def normalizar_tipo_liquidacion(tipo_liquidacion: str) -> str:
     """
@@ -157,3 +175,28 @@ class ModoCalculoLiquidacion(models.TextChoices):
 
     TARIFA = "TARIFA", "Tarifa"
     MANUAL = "MANUAL", "Manual"
+
+
+class EstrategiaCotizacionPO(models.TextChoices):
+    """Estrategia de cotización del motor PO (PorcentajeObra) de Edificaciones.
+
+    Son exactamente tres estrategias (no hay un cuarto modo):
+
+    - ``NORMAL_SELECCIONADAS``: cada especialidad seleccionada suma la tarifa
+      fija y genera su propio detalle. Nunca acumula.
+    - ``TARIFA_HABILITADAS_PARTICIPANTES``: el padre se calcula sobre todas las
+      habilitadas (H) y sólo los participantes generan detalle; la diferencia
+      queda registrada como acumulación.
+    - ``TOTAL_EXPLICITO``: el usuario ingresa el total final con IGV y el
+      backend extrae el subtotal; los porcentajes se persisten como NULL.
+
+    No confundir con ``ModoCalculoLiquidacion``: aquel indica el ORIGEN del
+    monto (tarifa vs manual) y es transversal a todos los motores.
+    """
+
+    NORMAL_SELECCIONADAS = "NORMAL_SELECCIONADAS", "Normal - seleccionadas"
+    TARIFA_HABILITADAS_PARTICIPANTES = (
+        "TARIFA_HABILITADAS_PARTICIPANTES",
+        "Tarifa habilitadas participantes",
+    )
+    TOTAL_EXPLICITO = "TOTAL_EXPLICITO", "Total explícito"

@@ -1,10 +1,11 @@
 "use client";
 
 import { formatCurrency } from "../components/liquidacion-ui";
+import type { EdificacionesPorcentajeObraDatosOut } from "../schemas/liquidacion-edificaciones.schema";
 import type { PorcentajeObraDatosOut } from "../schemas/liquidacion-porcentaje.schema";
 
 interface ValorObraCellProps {
-  lt: PorcentajeObraDatosOut;
+  lt: PorcentajeObraDatosOut | EdificacionesPorcentajeObraDatosOut;
 }
 
 /**

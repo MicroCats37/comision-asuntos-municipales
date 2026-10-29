@@ -11,27 +11,31 @@
  *
  * M2 usa `area_solicitada` (no `valor_declarado`) y `tarifa_m2_id` singular (no array de especialidades).
  *
- * Usa useLiquidacionesCreateMutation (cache manual reactivo) con lógica de ultimas-revisiones.
+ * Usa useLiquidacionesCreateMutation (cache manual reactivo). La liquidación devuelta se inserta/actualiza en las listas visibles; la revisión previa permanece en la lista (ya no hay revisión canónica).
  */
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import type { HabilitacionUrbanaFormData } from "../schemas/liquidacion-habilitacion-urbana-form.schema";
-import type { LiquidacionWrapper } from "./cache";
-import {
-  useLiquidacionesCacheUtils,
-  useLiquidacionesCreateMutation,
-} from "./cache";
+import { useLiquidacionesCreateMutation } from "./cache";
 
 const BASE_URL = "/liquidaciones/habilitacion-urbana";
 const LIST_KEY = ["liquidaciones", "habilitacion-urbana"] as const;
-const TIPO_KEY = "habilitacion-urbana";
 
-function buildPayload(
+/**
+ * Payload de nueva revisión de Habilitación Urbana.
+ *
+ * `numero_revision` viaja en el TOP LEVEL del body (contrato backend
+ * `LiquidacionHabilitacionUrbanaNuevaRevisionInput` =
+ * `NumeroRevisionRequeridoMixin` + wrappers): es obligatorio y lo elige el
+ * usuario (etiqueta editable).
+ */
+export function buildCrearNuevaRevisionHabilitacionUrbanaPayload(
   data: HabilitacionUrbanaFormData,
   liquidacionPreviaId: string,
 ) {
-  const { tarifa_m2_id, area_solicitada, ...rest } = data;
+  const { tarifa_m2_id, area_solicitada, numero_revision, ...rest } = data;
   return {
     liquidacion_previa_id: liquidacionPreviaId,
+    numero_revision,
     liquidacion_general: {
       municipalidad_id: rest.municipalidad_id,
       expediente: rest.expediente,
@@ -60,36 +64,14 @@ function buildPayload(
 }
 
 export function useCrearNuevaRevisionHabilitacionUrbana() {
-  const previousIdRef = useRef<string | null>(null);
-  const cacheUtils = useLiquidacionesCacheUtils();
-
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_general: unknown;
     liquidacion_especifica: unknown;
     liquidacion_previa_id: string;
+    numero_revision: number;
   }>({
     tipoQueryKey: LIST_KEY,
     url: `${BASE_URL}/nueva-revision`,
-    options: {
-      onSuccess: (rawResult) => {
-        const response = rawResult as { data?: LiquidacionWrapper };
-        const newItem: LiquidacionWrapper =
-          response?.data ?? (rawResult as LiquidacionWrapper);
-        if (!newItem?.liquidacion_general?.id) return;
-
-        // Insert into type-specific + general lists
-        cacheUtils.insertCreatedItem(newItem, { tipoKey: TIPO_KEY });
-
-        // ultimas-revisiones: replace previous with new
-        const prevId = previousIdRef.current;
-        if (prevId) {
-          cacheUtils.replaceLatestRevision(newItem, {
-            tipoKey: TIPO_KEY,
-            previousId: prevId,
-          });
-        }
-      },
-    },
   });
 
   const crearMutation = useMemo(
@@ -99,15 +81,23 @@ export function useCrearNuevaRevisionHabilitacionUrbana() {
         data: HabilitacionUrbanaFormData,
         liquidacionPreviaId: string,
       ) => {
-        previousIdRef.current = liquidacionPreviaId;
-        mutation.mutate(buildPayload(data, liquidacionPreviaId));
+        mutation.mutate(
+          buildCrearNuevaRevisionHabilitacionUrbanaPayload(
+            data,
+            liquidacionPreviaId,
+          ),
+        );
       },
       mutateAsync: async (
         data: HabilitacionUrbanaFormData,
         liquidacionPreviaId: string,
       ) => {
-        previousIdRef.current = liquidacionPreviaId;
-        return mutation.mutateAsync(buildPayload(data, liquidacionPreviaId));
+        return mutation.mutateAsync(
+          buildCrearNuevaRevisionHabilitacionUrbanaPayload(
+            data,
+            liquidacionPreviaId,
+          ),
+        );
       },
     }),
     [mutation],

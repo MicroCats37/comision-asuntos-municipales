@@ -166,7 +166,8 @@ export function LiquidacionInspeccionObraFormModal(
 
   // sourceItem: en edit es el list item completo. En relacionada es un
   // LiquidacionPreviaItem (que ya tiene la forma { liquidacion_general, ... })
-  // — se pasa directo al shell que extrae previousValues/revisionNumber.
+  // — se pasa directo al shell que extrae previousValues. IO no tiene campo
+  // de número de revisión: su liquidación queda fija en revisión 1.
   const sourceItem: LiquidacionInspeccionObraListItem | null =
     mode === "edit"
       ? props.item
@@ -306,6 +307,9 @@ export function LiquidacionInspeccionObraFormModal(
             motorSection={motorSection}
             valoresActualesSection={null}
             canEditProyecto={canEditProyecto}
+            // IO es revision-less: no hay campo de número de revisión y su
+            // liquidación permanece fija en revisión 1.
+            showRevisionField={false}
           />
           {/* Modal inspector — sibling del body, solo IO */}
           <SeleccionarInspectorModal

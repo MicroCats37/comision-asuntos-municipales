@@ -5,6 +5,7 @@ import type {
   LiquidacionDelegadoEnGeneralOutput,
   LiquidacionGeneralOutput,
 } from "@/features/liquidaciones/schemas/liquidacion-base.schema";
+import type { EdificacionesPorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-edificaciones.schema";
 import type { PorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-porcentaje.schema";
 import {
   DetalleComercialSection,
@@ -20,7 +21,7 @@ interface ComposeProps {
   lg: LiquidacionGeneralOutput;
   /** PorcentajeObra data (Edif / IV / Taludes). Drives whether the
    *  `Cotización y Delegados` combined section is rendered. */
-  lt?: PorcentajeObraDatosOut | null;
+  lt?: PorcentajeObraDatosOut | EdificacionesPorcentajeObraDatosOut | null;
   /** Tipo-specific section rendered between `DetalleProyectoSection` and the
    *  delegados section. Use the `LiquidacionDetalle<Domain>Section` for
    *  your tipo (Edif / Taludes / IV / HU / MS / IO) — it already wraps the

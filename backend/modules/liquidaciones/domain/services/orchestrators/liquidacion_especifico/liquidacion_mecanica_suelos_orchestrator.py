@@ -123,6 +123,7 @@ class LiquidacionMecanicaSuelosOrchestrator:
                 expediente=payload_in.liquidacion_general.expediente,
                 observacion=payload_in.liquidacion_general.observacion,
                 denominacion_de_proyecto=payload_in.liquidacion_general.denominacion_de_proyecto,
+                numero_revision=payload_in.numero_revision,
                 proyecto=ProyectoData(
                     nombre_propietario=payload_in.liquidacion_general.proyecto.nombre_propietario,
                     direccion=payload_in.liquidacion_general.proyecto.direccion,
@@ -166,11 +167,12 @@ class LiquidacionMecanicaSuelosOrchestrator:
         liquidacion_previa_id: uuid.UUID,
     ) -> MecanicaSuelosPrimeraRevisionResult:
         """
-        Validates and creates a related Mecanica de Suelos liquidacion with numero_revision=1
-        for an existing MS liquidacion.
+        Validates and creates a related Mecanica de Suelos liquidacion for an
+        existing MS liquidacion.
 
-        The new liquidacion is related to the previous one via the relation group,
-        but has its own numero_revision=1 (not a subsequent revision like /nueva-revision).
+        The new liquidacion joins the relation group of the previous one, using the
+        `numero_revision` chosen by the client (validated against {1, 3, 5} and
+        MAX_REVISIONES by the input contract).
         """
         # Step 1: Validate liquidacion_previa exists and is MS
         try:
@@ -215,6 +217,7 @@ class LiquidacionMecanicaSuelosOrchestrator:
                 expediente=payload_in.liquidacion_general.expediente,
                 observacion=payload_in.liquidacion_general.observacion,
                 denominacion_de_proyecto=payload_in.liquidacion_general.denominacion_de_proyecto,
+                numero_revision=payload_in.numero_revision,
                 proyecto=ProyectoData(
                     nombre_propietario=payload_in.liquidacion_general.proyecto.nombre_propietario,
                     direccion=payload_in.liquidacion_general.proyecto.direccion,
@@ -261,13 +264,15 @@ class LiquidacionMecanicaSuelosOrchestrator:
         liquidacion_previa_id: uuid.UUID,
     ) -> MecanicaSuelosPrimeraRevisionResult:
         """
-        Validates and creates a new revision (3 or 5) for an existing MS liquidacion.
+        Validates and creates a new revision for an existing MS liquidacion.
 
         Validations:
         - liquidacion_previa_id exists and is MS
-        - numero_revision follows pattern: previa + 2 (1→3, 3→5)
-        - MAX_REVISIONES not exceeded
         - area_solicitada > 0
+
+        `numero_revision` comes from the client (validated against {1, 3, 5} and
+        MAX_REVISIONES by the input contract). The backend never derives it from
+        the previa and never rejects a repeated revision number.
         """
         # Step 1: Validate liquidacion_previa exists and is MS
         try:
@@ -275,17 +280,7 @@ class LiquidacionMecanicaSuelosOrchestrator:
         except ObjectDoesNotExist:
             raise HttpError(404, "Liquidación previa no encontrada.")
 
-        # Step 2: Calculate new numero_revision
-        nueva_revision_numero = previa.numero_revision + 2
-        MAX_REVISIONES = 5
-        if nueva_revision_numero > MAX_REVISIONES:
-            raise HttpError(400, f"MAX_REVISIONES={MAX_REVISIONES} excedido. No se puede crear revisión {nueva_revision_numero}")
-
-        # Step 3: Validate odd revision numbers
-        if nueva_revision_numero % 2 == 0:
-            raise HttpError(400, f"Solo se permiten revisiones impares (1, 3, 5). No se puede crear revisión {nueva_revision_numero}")
-
-        # Step 4: Validate area_solicitada > 0
+        # Step 2: Validate area_solicitada > 0
         area = payload_in.liquidacion_especifica.datos.area_solicitada
         if area <= 0:
             raise HttpError(400, "area_solicitada debe ser mayor a 0")
@@ -324,6 +319,7 @@ class LiquidacionMecanicaSuelosOrchestrator:
                 denominacion_de_proyecto=payload_in.liquidacion_general.denominacion_de_proyecto
                 if payload_in.liquidacion_general.denominacion_de_proyecto is not None
                 else previa.denominacion_de_proyecto,
+                numero_revision=payload_in.numero_revision,
                 proyecto=ProyectoData(
                     nombre_propietario=previa.proyecto.nombre_propietario,
                     direccion=previa.proyecto.direccion,
@@ -620,6 +616,7 @@ class LiquidacionMecanicaSuelosOrchestrator:
                     proyecto_data=liquidacion_general.get("proyecto"),
                     denominacion_de_proyecto=liquidacion_general.get("denominacion_de_proyecto"),
                     contacto_data=liquidacion_general.get("contacto"),
+                    numero_revision=liquidacion_general.get("numero_revision"),
                 )
 
             # 4b. Update tipo fields if provided

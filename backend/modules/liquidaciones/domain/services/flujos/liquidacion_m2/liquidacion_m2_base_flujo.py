@@ -16,6 +16,11 @@ Subclasses must override:
 - _crear_wrapper(liquidacion_general) → wrapper ORM instance
 - _build_result(...) → type-specific PrimeraRevisionResult
 - _build_result_legacy(...) → type-specific PrimeraRevisionResult
+
+REVISION NUMBER: `numero_revision` is always the value chosen by the client and
+carried in `LiquidacionGeneralData`. This flow never derives it from the previa
+and never forces it to 1 — the same value is persisted on the LiquidacionGeneral
+and on the relation member, inside the same transaction.
 """
 from abc import abstractmethod
 from datetime import date
@@ -124,7 +129,7 @@ class LiquidacionM2FlujoBase:
             observacion=gen_data.observacion,
             proyecto=proyecto,
             tipo_liquidacion=tipo_liquidacion,
-            numero_revision=1,
+            numero_revision=gen_data.numero_revision,
             contacto=contacto,
             denominacion_de_proyecto=getattr(gen_data, 'denominacion_de_proyecto', None),
             sub_total=Decimal(str(cotizacion.subtotal)),
@@ -413,8 +418,9 @@ class LiquidacionM2FlujoBase:
         """
         Create a new relation group and add the liquidacion as its first member.
 
-        Use this for primera revision (relacionada) — creates a new group
-        and adds the liquidacion with numero_revision=1.
+        Use this for primera revision — creates a new group and adds the liquidacion
+        with the very same `numero_revision` that was persisted on the
+        LiquidacionGeneral (the value chosen by the client).
 
         For M2 flows (HU/MS), no tipo_tramite is needed — they use fixed type codes.
 
@@ -433,24 +439,6 @@ class LiquidacionM2FlujoBase:
             numero_revision=liquidacion_general.numero_revision,
         )
 
-    def _calcular_siguiente_numero_revision(
-        self,
-        liquidacion_previa,
-    ) -> int:
-        """
-        Calculate the next revision number given a previous liquidacion.
-
-        Revision sequence is: 1 → 3 → 5 (odd numbers, +2 increment).
-        Returns liquidacion_previa.numero_revision + 2.
-
-        Args:
-            liquidacion_previa: the previous LiquidacionGeneral
-
-        Returns:
-            int: the next revision number (e.g. 1 → 3, 3 → 5)
-        """
-        return liquidacion_previa.numero_revision + 2
-
     def _crear_relacion_grupo_nueva_revision(
         self,
         liquidacion_previa,
@@ -461,7 +449,14 @@ class LiquidacionM2FlujoBase:
 
         Use this for nueva revision — finds the group of liquidacion_previa
         (or creates one if previa has no group yet) and adds the new liquidacion
-        as a member with the next revision number.
+        as a member.
+
+        `liquidacion_previa` is TRANSIENT: it is only used to locate the relation
+        group (and to backfill it when missing). No parent lineage is persisted.
+
+        The revision number is NOT derived from the previa: the member is stored
+        with the very same `numero_revision` persisted on the new LiquidacionGeneral
+        (the value chosen by the client).
 
         For M2 flows (HU/MS), no tipo_tramite is needed — they use fixed type codes.
 
@@ -477,12 +472,11 @@ class LiquidacionM2FlujoBase:
         relacion_key = generar_relacion_key(
             tipo_liquidacion=self._get_tipo_liquidacion_code(),
         )
-        numero_revision = self._calcular_siguiente_numero_revision(liquidacion_previa)
         return self.relacion_core.agregar_miembro_a_grupo_de_previa(
             liquidacion_previa=liquidacion_previa,
             liquidacion_nueva=liquidacion_general,
             relacion_key=relacion_key,
-            numero_revision=numero_revision,
+            numero_revision=liquidacion_general.numero_revision,
         )
 
     def _crear_relacion_grupo_desde_previa(
@@ -491,13 +485,18 @@ class LiquidacionM2FlujoBase:
         liquidacion_general,
     ) -> tuple:
         """
-        Add a liquidacion to the relation group of a previous liquidacion,
-        with numero_revision=1.
+        Add a liquidacion to the relation group of a previous liquidacion.
 
-        Use this for /relacionada endpoint — creates a new liquidacion with
-        numero_revision=1 that is related to an existing liquidacion. Finds the
-        group of liquidacion_previa (or creates one if previa has no group yet)
-        and adds the new liquidacion as a member with numero_revision=1.
+        Use this for /relacionada endpoint — creates a new liquidacion related to an
+        existing liquidacion. Finds the group of liquidacion_previa (or creates one if
+        previa has no group yet) and adds the new liquidacion as a member.
+
+        `liquidacion_previa` is TRANSIENT: it is only used to locate the relation
+        group (and to backfill it when missing). No parent lineage is persisted.
+
+        The revision number is NOT derived nor forced to 1: the member is stored with
+        the very same `numero_revision` persisted on the new LiquidacionGeneral
+        (the value chosen by the client).
 
         For M2 flows (HU/MS), no tipo_tramite is needed — they use fixed type codes.
 
@@ -517,5 +516,5 @@ class LiquidacionM2FlujoBase:
             liquidacion_previa=liquidacion_previa,
             liquidacion_nueva=liquidacion_general,
             relacion_key=relacion_key,
-            numero_revision=1,
+            numero_revision=liquidacion_general.numero_revision,
         )

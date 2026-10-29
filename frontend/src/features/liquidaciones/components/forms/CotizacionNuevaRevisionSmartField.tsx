@@ -14,6 +14,7 @@ import { Calculator, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import api from "@/lib/api";
+import { formatCurrencyTrimmed } from "@/utils/number-formatter";
 import type { CotizacionOutput } from "../../schemas/cotizacion.schema";
 
 interface CotizacionNuevaRevisionSmartFieldProps {
@@ -32,7 +33,7 @@ const toNumber = (value: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 const formatSoles = (value: unknown): string =>
-  `S/ ${toNumber(value).toFixed(2)}`;
+  formatCurrencyTrimmed(toNumber(value), 2);
 
 export function CotizacionNuevaRevisionSmartField({
   valorDeclarado,

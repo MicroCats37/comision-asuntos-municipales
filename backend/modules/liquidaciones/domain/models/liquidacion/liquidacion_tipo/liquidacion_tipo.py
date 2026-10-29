@@ -13,6 +13,7 @@ from core.models import BaseModel
 
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral
 from modules.liquidaciones.domain.constants import (
+    EstrategiaCotizacionPO,
     TipoTramiteEdificaciones,
     TramiteAccion,
 )
@@ -205,6 +206,53 @@ class LiquidacionPorcentajeObra(BaseModel):
         null=True,
     )
 
+    estrategia_cotizacion = models.CharField(
+        max_length=40,
+        choices=EstrategiaCotizacionPO.choices,
+        default=EstrategiaCotizacionPO.NORMAL_SELECCIONADAS,
+        verbose_name="Estrategia de Cotización",
+        help_text="Estrategia de cotización del motor PO: NORMAL_SELECCIONADAS, "
+        "TARIFA_HABILITADAS_PARTICIPANTES o TOTAL_EXPLICITO.",
+    )
+
+    count_habilitadas = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Cantidad de Habilitadas",
+        help_text="Snapshot de H (habilitadas del catálogo en la fecha efectiva). "
+        "NULL en registros históricos: el motor lo deriva del catálogo.",
+    )
+
+    total_explicito = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Total Explícito",
+        help_text="Total final autoritativo (IGV incluido) en modo TOTAL_EXPLICITO.",
+    )
+
+    porcentaje_tarifa = models.DecimalField(
+        max_digits=7,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        verbose_name="Porcentaje de Tarifa",
+        help_text="Snapshot del porcentaje unitario (f) de la tarifa aplicada. "
+        "El porcentaje_liquidacion del padre es el agregado (H×f) en modo habilitadas.",
+    )
+
+    tarifa_aplicada = models.ForeignKey(
+        "TarifaPorcentajeObra",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="liquidaciones_porcentaje_padre",
+        verbose_name="Tarifa Aplicada del Padre",
+        help_text="Snapshot de la tarifa que genera el subtotal del padre. "
+        "En modo habilitadas puede no aparecer en ningún detalle.",
+    )
+
     derecho_minimo = models.DecimalField(
         max_digits=10,
         decimal_places=4,
@@ -342,3 +390,53 @@ class LiquidacionPorcentajeObraDetalle(BaseModel):
 
     def __str__(self):
         return f"Detalle {self.especialidad} - {self.liquidacion_porcentaje}"
+
+
+class LiquidacionPorcentajeObraAcumulacion(BaseModel):
+    """
+    Proyección referencial vigente de la diferencia entre el padre PO y la
+    suma de sus detalles.
+
+    Es una OneToOne con el PO padre: representa únicamente la última
+    cotización guardada. El preview nunca la persiste.
+
+    NO tiene `HistoricalRecords` propios: es una proyección del estado
+    actual, no un registro histórico. El monto sigue siendo derivable del
+    historial del padre más el de sus detalles, de modo que la auditoría no
+    se pierde.
+
+    En modo NORMAL_SELECCIONADAS no existe fila de acumulación.
+    """
+
+    liquidacion_porcentaje = models.OneToOneField(
+        "LiquidacionPorcentajeObra",
+        on_delete=models.CASCADE,
+        related_name="acumulacion",
+        verbose_name="Liquidación Porcentual de Obra",
+    )
+
+    porcentaje_acumulado = models.DecimalField(
+        max_digits=7,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        verbose_name="Porcentaje Acumulado",
+        help_text="Diferencia de porcentaje entre el padre y la suma de los detalles. "
+        "NULL en modo TOTAL_EXPLICITO.",
+    )
+
+    subtotal_acumulado = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name="Subtotal Acumulado",
+        help_text="Diferencia monetaria entre el subtotal del padre y la suma de los "
+        "subtotales de los detalles.",
+    )
+
+    class Meta:
+        verbose_name = "Acumulación de Liquidación Porcentual de Obra"
+        verbose_name_plural = "Acumulaciones de Liquidaciones Porcentuales de Obra"
+        ordering = ["liquidacion_porcentaje"]
+
+    def __str__(self):
+        return f"Acumulación {self.liquidacion_porcentaje}"

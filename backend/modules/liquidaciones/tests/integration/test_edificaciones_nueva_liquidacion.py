@@ -1003,6 +1003,7 @@ def test_denominacion_de_proyecto_en_nueva_revision(
     # Create nueva revision (inherits denominacion_de_proyecto) — reduced schema
     payload_2 = {
         "liquidacion_previa_id": str(lg_id),
+        "numero_revision": 3,
         "liquidacion_general": {
             "expediente": "EXP-DENOM-NR-001",
             "observacion": "Segunda revision",

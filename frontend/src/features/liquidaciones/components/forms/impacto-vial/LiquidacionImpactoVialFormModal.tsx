@@ -34,6 +34,7 @@ import {
 import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
 import { formatPublicId } from "../../../utils/formatPublicId";
+import { resolveNumeroRevisionInicial } from "../../../utils/numeroRevision";
 import { toFiniteNumber } from "../../../utils/toFiniteNumber";
 import { CotizacionPorcentajeSmartField } from "../CotizacionPorcentajeSmartField";
 import { LiquidacionFormBodyBase } from "../LiquidacionFormBodyBase";
@@ -71,7 +72,7 @@ export type LiquidacionImpactoVialFormModalProps =
 function buildInitialData(
   item: LiquidacionImpactoVialListItem,
   options: { skipSmartFieldDefaults?: boolean } = {},
-): ImpactoVialFormData {
+): Partial<ImpactoVialFormData> {
   const { liquidacion_general: lg, liquidacion_tipo: lt } = item;
   return {
     denominacion: lg.denominacion_de_proyecto ?? "",
@@ -248,10 +249,22 @@ export function LiquidacionImpactoVialFormModal(
   );
 
   const initialData: Partial<ImpactoVialFormData> = (() => {
-    if (mode === "create") return { valor_declarado: 0 };
-    if (mode === "edit" && sourceItem) return buildInitialData(sourceItem);
+    if (mode === "create") {
+      return {
+        valor_declarado: 0,
+        numero_revision: resolveNumeroRevisionInicial("create"),
+      };
+    }
     if (sourceItem) {
-      return buildInitialData(sourceItem, { skipSmartFieldDefaults: true });
+      return {
+        ...buildInitialData(sourceItem, {
+          skipSmartFieldDefaults: mode !== "edit",
+        }),
+        numero_revision: resolveNumeroRevisionInicial(
+          mode,
+          sourceItem.liquidacion_general.numero_revision,
+        ),
+      };
     }
     return {};
   })();

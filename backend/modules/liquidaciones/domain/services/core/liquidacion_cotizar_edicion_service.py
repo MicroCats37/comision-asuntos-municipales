@@ -50,8 +50,11 @@ from modules.liquidaciones.domain.services.core.liquidacion_patch_historico_core
     NoDerechoVigenteError,
 )
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_porcentaje_obra_core_service import (
+    CotizacionPOContexto,
+    CotizacionPOEstrategiaData,
     LiquidacionPorcentajeObraCoreService,
 )
+from modules.liquidaciones.domain.constants import EstrategiaCotizacionPO
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_metro_cuadrado_core_service import (
     LiquidacionPorMetroCuadradoCoreService,
 )
@@ -80,6 +83,27 @@ class CotizarEdicionPOInput:
     """
     valor_declarado: Optional[Decimal] = None
     tarifas: Optional[List[CotizarEdicionPOTarifaInput]] = None
+
+
+@dataclass
+class CotizarEdicionPOEstrategiaInput:
+    """
+    Input for the STRATEGY-AWARE PO cotizar-edicion (SOLO Edificaciones).
+
+    A diferencia de `CotizarEdicionPOInput`, la estrategia es explícita y el
+    dato de entrada depende de ella:
+
+    Todas las estrategias conservan `valor_declarado`; TOTAL_EXPLICITO además
+    usa `total_explicito` como dato autoritativo para el cálculo.
+
+    `count_habilitadas` (H) lo resuelve el llamador con el contrato de
+    snapshot/catálogo: NUNCA se deduce de los participantes.
+    """
+    estrategia: str = EstrategiaCotizacionPO.NORMAL_SELECCIONADAS
+    valor_declarado: Optional[Decimal] = None
+    total_explicito: Optional[Decimal] = None
+    tarifas: Optional[List[CotizarEdicionPOTarifaInput]] = None
+    count_habilitadas: Optional[int] = None
 
 
 class LiquidacionNoEncontradaError(BusinessError):
@@ -200,6 +224,130 @@ class LiquidacionCotizarEdicionPOService:
             total_subtotal=cotizacion.total_subtotal,
             total=cotizacion.total,
         )
+
+    def cotizar_edicion_estrategia(
+        self,
+        liquidacion_general: LiquidacionGeneral,
+        patch: CotizarEdicionPOEstrategiaInput,
+    ) -> CotizacionPOEstrategiaData:
+        """
+        Cotización POR ESTRATEGIA para editar una liquidación PO de Edificaciones.
+
+        Read-only — NO persiste ni la acumulación ni ningún otro dato.
+
+        Usa el MISMO motor único que el preview y el guardado
+        (`calcular_cotizacion_po_estrategia`), de modo que
+        `cotizar-edicion` y el PATCH producen las mismas cifras.
+
+        Valores históricos por `LiquidacionGeneral.fecha_registro.date()`:
+        IGV, UIT y derechos se resuelven a esa fecha (nunca a hoy).
+
+        H (habilitadas) lo entrega el llamador ya resuelto (snapshot persistido
+        o catálogo en la fecha efectiva): NUNCA se deduce de los participantes.
+        """
+        # ── 1. Get PO record ───────────────────────────────────────────────────
+        try:
+            liq_po = liquidacion_general.liquidacion_porcentaje_obra
+        except LiquidacionPorcentajeObra.DoesNotExist:
+            raise LiquidacionNoEncontradaError(
+                "LiquidacionPorcentajeObra",
+                str(liquidacion_general.id),
+            )
+
+        # ── 2. Resolve historical financial variables ───────────────────────────
+        fecha = liquidacion_general.fecha_registro.date()
+
+        igv = self._historico.get_igv_por_fecha(fecha)
+        uit = self._historico.get_uit_por_fecha(fecha)
+        derecho = self._historico.get_derecho_porcentaje_vigente(fecha)
+
+        # ── 3. Resolve the strategy inputs ─────────────────────────────────────
+        if patch.estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO:
+            valor_declarado = (
+                patch.valor_declarado
+                if patch.valor_declarado is not None
+                else liq_po.valor_declarado
+            )
+            total_explicito = (
+                patch.total_explicito
+                if patch.total_explicito is not None
+                else liq_po.total_explicito
+            )
+        else:
+            valor_declarado = (
+                patch.valor_declarado
+                if patch.valor_declarado is not None
+                else liq_po.valor_declarado
+            )
+            total_explicito = None
+
+        # ── 4. Determine participantes to apply ─────────────────────────────────
+        if patch.tarifas is not None:
+            if not patch.tarifas:
+                raise BusinessError(
+                    "Se requiere al menos una tarifa para cotizar la liquidacion."
+                )
+            participantes = self._build_tarifa_dtos_from_input(patch.tarifas, fecha)
+        else:
+            participantes = self._build_estrategia_dtarifas_from_existing_details(
+                liq_po
+            )
+
+        # ── 5. Canonical engine (no DB access, no formulas here) ───────────────
+        contexto = CotizacionPOContexto(
+            estrategia=patch.estrategia,
+            participantes=participantes,
+            count_habilitadas=patch.count_habilitadas,
+            valor_declarado=valor_declarado,
+            total_explicito=total_explicito,
+            igv_porcentaje=Decimal(str(igv.valor)),
+            uit_valor=Decimal(str(uit.valor)),
+            derecho=self._po_core.derecho_a_contexto(derecho),
+        )
+        return self._po_core.calcular_cotizacion_po_estrategia(contexto)
+
+    def _build_estrategia_dtarifas_from_existing_details(
+        self, liq_po: LiquidacionPorcentajeObra
+    ) -> list[TarifaPorcentajeObraAplicada]:
+        """
+        Reconstruye los participantes actuales desde los detalles persistidos.
+
+        En TOTAL_EXPLICITO los porcentajes se persisten en NULL (invariante
+        I-3): en ese caso el porcentaje unitario se resuelve con el snapshot
+        `porcentaje_tarifa` del padre y, en último caso, con el porcentaje
+        vigente de la tarifa.
+        """
+        from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
+            TarifaPorcentajeObra,
+        )
+
+        porcentaje_snapshot = liq_po.porcentaje_tarifa
+
+        dtos = []
+        for detalle in liq_po.detalles.all():
+            porcentaje = detalle.porcentaje_aplicado
+            if porcentaje is None:
+                porcentaje = porcentaje_snapshot
+            if porcentaje is None and detalle.tarifa_aplicada_id:
+                porcentaje = (
+                    TarifaPorcentajeObra.objects.filter(id=detalle.tarifa_aplicada_id)
+                    .values_list("porcentaje_liquidacion", flat=True)
+                    .first()
+                )
+            if porcentaje is None:
+                raise BusinessError(
+                    "No se pudo determinar el porcentaje de la tarifa aplicada.",
+                    code="PO_PORCENTAJE_TARIFA_AUSENTE",
+                )
+            dtos.append(
+                TarifaPorcentajeObraAplicada(
+                    tarifa_id=str(detalle.tarifa_aplicada_id),
+                    porcentaje_liquidacion=porcentaje,
+                    especialidad_id=str(detalle.especialidad_id),
+                    especialidad_nombre=None,
+                )
+            )
+        return dtos
 
     def _build_tarifa_dtos_from_input(
         self, tarifas: List[CotizarEdicionPOTarifaInput], fecha: date

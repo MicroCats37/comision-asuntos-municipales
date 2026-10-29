@@ -1,5 +1,9 @@
 """
 Integration tests for M2 /relacionada and /nueva-revision endpoints.
+
+The `numero_revision` is always sent by the client and persisted verbatim:
+the backend never derives it from the previa and never rejects a repeated
+revision number (duplicate siblings coexist in the same relation group).
 """
 from copy import deepcopy
 from datetime import date
@@ -109,8 +113,9 @@ def tarifa_m2_ms(db, tipo_mecanica_suelos):
     )
 
 
-def _payload(municipalidad, ubigeo_distrito, tarifa_m2, expediente):
+def _payload(municipalidad, ubigeo_distrito, tarifa_m2, expediente, numero_revision=1):
     return {
+        "numero_revision": numero_revision,
         "liquidacion_general": {
             "municipalidad_id": str(municipalidad.id),
             "expediente": expediente,
@@ -149,10 +154,12 @@ def _crear_primera(auth_client, endpoint, payload):
     return response.json()["data"]
 
 
-def _with_previa(payload, previa_id, expediente):
+def _with_previa(payload, previa_id, expediente, numero_revision=None):
     related = deepcopy(payload)
     related["liquidacion_previa_id"] = str(previa_id)
     related["liquidacion_general"]["expediente"] = expediente
+    if numero_revision is not None:
+        related["numero_revision"] = numero_revision
     return related
 
 
@@ -176,7 +183,7 @@ def test_hu_nueva_revision_crea_rev3_y_mismo_grupo(
 
     response = auth_client.post(
         "/liquidaciones/habilitacion-urbana/nueva-revision",
-        json=_with_previa(primera_payload, primera_id, "EXP-HU-M2-REV3"),
+        json=_with_previa(primera_payload, primera_id, "EXP-HU-M2-REV3", numero_revision=3),
     )
 
     assert response.status_code == 200, response.content
@@ -194,7 +201,7 @@ def test_hu_nueva_revision_crea_rev3_y_mismo_grupo(
 
 
 @pytest.mark.django_db
-def test_hu_relacionada_duplica_rev1_devuelve_409(
+def test_hu_nueva_revision_persiste_numero_revision_enviado(
     auth_client,
     municipalidad,
     ubigeo_distrito,
@@ -202,6 +209,48 @@ def test_hu_relacionada_duplica_rev1_devuelve_409(
     igv_vigente,
     tarifa_m2_hu,
 ):
+    """
+    GIVEN: a revision-1 HU liquidacion
+    WHEN: /nueva-revision is called with numero_revision=5
+    THEN: the revision is created — the backend does not enforce a revision chain
+          (previa + 2) — and the submitted number is persisted verbatim
+    """
+    primera_payload = _payload(municipalidad, ubigeo_distrito, tarifa_m2_hu, "EXP-HU-M2-REV5")
+    primera = _crear_primera(
+        auth_client,
+        "/liquidaciones/habilitacion-urbana/nueva-liquidacion/primera-revision",
+        primera_payload,
+    )
+    primera_id = uuid.UUID(primera["liquidacion_general"]["id"])
+
+    response = auth_client.post(
+        "/liquidaciones/habilitacion-urbana/nueva-revision",
+        json=_with_previa(primera_payload, primera_id, "EXP-HU-M2-REV5B", numero_revision=5),
+    )
+
+    assert response.status_code == 200, response.content
+    data = response.json()["data"]
+    assert data["liquidacion_general"]["numero_revision"] == 5
+
+    nueva_id = uuid.UUID(data["liquidacion_general"]["id"])
+    miembro = LiquidacionRelacionMiembro.objects.get(liquidacion_id=nueva_id)
+    assert miembro.numero_revision == 5
+
+
+@pytest.mark.django_db
+def test_hu_relacionada_duplica_rev1_permite_hermano(
+    auth_client,
+    municipalidad,
+    ubigeo_distrito,
+    derecho_m2_vigente,
+    igv_vigente,
+    tarifa_m2_hu,
+):
+    """
+    GIVEN: a revision-1 HU liquidacion
+    WHEN: /relacionada is called again with numero_revision=1
+    THEN: the duplicate sibling is created and stored in the same group
+    """
     primera_payload = _payload(municipalidad, ubigeo_distrito, tarifa_m2_hu, "EXP-HU-M2-002")
     primera = _crear_primera(
         auth_client,
@@ -215,9 +264,11 @@ def test_hu_relacionada_duplica_rev1_devuelve_409(
         json=_with_previa(primera_payload, primera_id, "EXP-HU-M2-DUP"),
     )
 
-    assert response.status_code == 409, response.content
+    assert response.status_code == 200, response.content
     grupo_id = LiquidacionRelacionMiembro.objects.get(liquidacion_id=primera_id).grupo_id
-    assert LiquidacionRelacionMiembro.objects.filter(grupo_id=grupo_id).count() == 1
+    miembros = LiquidacionRelacionMiembro.objects.filter(grupo_id=grupo_id)
+    assert miembros.count() == 2
+    assert set(miembros.values_list("numero_revision", flat=True)) == {1}
 
 
 @pytest.mark.django_db
@@ -240,7 +291,7 @@ def test_ms_nueva_revision_crea_rev3_y_mismo_grupo(
 
     response = auth_client.post(
         "/liquidaciones/mecanica-suelos/nueva-revision",
-        json=_with_previa(primera_payload, primera_id, "EXP-MS-M2-REV3"),
+        json=_with_previa(primera_payload, primera_id, "EXP-MS-M2-REV3", numero_revision=3),
     )
 
     assert response.status_code == 200, response.content
@@ -258,7 +309,7 @@ def test_ms_nueva_revision_crea_rev3_y_mismo_grupo(
 
 
 @pytest.mark.django_db
-def test_ms_relacionada_duplica_rev1_devuelve_409(
+def test_ms_relacionada_duplica_rev1_permite_hermano(
     auth_client,
     municipalidad,
     ubigeo_distrito,
@@ -266,6 +317,11 @@ def test_ms_relacionada_duplica_rev1_devuelve_409(
     igv_vigente,
     tarifa_m2_ms,
 ):
+    """
+    GIVEN: a revision-1 MS liquidacion
+    WHEN: /relacionada is called again with numero_revision=1
+    THEN: the duplicate sibling is created and stored in the same group
+    """
     primera_payload = _payload(municipalidad, ubigeo_distrito, tarifa_m2_ms, "EXP-MS-M2-002")
     primera = _crear_primera(
         auth_client,
@@ -279,6 +335,8 @@ def test_ms_relacionada_duplica_rev1_devuelve_409(
         json=_with_previa(primera_payload, primera_id, "EXP-MS-M2-DUP"),
     )
 
-    assert response.status_code == 409, response.content
+    assert response.status_code == 200, response.content
     grupo_id = LiquidacionRelacionMiembro.objects.get(liquidacion_id=primera_id).grupo_id
-    assert LiquidacionRelacionMiembro.objects.filter(grupo_id=grupo_id).count() == 1
+    miembros = LiquidacionRelacionMiembro.objects.filter(grupo_id=grupo_id)
+    assert miembros.count() == 2
+    assert set(miembros.values_list("numero_revision", flat=True)) == {1}

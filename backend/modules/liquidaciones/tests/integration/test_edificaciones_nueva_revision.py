@@ -6,13 +6,14 @@ All tests use @pytest.mark.django_db for database access.
 
 Tests cover:
 - Creating revision 3 from revision 1
-- Creating revision 5 from revision 3 (requires 1 and 3 to exist in chain)
+- Creating revision 5 from revision 3
+- The revision number is the one sent by the client (never derived from the previa)
+- Duplicate siblings with the same revision number coexist in the same group
 - Validation: previa doesn't exist
-- Validation: MAX_REVISIONES exceeded (5)
-- Validation: even revision numbers not allowed (sanity check)
+- Validation: revision number outside the allowed set {1, 3, 5} / MAX_REVISIONES
 - Contact upsert: reuse when all fields match
 - Contact upsert: create new when fields differ
-- GET /ultima-revision returns highest numero_revision
+- The legacy GET /ultima-revision endpoint is gone: no canonical-latest semantics
 
 Fixtures shared via conftest.py: municipalidad, proyecto, ubigeo_distrito, auth_client,
     api_client, create_user, igv_vigente, uit_vigente, tipo_edificacion,
@@ -35,6 +36,7 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
     LiquidacionGeneral,
 )
+from modules.liquidaciones.tests.fixtures.http_helpers import status_de_ruta_retirada
 
 
 # ── Local Fixtures (not in conftest) ────────────────────────────────────────────
@@ -72,6 +74,7 @@ def valid_tarifa_ids(tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_
 def primera_revision_payload(valid_tarifa_ids, municipalidad, valid_distrito_id):
     """Payload for creating primera revision (full schema — NOT the reduced nueva-revision schema)."""
     return {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": str(municipalidad.id),
             "expediente": "EXP-EDIF-NUEVA-001",
@@ -109,10 +112,22 @@ def primera_revision_payload(valid_tarifa_ids, municipalidad, valid_distrito_id)
     }
 
 
-def _nueva_revision_payload(primera_id, expediente, observacion, tarifas, tipo_tramite="OBRA_NUEVA"):
-    """Reduced payload for /nueva-revision matching LiquidacionEdificacionesNuevaRevisionInput."""
+def _nueva_revision_payload(
+    primera_id,
+    expediente,
+    observacion,
+    tarifas,
+    tipo_tramite="OBRA_NUEVA",
+    numero_revision=3,
+):
+    """Reduced payload for /nueva-revision matching LiquidacionEdificacionesNuevaRevisionInput.
+
+    `numero_revision` is the revision chosen by the client; the backend never
+    derives it from the previa.
+    """
     return {
         "liquidacion_previa_id": primera_id,
+        "numero_revision": numero_revision,
         "liquidacion_general": {
             "expediente": expediente,
             "observacion": observacion,
@@ -220,7 +235,9 @@ def test_crear_revision_5_desde_revision_3(
     # Create revision 5 — reduced schema
     response_r5 = auth_client.post(
         "/liquidaciones/edificaciones/nueva-revision",
-        json=_nueva_revision_payload(revision_3_id, "EXP-EDIF-NUEVA-003", "Test revision 5", tarifas),
+        json=_nueva_revision_payload(
+            revision_3_id, "EXP-EDIF-NUEVA-003", "Test revision 5", tarifas, numero_revision=5,
+        ),
     )
 
     assert response_r5.status_code == 200, f"Revision 5 failed: {response_r5.content}"
@@ -297,7 +314,7 @@ def test_previa_no_existe_devuelve_404(
 
 
 @pytest.mark.django_db
-def test_max_revisiones_excedido_devuelve_400(
+def test_max_revisiones_excedido_es_rechazado_por_el_contrato(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
     tarifa_porcentaje_obra_installaciones,
@@ -305,7 +322,10 @@ def test_max_revisiones_excedido_devuelve_400(
     primera_revision_payload
 ):
     """
-    Creating revision beyond MAX_REVISIONES=5 returns 400.
+    A revision number above MAX_REVISIONES=5 is rejected by the input contract.
+
+    The allowed set {1, 3, 5} and the MAX_REVISIONES bound live in the request
+    contract, so the payload never reaches the orchestrator.
     """
     # Create revision 1, 3, 5
     primera = crear_primera_revision(auth_client, primera_revision_payload)
@@ -328,7 +348,9 @@ def test_max_revisiones_excedido_devuelve_400(
     # Create revision 5
     response_r5 = auth_client.post(
         "/liquidaciones/edificaciones/nueva-revision",
-        json=_nueva_revision_payload(revision_3_id, "EXP-EDIF-NUEVA-003", "Test revision 5", tarifas),
+        json=_nueva_revision_payload(
+            revision_3_id, "EXP-EDIF-NUEVA-003", "Test revision 5", tarifas, numero_revision=5,
+        ),
     )
     assert response_r5.status_code == 200
 
@@ -338,6 +360,7 @@ def test_max_revisiones_excedido_devuelve_400(
         "EXP-EDIF-NUEVA-004",
         "Test revision 7",
         tarifas,
+        numero_revision=7,
     )
 
     response = auth_client.post(
@@ -345,13 +368,13 @@ def test_max_revisiones_excedido_devuelve_400(
         json=revision_7_payload,
     )
 
-    assert response.status_code == 400, f"Expected 400 for MAX_REVISIONES exceeded, got {response.status_code}"
-    error_data = response.json()
-    assert "MAX_REVISIONES" in str(error_data.get("error", {}).get("details", {}))
+    assert response.status_code == 422, (
+        f"Expected 422 for a revision number above MAX_REVISIONES, got {response.status_code}: {response.content}"
+    )
 
 
 @pytest.mark.django_db
-def test_ultima_revision_retorna_mayor_numero(
+def test_hermanos_con_misma_revision_coexisten(
     auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
     tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
     tarifa_porcentaje_obra_installaciones,
@@ -359,9 +382,65 @@ def test_ultima_revision_retorna_mayor_numero(
     primera_revision_payload
 ):
     """
-    GET /ultima-revision returns the liquidacion with highest numero_revision.
+    Two revisions with the SAME number created from the same previa coexist.
+
+    The revision number is an editable label, not a uniqueness constraint: there is
+    no canonical revision and repeated active revisions are allowed.
     """
-    # Create primera revision
+    from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion_relacion_miembro import (
+        LiquidacionRelacionMiembro,
+    )
+
+    primera = crear_primera_revision(auth_client, primera_revision_payload)
+    primera_id = uuid.UUID(primera["liquidacion_general"]["id"])
+
+    tarifas = [
+        {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_estructuras.id), "especialidad_id": str(especialidad_estructuras.id)},
+        {"tarifa_porcentaje_obra_id": str(tarifa_porcentaje_obra_arquitectura.id), "especialidad_id": str(especialidad_arquitectura.id)},
+    ]
+
+    # First revision 3
+    response_1 = auth_client.post(
+        "/liquidaciones/edificaciones/nueva-revision",
+        json=_nueva_revision_payload(primera_id, "EXP-EDIF-HERMANO-1", "Test hermano 1", tarifas),
+    )
+    assert response_1.status_code == 200, response_1.content
+    hermano_1_id = uuid.UUID(response_1.json()["data"]["liquidacion_general"]["id"])
+
+    # Second revision 3 — same slot, same group
+    response_2 = auth_client.post(
+        "/liquidaciones/edificaciones/nueva-revision",
+        json=_nueva_revision_payload(primera_id, "EXP-EDIF-HERMANO-2", "Test hermano 2", tarifas),
+    )
+    assert response_2.status_code == 200, response_2.content
+    hermano_2_id = uuid.UUID(response_2.json()["data"]["liquidacion_general"]["id"])
+
+    assert response_2.json()["data"]["liquidacion_general"]["numero_revision"] == 3
+
+    grupo_id = LiquidacionRelacionMiembro.objects.get(liquidacion_id=primera_id).grupo_id
+    miembros = LiquidacionRelacionMiembro.objects.filter(grupo_id=grupo_id)
+    assert miembros.count() == 3
+    assert hermano_1_id in set(miembros.values_list("liquidacion_id", flat=True))
+    assert hermano_2_id in set(miembros.values_list("liquidacion_id", flat=True))
+    assert set(miembros.values_list("numero_revision", flat=True)) == {1, 3}
+
+
+@pytest.mark.django_db
+def test_endpoint_ultima_revision_ya_no_existe(
+    auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
+    tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
+    tarifa_porcentaje_obra_installaciones,
+    especialidad_estructuras, especialidad_arquitectura, especialidad_installaciones,
+    primera_revision_payload
+):
+    """
+    GET /ultima-revision ya no existe: el endpoint canonico-latest fue retirado.
+
+    El revision number es una etiqueta editable, no una identidad de secuencia —
+    ya no hay "una revision canonica por proyecto". El listado paginado por tipo
+    es el reemplazo.
+    """
+    # Create primera revision (the flow still works without the latest endpoint)
     primera = crear_primera_revision(auth_client, primera_revision_payload)
     primera_id = primera["liquidacion_general"]["id"]
 
@@ -378,38 +457,14 @@ def test_ultima_revision_retorna_mayor_numero(
     )
     assert response_r3.status_code == 200
 
-    # Get ultima revision (array paginado)
-    response = auth_client.get(
-        "/liquidaciones/edificaciones/ultima-revision",
+    # The canonical-latest endpoint is gone
+    status = status_de_ruta_retirada(
+        auth_client, "/liquidaciones/edificaciones/ultima-revision"
     )
 
-    assert response.status_code == 200, f"Ultima revision failed: {response.content}"
-    data = response.json()["data"]
-    assert len(data["items"]) >= 1, "Debe haber al menos una liquidacion"
-    assert data["items"][0]["liquidacion_general"]["numero_revision"] == 3
-
-
-@pytest.mark.django_db
-def test_ultima_revision_con_filtros(
-    auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
-    tarifa_porcentaje_obra_estructuras, tarifa_porcentaje_obra_arquitectura,
-    primera_revision_payload
-):
-    """
-    GET /ultima-revision with razon_social and numero_documento filters.
-    """
-    # Create primera revision
-    primera = crear_primera_revision(auth_client, primera_revision_payload)
-
-    # Get ultima revision with filters
-    response = auth_client.get(
-        "/liquidaciones/edificaciones/ultima-revision?razon_social=Propietario%20Nueva%20Revision%20SAC&numero_documento=20456789020",
+    assert status in (404, 405), (
+        f"Expected the retired endpoint to be unreachable, got {status}"
     )
-
-    assert response.status_code == 200, f"Ultima revision with filters failed: {response.content}"
-    data = response.json()["data"]
-    assert len(data["items"]) >= 1, "Debe haber al menos una liquidacion"
-    assert data["items"][0]["liquidacion_general"]["numero_revision"] == 1
 
 
 @pytest.mark.django_db
@@ -495,60 +550,20 @@ def test_contacto_upsert_crea_nuevo_si_diferente(
 
 
 @pytest.mark.django_db
-def test_ultima_revision_sin_resultados_devuelve_vacio(
+def test_endpoint_ultima_revision_con_filtros_ya_no_existe(
     auth_client
 ):
     """
-    GET /ultima-revision with a filter that matches nothing returns empty items.
+    GET /ultima-revision with filters ya no existe: el endpoint fue retirado.
     """
-    response = auth_client.get(
+    status = status_de_ruta_retirada(
+        auth_client,
         "/liquidaciones/edificaciones/ultima-revision?numero_documento=00000000",
     )
 
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
-    data = response.json()["data"]
-    assert data["items"] == [], "Debe devolver items vacios"
-
-
-@pytest.mark.django_db
-def test_ultima_revision_con_numero_filtro_devuelve_200(
-    auth_client,
-    municipalidad,
-    derecho_porcentaje_vigente,
-    igv_vigente,
-    uit_vigente,
-    tarifa_porcentaje_obra_estructuras,
-    tarifa_porcentaje_obra_arquitectura,
-    primera_revision_payload,
-):
-    """
-    GET /ultima-revision?numero=X returns 200 and filters to matching liquidaciones.
-    This exercises the direct-lookup optimization for the numero filter in
-    list_ultimas_revisiones_por_proyecto.
-    The core query logic is verified by test_ultimas_revisiones.py::test_ultimas_revisiones_numero_filter_returns_only_latest_revision.
-    """
-    # Create primera revision (auto-assigns numero=1)
-    primera = crear_primera_revision(auth_client, primera_revision_payload)
-    primera_numero = primera["liquidacion_especifica"]["numero"]
-
-    # Filter by the primera numero → should return it
-    response = auth_client.get(
-        f"/liquidaciones/edificaciones/ultima-revision?numero={primera_numero}",
+    assert status in (404, 405), (
+        f"Expected the retired endpoint to be unreachable, got {status}"
     )
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
-    data = response.json()["data"]
-    assert data["total"] == 1, f"Expected total=1 for numero={primera_numero}, got {data['total']}"
-    assert len(data["items"]) == 1
-    assert data["items"][0]["liquidacion_general"]["numero_revision"] == 1
-
-    # Filter by nonexistent numero → no match
-    response = auth_client.get(
-        "/liquidaciones/edificaciones/ultima-revision?numero=99999",
-    )
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
-    data = response.json()["data"]
-    assert data["total"] == 0, f"Expected total=0 for nonexistent numero, got {data['total']}"
-    assert data["items"] == []
 
 
 @pytest.mark.django_db

@@ -2,8 +2,11 @@
 Integration tests for PO /relacionada endpoints.
 
 Tests the /relacionada endpoint for PO types (Edificaciones, Taludes, Impacto Vial).
-Each PO type /relacionada creates a liquidacion with numero_revision=1 that is
-related to an existing liquidacion via Grupo/Miembro.
+Each PO type /relacionada creates a liquidacion with the `numero_revision` sent by
+the client, related to an existing liquidacion via Grupo/Miembro.
+
+Repeated revision numbers are legal: two liquidaciones may share the same
+(grupo, relacion_key, numero_revision) slot and coexist as siblings.
 
 Tests use Ninja's TestClient (not Django's Client) for proper async handling.
 All tests use @pytest.mark.django_db for database access.
@@ -74,6 +77,7 @@ def _make_payload_edif_primera(municipalidad, valid_distrito_id, valid_tarifa_id
                       Different tipo_tramite → different relacion_key → same group can have both.
     """
     return {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": str(municipalidad.id),
             "expediente": "EXP-REL-EDIF-001",
@@ -121,6 +125,7 @@ def _make_payload_edif_relacionada(municipalidad, valid_distrito_id, valid_tarif
     """
     return {
         "liquidacion_previa_id": str(previa_id),
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": str(municipalidad.id),
             "expediente": "EXP-REL-EDIF-002",
@@ -161,6 +166,7 @@ def _make_payload_edif_relacionada(municipalidad, valid_distrito_id, valid_tarif
 def _make_payload_taludes_primera(municipalidad, valid_distrito_id, valid_tarifa_ids_taludes):
     """Create primera revision payload for Taludes."""
     return {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": str(municipalidad.id),
             "expediente": "EXP-REL-TAL-001",
@@ -192,6 +198,7 @@ def _make_payload_taludes_relacionada(municipalidad, valid_distrito_id, valid_ta
     """Create relacionada payload for Taludes."""
     return {
         "liquidacion_previa_id": str(previa_id),
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": str(municipalidad.id),
             "expediente": "EXP-REL-TAL-002",
@@ -222,6 +229,7 @@ def _make_payload_taludes_relacionada(municipalidad, valid_distrito_id, valid_ta
 def _make_payload_iv_primera(municipalidad, valid_distrito_id, valid_tarifa_ids_iv):
     """Create primera revision payload for Impacto Vial."""
     return {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": str(municipalidad.id),
             "expediente": "EXP-REL-IV-001",
@@ -253,6 +261,7 @@ def _make_payload_iv_relacionada(municipalidad, valid_distrito_id, valid_tarifa_
     """Create relacionada payload for Impacto Vial."""
     return {
         "liquidacion_previa_id": str(previa_id),
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": str(municipalidad.id),
             "expediente": "EXP-REL-IV-002",
@@ -371,8 +380,8 @@ def test_edif_relacionada_crea_grupo_con_dos_miembros_diferente_tipo_tramite(
           with different relacion_keys (EDIFICACION-OBRA vs EDIFICACION-DEMOLICION),
           both having numero_revision=1.
 
-    The constraint unique(grupo, relacion_key, numero_revision) allows this because
-    the two members have different relacion_keys.
+    Repeated revision numbers are allowed inside the same group, so the two members
+    coexist regardless of the relacion_key.
     """
     # Create primera liquidacion with OBRA_NUEVA → relacion_key = "EDIFICACION-OBRA"
     primera_payload = _make_payload_edif_primera(
@@ -464,7 +473,7 @@ def test_taludes_relacionada_crea_liquidacion_numero_revision_1(
     """
     GIVEN: an existing Taludes liquidacion with numero_revision=1
     WHEN: /relacionada is called with the same fixed relation key (TALUDES)
-    THEN: returns 409 because TALUDES REV1 already exists in the group
+    THEN: creates a sibling liquidacion with numero_revision=1 in the same group
     """
     # Create primera liquidacion
     primera_payload = _make_payload_taludes_primera(municipalidad, valid_distrito_id, valid_tarifa_ids_taludes)
@@ -477,13 +486,15 @@ def test_taludes_relacionada_crea_liquidacion_numero_revision_1(
         "/liquidaciones/taludes/relacionada",
         json=relacionada_payload,
     )
-    assert response.status_code == 409, (
-        f"Expected 409 Conflict for duplicate TALUDES REV1, got {response.status_code}: {response.content}"
+    assert response.status_code == 200, (
+        f"Expected 200 for a TALUDES sibling, got {response.status_code}: {response.content}"
     )
+    data = response.json()["data"]
+    assert data["liquidacion_general"]["numero_revision"] == 1
 
 
 @pytest.mark.django_db
-def test_taludes_relacionada_duplicado_no_agrega_segundo_miembro(
+def test_taludes_relacionada_duplicado_agrega_segundo_miembro(
     auth_client,
     municipalidad,
     valid_distrito_id,
@@ -495,8 +506,8 @@ def test_taludes_relacionada_duplicado_no_agrega_segundo_miembro(
     """
     GIVEN: an existing Taludes liquidacion with numero_revision=1
     WHEN: /relacionada is called with another TALUDES REV1
-    THEN: keeps the group unchanged because unique(grupo, relacion_key, numero_revision)
-          does not allow two TALUDES REV1 members in the same group
+    THEN: both siblings coexist in the same group — repeated revision numbers
+          are a legal editable label, not a uniqueness constraint
     """
     # Create primera liquidacion
     primera_payload = _make_payload_taludes_primera(municipalidad, valid_distrito_id, valid_tarifa_ids_taludes)
@@ -509,9 +520,10 @@ def test_taludes_relacionada_duplicado_no_agrega_segundo_miembro(
         "/liquidaciones/taludes/relacionada",
         json=relacionada_payload,
     )
-    assert response.status_code == 409, (
-        f"Expected 409 Conflict for duplicate TALUDES REV1, got {response.status_code}: {response.content}"
+    assert response.status_code == 200, (
+        f"Expected 200 for a duplicate TALUDES REV1 sibling, got {response.status_code}: {response.content}"
     )
+    relacionada_id = response.json()["data"]["liquidacion_general"]["id"]
 
     # Both liquidaciones should be in the same group
     grupos = LiquidacionRelacionGrupo.objects.filter(
@@ -522,12 +534,13 @@ def test_taludes_relacionada_duplicado_no_agrega_segundo_miembro(
     grupo = grupos.first()
     miembros = LiquidacionRelacionMiembro.objects.filter(grupo=grupo)
 
-    # Should still have only the original member
-    assert miembros.count() == 1, f"Expected 1 member, got {miembros.count()}"
+    # The duplicate sibling is added as a second member
+    assert miembros.count() == 2, f"Expected 2 members, got {miembros.count()}"
 
-    # Only the original liquidacion should be in the group
+    # Both liquidaciones should be in the group
     miembros_liquidacion_ids = list(miembros.values_list("liquidacion_id", flat=True))
     assert uuid.UUID(primera_id) in miembros_liquidacion_ids
+    assert uuid.UUID(relacionada_id) in miembros_liquidacion_ids
 
     # All members should have numero_revision=1
     for miembro in miembros:
@@ -553,7 +566,7 @@ def test_iv_relacionada_crea_liquidacion_numero_revision_1(
     """
     GIVEN: an existing Impacto Vial liquidacion with numero_revision=1
     WHEN: /relacionada is called with the same fixed relation key (IMPACTO_VIAL)
-    THEN: returns 409 because IMPACTO_VIAL REV1 already exists in the group
+    THEN: creates a sibling liquidacion with numero_revision=1 in the same group
     """
     # Create primera liquidacion
     primera_payload = _make_payload_iv_primera(municipalidad, valid_distrito_id, valid_tarifa_ids_iv)
@@ -566,13 +579,15 @@ def test_iv_relacionada_crea_liquidacion_numero_revision_1(
         "/liquidaciones/impacto-vial/relacionada",
         json=relacionada_payload,
     )
-    assert response.status_code == 409, (
-        f"Expected 409 Conflict for duplicate IMPACTO_VIAL REV1, got {response.status_code}: {response.content}"
+    assert response.status_code == 200, (
+        f"Expected 200 for an IMPACTO_VIAL sibling, got {response.status_code}: {response.content}"
     )
+    data = response.json()["data"]
+    assert data["liquidacion_general"]["numero_revision"] == 1
 
 
 @pytest.mark.django_db
-def test_iv_relacionada_duplicado_no_agrega_segundo_miembro(
+def test_iv_relacionada_duplicado_agrega_segundo_miembro(
     auth_client,
     municipalidad,
     valid_distrito_id,
@@ -584,8 +599,8 @@ def test_iv_relacionada_duplicado_no_agrega_segundo_miembro(
     """
     GIVEN: an existing Impacto Vial liquidacion with numero_revision=1
     WHEN: /relacionada is called with another IMPACTO_VIAL REV1
-    THEN: keeps the group unchanged because unique(grupo, relacion_key, numero_revision)
-          does not allow two IMPACTO_VIAL REV1 members in the same group
+    THEN: both siblings coexist in the same group — repeated revision numbers
+          are a legal editable label, not a uniqueness constraint
     """
     # Create primera liquidacion
     primera_payload = _make_payload_iv_primera(municipalidad, valid_distrito_id, valid_tarifa_ids_iv)
@@ -598,9 +613,10 @@ def test_iv_relacionada_duplicado_no_agrega_segundo_miembro(
         "/liquidaciones/impacto-vial/relacionada",
         json=relacionada_payload,
     )
-    assert response.status_code == 409, (
-        f"Expected 409 Conflict for duplicate IMPACTO_VIAL REV1, got {response.status_code}: {response.content}"
+    assert response.status_code == 200, (
+        f"Expected 200 for a duplicate IMPACTO_VIAL REV1 sibling, got {response.status_code}: {response.content}"
     )
+    relacionada_id = response.json()["data"]["liquidacion_general"]["id"]
 
     # Both liquidaciones should be in the same group
     grupos = LiquidacionRelacionGrupo.objects.filter(
@@ -611,12 +627,13 @@ def test_iv_relacionada_duplicado_no_agrega_segundo_miembro(
     grupo = grupos.first()
     miembros = LiquidacionRelacionMiembro.objects.filter(grupo=grupo)
 
-    # Should still have only the original member
-    assert miembros.count() == 1, f"Expected 1 member, got {miembros.count()}"
+    # The duplicate sibling is added as a second member
+    assert miembros.count() == 2, f"Expected 2 members, got {miembros.count()}"
 
-    # Only the original liquidacion should be in the group
+    # Both liquidaciones should be in the group
     miembros_liquidacion_ids = list(miembros.values_list("liquidacion_id", flat=True))
     assert uuid.UUID(primera_id) in miembros_liquidacion_ids
+    assert uuid.UUID(relacionada_id) in miembros_liquidacion_ids
 
     # All members should have numero_revision=1
     for miembro in miembros:
@@ -692,10 +709,10 @@ def test_edif_relacionada_backfill_crea_grupo_si_previa_sin_grupo(
     assert uuid.UUID(relacionada_id) in miembros_liquidacion_ids
 
 
-# ── Duplicate Constraint Tests ──────────────────────────────────────────────────
+# ── Duplicate Sibling Tests ────────────────────────────────────────────────────
 
 @pytest.mark.django_db
-def test_edif_relacionada_mismo_tipo_tramite_rechazado_por_constraint(
+def test_edif_relacionada_mismo_tipo_tramite_permite_hermano_duplicado(
     auth_client,
     municipalidad,
     valid_distrito_id,
@@ -708,12 +725,10 @@ def test_edif_relacionada_mismo_tipo_tramite_rechazado_por_constraint(
     GIVEN: an existing Edificaciones liquidacion (OBRA_NUEVA, numero_revision=1)
            and a related liquidacion also with OBRA_NUEVA + numero_revision=1
     WHEN: /relacionada is called AGAIN with the same tipo_tramite (OBRA_NUEVA)
-    THEN: returns 409 Conflict because the constraint
-          unique(grupo, relacion_key, numero_revision) is violated
-          (EDIFICACION-OBRA + REV1 already exists in the group).
+    THEN: succeeds — the second sibling shares (grupo, relacion_key, numero_revision)
+          with the first one and both are stored in the same group.
 
-    The constraint allows EDIFICACION-OBRA+REV1 and EDIFICACION-DEMOLICION+REV1
-    in the same group (different relacion_key), but NOT two EDIFICACION-OBRA+REV1.
+    Repeated revision numbers are an editable label, not a uniqueness constraint.
     """
     # Create primera with OBRA_NUEVA → relacion_key = "EDIFICACION-OBRA"
     primera_payload = _make_payload_edif_primera(
@@ -724,7 +739,6 @@ def test_edif_relacionada_mismo_tipo_tramite_rechazado_por_constraint(
     primera_id = primera["liquidacion_general"]["id"]
 
     # Create relacionada with DEMOLICION → relacion_key = "EDIFICACION-DEMOLICION"
-    # This succeeds because it's a different relation_key
     relacionada_payload = _make_payload_edif_relacionada(
         municipalidad, valid_distrito_id, valid_tarifa_ids_edif, uuid.UUID(primera_id),
         tipo_tramite="DEMOLICION",
@@ -735,12 +749,11 @@ def test_edif_relacionada_mismo_tipo_tramite_rechazado_por_constraint(
     )
     assert response.status_code == 200, "Primera relacionada (different tipo_tramite) should succeed"
 
-    # Now try to create ANOTHER relacionada with OBRA_NUEVA
-    # This should fail with 409 because:
+    # Now create ANOTHER relacionada with OBRA_NUEVA — same slot as the primera.
     #   grupo = same group as primera
     #   relacion_key = "EDIFICACION-OBRA" (same as primera)
     #   numero_revision = 1 (same as primera)
-    #   → violates unique(grupo, relacion_key, numero_revision)
+    #   → allowed: duplicate siblings coexist.
     dup_payload = _make_payload_edif_relacionada(
         municipalidad, valid_distrito_id, valid_tarifa_ids_edif, uuid.UUID(primera_id),
         tipo_tramite="OBRA_NUEVA",
@@ -749,6 +762,62 @@ def test_edif_relacionada_mismo_tipo_tramite_rechazado_por_constraint(
         "/liquidaciones/edificaciones/relacionada",
         json=dup_payload,
     )
-    assert dup_response.status_code == 409, (
-        f"Expected 409 Conflict for duplicate slot, got {dup_response.status_code}: {dup_response.content}"
+    assert dup_response.status_code == 200, (
+        f"Expected 200 for a duplicate sibling, got {dup_response.status_code}: {dup_response.content}"
     )
+
+    grupo = LiquidacionRelacionGrupo.objects.filter(
+        miembros__liquidacion_id=primera_id
+    ).first()
+    assert grupo is not None
+
+    miembros = LiquidacionRelacionMiembro.objects.filter(grupo=grupo)
+    assert miembros.count() == 3, f"Expected 3 members, got {miembros.count()}"
+    assert set(miembros.values_list("numero_revision", flat=True)) == {1}
+
+
+# ── Explicit Revision Value Tests ──────────────────────────────────────────────
+
+@pytest.mark.django_db
+def test_edif_relacionada_persiste_numero_revision_enviado(
+    auth_client,
+    municipalidad,
+    valid_distrito_id,
+    valid_tarifa_ids_edif,
+    igv_vigente,
+    uit_vigente,
+    derecho_porcentaje_vigente,
+):
+    """
+    GIVEN: an existing Edificaciones liquidacion
+    WHEN: /relacionada is called with numero_revision=3 (not derived from the previa)
+    THEN: the LiquidacionGeneral AND the relation member both store 3
+    """
+    primera_payload = _make_payload_edif_primera(
+        municipalidad, valid_distrito_id, valid_tarifa_ids_edif,
+        tipo_tramite="OBRA_NUEVA",
+    )
+    primera = crear_primera_revision_edif(auth_client, primera_payload)
+    primera_id = primera["liquidacion_general"]["id"]
+
+    relacionada_payload = _make_payload_edif_relacionada(
+        municipalidad, valid_distrito_id, valid_tarifa_ids_edif, uuid.UUID(primera_id),
+        tipo_tramite="OBRA_NUEVA",
+    )
+    relacionada_payload["numero_revision"] = 3
+
+    response = auth_client.post(
+        "/liquidaciones/edificaciones/relacionada",
+        json=relacionada_payload,
+    )
+    assert response.status_code == 200, f"Relacionada failed: {response.content}"
+    data = response.json()["data"]
+    assert data["liquidacion_general"]["numero_revision"] == 3
+
+    relacionada_id = uuid.UUID(data["liquidacion_general"]["id"])
+    miembro = LiquidacionRelacionMiembro.objects.get(liquidacion_id=relacionada_id)
+    assert miembro.numero_revision == 3
+
+    # The previous liquidacion keeps its own revision number — no lineage is rewritten
+    miembro_previa = LiquidacionRelacionMiembro.objects.get(liquidacion_id=primera_id)
+    assert miembro_previa.numero_revision == 1

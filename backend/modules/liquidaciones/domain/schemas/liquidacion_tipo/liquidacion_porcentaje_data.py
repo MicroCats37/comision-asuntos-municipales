@@ -38,6 +38,20 @@ class LiquidacionPorcentajeObraData(BaseSchema):
         description="Tarifas a aplicar (vacío = auto-fill con todas las vigentes)",
     )
     tipo_tramite: Optional[str] = None  # FUTURE: activar cuando el frontend lo envíe
+    estrategia_cotizacion: Optional[str] = Field(
+        default=None,
+        description="Estrategia de cotización PO (Edificaciones). None = NORMAL_SELECCIONADAS. "
+        "Los demás motores (Taludes, Impacto Vial, legacy) lo dejan en None.",
+    )
+    count_habilitadas: Optional[int] = Field(
+        default=None,
+        description="H (habilitadas del catálogo) ya resuelto por el orchestrador para la "
+        "fecha efectiva. NUNCA se deduce de los participantes.",
+    )
+    total_explicito: Optional[Decimal] = Field(
+        default=None,
+        description="Total final autoritativo con IGV (estrategia TOTAL_EXPLICITO).",
+    )
     override_subtotal: Optional[Decimal] = Field(
         default=None,
         description="Legacy bypass: when set, usar este subtotal directamente en lugar de calcularlo (bypasses Steps 1-5)",

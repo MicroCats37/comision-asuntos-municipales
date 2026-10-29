@@ -17,6 +17,7 @@ import { useWatch } from "react-hook-form";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import { useLatestRequestGuard } from "@/hooks/system/useLatestRequestGuard";
 import api from "@/lib/api";
+import { formatCurrencyTrimmed } from "@/utils/number-formatter";
 
 interface CotizacionM2Output {
   datos?: {
@@ -47,7 +48,7 @@ const toNumber = (value: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 const formatSoles = (value: unknown): string =>
-  `S/ ${toNumber(value).toFixed(2)}`;
+  formatCurrencyTrimmed(toNumber(value), 2);
 
 export function CotizacionM2SmartField({
   methods,

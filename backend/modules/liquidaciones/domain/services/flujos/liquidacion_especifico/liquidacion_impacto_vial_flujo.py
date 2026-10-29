@@ -208,7 +208,7 @@ class LiquidacionImpactoVialFlujo(LiquidacionPOBaseFlujo):
         gen_data,
         proyecto,
         tipo_liquidacion,
-        numero_revision: int = 1,
+        numero_revision: int,
         sub_total: Optional[Decimal] = None,
         total: Optional[Decimal] = None,
         igv_id=None,
@@ -287,9 +287,6 @@ class LiquidacionImpactoVialFlujo(LiquidacionPOBaseFlujo):
                 gen_data.contacto.model_dump() if hasattr(gen_data.contacto, "model_dump") else gen_data.contacto.__dict__
             )
 
-        # Calculate next revision number
-        siguiente_revision = self._calcular_siguiente_numero_revision(liquidacion_previa)
-
         # Get IGV/UIT FKs upfront (no DB dependency on LG creation)
         igv_vigente = self.general_core.get_igv_vigente()
         uit_vigente = self.general_core.get_uit_vigente()
@@ -303,12 +300,13 @@ class LiquidacionImpactoVialFlujo(LiquidacionPOBaseFlujo):
         )
 
         # Create LiquidacionGeneral with correct totals and FKs in one shot (quote-first pattern).
+        # numero_revision is the value chosen by the client — never derived from the previa.
         tipo_liquidacion = TipoLiquidacionModel.objects.get(codigo=self._get_tipo_liquidacion_code())
         liquidacion_general = self._crear_liquidacion_general(
             gen_data=gen_data,
             proyecto=proyecto,
             tipo_liquidacion=tipo_liquidacion,
-            numero_revision=siguiente_revision,
+            numero_revision=gen_data.numero_revision,
             sub_total=cotizacion.total_subtotal,
             total=cotizacion.total,
             igv_id=igv_vigente,
@@ -350,11 +348,13 @@ class LiquidacionImpactoVialFlujo(LiquidacionPOBaseFlujo):
         liquidacion_previa,
     ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
-        Creates a new Impacto Vial liquidacion with numero_revision=1 that is related to
-        an existing liquidacion.
+        Creates a new Impacto Vial liquidacion related to an existing liquidacion.
 
         Same as primera_revision but at step 8.5 calls _crear_relacion_grupo_desde_previa
         instead of _crear_relacion_grupo_primera_revision to link to the previous liquidacion.
+
+        `liquidacion_previa` is TRANSIENT: it is used to locate the relation group.
+        No parent lineage is persisted.
         """
         return self._ejecutar_relacionada_sync(
             usuario_id=usuario_id,
@@ -419,6 +419,7 @@ class LiquidacionImpactoVialFlujo(LiquidacionPOBaseFlujo):
             gen_data=gen_data,
             proyecto=proyecto,
             tipo_liquidacion=tipo_liquidacion,
+            numero_revision=gen_data.numero_revision,
             sub_total=cotizacion.total_subtotal,
             total=cotizacion.total,
             igv_id=igv_vigente,
@@ -438,7 +439,7 @@ class LiquidacionImpactoVialFlujo(LiquidacionPOBaseFlujo):
         wrapper = self._crear_wrapper(liquidacion_general)
 
         # Step 8.5: Create relation group link to previous liquidacion (NOT _crear_relacion_grupo_primera_revision)
-        # Uses _crear_relacion_grupo_desde_previa which adds to previa's group with numero_revision=1
+        # Uses _crear_relacion_grupo_desde_previa which adds to previa's group
         self._crear_relacion_grupo_desde_previa(
             liquidacion_previa=liquidacion_previa,
             liquidacion_general=liquidacion_general,

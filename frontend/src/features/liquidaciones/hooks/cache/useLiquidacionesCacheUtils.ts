@@ -10,8 +10,18 @@
  * Esta utilidad opera sobre:
  * - Listas tipo-específicas: ["liquidaciones", "<tipo>"]
  * - Listas generales: ["liquidaciones", "generales", "todas"]
- * - Últimas revisiones: ["liquidaciones", "generales", "ultimas-revisiones"]
- * - Detalle: ["liquidaciones", "<tipo>", id]
+ * - Detalle: ["liquidaciones", "<tipo>", id] y ["liquidaciones", "generales", id]
+ *
+ * NO existe una cache de "última revisión": el backend ya no expone
+ * `GET /liquidaciones/generales/ultimas-revisiones` ni
+ * `GET /liquidaciones/edificaciones/ultima-revision`, y el modelo de datos no
+ * tiene una revisión canónica por proyecto (el número de revisión es una
+ * ETIQUETA editable y puede repetirse entre hermanos).
+ *
+ * Política de escritura (invariante central de esta fase):
+ * una liquidación creada, revisada o relacionada se INSERTA o ACTUALIZA en las
+ * listas SIN eliminar nunca la previa seleccionada ni sus hermanos. Solo el
+ * soft-delete (`removeVisibleItem`) saca un item de las listas.
  */
 
 import { useQueryClient } from "@tanstack/react-query";
@@ -47,7 +57,7 @@ export interface LiquidacionWrapper {
  * dentro de `old.data.items` (no en `old.items` directamente). Los updaters
  * deben respetar esta estructura al escribir.
  */
-interface PaginatedCache {
+export interface PaginatedCache {
   success?: boolean;
   data: {
     items: LiquidacionWrapper[];
@@ -60,6 +70,9 @@ interface PaginatedCache {
   message?: string | null;
   [key: string]: unknown;
 }
+
+/** Posición de inserción en una lista paginada. */
+export type InsertPosition = "start" | "end";
 
 // ---------------------------------------------------------------------------
 // Helpers internos
@@ -77,18 +90,53 @@ function extractWrapperId(item: LiquidacionWrapper): string {
   return String(id);
 }
 
-/** Rebuild paginated cache con item insertado en posición 0 (prepend). Respeta el envelope ApiResponse. */
-function insertItemAtStart(
+/**
+ * Rebuild de una cache paginada con un item INSERTADO o ACTUALIZADO.
+ *
+ * Reglas (invariantes de paginación):
+ * - Si el id ya existe en la página → se ACTUALIZA EN SU LUGAR: se conserva la
+ *   posición y el `total` NO cambia. Nunca se duplica.
+ * - Si el id no existe → se inserta (prepend por defecto) y el `total` crece
+ *   en 1.
+ * - La longitud de la página se respeta (`page_size`).
+ * - NUNCA se elimina ningún otro item: ni la previa seleccionada ni sus
+ *   hermanos con el mismo número de revisión.
+ *
+ * Respeta el envelope ApiResponse ({ success, data: { items, total, ... } }).
+ */
+export function upsertItemInPaginatedCache(
   old: PaginatedCache | undefined,
   newItem: LiquidacionWrapper,
+  position: InsertPosition = "start",
 ): PaginatedCache {
   if (!old || !old.data || !Array.isArray(old.data.items)) {
     return old as PaginatedCache;
   }
-  const items = [newItem, ...old.data.items];
+  const items = old.data.items as LiquidacionWrapper[];
+  const newId = String(newItem.liquidacion_general?.id);
+
+  const existingIdx = items.findIndex(
+    (item) => String(item.liquidacion_general?.id) === newId,
+  );
+
+  // Actualización en el lugar — conserva posición y total.
+  if (existingIdx !== -1) {
+    const updatedItems = [...items];
+    updatedItems[existingIdx] = newItem;
+    return {
+      ...old,
+      data: {
+        ...old.data,
+        items: updatedItems as LiquidacionWrapper[],
+      },
+    };
+  }
+
+  const nextItems =
+    position === "start" ? [newItem, ...items] : [...items, newItem];
   // Recortar al page_size si existe para no agrandar la página
   const pageSize = old.data.page_size;
-  const trimmedItems = pageSize ? items.slice(0, pageSize) : items;
+  const trimmedItems = pageSize ? nextItems.slice(0, pageSize) : nextItems;
   return {
     ...old,
     data: {
@@ -158,11 +206,18 @@ export const TIPO_KEY_PREFIXES = [
 /** Query key prefix para listas generales. */
 export const GENERALES_KEY_PREFIX = ["liquidaciones", "generales"] as const;
 
-/** "todas" suffix para lista general sin ultimas-revisiones. */
+/**
+ * "todas" suffix del listado general completo.
+ *
+ * Se conserva (y no se elimina) porque separa el LISTADO
+ * `["liquidaciones", "generales", "todas", ...]` de los DETALLES
+ * `["liquidaciones", "generales", id]`: sin este segmento, cualquier
+ * `setQueriesData` por prefijo general pisaría también los detalles.
+ *
+ * Ya NO existe el modo "ultimas-revisiones": el backend retiró ese endpoint
+ * y el modelo no tiene revisión canónica.
+ */
 export const GENERALES_TODAS_SUFFIX = "todas" as const;
-
-/** "ultimas-revisiones" suffix. */
-export const ULTIMAS_REVISIONES_SUFFIX = "ultimas-revisiones" as const;
 
 // ---------------------------------------------------------------------------
 // Hook
@@ -181,26 +236,29 @@ export function useLiquidacionesCacheUtils() {
     },
 
     /**
-     * Inserta un item creado en las caches de lista visibles.
+     * INSERTA o ACTUALIZA un item en las caches de lista visibles.
      *
-     * Política conservadora:
-     * - Solo inserta en página 1 (query keys que terminan en page=1 o sin page implícito).
-     * - No inserta si hay filtros activos no evaluables (razonSocial, documento, etc. distintos de undefined).
+     * Política (invariante central de la Fase 5):
+     * - NUNCA se elimina ningún registro existente: ni la previa seleccionada
+     *   ni sus hermanos con el mismo número de revisión.
+     * - Si el id ya está en la página, se actualiza EN SU LUGAR (no se duplica
+     *   y el `total` no cambia).
+     * - Solo escribe en página 1 (query keys con page === 1 o page implícito).
      *
      * Caches actualizadas:
      * 1. Lista tipo-específica (tipoKey debe ser uno de "edificaciones", "habilitacion-urbana", etc.)
      * 2. Lista general "todas"
+     * 3. Seed del detalle tipo-específico y general
      */
-    insertCreatedItem(
+    upsertCreatedItem(
       item: LiquidacionWrapper,
-      options: { tipoKey: string },
+      options: { tipoKey: string; position?: InsertPosition },
     ): void {
       const wrapperId = extractWrapperId(item);
 
       // 1) Lista tipo-específica
       // Las listas tipo-específicas usan useLiquidacionList que anexa [page, pageSize, filtros, params]
       // Cacheado como ApiResponse envelope: { success, data: { items, total, page, ... } }.
-      // Solamente insetar en caches de página 1 sin filtros complejos
       const tipoPrefijo = ["liquidaciones", options.tipoKey] as const;
       queryClient.setQueriesData<PaginatedCache>(
         { queryKey: tipoPrefijo },
@@ -208,16 +266,16 @@ export function useLiquidacionesCacheUtils() {
           if (!old?.data || !Array.isArray(old.data.items)) {
             return old as PaginatedCache;
           }
-          // Solo insetar si estamos en página 1 (page === 1 o page no definido = 1 implícito)
+          // Solo escribir si estamos en página 1 (page === 1 o page no definido = 1 implícito)
           const page = old.data.page ?? 1;
           if (page !== 1) return old as PaginatedCache;
-          return insertItemAtStart(old, item);
+          return upsertItemInPaginatedCache(old, item, options.position);
         },
       );
 
       // 2) Lista general "todas"
       // Query keys: ["liquidaciones", "generales", "todas", page, pageSize, tipo, documento, razonSocial, propietario, numero, params]
-      // Cacheado como ApiResponse envelope. Insetar solo en página 1 sin filtros
+      // Cacheado como ApiResponse envelope. Escribir solo en página 1
       const generalesPrefijo = [
         ...GENERALES_KEY_PREFIX,
         GENERALES_TODAS_SUFFIX,
@@ -230,7 +288,7 @@ export function useLiquidacionesCacheUtils() {
           }
           const page = old.data.page ?? 1;
           if (page !== 1) return old as PaginatedCache;
-          return insertItemAtStart(old, item);
+          return upsertItemInPaginatedCache(old, item, options.position);
         },
       );
 
@@ -248,7 +306,6 @@ export function useLiquidacionesCacheUtils() {
      * Caches actualizadas:
      * - Todas las listas tipo-específicas
      * - Lista general "todas"
-     * - Lista "ultimas-revisiones"
      *
      * Si el item no está en una cache particular (no se encontró por id), se ignora.
      */
@@ -283,21 +340,8 @@ export function useLiquidacionesCacheUtils() {
         },
       );
 
-      // 3) Lista ultimas-revisiones
-      const ultimasPrefijo = [
-        ...GENERALES_KEY_PREFIX,
-        ULTIMAS_REVISIONES_SUFFIX,
-      ] as const;
-      queryClient.setQueriesData<PaginatedCache>(
-        { queryKey: ultimasPrefijo },
-        (old) => {
-          if (!old?.data || !Array.isArray(old.data.items)) {
-            return old as PaginatedCache;
-          }
-          const result = removeItemById(old, id);
-          return result ?? (old as PaginatedCache);
-        },
-      );
+      // 3) Lista ultimas-revisiones: RETIRADA (endpoint y modelo canónico
+      // eliminados en la Fase 3). Ya no existe una cache de "última revisión".
     },
 
     /**
@@ -321,96 +365,18 @@ export function useLiquidacionesCacheUtils() {
       );
     },
 
-    /**
-     * Reemplaza un item en las caches de últimas revisiones.
-     * Para nueva-revision: la revisión previa debe salir y la nueva debe entrar.
+    /*
+     * `replaceLatestRevision` fue RETIRADO en la Fase 5.
      *
-     * Política:
-     * - Si previousId existe, remover previousId e insertar el nuevo item.
-     * - Si no hay previousId, remover cualquier item con mismo wrapper id e insetar.
+     * Antes: sacaba la revisión PREVIA de la cache de "últimas revisiones" y
+     * metía la nueva. Ese modelo de "revisión canónica" ya no existe: el
+     * backend retiró `GET /liquidaciones/generales/ultimas-revisiones` y
+     * `GET /liquidaciones/edificaciones/ultima-revision`, y el número de
+     * revisión es una etiqueta editable que puede repetirse entre hermanos.
+     *
+     * Hoy la operación correcta es `upsertCreatedItem`: la liquidación nueva
+     * (o revisada) se inserta/actualiza SIN eliminar la previa seleccionada ni
+     * sus hermanos.
      */
-    replaceLatestRevision(
-      item: LiquidacionWrapper,
-      options: { tipoKey: string; previousId?: string },
-    ): void {
-      const wrapperId = extractWrapperId(item);
-      const previousId = options.previousId;
-
-      const ultimasPrefijo = [
-        ...GENERALES_KEY_PREFIX,
-        ULTIMAS_REVISIONES_SUFFIX,
-      ] as const;
-
-      queryClient.setQueriesData<PaginatedCache>(
-        { queryKey: ultimasPrefijo },
-        (old) => {
-          if (!old?.data || !Array.isArray(old.data.items)) {
-            return old as PaginatedCache;
-          }
-          let items = old.data.items as LiquidacionWrapper[];
-
-          // Remover previousId si existe
-          if (previousId) {
-            items = items.filter(
-              (it) => String(it.liquidacion_general?.id) !== String(previousId),
-            );
-          }
-
-          // Remover el item con mismo wrapper id (revisión previa con mismo id si no hay previousId)
-          items = items.filter(
-            (it) => String(it.liquidacion_general?.id) !== wrapperId,
-          );
-
-          // Insetar la nueva revisión al inicio
-          const page = old.data.page ?? 1;
-          if (page !== 1) {
-            return {
-              ...old,
-              data: { ...old.data, items },
-            } as PaginatedCache;
-          }
-
-          const pageSize = old.data.page_size;
-          const newItems = [item, ...items];
-          const trimmedItems = pageSize
-            ? newItems.slice(0, pageSize)
-            : newItems;
-
-          return {
-            ...old,
-            data: {
-              ...old.data,
-              items: trimmedItems as LiquidacionWrapper[],
-              total: previousId
-                ? old.data.total
-                : Math.min((old.data.total ?? 0) + 1, old.data.total ?? 0),
-            },
-          };
-        },
-      );
-    },
-
-    /**
-     * Actualiza las caches de lista general "todas" con un item.
-     * Útil para nueva-revision y relacionada cuando se quiere mantener sincronizada
-     * la lista general.
-     */
-    insertInGenerales(item: LiquidacionWrapper): void {
-      const generalesPrefijo = [
-        ...GENERALES_KEY_PREFIX,
-        GENERALES_TODAS_SUFFIX,
-      ] as const;
-      queryClient.setQueriesData<PaginatedCache>(
-        { queryKey: generalesPrefijo },
-        (old) => {
-          if (!old?.data || !Array.isArray(old.data.items)) {
-            return old as PaginatedCache;
-          }
-          const page = old.data.page ?? 1;
-          if (page !== 1) return old as PaginatedCache;
-          return insertItemAtStart(old, item);
-        },
-      );
-    },
   };
 }

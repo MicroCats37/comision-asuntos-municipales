@@ -141,6 +141,7 @@ def valid_distrito_id(ubigeo_distrito):
 def valid_payload(valid_municipalidad_id, valid_tarifa_m2_id, valid_distrito_id):
     """Return a valid full payload for primera-revision endpoint."""
     return {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
             "expediente": "EXP-2024-001",
@@ -225,6 +226,7 @@ def test_hu_nueva_liquidacion_area_zero_returns_400(
     The orchestrator validates that area_solicitada must be > 0.
     """
     payload = {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
             "expediente": "EXP-2024-002",
@@ -269,6 +271,7 @@ def test_hu_nueva_liquidacion_area_negative_returns_400(
     The orchestrator validates that area_solicitada must be > 0.
     """
     payload = {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
             "expediente": "EXP-2024-003",
@@ -357,6 +360,7 @@ def test_hu_nueva_liquidacion_no_usuario_creador_in_input(
     the input payload (usuario_id is hardcoded in the controller or extracted from token).
     """
     payload = {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
             "expediente": "EXP-2024-004",
@@ -414,6 +418,7 @@ def test_hu_denominacion_de_proyecto_se_persiste_y_devuelve(
     Mirrors the Edificaciones regression test (test_denominacion_de_proyecto_se_persiste_y_devuelve).
     """
     payload = {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
             "expediente": "EXP-2024-DEN",
@@ -462,6 +467,7 @@ def test_hu_denominacion_de_proyecto_null_se_devuelve_como_null(
     When denominacion_de_proyecto is not provided (null), it must remain null in the response.
     """
     payload = {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": valid_municipalidad_id,
             "expediente": "EXP-2024-DENNULL",

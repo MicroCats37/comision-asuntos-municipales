@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { esNumeroRevisionValido } from "../utils/numeroRevision";
 
 // Contacto inline schema — matches backend ContactoInlineSchema (SINGLE contacto)
 // GENERAL: se usa en los 6 tipos de liquidación.
@@ -45,4 +46,31 @@ export const generalFormSchema = z.object({
   municipalidad_id: z.string({ error: "Requerido" }).min(1, "Requerido"),
   expediente: z.string().optional(),
   observacion: z.string().optional(),
+});
+
+/**
+ * Bloque compartido del número de revisión.
+ *
+ * Espejo del contrato backend `NumeroRevisionRequeridoMixin`: obligatorio y
+ * acotado al conjunto permitido {1, 3, 5}. El número de revisión es una
+ * ETIQUETA EDITABLE elegida por el usuario — el backend no lo deriva.
+ *
+ * Solo lo componen los CINCO tipos con revisión editable (Edificaciones,
+ * Habilitación Urbana, Mecánica de Suelos, Taludes, Impacto Vial).
+ * Inspección de Obra es revision-less: su schema NO incluye este bloque y el
+ * backend mantiene su liquidación fija en revisión 1.
+ */
+export const numeroRevisionFormSchema = z.object({
+  numero_revision: z
+    .number({
+      error: (issue) =>
+        issue.input === undefined || issue.input === null || issue.input === ""
+          ? "El número de revisión es requerido"
+          : "El número de revisión debe ser un número válido",
+    })
+    .int("El número de revisión debe ser un entero")
+    .refine(
+      (valor) => esNumeroRevisionValido(valor),
+      "El número de revisión debe ser 1, 3 o 5",
+    ),
 });

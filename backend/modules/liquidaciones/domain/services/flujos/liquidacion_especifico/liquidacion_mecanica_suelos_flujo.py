@@ -117,11 +117,14 @@ class LiquidacionMecanicaSuelosFlujo(LiquidacionM2FlujoBase):
         liquidacion_previa,
     ) -> MecanicaSuelosPrimeraRevisionResult:
         """
-        Creates a new Mecánica de Suelos liquidacion with numero_revision=1
-        that is related to an existing MS liquidacion.
+        Creates a new Mecánica de Suelos liquidacion related to an existing MS
+        liquidacion.
 
         Similar to primera_revision but links to the previous liquidacion's
         relation group instead of creating a new one.
+
+        `liquidacion_previa` is TRANSIENT: it is used to locate the relation group.
+        No parent lineage is persisted.
         """
         return self._ejecutar_relacionada_sync(usuario_id, data, liquidacion_previa)
 
@@ -164,7 +167,7 @@ class LiquidacionMecanicaSuelosFlujo(LiquidacionM2FlujoBase):
                 gen_data.contacto.model_dump() if hasattr(gen_data.contacto, "model_dump") else gen_data.contacto.__dict__
             )
 
-        # Step 4: LiquidacionGeneral with numero_revision=1
+        # Step 4: LiquidacionGeneral with the numero_revision chosen by the client
         igv_vigente = self.general_core.get_igv_vigente()
         uit_vigente = self.general_core.get_uit_vigente()
         tipo_liquidacion = TipoLiquidacionModel.objects.get(
@@ -176,7 +179,7 @@ class LiquidacionMecanicaSuelosFlujo(LiquidacionM2FlujoBase):
             observacion=gen_data.observacion,
             proyecto=proyecto,
             tipo_liquidacion=tipo_liquidacion,
-            numero_revision=1,
+            numero_revision=gen_data.numero_revision,
             denominacion_de_proyecto=getattr(gen_data, 'denominacion_de_proyecto', None),
             contacto=contacto,
             sub_total=Decimal(str(cotizacion.subtotal)),
@@ -201,7 +204,7 @@ class LiquidacionMecanicaSuelosFlujo(LiquidacionM2FlujoBase):
         # Step 7: MS wrapper
         wrapper = self._crear_wrapper(liquidacion_general)
 
-        # Step 8: Create relation group link to previous liquidacion (numero_revision=1)
+        # Step 8: Create relation group link to previous liquidacion
         self._crear_relacion_grupo_desde_previa(
             liquidacion_previa=liquidacion_previa,
             liquidacion_general=liquidacion_general,
@@ -224,10 +227,13 @@ class LiquidacionMecanicaSuelosFlujo(LiquidacionM2FlujoBase):
         liquidacion_previa,
     ) -> MecanicaSuelosPrimeraRevisionResult:
         """
-        Creates a new Mecánica de Suelos liquidacion with next odd revision number
-        (e.g. 1 → 3, 3 → 5) based on an existing MS liquidacion.
+        Creates a new Mecánica de Suelos liquidacion based on an existing MS
+        liquidacion, using the `numero_revision` chosen by the client.
 
         Reuses the proyecto from the previous liquidacion (cloned for isolation).
+
+        `liquidacion_previa` is TRANSIENT: it is used to copy source data and to
+        locate the relation group. No parent lineage is persisted.
         """
         return self._ejecutar_nueva_revision_sync(usuario_id, data, liquidacion_previa)
 
@@ -252,9 +258,6 @@ class LiquidacionMecanicaSuelosFlujo(LiquidacionM2FlujoBase):
                 gen_data.contacto.model_dump() if hasattr(gen_data.contacto, "model_dump") else gen_data.contacto.__dict__
             )
 
-        # Step 3: Calculate new numero_revision
-        nueva_revision_numero = self._calcular_siguiente_numero_revision(liquidacion_previa)
-
         # Step 4: LiquidacionGeneral
         igv_vigente = self.general_core.get_igv_vigente()
         uit_vigente = self.general_core.get_uit_vigente()
@@ -267,7 +270,7 @@ class LiquidacionMecanicaSuelosFlujo(LiquidacionM2FlujoBase):
             observacion=gen_data.observacion,
             proyecto=proyecto,
             tipo_liquidacion=tipo_liquidacion,
-            numero_revision=nueva_revision_numero,
+            numero_revision=gen_data.numero_revision,
             denominacion_de_proyecto=getattr(gen_data, 'denominacion_de_proyecto', None),
             contacto=contacto,
             sub_total=Decimal(str(cotizacion.subtotal)),

@@ -37,12 +37,19 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liqu
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_inspeccion_obra import (
     LiquidacionInspeccionObra,
 )
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion_relacion_grupo import (
+    LiquidacionRelacionGrupo,
+)
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion_relacion_miembro import (
+    LiquidacionRelacionMiembro,
+)
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorcentajeObra,
     LiquidacionPorcentajeObraDetalle,
     LiquidacionPorMetroCuadrado,
     LiquidacionPorCategoriaVisitas,
 )
+from modules.liquidaciones.tests.fixtures.factories import make_patch_wrapper_general_payload
 
 User = get_user_model()
 
@@ -1263,3 +1270,112 @@ def test_inspeccion_obra_patch_only_tipo_wrapper(
     data = response.json()
     result = data["data"]
     assert result["liquidacion_general"]["expediente"] == original_expediente
+
+# ── Tests: Editable revision number on the type-specific PATCH ────────────────
+
+@pytest.fixture
+def miembro_relacion_edificaciones(db, po_liquidacion_pendiente):
+    """Attach a relation member (revision 1) to the Edificaciones liquidacion."""
+    grupo = LiquidacionRelacionGrupo.objects.create(codigo="GRUPO-PATCH-PO-001")
+    return LiquidacionRelacionMiembro.objects.create(
+        grupo=grupo,
+        liquidacion=po_liquidacion_pendiente,
+        relacion_key="EDIFICACION-OBRA_NUEVA",
+        numero_revision=1,
+    )
+
+
+@pytest.fixture
+def miembro_relacion_hu(db, hu_liquidacion_pendiente):
+    """Attach a relation member (revision 1) to the Habilitacion Urbana liquidacion."""
+    grupo = LiquidacionRelacionGrupo.objects.create(codigo="GRUPO-PATCH-HU-001")
+    return LiquidacionRelacionMiembro.objects.create(
+        grupo=grupo,
+        liquidacion=hu_liquidacion_pendiente,
+        relacion_key="HABILITACION_URBANA",
+        numero_revision=1,
+    )
+
+
+@pytest.mark.django_db
+def test_edificaciones_patch_wrapper_actualiza_numero_revision(
+    auth_client,
+    po_liquidacion_pendiente,
+    miembro_relacion_edificaciones,
+):
+    """
+    PATCH /liquidaciones/edificaciones/{id} with liquidacion_general.numero_revision
+    stores the submitted revision on the header AND on the relation member (same value).
+    """
+    liquidacion_id = po_liquidacion_pendiente.id
+
+    response = auth_client.patch(
+        f"/liquidaciones/edificaciones/{liquidacion_id}",
+        json=make_patch_wrapper_general_payload(numero_revision=3),
+    )
+
+    assert response.status_code == 200, \
+        f"Expected 200, got {response.status_code}: {response.content}"
+
+    po_liquidacion_pendiente.refresh_from_db()
+    miembro_relacion_edificaciones.refresh_from_db()
+
+    assert po_liquidacion_pendiente.numero_revision == 3, \
+        "Header must store the submitted revision"
+    assert miembro_relacion_edificaciones.numero_revision == 3, \
+        "Relation member must store the same revision"
+
+
+@pytest.mark.django_db
+def test_habilitacion_urbana_patch_wrapper_actualiza_numero_revision(
+    auth_client,
+    hu_liquidacion_pendiente,
+    miembro_relacion_hu,
+):
+    """
+    PATCH /liquidaciones/habilitacion-urbana/{id} with liquidacion_general.numero_revision
+    stores the submitted revision on the header AND on the relation member (same value).
+    """
+    liquidacion_id = hu_liquidacion_pendiente.id
+
+    response = auth_client.patch(
+        f"/liquidaciones/habilitacion-urbana/{liquidacion_id}",
+        json=make_patch_wrapper_general_payload(numero_revision=5),
+    )
+
+    assert response.status_code == 200, \
+        f"Expected 200, got {response.status_code}: {response.content}"
+
+    hu_liquidacion_pendiente.refresh_from_db()
+    miembro_relacion_hu.refresh_from_db()
+
+    assert hu_liquidacion_pendiente.numero_revision == 5, \
+        "Header must store the submitted revision"
+    assert miembro_relacion_hu.numero_revision == 5, \
+        "Relation member must store the same revision"
+
+
+@pytest.mark.django_db
+def test_edificaciones_patch_wrapper_numero_revision_fuera_del_conjunto_es_rechazado(
+    auth_client,
+    po_liquidacion_pendiente,
+    miembro_relacion_edificaciones,
+):
+    """
+    The PATCH contract rejects a revision outside {1, 3, 5} — nothing is written.
+    """
+    liquidacion_id = po_liquidacion_pendiente.id
+
+    response = auth_client.patch(
+        f"/liquidaciones/edificaciones/{liquidacion_id}",
+        json=make_patch_wrapper_general_payload(numero_revision=2),
+    )
+
+    assert response.status_code == 422, \
+        f"Expected 422 for numero_revision=2, got {response.status_code}: {response.content}"
+
+    po_liquidacion_pendiente.refresh_from_db()
+    miembro_relacion_edificaciones.refresh_from_db()
+
+    assert po_liquidacion_pendiente.numero_revision == 1
+    assert miembro_relacion_edificaciones.numero_revision == 1

@@ -5,12 +5,12 @@ Each member links a LiquidacionGeneral to a LiquidacionRelacionGrupo with a
 relacion_key (e.g., EDIFICACION-OBRA, EDIFICACION-DEMOLICION, HU, MS) and a
 numero_revision.
 
-Unique constraint: (grupo, relacion_key, numero_revision)
-  — Allows EDIFICACION-OBRA+REV1 and EDIFICACION-DEMOLICION+REV1 in the same group
-     (different relacion_key even with same revision).
-  — Rejects two EDIFICACION-OBRA+REV1 in the same group (duplicate slot).
-  — nueva-revision uses higher revision numbers (3, 5) so it never conflicts with
-     the first revision (1) in the same group.
+Unique constraint: (liquidacion)
+  — Each LiquidacionGeneral belongs to at most one group.
+
+The (grupo, relacion_key, numero_revision) uniqueness was removed: `numero_revision` is a
+user-editable classification, not a sequence identity, so several active liquidaciones
+may share the same slot (e.g. two EDIFICACION-OBRA at revision 3 in the same group).
 """
 
 from django.db import models
@@ -23,9 +23,9 @@ class LiquidacionRelacionMiembro(BaseModel):
     Miembro de un grupo de relación de liquidaciones.
 
     Cada LiquidacionGeneral puede ser miembro de un único grupo (unique en liquidacion).
-    El constraint unique (grupo, relacion_key, numero_revision) previene duplicados
-    del mismo slot, pero permite /relacionada entre subtipos distintos (OBRA vs
-    DEMOLICION) porque generan relacion_key diferentes.
+    El grupo puede contener varias liquidaciones con la misma relacion_key y el mismo
+    numero_revision: el número de revisión es una etiqueta editable y no una identidad
+    única de secuencia.
     """
 
     history = HistoricalRecords()
@@ -59,10 +59,6 @@ class LiquidacionRelacionMiembro(BaseModel):
             models.UniqueConstraint(
                 fields=["liquidacion"],
                 name="unique_liquidacion_unico_grupo",
-            ),
-            models.UniqueConstraint(
-                fields=["grupo", "relacion_key", "numero_revision"],
-                name="unique_grupo_relacion_key_revision",
             ),
         ]
         indexes = [

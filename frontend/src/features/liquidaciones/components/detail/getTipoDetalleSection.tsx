@@ -4,7 +4,10 @@ import type { ReactNode } from "react";
 import type { M2DatosOut } from "@/features/liquidaciones/schemas/liquidacion-m2.schema";
 import type { PorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-porcentaje.schema";
 import type { VisitasDatosOut } from "@/features/liquidaciones/schemas/liquidacion-visitas.schema";
-import { LiquidacionDetalleEdificacionesSection } from "./LiquidacionDetalleEdificacionesSection";
+import {
+  LiquidacionDetalleEdificacionesSection,
+  type EdificacionesDetalleDatos,
+} from "./LiquidacionDetalleEdificacionesSection";
 import { LiquidacionDetalleHabilitacionUrbanaSection } from "./LiquidacionDetalleHabilitacionUrbanaSection";
 import { LiquidacionDetalleImpactoVialSection } from "./LiquidacionDetalleImpactoVialSection";
 import { LiquidacionDetalleInspeccionObraSection } from "./LiquidacionDetalleInspeccionObraSection";
@@ -43,7 +46,10 @@ export function getTipoDetalleSection(
     case "EDIFICACION":
       return (
         <LiquidacionDetalleEdificacionesSection
-          liquidacionTipo={liquidacionTipo as PorcentajeObraDatosOut}
+          // Edificaciones es el único motor con estrategia: el objeto puede
+          // traerla (listado/detalle propios) o no (superficies de RH), y la
+          // sección lo tolera en ambos casos.
+          liquidacionTipo={liquidacionTipo as EdificacionesDetalleDatos}
         />
       );
     case "TALUDES":

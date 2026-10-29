@@ -3,27 +3,31 @@
  *
  * POST /liquidaciones/mecanica-suelos/relacionada
  *
- * Usa useLiquidacionesCreateMutation (cache manual reactivo) con lógica de ultimas-revisiones.
+ * Usa useLiquidacionesCreateMutation (cache manual reactivo). La liquidación devuelta se inserta/actualiza en las listas visibles; la revisión previa permanece en la lista (ya no hay revisión canónica).
  */
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import type { MecanicaSuelosFormData } from "../schemas/liquidacion-mecanica-suelos-form.schema";
-import type { LiquidacionWrapper } from "./cache";
-import {
-  useLiquidacionesCacheUtils,
-  useLiquidacionesCreateMutation,
-} from "./cache";
+import { useLiquidacionesCreateMutation } from "./cache";
 
 const BASE_URL = "/liquidaciones/mecanica-suelos";
 const LIST_KEY = ["liquidaciones", "mecanica-suelos"] as const;
-const TIPO_KEY = "mecanica-suelos";
 
-function buildPayload(
+/**
+ * Payload de liquidación relacionada de Mecánica de Suelos.
+ *
+ * `numero_revision` viaja en el TOP LEVEL del body (contrato backend
+ * `LiquidacionMecanicaSuelosRelacionadaInput` =
+ * `NumeroRevisionRequeridoMixin` + wrappers): es obligatorio y lo elige el
+ * usuario (etiqueta editable).
+ */
+export function buildCrearRelacionadaMecanicaSuelosPayload(
   data: MecanicaSuelosFormData,
   liquidacionPreviaId: string,
 ) {
-  const { tarifa_m2_id, area_solicitada, ...rest } = data;
+  const { tarifa_m2_id, area_solicitada, numero_revision, ...rest } = data;
   return {
     liquidacion_previa_id: liquidacionPreviaId,
+    numero_revision,
     liquidacion_general: {
       municipalidad_id: rest.municipalidad_id,
       expediente: rest.expediente,
@@ -52,49 +56,37 @@ function buildPayload(
 }
 
 export function useCrearRelacionadaMecanicaSuelos() {
-  const previousIdRef = useRef<string | null>(null);
-  const cacheUtils = useLiquidacionesCacheUtils();
-
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_general: unknown;
     liquidacion_especifica: unknown;
     liquidacion_previa_id: string;
+    numero_revision: number;
   }>({
     tipoQueryKey: LIST_KEY,
     url: `${BASE_URL}/relacionada`,
-    options: {
-      onSuccess: (rawResult) => {
-        const response = rawResult as { data?: LiquidacionWrapper };
-        const newItem: LiquidacionWrapper =
-          response?.data ?? (rawResult as LiquidacionWrapper);
-        if (!newItem?.liquidacion_general?.id) return;
-
-        cacheUtils.insertCreatedItem(newItem, { tipoKey: TIPO_KEY });
-
-        const prevId = previousIdRef.current;
-        if (prevId) {
-          cacheUtils.replaceLatestRevision(newItem, {
-            tipoKey: TIPO_KEY,
-            previousId: prevId,
-          });
-        }
-      },
-    },
   });
 
   const crearMutation = useMemo(
     () => ({
       ...mutation,
       mutate: (data: MecanicaSuelosFormData, liquidacionPreviaId: string) => {
-        previousIdRef.current = liquidacionPreviaId;
-        mutation.mutate(buildPayload(data, liquidacionPreviaId));
+        mutation.mutate(
+          buildCrearRelacionadaMecanicaSuelosPayload(
+            data,
+            liquidacionPreviaId,
+          ),
+        );
       },
       mutateAsync: async (
         data: MecanicaSuelosFormData,
         liquidacionPreviaId: string,
       ) => {
-        previousIdRef.current = liquidacionPreviaId;
-        return mutation.mutateAsync(buildPayload(data, liquidacionPreviaId));
+        return mutation.mutateAsync(
+          buildCrearRelacionadaMecanicaSuelosPayload(
+            data,
+            liquidacionPreviaId,
+          ),
+        );
       },
     }),
     [mutation],

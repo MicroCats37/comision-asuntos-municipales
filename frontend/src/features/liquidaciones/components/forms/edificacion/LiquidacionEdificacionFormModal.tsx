@@ -25,7 +25,6 @@ import {
  *   - 'relacionada'    → useCrearRelacionadaEdificaciones
  */
 import { useCallback, useState } from "react";
-import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
 import { notify } from "@/errors";
 import {
   composeDetalleSections,
@@ -43,11 +42,16 @@ import {
   type EdificacionesFormData,
   edificacionesFormSchema,
 } from "../../../schemas/liquidacion-edificaciones-form.schema";
+import { ESTRATEGIA_NORMAL } from "../../../schemas/liquidacion-po-estrategia.schema";
 import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
+import { hidratarEstrategiaDesdeItem } from "../../../utils/estrategiaCotizacion";
 import { formatPublicId } from "../../../utils/formatPublicId";
-import { toFiniteNumber } from "../../../utils/toFiniteNumber";
+import { resolveNumeroRevisionInicial } from "../../../utils/numeroRevision";
 import { CotizacionPorcentajeSmartField } from "../CotizacionPorcentajeSmartField";
+import {
+  EstrategiaValorField,
+} from "../EstrategiaCotizacionField";
 import { LiquidacionFormBodyBase } from "../LiquidacionFormBodyBase";
 import { LiquidacionFormShell } from "../LiquidacionFormShell";
 import { TarifasYEspecialidadesSmartField } from "../TarifasYEspecialidadesSmartField";
@@ -96,6 +100,10 @@ function buildInitialDataFromItem(
 ): Partial<EdificacionesFormData> {
   const { liquidacion_general: lg, liquidacion_tipo: lt } =
     item as LiquidacionEdificacionesListItem;
+  // Rehidratación de la estrategia: las liquidaciones legacy (sin estrategia
+  // persistida) vuelven como NORMAL_SELECCIONADAS y el dato que la estrategia
+  // prohíbe queda en undefined (no se inventa un 0 que luego se enviaría).
+  const estrategia = hidratarEstrategiaDesdeItem({ liquidacion_tipo: lt });
   return {
     denominacion: lg.denominacion_de_proyecto ?? "",
     municipalidad_id: lg.municipalidad?.id ?? "",
@@ -109,7 +117,9 @@ function buildInitialDataFromItem(
       lg.proyecto.entidad?.tipo_documento === "DNI" ? "DNI" : "RUC",
     entidad_numero_documento: lg.proyecto.entidad?.numero_documento ?? "",
     entidad_razon_social: lg.proyecto.entidad?.razon_social ?? "",
-    valor_declarado: toFiniteNumber(lt.valor_declarado),
+    estrategia_cotizacion: estrategia.estrategia_cotizacion,
+    valor_declarado: estrategia.valor_declarado,
+    total_explicito: estrategia.total_explicito,
     tipo_tramite: lt.tipo_tramite as EdificacionesFormData["tipo_tramite"],
     tarifa_unica_id: options.skipSmartFieldDefaults
       ? undefined
@@ -199,20 +209,6 @@ export function LiquidacionEdificacionFormModal(
         : undefined
       : undefined;
 
-  // ── Revision number para badge (mismo +2 que el default del shell)
-  const revisionNumber: number | undefined =
-    mode === "edit"
-      ? Number(props.item.liquidacion_general.numero_revision)
-      : mode === "nueva-revision" || mode === "relacionada"
-        ? (() => {
-            const n = Number(
-              (props.previa as LiquidacionPreviaItem).liquidacion_general
-                .numero_revision,
-            );
-            return Number.isFinite(n) ? n + 2 : undefined;
-          })()
-        : undefined;
-
   // ── canEditProyecto: incluye regla PAGADA además de revision>1
   const computeCanEditProyecto = useCallback(
     (m: typeof mode, item: typeof sourceItem): boolean => {
@@ -249,16 +245,16 @@ export function LiquidacionEdificacionFormModal(
       const initialData = sourceItem
         ? buildInitialDataFromItem(sourceItem as UltimaRevisionGenericItem)
         : null;
-      const valorDeclaradoInicial = initialData?.valor_declarado ?? 0;
+      const valorDeclaradoInicial = initialData?.valor_declarado;
+      const totalExplicitoInicial = initialData?.total_explicito;
 
+      // El campo monetario depende de la estrategia activa: valor declarado
+      // (NORMAL / HABILITADAS) o total final con IGV (TOTAL_EXPLICITO).
       const tramiteField = (
-        <MoneyInput
-          name="valor_declarado"
-          label="Valor Declarado (S/)"
-          placeholder="S/ 0.00"
-          control={methods.control}
-          required
-          defaultValue={valorDeclaradoInicial}
+        <EstrategiaValorField
+          methods={methods}
+          defaultValorDeclarado={valorDeclaradoInicial}
+          defaultTotalExplicito={totalExplicitoInicial}
         />
       );
 
@@ -280,6 +276,7 @@ export function LiquidacionEdificacionFormModal(
             methods={methods}
             hasTipoTramite
             tipo="edificaciones"
+            soportaEstrategia
             {...(isEdit
               ? {
                   mode: "edit",
@@ -296,26 +293,45 @@ export function LiquidacionEdificacionFormModal(
           methods={methods}
           tramiteField={tramiteField}
           motorSection={motorSection}
-          proyectoFieldsExtra={
-            <TipoTramiteSmartField
-              methods={methods}
-              revisionNumber={revisionNumber}
-            />
-          }
+          proyectoFieldsExtra={<TipoTramiteSmartField methods={methods} />}
           valoresActualesSection={null}
           canEditProyecto={canEditProyecto}
         />
       );
     },
-    [sourceItem, mode, revisionNumber, sourceFechaRegistro, sourceId],
+    [sourceItem, mode, sourceFechaRegistro, sourceId],
   );
 
+  // ── Número de revisión inicial (etiqueta editable) ──────────────────
+  // El badge, la denominación auto-completada y el payload leen el MISMO
+  // valor vivo del formulario: aquí solo se define con el que se abre.
   const initialData: Partial<EdificacionesFormData> = (() => {
-    if (mode === "create") return { valor_declarado: 0 };
-    if (mode === "edit") return buildInitialDataFromItem(props.item);
-    return buildInitialDataFromItem(props.previa as UltimaRevisionGenericItem, {
-      skipSmartFieldDefaults: true,
-    });
+    if (mode === "create") {
+      return {
+        valor_declarado: 0,
+        estrategia_cotizacion: ESTRATEGIA_NORMAL,
+        numero_revision: resolveNumeroRevisionInicial("create"),
+      };
+    }
+    if (mode === "edit") {
+      return {
+        ...buildInitialDataFromItem(props.item),
+        numero_revision: resolveNumeroRevisionInicial(
+          "edit",
+          props.item.liquidacion_general.numero_revision,
+        ),
+      };
+    }
+    return {
+      ...buildInitialDataFromItem(props.previa as UltimaRevisionGenericItem, {
+        skipSmartFieldDefaults: true,
+      }),
+      numero_revision: resolveNumeroRevisionInicial(
+        mode,
+        (props.previa as LiquidacionPreviaItem).liquidacion_general
+          .numero_revision,
+      ),
+    };
   })();
 
   // ── Submit handlers ──────────────────────────────────────────────────────

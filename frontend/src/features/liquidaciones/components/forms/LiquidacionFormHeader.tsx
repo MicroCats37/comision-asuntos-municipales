@@ -19,6 +19,14 @@ export type LiquidacionFormMode =
 
 interface LiquidacionFormHeaderProps {
   mode: LiquidacionFormMode;
+  /**
+   * Número de revisión mostrado en el badge.
+   *
+   * Refleja el valor VIVO del campo `numero_revision` del formulario (lo
+   * publica `NumeroRevisionWatcher` desde dentro del form, porque el header
+   * del modal vive fuera del `FormProvider`). Cuando el formulario no tiene
+   * el campo —Inspección de Obra— se muestra la revisión fija (1).
+   */
   revisionNumber?: number;
   onVerDetalle?: () => void;
   verDetalleDisabled?: boolean;

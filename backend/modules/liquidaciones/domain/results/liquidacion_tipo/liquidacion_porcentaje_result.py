@@ -21,6 +21,17 @@ class DetallePorcentajeObraResult(BaseModel):
     subtotal: Decimal
 
 
+class AcumulacionPorcentajeObraResult(BaseModel):
+    """
+    Proyección vigente de la diferencia entre el padre PO y la suma de sus detalles.
+
+    `porcentaje_acumulado` es NULL en TOTAL_EXPLICITO: el total es autoritativo y
+    no hay invariante de porcentaje.
+    """
+    porcentaje_acumulado: Optional[Decimal] = None
+    subtotal_acumulado: Decimal
+
+
 class LiquidacionPorcentajeObraResult(BaseModel):
     """Result del motor PorcentajeObra persistido."""
     id: str
@@ -33,3 +44,10 @@ class LiquidacionPorcentajeObraResult(BaseModel):
     porcentaje_minimo_uit: Optional[Decimal] = None
     derecho_aplicado_id: Optional[str] = None
     detalles: List[DetallePorcentajeObraResult]
+    # ── Estrategia PO (Edificaciones). Los demás motores los dejan en None. ──
+    estrategia_cotizacion: Optional[str] = None
+    count_habilitadas: Optional[int] = None
+    total_explicito: Optional[Decimal] = None
+    porcentaje_tarifa: Optional[Decimal] = None
+    tarifa_aplicada_id: Optional[str] = None
+    acumulacion: Optional[AcumulacionPorcentajeObraResult] = None

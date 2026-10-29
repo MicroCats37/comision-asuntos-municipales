@@ -70,18 +70,22 @@ export function formatDecimalPercent(
  *
  * @param value - Numeric value or null/undefined.
  * @param maxDecimals - Optional cap on decimal places (default 4).
- * @returns "S/ {value}" with trailing zeros removed, or "—" for null/undefined.
+ * @returns "S/ {value}" with space-grouped thousands and trailing zeros removed.
  *
  * @example
  * formatCurrencyTrimmed(5.000)   // "S/ 5"
  * formatCurrencyTrimmed(5.5000)  // "S/ 5.5"
  * formatCurrencyTrimmed(5.001)   // "S/ 5.001"
+ * formatCurrencyTrimmed(4222555.2) // "S/ 4 222 555.2"
  * formatCurrencyTrimmed(null)    // "—"
  */
 export function formatCurrencyTrimmed(
-  value: number | null | undefined,
+  value: number | string | null | undefined,
   maxDecimals: number = 4,
 ): string {
   if (value == null) return "—";
-  return `S/ ${trimTrailingZeros(value, maxDecimals)}`;
+  const trimmed = trimTrailingZeros(value, maxDecimals);
+  const [integerPart, decimalPart] = trimmed.split(".");
+  const groupedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return `S/ ${groupedInteger}${decimalPart ? `.${decimalPart}` : ""}`;
 }

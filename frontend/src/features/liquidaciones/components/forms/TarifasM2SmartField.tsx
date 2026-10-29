@@ -14,6 +14,7 @@ import { Banknote, CircleCheck, MapPin, Square } from "lucide-react";
 import { useEffect } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useWatch } from "react-hook-form";
+import { formatCurrencyTrimmed } from "@/utils/number-formatter";
 import { useTarifasVigentesM2 } from "../../hooks/useTarifasVigentes";
 
 interface TarifasM2SmartFieldProps {
@@ -23,7 +24,7 @@ interface TarifasM2SmartFieldProps {
 }
 
 const formatSoles = (value: number | undefined): string =>
-  value == null ? "—" : `S/ ${Number(value).toFixed(2)}`;
+  formatCurrencyTrimmed(value, 2);
 
 export function TarifasM2SmartField({
   methods,

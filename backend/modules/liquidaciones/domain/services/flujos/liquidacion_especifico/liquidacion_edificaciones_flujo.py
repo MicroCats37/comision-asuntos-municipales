@@ -17,6 +17,7 @@ NO validation, NO business logic — trusts Orchestrator.
 from datetime import date
 from decimal import Decimal
 from typing import Optional
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from injector import inject
 from ninja.errors import HttpError
@@ -28,6 +29,7 @@ from modules.liquidaciones.domain.services.flujos.liquidacion_po.liquidacion_po_
     LiquidacionPOBaseFlujo,
 )
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_porcentaje_obra_core_service import (
+    CotizacionPOContexto,
     LiquidacionPorcentajeObraCoreService,
 )
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
@@ -50,11 +52,12 @@ from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_genera
     ContactoResult,
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_porcentaje_result import (
+    AcumulacionPorcentajeObraResult,
     LiquidacionPorcentajeObraResult,
     DetallePorcentajeObraResult,
     EspecialidadResult,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
+from modules.liquidaciones.domain.constants import EstrategiaCotizacionPO, TipoLiquidacion
 
 
 class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
@@ -92,8 +95,14 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
         """
         Calculate PO cotizacion for Edificaciones.
 
-        For legacy flows, checks self._override_subtotal and self._override_total
-        (set by ejecutar_legacy before calling the base template).
+        Usa el MOTOR ÚNICO de strategies (`calcular_cotizacion_po_estrategia`):
+        la estrategia, H y el total explícito los resuelve el orchestrator y
+        llegan ya resueltos en `po_data`. El motor no consulta la base de datos.
+
+        Para flows legacy, checks self._override_subtotal and self._override_total
+        (set by ejecutar_legacy before calling the base template): ese camino
+        conserva la fachada `calcular_cotizacion_po` para no alterar el bypass
+        histórico del import legacy.
         """
         kwargs = {}
         if getattr(self, '_override_subtotal', None) is not None:
@@ -101,14 +110,31 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
         if getattr(self, '_override_total', None) is not None:
             kwargs['override_total'] = self._override_total
 
-        return self.porcentaje_core.calcular_cotizacion_po(
+        if kwargs:
+            # Legacy import: la fachada preserva el bypass histórico.
+            return self.porcentaje_core.calcular_cotizacion_po(
+                valor_declarado=po_data.datos.valor_declarado,
+                tarifas=po_data.tarifas,
+                igv_porcentaje=igv_porcentaje,
+                derecho=derecho,
+                uit_valor=uit_valor,
+                **kwargs,
+            )
+
+        contexto = CotizacionPOContexto(
+            estrategia=(
+                getattr(po_data, 'estrategia_cotizacion', None)
+                or EstrategiaCotizacionPO.NORMAL_SELECCIONADAS
+            ),
+            participantes=list(po_data.tarifas),
+            count_habilitadas=getattr(po_data, 'count_habilitadas', None),
             valor_declarado=po_data.datos.valor_declarado,
-            tarifas=po_data.tarifas,
+            total_explicito=getattr(po_data, 'total_explicito', None),
             igv_porcentaje=igv_porcentaje,
-            derecho=derecho,
             uit_valor=uit_valor,
-            **kwargs,
+            derecho=self.porcentaje_core.derecho_a_contexto(derecho),
         )
+        return self.porcentaje_core.calcular_cotizacion_po_estrategia(contexto)
 
     def _crear_wrapper(self, liquidacion_general) -> LiquidacionEdificacion:
         """Create Edificacion identity wrapper."""
@@ -169,6 +195,12 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
                 derecho_maximo=liquidacion_po.derecho_maximo,
                 porcentaje_minimo_uit=liquidacion_po.porcentaje_minimo_uit,
                 derecho_aplicado_id=str(liquidacion_po.derecho_aplicado_id) if liquidacion_po.derecho_aplicado_id else None,
+                estrategia_cotizacion=liquidacion_po.estrategia_cotizacion,
+                count_habilitadas=liquidacion_po.count_habilitadas,
+                total_explicito=liquidacion_po.total_explicito,
+                porcentaje_tarifa=liquidacion_po.porcentaje_tarifa,
+                tarifa_aplicada_id=str(liquidacion_po.tarifa_aplicada_id) if liquidacion_po.tarifa_aplicada_id else None,
+                acumulacion=self._acumulacion_result(liquidacion_po),
                 detalles=[
                     DetallePorcentajeObraResult(
                         id=str(d.id),
@@ -185,6 +217,18 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
             ),
         )
 
+    @staticmethod
+    def _acumulacion_result(liquidacion_po) -> Optional[AcumulacionPorcentajeObraResult]:
+        """Proyecta la fila de acumulación vigente del PO (None si no hay diferencia)."""
+        try:
+            acumulacion = liquidacion_po.acumulacion
+        except ObjectDoesNotExist:
+            return None
+        return AcumulacionPorcentajeObraResult(
+            porcentaje_acumulado=acumulacion.porcentaje_acumulado,
+            subtotal_acumulado=acumulacion.subtotal_acumulado,
+        )
+
     # ── Contacto + LG creation (Edificaciones-specific override) ─────────────────
 
     # ── Nueva Revision (Edificaciones-specific — not in base) ─────────────────
@@ -199,17 +243,17 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
         liquidacion_previa,
     ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
-        Creates a new revision (3 or 5) for an existing Edificaciones liquidacion.
+        Creates a new revision for an existing Edificaciones liquidacion.
 
         Key differences from primera_revision:
         - Reuses existing Entidad/Proyecto (no upsert needed, already exists)
         - Contact upsert by ALL fields (nombres, apellidos, dni, cargo, telefono, celular, email)
-        - Creates new LiquidacionGeneral with numero_revision = previa.numero_revision + 2
-        - Sets up M2M liquidaciones_previas (for revision 5, includes BOTH revision 1 AND 3)
+        - Creates new LiquidacionGeneral with the `numero_revision` chosen by the client
+          (never derived from the previa)
         - Creates LiquidacionPorcentajeObra + LiquidacionEdificacion
 
-        For revision 5, the M2M chain is transitive: if previa is revision 3, and revision 3's
-        M2M already has revision 1, then the new revision 5's M2M should include both 1 and 3.
+        `liquidacion_previa` is TRANSIENT: it is used to copy source data and to
+        locate the relation group. No parent lineage is persisted.
         """
         return self._ejecutar_nueva_revision_sync(
             usuario_id=usuario_id,
@@ -232,8 +276,7 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
         liquidacion_previa,
     ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
-        Creates a new liquidacion with numero_revision=1 that is related to
-        an existing Edificaciones liquidacion.
+        Creates a new liquidacion related to an existing Edificaciones liquidacion.
 
         Similar to primera_revision but instead of creating a new relation group,
         joins the existing liquidacion's group (or creates a new group if the
@@ -241,11 +284,9 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
 
         Key differences from primera_revision:
         - Links to liquidacion_previa via relation group
-        - numero_revision=1 (same as primera_revision)
 
-        Key differences from nueva_revision:
-        - numero_revision is always 1 (not previa.numero_revision + 2)
-        - Does not clone proyecto (creates new proyecto like primera_revision)
+        `liquidacion_previa` is TRANSIENT: it is used to locate the relation group.
+        No parent lineage is persisted.
         """
         return self._ejecutar_relacionada_sync(
             usuario_id=usuario_id,
@@ -298,9 +339,10 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
             )
 
         # Step 4: Calculate PO cotizacion (pure arithmetic — no DB dependency)
-        cotizacion = self.porcentaje_core.calcular_cotizacion_po(
-            valor_declarado=po_data.datos.valor_declarado,
-            tarifas=po_data.tarifas,
+        # Usa el MOTOR ÚNICO por estrategia: la estrategia, H y el total
+        # explícito los resuelve el orchestrator y llegan ya resueltos.
+        cotizacion = self._calcular_cotizacion(
+            po_data=po_data,
             igv_porcentaje=igv_porcentaje,
             derecho=derecho,
             uit_valor=uit_valor,
@@ -318,7 +360,7 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
             observacion=gen_data.observacion,
             proyecto=proyecto,
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.EDIFICACION),
-            numero_revision=1,  # Always revision 1 for /relacionada
+            numero_revision=gen_data.numero_revision,
             contacto=contacto,
             denominacion_de_proyecto=getattr(gen_data, 'denominacion_de_proyecto', None),
             sub_total=cotizacion.total_subtotal,
@@ -342,9 +384,8 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
         )
 
         # Step 10: Create relation group link to previous liquidacion.
-        # Uses _crear_relacion_grupo_desde_previa (numero_revision=1)
-        # instead of _crear_relacion_grupo_primera_revision (also numero_revision=1
-        # but creates a new group).
+        # Uses _crear_relacion_grupo_desde_previa (joins the previa's group)
+        # instead of _crear_relacion_grupo_primera_revision (creates a new group).
         self._crear_relacion_grupo_desde_previa(
             liquidacion_previa=liquidacion_previa,
             liquidacion_general=liquidacion_general,
@@ -382,23 +423,21 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
                 gen_data.contacto.model_dump() if hasattr(gen_data.contacto, "model_dump") else gen_data.contacto.__dict__
             )
 
-        # Calculate new numero_revision
-        nueva_revision_numero = liquidacion_previa.numero_revision + 2
-
         # Get IGV/UIT FKs for snapshot (no DB dependency on LG creation)
         igv_vigente = self.general_core.get_igv_vigente()
         uit_vigente = self.general_core.get_uit_vigente()
 
         # Calculate PorcentajeObra cotizacion (pure arithmetic — no DB dependency)
-        cotizacion = self.porcentaje_core.calcular_cotizacion_po(
-            valor_declarado=po_data.datos.valor_declarado,
-            tarifas=po_data.tarifas,
+        # Usa el MOTOR ÚNICO por estrategia (mismo motor que el preview y el PATCH).
+        cotizacion = self._calcular_cotizacion(
+            po_data=po_data,
             igv_porcentaje=igv_porcentaje,
             derecho=derecho,
             uit_valor=uit_valor,
         )
 
         # LiquidacionGeneral with correct totals and FKs in one shot (quote-first pattern).
+        # numero_revision is the value chosen by the client — never derived from the previa.
         from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
         liquidacion_general = self.general_core.create_liquidacion_general(
             municipalidad_id=str(liquidacion_previa.municipalidad_id),
@@ -406,7 +445,7 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
             observacion=gen_data.observacion,
             proyecto=proyecto,
             tipo_liquidacion=TipoLiquidacionModel.objects.get(codigo=TipoLiquidacion.EDIFICACION),
-            numero_revision=nueva_revision_numero,
+            numero_revision=gen_data.numero_revision,
             contacto=contacto,
             denominacion_de_proyecto=gen_data.denominacion_de_proyecto,
             sub_total=cotizacion.total_subtotal,
@@ -494,7 +533,7 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
         gen_data,
         proyecto,
         tipo_liquidacion,
-        numero_revision: int = 1,
+        numero_revision: int,
         sub_total: Optional[Decimal] = None,
         total: Optional[Decimal] = None,
         igv_id=None,

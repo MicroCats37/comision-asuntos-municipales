@@ -20,6 +20,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     ContactoInlineSchema,
     EntidadUpdateSchema,
     ProyectoUpdateSchema,
+    NumeroRevisionOpcionalMixin,
 )
 
 
@@ -57,12 +58,15 @@ class LiquidacionPatchPOIn(BaseSchema):
 
 # ── Wrapper schema (liquidacion_general + liquidacion_tipo) ──────────────────
 
-class LiquidacionPatchPOGeneralIn(BaseSchema):
+class LiquidacionPatchPOGeneralIn(NumeroRevisionOpcionalMixin):
     """
     Partial update schema for general fields inside PO PATCH wrapper.
 
     Exposes the same conditional-editing rules as LiquidacionGeneralUpdateIn
     (municipalidad_id and proyecto only editable at revision 1 with no previas).
+
+    `numero_revision` es editable (opcional) y debe pertenecer al conjunto permitido
+    {1, 3, 5} — ver `NumeroRevisionOpcionalMixin`.
 
     Fields are optional — omitted fields preserve current stored values.
     """

@@ -158,7 +158,7 @@ def test_agregar_miembro_crea_miembro(
 
 
 @pytest.mark.django_db
-def test_agregar_miembro_unique_constraint_grupo_key_revision(
+def test_agregar_miembro_permite_duplicados_grupo_key_revision(
     db,
     relacion_service,
     tipo_edificacion,
@@ -167,8 +167,9 @@ def test_agregar_miembro_unique_constraint_grupo_key_revision(
     proyecto,
 ):
     """
-    WHEN: the same (grupo, relacion_key, numero_revision) combination is inserted twice
-    THEN: IntegrityError is raised due to unique constraint
+    WHEN: two liquidaciones share the same (grupo, relacion_key, numero_revision)
+    THEN: both members are persisted — the unique constraint on that triple was removed
+         because `numero_revision` is an editable classification, not a sequence identity
     """
     grupo = LiquidacionRelacionGrupo.objects.create(codigo="LQG-TEST-0002")
     lg = LiquidacionGeneral.objects.create(
@@ -186,7 +187,7 @@ def test_agregar_miembro_unique_constraint_grupo_key_revision(
         numero_revision=1,
     )
 
-    # Different liquidacion but same (grupo, relacion_key, numero_revision) should fail
+    # Different liquidacion with the same (grupo, relacion_key, numero_revision) is allowed
     lg2 = LiquidacionGeneral.objects.create(
         municipalidad=municipalidad,
         proyecto=_make_proyecto(ubigeo_distrito, seq=2),
@@ -195,13 +196,24 @@ def test_agregar_miembro_unique_constraint_grupo_key_revision(
         sub_total=Decimal("0"),
         total=Decimal("0"),
     )
-    with pytest.raises(IntegrityError):
-        relacion_service.agregar_miembro(
+    miembro2 = relacion_service.agregar_miembro(
+        grupo=grupo,
+        liquidacion=lg2,
+        relacion_key=generar_relacion_key(TipoLiquidacion.EDIFICACION, TipoTramiteEdificaciones.OBRA_NUEVA),
+        numero_revision=1,
+    )
+
+    assert miembro2.grupo == grupo
+    assert miembro2.liquidacion == lg2
+    assert miembro2.numero_revision == 1
+    assert (
+        LiquidacionRelacionMiembro.objects.filter(
             grupo=grupo,
-            liquidacion=lg2,
             relacion_key=generar_relacion_key(TipoLiquidacion.EDIFICACION, TipoTramiteEdificaciones.OBRA_NUEVA),
             numero_revision=1,
-        )
+        ).count()
+        == 2
+    )
 
 
 @pytest.mark.django_db

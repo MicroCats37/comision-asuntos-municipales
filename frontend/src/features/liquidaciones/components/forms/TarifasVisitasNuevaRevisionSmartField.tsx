@@ -20,6 +20,7 @@ import { Calculator, Loader2, Minus, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import api from "@/lib/api";
+import { formatCurrencyTrimmed } from "@/utils/number-formatter";
 import { useTarifasVigentesVisitas } from "../../hooks/useTarifasVigentes";
 
 interface CotizacionVisitasOutput {
@@ -66,7 +67,7 @@ const toNumber = (value: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 const formatSoles = (value: unknown): string =>
-  `S/ ${toNumber(value).toFixed(2)}`;
+  formatCurrencyTrimmed(toNumber(value), 2);
 
 /** Compatibilidad con respuestas históricas C1-C4; el valor canónico es 1-4. */
 const normalizeCategoria = (cat: string): string => {

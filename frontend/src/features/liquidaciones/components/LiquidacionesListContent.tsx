@@ -40,7 +40,7 @@ export interface LiquidacionesListContentProps<TItem> {
   description: string;
   /** "Nueva Liquidación" button (and other pre-filtros actions). */
   primaryAction?: ReactNode;
-  /** Tertiary actions next to primary (e.g., "Tercera Revisión" for Edificaciones). */
+  /** Tertiary actions next to primary (e.g., "Nueva Revisión" for Edificaciones). */
   extraAction?: ReactNode;
   /** Hook bound to the domain-specific list fetcher. Reads URL state internally. */
   useListData: () => UseLiquidacionListReturn<TItem>;

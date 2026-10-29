@@ -3,11 +3,31 @@
 import { Building2 } from "lucide-react";
 import { formatDecimalPercent } from "@/utils/number-formatter";
 import type { PorcentajeObraDatosOut } from "../../schemas/liquidacion-porcentaje.schema";
+import type { EstrategiaCotizacionPOOut } from "../../schemas/liquidacion-edificaciones.schema";
 import { formatCurrency, formatEnumLabel } from "../liquidacion-ui";
 import { TarifaDetailSection, type TarifaParam } from "./TarifaDetailSection";
 
+/**
+ * Datos PO que la sección puede leer.
+ *
+ * El wrapper PO compartido no lleva campos de estrategia: se combinan como
+ * opcionales para que Taludes, Impacto Vial y edge (que reutilizan esta
+ * sección vía `getTipoDetalleSection`) no cambien de contrato. Solo
+ * Edificaciones las trae.
+ *
+ * `valor_declarado` se relaja a nullable porque en Edificaciones con
+ * TOTAL_EXPLICITO es NULL (el total final es el dato autoritativo) y el
+ * wrapper compartido lo declara obligatorio.
+ */
+export type EdificacionesDetalleDatos = Omit<
+  PorcentajeObraDatosOut,
+  "valor_declarado"
+> & {
+  valor_declarado?: number | null;
+} & Partial<EstrategiaCotizacionPOOut>;
+
 interface Props {
-  liquidacionTipo: PorcentajeObraDatosOut;
+  liquidacionTipo: EdificacionesDetalleDatos;
 }
 
 const getTipoTramiteLabel = (value: string | null | undefined): string => {
@@ -36,6 +56,10 @@ const getTipoTramiteLabel = (value: string | null | undefined): string => {
  * modal. Delegates the entire layout to the shared `TarifaDetailSection`
  * wrapper — it provides the header, trámite chip, params grid and fallback
  * text uniformly across the 6 liquidation tipos.
+ *
+ * Los motores sin estrategia (Taludes, Impacto Vial, edge) no pasan ningún
+ * campo de estrategia: el bloque de contexto simplemente no se renderiza y su
+ * contrato de UI queda intacto.
  */
 export function LiquidacionDetalleEdificacionesSection({
   liquidacionTipo: lt,

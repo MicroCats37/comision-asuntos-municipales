@@ -8,10 +8,11 @@ import {
 } from "@/components/ui/tooltip";
 import { formatDecimalPercent } from "@/utils/number-formatter";
 import { formatCurrency } from "../components/liquidacion-ui";
+import type { EdificacionesPorcentajeObraDatosOut } from "../schemas/liquidacion-edificaciones.schema";
 import type { PorcentajeObraDatosOut } from "../schemas/liquidacion-porcentaje.schema";
 
 interface TarifaCellProps {
-  lt: PorcentajeObraDatosOut;
+  lt: PorcentajeObraDatosOut | EdificacionesPorcentajeObraDatosOut;
 }
 
 /**

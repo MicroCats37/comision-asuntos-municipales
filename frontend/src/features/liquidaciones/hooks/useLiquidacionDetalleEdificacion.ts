@@ -5,9 +5,9 @@
  */
 import { useApiQuery } from "@/hooks";
 import {
-  type LiquidacionEdificacionOut,
-  liquidacionEdificacionOutResponseSchema,
-} from "../schemas/liquidacion-detail.schemas";
+  liquidacionEdificacionesDetalleResponseSchema,
+  type LiquidacionEdificacionesDetalleItem,
+} from "../schemas/liquidacion-edificaciones.schema";
 
 interface UseLiquidacionDetalleEdificacionProps {
   id: string;
@@ -21,9 +21,11 @@ export function useLiquidacionDetalleEdificacion({
   const query = useApiQuery({
     queryKey,
     url: id ? `/liquidaciones/edificaciones/${id}` : null,
-    schema: liquidacionEdificacionOutResponseSchema,
+    // Schema PROPIO de Edificaciones: conserva estrategia, snapshots y
+    // acumulación. El wrapper PO compartido no se toca (Taludes / IV / edge).
+    schema: liquidacionEdificacionesDetalleResponseSchema,
     queryOptions: {
-      select: (response): LiquidacionEdificacionOut | null => {
+      select: (response): LiquidacionEdificacionesDetalleItem | null => {
         return response.data ?? null;
       },
       enabled: !!id,

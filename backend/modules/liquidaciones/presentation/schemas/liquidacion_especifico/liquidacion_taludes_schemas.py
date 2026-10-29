@@ -13,6 +13,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     ContactoInlineSchema,
     LiquidacionGeneralOutput,
     LiquidacionGeneralRevisionIn,
+    NumeroRevisionRequeridoMixin,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
     LiquidacionPorcentajeObraIn,
@@ -29,8 +30,8 @@ class LiquidacionTipoOutput(BaseSchema):
     numero: Optional[int] = Field(None, description="Número secuencial correlativo de la especialidad")
 
 
-class LiquidacionTaludesInput(BaseSchema):
-    """Input: 2 wrappers."""
+class LiquidacionTaludesInput(NumeroRevisionRequeridoMixin):
+    """Input: 2 wrappers + número de revisión."""
     liquidacion_general: LiquidacionGeneralRevisionIn
     liquidacion_especifica: LiquidacionPorcentajeObraIn
 
@@ -79,10 +80,10 @@ class LiquidacionTaludesCotizarOutput(BaseSchema):
     total: Decimal
 
 
-class LiquidacionTaludesRelacionadaInput(BaseSchema):
+class LiquidacionTaludesRelacionadaInput(NumeroRevisionRequeridoMixin):
     """
-    Input para /relacionada — crea una nueva liquidacion con numero_revision=1
-    vinculada a una liquidacion previa existente.
+    Input para /relacionada — crea una nueva liquidacion vinculada a una
+    liquidacion previa existente, con el número de revisión elegido por el usuario.
 
     Usa la misma estructura que primera-revision (full input) más el
     liquidacion_previa_id para establecer la relación de grupo.
@@ -92,10 +93,10 @@ class LiquidacionTaludesRelacionadaInput(BaseSchema):
     liquidacion_especifica: LiquidacionPorcentajeObraIn
 
 
-class LiquidacionTaludesNuevaRevisionInput(BaseSchema):
+class LiquidacionTaludesNuevaRevisionInput(NumeroRevisionRequeridoMixin):
     """
-    Input para /nueva-revision — crea la siguiente revisión impar (1→3→5)
-    vinculada a una liquidación previa existente.
+    Input para /nueva-revision — crea una nueva revisión vinculada a una liquidación
+    previa existente, con el número de revisión elegido por el usuario (1, 3 o 5).
     """
     liquidacion_previa_id: uuid.UUID
     liquidacion_general: "LiquidacionTaludesGeneralNuevaRevisionIn"

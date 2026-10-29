@@ -13,6 +13,11 @@ export type M2FormData = HabilitacionUrbanaFormData | MecanicaSuelosFormData;
 
 /**
  * Builds the liquidacion_general section for M2 edit payloads.
+ *
+ * `numero_revision` viaja dentro del bloque `liquidacion_general` (contrato
+ * backend `LiquidacionPatchM2GeneralIn` = `NumeroRevisionOpcionalMixin`): es
+ * opcional para el backend, pero el formulario siempre lo manda porque el
+ * campo es editable.
  */
 export function buildM2GeneralPayload(
   data: M2FormData,
@@ -30,6 +35,7 @@ export function buildM2GeneralPayload(
     entidad_tipo_documento,
     entidad_numero_documento,
     entidad_razon_social,
+    numero_revision,
   } = data;
 
   const generalFields: Record<string, unknown> = {};
@@ -40,6 +46,8 @@ export function buildM2GeneralPayload(
   if (denominacion !== undefined)
     generalFields.denominacion_de_proyecto = denominacion;
   if (contacto !== undefined) generalFields.contacto = contacto;
+  if (numero_revision !== undefined)
+    generalFields.numero_revision = numero_revision;
 
   const proyectoFields: Record<string, unknown> = {};
   if (nombre_propietario !== undefined)

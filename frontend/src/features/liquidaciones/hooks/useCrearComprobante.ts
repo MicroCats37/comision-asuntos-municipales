@@ -10,7 +10,9 @@
  *   el item con id matching usando setQueriesData con stale key filtering.
  * - Detalle ['liquidaciones', 'generales', 'detail', liquidacionId]: se reemplaza
  *   el item completo con los datos del response.
- * - Invalidate de ultimas-revisiones como fallback seguro.
+ *
+ * No hay namespace de cache "ultimas-revisiones": ese endpoint fue retirado
+ * del backend y no existe una revisión canónica por proyecto.
  *
  * No faz parte del modal UI (Phase D).
  */
@@ -114,10 +116,11 @@ export function useCrearComprobante({
         },
       );
 
-      // ── 3. Invalidate ultimas-revisiones as safe fallback ─────────────────
-      queryClient.invalidateQueries({
-        queryKey: ["liquidaciones", "generales", "ultimas-revisiones"],
-      });
+      // ── 3. Sin invalidate de "ultimas-revisiones" ─────────────────────────
+      //Ese namespace de cache ya no existe: el backend retiró el endpoint
+      // `GET /liquidaciones/generales/ultimas-revisiones` y el modelo de datos
+      // no tiene una revisión canónica por proyecto. El listado general es el
+      // paginado completo y ya fue parcheado arriba.
 
       onSuccess?.(updatedLiquidacion);
     },

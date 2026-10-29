@@ -33,15 +33,10 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
     LiquidacionEdificacionesOutput,
     LiquidacionEdificacionesCotizarInput,
     LiquidacionEdificacionesCotizarOutput,
+    LiquidacionEdificacionesCotizarEdicionIn,
     LiquidacionEdificacionesNuevaRevisionInput,
     LiquidacionEdificacionesRelacionadaInput,
-)
-from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_patch_po_schemas import (
-    LiquidacionPatchPOIn,
-    LiquidacionPatchPOWrapperIn,
-)
-from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_cotizar_edicion_schemas import (
-    CotizarEdicionPOWrapperIn,
+    LiquidacionEdificacionesPatchIn,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.po_edge_schemas import (
     POEdgeIn,
@@ -150,7 +145,7 @@ class LiquidacionEdificacionesController:
     def actualizar_calculo(
         self,
         liquidacion_id: uuid.UUID,
-        data: LiquidacionPatchPOWrapperIn,
+        data: LiquidacionEdificacionesPatchIn,
     ):
         """
         PATCH recalculation of PO calculation inputs.
@@ -160,6 +155,8 @@ class LiquidacionEdificacionesController:
         2. Flat (legacy): { valor_declarado: ..., tarifas: [...] }
 
         Both general and tipo fields can be updated in one call.
+        `liquidacion_tipo.estrategia_cotizacion` transiciona la estrategia de
+        cotización (si se omite, se conserva la persistida).
         Solo editable cuando estado == PENDIENTE. PAGADA bloquea toda la edición.
         """
         # Extract wrapper data if present
@@ -236,41 +233,6 @@ class LiquidacionEdificacionesController:
         result = self.presenter.present_primera_revision(domain_result)
         return success_response(result, message="Liquidación relacionada de edificación creada correctamente.")
 
-    @route.get(
-        "/ultima-revision",
-        response={200: ApiResponse[PaginatedData[LiquidacionEdificacionesOutput]]},
-    )
-    def obtener_ultima_revision(
-        self,
-        page: int = Query(default=1, ge=1, description="Page number"),
-        page_size: int = Query(default=10, ge=1, le=100, description="Items per page"),
-        razon_social: str = Query(default=None, description="Filter by entidad razon_social (icontains)"),
-        numero_documento: str = Query(default=None, description="Filter by entidad numero_documento"),
-        numero: int = Query(default=None, description="Filter by edificacion numero (exact)"),
-        fecha_desde: date = Query(default=None, description="Filter by fecha_registro >= date"),
-        fecha_hasta: date = Query(default=None, description="Filter by fecha_registro <= date"),
-    ):
-        """
-        Returns a paginated list of the latest revision per project for Edificaciones.
-        Each item is the liquidacion with the highest numero_revision for a proyecto.
-        """
-        liquidaciones, total = self.orchestrator.obtener_ultima_revision_proceso(
-            page=page,
-            page_size=page_size,
-            razon_social=razon_social,
-            numero_documento=numero_documento,
-            numero=numero,
-            fecha_desde=fecha_desde,
-            fecha_hasta=fecha_hasta,
-        )
-        result = self.presenter.present_list(
-            liquidaciones=liquidaciones,
-            total=total,
-            page=page,
-            page_size=page_size,
-        )
-        return success_response(result)
-
     @route.post(
         "/cotizar",
         response={200: ApiResponse[LiquidacionEdificacionesCotizarOutput]},
@@ -279,13 +241,13 @@ class LiquidacionEdificacionesController:
     def cotizar(self, payload: LiquidacionEdificacionesCotizarInput):
         """
         Calculates a quote for Edificaciones liquidacion WITHOUT persisting.
-        """
-        le = payload.liquidacion_especifica
-        valor_declarado = le.datos.valor_declarado
 
+        The strategy (union discriminado) travels inside liquidacion_especifica:
+        the orchestrator resolves the context and the unique PO engine produces
+        the same figures that the first-revision flow will persist.
+        """
         domain_result = self.orchestrator.cotizar_proceso(
-            valor_declarado=valor_declarado,
-            tarifas_input=le.tarifas,
+            estrategia_in=payload.liquidacion_especifica,
         )
 
         presented = self.presenter.present_cotizacion(domain_result)
@@ -295,7 +257,7 @@ class LiquidacionEdificacionesController:
         "/{uuid:liquidacion_id}/cotizar-edicion",
         response={200: ApiResponse[LiquidacionEdificacionesCotizarOutput]},
     )
-    def cotizar_edicion(self, liquidacion_id: uuid.UUID, payload: CotizarEdicionPOWrapperIn):
+    def cotizar_edicion(self, liquidacion_id: uuid.UUID, payload: LiquidacionEdificacionesCotizarEdicionIn):
         """
         Read-only quote preview for editing an existing Edificaciones liquidacion.
 
@@ -303,6 +265,8 @@ class LiquidacionEdificacionesController:
         existing liquidacion's fecha_registro. Does NOT persist any changes.
 
         The route IS the type discriminator — no motor or tipo_liquidacion in body.
+        `liquidacion_tipo` es la union discriminado de estrategias de Edificaciones:
+        el preview usa el MISMO motor que el guardado.
         """
         domain_result = self.orchestrator.cotizar_edicion_proceso(
             liquidacion_id=liquidacion_id,

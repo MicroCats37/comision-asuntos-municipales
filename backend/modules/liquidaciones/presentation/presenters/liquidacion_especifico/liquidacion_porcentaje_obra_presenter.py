@@ -35,14 +35,18 @@ from core.pagination import PaginatedData
 class LiquidacionPorcentajeObraPresenter:
     """
     Base presenter for PorcentajeObra motor.
-    
+
     Subclasses define OUTPUT_SCHEMA and COTIZAR_OUTPUT_SCHEMA class attributes.
     """
-    
+
     # Subclasses must override these
     OUTPUT_SCHEMA: ClassVar = None
     COTIZAR_OUTPUT_SCHEMA: ClassVar = None
     COTIZAR_DETALLE_SCHEMA: ClassVar = None
+    # Schema del wrapper de cálculo. Los motores que exponen datos de estrategia
+    # (Edificaciones) lo sobrescriben con su propia variante tipada; el resto
+    # (Taludes, Impacto Vial) conservan el wrapper PO compartido sin cambios.
+    TIPO_DATOS_SCHEMA: ClassVar = LiquidacionPorcentajeObraDatosOut
 
     @staticmethod
     def _map_especialidad(especialidad) -> EspecialidadOut | None:
@@ -52,7 +56,42 @@ class LiquidacionPorcentajeObraPresenter:
             id=uuid.UUID(especialidad.id),
             nombre=especialidad.nombre or "",
         )
-    
+
+    @classmethod
+    def _build_tipo_datos_out(cls, tipo, extra: dict | None = None):
+        """
+        Construye el wrapper de cálculo (liquidacion_tipo) a partir del DTO de dominio.
+
+        `extra` permite a los motores con información propia (Estrategia PO)
+        ampliar el wrapper sin duplicar el mapeo: se aplica al final y sólo
+        contiene claves declaradas por `cls.TIPO_DATOS_SCHEMA`.
+        """
+        datos = {
+            "id": uuid.UUID(tipo.id),
+            "valor_declarado": tipo.valor_declarado,
+            "porcentaje_liquidacion": tipo.porcentaje_liquidacion,
+            "tipo_tramite": tipo.tipo_tramite,
+            "derecho_minimo": tipo.derecho_minimo,
+            "derecho_maximo": tipo.derecho_maximo,
+            "porcentaje_minimo_uit": tipo.porcentaje_minimo_uit,
+            "derecho_aplicado_id": uuid.UUID(tipo.derecho_aplicado_id) if tipo.derecho_aplicado_id else None,
+            "tarifa_aplicada_id": None,
+            "detalles": [
+                LiquidacionPorcentajeObraDetalleOut(
+                    id=uuid.UUID(d.id),
+                    tarifa_aplicada_id=uuid.UUID(d.tarifa_aplicada_id) if d.tarifa_aplicada_id else None,
+                    especialidad_id=uuid.UUID(d.especialidad.id),
+                    especialidad=cls._map_especialidad(d.especialidad),
+                    porcentaje_aplicado=d.porcentaje_aplicado,
+                    subtotal=d.subtotal,
+                )
+                for d in tipo.detalles
+            ],
+        }
+        if extra:
+            datos.update(extra)
+        return cls.TIPO_DATOS_SCHEMA(**datos)
+
     @classmethod
     def present_primera_revision(cls, domain_result: LiquidacionEspecificaPrimeraRevisionResult):
         """
@@ -69,28 +108,7 @@ class LiquidacionPorcentajeObraPresenter:
             numero=especifica.numero,
         )
 
-        tipo_datos_out = LiquidacionPorcentajeObraDatosOut(
-            id=uuid.UUID(tipo.id),
-            valor_declarado=tipo.valor_declarado,
-            porcentaje_liquidacion=tipo.porcentaje_liquidacion,
-            tipo_tramite=tipo.tipo_tramite,
-            derecho_minimo=tipo.derecho_minimo,
-            derecho_maximo=tipo.derecho_maximo,
-            porcentaje_minimo_uit=tipo.porcentaje_minimo_uit,
-            derecho_aplicado_id=uuid.UUID(tipo.derecho_aplicado_id) if tipo.derecho_aplicado_id else None,
-            tarifa_aplicada_id=None,
-            detalles=[
-                LiquidacionPorcentajeObraDetalleOut(
-                    id=uuid.UUID(d.id),
-                    tarifa_aplicada_id=uuid.UUID(d.tarifa_aplicada_id) if d.tarifa_aplicada_id else None,
-                    especialidad_id=uuid.UUID(d.especialidad.id),
-                    especialidad=cls._map_especialidad(d.especialidad),
-                    porcentaje_aplicado=d.porcentaje_aplicado,
-                    subtotal=d.subtotal,
-                )
-                for d in tipo.detalles
-            ],
-        )
+        tipo_datos_out = cls._build_tipo_datos_out(tipo)
 
         return cls.OUTPUT_SCHEMA(
             liquidacion_general=general_out,
@@ -99,18 +117,21 @@ class LiquidacionPorcentajeObraPresenter:
         )
 
     @classmethod
-    def present_cotizacion(cls, domain_result: CotizacionPorcentajeObraResult):
+    def _build_cotizacion_out(cls, domain_result: CotizacionPorcentajeObraResult, extra: dict | None = None):
         """
-        Maps CotizacionPorcentajeObraResult to tipo-specific CotizarOutputSchema.
+        Construye el wrapper de cotización (preview) a partir del DTO de dominio.
+
+        `extra` permite ampliar el wrapper con datos propios del motor sin
+        duplicar el mapeo.
         """
-        return cls.COTIZAR_OUTPUT_SCHEMA(
-            valor_declarado=domain_result.valor_declarado,
-            porcentaje_liquidacion=domain_result.porcentaje_liquidacion,
-            derecho_minimo=domain_result.derecho_minimo,
-            derecho_maximo=domain_result.derecho_maximo,
-            porcentaje_minimo_uit=domain_result.porcentaje_minimo_uit,
-            derecho_aplicado_id=uuid.UUID(domain_result.derecho_aplicado_id) if domain_result.derecho_aplicado_id else None,
-            detalles=[
+        datos = {
+            "valor_declarado": domain_result.valor_declarado,
+            "porcentaje_liquidacion": domain_result.porcentaje_liquidacion,
+            "derecho_minimo": domain_result.derecho_minimo,
+            "derecho_maximo": domain_result.derecho_maximo,
+            "porcentaje_minimo_uit": domain_result.porcentaje_minimo_uit,
+            "derecho_aplicado_id": uuid.UUID(domain_result.derecho_aplicado_id) if domain_result.derecho_aplicado_id else None,
+            "detalles": [
                 cls.COTIZAR_DETALLE_SCHEMA(
                     tarifa_id=uuid.UUID(d.tarifa_id) if d.tarifa_id else None,
                     especialidad=cls._map_especialidad(d.especialidad),
@@ -119,9 +140,19 @@ class LiquidacionPorcentajeObraPresenter:
                 )
                 for d in domain_result.detalles
             ],
-            total_subtotal=domain_result.total_subtotal,
-            total=domain_result.total,
-        )
+            "total_subtotal": domain_result.total_subtotal,
+            "total": domain_result.total,
+        }
+        if extra:
+            datos.update(extra)
+        return cls.COTIZAR_OUTPUT_SCHEMA(**datos)
+
+    @classmethod
+    def present_cotizacion(cls, domain_result: CotizacionPorcentajeObraResult):
+        """
+        Maps CotizacionPorcentajeObraResult to tipo-specific CotizarOutputSchema.
+        """
+        return cls._build_cotizacion_out(domain_result)
 
     @classmethod
     def present_list(

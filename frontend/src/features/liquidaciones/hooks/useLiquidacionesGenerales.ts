@@ -2,6 +2,12 @@
  * Hook para listar liquidaciones GENERALES (cualquier tipo) — para búsqueda de previa.
  * Endpoint: GET /liquidaciones/generales/
  * Devuelve PaginatedData[LiquidacionGeneralOutput] con tipo_liquidacion.
+ *
+ * El listado es el paginado COMPLETO: ya no existe el modo "ultimas
+ * revisiones" (`GET /liquidaciones/generales/ultimas-revisiones` fue retirado
+ * del backend y el modelo de datos no tiene una revisión canónica por
+ * proyecto). Los números de revisión son etiquetas editables y pueden
+ * repetirse entre hermanos: el listado los muestra tal cual.
  */
 
 import { z } from "zod";
@@ -13,6 +19,7 @@ import {
   LiquidacionTipoOutputSchema,
   paginatedResponseSchema,
 } from "../schemas/liquidacion-base.schema";
+import { GENERALES_TODAS_SUFFIX } from "./cache";
 
 /**
  * Schema for a general list item — wraps LiquidacionGeneralOutput alongside
@@ -152,8 +159,6 @@ interface UseLiquidacionesGeneralesProps {
   /** Filter by liquidacion numero (autoincremental per type, independent sequences across types) */
   numero?: number;
   enabled?: boolean;
-  /** true → usa GET /ultimas-revisiones (solo la última revisión por proyecto+tipo) */
-  soloUltimasRevisiones?: boolean;
 }
 
 export function useLiquidacionesGenerales({
@@ -163,7 +168,6 @@ export function useLiquidacionesGenerales({
   propietario,
   numero,
   enabled = true,
-  soloUltimasRevisiones = false,
 }: UseLiquidacionesGeneralesProps = {}) {
   const { page, pageSize, setPage, setPageSize, resetPagination } =
     useUrlPagination();
@@ -184,7 +188,7 @@ export function useLiquidacionesGenerales({
     queryKey: [
       "liquidaciones",
       "generales",
-      soloUltimasRevisiones ? "ultimas-revisiones" : "todas",
+      GENERALES_TODAS_SUFFIX,
       page,
       pageSize,
       tipo,
@@ -193,9 +197,7 @@ export function useLiquidacionesGenerales({
       propietario,
       numero,
     ],
-    url: soloUltimasRevisiones
-      ? "/liquidaciones/generales/ultimas-revisiones"
-      : "/liquidaciones/generales/",
+    url: "/liquidaciones/generales/",
     schema: paginatedSchema,
     params,
     queryOptions: {

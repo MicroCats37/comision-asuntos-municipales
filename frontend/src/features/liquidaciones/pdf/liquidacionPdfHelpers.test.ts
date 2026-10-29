@@ -92,6 +92,132 @@ describe("buildExtraFieldRows", () => {
   });
 });
 
+describe("buildExtraFieldRows — contexto interno PO", () => {
+  function edificacionItem(
+    liquidacion_tipo: PdfLiquidacionItem["liquidacion_tipo"],
+  ): PdfLiquidacionItem {
+    const item = baseItem();
+    item.liquidacion_tipo = liquidacion_tipo;
+    return item;
+  }
+
+  it("oculta estrategia, H y porcentaje de tarifa en Edificaciones", () => {
+    const rows = buildExtraFieldRows(
+      edificacionItem({
+        valor_declarado: 1_000_000,
+        porcentaje_liquidacion: 0.0015,
+        estrategia_cotizacion: "TARIFA_HABILITADAS_PARTICIPANTES",
+        count_habilitadas: 3,
+        porcentaje_tarifa: 0.0005,
+      }),
+      "edificacion",
+    );
+
+    const labels = rows.map(([label]) => label);
+    expect(labels).not.toContain("ESTRATEGIA");
+    expect(labels).not.toContain("HABILITADAS");
+    expect(labels).not.toContain("% TARIFA");
+  });
+
+  it("omite H y % de tarifa en NORMAL_SELECCIONADAS (el padre cobra las seleccionadas)", () => {
+    const rows = buildExtraFieldRows(
+      edificacionItem({
+        valor_declarado: 1_000_000,
+        porcentaje_liquidacion: 0.001,
+        estrategia_cotizacion: "NORMAL_SELECCIONADAS",
+        count_habilitadas: 3,
+        porcentaje_tarifa: 0.0005,
+      }),
+      "edificacion",
+    );
+
+    const labels = rows.map(([label]) => label);
+    expect(labels).not.toContain("ESTRATEGIA");
+    expect(labels).not.toContain("HABILITADAS");
+    expect(labels).not.toContain("% TARIFA");
+    expect(labels).not.toContain("ACUMULACION");
+  });
+
+  it("oculta la acumulación de Edificaciones", () => {
+    const rows = buildExtraFieldRows(
+      edificacionItem({
+        estrategia_cotizacion: "TARIFA_HABILITADAS_PARTICIPANTES",
+        count_habilitadas: 3,
+        porcentaje_tarifa: 0.0005,
+        acumulacion: {
+          porcentaje_acumulado: 0.001,
+          subtotal_acumulado: 1000,
+        },
+      }),
+      "edificacion",
+    );
+
+    const acumulacion = rows.find(([label]) => label === "ACUMULACION");
+    expect(acumulacion).toBeUndefined();
+  });
+
+  it("oculta la acumulación de TOTAL_EXPLICITO", () => {
+    const rows = buildExtraFieldRows(
+      edificacionItem({
+        estrategia_cotizacion: "TOTAL_EXPLICITO",
+        count_habilitadas: 3,
+        acumulacion: {
+          porcentaje_acumulado: null,
+          subtotal_acumulado: 100,
+        },
+      }),
+      "edificacion",
+    );
+
+    const acumulacion = rows.find(([label]) => label === "ACUMULACION");
+    expect(acumulacion).toBeUndefined();
+  });
+
+  it("no agrega filas de estrategia a Taludes ni Impacto Vial", () => {
+    const item = edificacionItem({
+      valor_declarado: 1_000_000,
+      porcentaje_liquidacion: 0.001,
+      estrategia_cotizacion: "TARIFA_HABILITADAS_PARTICIPANTES",
+      count_habilitadas: 3,
+      porcentaje_tarifa: 0.0005,
+      acumulacion: {
+        porcentaje_acumulado: 0.001,
+        subtotal_acumulado: 1000,
+      },
+    });
+
+    for (const tipo of ["taludes", "impacto-vial"] as const) {
+      const rows = buildExtraFieldRows(item, tipo);
+      const labels = rows.map(([label]) => label);
+      expect(labels).toContain("VALOR DE OBRA");
+      expect(labels).toContain("PORCENTAJE");
+      expect(labels).not.toContain("ESTRATEGIA");
+      expect(labels).not.toContain("HABILITADAS");
+      expect(labels).not.toContain("% TARIFA");
+      expect(labels).not.toContain("ACUMULACION");
+    }
+  });
+
+  it("no altera las filas del motor de visitas ni del motor m2", () => {
+    const item = edificacionItem({
+      estrategia_cotizacion: "NORMAL_SELECCIONADAS",
+      cantidad_visitas: 3,
+      porcentaje_uit: 0.05,
+    });
+
+    const visitas = buildExtraFieldRows(item, "inspeccion-obra").map(
+      ([label]) => label,
+    );
+    expect(visitas).toContain("CANTIDAD DE VISITAS");
+    expect(visitas).not.toContain("ESTRATEGIA");
+
+    const m2 = buildExtraFieldRows(item, "habilitacion-urbana").map(
+      ([label]) => label,
+    );
+    expect(m2).not.toContain("ESTRATEGIA");
+  });
+});
+
 describe("buildLiquidacionPdfDom", () => {
   function render(item: PdfLiquidacionItem, tipo: PdfTipoSlug): HTMLElement {
     const host = document.createElement("div");
@@ -167,5 +293,45 @@ describe("buildLiquidacionPdfDom", () => {
     // La caja fusionada ya no está en el header.
     const header = host.querySelector("[data-pdf-host] > div > div");
     expect(header?.textContent).not.toContain("COMPROBANTE DE PAGO");
+  });
+
+  it("mantiene el recibo de Edificaciones sin contexto interno", () => {
+    const item = baseItem();
+    item.liquidacion_tipo = {
+      valor_declarado: 1_000_000,
+      porcentaje_liquidacion: 0.0015,
+      estrategia_cotizacion: "TARIFA_HABILITADAS_PARTICIPANTES",
+      count_habilitadas: 3,
+      porcentaje_tarifa: 0.0005,
+      acumulacion: {
+        porcentaje_acumulado: 0.001,
+        subtotal_acumulado: 1000,
+      },
+    };
+
+    const host = render(item, "edificacion");
+    const texto = host.textContent ?? "";
+
+    expect(texto).toContain("VALOR DE OBRA");
+    expect(texto).toContain("PORCENTAJE");
+    expect(texto).not.toContain("ESTRATEGIA");
+    expect(texto).not.toContain("HABILITADAS");
+    expect(texto).not.toContain("% TARIFA");
+    expect(texto).not.toContain("ACUMULACION");
+  });
+
+  it("mantiene el recibo de Taludes sin contexto de estrategia", () => {
+    const item = baseItem();
+    item.liquidacion_tipo = {
+      valor_declarado: 1_000_000,
+      porcentaje_liquidacion: 0.001,
+    };
+
+    const host = render(item, "taludes");
+    const texto = host.textContent ?? "";
+
+    expect(texto).toContain("PORCENTAJE");
+    expect(texto).not.toContain("ESTRATEGIA");
+    expect(texto).not.toContain("ACUMULACION");
   });
 });

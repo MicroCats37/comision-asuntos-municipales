@@ -4,7 +4,7 @@
  *
  * Usa el chrome compartido `LiquidacionesListContent` (URL state,
  * view toggle, pagination, cards/table). Los modales viven como siblings:
- * - Form modals son específicos de Edificaciones (Nueva / Tercera revisión).
+ * - Form modals son específicos de Edificaciones (Nueva / Nueva revisión).
  * - Detail / delegados / edit / comprobante modals están LIFTED para ser
  *   disparados desde la columna Actions de la vista Tabla. En Cards, los
  *   modales viven dentro de cada card y la state lifted nunca se activa.

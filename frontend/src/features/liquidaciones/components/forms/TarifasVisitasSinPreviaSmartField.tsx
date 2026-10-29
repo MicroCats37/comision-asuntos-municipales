@@ -28,6 +28,7 @@ import { useDebounce } from "@/hooks/system/useDebounce";
 import { useLatestRequestGuard } from "@/hooks/system/useLatestRequestGuard";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { formatCurrencyTrimmed } from "@/utils/number-formatter";
 import { useTarifasVigentesVisitas } from "../../hooks/useTarifasVigentes";
 
 interface CotizacionVisitasOutput {
@@ -56,7 +57,7 @@ const toNumber = (value: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 const formatSoles = (value: unknown): string =>
-  `S/ ${toNumber(value).toFixed(2)}`;
+  formatCurrencyTrimmed(toNumber(value), 2);
 
 const normalizeCategoria = (cat: string): string => {
   if (["C1", "C2", "C3", "C4"].includes(cat)) return cat.slice(1);

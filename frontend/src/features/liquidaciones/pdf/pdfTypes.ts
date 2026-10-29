@@ -51,8 +51,8 @@ export interface PdfLiquidacionItem {
     numero?: number;
   };
   liquidacion_tipo: {
-    valor_declarado?: number;
-    porcentaje_liquidacion?: number;
+    valor_declarado?: number | null;
+    porcentaje_liquidacion?: number | null;
     area_m2?: number;
     costo_por_m2?: number;
     cantidad_visitas?: number;
@@ -61,6 +61,23 @@ export interface PdfLiquidacionItem {
     categoria?: string;
     derecho_minimo?: number;
     derecho_maximo?: number;
+    // ── Estrategia PO (SOLO Edificaciones) ────────────────────────────────
+    // Taludes, Impacto Vial, edge y legacy NUNCA traen estos campos: el
+    // wrapper PO compartido del backend no los expone.
+    /** Estrategia persistida: NORMAL_SELECCIONADAS, TARIFA_HABILITADAS_PARTICIPANTES o TOTAL_EXPLICITO. */
+    estrategia_cotizacion?: string | null;
+    /** Snapshot de H (habilitadas del catálogo en la fecha efectiva). */
+    count_habilitadas?: number | null;
+    /** Total final autoritativo persistido (TOTAL_EXPLICITO). */
+    total_explicito?: number | null;
+    /** Snapshot del porcentaje unitario (f) de la tarifa aplicada. */
+    porcentaje_tarifa?: number | null;
+    /** Proyección informativa de la diferencia padre - detalles. */
+    acumulacion?: {
+      /** NULL en TOTAL_EXPLICITO: el total es autoritativo. */
+      porcentaje_acumulado?: number | null;
+      subtotal_acumulado?: number;
+    } | null;
     inspectores?: {
       id?: string;
       inspector_id?: string;

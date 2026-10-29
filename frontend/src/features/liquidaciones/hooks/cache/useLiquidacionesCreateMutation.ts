@@ -6,11 +6,14 @@
  *
  * El id canónico se extrae como item.liquidacion_general.id.
  *
- * Comportamiento en onSuccess:
- * 1. Inserta el item en la lista tipo-específica (página 1, sin filtros)
- * 2. Inserta el item en la lista general "todas" (página 1)
+ * Comportamiento en onSuccess (delegado a `useLiquidacionesCacheUtils`):
+ * 1. Inserta/actualiza el item en la lista tipo-específica (página 1)
+ * 2. Inserta/actualiza el item en la lista general "todas" (página 1)
  * 3. Hace seed del detalle tipo-específico: ["liquidaciones", tipoKey, id]
  * 4. Hace seed del detalle general: ["liquidaciones", "generales", id]
+ *
+ * NUNCA elimina registros existentes: ni la previa seleccionada ni sus
+ * hermanos. Si el id ya está en la lista, se actualiza en su lugar.
  *
  * No hace invalidateQueries — toda la actualización es manual.
  */
@@ -19,7 +22,6 @@ import {
   type MutationFunction,
   type UseMutationOptions,
   useMutation,
-  useQueryClient,
 } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import type { ZodType } from "zod";
@@ -56,31 +58,10 @@ interface LiquidacionCreateResponse {
 /**
  * Hook de creación para liquidaciones con cache manual reactivo.
  *
- * Para nueva-revision/relacionada con lógica de ultimas-revisiones, usar
- * el refPattern:
- *
- *   const previousIdRef = useRef<string>();
- *   const mutation = useLiquidacionesCreateMutation({ tipoQueryKey, url });
- *   const cacheUtils = useLiquidacionesCacheUtils();
- *
- *   const crearMutation = useMemo(() => ({
- *     ...mutation,
- *     mutate: (data, previousId) => {
- *       previousIdRef.current = previousId;
- *       mutation.mutate(data);
- *     },
- *     mutateAsync: async (data, previousId) => {
- *       previousIdRef.current = previousId;
- *       return mutation.mutateAsync(data);
- *     },
- *   }), [mutation]);
- *
- *   // En options.onSuccess del mutation:
- *   // afterSuccess: (wrapper) => {
- *   //   if (previousIdRef.current) {
- *   //     cacheUtils.replaceLatestRevision(wrapper, { tipoKey, previousId: previousIdRef.current });
- *   //   }
- *   // }
+ * Para nueva-revisión / relacionada NO hace falta ningún `onSuccess` propio:
+ * el `onSuccess` interno ya inserta o actualiza la liquidación devuelta en las
+ * listas visibles y en los detalles, SIN eliminar la previa seleccionada ni sus
+ * hermanos (el modelo ya no tiene "revisión canónica").
  *
  * @example
  * const mutation = useLiquidacionesCreateMutation({
@@ -98,9 +79,7 @@ export function useLiquidacionesCreateMutation<TVars = unknown>({
   insertPosition = "start",
   options,
 }: UseLiquidacionesCreateMutationOptions<TVars>) {
-  const queryClient = useQueryClient();
   const cacheUtils = useLiquidacionesCacheUtils();
-
   const internalMutationFn: MutationFunction<unknown, TVars> = url
     ? async (variables) => {
         try {
@@ -138,81 +117,13 @@ export function useLiquidacionesCreateMutation<TVars = unknown>({
         return;
       }
 
-      const wrapperId = cacheUtils.getWrapperId(newItem);
-
-      // ── 1) Lista tipo-específica paginada ──────────────────────────────────
-      // El cache de useApiQuery guarda el envelope ApiResponse: { success, data: { items, total, page, ... } }.
-      // Los updaters deben leer/escribir a través de `old.data.items` para que la preprenda
-      // se refleje en la lista. El display layer (useLiquidacionList) ya desenvuelve `apiData.data`,
-      // así que solo cambia la forma de lo escrito en cache.
-      queryClient.setQueriesData<{
-        success?: boolean;
-        data: {
-          items: LiquidacionWrapper[];
-          total: number;
-          total_pages?: number;
-          page_size?: number;
-          page?: number;
-        } | null;
-      }>({ queryKey: tipoQueryKey }, (old) => {
-        if (!old?.data || !Array.isArray(old.data.items)) return old;
-        const page = old.data.page ?? 1;
-        if (page !== 1) return old;
-        const pageSize = old.data.page_size;
-        const items =
-          insertPosition === "start"
-            ? [newItem, ...old.data.items]
-            : [...old.data.items, newItem];
-        const trimmedItems = pageSize ? items.slice(0, pageSize) : items;
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            items: trimmedItems as LiquidacionWrapper[],
-            total: (old.data.total ?? 0) + 1,
-          },
-        };
+      // ── Listas + detalles ─────────────────────────────────────────────────
+      // Inserción/actualización sin eliminar NUNCA la previa seleccionada ni sus
+      // hermanos: la revisión nueva_convive con la revisión de la que nació.
+      cacheUtils.upsertCreatedItem(newItem, {
+        tipoKey: tipoQueryKey[1],
+        position: insertPosition,
       });
-
-      // ── 2) Lista general "todas" ───────────────────────────────────────────
-      const generalesPrefijo = ["liquidaciones", "generales", "todas"] as const;
-      queryClient.setQueriesData<{
-        success?: boolean;
-        data: {
-          items: LiquidacionWrapper[];
-          total: number;
-          total_pages?: number;
-          page_size?: number;
-          page?: number;
-        } | null;
-      }>({ queryKey: generalesPrefijo }, (old) => {
-        if (!old?.data || !Array.isArray(old.data.items)) return old;
-        const page = old.data.page ?? 1;
-        if (page !== 1) return old;
-        const pageSize = old.data.page_size;
-        const items =
-          insertPosition === "start"
-            ? [newItem, ...old.data.items]
-            : [...old.data.items, newItem];
-        const trimmedItems = pageSize ? items.slice(0, pageSize) : items;
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            items: trimmedItems as LiquidacionWrapper[],
-            total: (old.data.total ?? 0) + 1,
-          },
-        };
-      });
-
-      // ── 3) Seed detail tipo-específico ────────────────────────────────────
-      queryClient.setQueryData([...tipoQueryKey, wrapperId], newItem);
-
-      // ── 4) Seed detail general ─────────────────────────────────────────────
-      queryClient.setQueryData(
-        ["liquidaciones", "generales", wrapperId],
-        newItem,
-      );
     },
     ...options,
   });

@@ -9,14 +9,20 @@ Tests cover:
 - Taludes: creating revision 5 from revision 3
 - Taludes: relation key is TALUDES (no tipo_tramite)
 - Taludes: contacto preserved from input
-- Taludes: MAX_REVISIONES exceeded (REV7 rejected)
+- Taludes: MAX_REVISIONES exceeded (REV7 rejected by the input contract)
+- Taludes: duplicate siblings with the same revision number coexist
 - Taludes: previa doesn't exist returns 404
 - Impacto Vial: creating revision 3 from revision 1
 - Impacto Vial: creating revision 5 from revision 3
 - Impacto Vial: relation key is IMPACTO_VIAL (no tipo_tramite)
 - Impacto Vial: contacto preserved from input
-- Impacto Vial: MAX_REVISIONES exceeded (REV7 rejected)
+- Impacto Vial: MAX_REVISIONES exceeded (REV7 rejected by the input contract)
+- Impacto Vial: duplicate siblings with the same revision number coexist
 - Impacto Vial: previa doesn't exist returns 404
+
+The `numero_revision` is always sent by the client and persisted verbatim: the
+backend never derives it from the previa and never rejects a repeated revision
+number (there is no canonical revision).
 
 Fixtures shared via conftest.py: municipalidad, ubigeo_distrito, auth_client,
     igv_vigente, uit_vigente, tipo_taludes, tipo_impacto_vial,
@@ -71,6 +77,7 @@ def valid_tarifa_ids_iv(tarifa_porcentaje_obra_iv, especialidad_impacto_vial):
 def _primera_payload_taludes(municipalidad, valid_distrito_id, valid_tarifa_ids_taludes):
     """Build primera revision payload for Taludes."""
     return {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": str(municipalidad.id),
             "expediente": "EXP-TAL-NUEVA-001",
@@ -110,6 +117,7 @@ def _primera_payload_taludes(municipalidad, valid_distrito_id, valid_tarifa_ids_
 def _primera_payload_iv(municipalidad, valid_distrito_id, valid_tarifa_ids_iv):
     """Build primera revision payload for Impacto Vial."""
     return {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": str(municipalidad.id),
             "expediente": "EXP-IV-NUEVA-001",
@@ -146,18 +154,20 @@ def _primera_payload_iv(municipalidad, valid_distrito_id, valid_tarifa_ids_iv):
     }
 
 
-def _nueva_revision_payload(previa_id, expediente, observacion, tarifas, contacto=None):
+def _nueva_revision_payload(previa_id, expediente, observacion, tarifas, contacto=None, numero_revision=3):
     """
     Build nueva-revision payload (reduced schema for Taludes/IV).
 
     Reduced schema contract:
     - liquidacion_previa_id: ID of the previous liquidacion
+    - numero_revision: the revision chosen by the client (never derived from the previa)
     - liquidacion_general: expediente + observacion (+ optional contacto)
     - liquidacion_especifica: tarifas only (valor_declarado inherited from previa)
     - NO municipalidad_id, proyecto, or datos in nueva revision
     """
     payload = {
         "liquidacion_previa_id": previa_id,
+        "numero_revision": numero_revision,
         "liquidacion_general": {
             "expediente": expediente,
             "observacion": observacion,
@@ -252,7 +262,9 @@ def test_taludes_crear_revision_5_desde_revision_3(
     # Create revision 5
     response_r5 = auth_client.post(
         "/liquidaciones/taludes/nueva-revision",
-        json=_nueva_revision_payload(revision_3_id, "EXP-TAL-NR-003", "Test revision 5", tarifas),
+        json=_nueva_revision_payload(
+            revision_3_id, "EXP-TAL-NR-003", "Test revision 5", tarifas, numero_revision=5,
+        ),
     )
 
     assert response_r5.status_code == 200, f"Revision 5 failed: {response_r5.content}"
@@ -351,7 +363,8 @@ def test_taludes_max_revisiones_excedido(
     valid_distrito_id, valid_tarifa_ids_taludes
 ):
     """
-    Taludes: attempting to create revision 7 (beyond MAX_REVISIONES=5) returns 400.
+    Taludes: attempting to create revision 7 (beyond MAX_REVISIONES=5) is rejected
+    by the input contract (the allowed set {1, 3, 5} and the MAX bound live there).
     """
     payload = _primera_payload_taludes(municipalidad, valid_distrito_id, valid_tarifa_ids_taludes)
     primera = crear_primera_taludes(auth_client, payload)
@@ -372,7 +385,9 @@ def test_taludes_max_revisiones_excedido(
     # Create revision 5
     response_r5 = auth_client.post(
         "/liquidaciones/taludes/nueva-revision",
-        json=_nueva_revision_payload(revision_3_id, "EXP-TAL-NR-003", "Test revision 5", tarifas),
+        json=_nueva_revision_payload(
+            revision_3_id, "EXP-TAL-NR-003", "Test revision 5", tarifas, numero_revision=5,
+        ),
     )
     assert response_r5.status_code == 200
 
@@ -382,6 +397,7 @@ def test_taludes_max_revisiones_excedido(
         "EXP-TAL-NR-004",
         "Test revision 7",
         tarifas,
+        numero_revision=7,
     )
 
     response = auth_client.post(
@@ -389,9 +405,49 @@ def test_taludes_max_revisiones_excedido(
         json=revision_7_payload,
     )
 
-    assert response.status_code == 400, f"Expected 400 for MAX_REVISIONES exceeded, got {response.status_code}"
-    error_data = response.json()
-    assert "MAX_REVISIONES" in str(error_data.get("error", {}).get("details", {}))
+    assert response.status_code == 422, (
+        f"Expected 422 for a revision number above MAX_REVISIONES, got {response.status_code}"
+    )
+
+
+@pytest.mark.django_db
+def test_taludes_hermanos_con_misma_revision_coexisten(
+    auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
+    tarifa_porcentaje_obra_taludes, especialidad_taludes,
+    valid_distrito_id, valid_tarifa_ids_taludes
+):
+    """
+    Taludes: two revisions with the SAME number created from the same previa coexist
+    in the same relation group — repeated revision numbers are legal.
+    """
+    payload = _primera_payload_taludes(municipalidad, valid_distrito_id, valid_tarifa_ids_taludes)
+    primera = crear_primera_taludes(auth_client, payload)
+    primera_id = uuid.UUID(primera["liquidacion_general"]["id"])
+
+    tarifas = [
+        {"tarifa_porcentaje_obra_id": valid_tarifa_ids_taludes[0]["id"], "especialidad_id": valid_tarifa_ids_taludes[0]["esp_id"]},
+    ]
+
+    response_1 = auth_client.post(
+        "/liquidaciones/taludes/nueva-revision",
+        json=_nueva_revision_payload(primera_id, "EXP-TAL-HERMANO-1", "Test hermano 1", tarifas),
+    )
+    assert response_1.status_code == 200, response_1.content
+    hermano_1_id = uuid.UUID(response_1.json()["data"]["liquidacion_general"]["id"])
+
+    response_2 = auth_client.post(
+        "/liquidaciones/taludes/nueva-revision",
+        json=_nueva_revision_payload(primera_id, "EXP-TAL-HERMANO-2", "Test hermano 2", tarifas),
+    )
+    assert response_2.status_code == 200, response_2.content
+    hermano_2_id = uuid.UUID(response_2.json()["data"]["liquidacion_general"]["id"])
+
+    grupo_id = LiquidacionRelacionMiembro.objects.get(liquidacion_id=primera_id).grupo_id
+    miembros = LiquidacionRelacionMiembro.objects.filter(grupo_id=grupo_id)
+    assert miembros.count() == 3
+    assert hermano_1_id in set(miembros.values_list("liquidacion_id", flat=True))
+    assert hermano_2_id in set(miembros.values_list("liquidacion_id", flat=True))
+    assert set(miembros.values_list("numero_revision", flat=True)) == {1, 3}
 
 
 @pytest.mark.django_db
@@ -479,7 +535,9 @@ def test_iv_crear_revision_5_desde_revision_3(
     # Create revision 5
     response_r5 = auth_client.post(
         "/liquidaciones/impacto-vial/nueva-revision",
-        json=_nueva_revision_payload(revision_3_id, "EXP-IV-NR-003", "Test revision 5", tarifas),
+        json=_nueva_revision_payload(
+            revision_3_id, "EXP-IV-NR-003", "Test revision 5", tarifas, numero_revision=5,
+        ),
     )
 
     assert response_r5.status_code == 200, f"Revision 5 failed: {response_r5.content}"
@@ -578,7 +636,9 @@ def test_iv_max_revisiones_excedido(
     valid_distrito_id, valid_tarifa_ids_iv
 ):
     """
-    Impacto Vial: attempting to create revision 7 (beyond MAX_REVISIONES=5) returns 400.
+    Impacto Vial: attempting to create revision 7 (beyond MAX_REVISIONES=5) is
+    rejected by the input contract (the allowed set {1, 3, 5} and the MAX bound
+    live there).
     """
     payload = _primera_payload_iv(municipalidad, valid_distrito_id, valid_tarifa_ids_iv)
     primera = crear_primera_iv(auth_client, payload)
@@ -599,7 +659,9 @@ def test_iv_max_revisiones_excedido(
     # Create revision 5
     response_r5 = auth_client.post(
         "/liquidaciones/impacto-vial/nueva-revision",
-        json=_nueva_revision_payload(revision_3_id, "EXP-IV-NR-003", "Test revision 5", tarifas),
+        json=_nueva_revision_payload(
+            revision_3_id, "EXP-IV-NR-003", "Test revision 5", tarifas, numero_revision=5,
+        ),
     )
     assert response_r5.status_code == 200
 
@@ -609,6 +671,7 @@ def test_iv_max_revisiones_excedido(
         "EXP-IV-NR-004",
         "Test revision 7",
         tarifas,
+        numero_revision=7,
     )
 
     response = auth_client.post(
@@ -616,9 +679,49 @@ def test_iv_max_revisiones_excedido(
         json=revision_7_payload,
     )
 
-    assert response.status_code == 400, f"Expected 400 for MAX_REVISIONES exceeded, got {response.status_code}"
-    error_data = response.json()
-    assert "MAX_REVISIONES" in str(error_data.get("error", {}).get("details", {}))
+    assert response.status_code == 422, (
+        f"Expected 422 for a revision number above MAX_REVISIONES, got {response.status_code}"
+    )
+
+
+@pytest.mark.django_db
+def test_iv_hermanos_con_misma_revision_coexisten(
+    auth_client, municipalidad, derecho_porcentaje_vigente, igv_vigente, uit_vigente,
+    tarifa_porcentaje_obra_iv, especialidad_impacto_vial,
+    valid_distrito_id, valid_tarifa_ids_iv
+):
+    """
+    Impacto Vial: two revisions with the SAME number created from the same previa
+    coexist in the same relation group — repeated revision numbers are legal.
+    """
+    payload = _primera_payload_iv(municipalidad, valid_distrito_id, valid_tarifa_ids_iv)
+    primera = crear_primera_iv(auth_client, payload)
+    primera_id = uuid.UUID(primera["liquidacion_general"]["id"])
+
+    tarifas = [
+        {"tarifa_porcentaje_obra_id": valid_tarifa_ids_iv[0]["id"], "especialidad_id": valid_tarifa_ids_iv[0]["esp_id"]},
+    ]
+
+    response_1 = auth_client.post(
+        "/liquidaciones/impacto-vial/nueva-revision",
+        json=_nueva_revision_payload(primera_id, "EXP-IV-HERMANO-1", "Test hermano 1", tarifas),
+    )
+    assert response_1.status_code == 200, response_1.content
+    hermano_1_id = uuid.UUID(response_1.json()["data"]["liquidacion_general"]["id"])
+
+    response_2 = auth_client.post(
+        "/liquidaciones/impacto-vial/nueva-revision",
+        json=_nueva_revision_payload(primera_id, "EXP-IV-HERMANO-2", "Test hermano 2", tarifas),
+    )
+    assert response_2.status_code == 200, response_2.content
+    hermano_2_id = uuid.UUID(response_2.json()["data"]["liquidacion_general"]["id"])
+
+    grupo_id = LiquidacionRelacionMiembro.objects.get(liquidacion_id=primera_id).grupo_id
+    miembros = LiquidacionRelacionMiembro.objects.filter(grupo_id=grupo_id)
+    assert miembros.count() == 3
+    assert hermano_1_id in set(miembros.values_list("liquidacion_id", flat=True))
+    assert hermano_2_id in set(miembros.values_list("liquidacion_id", flat=True))
+    assert set(miembros.values_list("numero_revision", flat=True)) == {1, 3}
 
 
 @pytest.mark.django_db

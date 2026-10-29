@@ -3,7 +3,8 @@
  * según el tipo de liquidación.
  *
  * Cada tipo tiene campos específicos en `liquidacion_tipo`:
- * - edificacion / impacto-vial / taludes → "porcentaje"
+ * - edificacion → "porcentaje"
+ * - impacto-vial / taludes → "porcentaje"
  * - habilitacion-urbana / mecanica-suelos → "m2"
  * - inspeccion-obra → "visitas"
  *
@@ -76,8 +77,8 @@ export function buildExtraFieldRows(
   const rows: Array<[string, string]> = [];
   const derechoMinimo = lt.derecho_minimo ?? 0;
 
-  if (tipo === "edificacion" || tipo === "impacto-vial" || tipo === "taludes") {
-    // Motor porcentaje
+  if (tipo === "edificacion") {
+    // Motor porcentaje.
     if (lt.valor_declarado && lt.valor_declarado > 0) {
       rows.push(["VALOR DE OBRA", formatCurrency(lt.valor_declarado)]);
     }
@@ -85,8 +86,17 @@ export function buildExtraFieldRows(
       const pct = (Number(lt.porcentaje_liquidacion) * 100).toFixed(2);
       rows.push(["PORCENTAJE", `${pct}%`]);
     }
-    if (derechoMinimo > 0) {
-      rows.push(["DERECHO MINIMO", `${formatCurrency(derechoMinimo)}`]);
+    return rows;
+  }
+
+  if (tipo === "impacto-vial" || tipo === "taludes") {
+    // Motor porcentaje (sin contexto de estrategia: esos motores no lo tienen)
+    if (lt.valor_declarado && lt.valor_declarado > 0) {
+      rows.push(["VALOR DE OBRA", formatCurrency(lt.valor_declarado)]);
+    }
+    if (lt.porcentaje_liquidacion != null) {
+      const pct = (Number(lt.porcentaje_liquidacion) * 100).toFixed(2);
+      rows.push(["PORCENTAJE", `${pct}%`]);
     }
     return rows;
   }

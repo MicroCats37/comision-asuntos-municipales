@@ -16,6 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { TipoTramiteEdificaciones } from "../../schemas/tramite.schema";
+import { toNumeroRevision } from "../../utils/numeroRevision";
 
 /** Labels for the 8 tipo_tramite options (Title Case matching backend display) */
 const TIPO_TRAMITE_LABELS: Record<TipoTramiteEdificaciones, string> = {
@@ -49,12 +50,6 @@ interface TipoTramiteSmartFieldProps {
   // biome-ignore lint/suspicious/noExplicitAny: UseFormReturn pattern matches existing smart fields
   methods: UseFormReturn<any>;
   denominationFieldName?: string;
-  /**
-   * Número de revisión esperado. Cuando es > 1, el auto-fill agrega el sufijo
-   * "{tipo_tramite}-{nro}{ra|da|ta|...} revisión". Cuando es 1 o undefined,
-   * solo se setea el enum.
-   */
-  revisionNumber?: number;
 }
 
 const getRevisionOrdinal = (revisionNumber: number) => {
@@ -101,8 +96,12 @@ function buildDenominacion(
  * - "Especialidades Particulares" (modificación de licencia, variación de proyecto)
  *
  * Auto-fill de denominacion: vía `useEffect` que observa `tipo_tramite` y
- * actualiza el campo denominacion con `{tipo_tramite}-{nro}{ordinal} revisión`
- * cuando hay revisionNumber > 1.
+ * actualiza el campo denominacion con "{TIPO TRÁMITE} {nro}{ordinal} REVISIÓN"
+ * cuando el número de revisión (VIVO) es > 1.
+ *
+ * El número de revisión se lee del propio formulario (`numero_revision`) con
+ * `useWatch`: es la misma fuente de verdad que el payload, así que el badge,
+ * la denominación y lo que se envía al backend no pueden divergir.
  *
  * Reactivo vía `useWatch`: cualquier cambio se refleja al instante en
  * TarifasYEspecialidadesSmartField (que también hace watch del mismo campo).
@@ -110,12 +109,16 @@ function buildDenominacion(
 export function TipoTramiteSmartField({
   methods,
   denominationFieldName = "denominacion",
-  revisionNumber,
 }: TipoTramiteSmartFieldProps) {
   const tipoTramite = useWatch({
     control: methods.control,
     name: "tipo_tramite",
   }) as TipoTramiteEdificaciones | undefined;
+
+  // Número de revisión VIVO del formulario (etiqueta editable del usuario).
+  const numeroRevision = toNumeroRevision(
+    useWatch({ control: methods.control, name: "numero_revision" }),
+  );
 
   // Lee el error de validación asociado a este campo. Como `tipo_tramite` es
   // opcional en el schema (solo requerido en edificaciones), puede que no
@@ -150,13 +153,13 @@ export function TipoTramiteSmartField({
 
     if (!isEmpty && !stillOurPreviousAutoFill) return;
 
-    const denominacion = buildDenominacion(tipoTramite, revisionNumber);
+    const denominacion = buildDenominacion(tipoTramite, numeroRevision);
     methods.setValue(denominationFieldName, denominacion, {
       shouldDirty: false,
       shouldValidate: false,
     });
     lastAutoFilledValueRef.current = denominacion;
-  }, [tipoTramite, revisionNumber, denominationFieldName, methods]);
+  }, [tipoTramite, numeroRevision, denominationFieldName, methods]);
 
   const handleSelect = (value: TipoTramiteEdificaciones) => {
     // El useEffect se encarga del auto-fill; solo seteamos el tipo_tramite aquí.

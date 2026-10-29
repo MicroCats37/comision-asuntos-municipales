@@ -12,6 +12,10 @@ import type {
 } from "./liquidacion-edit-payloads.schema";
 import type { ContactoInline } from "./liquidacion-form-base.schema";
 import type { ImpactoVialFormData } from "./liquidacion-impacto-vial-form.schema";
+import {
+  ESTRATEGIA_TOTAL,
+  leerEstrategiaFormData,
+} from "./liquidacion-po-estrategia.schema";
 import type { TaludesFormData } from "./liquidacion-taludes-form.schema";
 
 export type POFormData =
@@ -51,7 +55,12 @@ export function toContactoInline(
 
 /**
  * Builds the liquidacion_general section for PO edit payloads.
- * Handles proyecto nested fields and contacto.
+ * Handles proyecto nested fields, contacto and the editable revision number.
+ *
+ * `numero_revision` viaja dentro del bloque `liquidacion_general` (contrato
+ * backend `LiquidacionPatchPOGeneralIn` = `NumeroRevisionOpcionalMixin`): es
+ * opcional para el backend, pero el formulario siempre lo manda porque el
+ * campo es editable.
  *
  * @param data - The form data
  * @param canEditProyecto - When false, skips all proyecto fields from the payload
@@ -74,6 +83,7 @@ export function buildPOGeneralPayload(
     entidad_tipo_documento,
     entidad_numero_documento,
     entidad_razon_social,
+    numero_revision,
   } = data;
 
   const generalFields: Record<string, unknown> = {};
@@ -84,6 +94,8 @@ export function buildPOGeneralPayload(
   if (denominacion !== undefined)
     generalFields.denominacion_de_proyecto = denominacion;
   if (contacto !== undefined) generalFields.contacto = contacto;
+  if (numero_revision !== undefined)
+    generalFields.numero_revision = numero_revision;
 
   // Only include proyecto fields when explicitly allowed (first revision)
   if (canEditProyecto) {
@@ -121,23 +133,47 @@ export function buildPOGeneralPayload(
 
 /**
  * Builds the liquidacion_tipo section for PO edit payloads.
- * Includes tipo_tramite (Bug 1 fix) and tarifas.
+ * Includes tipo_tramite (Bug 1 fix), tarifas y —solo para Edificaciones— la
+ * estrategia de cotización con su dato propio.
+ *
+ * La estrategia SOLO existe en Edificaciones (único motor con estrategias):
+ * Taludes e Impacto Vial conservan su contrato exacto y no envían ni
+ * `estrategia_cotizacion` ni `total_explicito`.
+ *
+ * `valor_declarado` viaja en todas las estrategias. TOTAL_EXPLICITO añade el
+ * total final autoritativo.
  */
 export function buildPOTipoPayload(data: POFormData): PorcentajeObraTipoEdit {
   const { tarifa_unica_id, especialidades_seleccionadas, valor_declarado } =
     data;
   // tipo_tramite only exists on EdificacionesFormData — cast to access safely
   const tipo_tramite = (data as EdificacionesFormData).tipo_tramite;
+  // La estrategia (y su total explícito) solo existen en Edificaciones: la
+  // lectura segura evita filtrarlos a Taludes e Impacto Vial.
+  const { estrategia_cotizacion: estrategia, total_explicito: totalExplicito } =
+    leerEstrategiaFormData(data);
 
   const tipoFields: PorcentajeObraTipoEdit = {};
 
-  if (valor_declarado !== undefined || tipo_tramite !== undefined) {
-    tipoFields.datos = {};
-    if (valor_declarado !== undefined)
-      tipoFields.datos.valor_declarado = valor_declarado;
-    // tipo_tramite fix: include it when present (Edificaciones only)
-    if (tipo_tramite !== undefined)
-      (tipoFields.datos as Record<string, unknown>).tipo_tramite = tipo_tramite;
+  if (estrategia !== undefined) {
+    tipoFields.estrategia_cotizacion = estrategia;
+  }
+  if (tipo_tramite !== undefined) {
+    tipoFields.tipo_tramite = tipo_tramite;
+  }
+
+  // TOTAL_EXPLICITO conserva el valor informativo y añade el total autoritativo.
+  if (estrategia === ESTRATEGIA_TOTAL) {
+    if (valor_declarado !== undefined || totalExplicito !== undefined) {
+      tipoFields.datos = {
+        ...(valor_declarado !== undefined ? { valor_declarado } : {}),
+        ...(totalExplicito !== undefined
+          ? { total_explicito: totalExplicito }
+          : {}),
+      };
+    }
+  } else if (valor_declarado !== undefined) {
+    tipoFields.datos = { valor_declarado: valor_declarado };
   }
 
   if (

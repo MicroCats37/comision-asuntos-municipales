@@ -2,13 +2,14 @@
 
 import { FileText, Scale, UserCog } from "lucide-react";
 import type { LiquidacionDelegadoEnGeneralOutput } from "@/features/liquidaciones/schemas/liquidacion-base.schema";
+import type { EdificacionesPorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-edificaciones.schema";
 import type { PorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-porcentaje.schema";
 import { formatDecimalPercent } from "@/utils/number-formatter";
 import { formatCurrency } from "../liquidacion-ui";
 import { DetalleSection } from "./DetalleSection";
 
 interface Props {
-  lt: PorcentajeObraDatosOut;
+  lt: PorcentajeObraDatosOut | EdificacionesPorcentajeObraDatosOut;
   delegados?: LiquidacionDelegadoEnGeneralOutput[];
 }
 

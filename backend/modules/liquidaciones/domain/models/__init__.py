@@ -39,6 +39,7 @@ from .liquidacion.liquidacion_especifico.liquidacion_inspeccion_obra import Liqu
 from .liquidacion.liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorcentajeObra,
     LiquidacionPorcentajeObraDetalle,
+    LiquidacionPorcentajeObraAcumulacion,
     LiquidacionPorMetroCuadrado,
     LiquidacionPorCategoriaVisitas,
 )
@@ -103,6 +104,7 @@ __all__ = [
     "TarifaLiquidacionBase",
     "LiquidacionPorcentajeObra",
     "LiquidacionPorcentajeObraDetalle",
+    "LiquidacionPorcentajeObraAcumulacion",
     # Tarifas y reglas nuevas
     "TarifaPorMetroCuadrado",
     "TarifaPorCategoriaVisitas",

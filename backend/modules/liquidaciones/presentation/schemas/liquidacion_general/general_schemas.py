@@ -3,8 +3,13 @@ General presentation schemas — Cabeceras y metadatos comunes a todo tipo de li
 """
 from core.types import BaseSchema
 from ninja import Field
+from pydantic import field_validator
 from typing import Optional
 import uuid
+from modules.liquidaciones.domain.constants import (
+    MAX_REVISIONES,
+    NUMERO_REVISION_PERMITIDOS,
+)
 from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
     LiquidacionDelegadoEnGeneralOut,
 )
@@ -106,6 +111,83 @@ class LiquidacionRelacionadaMixin(BaseSchema):
     )
 
 
+# --- Bloque de contrato: número de revisión ----------------------------------
+
+def _validar_numero_revision(valor: int) -> int:
+    """
+    Valida que el número de revisión pertenezca al conjunto permitido.
+
+    Única fuente de verdad de la validación: el conjunto permitido vive en
+    `domain/constants.py` (`NUMERO_REVISION_PERMITIDOS`), acotado por `MAX_REVISIONES`.
+
+    Args:
+        valor: Número de revisión recibido del cliente.
+
+    Returns:
+        El mismo valor recibido, si es válido.
+
+    Raises:
+        ValueError: Si el valor no pertenece al conjunto permitido {1, 3, 5}.
+    """
+    if valor not in NUMERO_REVISION_PERMITIDOS:
+        permitidos = ", ".join(str(v) for v in NUMERO_REVISION_PERMITIDOS)
+        raise ValueError(
+            f"numero_revision debe ser uno de: {permitidos} (máximo {MAX_REVISIONES})."
+        )
+    return valor
+
+
+class NumeroRevisionRequeridoMixin(BaseSchema):
+    """
+    Bloque de contrato: `numero_revision` obligatorio (creación / relacionada / nueva revisión).
+
+    El número de revisión es una clasificación editable elegida por el usuario: el
+    frontend siempre lo envía y el backend solo valida que pertenezca al conjunto
+    permitido {1, 3, 5} (nunca por encima de `MAX_REVISIONES`). El backend nunca lo
+    deriva ni lo recalcula.
+
+    Composición sobre herencia (contrato SCHEMA_DRY_INTENTION): este bloque se combina
+    con los inputs de los tipos con revisión (Edificaciones, Habilitación Urbana,
+    Mecánica de Suelos, Taludes, Impacto Vial).
+
+    Inspección de Obra queda fuera de este bloque: es estructuralmente revision-less
+    y permanece fija en revisión 1.
+    """
+    numero_revision: int = Field(
+        ...,
+        ge=1,
+        le=MAX_REVISIONES,
+        description="Número de revisión (1, 3 o 5) elegido por el usuario.",
+    )
+
+    @field_validator("numero_revision")
+    @classmethod
+    def _validate_numero_revision(cls, valor: int) -> int:
+        return _validar_numero_revision(valor)
+
+
+class NumeroRevisionOpcionalMixin(BaseSchema):
+    """
+    Bloque de contrato: `numero_revision` opcional (PATCH).
+
+    Mismo conjunto permitido que `NumeroRevisionRequeridoMixin`, pero opcional: si se
+    omite, se conserva el valor almacenado.
+    """
+    numero_revision: Optional[int] = Field(
+        None,
+        ge=1,
+        le=MAX_REVISIONES,
+        description="Número de revisión (1, 3 o 5) — opcional; si se omite se conserva el actual.",
+    )
+
+    @field_validator("numero_revision")
+    @classmethod
+    def _validate_numero_revision(cls, valor: Optional[int]) -> Optional[int]:
+        if valor is None:
+            return None
+        return _validar_numero_revision(valor)
+
+
 # --- Liquidacion General (Cabecera base) ---
 class LiquidacionGeneralRevisionIn(BaseSchema):
     municipalidad_id: uuid.UUID = Field(..., description="ID de la municipalidad")
@@ -160,7 +242,7 @@ class LiquidacionEliminarIn(BaseSchema):
     )
 
 
-class LiquidacionGeneralUpdateIn(BaseSchema):
+class LiquidacionGeneralUpdateIn(NumeroRevisionOpcionalMixin):
     """
     Schema for PATCH updates to general liquidacion fields.
 
@@ -169,7 +251,10 @@ class LiquidacionGeneralUpdateIn(BaseSchema):
 
     Proyecto y municipalidad son editables en cualquier revisión PENDIENTE.
 
-    Excludes: estado, tipo_liquidacion, numero_revision, sub_total, total, igv, uit,
+    `numero_revision` es editable (opcional) y debe pertenecer al conjunto permitido
+    {1, 3, 5} — ver `NumeroRevisionOpcionalMixin`.
+
+    Excludes: estado, tipo_liquidacion, sub_total, total, igv, uit,
     fecha_registro (those require explicit state transitions or recalculation).
     """
     expediente: Optional[str] = Field(None, description="Número de expediente")

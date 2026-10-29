@@ -183,7 +183,7 @@ export function LiquidacionesHabilitacionUrbanaView() {
             onClick={() => setSelectPreviaOpen(true)}
           >
             <RefreshCw className="h-4 w-4" />
-            Tercera Revisión
+            Nueva Revisión
           </Button>
         }
         useListData={useHuData}

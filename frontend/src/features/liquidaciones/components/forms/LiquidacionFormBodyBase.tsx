@@ -7,6 +7,8 @@ import type { ReactNode } from "react";
  *
  * Renderiza UNA vez:
  *  - Columna izquierda: Datos del Trámite (municipalidad, expediente, observación)
+ *    + campo del motor (valor_declarado / area_solicitada) y el número de
+ *      revisión en la segunda celda (etiqueta editable, salvo IO)
  *    + slot `specificSection` (la parte del motor: tarifas + cotización)
  *  - Columna derecha: Datos del Proyecto (entidad, denominación, distrito, dirección) + Contacto
  *
@@ -23,6 +25,7 @@ import { useDistritos } from "../../hooks/useDistritos";
 import { useMunicipalidades } from "../../hooks/useMunicipalidades";
 import { ContactoSmartField } from "./ContactoSmartField";
 import { EntidadLookupField } from "./EntidadLookupSmartField";
+import { NumeroRevisionField } from "./NumeroRevisionField";
 
 // ── Generic fields (useController pattern) ──────────────────────────────
 
@@ -289,6 +292,12 @@ interface LiquidacionFormBodyBaseProps {
   valoresActualesSection?: ReactNode;
   /** When false, project fields are visually disabled and excluded from PATCH payload (revisions > 1) */
   canEditProyecto?: boolean;
+  /**
+   * Muestra el campo de número de revisión en la segunda celda de "Datos del
+   * Trámite". Por defecto `true` (los 5 tipos con revisión editable).
+   * Inspección de Obra lo desactiva: es revision-less y queda fija en 1.
+   */
+  showRevisionField?: boolean;
 }
 
 export function LiquidacionFormBodyBase({
@@ -300,6 +309,7 @@ export function LiquidacionFormBodyBase({
   showUrbanizacion = false,
   valoresActualesSection,
   canEditProyecto = true,
+  showRevisionField = true,
 }: LiquidacionFormBodyBaseProps) {
   const {
     formState: { errors },
@@ -348,6 +358,13 @@ export function LiquidacionFormBodyBase({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {tramiteField}
+              {showRevisionField && (
+                <NumeroRevisionField
+                  register={register}
+                  control={control}
+                  errors={errors}
+                />
+              )}
             </div>
             <ObservacionField control={control} />
           </div>

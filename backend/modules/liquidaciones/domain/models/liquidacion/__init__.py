@@ -16,6 +16,7 @@ from .liquidacion_general import (
 from .liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorcentajeObra,
     LiquidacionPorcentajeObraDetalle,
+    LiquidacionPorcentajeObraAcumulacion,
 )
 from .liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
@@ -38,6 +39,7 @@ __all__ = [
     "TarifaLiquidacionBase",
     "LiquidacionPorcentajeObra",
     "LiquidacionPorcentajeObraDetalle",
+    "LiquidacionPorcentajeObraAcumulacion",
     "TipoTramiteEdificaciones",
     "TramiteAccion",
     "LiquidacionEdificacion",

@@ -7,12 +7,15 @@ import { z } from "zod";
 import {
   contactoInlineSchema,
   generalFormSchema,
+  numeroRevisionFormSchema,
   proyectoFormSchema,
 } from "./liquidacion-form-base.schema";
 
 export const impactoVialFormSchema = z.object({
   ...proyectoFormSchema.shape,
   ...generalFormSchema.shape,
+  // Número de revisión — etiqueta editable (1, 3 o 5)
+  ...numeroRevisionFormSchema.shape,
   // Especifica fields
   valor_declarado: z
     .number()

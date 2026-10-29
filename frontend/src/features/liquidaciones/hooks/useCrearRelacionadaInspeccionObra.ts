@@ -16,19 +16,14 @@
  * Crea una liquidación con numero_revision = 1, heredando proyecto, municipalidad,
  * entidad, expediente y observacion de la previa.
  *
- * Usa useLiquidacionesCreateMutation (cache manual reactivo) con lógica de ultimas-revisiones.
+ * Usa useLiquidacionesCreateMutation (cache manual reactivo). La liquidación devuelta se inserta/actualiza en las listas visibles; la revisión previa permanece en la lista (ya no hay revisión canónica).
  */
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import type { NuevaRevisionInspeccionObraFormData } from "../schemas/liquidacion-nueva-revision-io.schema";
-import type { LiquidacionWrapper } from "./cache";
-import {
-  useLiquidacionesCacheUtils,
-  useLiquidacionesCreateMutation,
-} from "./cache";
+import { useLiquidacionesCreateMutation } from "./cache";
 
 const BASE_URL = "/liquidaciones/inspeccion-obra";
 const LIST_KEY = ["liquidaciones", "inspeccion-obra"] as const;
-const TIPO_KEY = "inspeccion-obra";
 
 type CrearRelacionadaInspeccionObraData = Omit<
   NuevaRevisionInspeccionObraFormData,
@@ -50,9 +45,6 @@ export function buildCrearRelacionadaInspeccionObraPayload(
 }
 
 export function useCrearRelacionadaInspeccionObra() {
-  const previousIdRef = useRef<string | null>(null);
-  const cacheUtils = useLiquidacionesCacheUtils();
-
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_previa_id: string;
     liquidacion_especifica: {
@@ -72,35 +64,15 @@ export function useCrearRelacionadaInspeccionObra() {
   }>({
     tipoQueryKey: LIST_KEY,
     url: `${BASE_URL}/relacionada`,
-    options: {
-      onSuccess: (rawResult) => {
-        const response = rawResult as { data?: LiquidacionWrapper };
-        const newItem: LiquidacionWrapper =
-          response?.data ?? (rawResult as LiquidacionWrapper);
-        if (!newItem?.liquidacion_general?.id) return;
-
-        cacheUtils.insertCreatedItem(newItem, { tipoKey: TIPO_KEY });
-
-        const prevId = previousIdRef.current;
-        if (prevId) {
-          cacheUtils.replaceLatestRevision(newItem, {
-            tipoKey: TIPO_KEY,
-            previousId: prevId,
-          });
-        }
-      },
-    },
   });
 
   const crearMutation = useMemo(
     () => ({
       ...mutation,
       mutate: (payload: CrearRelacionadaInspeccionObraData) => {
-        previousIdRef.current = payload.liquidacion_previa_id;
         mutation.mutate(buildCrearRelacionadaInspeccionObraPayload(payload));
       },
       mutateAsync: async (payload: CrearRelacionadaInspeccionObraData) => {
-        previousIdRef.current = payload.liquidacion_previa_id;
         return mutation.mutateAsync(
           buildCrearRelacionadaInspeccionObraPayload(payload),
         );

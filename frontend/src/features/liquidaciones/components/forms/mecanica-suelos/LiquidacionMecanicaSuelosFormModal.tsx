@@ -34,6 +34,7 @@ import {
 import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
 import { formatPublicId } from "../../../utils/formatPublicId";
+import { resolveNumeroRevisionInicial } from "../../../utils/numeroRevision";
 import { toFiniteNumber } from "../../../utils/toFiniteNumber";
 import { CotizacionM2SmartField } from "../CotizacionM2SmartField";
 import { LiquidacionFormBodyBase } from "../LiquidacionFormBodyBase";
@@ -230,8 +231,21 @@ export function LiquidacionMecanicaSuelosFormModal(
   );
 
   const initialData: Partial<MecanicaSuelosFormData> = (() => {
-    if (mode === "create") return { area_solicitada: 0 };
-    if (sourceItem) return buildInitialData(sourceItem);
+    if (mode === "create") {
+      return {
+        area_solicitada: 0,
+        numero_revision: resolveNumeroRevisionInicial("create"),
+      };
+    }
+    if (sourceItem) {
+      return {
+        ...buildInitialData(sourceItem),
+        numero_revision: resolveNumeroRevisionInicial(
+          mode,
+          sourceItem.liquidacion_general.numero_revision,
+        ),
+      };
+    }
     return {};
   })();
 

@@ -105,8 +105,12 @@ class LiquidacionRelacionCoreService:
             LiquidacionRelacionMiembro: the created member instance.
 
         Raises:
-            IntegrityError: if (grupo, relacion_key, numero_revision) unique
-                           constraint is violated, or liquidacion already has a group.
+            IntegrityError: if the liquidacion already belongs to a group
+                           (unique_liquidacion_unico_grupo).
+
+        Note:
+            Varias liquidaciones pueden compartir (grupo, relacion_key, numero_revision):
+            `numero_revision` es una clasificación editable, no una identidad de secuencia.
         """
         return LiquidacionRelacionMiembro.objects.create(
             grupo=grupo,
@@ -133,6 +137,41 @@ class LiquidacionRelacionCoreService:
             )
         except LiquidacionRelacionMiembro.DoesNotExist:
             return None
+
+    # ── Member update ─────────────────────────────────────────────────────────
+
+    def actualizar_numero_revision_miembro(
+        self,
+        liquidacion: LiquidacionGeneral,
+        numero_revision: int,
+    ) -> Optional[LiquidacionRelacionMiembro]:
+        """
+        Updates the `numero_revision` label of the relation member of a liquidacion.
+
+        PURE ORM — no business logic and no transaction of its own. The caller
+        provides the transaction so the header (`LiquidacionGeneral`) and this
+        member row are written atomically with the SAME submitted value.
+
+        The revision number is an EDITABLE LABEL, not a sequence: the value is
+        stored verbatim, never derived from the previa and never recalculated.
+
+        If the liquidacion has no relation member, nothing is written and None is
+        returned — no lineage is invented for a liquidacion that never had one.
+
+        Args:
+            liquidacion: the LiquidacionGeneral instance (must be saved by caller).
+            numero_revision: the revision number submitted by the client.
+
+        Returns:
+            The updated LiquidacionRelacionMiembro, or None when the liquidacion
+            has no relation member.
+        """
+        miembro = self.obtener_grupo_de_liquidacion(liquidacion)
+        if miembro is None:
+            return None
+        miembro.numero_revision = numero_revision
+        miembro.save(update_fields=["numero_revision"])
+        return miembro
 
     # ── Combined group + member operations ────────────────────────────────────
 

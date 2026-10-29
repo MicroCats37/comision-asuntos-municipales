@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { ZodNumber } from "zod";
-import { edificacionesFormSchema } from "./liquidacion-edificaciones-form.schema";
 import { m2FormSchema } from "./liquidacion-m2-form.schema";
 import { visitasFormSchema } from "./liquidacion-visitas-form.schema";
 
@@ -10,12 +9,6 @@ const cases: Array<{
   invalid: string;
   positive: string;
 }> = [
-  {
-    schema: edificacionesFormSchema.shape.valor_declarado,
-    required: "El valor declarado es requerido",
-    invalid: "El valor declarado debe ser un número válido",
-    positive: "El valor declarado debe ser positivo",
-  },
   {
     schema: m2FormSchema.shape.area_solicitada,
     required: "El área solicitada es requerida",

@@ -16,8 +16,10 @@ Supported mappings:
   - INSPECCION_OBRA (IO is exception for delegados — not included here unless needed)
 
 Note: numero_revision is NOT included in relacion_key — it is a separate field.
-The (grupo, relacion_key, numero_revision) unique constraint ensures uniqueness
-across revisions.
+It is an editable label chosen by the user, NOT a sequence: several liquidaciones
+may share the same (grupo, relacion_key, numero_revision) slot. The only unique
+constraint on this table is `unique_liquidacion_unico_grupo` (a liquidacion belongs
+to a single group).
 
 Usage:
     from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_relacion_key_helper import generar_relacion_key

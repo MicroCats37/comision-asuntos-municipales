@@ -10,6 +10,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
     LiquidacionGeneralRevisionIn,
     LiquidacionGeneralOutput,
     LiquidacionRelacionadaMixin,
+    NumeroRevisionRequeridoMixin,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas import (
     LiquidacionPorMetroCuadradoIn,
@@ -21,8 +22,8 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas im
 # =============================================================================
 # POST /primera-revision — Schema específico de Mecánica de Suelos
 # =============================================================================
-class LiquidacionMecanicaSuelosInput(BaseSchema):
-    """Payload de entrada: Cabecera Genérica + cálculo M2."""
+class LiquidacionMecanicaSuelosInput(NumeroRevisionRequeridoMixin):
+    """Payload de entrada: Cabecera Genérica + cálculo M2 + número de revisión."""
     liquidacion_general: LiquidacionGeneralRevisionIn
     liquidacion_especifica: LiquidacionPorMetroCuadradoIn
 
@@ -35,12 +36,15 @@ class LiquidacionMecanicaSuelosOutput(BaseSchema):
 
 
 # =============================================================================
-# POST /relacionada — Crea MS con numero_revision=1 relacionada a previa
+# POST /relacionada — Crea MS relacionada a previa
 # =============================================================================
-class LiquidacionMecanicaSuelosRelacionadaInput(LiquidacionRelacionadaMixin):
+class LiquidacionMecanicaSuelosRelacionadaInput(
+    LiquidacionRelacionadaMixin,
+    NumeroRevisionRequeridoMixin,
+):
     """
-    Input para /relacionada — crea una nueva liquidacion MS con numero_revision=1
-    vinculada a una liquidacion previa existente.
+    Input para /relacionada — crea una nueva liquidacion MS vinculada a una
+    liquidacion previa existente, con el número de revisión elegido por el usuario.
 
     Usa la misma estructura que primera-revision (full input) más el
     liquidacion_previa_id para establecer la relación de grupo.
@@ -50,12 +54,16 @@ class LiquidacionMecanicaSuelosRelacionadaInput(LiquidacionRelacionadaMixin):
 
 
 # =============================================================================
-# POST /nueva-revision — Crea MS con siguiente revisión impar (1→3→5)
+# POST /nueva-revision — Crea MS con nueva revisión (1→3→5)
 # =============================================================================
-class LiquidacionMecanicaSuelosNuevaRevisionInput(LiquidacionRelacionadaMixin):
+class LiquidacionMecanicaSuelosNuevaRevisionInput(
+    LiquidacionRelacionadaMixin,
+    NumeroRevisionRequeridoMixin,
+):
     """
     Input para /nueva-revision — crea una nueva revisión MS (1→3, 3→5)
-    basada en una liquidación previa existente.
+    basada en una liquidación previa existente, con el número de revisión
+    elegido por el usuario.
 
     Los campos M2 (area_solicitada, tarifa) se proporcionan frescos en el input.
     """

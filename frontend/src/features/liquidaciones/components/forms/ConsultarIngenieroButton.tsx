@@ -23,6 +23,7 @@ import {
  * Se usa en el header de las vistas de liquidaciones, junto al botón de
  * "Nueva Liquidación".
  */
+import Image from "next/image";
 import { useState } from "react";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import { Button } from "@/components/ui/button";
@@ -70,10 +71,18 @@ export function ConsultarIngenieroButton({
       <Button
         type="button"
         variant={variant}
-        className="gap-2 h-11 rounded-xl font-semibold shrink-0"
+        className="group h-11 shrink-0 gap-2.5 rounded-xl px-4 font-semibold shadow-sm transition-[border-color,background-color,box-shadow,transform] hover:-translate-y-px hover:shadow-md"
         onClick={() => setOpen(true)}
       >
-        <UserSearch className="h-4 w-4" />
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white p-0.5 ring-1 ring-black/10">
+          <Image
+            src="/images/logo.png"
+            alt="Logo del Colegio de Ingenieros del Perú"
+            width={24}
+            height={24}
+            className="size-6"
+          />
+        </span>
         {label}
       </Button>
 

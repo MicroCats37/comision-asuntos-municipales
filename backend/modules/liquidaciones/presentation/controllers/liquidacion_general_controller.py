@@ -106,56 +106,6 @@ class LiquidacionGeneralController:
         output = LiquidacionMixedPresenter.present_item(result)
         return success_response(output)
 
-    @route.get(
-        "/ultimas-revisiones",
-        response={200: ApiResponse[PaginatedData[Any]]},
-    )
-    def list_ultimas_liquidaciones(
-        self,
-        page: int = Query(default=1, ge=1, description="Page number"),
-        page_size: int = Query(default=10, ge=1, le=100, description="Items per page"),
-        tipo_liquidacion: list[str] = Query(
-            ...,
-            description="Filter by one or more tipo liquidacion codes (OBLIGATORIO)",
-        ),
-        documento: str = Query(default=None, description="Filter by proyecto entity numero documento (icontains)"),
-        razon_social: str = Query(default=None, description="Filter by proyecto entidad razon social (icontains)"),
-        propietario: str = Query(default=None, description="Filter by proyecto nombre propietario (icontains)"),
-        expediente: str = Query(default=None, description="Filter by expediente numero (icontains)"),
-        nombre_propietario: str = Query(default=None, description="Filter by proyecto nombre propietario — equivalent to 'propietario', both filter the same field"),
-        numero: int = Query(default=None, ge=1, description="Filter by liquidacion numero (autoincremental per type, independent sequences across types)"),
-        direccion: str = Query(default=None, description="Filter by proyecto direccion (icontains)"),
-    ):
-        """
-        Returns a paginated list of the latest liquidaciones (one per proyecto+tipo_liquidacion pair)
-        with optional filters.
-
-        Each item is a fully populated polymorphic object containing liquidacion_general,
-        liquidacion_especifica, and liquidacion_tipo — exactly like the individual GET by ID endpoints.
-
-        NOTE: tipo_liquidacion filter is MANDATORY. Requests without this parameter
-        will be rejected with 400 Bad Request.
-        """
-        liquidaciones, total = self.orchestrator.listar_ultimas_liquidaciones_generales(
-            page=page,
-            page_size=page_size,
-            tipo_liquidacion=tipo_liquidacion,
-            documento=documento,
-            razon_social=razon_social,
-            propietario=propietario,
-            expediente=expediente,
-            nombre_propietario=nombre_propietario,
-            numero=numero,
-            direccion=direccion,
-        )
-        result = LiquidacionMixedPresenter.present_list(
-            liquidaciones=liquidaciones,
-            total=total,
-            page=page,
-            page_size=page_size,
-        )
-        return success_response(result)
-
     @route.patch(
         "/{liquidacion_id}",
         response={200: ApiResponse[LiquidacionGeneralOutput]},
@@ -171,7 +121,11 @@ class LiquidacionGeneralController:
         Solo editable cuando estado == PENDIENTE.
         Si estado == PAGADA, retorna 409 Conflict.
 
-        Campos siempre editables: expediente, observacion, contacto.
+        Campos siempre editables: expediente, observacion, contacto, numero_revision.
+
+        `numero_revision` es una ETIQUETA EDITABLE elegida por el cliente: se aplica
+        tal cual (nunca se deriva ni se recalcula) y se sincroniza con el miembro de
+        relación en la misma transacción. Si se omite, se conserva el valor actual.
 
         Campos condicionalmente editables (requieren revision rule):
         - municipalidad_id: solo si numero_revision == 1 y no hay liquidaciones previas
@@ -210,6 +164,7 @@ class LiquidacionGeneralController:
                 observacion=data.observacion,
                 denominacion_de_proyecto=data.denominacion_de_proyecto,
                 contacto_data=contacto_data,
+                numero_revision=data.numero_revision,
             )
         else:
             # Has proyecto or municipalidad fields — build proyecto_data and route
@@ -236,6 +191,7 @@ class LiquidacionGeneralController:
                 observacion=data.observacion,
                 denominacion_de_proyecto=data.denominacion_de_proyecto,
                 contacto_data=contacto_data,
+                numero_revision=data.numero_revision,
             )
 
         output = self.presenter.present_liquidacion_general(result)

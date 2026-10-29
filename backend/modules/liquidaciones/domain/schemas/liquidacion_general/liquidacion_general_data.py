@@ -35,3 +35,9 @@ class LiquidacionGeneralData(BaseSchema):
     contacto: Optional[ContactoData] = None
     denominacion_de_proyecto: Optional[str] = None
     descripcion_legacy: Optional[str] = None
+    # Número de revisión elegido por el cliente (1, 3 o 5). Viaja hasta el flujo
+    # para persistirse TAL CUAL en `LiquidacionGeneral` y en el miembro de relación,
+    # dentro de la misma transacción. El backend nunca lo deriva ni lo recalcula.
+    # Es opcional solo porque los caminos legacy/edge lo reciben por otro
+    # parámetro explícito; en creación/relacionada/nueva revisión es obligatorio.
+    numero_revision: Optional[int] = None

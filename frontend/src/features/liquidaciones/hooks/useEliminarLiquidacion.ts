@@ -29,7 +29,7 @@ export function useEliminarLiquidacion(id: string) {
     schema: EliminarLiquidacionSchema,
     options: {
       onSuccess: () => {
-        // Remover de todas las listas visibles (tipo-específicas, generales, ultimas-revisiones)
+        // Remover de todas las listas visibles (tipo-específicas y generales)
         cacheUtils.removeVisibleItem(id);
         // Marcar el detalle general como eliminado
         cacheUtils.markDetailDeleted(id);

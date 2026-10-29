@@ -10,6 +10,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -170,13 +171,24 @@ export function ProtectedSidebar({ user }: { user: MeResponse }) {
   const sidebarContent = (
     <>
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-sidebar-border px-4 py-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-          <FileText className="h-5 w-5" />
+      <div className="flex items-center gap-3 border-b border-sidebar-border px-3 py-3.5">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-sidebar-border/70 bg-white p-1 shadow-sm">
+          <Image
+            src="/images/logo.png"
+            alt="Logo del Colegio de Ingenieros del Perú"
+            width={36}
+            height={36}
+            className="size-9"
+            priority
+          />
         </div>
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-bold">CAM Liquidaciones</span>
-          <span className="truncate text-xs text-muted-foreground">CAM</span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="truncate text-sm font-bold tracking-tight">
+            CAM Liquidaciones
+          </span>
+          <span className="truncate text-[11px] font-medium text-muted-foreground">
+            Colegio de Ingenieros
+          </span>
         </div>
       </div>
 

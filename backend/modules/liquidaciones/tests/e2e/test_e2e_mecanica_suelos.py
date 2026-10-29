@@ -187,6 +187,7 @@ def test_e2e_ms_flow(
 
     # Step 3: Construct payload using extracted tarifa_id
     payload = {
+        "numero_revision": 1,
         "liquidacion_general": {
             "municipalidad_id": municipalidad_id,
             "expediente": "EXP-E2E-MS-2024-001",

@@ -307,3 +307,182 @@ def test_list_detalles_have_required_fields(
     assert "porcentaje_aplicado" in detalle
     assert "subtotal" in detalle
 
+
+# ── Sibling liquidaciones (same revision) ─────────────────────────────────────
+
+@pytest.fixture
+def liquidacion_edificacion_hermano_rev3(
+    db,
+    municipalidad,
+    create_user,
+    derecho_porcentaje_vigente,
+    igv_vigente,
+    uit_vigente,
+    tarifa_porcentaje_obra_estructuras,
+    especialidad_estructuras,
+    tipo_edificacion,
+    ubigeo_distrito,
+):
+    """
+    A SECOND Edificaciones liquidacion at revision 3, on its own proyecto.
+
+    Together with `liquidacion_edificacion_created` (revision 1) it forms two
+    sibling liquidaciones of the same tipo. The revision number is an editable
+    label, so several liquidaciones may share it — the listing must admit them
+    all instead of collapsing them into one canonical record.
+    """
+    from modules.entidades.domain.models import Entidad
+    from modules.liquidaciones.domain.models.proyecto import Proyecto
+
+    user = create_user
+
+    entidad = Entidad.objects.create(
+        tipo_documento="RUC",
+        numero_documento="20456789077",
+    )
+    proyecto_hermano = Proyecto.objects.create(
+        entidad=entidad,
+        nombre_propietario="Propietario Hermano SAC",
+        direccion="Av. Hermano 789, Lima",
+        distrito_id=ubigeo_distrito.id,
+        entidad_tipo_documento="RUC",
+        entidad_numero_documento="20456789077",
+        entidad_razon_social="Propietario Hermano SAC",
+    )
+
+    lg = LiquidacionGeneral.objects.create(
+        proyecto=proyecto_hermano,
+        municipalidad=municipalidad,
+        usuario_creador=user,
+        expediente="EXP-EDIF-REV3-HERMANO",
+        observacion="Liquidacion hermana en revision 3",
+        estado="PENDIENTE",
+        tipo_liquidacion=tipo_edificacion,
+        numero_revision=3,
+        sub_total=Decimal("1000.00"),
+        total=Decimal("1180.00"),
+        igv_id=igv_vigente,
+        uit_id=uit_vigente,
+    )
+
+    LiquidacionEdificacion.objects.create(liquidacion=lg, numero=2)
+
+    lpo = LiquidacionPorcentajeObra.objects.create(
+        liquidacion_general=lg,
+        tipo_tramite="OBRA_NUEVA",
+        valor_declarado=Decimal("100000.00"),
+        porcentaje_liquidacion=Decimal("0.0010"),
+        derecho_minimo=Decimal("500.00"),
+        derecho_maximo=Decimal("50000.00"),
+        porcentaje_minimo_uit=Decimal("0.10"),
+        derecho_aplicado=derecho_porcentaje_vigente,
+    )
+
+    LiquidacionPorcentajeObraDetalle.objects.create(
+        liquidacion_porcentaje=lpo,
+        tarifa_aplicada=tarifa_porcentaje_obra_estructuras,
+        especialidad=especialidad_estructuras,
+        porcentaje_aplicado=Decimal("0.0010"),
+        subtotal=Decimal("1000.00"),
+    )
+
+    return lg
+
+
+@pytest.mark.django_db
+def test_list_filtrado_por_numero_revision_es_exacto(
+    auth_client,
+    liquidacion_edificacion_created,
+    liquidacion_edificacion_hermano_rev3,
+):
+    """
+    The `numero_revisiones` filter is exact: revision 3 does not match revision 1.
+    """
+    response = auth_client.get("/liquidaciones/edificaciones/?numero_revisiones=3")
+
+    assert response.status_code == 200
+    result = response.json()["data"]
+
+    assert result["total"] == 1, \
+        f"Expected only the revision-3 liquidacion, got total={result['total']}"
+
+    item = result["items"][0]
+    assert item["liquidacion_general"]["numero_revision"] == 3
+
+
+@pytest.mark.django_db
+def test_list_admite_hermanos_con_la_misma_revision(
+    auth_client,
+    liquidacion_edificacion_created,
+    liquidacion_edificacion_hermano_rev3,
+):
+    """
+    Several liquidaciones may share the same revision number: the standard
+    paginated per-type listing admits all of them (no canonical record is picked).
+    """
+    # Move the first liquidacion to revision 3 as well → two siblings at rev 3.
+    liquidacion_edificacion_created.numero_revision = 3
+    liquidacion_edificacion_created.save(update_fields=["numero_revision"])
+
+    response = auth_client.get("/liquidaciones/edificaciones/?numero_revisiones=3")
+
+    assert response.status_code == 200
+    result = response.json()["data"]
+
+    assert result["total"] == 2, \
+        f"Expected both siblings at revision 3, got total={result['total']}"
+    assert len(result["items"]) == 2
+
+    assert {item["liquidacion_general"]["numero_revision"] for item in result["items"]} == {3}
+
+
+@pytest.mark.django_db
+def test_list_paginado_conserva_el_total_con_hermanos(
+    auth_client,
+    liquidacion_edificacion_created,
+    liquidacion_edificacion_hermano_rev3,
+):
+    """
+    The paginated per-type listing keeps every sibling and reports the real total
+    (it does not collapse them into a single "latest" record).
+    """
+    liquidacion_edificacion_created.numero_revision = 3
+    liquidacion_edificacion_created.save(update_fields=["numero_revision"])
+
+    response = auth_client.get("/liquidaciones/edificaciones/?page=1&page_size=10")
+
+    assert response.status_code == 200
+    result = response.json()["data"]
+
+    assert result["total"] == 2
+    assert result["page"] == 1
+    assert result["page_size"] == 10
+    assert len(result["items"]) == 2
+
+
+@pytest.mark.django_db
+def test_list_devuelve_todas_las_revisiones_sin_reduccion_canonica(
+    auth_client,
+    liquidacion_edificacion_created,
+    liquidacion_edificacion_hermano_rev3,
+):
+    """
+    The per-type listing returns EVERY revision of the tipo: the retired
+    canonical-latest machinery used to hide the lower revisions, and the standard
+    listing must not do that.
+    """
+    response = auth_client.get("/liquidaciones/edificaciones/")
+
+    assert response.status_code == 200
+    result = response.json()["data"]
+
+    assert result["total"] == 2, \
+        f"Expected both revisions in the listing, got total={result['total']}"
+
+    revisiones = {
+        item["liquidacion_general"]["numero_revision"]
+        for item in result["items"]
+    }
+    assert revisiones == {1, 3}, \
+        f"Expected revisions 1 and 3 (no canonical reduction), got {revisiones}"
+
