@@ -55,12 +55,19 @@ class UsuarioAdmin(UserAdmin):
         ),
     )
 
-    # Fields shown when creating a user via admin
-    # UserCreationForm handles password automatically, so we only supply the needed fields
+    # UserCreationForm requires both password fields on the add view.
     add_fieldsets = (
         (None, {
             "classes": ("wide",),
-            "fields": ("username", "email", "dni", "nombres", "apellidos"),
+            "fields": (
+                "username",
+                "email",
+                "dni",
+                "nombres",
+                "apellidos",
+                "password1",
+                "password2",
+            ),
         }),
     )
 
