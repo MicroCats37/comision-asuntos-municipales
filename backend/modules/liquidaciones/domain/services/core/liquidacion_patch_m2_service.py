@@ -6,7 +6,7 @@ ALCANCE: Solo servicio — sin controller, sin exposición API. El siguiente paq
 Aplica a tipos M2: Habilitación Urbana, Mecánica de Suelos.
 
 Reglas clave:
-- Resuelve derecho vía LiquidacionPatchHistoricoCoreService (NO vigentes actuales).
+- Resuelve derecho vía LiquidacionHistoricoCoreService (NO vigentes actuales).
 - Tarifa resuelta vía TarifaLiquidacionBase vigente en fecha_registro.
 - Si patch.tarifa_m2_id es proporcionado: valida que exista y su base estaba vigente en fecha_registro.
 - Si patch.tarifa_m2_id es None: usa el TarifaPorMetroCuadrado almacenado actualmente.
@@ -33,8 +33,8 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     TarifaLiquidacionBase,
     TarifaPorMetroCuadrado as TarifaPorMetroCuadradoModel,
 )
-from modules.liquidaciones.domain.services.core.liquidacion_patch_historico_core_service import (
-    LiquidacionPatchHistoricoCoreService,
+from modules.liquidaciones.domain.services.core.liquidacion_historico_core_service import (
+    LiquidacionHistoricoCoreService,
     NoDerechoVigenteError,
     NoTarifaVigenteError,
 )
@@ -78,7 +78,7 @@ class LiquidacionPatchM2Service:
     """
 
     def __init__(self) -> None:
-        self._historico_service = LiquidacionPatchHistoricoCoreService()
+        self._historico_service = LiquidacionHistoricoCoreService()
         self._m2_core = LiquidacionPorMetroCuadradoCoreService()
 
     def recalcular(

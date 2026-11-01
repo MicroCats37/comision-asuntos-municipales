@@ -28,12 +28,17 @@ const LIST_KEY = ["liquidaciones", "edificaciones"] as const;
  * Edificaciones: el backend exige el discriminador y un `datos` distinto por
  * estrategia (`valor_declarado` o `total_explicito`, nunca ambos).
  */
-export function buildCrearEdificacionesPayload(payload: EdificacionesFormData) {
+export function buildCrearEdificacionesPayload(
+  payload: EdificacionesFormData,
+  legacy = false,
+) {
   const {
     tarifa_unica_id,
     especialidades_seleccionadas,
     tipo_tramite,
     numero_revision,
+    numero,
+    fecha_registro,
     ...rest
   } = payload;
   const {
@@ -41,7 +46,7 @@ export function buildCrearEdificacionesPayload(payload: EdificacionesFormData) {
     valor_declarado,
     total_explicito,
   } = leerEstrategiaFormData(payload);
-  return {
+  const apiPayload = {
     numero_revision,
     liquidacion_general: {
       municipalidad_id: rest.municipalidad_id,
@@ -72,16 +77,17 @@ export function buildCrearEdificacionesPayload(payload: EdificacionesFormData) {
       })),
     }),
   };
+  return legacy ? { ...apiPayload, numero, fecha_registro } : apiPayload;
 }
 
-export function useCrearEdificaciones() {
+export function useCrearEdificaciones(mode: "create" | "legacy" = "create") {
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_general: unknown;
     liquidacion_especifica: unknown;
     numero_revision: number;
   }>({
     tipoQueryKey: LIST_KEY,
-    url: `${BASE_URL}/primera-revision`,
+    url: `${BASE_URL}/${mode === "legacy" ? "legacy" : "primera-revision"}`,
   });
 
   // Wrapper that formats payload as { liquidacion_general, liquidacion_especifica } for the API
@@ -89,13 +95,17 @@ export function useCrearEdificaciones() {
     () => ({
       ...mutation,
       mutate: (payload: EdificacionesFormData) => {
-        mutation.mutate(buildCrearEdificacionesPayload(payload));
+        mutation.mutate(
+          buildCrearEdificacionesPayload(payload, mode === "legacy"),
+        );
       },
       mutateAsync: async (payload: EdificacionesFormData) => {
-        return mutation.mutateAsync(buildCrearEdificacionesPayload(payload));
+        return mutation.mutateAsync(
+          buildCrearEdificacionesPayload(payload, mode === "legacy"),
+        );
       },
     }),
-    [mutation],
+    [mode, mutation],
   );
 
   return crearMutation;

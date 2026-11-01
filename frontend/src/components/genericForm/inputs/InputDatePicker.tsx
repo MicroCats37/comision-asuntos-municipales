@@ -36,7 +36,7 @@ export const InputDatePicker: React.FC<InputComponentProps> = ({
       render={({ field: controllerField }) => {
         // Convertir string a Date si existe
         const selectedDate = controllerField.value
-          ? new Date(controllerField.value)
+          ? new Date(`${String(controllerField.value).slice(0, 10)}T00:00:00`)
           : undefined;
 
         return (
@@ -48,7 +48,7 @@ export const InputDatePicker: React.FC<InputComponentProps> = ({
                 disabled={field.disabled}
                 aria-invalid={!!error}
                 className={cn(
-                  "w-full justify-start text-left font-normal",
+                  "relative w-full justify-start text-left font-normal",
                   !controllerField.value && "text-muted-foreground",
                   hasIcon && "pl-10",
                   field.className,

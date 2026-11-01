@@ -1,24 +1,18 @@
 /**
- * Hooks para listar y obtener detalle de Reparticiones Estacionales.
+ * Hook para listar Reparticiones Estacionales con su distribución completa.
  * Endpoints:
  *   GET  /finanzas/reparticiones-estacionales
- *   GET  /finanzas/reparticiones-estacionales/{id}
  */
 import { z } from "zod";
-import { apiResponseSchema } from "@/types/api.types";
 import { useApiQuery } from "@/hooks";
-import {
-  RHReparticionEstacionalListItemSchema,
-  RHReparticionEstacionalDetalleSchema,
-  RHReparticionEstacionalCotizarResponseSchema,
-  RHReparticionEstacionalDetalleResponseSchema,
-} from "../schemas/rh-reparticion-estacional.schema";
+import { apiResponseSchema } from "@/types/api.types";
+import { RHReparticionEstacionalSchema } from "../schemas/rh-reparticion-estacional.schema";
 
 // ── List ────────────────────────────────────────────────────────────────────────
 
 /** List returns a plain array wrapped in ApiResponse */
 const listResponseSchema = apiResponseSchema(
-  z.array(RHReparticionEstacionalListItemSchema),
+  z.array(RHReparticionEstacionalSchema),
 );
 type ListResponseType = z.infer<typeof listResponseSchema>;
 
@@ -40,7 +34,7 @@ export function useRHReparticionesEstacionales({
 
   const query = useApiQuery<
     ListResponseType,
-    z.infer<typeof RHReparticionEstacionalListItemSchema>[]
+    z.infer<typeof RHReparticionEstacionalSchema>[]
   >({
     queryKey: [
       "finanzas",
@@ -57,7 +51,7 @@ export function useRHReparticionesEstacionales({
       staleTime: 1000 * 60 * 5, // 5 minutes
       select: (data) => {
         if (!data.data) {
-          return [] as z.infer<typeof RHReparticionEstacionalListItemSchema>[];
+          return [] as z.infer<typeof RHReparticionEstacionalSchema>[];
         }
         return data.data;
       },
@@ -67,50 +61,5 @@ export function useRHReparticionesEstacionales({
   return {
     ...query,
     items: query.data ?? [],
-  };
-}
-
-// ── Detail ─────────────────────────────────────────────────────────────────────
-
-interface UseRHReparticionEstacionalDetalleProps {
-  reparticionId: string | null;
-  enabled?: boolean;
-}
-
-export function useRHReparticionEstacionalDetalle({
-  reparticionId,
-  enabled = true,
-}: UseRHReparticionEstacionalDetalleProps) {
-  const query = useApiQuery<
-    z.infer<typeof RHReparticionEstacionalDetalleResponseSchema>,
-    z.infer<typeof RHReparticionEstacionalDetalleSchema> | null
-  >({
-    queryKey: [
-      "finanzas",
-      "reparticiones-estacionales",
-      "detalle",
-      reparticionId ?? "",
-    ],
-    url: reparticionId
-      ? `/finanzas/reparticiones-estacionales/${reparticionId}`
-      : null,
-    schema: RHReparticionEstacionalDetalleResponseSchema,
-    queryOptions: {
-      enabled: !!reparticionId && enabled,
-      staleTime: 1000 * 60 * 2, // 2 minutes
-      select: (data) => {
-        if (!data.data) {
-          return null as z.infer<
-            typeof RHReparticionEstacionalDetalleSchema
-          > | null;
-        }
-        return data.data;
-      },
-    },
-  });
-
-  return {
-    ...query,
-    detalle: query.data ?? null,
   };
 }

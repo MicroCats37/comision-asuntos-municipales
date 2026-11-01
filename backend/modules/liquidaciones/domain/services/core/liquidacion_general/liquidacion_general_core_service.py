@@ -400,6 +400,7 @@ class LiquidacionGeneralCoreService:
         page: int,
         page_size: int,
         municipalidad_id=None,
+        distrito_id=None,
         propietario=None,
         razon_social=None,
         creador_username=None,
@@ -416,7 +417,7 @@ class LiquidacionGeneralCoreService:
         Unified paginated queryset for LiquidacionGeneral, selected by tipo_liquidacion.
 
         Applies the same filter set and pagination as the 6 legacy methods
-        (municipalidad_id, propietario, razon_social, creador_username, fecha_desde,
+        (municipalidad_id, distrito_id, propietario, razon_social, creador_username, fecha_desde,
         fecha_hasta, numero, numero_revision, direccion, documento, expediente).
         Uses conditional prefetch_related based on tipo_liquidacion.
         Returns (queryset, total_count).
@@ -435,16 +436,18 @@ class LiquidacionGeneralCoreService:
             *self._PREFETCH_MAP[tipo_liquidacion]
         )
 
-        # Order by tipo-specific numero DESC, fecha_registro DESC as tie-breaker.
+        # Current records first; within each group, order by numero descending.
         numero_lookup = self._NUMERO_FILTER_FIELD_MAP.get(tipo_liquidacion)
         if numero_lookup:
-            qs = qs.order_by(f'-{numero_lookup}', '-fecha_registro')
+            qs = qs.order_by('legacy', f'-{numero_lookup}', '-fecha_registro')
         else:
-            qs = qs.order_by('-fecha_registro')
+            qs = qs.order_by('legacy', '-fecha_registro')
 
         # Apply filters
         if municipalidad_id:
             qs = qs.filter(municipalidad_id=municipalidad_id)
+        if distrito_id:
+            qs = qs.filter(proyecto__distrito_id=distrito_id)
         if propietario:
             qs = qs.filter(proyecto__nombre_propietario__icontains=propietario)
         if razon_social:
@@ -476,6 +479,7 @@ class LiquidacionGeneralCoreService:
         page: int,
         page_size: int,
         municipalidad_id=None,
+        distrito_id=None,
         propietario=None,
         razon_social=None,
         creador_username=None,
@@ -497,6 +501,7 @@ class LiquidacionGeneralCoreService:
             page=page,
             page_size=page_size,
             municipalidad_id=municipalidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creador_username,
@@ -514,6 +519,7 @@ class LiquidacionGeneralCoreService:
         page: int,
         page_size: int,
         municipalidad_id=None,
+        distrito_id=None,
         propietario=None,
         razon_social=None,
         creador_username=None,
@@ -535,6 +541,7 @@ class LiquidacionGeneralCoreService:
             page=page,
             page_size=page_size,
             municipalidad_id=municipalidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creador_username,
@@ -552,6 +559,7 @@ class LiquidacionGeneralCoreService:
         page: int,
         page_size: int,
         municipalidad_id=None,
+        distrito_id=None,
         propietario=None,
         razon_social=None,
         creador_username=None,
@@ -573,6 +581,7 @@ class LiquidacionGeneralCoreService:
             page=page,
             page_size=page_size,
             municipalidad_id=municipalidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creador_username,
@@ -590,6 +599,7 @@ class LiquidacionGeneralCoreService:
         page: int,
         page_size: int,
         municipalidad_id=None,
+        distrito_id=None,
         propietario=None,
         razon_social=None,
         creador_username=None,
@@ -611,6 +621,7 @@ class LiquidacionGeneralCoreService:
             page=page,
             page_size=page_size,
             municipalidad_id=municipalidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creador_username,
@@ -628,6 +639,7 @@ class LiquidacionGeneralCoreService:
         page: int,
         page_size: int,
         municipalidad_id=None,
+        distrito_id=None,
         propietario=None,
         razon_social=None,
         creador_username=None,
@@ -649,6 +661,7 @@ class LiquidacionGeneralCoreService:
             page=page,
             page_size=page_size,
             municipalidad_id=municipalidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creador_username,
@@ -666,6 +679,7 @@ class LiquidacionGeneralCoreService:
         page: int,
         page_size: int,
         municipalidad_id=None,
+        distrito_id=None,
         propietario=None,
         razon_social=None,
         creador_username=None,
@@ -687,6 +701,7 @@ class LiquidacionGeneralCoreService:
             page=page,
             page_size=page_size,
             municipalidad_id=municipalidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creador_username,
@@ -948,6 +963,8 @@ class LiquidacionGeneralCoreService:
         page: int,
         page_size: int,
         tipo=None,
+        municipalidad_id=None,
+        distrito_id=None,
         documento=None,
         razon_social=None,
         propietario=None,
@@ -1081,14 +1098,18 @@ class LiquidacionGeneralCoreService:
                 Prefetch("comprobantes", queryset=LiquidacionComprobante.objects.order_by("-fecha_emision", "-id"), to_attr="comprobantes_prefetched"),
             )
 
-        # Order by tipo_liquidacion ASC, then tipo-specific numero DESC, fecha_registro DESC as tie-breaker.
+        # Current records first; within each group, retain tipo and numero order.
         qs = self._annotate_numero_orden(qs).order_by(
-            'tipo_liquidacion__codigo', '-numero_orden', '-fecha_registro',
+            'legacy', 'tipo_liquidacion__codigo', '-numero_orden', '-fecha_registro',
         )
 
         # Apply filters (only for non-None params)
         if tipo:
             qs = qs.filter(tipo_liquidacion__codigo=tipo)
+        if municipalidad_id:
+            qs = qs.filter(municipalidad_id=municipalidad_id)
+        if distrito_id:
+            qs = qs.filter(proyecto__distrito_id=distrito_id)
         if documento:
             qs = qs.filter(proyecto__entidad_numero_documento__icontains=documento)
         if razon_social:

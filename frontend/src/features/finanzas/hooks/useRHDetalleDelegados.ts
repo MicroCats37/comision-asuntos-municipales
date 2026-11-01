@@ -27,6 +27,11 @@ interface UseRHDetalleDelegadosProps {
   tipoLiquidacionCodigo?: string;
   numeroLiquidacion?: number;
   enabled?: boolean;
+  /**
+   * Pide el conjunto completo filtrado en una sola respuesta (sin paginación).
+   * Lo usa la vista para listar el mes/año completo y exportar a Excel.
+   */
+  sinPaginacion?: boolean;
 }
 
 export function useRHDetalleDelegados({
@@ -40,8 +45,13 @@ export function useRHDetalleDelegados({
   tipoLiquidacionCodigo,
   numeroLiquidacion,
   enabled = true,
+  sinPaginacion = false,
 }: UseRHDetalleDelegadosProps = {}) {
-  const params: Record<string, string | number> = { page, page_size: pageSize };
+  const params: Record<string, string | number | boolean> = {
+    page,
+    page_size: pageSize,
+  };
+  if (sinPaginacion) params.sin_paginacion = true;
   if (delegadoCip) {
     // CIP must be exactly 6 digits: pad with leading zeros on the request only,
     // keep visual/URL state untouched.

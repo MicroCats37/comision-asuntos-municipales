@@ -80,9 +80,14 @@ export function useCrearComprobante({
       // Backend returns ApiResponse<LiquidacionGeneralOutput>: { success, data, error }
       // Unwrap the envelope
       if (!data.success || !data.data) {
-        const apiError = handleApiError(data.error ?? new Error("API error"));
-        notify.error(apiError.message);
-        throw apiError;
+        // The envelope must be normalized as an HTTP payload (not as a bare
+        // error object) so `error.message` AND `error.details` survive.
+        throw Object.assign(
+          new Error("La API no devolvió los datos esperados."),
+          {
+            response: { data, status: 200 },
+          },
+        );
       }
       return data.data as LiquidacionGeneralOutput;
     },

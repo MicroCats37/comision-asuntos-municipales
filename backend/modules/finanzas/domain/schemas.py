@@ -111,32 +111,155 @@ class RHDelegadoCotizarIn(_BaseSchema):
 
 
 # ---------------------------------------------------------------------------
+# RH Delegado Mensual — PATCH (sincronización del conjunto final)
+# ---------------------------------------------------------------------------
+
+
+class RHDelegadoActualizarItemIn(_BaseSchema):
+    """
+    Item del conjunto final de detalles (PATCH) del RH mensual del delegado.
+
+    Reproduce la forma de selección de la cotización y agrega el identificador
+    estable del detalle (``detalle_id``) que permite conservar la fila ya
+    persistida:
+
+    - ``detalle_id`` presente → la fila se CONSERVA (se recalcula con la tasa
+      congelada del recibo).
+    - ``detalle_id`` ausente → la fila se AGREGA (se crea la asignación RH si
+      no existía).
+
+    Los campos de metadata de la asignación (``numero_rh``, ``periodo``,
+    ``mes``, ``dictamen_revision``, ``fecha_presentacion``,
+    ``fecha_revision``) NUNCA modifican una asignación ya existente: si el
+    payload intenta cambiarlos sobre un detalle retenido, el flujo responde
+    409 y no altera ningún recibo.
+    """
+    liquidacion_general_id: str  # UUID string de la liquidación seleccionada
+    especialidad_revision_id: str  # UUID string de la especialidad de revisión
+    detalle_id: Optional[str] = Field(
+        None,
+        description=(
+            "ID del DetalleHonorarioDelegado persistido. Si viene, la fila se "
+            "conserva; si no, la fila se agrega al conjunto final."
+        ),
+    )
+    numero_rh: Optional[str] = Field(None, description="Número de Orden/RH de la asignación")
+    periodo: Optional[int] = Field(None, description="Año de la asignación")
+    mes: Optional[int] = Field(None, ge=1, le=12, description="Mes de la asignación (1-12)")
+    dictamen_revision: Optional[str] = Field(None, description="Dictamen de revisión de la asignación")
+    fecha_presentacion: Optional[date] = Field(None, description="Fecha de presentación de la asignación")
+    fecha_revision: Optional[date] = Field(None, description="Fecha de revisión de la asignación")
+
+
+class RHDelegadoActualizarIn(_BaseSchema):
+    """
+    Payload de entrada para sincronizar (PATCH) el RH mensual del delegado.
+
+    El conjunto de ``items`` es el conjunto FINAL de detalles del recibo: los
+    detalles persistidos que no aparecen en el payload se retiran.
+    """
+    cip: str = Field(..., description="CIP del delegado dueño del recibo")
+    periodo: int = Field(..., ge=2000, le=2100, description="Año del periodo")
+    mes: int = Field(..., ge=1, le=12, description="Mes del periodo (1-12)")
+    delegado_operacion_id: str = Field(
+        ...,
+        description="UUID string de la DelegadoOperacion que define la tasa a aplicar",
+    )
+    items: list[RHDelegadoActualizarItemIn]
+
+
+# ---------------------------------------------------------------------------
+# RH Inspector Mensual — PATCH (sincronización del conjunto final)
+# ---------------------------------------------------------------------------
+
+
+class RHInspectorActualizarItemIn(_BaseSchema):
+    """
+    Item del conjunto final de detalles (PATCH) del RH mensual del inspector.
+
+    - ``detalle_id`` presente → la fila se CONSERVA (se re-cotiza con el saldo
+      del recibo excluido de su propio balance).
+    - ``detalle_id`` ausente → la fila se AGREGA.
+
+    Las fechas de revisión y presentación se validan como rango: una revisión
+    posterior a la presentación es un rango invertido (422).
+    """
+    exp_liqui: Optional[str] = Field(None, description="Expediente de la liquidación")
+    liquidacion_categoria_visitas_id: Optional[str] = Field(
+        None,
+        description="ID de la LiquidacionPorCategoriaVisitas (IO) seleccionada",
+    )
+    cantidad_visitas: int = Field(..., ge=1, description="Cantidad de inspecciones a liquidar")
+    periodo: Optional[int] = Field(None, description="Año del periodo del item")
+    mes: Optional[int] = Field(None, ge=1, le=12, description="Mes del periodo del item")
+    detalle_id: Optional[str] = Field(
+        None,
+        description=(
+            "ID del DetalleHonorarioInspector persistido. Si viene, la fila se "
+            "conserva; si no, la fila se agrega al conjunto final."
+        ),
+    )
+    fecha_revision: Optional[date] = Field(None, description="Fecha de revisión (ISO)")
+    fecha_presentacion: Optional[date] = Field(None, description="Fecha de presentación (ISO)")
+
+
+class RHInspectorActualizarIn(_BaseSchema):
+    """
+    Payload de entrada para sincronizar (PATCH) el RH mensual del inspector.
+
+    El conjunto de ``items`` es el conjunto FINAL de detalles del recibo: los
+    detalles persistidos que no aparecen en el payload se retiran.
+    """
+    cip: str = Field(..., description="CIP del inspector dueño del recibo")
+    periodo: int = Field(..., ge=2000, le=2100, description="Año del periodo")
+    mes: int = Field(..., ge=1, le=12, description="Mes del periodo (1-12)")
+    items: list[RHInspectorActualizarItemIn]
+
+
+# ---------------------------------------------------------------------------
 # RH Reparticion Estacional — contratos de entrada
 # ---------------------------------------------------------------------------
 
 
-class RHReparticionEstacionalCotizarIn(_BaseSchema):
+class RHReparticionEstacionalGeneralIn(_BaseSchema):
+    """
+    Bloque general de entrada de la RH Repartición Estacional.
+
+    Fields shared by the three operations (cotizar / crear / actualizar).
+    Defined once and composed by each operation schema so the three
+    endpoints can never drift apart (contract/SCHEMA_DRY_INTENTION.md).
+    """
+
+    especialidad_revision_id: str = Field(
+        ..., description="UUID string de EspecialidadRevision"
+    )
+    periodo: int = Field(..., ge=2000, le=2100, description="Año de la repartición")
+    mes_desde: int = Field(..., ge=1, le=12, description="Mes inicial del rango")
+    mes_hasta: int = Field(..., ge=1, le=12, description="Mes final del rango")
+    delegado_ids: list[str] = Field(
+        ..., description="Lista de UUIDs de Delegado seleccionados"
+    )
+
+
+class RHReparticionEstacionalCotizarIn(RHReparticionEstacionalGeneralIn):
     """
     Payload para cotizar una repartición estacional.
 
-    Incluye especialidad_revision, periodo, rango de meses y IDs de delegados.
     No persiste nada — solo calcula y retorna preview.
     """
-    especialidad_revision_id: str = Field(..., description="UUID string de EspecialidadRevision")
-    periodo: int = Field(..., ge=2000, le=2100, description="Año de la repartición")
-    mes_desde: int = Field(..., ge=1, le=12, description="Mes inicial del rango")
-    mes_hasta: int = Field(..., ge=1, le=12, description="Mes final del rango")
-    delegado_ids: list[str] = Field(..., description="Lista de UUIDs de Delegado seleccionados")
 
 
-class RHReparticionEstacionalCrearIn(_BaseSchema):
+class RHReparticionEstacionalCrearIn(RHReparticionEstacionalGeneralIn):
     """
     Payload para crear una repartición estacional (cotizar + persistir).
-
-    Mismos campos que CotizarIn — el flujo decide si solo cotiza o persiste.
     """
-    especialidad_revision_id: str = Field(..., description="UUID string de EspecialidadRevision")
-    periodo: int = Field(..., ge=2000, le=2100, description="Año de la repartición")
-    mes_desde: int = Field(..., ge=1, le=12, description="Mes inicial del rango")
-    mes_hasta: int = Field(..., ge=1, le=12, description="Mes final del rango")
-    delegado_ids: list[str] = Field(..., description="Lista de UUIDs de Delegado seleccionados")
+
+
+class RHReparticionEstacionalActualizarIn(RHReparticionEstacionalGeneralIn):
+    """
+    Payload para editar una repartición estacional persistida (PATCH).
+
+    Mismo bloque general que cotizar/crear: la edición recalcula la
+    distribución completa con la misma lógica de cálculo y reemplaza el
+    conjunto final de detalles.
+    """

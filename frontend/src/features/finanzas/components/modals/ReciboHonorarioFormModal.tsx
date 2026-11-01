@@ -10,7 +10,6 @@ import { FileText, Loader2, Receipt, User, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import { Button } from "@/components/ui/button";
-import { notify } from "@/errors";
 import { useCrearReciboDelegado } from "@/features/finanzas/hooks/useCrearReciboDelegado";
 import type { LiquidacionDelegado } from "@/features/finanzas/schemas/delegado-asignacion.schema";
 import { BuscarAsignacionDelegadoContent } from "./BuscarAsignacionDelegadoContent";
@@ -43,7 +42,7 @@ export function ReciboHonorarioFormModal({
       await crearMutation.mutateAsync({
         liquidacion_delegado_id: asignacionSeleccionada.id,
       });
-      notify.success("Recibo de honorario creado correctamente");
+      // The success toast comes from the mutation hook (server message).
       setAsignacionSeleccionada(null);
       onSuccess?.();
       onOpenChange(false);

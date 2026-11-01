@@ -3,6 +3,7 @@ FinanzasOrchestrator — fachada ligera para controladores.
 
 Solo delega. Sin lógica de negocio aquí.
 """
+
 import uuid
 from decimal import Decimal
 from injector import inject
@@ -15,16 +16,20 @@ from modules.finanzas.domain.services.flujos.rh_inspector_mensual_flujo import (
     RHInspectorMensualCrearFlujo,
     RHInspectorMensualListFlujo,
     RHInspectorMensualDeleteFlujo,
+    RHInspectorMensualActualizarFlujo,
 )
 from modules.finanzas.domain.services.flujos.rh_delegado_mensual_flujo import (
     RHDelegadoMensualCotizarFlujo,
     RHDelegadoMensualCrearFlujo,
     RHDelegadoMensualListFlujo,
     RHDelegadoMensualDeleteFlujo,
+    RHDelegadoMensualActualizarFlujo,
 )
 from modules.finanzas.domain.schemas import VariablesVigentesResult
 from modules.finanzas.domain.schemas import RHInspectorCotizarIn
+from modules.finanzas.domain.schemas import RHInspectorActualizarIn
 from modules.finanzas.domain.schemas import RHDelegadoCotizarIn
+from modules.finanzas.domain.schemas import RHDelegadoActualizarIn
 from modules.finanzas.domain.results.rh_inspector_mensual_result import (
     RHInspectorCotizarResult,
 )
@@ -56,6 +61,14 @@ from modules.finanzas.domain.results.rh_detalle_inspector_result import (
     MunicipalidadNestedResult as InspectorMunicipalidadNestedResult,
     TipoLiquidacionNestedResult as InspectorTipoLiquidacionNestedResult,
 )
+from modules.liquidaciones.domain.results.inspector.inspector_result import (
+    EspecialidadBasicaFormResult,
+    InspectorVigenteFormResult,
+    InspectoresVigentesFormResult,
+)
+from modules.liquidaciones.domain.services.core.inspector.inspector_core_service import (
+    InspectorCoreService,
+)
 
 
 class FinanzasOrchestrator:
@@ -76,6 +89,11 @@ class FinanzasOrchestrator:
         rh_inspector_mensual_list_flujo: RHInspectorMensualListFlujo | None = None,
         rh_inspector_mensual_delete_flujo: RHInspectorMensualDeleteFlujo | None = None,
         rh_delegado_mensual_delete_flujo: RHDelegadoMensualDeleteFlujo | None = None,
+        rh_inspector_mensual_actualizar_flujo: RHInspectorMensualActualizarFlujo
+        | None = None,
+        rh_delegado_mensual_actualizar_flujo: RHDelegadoMensualActualizarFlujo
+        | None = None,
+        inspector_core_service: InspectorCoreService | None = None,
     ):
         self.flujo = flujo
         self.core = core
@@ -87,6 +105,11 @@ class FinanzasOrchestrator:
         self.rh_inspector_mensual_list_flujo = rh_inspector_mensual_list_flujo
         self.rh_inspector_mensual_delete_flujo = rh_inspector_mensual_delete_flujo
         self.rh_delegado_mensual_delete_flujo = rh_delegado_mensual_delete_flujo
+        self.rh_inspector_mensual_actualizar_flujo = (
+            rh_inspector_mensual_actualizar_flujo
+        )
+        self.rh_delegado_mensual_actualizar_flujo = rh_delegado_mensual_actualizar_flujo
+        self.inspector_core_service = inspector_core_service
 
     def obtener_variables_vigentes(self) -> VariablesVigentesResult:
         """
@@ -149,6 +172,100 @@ class FinanzasOrchestrator:
         resultado = self.rh_inspector_mensual_delete_flujo.eliminar(rh_id)
         return resultado
 
+    def actualizar_rh_inspector_mensual_proceso(
+        self,
+        rh_id: int | str,
+        payload: RHInspectorActualizarIn,
+    ) -> RHInspectorCotizarResult:
+        """
+        Sincroniza (PATCH) el conjunto final de detalles del RH del inspector.
+
+        Delega al RHInspectorMensualActualizarFlujo.
+
+        Args:
+            rh_id: PK del ReciboHonorarioInspectorMensual a sincronizar.
+            payload: Conjunto final de items (agregar / conservar / retirar).
+
+        Returns:
+            RHInspectorCotizarResult con el estado final del recibo.
+
+        Raises:
+            HttpError(404): RH no encontrado.
+            HttpError(400): Selección malformada.
+            HttpError(422): Rango de fechas invertido.
+            HttpError(409): Conflicto (RH no latest, otro inspector u periodo).
+        """
+        resultado = self.rh_inspector_mensual_actualizar_flujo.actualizar(
+            rh_id, payload
+        )
+        return resultado
+
+    def cotizar_edicion_rh_inspector_mensual_proceso(
+        self,
+        rh_id: int | str,
+        payload: RHInspectorActualizarIn,
+    ) -> RHInspectorCotizarResult:
+        """Cotiza el conjunto final de una edición sin persistir cambios."""
+        return self.rh_inspector_mensual_actualizar_flujo.cotizar_actualizacion(
+            rh_id, payload
+        )
+
+    def listar_operatividades_rh_inspector_proceso(
+        self,
+        cip: str,
+        vigente: bool | None = None,
+    ) -> InspectoresVigentesFormResult:
+        """Lista operatividades para la selección del RH mensual de inspector."""
+        cip_normalizado = cip.strip()
+        if not cip_normalizado:
+            raise HttpError(400, "El parámetro cip es requerido")
+
+        operaciones = self.inspector_core_service.list_inspectores_por_cip(
+            cip=cip_normalizado,
+            vigente=vigente,
+        )
+        from datetime import date
+
+        today = date.today()
+        inspectores = []
+        for operacion in operaciones:
+            perfil = operacion.inspector.perfil_ingeniero
+            especialidad = operacion.especialidad_revision
+            periodo_vigente = next(
+                (
+                    periodo
+                    for periodo in operacion.periodos.all()
+                    if periodo.periodo_inicio <= today
+                    and (periodo.periodo_fin is None or periodo.periodo_fin >= today)
+                ),
+                None,
+            )
+            periodo = periodo_vigente or max(
+                operacion.periodos.all(),
+                key=lambda item: item.periodo_inicio,
+                default=None,
+            )
+            inspectores.append(
+                InspectorVigenteFormResult(
+                    id=str(operacion.inspector_id),
+                    nombre_completo=perfil.nombre_completo,
+                    cip=perfil.cip or "",
+                    especialidad=EspecialidadBasicaFormResult(
+                        id=str(especialidad.id),
+                        nombre=especialidad.nombre,
+                    ),
+                    tipo_liquidacion=operacion.tipo_liquidacion.codigo,
+                    categoria=operacion.categoria or None,
+                    numero_registro=operacion.numero_registro,
+                    vigencia=str(periodo.periodo_fin) if periodo and periodo.periodo_fin else None,
+                    periodo_inicio=periodo.periodo_inicio if periodo else None,
+                    periodo_fin=periodo.periodo_fin if periodo else None,
+                    es_vigente=periodo_vigente is not None,
+                    inspector_operacion_id=str(operacion.id),
+                )
+            )
+        return InspectoresVigentesFormResult(inspectores=inspectores)
+
     def list_candidatos_inspector_proceso(
         self,
         cip: str,
@@ -186,9 +303,7 @@ class FinanzasOrchestrator:
         )
 
         perfil = inspector.perfil_ingeniero
-        candidatos = [
-            InspectorCandidataItemResult(**data) for data in candidatos_data
-        ]
+        candidatos = [InspectorCandidataItemResult(**data) for data in candidatos_data]
 
         return InspectorCandidatosResult(
             inspector_id=str(inspector.id),
@@ -202,7 +317,9 @@ class FinanzasOrchestrator:
 
     # ── RH Delegado Mensual ─────────────────────────────────────────────────────
 
-    def _build_rh_mensual_delegado_result(self, recibo_mensual) -> RHDelegadoMensualListItemResult:
+    def _build_rh_mensual_delegado_result(
+        self, recibo_mensual
+    ) -> RHDelegadoMensualListItemResult:
         """
         Wrapper backward-compat para tests que llaman _build_rh_mensual_delegado_result
         directamente en el orchestrator.
@@ -210,7 +327,11 @@ class FinanzasOrchestrator:
         Delega al RHDelegadoMensualListFlujo si está disponible.
         """
         if self.rh_delegado_mensual_list_flujo is not None:
-            return self.rh_delegado_mensual_list_flujo._build_rh_mensual_delegado_result(recibo_mensual)
+            return (
+                self.rh_delegado_mensual_list_flujo._build_rh_mensual_delegado_result(
+                    recibo_mensual
+                )
+            )
         # Fallback inline
         from modules.finanzas.domain.results.rh_delegado_mensual_result import (
             DelegadoRHMinimalResult,
@@ -224,6 +345,7 @@ class FinanzasOrchestrator:
             _resolve_comprobante_activo,
         )
         from decimal import Decimal
+
         delegado_perfil = recibo_mensual.delegado.perfil_ingeniero
         operacion = recibo_mensual.delegado_operacion
         tipo_liquidacion = operacion.tipo_liquidacion if operacion else None
@@ -236,15 +358,26 @@ class FinanzasOrchestrator:
             lg = ld.liquidacion
             expediente = getattr(lg, "expediente", "") or ""
             renta_cip = d.renta_cip if d.renta_cip is not None else Decimal("0.00")
-            aporte_codemu = d.aporte_codemu if d.aporte_codemu is not None else Decimal("0.00")
-            fondo_comun = d.fondo_comun if d.fondo_comun is not None else Decimal("0.00")
-            neto_honorario = d.neto_honorario if d.neto_honorario is not None else Decimal("0.00")
+            aporte_codemu = (
+                d.aporte_codemu if d.aporte_codemu is not None else Decimal("0.00")
+            )
+            fondo_comun = (
+                d.fondo_comun if d.fondo_comun is not None else Decimal("0.00")
+            )
+            neto_honorario = (
+                d.neto_honorario if d.neto_honorario is not None else Decimal("0.00")
+            )
             detalles.append(
                 RHDelegadoMensualDetalleResult(
                     liquidacion_delegado_id=str(ld.id),
+                    detalle_id=str(d.id),
                     expediente=expediente,
-                    fecha_revision=str(ld.fecha_revision.isoformat()) if ld.fecha_revision else None,
-                    numero_revision=lg.numero_revision if hasattr(lg, "numero_revision") else None,
+                    fecha_revision=str(ld.fecha_revision.isoformat())
+                    if ld.fecha_revision
+                    else None,
+                    numero_revision=lg.numero_revision
+                    if hasattr(lg, "numero_revision")
+                    else None,
                     total_liquidacion=lg.total,
                     sub_total_liquidacion=lg.sub_total,
                     numero_rh=ld.numero_rh or None,
@@ -256,9 +389,15 @@ class FinanzasOrchestrator:
                     periodo=ld.periodo,
                     mes=ld.mes,
                     dictamen_revision=ld.dictamen_revision or None,
-                    fecha_presentacion=str(ld.fecha_presentacion.isoformat()) if ld.fecha_presentacion else None,
-                    delegado_operacion_id=str(ld.delegado_operacion_id) if ld.delegado_operacion_id else None,
-                    liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(lg),
+                    fecha_presentacion=str(ld.fecha_presentacion.isoformat())
+                    if ld.fecha_presentacion
+                    else None,
+                    delegado_operacion_id=str(ld.delegado_operacion_id)
+                    if ld.delegado_operacion_id
+                    else None,
+                    liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(
+                        lg
+                    ),
                     comprobante_activo=_resolve_comprobante_activo(lg),
                 )
             )
@@ -269,12 +408,22 @@ class FinanzasOrchestrator:
                 operatividad_context = DelegadoOperacionContextResult(
                     id=str(op.id),
                     municipalidad_id=str(op.municipalidad_id),
-                    municipalidad_nombre=op.municipalidad.nombre if op.municipalidad else "",
-                    tipo_liquidacion_id=str(op.tipo_liquidacion_id) if op.tipo_liquidacion_id else None,
-                    tipo_liquidacion_codigo=op.tipo_liquidacion.codigo if op.tipo_liquidacion else None,
-                    tipo_liquidacion_nombre=op.tipo_liquidacion.nombre if op.tipo_liquidacion else None,
+                    municipalidad_nombre=op.municipalidad.nombre
+                    if op.municipalidad
+                    else "",
+                    tipo_liquidacion_id=str(op.tipo_liquidacion_id)
+                    if op.tipo_liquidacion_id
+                    else None,
+                    tipo_liquidacion_codigo=op.tipo_liquidacion.codigo
+                    if op.tipo_liquidacion
+                    else None,
+                    tipo_liquidacion_nombre=op.tipo_liquidacion.nombre
+                    if op.tipo_liquidacion
+                    else None,
                     especialidad_id=str(op.especialidad_revision_id),
-                    especialidad_nombre=op.especialidad_revision.nombre if op.especialidad_revision else "",
+                    especialidad_nombre=op.especialidad_revision.nombre
+                    if op.especialidad_revision
+                    else "",
                     tipo=op.tipo or "",
                 )
         periodo_year = recibo_mensual.periodo
@@ -289,7 +438,9 @@ class FinanzasOrchestrator:
             id=str(recibo_mensual.id),
             periodo=periodo_year,
             mes=mes,
-            fecha_registro=recibo_mensual.fecha_registro.isoformat() if recibo_mensual.fecha_registro else "",
+            fecha_registro=recibo_mensual.fecha_registro.isoformat()
+            if recibo_mensual.fecha_registro
+            else "",
             delegado=DelegadoRHMinimalResult(
                 id=str(recibo_mensual.delegado.id),
                 nombre_completo=delegado_perfil.nombre_completo,
@@ -310,11 +461,15 @@ class FinanzasOrchestrator:
                 tasa_fondo_comun=tasas.fondo_comun if tasas else Decimal("0.10"),
                 tasa_delegado_id=tasas.id if tasas else None,
             ),
-            delegado_operacion_id=str(recibo_mensual.delegado_operacion_id) if recibo_mensual.delegado_operacion_id else None,
+            delegado_operacion_id=str(recibo_mensual.delegado_operacion_id)
+            if recibo_mensual.delegado_operacion_id
+            else None,
             delegado_operacion_context=operatividad_context,
         )
 
-    def _build_rh_inspector_mensual_result(self, recibo_mensual) -> "RHInspectorMensualListItemResult":
+    def _build_rh_inspector_mensual_result(
+        self, recibo_mensual
+    ) -> "RHInspectorMensualListItemResult":
         """
         Wrapper para construir RHInspectorMensualListItemResult desde un ORM object.
 
@@ -323,8 +478,13 @@ class FinanzasOrchestrator:
         from modules.finanzas.domain.results.rh_inspector_mensual_result import (
             RHInspectorMensualListItemResult,
         )
+
         if self.rh_inspector_mensual_list_flujo is not None:
-            return self.rh_inspector_mensual_list_flujo._build_rh_mensual_inspector_result(recibo_mensual)
+            return (
+                self.rh_inspector_mensual_list_flujo._build_rh_mensual_inspector_result(
+                    recibo_mensual
+                )
+            )
         # Fallback inline (copiado de RHInspectorMensualListFlujo)
         from modules.finanzas.domain.results.rh_inspector_mensual_result import (
             InspectorRHMinimalResult,
@@ -338,8 +498,13 @@ class FinanzasOrchestrator:
             _resolve_comprobante_activo,
         )
         from decimal import Decimal
+
         inspector_perfil = recibo_mensual.inspector.perfil_ingeniero
-        tasa_descuento = Decimal(str(recibo_mensual.tasa_descuento)) if recibo_mensual.tasa_descuento is not None else Decimal("0.0000")
+        tasa_descuento = (
+            Decimal(str(recibo_mensual.tasa_descuento))
+            if recibo_mensual.tasa_descuento is not None
+            else Decimal("0.0000")
+        )
         detalles: list[RHInspectorMensualDetalleResult] = []
         total_inspecciones_programadas = 0
         total_inspecciones_liquidadas = 0
@@ -354,19 +519,37 @@ class FinanzasOrchestrator:
             lcv = d.liquidacion_por_categoria_visitas
             lg = lcv.liquidacion_general
             lg.comprobantes_activos = [c for c in lg.comprobantes.all() if c.activo]
-            importe_bruto = d.importe_bruto if d.importe_bruto is not None else Decimal("0")
-            inspecciones_programadas = d.inspecciones_programadas if d.inspecciones_programadas is not None else 0
-            inspecciones_pagadas_hasta_mes_anterior = d.inspecciones_pagadas_hasta_mes_anterior if d.inspecciones_pagadas_hasta_mes_anterior is not None else 0
-            saldo_restante = int(d.saldo_restante) if d.saldo_restante is not None else 0
+            importe_bruto = (
+                d.importe_bruto if d.importe_bruto is not None else Decimal("0")
+            )
+            inspecciones_programadas = (
+                d.inspecciones_programadas
+                if d.inspecciones_programadas is not None
+                else 0
+            )
+            inspecciones_pagadas_hasta_mes_anterior = (
+                d.inspecciones_pagadas_hasta_mes_anterior
+                if d.inspecciones_pagadas_hasta_mes_anterior is not None
+                else 0
+            )
+            saldo_restante = (
+                int(d.saldo_restante) if d.saldo_restante is not None else 0
+            )
             total_inspecciones_programadas += inspecciones_programadas
             total_inspecciones_liquidadas += d.inspecciones_liquidadas
-            total_inspecciones_pagadas_anterior += inspecciones_pagadas_hasta_mes_anterior
+            total_inspecciones_pagadas_anterior += (
+                inspecciones_pagadas_hasta_mes_anterior
+            )
             total_saldo_restante += saldo_restante
             nombre_propietario = ""
             if lg.proyecto:
                 nombre_propietario = lg.proyecto.nombre_propietario or ""
             expediente = lg.expediente or ""
-            distrito = lg.proyecto.distrito.nombre if lg.proyecto and lg.proyecto.distrito else None
+            distrito = (
+                lg.proyecto.distrito.nombre
+                if lg.proyecto and lg.proyecto.distrito
+                else None
+            )
             liquidacion_inspector = None
             for li in lcv.inspectores.all():
                 if str(li.inspector_id) == str(recibo_mensual.inspector_id):
@@ -377,12 +560,17 @@ class FinanzasOrchestrator:
             dictamen_revision = None
             if liquidacion_inspector:
                 if liquidacion_inspector.fecha_revision:
-                    fecha_revision = str(liquidacion_inspector.fecha_revision.isoformat())
+                    fecha_revision = str(
+                        liquidacion_inspector.fecha_revision.isoformat()
+                    )
                 if liquidacion_inspector.fecha_presentacion:
-                    fecha_presentacion = str(liquidacion_inspector.fecha_presentacion.isoformat())
+                    fecha_presentacion = str(
+                        liquidacion_inspector.fecha_presentacion.isoformat()
+                    )
                 dictamen_revision = liquidacion_inspector.dictamen_revision or None
             detalles.append(
                 RHInspectorMensualDetalleResult(
+                    detalle_id=str(d.id),
                     expediente=expediente,
                     nombre_propietario=nombre_propietario,
                     distrito=distrito,
@@ -396,7 +584,9 @@ class FinanzasOrchestrator:
                     sub_total=d.sub_total,
                     descuento=d.descuento,
                     honorarios=d.honorarios,
-                    liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(lg),
+                    liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(
+                        lg
+                    ),
                     comprobante_activo=_resolve_comprobante_activo(lg),
                     fecha_revision=fecha_revision,
                     fecha_presentacion=fecha_presentacion,
@@ -439,7 +629,9 @@ class FinanzasOrchestrator:
             numero=recibo_mensual.numero,
             periodo=periodo_year,
             mes=mes,
-            fecha_registro=recibo_mensual.fecha_registro.isoformat() if recibo_mensual.fecha_registro else "",
+            fecha_registro=recibo_mensual.fecha_registro.isoformat()
+            if recibo_mensual.fecha_registro
+            else "",
             inspector=InspectorRHMinimalResult(
                 id=str(recibo_mensual.inspector.id),
                 nombre_completo=inspector_perfil.nombre_completo,
@@ -471,6 +663,7 @@ class FinanzasOrchestrator:
             _resolve_liquidacion_especifica_numero,
             _resolve_comprobante_activo,
         )
+
         delegado_perfil = recibo_mensual.delegado.perfil_ingeniero
         operacion = recibo_mensual.delegado_operacion
         tipo_liquidacion = operacion.tipo_liquidacion if operacion else None
@@ -483,15 +676,26 @@ class FinanzasOrchestrator:
             lg = ld.liquidacion
             expediente = getattr(lg, "expediente", "") or ""
             renta_cip = d.renta_cip if d.renta_cip is not None else Decimal("0.00")
-            aporte_codemu = d.aporte_codemu if d.aporte_codemu is not None else Decimal("0.00")
-            fondo_comun = d.fondo_comun if d.fondo_comun is not None else Decimal("0.00")
-            neto_honorario = d.neto_honorario if d.neto_honorario is not None else Decimal("0.00")
+            aporte_codemu = (
+                d.aporte_codemu if d.aporte_codemu is not None else Decimal("0.00")
+            )
+            fondo_comun = (
+                d.fondo_comun if d.fondo_comun is not None else Decimal("0.00")
+            )
+            neto_honorario = (
+                d.neto_honorario if d.neto_honorario is not None else Decimal("0.00")
+            )
             detalles.append(
                 RHDelegadoMensualDetalleResult(
                     liquidacion_delegado_id=str(ld.id),
+                    detalle_id=str(d.id),
                     expediente=expediente,
-                    fecha_revision=str(ld.fecha_revision.isoformat()) if ld.fecha_revision else None,
-                    numero_revision=lg.numero_revision if hasattr(lg, "numero_revision") else None,
+                    fecha_revision=str(ld.fecha_revision.isoformat())
+                    if ld.fecha_revision
+                    else None,
+                    numero_revision=lg.numero_revision
+                    if hasattr(lg, "numero_revision")
+                    else None,
                     total_liquidacion=lg.total,
                     sub_total_liquidacion=lg.sub_total,
                     numero_rh=ld.numero_rh or None,
@@ -503,9 +707,15 @@ class FinanzasOrchestrator:
                     periodo=ld.periodo,
                     mes=ld.mes,
                     dictamen_revision=ld.dictamen_revision or None,
-                    fecha_presentacion=str(ld.fecha_presentacion.isoformat()) if ld.fecha_presentacion else None,
-                    delegado_operacion_id=str(ld.delegado_operacion_id) if ld.delegado_operacion_id else None,
-                    liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(lg),
+                    fecha_presentacion=str(ld.fecha_presentacion.isoformat())
+                    if ld.fecha_presentacion
+                    else None,
+                    delegado_operacion_id=str(ld.delegado_operacion_id)
+                    if ld.delegado_operacion_id
+                    else None,
+                    liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(
+                        lg
+                    ),
                     comprobante_activo=_resolve_comprobante_activo(lg),
                 )
             )
@@ -516,12 +726,22 @@ class FinanzasOrchestrator:
                 operatividad_context = DelegadoOperacionContextResult(
                     id=str(op.id),
                     municipalidad_id=str(op.municipalidad_id),
-                    municipalidad_nombre=op.municipalidad.nombre if op.municipalidad else "",
-                    tipo_liquidacion_id=str(op.tipo_liquidacion_id) if op.tipo_liquidacion_id else None,
-                    tipo_liquidacion_codigo=op.tipo_liquidacion.codigo if op.tipo_liquidacion else None,
-                    tipo_liquidacion_nombre=op.tipo_liquidacion.nombre if op.tipo_liquidacion else None,
+                    municipalidad_nombre=op.municipalidad.nombre
+                    if op.municipalidad
+                    else "",
+                    tipo_liquidacion_id=str(op.tipo_liquidacion_id)
+                    if op.tipo_liquidacion_id
+                    else None,
+                    tipo_liquidacion_codigo=op.tipo_liquidacion.codigo
+                    if op.tipo_liquidacion
+                    else None,
+                    tipo_liquidacion_nombre=op.tipo_liquidacion.nombre
+                    if op.tipo_liquidacion
+                    else None,
                     especialidad_id=str(op.especialidad_revision_id),
-                    especialidad_nombre=op.especialidad_revision.nombre if op.especialidad_revision else "",
+                    especialidad_nombre=op.especialidad_revision.nombre
+                    if op.especialidad_revision
+                    else "",
                     tipo=op.tipo or "",
                 )
         periodo_year = recibo_mensual.periodo
@@ -536,7 +756,9 @@ class FinanzasOrchestrator:
             id=str(recibo_mensual.id),
             periodo=periodo_year,
             mes=mes,
-            fecha_registro=recibo_mensual.fecha_registro.isoformat() if recibo_mensual.fecha_registro else "",
+            fecha_registro=recibo_mensual.fecha_registro.isoformat()
+            if recibo_mensual.fecha_registro
+            else "",
             delegado=DelegadoRHMinimalResult(
                 id=str(recibo_mensual.delegado.id),
                 nombre_completo=delegado_perfil.nombre_completo,
@@ -557,7 +779,9 @@ class FinanzasOrchestrator:
                 tasa_fondo_comun=tasas.fondo_comun if tasas else Decimal("0.10"),
                 tasa_delegado_id=tasas.id if tasas else None,
             ),
-            delegado_operacion_id=str(recibo_mensual.delegado_operacion_id) if recibo_mensual.delegado_operacion_id else None,
+            delegado_operacion_id=str(recibo_mensual.delegado_operacion_id)
+            if recibo_mensual.delegado_operacion_id
+            else None,
             delegado_operacion_context=operatividad_context,
         )
 
@@ -610,6 +834,32 @@ class FinanzasOrchestrator:
         resultado = self.rh_delegado_mensual_delete_flujo.eliminar(rh_id)
         return resultado
 
+    def actualizar_rh_delegado_mensual_proceso(
+        self,
+        rh_id: int | str,
+        payload: RHDelegadoActualizarIn,
+    ) -> RHDelegadoCotizarResult:
+        """
+        Sincroniza (PATCH) el conjunto final de detalles del RH del delegado.
+
+        Delega al RHDelegadoMensualActualizarFlujo.
+
+        Args:
+            rh_id: PK del ReciboHonorarioDelegadoMensual a sincronizar.
+            payload: Conjunto final de items (agregar / conservar / retirar).
+
+        Returns:
+            RHDelegadoCotizarResult con el estado final del recibo.
+
+        Raises:
+            HttpError(404): RH no encontrado.
+            HttpError(400): Selección malformada.
+            HttpError(409): Conflicto (otro delegado u otro periodo, o mutación
+                            de la metadata compartida de la asignación).
+        """
+        resultado = self.rh_delegado_mensual_actualizar_flujo.actualizar(rh_id, payload)
+        return resultado
+
     def listar_rh_mensual_delegados_proceso(
         self,
         page: int = 1,
@@ -618,6 +868,7 @@ class FinanzasOrchestrator:
         municipalidad_id: uuid.UUID | None = None,
         periodo: int | None = None,
         mes: int | None = None,
+        sin_paginacion: bool = False,
     ) -> tuple[list[RHDelegadoMensualListItemResult], int]:
         """
         Lista RecibosHonorariosDelegadoMensuales con paginación.
@@ -639,6 +890,7 @@ class FinanzasOrchestrator:
                 municipalidad_id=municipalidad_id,
                 periodo=periodo,
                 mes=mes,
+                sin_paginacion=sin_paginacion,
             )
         # Fallback inline para tests que instancian sin DI
         from modules.finanzas.domain.results.rh_delegado_mensual_result import (
@@ -652,6 +904,7 @@ class FinanzasOrchestrator:
             _resolve_liquidacion_especifica_numero,
             _resolve_comprobante_activo,
         )
+
         page = max(1, page)
         page_size = max(1, min(page_size, 100))
         ORM_objects, total = self.core.list_rh_mensuales_delegados_paginated(
@@ -676,15 +929,28 @@ class FinanzasOrchestrator:
                 lg = ld.liquidacion
                 expediente = getattr(lg, "expediente", "") or ""
                 renta_cip = d.renta_cip if d.renta_cip is not None else Decimal("0.00")
-                aporte_codemu = d.aporte_codemu if d.aporte_codemu is not None else Decimal("0.00")
-                fondo_comun = d.fondo_comun if d.fondo_comun is not None else Decimal("0.00")
-                neto_honorario = d.neto_honorario if d.neto_honorario is not None else Decimal("0.00")
+                aporte_codemu = (
+                    d.aporte_codemu if d.aporte_codemu is not None else Decimal("0.00")
+                )
+                fondo_comun = (
+                    d.fondo_comun if d.fondo_comun is not None else Decimal("0.00")
+                )
+                neto_honorario = (
+                    d.neto_honorario
+                    if d.neto_honorario is not None
+                    else Decimal("0.00")
+                )
                 detalles.append(
                     RHDelegadoMensualDetalleResult(
                         liquidacion_delegado_id=str(ld.id),
+                        detalle_id=str(d.id),
                         expediente=expediente,
-                        fecha_revision=str(ld.fecha_revision.isoformat()) if ld.fecha_revision else None,
-                        numero_revision=lg.numero_revision if hasattr(lg, "numero_revision") else None,
+                        fecha_revision=str(ld.fecha_revision.isoformat())
+                        if ld.fecha_revision
+                        else None,
+                        numero_revision=lg.numero_revision
+                        if hasattr(lg, "numero_revision")
+                        else None,
                         total_liquidacion=lg.total,
                         sub_total_liquidacion=lg.sub_total,
                         numero_rh=ld.numero_rh or None,
@@ -696,9 +962,15 @@ class FinanzasOrchestrator:
                         periodo=ld.periodo,
                         mes=ld.mes,
                         dictamen_revision=ld.dictamen_revision or None,
-                        fecha_presentacion=str(ld.fecha_presentacion.isoformat()) if ld.fecha_presentacion else None,
-                        delegado_operacion_id=str(ld.delegado_operacion_id) if ld.delegado_operacion_id else None,
-                        liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(lg),
+                        fecha_presentacion=str(ld.fecha_presentacion.isoformat())
+                        if ld.fecha_presentacion
+                        else None,
+                        delegado_operacion_id=str(ld.delegado_operacion_id)
+                        if ld.delegado_operacion_id
+                        else None,
+                        liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(
+                            lg
+                        ),
                         comprobante_activo=_resolve_comprobante_activo(lg),
                     )
                 )
@@ -709,12 +981,22 @@ class FinanzasOrchestrator:
                     operatividad_context = DelegadoOperacionContextResult(
                         id=str(op.id),
                         municipalidad_id=str(op.municipalidad_id),
-                        municipalidad_nombre=op.municipalidad.nombre if op.municipalidad else "",
-                        tipo_liquidacion_id=str(op.tipo_liquidacion_id) if op.tipo_liquidacion_id else None,
-                        tipo_liquidacion_codigo=op.tipo_liquidacion.codigo if op.tipo_liquidacion else None,
-                        tipo_liquidacion_nombre=op.tipo_liquidacion.nombre if op.tipo_liquidacion else None,
+                        municipalidad_nombre=op.municipalidad.nombre
+                        if op.municipalidad
+                        else "",
+                        tipo_liquidacion_id=str(op.tipo_liquidacion_id)
+                        if op.tipo_liquidacion_id
+                        else None,
+                        tipo_liquidacion_codigo=op.tipo_liquidacion.codigo
+                        if op.tipo_liquidacion
+                        else None,
+                        tipo_liquidacion_nombre=op.tipo_liquidacion.nombre
+                        if op.tipo_liquidacion
+                        else None,
                         especialidad_id=str(op.especialidad_revision_id),
-                        especialidad_nombre=op.especialidad_revision.nombre if op.especialidad_revision else "",
+                        especialidad_nombre=op.especialidad_revision.nombre
+                        if op.especialidad_revision
+                        else "",
                         tipo=op.tipo or "",
                     )
             periodo_year = r.periodo
@@ -730,7 +1012,9 @@ class FinanzasOrchestrator:
                     id=str(r.id),
                     periodo=periodo_year,
                     mes=mes,
-                    fecha_registro=r.fecha_registro.isoformat() if r.fecha_registro else "",
+                    fecha_registro=r.fecha_registro.isoformat()
+                    if r.fecha_registro
+                    else "",
                     delegado=DelegadoRHMinimalResult(
                         id=str(r.delegado.id),
                         nombre_completo=delegado_perfil.nombre_completo,
@@ -747,11 +1031,17 @@ class FinanzasOrchestrator:
                     detalles=detalles,
                     variables_calculo=RHDelegadoVariablesCalculoResult(
                         tasa_renta_cip=tasas.renta_cip if tasas else Decimal("0.25"),
-                        tasa_aporte_codemu=tasas.aporte_codemu if tasas else Decimal("0.05"),
-                        tasa_fondo_comun=tasas.fondo_comun if tasas else Decimal("0.10"),
+                        tasa_aporte_codemu=tasas.aporte_codemu
+                        if tasas
+                        else Decimal("0.05"),
+                        tasa_fondo_comun=tasas.fondo_comun
+                        if tasas
+                        else Decimal("0.10"),
                         tasa_delegado_id=tasas.id if tasas else None,
                     ),
-                    delegado_operacion_id=str(r.delegado_operacion_id) if r.delegado_operacion_id else None,
+                    delegado_operacion_id=str(r.delegado_operacion_id)
+                    if r.delegado_operacion_id
+                    else None,
                     delegado_operacion_context=operatividad_context,
                 )
             )
@@ -806,6 +1096,10 @@ class FinanzasOrchestrator:
         page: int = 1,
         page_size: int = 10,
         inspector_id: uuid.UUID | None = None,
+        inspector_cip: str | None = None,
+        periodo: int | None = None,
+        mes: int | None = None,
+        sin_paginacion: bool = False,
     ) -> tuple[list, int]:
         """
         Lista RecibosHonorariosInspectorMensuales con paginación.
@@ -818,6 +1112,10 @@ class FinanzasOrchestrator:
                 page=page,
                 page_size=page_size,
                 inspector_id=int(inspector_id) if inspector_id is not None else None,
+                inspector_cip=inspector_cip,
+                periodo=periodo,
+                mes=mes,
+                sin_paginacion=sin_paginacion,
             )
         # Fallback inline para tests que instancian sin DI
         from modules.finanzas.domain.results.rh_inspector_mensual_result import (
@@ -836,6 +1134,7 @@ class FinanzasOrchestrator:
             _resolve_liquidacion_especifica_numero,
             _resolve_comprobante_activo,
         )
+
         page = max(1, page)
         page_size = max(1, min(page_size, 100))
         ORM_objects, total = self.core.list_rh_mensuales_inspectores_paginated(
@@ -846,7 +1145,11 @@ class FinanzasOrchestrator:
         results: list[RHInspectorMensualListItemResult] = []
         for r in ORM_objects:
             inspector_perfil = r.inspector.perfil_ingeniero
-            tasa_descuento = Decimal(str(r.tasa_descuento)) if r.tasa_descuento is not None else Decimal("0.0000")
+            tasa_descuento = (
+                Decimal(str(r.tasa_descuento))
+                if r.tasa_descuento is not None
+                else Decimal("0.0000")
+            )
             detalles: list[RHInspectorMensualDetalleResult] = []
             total_inspecciones_programadas = 0
             total_inspecciones_liquidadas = 0
@@ -861,19 +1164,37 @@ class FinanzasOrchestrator:
                 lcv = d.liquidacion_por_categoria_visitas
                 lg = lcv.liquidacion_general
                 lg.comprobantes_activos = [c for c in lg.comprobantes.all() if c.activo]
-                importe_bruto = d.importe_bruto if d.importe_bruto is not None else Decimal("0")
-                inspecciones_programadas = d.inspecciones_programadas if d.inspecciones_programadas is not None else 0
-                inspecciones_pagadas_hasta_mes_anterior = d.inspecciones_pagadas_hasta_mes_anterior if d.inspecciones_pagadas_hasta_mes_anterior is not None else 0
-                saldo_restante = int(d.saldo_restante) if d.saldo_restante is not None else 0
+                importe_bruto = (
+                    d.importe_bruto if d.importe_bruto is not None else Decimal("0")
+                )
+                inspecciones_programadas = (
+                    d.inspecciones_programadas
+                    if d.inspecciones_programadas is not None
+                    else 0
+                )
+                inspecciones_pagadas_hasta_mes_anterior = (
+                    d.inspecciones_pagadas_hasta_mes_anterior
+                    if d.inspecciones_pagadas_hasta_mes_anterior is not None
+                    else 0
+                )
+                saldo_restante = (
+                    int(d.saldo_restante) if d.saldo_restante is not None else 0
+                )
                 total_inspecciones_programadas += inspecciones_programadas
                 total_inspecciones_liquidadas += d.inspecciones_liquidadas
-                total_inspecciones_pagadas_anterior += inspecciones_pagadas_hasta_mes_anterior
+                total_inspecciones_pagadas_anterior += (
+                    inspecciones_pagadas_hasta_mes_anterior
+                )
                 total_saldo_restante += saldo_restante
                 nombre_propietario = ""
                 if lg.proyecto:
                     nombre_propietario = lg.proyecto.nombre_propietario or ""
                 expediente = lg.expediente or ""
-                distrito = lg.proyecto.distrito.nombre if lg.proyecto and lg.proyecto.distrito else None
+                distrito = (
+                    lg.proyecto.distrito.nombre
+                    if lg.proyecto and lg.proyecto.distrito
+                    else None
+                )
                 liquidacion_inspector = None
                 for li in lcv.inspectores.all():
                     if str(li.inspector_id) == str(r.inspector_id):
@@ -884,12 +1205,17 @@ class FinanzasOrchestrator:
                 dictamen_revision = None
                 if liquidacion_inspector:
                     if liquidacion_inspector.fecha_revision:
-                        fecha_revision = str(liquidacion_inspector.fecha_revision.isoformat())
+                        fecha_revision = str(
+                            liquidacion_inspector.fecha_revision.isoformat()
+                        )
                     if liquidacion_inspector.fecha_presentacion:
-                        fecha_presentacion = str(liquidacion_inspector.fecha_presentacion.isoformat())
+                        fecha_presentacion = str(
+                            liquidacion_inspector.fecha_presentacion.isoformat()
+                        )
                     dictamen_revision = liquidacion_inspector.dictamen_revision or None
                 detalles.append(
                     RHInspectorMensualDetalleResult(
+                        detalle_id=str(d.id),
                         expediente=expediente,
                         nombre_propietario=nombre_propietario,
                         distrito=distrito,
@@ -903,7 +1229,9 @@ class FinanzasOrchestrator:
                         sub_total=d.sub_total,
                         descuento=d.descuento,
                         honorarios=d.honorarios,
-                        liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(lg),
+                        liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(
+                            lg
+                        ),
                         comprobante_activo=_resolve_comprobante_activo(lg),
                         fecha_revision=fecha_revision,
                         fecha_presentacion=fecha_presentacion,
@@ -947,7 +1275,9 @@ class FinanzasOrchestrator:
                     numero=r.numero,
                     periodo=periodo_year,
                     mes=mes,
-                    fecha_registro=r.fecha_registro.isoformat() if r.fecha_registro else "",
+                    fecha_registro=r.fecha_registro.isoformat()
+                    if r.fecha_registro
+                    else "",
                     inspector=InspectorRHMinimalResult(
                         id=str(r.inspector.id),
                         nombre_completo=inspector_perfil.nombre_completo,
@@ -1026,17 +1356,20 @@ class FinanzasOrchestrator:
         fallback a implementación local para backward-compatibilidad con tests.
         """
         if self.rh_inspector_mensual_list_flujo is not None:
-            return self.rh_inspector_mensual_list_flujo.list_candidatos_inspector_proceso(
-                cip=cip,
-                periodo=periodo,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin,
+            return (
+                self.rh_inspector_mensual_list_flujo.list_candidatos_inspector_proceso(
+                    cip=cip,
+                    periodo=periodo,
+                    fecha_inicio=fecha_inicio,
+                    fecha_fin=fecha_fin,
+                )
             )
         # Fallback inline para tests que instancian sin DI
         from modules.finanzas.domain.results.rh_inspector_candidatos_result import (
             InspectorCandidatosResult,
             InspectorCandidataItemResult,
         )
+
         inspector = self.core.get_inspector_by_cip(cip)
         if not inspector:
             raise HttpError(404, f"Inspector con CIP '{cip}' no encontrado")
@@ -1111,6 +1444,7 @@ class FinanzasOrchestrator:
             InspectorCandidatosPaginatedResult,
             InspectorCandidataItemResult,
         )
+
         inspector = self.core.get_inspector_by_cip(cip)
         if not inspector:
             raise HttpError(404, f"Inspector con CIP '{cip}' no encontrado")
@@ -1130,18 +1464,20 @@ class FinanzasOrchestrator:
                 except ValueError:
                     pass
 
-        candidatos_data, total = self.core.list_liquidaciones_inspector_candidatas_paginated(
-            inspector_id=int(inspector.id),
-            page=page,
-            page_size=page_size,
-            expediente=expediente,
-            numero=numero,
-            propietario=propietario,
-            direccion=direccion,
-            periodo=periodo_int,
-            mes=mes_int,
-            fecha_inicio=fecha_inicio,
-            fecha_fin=fecha_fin,
+        candidatos_data, total = (
+            self.core.list_liquidaciones_inspector_candidatas_paginated(
+                inspector_id=int(inspector.id),
+                page=page,
+                page_size=page_size,
+                expediente=expediente,
+                numero=numero,
+                propietario=propietario,
+                direccion=direccion,
+                periodo=periodo_int,
+                mes=mes_int,
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
+            )
         )
         perfil = inspector.perfil_ingeniero
         items = [InspectorCandidataItemResult(**data) for data in candidatos_data]
@@ -1172,6 +1508,7 @@ class FinanzasOrchestrator:
         municipalidad_id: uuid.UUID | None = None,
         tipo_liquidacion_codigo: str | None = None,
         numero_liquidacion: int | None = None,
+        sin_paginacion: bool = False,
     ) -> tuple[list[DetalleDelegadoRowResult], int]:
         """
         Lista filas de DetalleHonorarioDelegado directamente (flat, sin agrupar por mes).
@@ -1179,6 +1516,8 @@ class FinanzasOrchestrator:
         Args:
             page: Página (1-indexed).
             page_size: Elementos por página (max 100).
+            sin_paginacion: Devuelve el conjunto completo filtrado en una sola
+                respuesta (sin paginación).
             delegado_id: Filter by delegado UUID.
             delegado_cip: Filter by CIP (from perfil_ingeniero). Takes precedence if both are set.
             periodo: Filter by año (from liquidacion_delegado). Optional.
@@ -1203,6 +1542,7 @@ class FinanzasOrchestrator:
             municipalidad_id=municipalidad_id,
             tipo_liquidacion_codigo=tipo_liquidacion_codigo,
             numero_liquidacion=numero_liquidacion,
+            sin_paginacion=sin_paginacion,
         )
 
         results: list[DetalleDelegadoRowResult] = []
@@ -1245,18 +1585,28 @@ class FinanzasOrchestrator:
                 periodo=ld.periodo,
                 mes=ld.mes,
                 dictamen_revision=ld.dictamen_revision or None,
-                fecha_revision=str(ld.fecha_revision.isoformat()) if ld.fecha_revision else None,
-                fecha_presentacion=str(ld.fecha_presentacion.isoformat()) if ld.fecha_presentacion else None,
+                fecha_revision=str(ld.fecha_revision.isoformat())
+                if ld.fecha_revision
+                else None,
+                fecha_presentacion=str(ld.fecha_presentacion.isoformat())
+                if ld.fecha_presentacion
+                else None,
                 delegado=DelegadoMinimalResult(
                     id=str(ld.delegado_id),
                     cip=delegado_perfil.cip if delegado_perfil else None,
-                    nombre_completo=delegado_perfil.nombre_completo if delegado_perfil else None,
+                    nombre_completo=delegado_perfil.nombre_completo
+                    if delegado_perfil
+                    else None,
                 ),
                 liquidacion=lg_nested,
                 especialidad=EspecialidadMinimalResult(
                     id=str(ld.especialidad_revision.id),
-                    nombre=ld.especialidad_revision.nombre if ld.especialidad_revision else None,
-                ) if ld.especialidad_revision else None,
+                    nombre=ld.especialidad_revision.nombre
+                    if ld.especialidad_revision
+                    else None,
+                )
+                if ld.especialidad_revision
+                else None,
             )
 
             results.append(
@@ -1284,6 +1634,7 @@ class FinanzasOrchestrator:
         mes: int | None = None,
         municipalidad_id: uuid.UUID | None = None,
         numero_liquidacion: int | None = None,
+        sin_paginacion: bool = False,
     ) -> tuple[list[DetalleInspectorRowResult], int]:
         """
         Lista filas de DetalleHonorarioInspector directamente (flat, sin agrupar por mes).
@@ -1291,6 +1642,8 @@ class FinanzasOrchestrator:
         Args:
             page: Página (1-indexed).
             page_size: Elementos por página (max 100).
+            sin_paginacion: Devuelve el conjunto completo filtrado en una sola
+                respuesta (sin paginación).
             inspector_id: Filter by inspector UUID (from parent receipt).
             inspector_cip: Filter by CIP (from inspector.perfil_ingeniero.cip).
                 Takes precedence if both inspector_id and inspector_cip are set.
@@ -1314,6 +1667,7 @@ class FinanzasOrchestrator:
             mes=mes,
             municipalidad_id=municipalidad_id,
             numero_liquidacion=numero_liquidacion,
+            sin_paginacion=sin_paginacion,
         )
 
         results: list[DetalleInspectorRowResult] = []
@@ -1354,7 +1708,8 @@ class FinanzasOrchestrator:
                     numero=_resolve_liquidacion_especifica_numero(lg),
                     nombre_propietario=(
                         lg.proyecto.nombre_propietario
-                        if getattr(lg, "proyecto", None) else None
+                        if getattr(lg, "proyecto", None)
+                        else None
                     ),
                     municipalidad=municipalidad_nested,
                     tipo_liquidacion=tipo_liq_nested,
@@ -1363,9 +1718,19 @@ class FinanzasOrchestrator:
             # Build nested InspectorLiquidacionResult
             ilq_nested = InspectorLiquidacionResult(
                 id=str(lcv.id),
-                periodo=(row.recibo_mensual.periodo if row.recibo_mensual else getattr(liquidacion_inspector, "periodo", None)),
-                mes=(row.recibo_mensual.mes if row.recibo_mensual else getattr(liquidacion_inspector, "mes", None)),
-                dictamen_revision=(getattr(liquidacion_inspector, "dictamen_revision", None) or None),
+                periodo=(
+                    row.recibo_mensual.periodo
+                    if row.recibo_mensual
+                    else getattr(liquidacion_inspector, "periodo", None)
+                ),
+                mes=(
+                    row.recibo_mensual.mes
+                    if row.recibo_mensual
+                    else getattr(liquidacion_inspector, "mes", None)
+                ),
+                dictamen_revision=(
+                    getattr(liquidacion_inspector, "dictamen_revision", None) or None
+                ),
                 fecha_revision=(
                     str(liquidacion_inspector.fecha_revision.isoformat())
                     if getattr(liquidacion_inspector, "fecha_revision", None)
@@ -1379,8 +1744,12 @@ class FinanzasOrchestrator:
                 inspector=InspectorMinimalResult(
                     id=str(inspector.id),
                     cip=inspector_perfil.cip if inspector_perfil else None,
-                    nombre_completo=inspector_perfil.nombre_completo if inspector_perfil else None,
-                ) if inspector else None,
+                    nombre_completo=inspector_perfil.nombre_completo
+                    if inspector_perfil
+                    else None,
+                )
+                if inspector
+                else None,
                 liquidacion=lg_insp_nested,
             )
 

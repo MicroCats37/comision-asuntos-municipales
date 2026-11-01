@@ -52,7 +52,7 @@ export function CrearReciboInspectorModal({
         liquidacion_inspector_id: asignacionSeleccionada.id,
         inspecciones_mes: mes,
       });
-      notify.success("Recibo de honorario de inspector creado correctamente");
+      // The success toast comes from the mutation hook (server message).
       setAsignacionSeleccionada(null);
       setInspeccionesMes("");
       onSuccess?.();

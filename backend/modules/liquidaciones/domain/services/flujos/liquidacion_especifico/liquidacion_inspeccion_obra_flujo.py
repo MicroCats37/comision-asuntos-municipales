@@ -17,6 +17,9 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
 from modules.liquidaciones.domain.schemas.liquidacion_especifico.inspeccion_obra_primera_revision_data import (
     InspeccionObraNuevaRevisionData,
 )
+from modules.liquidaciones.domain.schemas.liquidacion_legacy.legacy_registro_data import (
+    LegacyRegistroContexto,
+)
 from modules.liquidaciones.domain.results.liquidacion_especifico.inspeccion_obra_primera_revision_result import (
     InspeccionObraPrimeraRevisionResult,
     LiquidacionEspecificaInspeccionObraResult,
@@ -156,6 +159,7 @@ class LiquidacionInspeccionObraFlujo:
         data: InspeccionObraNuevaRevisionData,
         inspector,
         inspector_operacion=None,
+        registro_legacy: LegacyRegistroContexto | None = None,
     ) -> InspeccionObraPrimeraRevisionResult:
         """
         Crea una IO primera-revision SIN liquidación previa.
@@ -169,13 +173,28 @@ class LiquidacionInspeccionObraFlujo:
           /seleccionables endpoint). Ya NO se consulta por tipo INSPECCION_OBRA.
           Los inspectores NO se registran con tipo INSPECCION_OBRA — se registran
           con el tipo del trámite que pueden revisar (EDIFICACION/HABILITACION_URBANA).
+
+        Registro legacy (`registro_legacy`):
+        - usa el IGV/UIT y la tarifa de visitas resueltos por el orchestrator
+          para `fecha_registro` (nunca los vigentes de hoy);
+        - persiste `fecha_registro` explícita y `legacy=True`;
+        - persiste el `numero` explícito del registro;
+        - NO crea vínculo de inspector (`LiquidacionInspector`): el registro
+          legacy no tiene `inspector_operacion_id`.
         """
         from decimal import Decimal
 
         # 1. Traer tarifa, UIT y IGV
-        tarifa = self.visitas_core.get_tarifa_por_id(data.liquidacion_especifica.tarifa.tarifa_visitas_id) if data.liquidacion_especifica.tarifa.tarifa_visitas_id else None
-        uit_vigente = self.general_core.get_uit_vigente()
-        igv_vigente = self.general_core.get_igv_vigente()
+        if registro_legacy is not None:
+            # Registro legacy: valores YA resueltos por el orchestrator para la
+            # fecha efectiva del registro (nunca los vigentes de hoy).
+            tarifa = registro_legacy.tarifa
+            uit_vigente = registro_legacy.uit
+            igv_vigente = registro_legacy.igv
+        else:
+            tarifa = self.visitas_core.get_tarifa_por_id(data.liquidacion_especifica.tarifa.tarifa_visitas_id) if data.liquidacion_especifica.tarifa.tarifa_visitas_id else None
+            uit_vigente = self.general_core.get_uit_vigente()
+            igv_vigente = self.general_core.get_igv_vigente()
 
         # 2. Calcular subtotal (si hay tarifa — legacy CATEGORIA=0 path may have None)
         if tarifa:
@@ -236,6 +255,10 @@ class LiquidacionInspeccionObraFlujo:
             igv_id=igv_vigente,
             uit_id=uit_vigente,
             usuario_creador_id=usuario_id,
+            fecha_registro=(
+                registro_legacy.fecha_registro if registro_legacy is not None else None
+            ),
+            legacy=registro_legacy is not None,
         )
 
         # 7. Crear Tipo: LiquidacionPorCategoriaVisitas
@@ -247,21 +270,27 @@ class LiquidacionInspeccionObraFlujo:
         # 8. Crear Específico: LiquidacionInspeccionObra
         liquidacion_io = LiquidacionInspeccionObra.objects.create(
             liquidacion=liquidacion_general,
+            numero=(
+                registro_legacy.numero if registro_legacy is not None else None
+            ),
         )
 
         # 9. Crear LiquidacionInspector
         # La especialidad_revision se resuelve desde inspector_operacion cuando
         # está disponible (inyectado desde el input, obtenido de /seleccionables).
         # Ya NO se consulta por tipo INSPECCION_OBRA.
-        LiquidacionInspector.objects.create(
-            liquidacion=liquidacion_visitas,
-            inspector=inspector,
-            inspector_operacion=inspector_operacion,
-            especialidad_revision_id=(
-                inspector_operacion.especialidad_revision_id
-                if inspector_operacion else None
-            ),
-        )
+        # El registro legacy NO tiene inspector_operacion_id: en ese caso no se
+        # crea el vínculo (LiquidacionInspector exige inspector y especialidad).
+        if inspector is not None:
+            LiquidacionInspector.objects.create(
+                liquidacion=liquidacion_visitas,
+                inspector=inspector,
+                inspector_operacion=inspector_operacion,
+                especialidad_revision_id=(
+                    inspector_operacion.especialidad_revision_id
+                    if inspector_operacion else None
+                ),
+            )
 
         # 10. Mapear a Result
         liquidacion_general.refresh_from_db()

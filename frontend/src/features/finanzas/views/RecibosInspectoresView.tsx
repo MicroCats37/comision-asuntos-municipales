@@ -3,7 +3,7 @@
  * Ruta: /liquidaciones/recibos-inspectores
  *
  * Usa PageHeader + cards pattern + paginación URL-driven.
- * Filtros: inspector_id (URL-driven)
+ * Filtros: inspector_cip, periodo, mes (URL-driven)
  *
  * Nota: El endpoint GET /finanzas/recibos-inspectores ahora retorna
  * RecibosHonorariosInspectorMensuales (agrupados por periodo+inspector).
@@ -11,25 +11,37 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Filter, HardHat, Plus, RefreshCw, X } from "lucide-react";
+import {
+  FileSpreadsheet,
+  Filter,
+  HardHat,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
 import { useState } from "react";
 import { useConfirmationDialog } from "@/components/confirmationDialog/useConfirmationDialog";
 import { Pagination } from "@/components/genericPagination/Pagination";
+import { ActiveFiltersPanel } from "@/components/ui/active-filters";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { ReciboHonorarioInspectorMensualCard } from "@/features/finanzas/components/cards/ReciboHonorarioInspectorMensualCard";
 import { RecibosInspectoresFiltroModal } from "@/features/finanzas/components/filtros";
+import { RHMensualExcelModal } from "@/features/finanzas/components/modals/RHMensualExcelModal";
 import { RhInspectorMensualModal } from "@/features/finanzas/components/modals/RhInspectorMensualModal";
 import { useEliminarReciboInspector } from "@/features/finanzas/hooks/useEliminarReciboInspector";
 import { useRecibosInspectores } from "@/features/finanzas/hooks/useRecibosInspectores";
 import { useRecibosInspectoresFiltersUrl } from "@/features/finanzas/hooks/useRecibosInspectoresFiltersUrl";
+import type { ReciboHonorarioInspectorMensual } from "@/features/finanzas/schemas/recibo-honorario.schema";
 import { useUrlPagination } from "@/hooks/system/useUrlPagination";
 
 const KIND_ICON: LucideIcon = HardHat;
 
 export function RecibosInspectoresView() {
   const [rhModalOpen, setRhModalOpen] = useState(false);
+  const [rhEnEdicion, setRhEnEdicion] =
+    useState<ReciboHonorarioInspectorMensual | null>(null);
   const [filtroModalOpen, setFiltroModalOpen] = useState(false);
+  const [excelModalOpen, setExcelModalOpen] = useState(false);
   const { page, pageSize, setPage, setPageSize } = useUrlPagination();
   const { filtros, setFiltros, clearFiltros } =
     useRecibosInspectoresFiltersUrl();
@@ -40,10 +52,35 @@ export function RecibosInspectoresView() {
     useRecibosInspectores({
       page,
       pageSize,
-      inspectorId: filtros.inspector_id,
+      inspectorCip: filtros.inspector_cip,
+      periodo: filtros.periodo,
+      mes: filtros.mes,
     });
 
-  const hasActiveFilters = Boolean(filtros.inspector_id);
+  const activeFilterCount = [
+    filtros.inspector_cip,
+    filtros.periodo,
+    filtros.mes,
+  ].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
+
+  const removeFilter = (key: keyof typeof filtros) => {
+    const next = { ...filtros };
+    delete next[key];
+    setFiltros(next);
+  };
+
+  /** Abre el wizard de RH mensual en modo edición sobre el recibo elegido. */
+  const handleEdit = (item: ReciboHonorarioInspectorMensual) => {
+    setRhEnEdicion(item);
+    setRhModalOpen(true);
+  };
+
+  /** Abre el wizard de RH mensual en modo creación. */
+  const handleCreate = () => {
+    setRhEnEdicion(null);
+    setRhModalOpen(true);
+  };
 
   const handleDelete = (id: string) => {
     confirm({
@@ -69,6 +106,14 @@ export function RecibosInspectoresView() {
           actionNodes={
             <>
               <Button
+                variant="outline"
+                className="gap-2 h-11 rounded-xl font-bold shrink-0"
+                onClick={() => setExcelModalOpen(true)}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Exportar Excel
+              </Button>
+              <Button
                 variant={hasActiveFilters ? "default" : "outline"}
                 className="gap-2 h-11 rounded-xl font-bold shrink-0"
                 onClick={() => setFiltroModalOpen(true)}
@@ -77,13 +122,13 @@ export function RecibosInspectoresView() {
                 Filtros
                 {hasActiveFilters && (
                   <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-foreground/20 text-xs font-bold">
-                    1
+                    {activeFilterCount}
                   </span>
                 )}
               </Button>
               <Button
                 className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-                onClick={() => setRhModalOpen(true)}
+                onClick={handleCreate}
               >
                 <Plus className="h-4 w-4" />
                 Crear RH
@@ -92,28 +137,40 @@ export function RecibosInspectoresView() {
           }
         />
 
-        {/* Filtros activos */}
-        {hasActiveFilters && (
-          <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/20 rounded-xl border border-border/60">
-            <span className="text-xs font-semibold text-muted-foreground">
-              Filtros activos:
-            </span>
-            {filtros.inspector_id && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
-                Inspector ID: {filtros.inspector_id}
-              </span>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearFiltros}
-              className="h-7 px-2 gap-1 text-xs text-destructive"
-            >
-              <X className="h-3 w-3" />
-              Limpiar
-            </Button>
-          </div>
-        )}
+        {/* Filtros activos — cada chip removible individualmente */}
+        <ActiveFiltersPanel
+          entries={[
+            ...(filtros.inspector_cip
+              ? [
+                  {
+                    key: "inspector_cip" as const,
+                    label: "CIP",
+                    value: filtros.inspector_cip,
+                  },
+                ]
+              : []),
+            ...(filtros.periodo
+              ? [
+                  {
+                    key: "periodo" as const,
+                    label: "Año",
+                    value: String(filtros.periodo),
+                  },
+                ]
+              : []),
+            ...(filtros.mes
+              ? [
+                  {
+                    key: "mes" as const,
+                    label: "Mes",
+                    value: String(filtros.mes),
+                  },
+                ]
+              : []),
+          ]}
+          onRemove={removeFilter}
+          onClearAll={clearFiltros}
+        />
 
         {/* Cards View */}
         <div className="space-y-4">
@@ -146,7 +203,7 @@ export function RecibosInspectoresView() {
               <Button
                 variant="outline"
                 className="gap-2 h-10 rounded-xl font-semibold"
-                onClick={() => setRhModalOpen(true)}
+                onClick={handleCreate}
               >
                 <Plus className="h-4 w-4" />
                 Crear RH
@@ -160,6 +217,7 @@ export function RecibosInspectoresView() {
                     key={item.id}
                     item={item}
                     onDelete={handleDelete}
+                    onEdit={handleEdit}
                   />
                 ))}
               </div>
@@ -177,11 +235,22 @@ export function RecibosInspectoresView() {
         </div>
       </div>
 
+      <RHMensualExcelModal
+        open={excelModalOpen}
+        onOpenChange={setExcelModalOpen}
+        variante="inspectores"
+      />
+
       <RhInspectorMensualModal
         open={rhModalOpen}
-        onOpenChange={setRhModalOpen}
+        onOpenChange={(open) => {
+          setRhModalOpen(open);
+          if (!open) setRhEnEdicion(null);
+        }}
+        editContext={rhEnEdicion ? { rh: rhEnEdicion } : null}
         onSuccess={() => {
           setRhModalOpen(false);
+          setRhEnEdicion(null);
           refetch();
         }}
       />

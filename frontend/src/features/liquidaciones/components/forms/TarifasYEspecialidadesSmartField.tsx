@@ -30,6 +30,7 @@ const TIPO_GRUPO_B: TipoTramiteEdificaciones[] = [
 
 export type TarifasSmartFieldMode =
   | "create"
+  | "legacy"
   | "edit"
   | "nueva-revision"
   | "relacionada";
@@ -82,7 +83,17 @@ export function TarifasYEspecialidadesSmartField({
   fecha,
   variant = "auto",
 }: TarifasYEspecialidadesSmartFieldProps) {
-  const hookProps = mode === "edit" && fecha ? { fecha } : {};
+  const fechaRegistro = useWatch({
+    control: methods.control,
+    name: "fecha_registro",
+  }) as string | undefined;
+  const fechaEfectiva = fecha ?? fechaRegistro;
+  const hookProps =
+    mode === "legacy"
+      ? { fecha: fechaEfectiva, enabled: Boolean(fechaEfectiva) }
+      : mode === "edit" && fechaEfectiva
+        ? { fecha: fechaEfectiva }
+        : {};
   const { data, isLoading } = useTarifasVigentesPorcentaje(tipo, hookProps);
 
   const tipoTramite = useWatch({

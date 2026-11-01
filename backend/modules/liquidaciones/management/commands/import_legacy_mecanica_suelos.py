@@ -325,10 +325,8 @@ class Command(BaseCommand):
                                 distrito=ubigeo
                             ).first()
                 if not municipalidad:
-                    municipalidad = Municipalidad.objects.first()
-                if not municipalidad:
                     counters["errors"] += 1
-                    report_lines.append(f"{nro}\t{nro}\tsin municipalidad\tNO\terror")
+                    report_lines.append(f"{nro}\t{nro}\tmunicipalidad no resuelta\tNO\terror")
                     continue
 
                 # ── Entidad/proyecto (mismo mapeo HU) ──
@@ -343,15 +341,14 @@ class Command(BaseCommand):
                 direccion = _clean(raw.get("DIRECCION")) or DIRECCION_FALTANTE_LEGACY
                 urbanizacion = _clean(raw.get("URBNZCION"))
 
+                distrito_id = getattr(municipalidad, "distrito_id", None)
+                distrito_note = ""
+                if distrito_id is None:
+                    distrito_note = "; distrito=NULL (no resuelto)"
+
                 # ── LiquidacionGeneral ──
-                # Legacy requiere proyecto. OneToOne: creamos un proyecto por LG.
+                # Legacy requiere un proyecto, que solo se crea en --apply.
                 from modules.liquidaciones.domain.models.proyecto import Proyecto
-                legacy_proyecto = Proyecto.objects.create(
-                    nombre_propietario=nombre_propietario or "LEGACY IMPORT",
-                    direccion=direccion,
-                    distrito_id=getattr(municipalidad, "distrito_id", None),
-                    entidad_razon_social=razon_social,
-                )
                 # Resolver naive vs aware datetime para evitar warnings
                 from django.utils import timezone as djtz
                 fecha_dt = datetime.combine(fecha, datetime.min.time())
@@ -366,6 +363,12 @@ class Command(BaseCommand):
 
                 if apply:
                     with transaction.atomic():
+                        legacy_proyecto = Proyecto.objects.create(
+                            nombre_propietario=nombre_propietario or "LEGACY IMPORT",
+                            direccion=direccion,
+                            distrito_id=distrito_id,
+                            entidad_razon_social=razon_social,
+                        )
                         lg = LiquidacionGeneral.objects.create(
                             proyecto=legacy_proyecto,
                             municipalidad=municipalidad,
@@ -498,7 +501,7 @@ class Command(BaseCommand):
 
                 counters["created"] += 1
                 report_lines.append(
-                    f"{nro}\t{nro}\tarea={area} rec={subtotal_recalc:.2f} excel={subtotal_legacy} diff={diff:.2f}\t{'SI' if apply else 'DRY'}\t{'creada' if apply else 'seria creada'}"
+                    f"{nro}\t{nro}\tarea={area} rec={subtotal_recalc:.2f} excel={subtotal_legacy} diff={diff:.2f}{distrito_note}\t{'SI' if apply else 'DRY'}\t{'creada' if apply else 'seria creada'}"
                 )
             except Exception as exc:
                 counters["errors"] += 1

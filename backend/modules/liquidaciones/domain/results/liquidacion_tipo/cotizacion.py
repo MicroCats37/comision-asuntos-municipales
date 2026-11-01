@@ -63,7 +63,7 @@ class CotizacionPorcentajeObraResult(BaseModel):
     total: Decimal
     # ── Estrategia PO (Edificaciones). Los demás motores los dejan en None. ──
     estrategia_cotizacion: Optional[str] = None
-    count_habilitadas: Optional[int] = None
+    cantidad_especialidades_habilitadas: Optional[int] = None
     total_explicito: Optional[Decimal] = None
     porcentaje_tarifa: Optional[Decimal] = None
     acumulacion: Optional[AcumulacionPorcentajeObraResult] = None

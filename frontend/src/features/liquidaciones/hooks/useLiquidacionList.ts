@@ -11,6 +11,7 @@ type PaginatedData<T> = z.infer<
 /** Filtros comunes del backend para listas de liquidaciones. */
 export interface LiquidacionFiltros {
   entidad_id?: string;
+  distrito_id?: string;
   propietario?: string;
   fecha_desde?: string;
   fecha_hasta?: string;
@@ -55,6 +56,7 @@ export function useLiquidacionList<T>({
     page_size: pageSize,
   };
   if (filtros?.entidad_id) params.entidad_id = filtros.entidad_id;
+  if (filtros?.distrito_id) params.distrito_id = filtros.distrito_id;
   if (filtros?.propietario) params.propietario = filtros.propietario;
   if (filtros?.fecha_desde) params.fecha_desde = filtros.fecha_desde;
   if (filtros?.fecha_hasta) params.fecha_hasta = filtros.fecha_hasta;

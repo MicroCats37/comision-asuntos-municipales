@@ -153,6 +153,9 @@ class InspectorPresenter:
                     categoria=item.categoria,
                     numero_registro=item.numero_registro,
                     vigencia=item.vigencia,
+                    periodo_inicio=item.periodo_inicio,
+                    periodo_fin=item.periodo_fin,
+                    es_vigente=item.es_vigente,
                     inspector_operacion_id=uuid.UUID(item.inspector_operacion_id),
                 )
             )

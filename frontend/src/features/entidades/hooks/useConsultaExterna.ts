@@ -5,7 +5,7 @@
  * Hook único: useDocumentoLookup — auto-detecta DNI (8) vs RUC (11).
  */
 import { useMutation } from "@tanstack/react-query";
-import { notify } from "@/errors";
+import { getErrorMessage, notify } from "@/errors";
 import { consultarDocumento } from "../services/consulta-externa.service";
 
 export interface DocumentoConsultaData {
@@ -29,7 +29,8 @@ export function useDocumentoLookup() {
       }
     },
     onError: (error: Error) => {
-      notify.error(error.message || "Error al consultar documento");
+      // The API envelope owns the message (404, 503, validation, ...).
+      notify.error(getErrorMessage(error));
     },
   });
 }

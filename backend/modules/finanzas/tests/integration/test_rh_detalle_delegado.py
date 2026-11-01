@@ -51,6 +51,9 @@ from modules.finanzas.domain.models.detalle_honorario_delegado import (
 from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreService
 from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
 from modules.finanzas.domain.services.flujos.finanzas_flujo import FinanzasFlujo
+from modules.finanzas.presentation.presenters.finanzas_presenter import (
+    FinanzasPresenter,
+)
 from django.contrib.auth import get_user_model
 
 
@@ -797,3 +800,149 @@ def test_detalle_delegado_filtro_cip_sin_resultados(
 
     assert total == 0
     assert len(rows) == 0
+
+
+@pytest.mark.django_db
+def test_detalle_delegado_sin_paginacion_devuelve_el_conjunto_completo(
+    db,
+    core_service,
+    orquestador,
+    perfil_ingeniero_delegado,
+    segundo_perfil_ingeniero_delegado,
+    delegado,
+    segundo_delegado,
+    liquidacion_general_porcentaje,
+    segundo_liquidacion_general_porcentaje,
+    especialidad_estructuras,
+):
+    """
+    GIVEN: Dos filas detalle del mismo periodo (2026-01)
+    WHEN:  list_detalle_honorario_delegado_paginated se llama con sin_paginacion=True
+    THEN:  Devuelve TODAS las filas en una sola respuesta, ignorando el page_size
+    """
+    ld1 = _crear_liquidacion_delegado(
+        db,
+        liquidacion_general_porcentaje,
+        delegado,
+        especialidad_estructuras,
+        2026,
+        1,
+    )
+    ld2 = _crear_liquidacion_delegado(
+        db,
+        segundo_liquidacion_general_porcentaje,
+        segundo_delegado,
+        especialidad_estructuras,
+        2026,
+        1,
+    )
+
+    recibo = ReciboHonorarioDelegadoMensual.objects.create(
+        delegado=delegado,
+        periodo=2026,
+        mes=1,
+        sub_total=Decimal("1600.00"),
+        renta_cip=Decimal("400.00"),
+        aporte_codemu=Decimal("80.00"),
+        fondo_comun=Decimal("160.00"),
+        neto_honorario=Decimal("960.00"),
+    )
+    detalle1 = _crear_detalle_delegado(db, recibo, ld1, Decimal("1000.00"))
+    detalle2 = _crear_detalle_delegado(db, recibo, ld2, Decimal("600.00"))
+
+    rows, total = core_service.list_detalle_honorario_delegado_paginated(
+        page=1,
+        page_size=1,
+        periodo=2026,
+        mes=1,
+        sin_paginacion=True,
+    )
+
+    assert total == 2
+    assert len(rows) == 2
+    assert {r.id for r in rows} == {detalle1.id, detalle2.id}
+
+    # Sin sin_paginacion el page_size se respeta (paginación normal).
+    rows_paginados, total_paginados = (
+        core_service.list_detalle_honorario_delegado_paginated(
+            page=1,
+            page_size=1,
+            periodo=2026,
+            mes=1,
+        )
+    )
+
+    assert total_paginados == 2
+    assert len(rows_paginados) == 1
+
+    # El presenter describe la respuesta sin paginación como una sola página
+    # con todas las filas (el envelope no debe sugerir que hay más páginas).
+    results, total_result = orquestador.list_rh_detalle_delegados_proceso(
+        page=1,
+        page_size=1,
+        periodo=2026,
+        mes=1,
+        sin_paginacion=True,
+    )
+    presented = FinanzasPresenter.present_rh_detalle_delegados_list(
+        results,
+        total_result,
+        1,
+        1,
+        True,
+    )
+
+    assert len(presented.items) == 2
+    assert presented.total == 2
+    assert presented.total_pages == 1
+    assert presented.page_size == 2
+
+
+@pytest.mark.django_db
+def test_endpoint_detalle_delegado_sin_paginacion(
+    auth_client,
+    db,
+    perfil_ingeniero_delegado,
+    delegado,
+    liquidacion_general_porcentaje,
+    especialidad_estructuras,
+):
+    """
+    GIVEN: Dos filas detalle del periodo 2026-01
+    WHEN:  GET /finanzas/recibos-delegados/detalle con sin_paginacion=true
+    THEN:  Devuelve TODAS las filas en una sola respuesta y el envelope lo
+           describe como una única página
+    """
+    ld = _crear_liquidacion_delegado(
+        db,
+        liquidacion_general_porcentaje,
+        delegado,
+        especialidad_estructuras,
+        2026,
+        1,
+    )
+    recibo = ReciboHonorarioDelegadoMensual.objects.create(
+        delegado=delegado,
+        periodo=2026,
+        mes=1,
+        sub_total=Decimal("1000.00"),
+        renta_cip=Decimal("250.00"),
+        aporte_codemu=Decimal("50.00"),
+        fondo_comun=Decimal("100.00"),
+        neto_honorario=Decimal("600.00"),
+    )
+    _crear_detalle_delegado(db, recibo, ld, Decimal("1000.00"))
+
+    response = auth_client.get(
+        "/finanzas/recibos-delegados/detalle"
+        "?page=1&page_size=20&sin_paginacion=true&periodo=2026&mes=1"
+        "&tipo_liquidacion_codigo=EDIFICACION"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    data = body["data"]
+    assert data["total"] == 1
+    assert len(data["items"]) == 1
+    assert data["total_pages"] == 1

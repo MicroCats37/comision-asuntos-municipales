@@ -1,5 +1,5 @@
 /**
- * Zod schemas for RH Reparticion Estacional.
+ * Zod schemas for RH Reparticion Estacional (RH Trimestral).
  * Mirrors backend presentation schemas in:
  *   modules/finanzas/presentation/schemas/rh_reparticion_estacional_schemas.py
  *
@@ -9,7 +9,7 @@
  *   POST /finanzas/reparticiones-estacionales/cotizar
  *   POST /finanzas/reparticiones-estacionales
  *   GET  /finanzas/reparticiones-estacionales
- *   GET  /finanzas/reparticiones-estacionales/{id}
+ *   PATCH /finanzas/reparticiones-estacionales/{id}
  *   DELETE /finanzas/reparticiones-estacionales/{id}
  */
 import { z } from "zod";
@@ -40,11 +40,9 @@ export type CapituloMinimal = z.infer<typeof CapituloMinimalSchema>;
 
 /**
  * Delegate share detail — mirrors RHReparticionEstacionalDelegadoOut.
- * Nested `delegado` object is the primary shape; `delegado_id` is a backward-
- * compatibility alias kept for transition.
+ * The delegate identity is nested; no duplicate flat identifier is exposed.
  */
 export const RHReparticionEstacionalDelegadoSchema = z.object({
-  delegado_id: z.string(),
   delegado: DelegadoMinimalSchema,
   monto: num(),
 });
@@ -54,11 +52,9 @@ export type RHReparticionEstacionalDelegado = z.infer<
 
 /**
  * Chapter share detail — mirrors RHReparticionEstacionalCapituloOut.
- * Nested `capitulo` object is the primary shape; `capitulo_id` is a backward-
- * compatibility alias kept for transition.
+ * The chapter identity is nested; no duplicate flat identifier is exposed.
  */
 export const RHReparticionEstacionalCapituloSchema = z.object({
-  capitulo_id: z.string(),
   capitulo: CapituloMinimalSchema,
   monto: num(),
 });
@@ -66,10 +62,15 @@ export type RHReparticionEstacionalCapitulo = z.infer<
   typeof RHReparticionEstacionalCapituloSchema
 >;
 
-// ── Input payloads (cotizar + crear share the same shape) ─────────────────────
+// ── Input payloads (cotizar + crear + actualizar comparten el bloque general) ───
 
-/** Input for POST /finanzas/reparticiones-estacionales/cotizar and /crear */
-export const RHReparticionEstacionalCotizarInSchema = z.object({
+/**
+ * Bloque general de entrada — mirrors backend RHReparticionEstacionalGeneralIn.
+ *
+ * The three operations (cotizar / crear / actualizar) compose the SAME block:
+ * the backend defines it once and each operation schema extends it.
+ */
+export const RHReparticionEstacionalGeneralInSchema = z.object({
   especialidad_revision_id: z
     .string()
     .min(1, "Especialidad revision es requerida"),
@@ -78,14 +79,30 @@ export const RHReparticionEstacionalCotizarInSchema = z.object({
   mes_hasta: z.number().int().min(1).max(12),
   delegado_ids: z.array(z.string()).min(1, "Al menos un delegado es requerido"),
 });
+export type RHReparticionEstacionalGeneralIn = z.infer<
+  typeof RHReparticionEstacionalGeneralInSchema
+>;
+
+/** Input for POST /finanzas/reparticiones-estacionales/cotizar */
+export const RHReparticionEstacionalCotizarInSchema =
+  RHReparticionEstacionalGeneralInSchema;
 export type RHReparticionEstacionalCotizarIn = z.infer<
   typeof RHReparticionEstacionalCotizarInSchema
 >;
 
-// Alias for semantic clarity
-export type RHReparticionEstacionalCrearIn = RHReparticionEstacionalCotizarIn;
+/** Input for POST /finanzas/reparticiones-estacionales */
 export const RHReparticionEstacionalCrearInSchema =
-  RHReparticionEstacionalCotizarInSchema;
+  RHReparticionEstacionalGeneralInSchema;
+export type RHReparticionEstacionalCrearIn = z.infer<
+  typeof RHReparticionEstacionalCrearInSchema
+>;
+
+/** Input for PATCH /finanzas/reparticiones-estacionales/{id} */
+export const RHReparticionEstacionalActualizarInSchema =
+  RHReparticionEstacionalGeneralInSchema;
+export type RHReparticionEstacionalActualizarIn = z.infer<
+  typeof RHReparticionEstacionalActualizarInSchema
+>;
 
 // ── Cotizar output ─────────────────────────────────────────────────────────────
 
@@ -114,60 +131,63 @@ export const RHReparticionEstacionalCotizarResponseSchema = apiResponseSchema(
   RHReparticionEstacionalCotizarSchema,
 );
 
-// ── List item ─────────────────────────────────────────────────────────────────
+// ── Persisted list output ──────────────────────────────────────────────────────
 
-/** List item — mirrors RHReparticionEstacionalListItemOut */
-export const RHReparticionEstacionalListItemSchema = z.object({
+export const RHReparticionEstacionalIdentidadSchema = z.object({
   id: z.string(),
-  especialidad_revision_id: z.string(),
-  especialidad_revision_nombre: z.string(),
-  periodo: z.number().int(),
-  total_fondo_comun: num(),
-  numero_delegados: z.number().int(),
-  numero_capitulos: z.number().int(),
-  monto_por_participacion: num(),
-  residual: num(),
-  is_deleted: z.boolean(),
   created_at: z.string(),
 });
-export type RHReparticionEstacionalListItem = z.infer<
-  typeof RHReparticionEstacionalListItemSchema
->;
 
-// ── Detail ────────────────────────────────────────────────────────────────────
-
-/** Full detail — mirrors RHReparticionEstacionalDetalleOut */
-export const RHReparticionEstacionalDetalleSchema = z.object({
-  id: z.string(),
-  especialidad_revision_id: z.string(),
-  especialidad_revision_nombre: z.string(),
+export const RHReparticionEstacionalGeneralSchema = z.object({
+  especialidad_revision: z.object({
+    id: z.string(),
+    nombre: z.string(),
+  }),
   periodo: z.number().int(),
   mes_desde: z.number().int(),
   mes_hasta: z.number().int(),
+});
+
+export const RHReparticionEstacionalDistribucionSchema = z.object({
   total_fondo_comun: num(),
   numero_capitulos: z.number().int(),
   numero_delegados: z.number().int(),
   monto_por_participacion: num(),
   residual: num(),
-  is_deleted: z.boolean(),
-  created_at: z.string(),
   detalles_delegados: z.array(RHReparticionEstacionalDelegadoSchema),
   detalles_capitulos: z.array(RHReparticionEstacionalCapituloSchema),
 });
-export type RHReparticionEstacionalDetalle = z.infer<
-  typeof RHReparticionEstacionalDetalleSchema
+
+/** Composed list item — mirrors RHReparticionEstacionalOut. */
+export const RHReparticionEstacionalSchema = z.object({
+  identidad: RHReparticionEstacionalIdentidadSchema,
+  general: RHReparticionEstacionalGeneralSchema,
+  distribucion: RHReparticionEstacionalDistribucionSchema,
+});
+export type RHReparticionEstacional = z.infer<
+  typeof RHReparticionEstacionalSchema
 >;
 
-/** Response for GET /finanzas/reparticiones-estacionales/{id} — returns RHReparticionEstacionalDetalleSchema */
-export const RHReparticionEstacionalDetalleResponseSchema = apiResponseSchema(
-  RHReparticionEstacionalDetalleSchema,
+/**
+ * Response envelope of a single persisted item.
+ *
+ * The PATCH endpoint returns the SAME composed item the list returns, so the
+ * same schema validates both.
+ */
+export const RHReparticionEstacionalResponseSchema = apiResponseSchema(
+  RHReparticionEstacionalSchema,
 );
 
 // ── Delete response ────────────────────────────────────────────────────────────
 
-/** Delete response — mirrors RHReparticionEstacionalDeleteOut */
+/**
+ * Delete payload — mirrors RHReparticionEstacionalDeleteOut.
+ *
+ * The human-readable message lives only in the top level of the envelope
+ * (contract/next-app-architecture-contract.md §11), so it is not repeated here.
+ */
 export const RHReparticionEstacionalDeleteSchema = z.object({
-  message: z.string(),
+  id: z.string(),
 });
 export type RHReparticionEstacionalDelete = z.infer<
   typeof RHReparticionEstacionalDeleteSchema

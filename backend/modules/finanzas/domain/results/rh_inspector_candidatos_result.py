@@ -8,6 +8,10 @@ from decimal import Decimal
 
 from pydantic import BaseModel
 
+from modules.finanzas.domain.results.rh_delegado_mensual_result import (
+    LiquidacionComprobanteMinimalResult,
+)
+
 
 class InspectorCandidataItemResult(BaseModel):
     """
@@ -23,7 +27,7 @@ class InspectorCandidataItemResult(BaseModel):
     fecha_registro: str  # ISO date string
     inspector_nombre: str
     inspector_cip: str
-    inspector_dni: str
+    inspector_dni: str | None = None
     especialidad_nombre: str
     nombre_propietario: str  # from LiquidacionGeneral.proyecto.nombre_propietario
     cantidad_visitas: int  # inspecciones_programadas (from LiquidacionPorCategoriaVisitas)
@@ -32,6 +36,11 @@ class InspectorCandidataItemResult(BaseModel):
     costo_por_inspeccion: Decimal  # sub_total / cantidad_visitas
     total_liquidacion: Decimal  # sub_total of LiquidacionGeneral
     sub_total_liquidacion: Decimal  # same as total_liquidacion
+    # Número de la liquidación específica (e.g. LiquidacionInspeccionObra.numero).
+    # Dato DISTINTO de `numero_revision` (revisión) y del `numero` del RH de cabecera.
+    liquidacion_especifica_numero: int | None = None
+    # Comprobante activo (activo=True) de la liquidación.
+    comprobante_activo: LiquidacionComprobanteMinimalResult | None = None
 
 
 class InspectorCandidatosResult(BaseModel):
@@ -41,7 +50,7 @@ class InspectorCandidatosResult(BaseModel):
     inspector_id: str
     inspector_nombre: str
     inspector_cip: str
-    inspector_dni: str
+    inspector_dni: str | None = None
     periodo: str
     candidatos: list[InspectorCandidataItemResult]
     total: int
@@ -54,7 +63,7 @@ class InspectorCandidatosPaginatedResult(BaseModel):
     inspector_id: str
     inspector_nombre: str
     inspector_cip: str
-    inspector_dni: str
+    inspector_dni: str | None = None
     periodo: str
     items: list[InspectorCandidataItemResult]
     total: int

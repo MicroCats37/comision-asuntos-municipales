@@ -127,7 +127,9 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
                 or EstrategiaCotizacionPO.NORMAL_SELECCIONADAS
             ),
             participantes=list(po_data.tarifas),
-            count_habilitadas=getattr(po_data, 'count_habilitadas', None),
+            cantidad_especialidades_habilitadas=getattr(
+                po_data, 'cantidad_especialidades_habilitadas', None
+            ),
             valor_declarado=po_data.datos.valor_declarado,
             total_explicito=getattr(po_data, 'total_explicito', None),
             igv_porcentaje=igv_porcentaje,
@@ -136,11 +138,21 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
         )
         return self.porcentaje_core.calcular_cotizacion_po_estrategia(contexto)
 
-    def _crear_wrapper(self, liquidacion_general) -> LiquidacionEdificacion:
-        """Create Edificacion identity wrapper."""
+    def _crear_wrapper(self, liquidacion_general, numero: int | None = None) -> LiquidacionEdificacion:
+        """
+        Create Edificacion identity wrapper.
+
+        `numero` es el número explícito del registro legacy (informativo y
+        repetible). Si no se informa, se conserva el número histórico que
+        deja el importador legacy (`_legacy_numero`) y, en su defecto, el
+        autonumerado del modelo.
+        """
+        numero_resuelto = (
+            numero if numero is not None else getattr(self, "_legacy_numero", None)
+        )
         return LiquidacionEdificacion.objects.create(
             liquidacion=liquidacion_general,
-            numero=getattr(self, "_legacy_numero", None),
+            numero=numero_resuelto,
         )
 
     def _build_result(
@@ -196,7 +208,9 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
                 porcentaje_minimo_uit=liquidacion_po.porcentaje_minimo_uit,
                 derecho_aplicado_id=str(liquidacion_po.derecho_aplicado_id) if liquidacion_po.derecho_aplicado_id else None,
                 estrategia_cotizacion=liquidacion_po.estrategia_cotizacion,
-                count_habilitadas=liquidacion_po.count_habilitadas,
+                cantidad_especialidades_habilitadas=(
+                    liquidacion_po.cantidad_especialidades_habilitadas
+                ),
                 total_explicito=liquidacion_po.total_explicito,
                 porcentaje_tarifa=liquidacion_po.porcentaje_tarifa,
                 tarifa_aplicada_id=str(liquidacion_po.tarifa_aplicada_id) if liquidacion_po.tarifa_aplicada_id else None,

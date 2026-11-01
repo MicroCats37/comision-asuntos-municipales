@@ -24,6 +24,9 @@ from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_m2_result
 from modules.liquidaciones.domain.schemas.liquidacion_especifico.mecanica_suelos_primera_revision_data import (
     MecanicaSuelosPrimeraRevisionData,
 )
+from modules.liquidaciones.domain.schemas.liquidacion_legacy.legacy_registro_data import (
+    LegacyRegistroContexto,
+)
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
 )
@@ -59,8 +62,9 @@ class LiquidacionMecanicaSuelosFlujo(LiquidacionM2FlujoBase):
         self,
         usuario_id: int,
         data: MecanicaSuelosPrimeraRevisionData,
+        registro_legacy: LegacyRegistroContexto | None = None,
     ) -> MecanicaSuelosPrimeraRevisionResult:
-        return self._ejecutar_primera_revision_sync(usuario_id, data)
+        return self._ejecutar_primera_revision_sync(usuario_id, data, registro_legacy)
 
     def ejecutar_legacy(
         self,
@@ -96,6 +100,7 @@ class LiquidacionMecanicaSuelosFlujo(LiquidacionM2FlujoBase):
         self,
         usuario_id: int,
         data: MecanicaSuelosPrimeraRevisionData,
+        registro_legacy: LegacyRegistroContexto | None = None,
     ) -> MecanicaSuelosPrimeraRevisionResult:
         gen_data = data.liquidacion_general
         esp_data = data.liquidacion_especifica
@@ -106,6 +111,7 @@ class LiquidacionMecanicaSuelosFlujo(LiquidacionM2FlujoBase):
             gen_data=gen_data,
             esp_data=esp_data,
             cotizacion=cotizacion,
+            registro_legacy=registro_legacy,
         )
 
     # ── Relacionada (MS-specific) ───────────────────────────────────────────
@@ -314,9 +320,16 @@ class LiquidacionMecanicaSuelosFlujo(LiquidacionM2FlujoBase):
     def _get_tipo_liquidacion_code(self) -> str:
         return TipoLiquidacion.MECANICA_SUELOS
 
-    def _crear_wrapper(self, liquidacion_general) -> LiquidacionMecanicaSuelos:
+    def _crear_wrapper(self, liquidacion_general, numero: int | None = None) -> LiquidacionMecanicaSuelos:
+        """
+        Create Mecánica de Suelos identity wrapper.
+
+        `numero` es el número explícito del registro legacy (informativo y
+        repetible). Si no se informa, el modelo asigna el autonumerado.
+        """
         return LiquidacionMecanicaSuelos.objects.create(
-            liquidacion=liquidacion_general
+            liquidacion=liquidacion_general,
+            numero=numero,
         )
 
     def _build_result(

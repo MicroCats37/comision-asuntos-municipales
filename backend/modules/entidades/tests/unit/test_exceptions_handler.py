@@ -44,7 +44,9 @@ class TestOnHttpErrorPreservesMessage:
             assert data["success"] is False
             assert data["error"]["message"] == "El servicio de consulta de documentos no está disponible. Intente más tarde."
             assert data["error"]["code"] == "SCRAPER_UNAVAILABLE"
-            assert "non_field_errors" in data["error"]["details"]
+            # El mensaje ya vive en error.message: no se duplica bajo la clave
+            # global `non_field_errors` (el frontend nunca debe pintar esa clave).
+            assert data["error"]["details"] is None
 
     async def test_documento_invalido_error_message_preserved(self):
         """422 con mensaje específico → error.message debe contener ese mensaje."""

@@ -12,13 +12,17 @@ from injector import inject
 
 from core.responses import ApiResponse, success_response
 from core.pagination import PaginatedData
-from modules.finanzas.domain.schemas import RHInspectorCotizarIn
+from modules.finanzas.domain.schemas import (
+    RHInspectorActualizarIn,
+    RHInspectorCotizarIn,
+)
 from modules.finanzas.presentation.schemas.finanzas_schemas import (
     RHInspectorCotizarOut,
     InspectorCandidatosOut,
     InspectorCandidatosPaginatedOut,
     RHInspectorMensualListItemOut,
     RHInspectorDeleteOut,
+    RHInspectorOperatividadesOut,
 )
 from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
 from modules.finanzas.presentation.presenters.finanzas_presenter import FinanzasPresenter
@@ -34,6 +38,7 @@ class RHInspectorMensualController:
     - POST /finanzas/recibos-inspectores/crear
     - GET  /finanzas/recibos-inspectores/candidatos
     - GET  /finanzas/recibos-inspectores
+    - PATCH /finanzas/recibos-inspectores/{rh_id}
     """
 
     @inject
@@ -53,6 +58,22 @@ class RHInspectorMensualController:
         """
         result = self.orchestrator.cotizar_rh_inspector_mensual_proceso(payload)
         return success_response(FinanzasPresenter.present_rh_inspector_mensual(result))
+
+    @route.get(
+        "/recibos-inspectores/operatividades",
+        response={200: ApiResponse[RHInspectorOperatividadesOut]},
+    )
+    def listar_operatividades_inspector(
+        self,
+        cip: str,
+        vigente: bool | None = Query(default=None),
+    ):
+        """Lista operatividades RH del inspector, actuales, históricas o ambas."""
+        result = self.orchestrator.listar_operatividades_rh_inspector_proceso(
+            cip=cip,
+            vigente=vigente,
+        )
+        return success_response(result)
 
     @route.post(
         "/recibos-inspectores/crear",
@@ -139,9 +160,27 @@ class RHInspectorMensualController:
         page: int = Query(1, ge=1),
         page_size: int = Query(10, ge=1, le=100),
         inspector_id: uuid.UUID | None = None,
+        inspector_cip: str | None = Query(
+            None, description="CIP del inspector"
+        ),
+        periodo: int | None = Query(
+            None, ge=2000, le=2100, description="Año del periodo (e.g. 2026)"
+        ),
+        mes: int | None = Query(
+            None, ge=1, le=12, description="Mes del periodo (1-12)"
+        ),
+        sin_paginacion: bool = Query(
+            False,
+            description=(
+                "Devuelve el conjunto completo filtrado en una sola respuesta "
+                "(sin paginación). Útil para exportar la lista completa."
+            ),
+        ),
     ):
         """
-        GET /finanzas/recibos-inspectores — lista RecibosHonorariosInspectorMensual con paginación.
+        GET /finanzas/recibos-inspectores — lista RecibosHonorariosInspectorMensuales con paginación.
+
+        Filtros: inspector_id, inspector_cip, periodo, mes.
 
         Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
         retorna success_response formateado por presenter.
@@ -150,9 +189,13 @@ class RHInspectorMensualController:
             page=page,
             page_size=page_size,
             inspector_id=inspector_id,
+            inspector_cip=inspector_cip,
+            periodo=periodo,
+            mes=mes,
+            sin_paginacion=sin_paginacion,
         )
         presented = FinanzasPresenter.present_rh_mensuales_inspector_list(
-            domain_results, total, page, page_size
+            domain_results, total, page, page_size, sin_paginacion
         )
         return success_response(presented)
 
@@ -169,5 +212,55 @@ class RHInspectorMensualController:
         """
         self.orchestrator.eliminar_rh_inspector_mensual_proceso(id)
         return success_response(
-            RHInspectorDeleteOut(id=id, message="Recibo de inspector eliminado correctamente.")
+            RHInspectorDeleteOut(
+                id=id, message="Recibo de inspector eliminado correctamente."
+            ),
+            message="Recibo de inspector eliminado correctamente.",
+        )
+
+    @route.patch(
+        "/recibos-inspectores/{rh_id}",
+        response={200: ApiResponse[RHInspectorCotizarOut]},
+    )
+    def actualizar_recibo_inspector(
+        self,
+        request,
+        rh_id: uuid.UUID,
+        payload: RHInspectorActualizarIn,
+    ):
+        """
+        PATCH /finanzas/recibos-inspectores/{rh_id} — sincroniza el conjunto final de detalles.
+
+        El conjunto de items del payload es el conjunto FINAL de liquidaciones del
+        recibo: los detalles persistidos que no se incluyen se retiran. El
+        conjunto final se re-cotiza excluyendo el propio RH de su balance y el
+        ledger de pagos del RH se reemplaza por el nuevo conjunto.
+
+        Solo el último RH del inspector es editable (409 en caso contrario).
+
+        Contrato 1A: Controlador sagrado — solo parsea entrada, llama orchestrator,
+        retorna success_response formateado por presenter.
+        """
+        result = self.orchestrator.actualizar_rh_inspector_mensual_proceso(rh_id, payload)
+        return success_response(
+            FinanzasPresenter.present_rh_inspector_mensual(result),
+            message="Recibo de inspector actualizado correctamente.",
+        )
+
+    @route.post(
+        "/recibos-inspectores/{rh_id}/cotizar",
+        response={200: ApiResponse[RHInspectorCotizarOut]},
+    )
+    def cotizar_edicion_recibo_inspector(
+        self,
+        request,
+        rh_id: uuid.UUID,
+        payload: RHInspectorActualizarIn,
+    ):
+        """Cotiza una edición excluyendo el propio RH de su saldo."""
+        result = self.orchestrator.cotizar_edicion_rh_inspector_mensual_proceso(
+            rh_id, payload
+        )
+        return success_response(
+            FinanzasPresenter.present_rh_inspector_mensual(result)
         )

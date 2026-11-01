@@ -32,7 +32,7 @@ describe("LiquidacionDetalleEdificacionesSection — presentación pública", ()
       <LiquidacionDetalleEdificacionesSection
         liquidacionTipo={baseTipo({
           estrategia_cotizacion: "TARIFA_HABILITADAS_PARTICIPANTES",
-          count_habilitadas: 3,
+          cantidad_especialidades_habilitadas: 3,
           porcentaje_tarifa: 0.0005,
           acumulacion: {
             porcentaje_acumulado: 0.001,
@@ -55,7 +55,7 @@ describe("LiquidacionDetalleEdificacionesSection — presentación pública", ()
       <LiquidacionDetalleEdificacionesSection
         liquidacionTipo={baseTipo({
           estrategia_cotizacion: "TARIFA_HABILITADAS_PARTICIPANTES",
-          count_habilitadas: 3,
+          cantidad_especialidades_habilitadas: 3,
           acumulacion: {
             porcentaje_acumulado: 0.001,
             subtotal_acumulado: 1000,
@@ -74,7 +74,7 @@ describe("LiquidacionDetalleEdificacionesSection — presentación pública", ()
       <LiquidacionDetalleEdificacionesSection
         liquidacionTipo={baseTipo({
           estrategia_cotizacion: "NORMAL_SELECCIONADAS",
-          count_habilitadas: 3,
+          cantidad_especialidades_habilitadas: 3,
           porcentaje_tarifa: 0.0005,
         })}
       />,
@@ -95,7 +95,7 @@ describe("LiquidacionDetalleEdificacionesSection — presentación pública", ()
           valor_declarado: null,
           porcentaje_liquidacion: null,
           estrategia_cotizacion: "TOTAL_EXPLICITO",
-          count_habilitadas: 3,
+          cantidad_especialidades_habilitadas: 3,
           acumulacion: {
             porcentaje_acumulado: null,
             subtotal_acumulado: 100,

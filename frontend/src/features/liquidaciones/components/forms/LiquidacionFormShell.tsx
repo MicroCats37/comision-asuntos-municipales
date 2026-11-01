@@ -7,12 +7,12 @@ import type { FieldValues, UseFormReturn } from "react-hook-form";
 import type { ZodType } from "zod";
 import type { GenericModalSize } from "@/components/genericModal/GenericModal";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { notify } from "@/errors";
 import { NUMERO_REVISION_FIJA } from "../../utils/numeroRevision";
 import {
   LiquidacionFormHeader,
   type LiquidacionFormMode,
 } from "./LiquidacionFormHeader";
+import { LegacyRegistroFields } from "./LegacyRegistroFields";
 import { NumeroRevisionWatcher } from "./NumeroRevisionWatcher";
 
 /**
@@ -31,13 +31,6 @@ export interface LiquidacionSourceItem {
   liquidacion_tipo?: unknown;
   liquidacion_especifica?: unknown;
   [key: string]: unknown;
-}
-
-interface SuccessMessages {
-  create?: string;
-  edit?: string;
-  nuevaRevision?: string;
-  relacionada?: string;
 }
 
 export interface LiquidacionFormShellProps<
@@ -75,6 +68,7 @@ export interface LiquidacionFormShellProps<
   renderBody: (ctx: {
     methods: UseFormReturn<T>;
     isEdit: boolean;
+    isLegacy: boolean;
     isRevisionLike: boolean;
     sourceItem: TItem | null;
     canEditProyecto: boolean;
@@ -96,9 +90,6 @@ export interface LiquidacionFormShellProps<
     liquidacionPreviaId: string,
   ) => Promise<unknown>;
 
-  /** Mensajes de éxito por mode. Default: "Liquidación creada/editada correctamente", etc. */
-  successMessages?: SuccessMessages;
-
   /** Hook post-submit. En create se ejecuta después de solicitar el cierre. */
   onAfterSubmit?: (mode: LiquidacionFormMode, result: unknown) => void;
 
@@ -116,13 +107,6 @@ export interface LiquidacionFormShellProps<
   // ── Ver detalle (solo nueva-revision / relacionada) ───────────────
   onVerDetalle?: () => void;
 }
-
-const DEFAULT_SUCCESS: Required<SuccessMessages> = {
-  create: "Liquidación creada correctamente",
-  edit: "Liquidación editada correctamente",
-  nuevaRevision: "Nueva revisión creada correctamente",
-  relacionada: "Liquidación relacionada creada correctamente",
-};
 
 const defaultGetPreviousValues = <TItem extends LiquidacionSourceItem>(
   sourceItem: TItem | null,
@@ -186,14 +170,11 @@ export function LiquidacionFormShell<
     onSubmitEdit,
     onSubmitNuevaRevision,
     onSubmitRelacionada,
-    successMessages,
     onAfterSubmit,
     computeCanEditProyecto = defaultComputeCanEditProyecto as never,
     getPreviousValues = defaultGetPreviousValues as never,
     onVerDetalle,
   } = props;
-
-  const success = { ...DEFAULT_SUCCESS, ...successMessages };
 
   // ── Número de revisión VIVO ──────────────────────────────────────────
   // El badge de la cabecera refleja el valor del campo `numero_revision` del
@@ -229,6 +210,7 @@ export function LiquidacionFormShell<
   );
 
   const isEdit = mode === "edit";
+  const isLegacy = mode === "legacy";
   const isRevisionLike = mode === "nueva-revision" || mode === "relacionada";
 
   // ── Header con badge + Ver detalle ──────────────────────────────────
@@ -255,13 +237,14 @@ export function LiquidacionFormShell<
     [mode, onAfterSubmit],
   );
 
-  // ── Submission con 4 ramas ─────────────────────────────────────────
+  // ── Submission por modo ────────────────────────────────────────────
   const handleSubmit = useCallback(
     async (data: T) => {
       // Sin try/catch local: los errores se propagan a AppFormModal.handleFormSubmit
       // (modal NO cierra en error) → GenericForm (muestra submissionMessage inline).
-      // Los mutation hooks ya muestran notify.error() (toast rojo) en error.
-      if (mode === "create" && onSubmitCreate) {
+      // Los mutation hooks ya muestran notify.error() (toast rojo) en error y el
+      // mensaje de éxito del backend (notify.success) — el shell no lo duplica.
+      if ((mode === "create" || mode === "legacy") && onSubmitCreate) {
         const result = await onSubmitCreate(data);
         onSuccess?.();
         onOpenChange(false);
@@ -270,7 +253,6 @@ export function LiquidacionFormShell<
       }
       if (mode === "edit" && onSubmitEdit) {
         const result = await onSubmitEdit(data, canEditProyecto);
-        notify.success(success.edit);
         onSuccess?.();
         onOpenChange(false);
         schedulePrint(result);
@@ -280,7 +262,6 @@ export function LiquidacionFormShell<
         const prevId = sourceItem?.liquidacion_general.id;
         if (!prevId) return;
         const result = await onSubmitNuevaRevision(data, prevId);
-        notify.success(success.nuevaRevision);
         onSuccess?.();
         onOpenChange(false);
         schedulePrint(result);
@@ -290,7 +271,6 @@ export function LiquidacionFormShell<
         const prevId = sourceItem?.liquidacion_general.id;
         if (!prevId) return;
         const result = await onSubmitRelacionada(data, prevId);
-        notify.success(success.relacionada);
         onSuccess?.();
         onOpenChange(false);
         schedulePrint(result);
@@ -305,9 +285,6 @@ export function LiquidacionFormShell<
       onSubmitEdit,
       onSubmitNuevaRevision,
       onSubmitRelacionada,
-      success.edit,
-      success.nuevaRevision,
-      success.relacionada,
       schedulePrint,
       onSuccess,
       onOpenChange,
@@ -340,9 +317,15 @@ export function LiquidacionFormShell<
               control={methods.control}
               onChange={setLiveRevision}
             />
+            {isLegacy && (
+              <div className="mb-4">
+                <LegacyRegistroFields methods={methods as UseFormReturn<T>} />
+              </div>
+            )}
             {renderBody({
               methods: methods as UseFormReturn<T>,
               isEdit,
+              isLegacy,
               isRevisionLike,
               sourceItem,
               canEditProyecto,

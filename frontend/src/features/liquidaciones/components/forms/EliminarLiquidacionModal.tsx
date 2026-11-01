@@ -6,7 +6,6 @@ import { z } from "zod";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { notify } from "@/errors";
 import { useEliminarLiquidacion } from "../../hooks/useEliminarLiquidacion";
 
 export const EliminarLiquidacionSchema = z.object({
@@ -42,7 +41,7 @@ export function EliminarLiquidacionModal({
     async (data: EliminarLiquidacionData) => {
       try {
         await eliminarMutation.mutateAsync({ motivo: data.motivo });
-        notify.success("Liquidación eliminada correctamente");
+        // The success toast comes from the mutation hook (server message).
         onSuccess?.();
       } catch {
         // Error handled by mutation

@@ -1,7 +1,12 @@
 import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import type { ZodType } from "zod";
-import { getErrorMessage, handleApiError, notify } from "@/errors";
+import {
+  extractSuccessMessage,
+  handleApiError,
+  notify,
+  recordSuccessMessage,
+} from "@/errors";
 import api from "@/lib/api";
 import { buildApiPayload } from "@/utils";
 
@@ -26,8 +31,10 @@ export function useApiCreate<TData = unknown, TVariables = unknown>({
       try {
         const payload = buildApiPayload(variables);
         const response = await api.post(url, payload);
-        // Surface backend success message as toast when present
-        const message = response.data?.message;
+        // Surface the backend success message as toast when present.
+        // The envelope message is authoritative; some endpoints nest it in `data`.
+        const message = extractSuccessMessage(response.data);
+        recordSuccessMessage(message);
         if (showToast && message) {
           notify.success(message);
         }

@@ -169,7 +169,8 @@ export function leerContextoEstrategia(
 
   return {
     estrategia_cotizacion: estrategia,
-    count_habilitadas: toFiniteNumber(registro.count_habilitadas) ?? null,
+    cantidad_especialidades_habilitadas:
+      toFiniteNumber(registro.cantidad_especialidades_habilitadas) ?? null,
     total_explicito: toFiniteNumber(registro.total_explicito) ?? null,
     porcentaje_tarifa: toFiniteNumber(registro.porcentaje_tarifa) ?? null,
     tarifa_aplicada_id:

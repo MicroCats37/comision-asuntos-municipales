@@ -115,6 +115,11 @@ const comprobanteMinimalSchema = z.object({
 
 export const rhDelegadoMensualDetalleSchema = z.object({
   liquidacion_delegado_id: uuid(),
+  /**
+   * Identificador estable de la fila del RH (DetalleHonorarioDelegado).
+   * Es el token que el PATCH usa para conservar la fila persistida.
+   */
+  detalle_id: z.string().nullish(),
   expediente: z.string(),
   fecha_revision: z.string().nullish(),
   numero_revision: z.number().int().nullish(),
@@ -133,6 +138,10 @@ export const rhDelegadoMensualDetalleSchema = z.object({
   delegado_operacion_id: z.string().nullish(),
   liquidacion_especifica_numero: z.number().int().nullish(),
   comprobante_activo: comprobanteMinimalSchema.nullish(),
+  /** PO quotation strategy (only the PO engine; null for M2) */
+  estrategia_cotizacion: z.string().nullish(),
+  /** Authoritative final total (only TOTAL_EXPLICITO) */
+  total_explicito: num().nullish(),
 });
 
 export const rhDelegadoMensualTotalesSchema = z.object({
@@ -166,6 +175,8 @@ export const delegadoOperacionContextSchema = z.object({
 /** RHDelegadoMensualListItemOut — matches backend schema exactly */
 export const rhDelegadoMensualListItemSchema = z.object({
   id: uuid(),
+  /** Número del recibo de honorario mensual (RH de cabecera). */
+  numero: z.number().int().nullish(),
   periodo: z.number().int().nullish(),
   mes: z.number().int().nullish(),
   fecha_registro: z.string(),
@@ -184,6 +195,11 @@ export type ReciboHonorarioDelegadoMensual = z.infer<
 // ── RH Inspector Mensual — Listado ─────────────────────────────────────────────
 
 export const rhInspectorMensualDetalleSchema = z.object({
+  /**
+   * Identificador estable de la fila del RH (DetalleHonorarioInspector).
+   * Es el token que el PATCH usa para conservar la fila persistida.
+   */
+  detalle_id: z.string().nullish(),
   expediente: z.string(),
   nombre_propietario: z.string(),
   distrito: z.string().nullish(),
@@ -194,7 +210,13 @@ export const rhInspectorMensualDetalleSchema = z.object({
   costo_por_inspeccion: num(),
   monto_contribuido: num(),
   saldo_restante: z.coerce.number().int(),
+  /**
+   * Número de la liquidación específica (e.g. LiquidacionInspeccionObra.numero).
+   * Es un dato DISTINTO de `numero_revision` (revisión) y de `numero` (RH de cabecera).
+   */
   liquidacion_especifica_numero: z.coerce.number().int().nullish(),
+  /** Número de revisión de la liquidación (LiquidacionGeneral.numero_revision). */
+  numero_revision: z.number().int().nullish(),
   comprobante_activo: comprobanteMinimalSchema.nullish(),
   // Financial fields from backend
   honorarios: num().nullable().optional(),
@@ -238,7 +260,8 @@ export const rhInspectorMensualListItemSchema = z.object({
   mes: z.number().int().nullish(),
   fecha_registro: z.string(),
   inspector: inspectorMinimalSchema,
-  numero: z.number().nullable().optional(),
+  /** Número del recibo de honorario mensual (RH de cabecera). */
+  numero: z.number().int().nullish(),
   totales: rhInspectorMensualTotalesSchema,
   detalles: z.array(rhInspectorMensualDetalleSchema),
   variables_calculo: rhInspectorVariablesCalculoSchema,

@@ -66,7 +66,16 @@ export const InputSearchableSelect: React.FC<InputComponentProps> = ({
             value={stringValue}
             onValueChange={(val) => {
               if (val === null || val === "__none__") {
-                cf.onChange(null);
+                // Un select sin selección vale "" en campos string. Emitir
+                // null rompe los schemas Zod (`z.string().optional()` rechaza
+                // null) y muestra "Invalid input: expected string, received
+                // null" al deseleccionar. Para number/boolean se mantiene
+                // null porque "" no es un valor válido en esos tipos.
+                cf.onChange(
+                  field.valueType === "number" || field.valueType === "boolean"
+                    ? null
+                    : "",
+                );
                 return;
               }
 

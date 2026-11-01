@@ -3,12 +3,23 @@
  * Ruta: /liquidaciones/recibos-inspectores/detalle
  *
  * Tabla CSS-grid con paginación y filtros URL-driven.
- * Filtros opcionales: inspector_cip, periodo, mes, municipalidad_id, numero_liquidacion.
+ * Filtros opcionales: inspector_cip, periodo, mes, municipalidad_id,
+ * numero_liquidacion.
+ *
+ * La exportación a Excel vive en un modal aparte (2 pasos) y no altera la
+ * paginación de esta tabla.
  */
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Eye, Filter, RefreshCw, Users, X } from "lucide-react";
+import {
+  Eye,
+  FileSpreadsheet,
+  Filter,
+  RefreshCw,
+  Users,
+  X,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { FilterChip } from "@/components/ui/active-filters";
@@ -16,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { RHDetalleVerDetalleModal } from "@/features/finanzas/components/detail/RHDetalleVerDetalleModal";
 import { RHDetalleInspectoresFiltroModal } from "@/features/finanzas/components/filtros";
+import { RHDetalleExcelModal } from "@/features/finanzas/components/modals/RHDetalleExcelModal";
 import { RHDetalleInspectoresTable } from "@/features/finanzas/components/tables/RHDetalleInspectoresTable";
 import type {
   DetalleInspectorRow,
@@ -30,6 +42,7 @@ const KIND_ICON: LucideIcon = Users;
 
 export function RHDetalleInspectoresView() {
   const [filtroModalOpen, setFiltroModalOpen] = useState(false);
+  const [excelModalOpen, setExcelModalOpen] = useState(false);
   const [verDetalleId, setVerDetalleId] = useState<string | null>(null);
 
   const { page, pageSize, setPage } = useUrlPagination();
@@ -103,19 +116,29 @@ export function RHDetalleInspectoresView() {
           description="Listado de filas detalle de recibos de honorarios de inspectores"
           icon={KIND_ICON}
           actionNodes={
-            <Button
-              variant={hasActiveFilters ? "default" : "outline"}
-              className="gap-2 h-11 rounded-xl font-bold shrink-0"
-              onClick={() => setFiltroModalOpen(true)}
-            >
-              <Filter className="h-4 w-4" />
-              Filtros
-              {hasActiveFilters && (
-                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-foreground/20 text-xs font-bold">
-                  {activeFilterCount}
-                </span>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="gap-2 h-11 rounded-xl font-bold shrink-0"
+                onClick={() => setExcelModalOpen(true)}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Exportar Excel
+              </Button>
+              <Button
+                variant={hasActiveFilters ? "default" : "outline"}
+                className="gap-2 h-11 rounded-xl font-bold shrink-0"
+                onClick={() => setFiltroModalOpen(true)}
+              >
+                <Filter className="h-4 w-4" />
+                Filtros
+                {hasActiveFilters && (
+                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-foreground/20 text-xs font-bold">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            </div>
           }
         />
 
@@ -232,6 +255,13 @@ export function RHDetalleInspectoresView() {
         onOpenChange={(open) => {
           if (!open) setVerDetalleId(null);
         }}
+      />
+
+      {/* Exportador a Excel (2 pasos: filtros → registros completos) */}
+      <RHDetalleExcelModal
+        open={excelModalOpen}
+        onOpenChange={setExcelModalOpen}
+        variante="inspectores"
       />
 
       <RHDetalleInspectoresFiltroModal

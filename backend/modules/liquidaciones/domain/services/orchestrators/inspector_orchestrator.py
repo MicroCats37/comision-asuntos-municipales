@@ -298,10 +298,59 @@ class InspectorOrchestrator:
                     categoria=operacion.categoria or None,
                     numero_registro=operacion.numero_registro,
                     vigencia=str(periodo.periodo_fin) if periodo and periodo.periodo_fin else None,
+                    periodo_inicio=periodo.periodo_inicio if periodo else None,
+                    periodo_fin=periodo.periodo_fin if periodo else None,
+                    es_vigente=periodo is not None,
                     inspector_operacion_id=str(operacion.id),
                 )
             )
 
+        return InspectoresVigentesFormResult(inspectores=inspectores)
+
+    def listar_inspectores_seleccionables_por_cip_proceso(
+        self,
+        cip: str,
+        vigente: Optional[bool] = None,
+    ) -> InspectoresVigentesFormResult:
+        """Devuelve operaciones seleccionables por CIP para el flujo Legacy IO."""
+        cip_normalizado = cip.strip()
+        if not cip_normalizado:
+            raise HttpError(400, "El parámetro cip es requerido")
+
+        operaciones = self.core_service.list_inspectores_por_cip(
+            cip=cip_normalizado,
+            vigente=vigente,
+        )
+        today = date.today()
+        inspectores = []
+        for operacion in operaciones:
+            perfil = operacion.inspector.perfil_ingeniero
+            especialidad = operacion.especialidad_revision
+            periodo_vigente = self._get_periodo_vigente(operacion, today)
+            periodo = periodo_vigente or max(
+                operacion.periodos.all(),
+                key=lambda item: item.periodo_inicio,
+                default=None,
+            )
+            inspectores.append(
+                InspectorVigenteFormResult(
+                    id=str(operacion.inspector_id),
+                    nombre_completo=perfil.nombre_completo,
+                    cip=perfil.cip or "",
+                    especialidad=EspecialidadBasicaFormResult(
+                        id=str(especialidad.id),
+                        nombre=especialidad.nombre,
+                    ),
+                    tipo_liquidacion=operacion.tipo_liquidacion.codigo,
+                    categoria=operacion.categoria or None,
+                    numero_registro=operacion.numero_registro,
+                    vigencia=str(periodo.periodo_fin) if periodo and periodo.periodo_fin else None,
+                    periodo_inicio=periodo.periodo_inicio if periodo else None,
+                    periodo_fin=periodo.periodo_fin if periodo else None,
+                    es_vigente=periodo_vigente is not None,
+                    inspector_operacion_id=str(operacion.id),
+                )
+            )
         return InspectoresVigentesFormResult(inspectores=inspectores)
 
     @staticmethod

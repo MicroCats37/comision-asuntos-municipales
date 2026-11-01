@@ -1,6 +1,7 @@
 """RH Mensual (Delegado, Inspector) y Repartición Estacional — admin."""
 
 from django.contrib import admin
+from django.core.exceptions import PermissionDenied
 
 from modules.finanzas.domain.models.detalle_honorario_delegado import (
     DetalleHonorarioDelegado,
@@ -62,6 +63,38 @@ class RHReparticionEstacionalCapituloInline(admin.TabularInline):
     readonly_fields = ["created_at", "updated_at"]
 
 
+# ── Guards de borrado (lifecycle RH) ────────────────────────────────────────────
+#
+# El borrado desde el admin NO puede saltarse el lifecycle del RH: debe pasar por
+# el mismo flujo que usa la API (limpieza con provenance + guard de 409).
+
+
+def _eliminar_rh_delegado_via_lifecycle(rh_id) -> None:
+    """Elimina un RH de delegado usando el flujo de lifecycle."""
+    from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreService
+    from modules.finanzas.domain.services.flujos.rh_delegado_mensual_flujo import (
+        RHDelegadoMensualDeleteFlujo,
+    )
+
+    RHDelegadoMensualDeleteFlujo(core=FinanzasCoreService()).eliminar(rh_id)
+
+
+def _eliminar_rh_inspector_via_lifecycle(rh_id) -> None:
+    """Elimina un RH de inspector usando el flujo de lifecycle."""
+    from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreService
+    from modules.finanzas.domain.services.flujos.rh_inspector_mensual_flujo import (
+        RHInspectorMensualDeleteFlujo,
+    )
+
+    RHInspectorMensualDeleteFlujo(core=FinanzasCoreService()).eliminar(rh_id)
+
+
+def _traducir_error_lifecycle(exc) -> PermissionDenied:
+    """Convierte el HttpError del lifecycle en un rechazo de admin (403)."""
+    mensaje = getattr(exc, "message", None) or str(exc)
+    return PermissionDenied(str(mensaje))
+
+
 # ── Admins ─────────────────────────────────────────────────────────────────────
 
 
@@ -121,6 +154,20 @@ class ReciboHonorarioDelegadoMensualAdmin(admin.ModelAdmin):
     readonly_fields = ["created_at", "updated_at", "fecha_registro"]
     inlines = [DetalleHonorarioDelegadoInline]
 
+    def delete_model(self, request, obj):
+        """Borra el RH a través del lifecycle (limpieza con provenance)."""
+        from ninja.errors import HttpError
+
+        try:
+            _eliminar_rh_delegado_via_lifecycle(obj.id)
+        except HttpError as exc:
+            raise _traducir_error_lifecycle(exc)
+
+    def delete_queryset(self, request, queryset):
+        """Aplica el lifecycle a cada RH del borrado masivo."""
+        for obj in queryset:
+            self.delete_model(request, obj)
+
 
 @admin.register(ReciboHonorarioInspectorMensual)
 class ReciboHonorarioInspectorMensualAdmin(admin.ModelAdmin):
@@ -145,6 +192,20 @@ class ReciboHonorarioInspectorMensualAdmin(admin.ModelAdmin):
     ]
     readonly_fields = ["created_at", "updated_at", "fecha_registro"]
     inlines = [DetalleHonorarioInspectorInline]
+
+    def delete_model(self, request, obj):
+        """Borra el RH a través del lifecycle (guard latest-only + marcadores)."""
+        from ninja.errors import HttpError
+
+        try:
+            _eliminar_rh_inspector_via_lifecycle(obj.id)
+        except HttpError as exc:
+            raise _traducir_error_lifecycle(exc)
+
+    def delete_queryset(self, request, queryset):
+        """Aplica el lifecycle a cada RH del borrado masivo."""
+        for obj in queryset:
+            self.delete_model(request, obj)
 
 
 @admin.register(RegistroPagoInspector)

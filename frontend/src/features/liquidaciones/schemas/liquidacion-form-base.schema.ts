@@ -46,6 +46,9 @@ export const generalFormSchema = z.object({
   municipalidad_id: z.string({ error: "Requerido" }).min(1, "Requerido"),
   expediente: z.string().optional(),
   observacion: z.string().optional(),
+  // Solo se vuelven obligatorios cuando el shell opera en mode="legacy".
+  numero: z.number().int().positive().max(2147483647).optional(),
+  fecha_registro: z.string().optional(),
 });
 
 /**

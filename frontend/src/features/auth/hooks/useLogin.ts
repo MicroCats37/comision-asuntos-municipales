@@ -2,6 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { setCookie } from "cookies-next";
+import { getErrorMessage } from "@/errors";
 import { api } from "@/lib/api";
 import {
   AUTH_COOKIES,
@@ -52,52 +53,74 @@ export function useLogin() {
   });
 }
 
+/**
+ * Fallback used when the backend does not describe why the login failed.
+ */
+const LOGIN_ERROR_FALLBACK = "Credenciales inválidas";
+
+/**
+ * Posts the credentials and normalizes any failure into a human-readable
+ * message (the raw Axios text like "Request failed with status code 401" must
+ * never reach the UI).
+ */
+async function requestLogin(
+  url: string,
+  payload: Record<string, unknown>,
+): Promise<ApiResponse<LoginResponse>> {
+  try {
+    const response = await api.post<ApiResponse<LoginResponse>>(url, payload);
+    return response.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error) || LOGIN_ERROR_FALLBACK);
+  }
+}
+
 async function loginWithUsername(
   username: string,
   password: string,
 ): Promise<MeResponse> {
-  const loginResponse = await api.post<ApiResponse<LoginResponse>>(
-    "/auth/login/username",
-    { username, password },
-  );
+  const loginResponse = await requestLogin("/auth/login/username", {
+    username,
+    password,
+  });
 
-  if (!loginResponse.data?.success || !loginResponse.data?.data) {
-    throw new Error(loginResponse.data?.error?.message ?? "Login failed");
+  if (!loginResponse?.success || !loginResponse?.data) {
+    throw new Error(loginResponse?.error?.message ?? LOGIN_ERROR_FALLBACK);
   }
 
-  return persistAuthAndReturnUser(loginResponse.data.data);
+  return persistAuthAndReturnUser(loginResponse.data);
 }
 
 async function loginWithDni(
   dni: string,
   password: string,
 ): Promise<MeResponse> {
-  const loginResponse = await api.post<ApiResponse<LoginResponse>>(
-    "/auth/login/dni",
-    { dni, password },
-  );
+  const loginResponse = await requestLogin("/auth/login/dni", {
+    dni,
+    password,
+  });
 
-  if (!loginResponse.data?.success || !loginResponse.data?.data) {
-    throw new Error(loginResponse.data?.error?.message ?? "Login failed");
+  if (!loginResponse?.success || !loginResponse?.data) {
+    throw new Error(loginResponse?.error?.message ?? LOGIN_ERROR_FALLBACK);
   }
 
-  return persistAuthAndReturnUser(loginResponse.data.data);
+  return persistAuthAndReturnUser(loginResponse.data);
 }
 
 async function loginWithEmail(
   email: string,
   password: string,
 ): Promise<MeResponse> {
-  const loginResponse = await api.post<ApiResponse<LoginResponse>>(
-    "/auth/login/email",
-    { email, password },
-  );
+  const loginResponse = await requestLogin("/auth/login/email", {
+    email,
+    password,
+  });
 
-  if (!loginResponse.data?.success || !loginResponse.data?.data) {
-    throw new Error(loginResponse.data?.error?.message ?? "Login failed");
+  if (!loginResponse?.success || !loginResponse?.data) {
+    throw new Error(loginResponse?.error?.message ?? LOGIN_ERROR_FALLBACK);
   }
 
-  return persistAuthAndReturnUser(loginResponse.data.data);
+  return persistAuthAndReturnUser(loginResponse.data);
 }
 
 function persistAuthAndReturnUser(loginData: LoginResponse): MeResponse {

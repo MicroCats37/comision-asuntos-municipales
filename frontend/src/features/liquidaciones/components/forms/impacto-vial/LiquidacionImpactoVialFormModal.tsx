@@ -15,7 +15,6 @@ import { Car, FilePenLine, FileText, Link2, RefreshCw } from "lucide-react";
  */
 import { useCallback, useState } from "react";
 import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
-import { notify } from "@/errors";
 import {
   composeDetalleSections,
   LiquidacionDetalleImpactoVialSection,
@@ -31,6 +30,7 @@ import {
   type ImpactoVialFormData,
   impactoVialFormSchema,
 } from "../../../schemas/liquidacion-impacto-vial-form.schema";
+import { withLegacyRegistroFields } from "../../../schemas/liquidacion-legacy-registro-form.schema";
 import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
 import { formatPublicId } from "../../../utils/formatPublicId";
@@ -50,6 +50,7 @@ interface BaseProps {
 }
 
 type CreateProps = BaseProps & { mode: "create" };
+type LegacyProps = BaseProps & { mode: "legacy" };
 type EditProps = BaseProps & {
   mode: "edit";
   item: LiquidacionImpactoVialListItem;
@@ -65,6 +66,7 @@ type RelacionadaProps = BaseProps & {
 
 export type LiquidacionImpactoVialFormModalProps =
   | CreateProps
+  | LegacyProps
   | EditProps
   | NuevaRevisionProps
   | RelacionadaProps;
@@ -105,9 +107,15 @@ export function LiquidacionImpactoVialFormModal(
   const [detalleOpen, setDetalleOpen] = useState(false);
 
   const sourceItem: LiquidacionImpactoVialListItem | null =
-    mode === "edit" ? props.item : mode !== "create" ? props.previa : null;
+    mode === "edit"
+      ? props.item
+      : mode === "nueva-revision" || mode === "relacionada"
+        ? props.previa
+        : null;
 
-  const crearMutation = useCrearImpactoVial();
+  const crearMutation = useCrearImpactoVial(
+    mode === "legacy" ? "legacy" : "create",
+  );
   const editarMutation = useEditarImpactoVial(
     mode === "edit" ? props.item.liquidacion_general.id : "",
   );
@@ -129,6 +137,8 @@ export function LiquidacionImpactoVialFormModal(
     switch (mode) {
       case "create":
         return "Nueva Liquidación";
+      case "legacy":
+        return "Registro Legacy";
       case "edit":
         return "Editar Liquidación";
       case "nueva-revision":
@@ -142,6 +152,8 @@ export function LiquidacionImpactoVialFormModal(
     switch (mode) {
       case "create":
         return "Crear Liquidación";
+      case "legacy":
+        return "Registrar Legacy";
       case "edit":
         return "Guardar cambios";
       case "nueva-revision":
@@ -154,7 +166,7 @@ export function LiquidacionImpactoVialFormModal(
   const primaryLoadingLabel = mode === "edit" ? "Guardando..." : "Creando...";
 
   const primaryLoading =
-    mode === "create"
+    mode === "create" || mode === "legacy"
       ? crearMutation.isPending
       : mode === "edit"
         ? editarMutation.isPending
@@ -171,7 +183,7 @@ export function LiquidacionImpactoVialFormModal(
 
   const computeCanEditProyecto = useCallback(
     (m: typeof mode, item: typeof sourceItem): boolean => {
-      if (m === "create" || m === "nueva-revision") return true;
+      if (m === "create" || m === "legacy" || m === "nueva-revision") return true;
       if (m === "edit" && item) {
         return canEditLiquidacion(item.liquidacion_general).canEditProyecto;
       }
@@ -213,6 +225,7 @@ export function LiquidacionImpactoVialFormModal(
           <TarifasYEspecialidadesSmartField
             methods={methods}
             tipo="impacto-vial"
+            {...(mode === "legacy" ? { mode: "legacy" as const } : {})}
             {...(isEdit || isRevisionLike
               ? {
                   mode: "edit",
@@ -224,6 +237,7 @@ export function LiquidacionImpactoVialFormModal(
           <CotizacionPorcentajeSmartField
             methods={methods}
             tipo="impacto-vial"
+            {...(mode === "legacy" ? { mode: "legacy" as const } : {})}
             {...(isEdit
               ? {
                   mode: "edit",
@@ -249,7 +263,7 @@ export function LiquidacionImpactoVialFormModal(
   );
 
   const initialData: Partial<ImpactoVialFormData> = (() => {
-    if (mode === "create") {
+    if (mode === "create" || mode === "legacy") {
       return {
         valor_declarado: 0,
         numero_revision: resolveNumeroRevisionInicial("create"),
@@ -281,7 +295,6 @@ export function LiquidacionImpactoVialFormModal(
   const onSubmitEdit = useCallback(
     async (data: ImpactoVialFormData) => {
       const result = await editarMutation.mutateAsync(data);
-      notify.success("Liquidación editada correctamente");
       return result;
     },
     [editarMutation],
@@ -329,7 +342,11 @@ export function LiquidacionImpactoVialFormModal(
         onSuccess={onSuccess}
         mode={mode}
         sourceItem={sourceItem}
-        schema={impactoVialFormSchema}
+        schema={
+          mode === "legacy"
+            ? withLegacyRegistroFields(impactoVialFormSchema)
+            : impactoVialFormSchema
+        }
         initialData={initialData}
         eyebrow="Impacto Vial"
         icon={icon}

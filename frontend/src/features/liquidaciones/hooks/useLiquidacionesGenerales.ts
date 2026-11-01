@@ -153,6 +153,8 @@ const paginatedSchema = apiResponseSchema(
 
 interface UseLiquidacionesGeneralesProps {
   tipo?: string;
+  municipalidadId?: string;
+  distritoId?: string;
   documento?: string;
   razonSocial?: string;
   propietario?: string;
@@ -163,6 +165,8 @@ interface UseLiquidacionesGeneralesProps {
 
 export function useLiquidacionesGenerales({
   tipo,
+  municipalidadId,
+  distritoId,
   documento,
   razonSocial,
   propietario,
@@ -174,6 +178,8 @@ export function useLiquidacionesGenerales({
 
   const params: Record<string, string | number> = { page, page_size: pageSize };
   if (tipo) params.tipo = tipo;
+  if (municipalidadId) params.entidad_id = municipalidadId;
+  if (distritoId) params.distrito_id = distritoId;
   if (documento) params.documento = documento;
   if (razonSocial) params.razon_social = razonSocial;
   if (propietario) params.propietario = propietario;
@@ -192,6 +198,8 @@ export function useLiquidacionesGenerales({
       page,
       pageSize,
       tipo,
+      municipalidadId,
+      distritoId,
       documento,
       razonSocial,
       propietario,

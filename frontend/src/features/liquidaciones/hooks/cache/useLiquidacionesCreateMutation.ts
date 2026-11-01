@@ -25,7 +25,12 @@ import {
 } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import type { ZodType } from "zod";
-import { handleApiError, notify } from "@/errors";
+import {
+  extractSuccessMessage,
+  handleApiError,
+  notify,
+  recordSuccessMessage,
+} from "@/errors";
 import api from "@/lib/api";
 import { buildApiPayload } from "@/utils";
 import type { LiquidacionWrapper } from "./useLiquidacionesCacheUtils";
@@ -85,6 +90,13 @@ export function useLiquidacionesCreateMutation<TVars = unknown>({
         try {
           const payload = buildApiPayload(variables);
           const { data } = await api.post(url, payload);
+          // Surface the backend success message (the envelope owns it).
+          // Without this, every liquidaciones creation endpoint was silent.
+          const message = extractSuccessMessage(data);
+          recordSuccessMessage(message);
+          if (showToast && message) {
+            notify.success(message);
+          }
           return schema ? schema.parse(data) : data;
         } catch (error) {
           const apiError = handleApiError(error);
@@ -92,12 +104,22 @@ export function useLiquidacionesCreateMutation<TVars = unknown>({
           throw error;
         }
       }
-    : (mutationFn ??
-      ((async () => {
-        throw new Error(
-          "useLiquidacionesCreateMutation: se requiere url o mutationFn",
-        );
-      }) as MutationFunction<unknown, TVars>));
+    : async (variables, context) => {
+        const userMutationFn =
+          mutationFn ??
+          ((async () => {
+            throw new Error(
+              "useLiquidacionesCreateMutation: se requiere url o mutationFn",
+            );
+          }) as MutationFunction<unknown, TVars>);
+        const result = await userMutationFn(variables, context);
+        const message = extractSuccessMessage(result);
+        recordSuccessMessage(message);
+        if (showToast && message) {
+          notify.success(message);
+        }
+        return result;
+      };
 
   return useMutation<unknown, AxiosError, TVars>({
     mutationFn: internalMutationFn,

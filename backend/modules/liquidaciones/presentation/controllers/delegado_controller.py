@@ -30,7 +30,7 @@ from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas 
     DelegadoCandidatasOut,
     DelegadoCandidatasPaginatedOut,
     DelegadoTiposLiquidacionOut,
-    DelegadoOperatividadesVigentesOut,
+    DelegadoOperatividadesOut,
 )
 
 
@@ -206,22 +206,22 @@ class DelegadoController:
         return success_response(self.presenter.present_tipos_liquidacion(tipos))
 
     @route.get(
-        "/operatividades-vigentes",
-        response={200: ApiResponse[DelegadoOperatividadesVigentesOut]},
+        "/operatividades",
+        response={200: ApiResponse[DelegadoOperatividadesOut]},
     )
-    def list_operatividades_vigentes(self, cip: str):
+    def list_operatividades(self, cip: str, vigente: Optional[bool] = None):
         """
-        GET /delegados/operatividades-vigentes?cip=... — Get all active DelegadoOperacion
-        for a delegado identified by CIP.
+        GET /delegados/operatividades?cip=...&vigente=... — Get DelegadoOperacion
+        entries for a delegado identified by CIP.
 
-        Returns all vigente operations with their municipalidad, tipo_liquidacion,
-        especialidad, tipo (TITULAR/ALTERNO), and vigencia period info.
+        When ``vigente`` is omitted returns current and historical operations.
 
         Raises 404 if no delegado found with that CIP.
         """
-        domain_result = self.orchestrator.list_operatividades_vigentes_delegado_proceso(
+        domain_result = self.orchestrator.list_operatividades_delegado_proceso(
             cip=cip,
+            vigente=vigente,
         )
         return success_response(
-            self.presenter.present_operatividades_vigentes(domain_result)
+            self.presenter.present_operatividades(domain_result)
         )

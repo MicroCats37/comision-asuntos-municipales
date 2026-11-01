@@ -43,7 +43,7 @@ class LiquidacionPorcentajeObraData(BaseSchema):
         description="Estrategia de cotización PO (Edificaciones). None = NORMAL_SELECCIONADAS. "
         "Los demás motores (Taludes, Impacto Vial, legacy) lo dejan en None.",
     )
-    count_habilitadas: Optional[int] = Field(
+    cantidad_especialidades_habilitadas: Optional[int] = Field(
         default=None,
         description="H (habilitadas del catálogo) ya resuelto por el orchestrador para la "
         "fecha efectiva. NUNCA se deduce de los participantes.",

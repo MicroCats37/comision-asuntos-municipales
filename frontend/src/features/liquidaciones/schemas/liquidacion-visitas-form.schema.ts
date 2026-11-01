@@ -8,6 +8,7 @@ import {
   generalFormSchema,
   proyectoFormSchema,
 } from "./liquidacion-form-base.schema";
+import { withLegacyRegistroFields } from "./liquidacion-legacy-registro-form.schema";
 
 export const visitasFormSchema = z.object({
   ...proyectoFormSchema.shape,
@@ -34,9 +35,16 @@ export const visitasFormSchema = z.object({
   // Contacto (used in edit modal — not in creation form)
   contacto: contactoInlineSchema.optional(),
   // InspectorOperacion seleccionado para crear IO. El backend deriva el inspector desde esta operación.
-  inspector_operacion_id: z.string().min(1, "Selecciona un inspector"),
+  inspector_operacion_id: z.string().min(1, "Falta asignar al inspector"),
   // Inspector seleccionado, usado solo como estado visual del selector.
   inspector_id: z.string().optional(),
 });
 
 export type VisitasFormData = z.infer<typeof visitasFormSchema>;
+
+export const visitasLegacyFormSchema = withLegacyRegistroFields(
+  visitasFormSchema.extend({
+    inspector_id: z.string().min(1, "Falta asignar al inspector"),
+    inspector_operacion_id: z.string().min(1, "Falta asignar al inspector"),
+  }) as unknown as z.ZodType<VisitasFormData>,
+);

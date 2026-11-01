@@ -23,6 +23,15 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_historico_core_service import (
+    LiquidacionHistoricoCoreService,
+)
+from modules.liquidaciones.domain.schemas.liquidacion_legacy.legacy_registro_data import (
+    LegacyRegistroContexto,
+)
+from modules.liquidaciones.domain.services.orchestrators._shared.legacy_registro_resolution import (
+    LegacyRegistroResolutionMixin,
+)
 from modules.liquidaciones.domain.services.flujos.liquidacion_especifico.liquidacion_edificaciones_flujo import (
     LiquidacionEdificacionesFlujo,
 )
@@ -65,16 +74,18 @@ from modules.liquidaciones.domain.services.orchestrators._shared import Liquidac
 from modules.liquidaciones.domain.services.orchestrators._shared.vigencia_validation import validar_tarifa_unica_por_base
 from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 
-class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
+class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, LiquidacionPOValidationMixin):
     """
     Orchestrator for Edificaciones (PorcentajeObra).
-    
+
     Mirrors the MecanicaSuelos pattern but:
     - Uses PorcentajeObra Core service (not M2)
     - Handles hybrid resolution (auto-fill vs explicit tarifas)
     - tipo_tramite stays NULL for now (FUTURE comment)
-    
-    Uses LiquidacionPOValidationMixin for shared validation helpers.
+
+    Uses LiquidacionPOValidationMixin for shared validation helpers and
+    LegacyRegistroResolutionMixin for the historical resolution of the typed
+    legacy registration route.
     """
 
     @inject
@@ -84,16 +95,19 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         general_core_service: LiquidacionGeneralCoreService,
         general_orchestrator: LiquidacionGeneralOrchestrator,
         flujo: LiquidacionEdificacionesFlujo,
+        historico_core: LiquidacionHistoricoCoreService,
     ):
         self.porcentaje_core = porcentaje_core_service
         self.general_core = general_core_service
         self.general_orchestrator = general_orchestrator
         self.flujo = flujo
-    
+        self.historico_core = historico_core
+
     def crear_primera_revision_proceso(
         self,
         usuario_id: int,
         payload_in,
+        registro_legacy: LegacyRegistroContexto | None = None,
     ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
         Validates input, resolves the quotation context, delegates to Flujo.
@@ -105,30 +119,51 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         4. Validate IGV/UIT/derecho vigentes exist
         5. Build domain DTO
         6. Delegate to Flujo (el motor único corre dentro de la transacción)
+
+        `registro_legacy` (registro manual histórico):
+        - la fecha efectiva es `registro_legacy.fecha_registro`: IGV, UIT,
+          tarifas, derechos y H se resuelven a esa fecha con el resolver
+          canónico (sin fallback a los valores de hoy);
+        - los totales SIEMPRE se calculan: no hay bypass ni totales manuales.
         """
         estrategia_in = payload_in.liquidacion_especifica
         estrategia = estrategia_in.estrategia_cotizacion
         valor_declarado, total_explicito = self._resolver_datos_estrategia(estrategia_in)
+
+        # Fecha efectiva: hoy en el camino normal, `fecha_registro` en legacy.
+        fecha_efectiva = (
+            registro_legacy.fecha_registro if registro_legacy is not None else None
+        )
 
         # Step 1: Validation
         if valor_declarado is None or valor_declarado <= 0:
             raise HttpError(400, "valor_declarado debe ser mayor a 0")
 
         # Step 2: Hybrid resolution → participantes (la especialidad viene del input)
-        tarifas_aplicadas = self._resolver_tarifas_aplicadas(estrategia_in.tarifas)
+        tarifas_aplicadas = self._resolver_tarifas_aplicadas(
+            estrategia_in.tarifas, fecha=fecha_efectiva
+        )
 
         # Step 3: H desde el catálogo (fecha efectiva = hoy en creación)
-        count_habilitadas = self._resolver_count_habilitadas(estrategia)
+        cantidad_especialidades_habilitadas = (
+            self._resolver_cantidad_especialidades_habilitadas(
+                estrategia, fecha=fecha_efectiva
+            )
+        )
 
         # Step 4: Get vigente IGV and UIT
-        igv_vigente = self.general_core.get_igv_vigente()
-        uit_vigente = self.general_core.get_uit_vigente()
-        if not igv_vigente or not uit_vigente:
-            raise HttpError(400, "No hay IGV o UIT vigente configurado")
+        if registro_legacy is not None:
+            igv_vigente, uit_vigente = self._resolver_igv_uit_historicos(fecha_efectiva)
+            derecho = self._resolver_derecho_porcentaje_historico(fecha_efectiva)
+        else:
+            igv_vigente = self.general_core.get_igv_vigente()
+            uit_vigente = self.general_core.get_uit_vigente()
+            if not igv_vigente or not uit_vigente:
+                raise HttpError(400, "No hay IGV o UIT vigente configurado")
 
-        derecho = self.porcentaje_core.get_derecho_porcentaje_vigente()
-        if not derecho:
-            raise HttpError(400, "No hay DerechoPorcentajeObra vigente")
+            derecho = self.porcentaje_core.get_derecho_porcentaje_vigente()
+            if not derecho:
+                raise HttpError(400, "No hay DerechoPorcentajeObra vigente")
 
         # Step 5: Build domain DTOs with explicit especialidad from INPUT
         # (not from TarifaPorcentajeObra.especialidad which no longer exists)
@@ -169,7 +204,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                 tarifas=tarifas_aplicadas,
                 tipo_tramite=estrategia_in.tipo_tramite,
                 estrategia_cotizacion=estrategia,
-                count_habilitadas=count_habilitadas,
+                cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
                 total_explicito=total_explicito,
             ),
         )
@@ -181,6 +216,13 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             igv_porcentaje=Decimal(str(igv_vigente.valor)),
             derecho=derecho,
             uit_valor=Decimal(str(uit_vigente.valor)),
+            registro_legacy=(
+                registro_legacy.model_copy(
+                    update={"igv": igv_vigente, "uit": uit_vigente}
+                )
+                if registro_legacy is not None
+                else None
+            ),
         )
 
     def obtener_tarifas_vigentes_proceso(self, fecha=None):
@@ -208,6 +250,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
     def cotizar_proceso(
         self,
         estrategia_in,
+        fecha: Optional[date] = None,
     ) -> CotizacionPorcentajeObraResult:
         """
         Preview de cotización PO de Edificaciones por estrategia. Does NOT persist.
@@ -215,6 +258,10 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         Resuelve EXACTAMENTE el mismo contexto que la creación (estrategia,
         participantes, H del catálogo, IGV, UIT y derechos vigentes) y ejecuta el
         MOTOR ÚNICO: preview y guardado producen las mismas cifras.
+
+        `fecha` es la fecha EFECTIVA opcional del preview: `None` significa hoy
+        (comportamiento vigente); con fecha, IGV, UIT, tarifas, derechos y H se
+        resuelven a esa fecha con el resolver canónico (modo legacy).
 
         Returns CotizacionPorcentajeObraResult with totals, per-detalle breakdown,
         the applied strategy, its snapshots and the ephemeral accumulation
@@ -228,28 +275,36 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             raise HttpError(400, "valor_declarado debe ser mayor a 0")
 
         # Step 2: Hybrid resolution → participantes
-        tarifas_aplicadas = self._resolver_tarifas_aplicadas(estrategia_in.tarifas)
+        tarifas_aplicadas = self._resolver_tarifas_aplicadas(
+            estrategia_in.tarifas, fecha=fecha
+        )
 
         # Step 3: H desde el catálogo (fecha efectiva = hoy en preview)
-        count_habilitadas = self._resolver_count_habilitadas(estrategia)
+        cantidad_especialidades_habilitadas = (
+            self._resolver_cantidad_especialidades_habilitadas(estrategia, fecha=fecha)
+        )
 
         # Step 4: Get vigente IGV, UIT and derecho
-        igv_vigente = self.general_core.get_igv_vigente()
-        uit_vigente = self.general_core.get_uit_vigente()
-        if not igv_vigente:
-            raise HttpError(400, "No hay IGV vigente")
-        if not uit_vigente:
-            raise HttpError(400, "No hay UIT vigente configurado")
+        if fecha is not None:
+            igv_vigente, uit_vigente = self._resolver_igv_uit_historicos(fecha)
+            derecho = self._resolver_derecho_porcentaje_historico(fecha)
+        else:
+            igv_vigente = self.general_core.get_igv_vigente()
+            uit_vigente = self.general_core.get_uit_vigente()
+            if not igv_vigente:
+                raise HttpError(400, "No hay IGV vigente")
+            if not uit_vigente:
+                raise HttpError(400, "No hay UIT vigente configurado")
 
-        derecho = self.porcentaje_core.get_derecho_porcentaje_vigente()
-        if not derecho:
-            raise HttpError(400, "No hay DerechoPorcentajeObra vigente")
+            derecho = self.porcentaje_core.get_derecho_porcentaje_vigente()
+            if not derecho:
+                raise HttpError(400, "No hay DerechoPorcentajeObra vigente")
 
         # Step 5: Motor único (sin acceso a BD: el contexto llega resuelto)
         contexto = CotizacionPOContexto(
             estrategia=estrategia,
             participantes=tarifas_aplicadas,
-            count_habilitadas=count_habilitadas,
+            cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
             valor_declarado=valor_declarado,
             total_explicito=total_explicito,
             igv_porcentaje=Decimal(str(igv_vigente.valor)),
@@ -281,6 +336,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
     def _resolver_tarifas_aplicadas(
         self,
         input_tarifas: List[LiquidacionPorcentajeObraTarifaIn],
+        fecha: Optional[date] = None,
     ) -> List[TarifaPorcentajeObraAplicada]:
         """
         Resolución híbrida de tarifas → participantes de la cotización.
@@ -290,18 +346,24 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
 
         With tarifa-unica-especialidades: la especialidad se toma SIEMPRE del input
         (el modelo de tarifa única ya no tiene FK a especialidad).
+
+        `fecha` es la fecha efectiva: `None` significa hoy (camino normal); el
+        registro legacy pasa `fecha_registro` para resolver las tarifas y las
+        especialidades vigentes en esa fecha histórica.
         """
         payload_tarifas_ids = list(
             dict.fromkeys(str(t.tarifa_porcentaje_obra_id) for t in input_tarifas)
         )
         tarifas = self.porcentaje_core.resolver_tarifas(
-            payload_tarifas_ids, TipoLiquidacion.EDIFICACION
+            payload_tarifas_ids, TipoLiquidacion.EDIFICACION, fecha=fecha
         )
 
         # Validate explicit mode
         if payload_tarifas_ids:
             for tarifa in tarifas:
-                self._validar_tarifa_explicita(tarifa, TipoLiquidacion.EDIFICACION)
+                self._validar_tarifa_explicita(
+                    tarifa, TipoLiquidacion.EDIFICACION, fecha=fecha
+                )
 
         if not tarifas:
             raise HttpError(400, "No hay tarifas vigentes para edificaciones")
@@ -332,7 +394,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         # In tarifa-unica design there is ONE tarifa per TarifaLiquidacionBase/periodo,
         # so deduplicate by tarifa_base to avoid duplicate (liquidacion_porcentaje, especialidad).
         especialidades = self._obtener_especialidades_vigentes_para_tipo(
-            TipoLiquidacion.EDIFICACION
+            TipoLiquidacion.EDIFICACION, fecha=fecha
         )
         tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas}.values())
         return [
@@ -346,7 +408,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             for esp in especialidades
         ]
 
-    def _resolver_count_habilitadas(
+    def _resolver_cantidad_especialidades_habilitadas(
         self, estrategia: str, fecha: Optional[date] = None
     ) -> Optional[int]:
         """
@@ -380,7 +442,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
 
         Contrato de snapshot/catálogo, en este orden:
 
-        1. el SNAPSHOT persistido (`count_habilitadas`): es el H con el que se
+        1. el SNAPSHOT persistido (`cantidad_especialidades_habilitadas`): es el H con el que se
            cobró la liquidación y no depende de que el catálogo cambie después;
         2. el CATÁLOGO de habilitadas vigentes en la fecha efectiva (para los
            registros históricos creados antes del snapshot).
@@ -389,10 +451,10 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
         se acumularía y la estrategia TARIFA_HABILITADAS_PARTICIPANTES sería
         indistinguible de NORMAL_SELECCIONADAS.
         """
-        snapshot = getattr(liq_po, "count_habilitadas", None)
+        snapshot = getattr(liq_po, "cantidad_especialidades_habilitadas", None)
         if snapshot:
             return snapshot
-        return self._resolver_count_habilitadas(
+        return self._resolver_cantidad_especialidades_habilitadas(
             EstrategiaCotizacionPO.NORMAL_SELECCIONADAS, fecha=fecha
         )
 
@@ -410,7 +472,9 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             porcentaje_minimo_uit=cotizacion.porcentaje_minimo_uit,
             derecho_aplicado_id=cotizacion.derecho_aplicado_id,
             estrategia_cotizacion=str(cotizacion.estrategia),
-            count_habilitadas=cotizacion.count_habilitadas,
+            cantidad_especialidades_habilitadas=(
+                cotizacion.cantidad_especialidades_habilitadas
+            ),
             total_explicito=cotizacion.total_explicito,
             porcentaje_tarifa=cotizacion.porcentaje_tarifa,
             acumulacion=(
@@ -440,6 +504,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
     def listar_liquidaciones(
         self, page: int, page_size: int,
         municipalidad_id=None,
+        distrito_id=None,
         propietario=None,
         razon_social=None,
         creador_username=None,
@@ -469,6 +534,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             page=page,
             page_size=page_size,
             municipalidad_id=municipalidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creador_username,
@@ -547,7 +613,9 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             porcentaje_minimo_uit=lpo.porcentaje_minimo_uit,
             derecho_aplicado_id=str(lpo.derecho_aplicado_id) if lpo.derecho_aplicado_id else None,
             estrategia_cotizacion=lpo.estrategia_cotizacion,
-            count_habilitadas=lpo.count_habilitadas,
+            cantidad_especialidades_habilitadas=(
+                lpo.cantidad_especialidades_habilitadas
+            ),
             total_explicito=lpo.total_explicito,
             porcentaje_tarifa=lpo.porcentaje_tarifa,
             tarifa_aplicada_id=str(lpo.tarifa_aplicada_id) if lpo.tarifa_aplicada_id else None,
@@ -694,7 +762,9 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
 
         # Step 6: H del catálogo — la nueva revisión se registra HOY, su fecha
         # efectiva es hoy (IGV/UIT/derechos de hoy, igual que la creación).
-        count_habilitadas = self._resolver_count_habilitadas(estrategia)
+        cantidad_especialidades_habilitadas = (
+            self._resolver_cantidad_especialidades_habilitadas(estrategia)
+        )
 
         # Step 7: Build domain DTOs with explicit especialidad from INPUT
         tarifas_aplicadas = [
@@ -745,7 +815,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                 tarifas=tarifas_aplicadas,
                 tipo_tramite=payload_in.liquidacion_especifica.tipo_tramite,
                 estrategia_cotizacion=estrategia,
-                count_habilitadas=count_habilitadas,
+                cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
                 total_explicito=total_explicito,
             ),
         )
@@ -916,7 +986,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                     tipo_tramite=tipo_tramite,
                     estrategia=estrategia,
                     total_explicito=total_efectivo,
-                    count_habilitadas=self._resolver_habilitadas_patch(lg),
+                    cantidad_especialidades_habilitadas=self._resolver_habilitadas_patch(lg),
                 )
                 patch_service.recalcular(lg, patch_input)
 
@@ -1068,10 +1138,12 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             # Sin registro PO no hay cotización que editar: lo rechaza el
             # servicio de cotizar-edición con su error de dominio.
             liq_po = None
-        count_habilitadas = self._resolver_habilitadas_edicion(liq_po, fecha)
+        cantidad_especialidades_habilitadas = self._resolver_habilitadas_edicion(
+            liq_po, fecha
+        )
         if (
             estrategia != EstrategiaCotizacionPO.NORMAL_SELECCIONADAS
-            and count_habilitadas is None
+            and cantidad_especialidades_habilitadas is None
         ):
             raise HttpError(
                 400,
@@ -1094,7 +1166,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             valor_declarado=valor_declarado,
             total_explicito=total_explicito,
             tarifas=tarifas_input,
-            count_habilitadas=count_habilitadas,
+            cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
         )
 
         # 6. Quote (read-only, no DB mutation)
@@ -1164,7 +1236,9 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
             raise HttpError(400, "No hay DerechoPorcentajeObra vigente")
 
         # Step 5: H del catálogo (fecha efectiva = hoy, como la creación)
-        count_habilitadas = self._resolver_count_habilitadas(estrategia)
+        cantidad_especialidades_habilitadas = (
+            self._resolver_cantidad_especialidades_habilitadas(estrategia)
+        )
 
         # Step 6: Build domain DTOs with explicit especialidad from INPUT
         if input_tarifas:
@@ -1227,7 +1301,7 @@ class LiquidacionEdificacionesOrchestrator(LiquidacionPOValidationMixin):
                 tarifas=tarifas_aplicadas,
                 tipo_tramite=payload_in.liquidacion_especifica.tipo_tramite,
                 estrategia_cotizacion=estrategia,
-                count_habilitadas=count_habilitadas,
+                cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
                 total_explicito=total_explicito,
             ),
         )

@@ -9,54 +9,32 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Filter, Plus, RefreshCw, User, X } from "lucide-react";
+import { FileSpreadsheet, Filter, Plus, RefreshCw, User } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useConfirmationDialog } from "@/components/confirmationDialog/useConfirmationDialog";
 import { Pagination } from "@/components/genericPagination/Pagination";
+import { ActiveFiltersPanel } from "@/components/ui/active-filters";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { ReciboHonorarioDelegadoMensualCard } from "@/features/finanzas/components/cards/ReciboHonorarioDelegadoMensualCard";
 import { RecibosDelegadosFiltroModal } from "@/features/finanzas/components/filtros";
+import { RHMensualExcelModal } from "@/features/finanzas/components/modals/RHMensualExcelModal";
 import { RhDelegadoMensualModal } from "@/features/finanzas/components/modals/RhDelegadoMensualModal";
 import { useEliminarReciboDelegado } from "@/features/finanzas/hooks/useEliminarReciboDelegado";
 import { useRecibosDelegados } from "@/features/finanzas/hooks/useRecibosDelegados";
 import { useRecibosDelegadosFiltersUrl } from "@/features/finanzas/hooks/useRecibosDelegadosFiltersUrl";
+import type { ReciboHonorarioDelegadoMensual } from "@/features/finanzas/schemas/recibo-honorario.schema";
 import { useMunicipalidades } from "@/features/liquidaciones/hooks/useMunicipalidades";
 import { useUrlPagination } from "@/hooks/system/useUrlPagination";
 
 const KIND_ICON: LucideIcon = User;
 
-/**
- * Chip removible para un filtro activo individual. Click en la X quita SOLO ese filtro.
- */
-function FilterChip({
-  label,
-  value,
-  onRemove,
-}: {
-  label: string;
-  value: string;
-  onRemove: () => void;
-}) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 pl-2.5 pr-1 py-1 text-xs font-medium">
-      <span className="text-foreground/70 font-semibold">{label}:</span>
-      <span className="font-bold">{value}</span>
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={`Quitar filtro ${label}: ${value}`}
-        className="inline-flex items-center justify-center h-5 w-5 rounded-full hover:bg-primary/20 text-primary transition-colors"
-      >
-        <X className="h-3 w-3" />
-      </button>
-    </span>
-  );
-}
-
 export function RecibosDelegadosView() {
   const [rhModalOpen, setRhModalOpen] = useState(false);
+  const [rhEnEdicion, setRhEnEdicion] =
+    useState<ReciboHonorarioDelegadoMensual | null>(null);
   const [filtroModalOpen, setFiltroModalOpen] = useState(false);
+  const [excelModalOpen, setExcelModalOpen] = useState(false);
   const { page, pageSize, setPage, setPageSize } = useUrlPagination();
   const { filtros, setFiltros, clearFiltros } = useRecibosDelegadosFiltersUrl();
   const { confirm, Dialog } = useConfirmationDialog();
@@ -110,6 +88,18 @@ export function RecibosDelegadosView() {
     filtros.mes,
   ].filter(Boolean).length;
 
+  /** Abre el wizard de RH mensual en modo edición sobre el recibo elegido. */
+  const handleEdit = (item: ReciboHonorarioDelegadoMensual) => {
+    setRhEnEdicion(item);
+    setRhModalOpen(true);
+  };
+
+  /** Abre el wizard de RH mensual en modo creación. */
+  const handleCreate = () => {
+    setRhEnEdicion(null);
+    setRhModalOpen(true);
+  };
+
   const removeFilter = (key: keyof typeof filtros) => {
     const next = { ...filtros };
     delete next[key];
@@ -126,6 +116,14 @@ export function RecibosDelegadosView() {
           actionNodes={
             <>
               <Button
+                variant="outline"
+                className="gap-2 h-11 rounded-xl font-bold shrink-0"
+                onClick={() => setExcelModalOpen(true)}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Exportar Excel
+              </Button>
+              <Button
                 variant={hasActiveFilters ? "default" : "outline"}
                 className="gap-2 h-11 rounded-xl font-bold shrink-0"
                 onClick={() => setFiltroModalOpen(true)}
@@ -140,7 +138,7 @@ export function RecibosDelegadosView() {
               </Button>
               <Button
                 className="gap-2 h-11 rounded-xl font-bold shadow-lg shadow-primary/20 shrink-0"
-                onClick={() => setRhModalOpen(true)}
+                onClick={handleCreate}
               >
                 <Plus className="h-4 w-4" />
                 Crear RH
@@ -150,55 +148,50 @@ export function RecibosDelegadosView() {
         />
 
         {/* Filtros activos — cada chip removible individualmente */}
-        {hasActiveFilters && (
-          <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/20 rounded-xl border border-border/60">
-            <span className="text-xs font-semibold text-muted-foreground">
-              Filtros activos:
-            </span>
-
-            {filtros.delegado_cip && (
-              <FilterChip
-                label="CIP"
-                value={filtros.delegado_cip}
-                onRemove={() => removeFilter("delegado_cip")}
-              />
-            )}
-            {filtros.periodo && (
-              <FilterChip
-                label="Año"
-                value={String(filtros.periodo)}
-                onRemove={() => removeFilter("periodo")}
-              />
-            )}
-            {filtros.mes && (
-              <FilterChip
-                label="Mes"
-                value={String(filtros.mes)}
-                onRemove={() => removeFilter("mes")}
-              />
-            )}
-            {filtros.municipalidad_id && (
-              <FilterChip
-                label="Municipalidad"
-                value={
-                  municipalidadNombreById.get(filtros.municipalidad_id) ??
-                  filtros.municipalidad_id
-                }
-                onRemove={() => removeFilter("municipalidad_id")}
-              />
-            )}
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearFiltros}
-              className="h-7 px-2 gap-1 text-xs text-destructive"
-            >
-              <X className="h-3 w-3" />
-              Limpiar todo
-            </Button>
-          </div>
-        )}
+        <ActiveFiltersPanel
+          entries={[
+            ...(filtros.delegado_cip
+              ? [
+                  {
+                    key: "delegado_cip" as const,
+                    label: "CIP",
+                    value: filtros.delegado_cip,
+                  },
+                ]
+              : []),
+            ...(filtros.periodo
+              ? [
+                  {
+                    key: "periodo" as const,
+                    label: "Año",
+                    value: String(filtros.periodo),
+                  },
+                ]
+              : []),
+            ...(filtros.mes
+              ? [
+                  {
+                    key: "mes" as const,
+                    label: "Mes",
+                    value: String(filtros.mes),
+                  },
+                ]
+              : []),
+            ...(filtros.municipalidad_id
+              ? [
+                  {
+                    key: "municipalidad_id" as const,
+                    label: "Municipalidad",
+                    value:
+                      municipalidadNombreById.get(filtros.municipalidad_id) ??
+                      filtros.municipalidad_id,
+                  },
+                ]
+              : []),
+          ]}
+          onRemove={removeFilter}
+          onClearAll={clearFiltros}
+        />
 
         {/* Cards View */}
         <div className="space-y-4">
@@ -231,7 +224,7 @@ export function RecibosDelegadosView() {
               <Button
                 variant="outline"
                 className="gap-2 h-10 rounded-xl font-semibold"
-                onClick={() => setRhModalOpen(true)}
+                onClick={handleCreate}
               >
                 <Plus className="h-4 w-4" />
                 Crear RH
@@ -245,6 +238,7 @@ export function RecibosDelegadosView() {
                     key={item.id}
                     item={item}
                     onDelete={handleDelete}
+                    onEdit={handleEdit}
                   />
                 ))}
               </div>
@@ -262,11 +256,22 @@ export function RecibosDelegadosView() {
         </div>
       </div>
 
+      <RHMensualExcelModal
+        open={excelModalOpen}
+        onOpenChange={setExcelModalOpen}
+        variante="delegados"
+      />
+
       <RhDelegadoMensualModal
         open={rhModalOpen}
-        onOpenChange={setRhModalOpen}
+        onOpenChange={(open) => {
+          setRhModalOpen(open);
+          if (!open) setRhEnEdicion(null);
+        }}
+        editContext={rhEnEdicion ? { rh: rhEnEdicion } : null}
         onSuccess={() => {
           setRhModalOpen(false);
+          setRhEnEdicion(null);
           refetch();
         }}
       />

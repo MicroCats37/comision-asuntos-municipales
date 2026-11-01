@@ -9,8 +9,8 @@ export type EspecialidadBasicaInspector = z.infer<
   typeof EspecialidadBasicaInspectorSchema
 >;
 
-/** Inspector vigente/elegible — GET /liquidaciones/inspectores/seleccionables */
-export const InspectorVigenteSchema = z.object({
+/** Operatividad de inspector para el selector Legacy IO. */
+export const InspectorOperacionSchema = z.object({
   id: z.string(),
   nombre_completo: z.string(),
   cip: z.string(),
@@ -19,17 +19,30 @@ export const InspectorVigenteSchema = z.object({
   categoria: z.string().nullable(),
   numero_registro: z.string(),
   vigencia: z.string().nullable(),
+  periodo_inicio: z.string().nullable(),
+  periodo_fin: z.string().nullable(),
+  es_vigente: z.boolean(),
   inspector_operacion_id: z.string(),
 });
-export type InspectorVigenteData = z.infer<typeof InspectorVigenteSchema>;
-export type InspectorVigente = InspectorVigenteData;
+export type InspectorOperacionData = z.infer<typeof InspectorOperacionSchema>;
+export type InspectorOperacion = InspectorOperacionData;
 
-/** Envelope — GET /liquidaciones/inspectores/seleccionables */
-export const InspectoresVigentesResponseSchema = apiResponseSchema(
+// Kept for existing IO selector consumers; its response now also includes
+// the explicit operation period and current-status fields above.
+export const InspectorVigenteSchema = InspectorOperacionSchema;
+export type InspectorVigenteData = InspectorOperacionData;
+export type InspectorVigente = InspectorOperacion;
+
+/** Envelope del selector Legacy IO. */
+export const InspectorOperatividadesResponseSchema = apiResponseSchema(
   z.object({
-    inspectores: z.array(InspectorVigenteSchema),
+    inspectores: z.array(InspectorOperacionSchema),
   }),
 );
-export type InspectoresVigentesResponse = z.infer<
-  typeof InspectoresVigentesResponseSchema
+export type InspectorOperatividadesResponse = z.infer<
+  typeof InspectorOperatividadesResponseSchema
 >;
+
+export const InspectoresVigentesResponseSchema =
+  InspectorOperatividadesResponseSchema;
+export type InspectoresVigentesResponse = InspectorOperatividadesResponse;

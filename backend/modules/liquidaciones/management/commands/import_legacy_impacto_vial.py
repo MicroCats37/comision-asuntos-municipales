@@ -28,7 +28,7 @@ Input columns (openpyxl 0-indexed after list(row)):
 
 Output:
     Creates LiquidacionIMPACTO_VIAL records via
-    LiquidacionIMPACTO_VIALLegacyOrchestrator.crear_legacy_proceso().
+    LiquidacionImpactoVialLegacyOrchestrator.crear_legacy_proceso().
 
 Key changes from TSV version:
     - Read Excel with openpyxl (data_only=True)
@@ -90,7 +90,7 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liqu
     LiquidacionImpactoVial,
 )
 from modules.liquidaciones.domain.services.orchestrators.liquidacion_legacy.liquidacion_impacto_vial_legacy_orchestrator import (
-    LiquidacionIMPACTO_VIALLegacyOrchestrator,
+    LiquidacionImpactoVialLegacyOrchestrator,
 )
 from modules.liquidaciones.domain.resources import normalize_cip
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
@@ -100,7 +100,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_legacy.liquidacion_impacto_vial_legacy_schemas import (
     CotizacionLegacyIn,
-    LiquidacionIMPACTO_VIALLegacyIn,
+    LiquidacionImpactoVialLegacyIn,
     LiquidacionGeneralLegacyIn,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.porcentaje_schemas import (
@@ -237,9 +237,9 @@ def _parse_fecha(raw) -> date:
     return parsed
 
 
-def _build_orchestrator() -> LiquidacionIMPACTO_VIALLegacyOrchestrator:
+def _build_orchestrator() -> LiquidacionImpactoVialLegacyOrchestrator:
     """
-    Build a fully-injected LiquidacionIMPACTO_VIALLegacyOrchestrator.
+    Build a fully-injected LiquidacionImpactoVialLegacyOrchestrator.
 
     Creates a fresh Injector with the LiquidacionesModule and UsuariosModule
     bindings, then requests the orchestrator from the injector.
@@ -250,7 +250,7 @@ def _build_orchestrator() -> LiquidacionIMPACTO_VIALLegacyOrchestrator:
             UsuariosModule(),
         ]
     )
-    return injector.get(LiquidacionIMPACTO_VIALLegacyOrchestrator)
+    return injector.get(LiquidacionImpactoVialLegacyOrchestrator)
 
 
 # Mapeo ESPECIALIDAD (Excel) -> EspecialidadRevision.nombre
@@ -857,7 +857,7 @@ def _ensure_detalle_honorario_delegado(
 
 
 class Command(BaseCommand):
-    help = "Import legacy IMPACTO_VIAL data from CSV file via LiquidacionIMPACTO_VIALLegacyOrchestrator"
+    help = "Import legacy IMPACTO_VIAL data from CSV file via LiquidacionImpactoVialLegacyOrchestrator"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -1024,12 +1024,12 @@ class Command(BaseCommand):
             self._generar_reporte_detallado(rows, orchestrator, data_path.parent)
             return
 
-        # Resolve system user (first superuser or create 'system') for fallback
-        system_user = _get_or_create_system_user()
-        self._log(f"  System user fallback: username={system_user.username}")
+        if not self.dry_run:
+            system_user = _get_or_create_system_user()
+            self._log(f"  System user fallback: username={system_user.username}")
 
         # Optional reset: wipe all existing liquidaciones before importing
-        if self.reset:
+        if self.reset and not self.dry_run:
             self._log(self.style.WARNING("  --reset: eliminando LiquidacionGeneral existentes..."))
             self._reset_liquidaciones()
             self._log(self.style.SUCCESS("  Reset completado."))
@@ -1233,8 +1233,10 @@ class Command(BaseCommand):
                             continue
 
                     # Get usuario from USUARIO column (per-row)
-                    usuario_raw = row[COL_USUARIO] if len(row) > COL_USUARIO else None
-                    usuario = _get_or_create_usuario_from_usuario(usuario_raw)
+                    usuario = None
+                    if not self.dry_run:
+                        usuario_raw = row[COL_USUARIO] if len(row) > COL_USUARIO else None
+                        usuario = _get_or_create_usuario_from_usuario(usuario_raw)
 
                     created_liquidacion_general = existing_edificacion.liquidacion if existing_edificacion is not None else None
                     if not self.dry_run and created_liquidacion_general is None:
@@ -1958,7 +1960,7 @@ class Command(BaseCommand):
 
     def _build_payload(self, row: list, idx: int, orchestrator) -> tuple:
         """
-        Build a LiquidacionIMPACTO_VIALLegacyIn from an Excel row list.
+        Build a LiquidacionImpactoVialLegacyIn from an Excel row list.
 
         Returns (payload, anomalies_list, unit_ambiguity).
         Raises ValueError on parse errors (converted to str in the caller's except).
@@ -2227,16 +2229,16 @@ class Command(BaseCommand):
         # especialidad revisada de la fila -> porcentaje parcial de esa tarifa.
         # Solo ESPECIALIDAD == TODAS -> auto-fill (tarifas=[]).
         tarifas_explicit: list[LiquidacionPorcentajeObraTarifaIn] = []
-        if especialidad_str and especialidad_str.strip().upper() != "TODAS":
+        if not especialidad_str or especialidad_str.strip().upper() != "TODAS":
             esp_revision = _resolve_especialidad_revision(especialidad_str)
             if esp_revision is None:
-                anomalies.append(f"Especialidad no encontrada: {especialidad_str}")
+                raise ValueError(f"Especialidad no encontrada: {especialidad_str}")
             else:
                 tarifas_vigentes = orchestrator.legacy_po_core.get_tarifa_por_fecha(
                     TipoLiquidacion.IMPACTO_VIAL, fecha_registro
                 )
                 if not tarifas_vigentes:
-                    anomalies.append("No hay tarifa vigente para la fecha — se usa auto-fill")
+                    raise ValueError("No hay tarifa vigente para la fecha")
                 else:
                     tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas_vigentes}.values())
                     tarifas_explicit = [
@@ -2269,7 +2271,7 @@ class Command(BaseCommand):
             except (InvalidOperation, ValueError) as exc:
                 anomalies.append(f"Subtotal/Total inválido: {exc}")
 
-        payload = LiquidacionIMPACTO_VIALLegacyIn(
+        payload = LiquidacionImpactoVialLegacyIn(
             liquidacion_general=liquidacion_general_partial,
             liquidacion_especifica=liquidacion_especifica,
             cotizacion_legacy=cotizacion_legacy,

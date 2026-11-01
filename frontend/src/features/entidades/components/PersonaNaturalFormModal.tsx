@@ -5,7 +5,6 @@ import { z } from "zod";
 import { GenericInput } from "@/components/genericForm/GenericInput";
 import { Button } from "@/components/ui/button";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { notify } from "@/errors";
 import { useDocumentoLookup } from "@/features/entidades/hooks/useConsultaExterna";
 import { useDistritos } from "@/features/entidades/hooks/useDistritos";
 import { usePersonaNaturalUpsert } from "@/features/entidades/hooks/useEntidad";
@@ -67,7 +66,7 @@ export function PersonaNaturalFormModal({
         activo: result.data.activo,
         creado: result.data.creado,
       };
-      notify.success("Persona natural guardada correctamente");
+      // The success toast comes from the mutation hook (server message).
       onSaved(entidadResult);
     }
   };

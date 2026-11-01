@@ -2,6 +2,7 @@
 
 import {
   Building2,
+  CircleDollarSign,
   Eye,
   FileText,
   MapPin,
@@ -26,15 +27,19 @@ import { Pagination } from "@/components/genericPagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   composeDetalleSections,
   LiquidacionDetalleModal,
 } from "../../components/detail";
+import { useDistritos } from "../../hooks/useDistritos";
 import {
   type LiquidacionPreviaItem,
   useLiquidacionesPrevias,
 } from "../../hooks/useLiquidacionesPrevias";
+import { useMunicipalidades } from "../../hooks/useMunicipalidades";
 import { getLiquidacionTipoInfo } from "../../utils/liquidacionTipoInfo";
+import { formatCurrency } from "../liquidacion-ui";
 
 interface SeleccionarPreviaModalProps {
   open: boolean;
@@ -66,11 +71,17 @@ export function SeleccionarPreviaModal({
   const [numero, setNumero] = useState("");
   const [propietario, setPropietario] = useState("");
   const [direccion, setDireccion] = useState("");
+  const [municipalidadId, setMunicipalidadId] = useState("");
+  const [distritoId, setDistritoId] = useState("");
   const [searched, setSearched] = useState(false);
   const [page, setPage] = useState(1);
   const [detalleItem, setDetalleItem] = useState<LiquidacionPreviaItem | null>(
     null,
   );
+  const { data: municipalidades = [], isLoading: isLoadingMunicipalidades } =
+    useMunicipalidades();
+  const { data: distritos = [], isLoading: isLoadingDistritos } =
+    useDistritos();
 
   const isDocumentoValid =
     !documento.trim() ||
@@ -82,7 +93,9 @@ export function SeleccionarPreviaModal({
     (documento.trim() ||
       numeroValue !== undefined ||
       propietario.trim() ||
-      direccion.trim()) &&
+      direccion.trim() ||
+      municipalidadId ||
+      distritoId) &&
     isDocumentoValid &&
     isNumeroValid;
 
@@ -96,6 +109,8 @@ export function SeleccionarPreviaModal({
       numero: numeroValue,
       nombrePropietario: propietario || undefined,
       direccion: direccion || undefined,
+      municipalidadId: municipalidadId || undefined,
+      distritoId: distritoId || undefined,
       enabled: searched && open && tipoPermitido !== undefined,
     });
 
@@ -111,6 +126,8 @@ export function SeleccionarPreviaModal({
     setNumero("");
     setPropietario("");
     setDireccion("");
+    setMunicipalidadId("");
+    setDistritoId("");
     setSearched(false);
     setPage(1);
   }, []);
@@ -151,6 +168,46 @@ export function SeleccionarPreviaModal({
             <div className="p-4 rounded-xl border border-border/60 bg-muted/10 space-y-3">
               <div className="space-y-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <SearchableSelect
+                    id="buscar-municipalidad"
+                    label="Municipalidad"
+                    value={municipalidadId || null}
+                    onValueChange={(value) => {
+                      setMunicipalidadId(value ?? "");
+                      setSearched(false);
+                    }}
+                    options={municipalidades.map((municipalidad) => ({
+                      value: municipalidad.id,
+                      label: `${municipalidad.codigo ? `${municipalidad.codigo} - ` : ""}${municipalidad.nombre}`,
+                    }))}
+                    placeholder={
+                      isLoadingMunicipalidades
+                        ? "Cargando..."
+                        : "Buscar municipalidad"
+                    }
+                    icon={Building2}
+                    disabled={isLoadingMunicipalidades}
+                    className="[&>button]:w-full"
+                  />
+                  <SearchableSelect
+                    id="buscar-distrito"
+                    label="Distrito"
+                    value={distritoId || null}
+                    onValueChange={(value) => {
+                      setDistritoId(value ?? "");
+                      setSearched(false);
+                    }}
+                    options={distritos.map((distrito) => ({
+                      value: distrito.id,
+                      label: `${distrito.nombre} - ${distrito.provinciaNombre}`,
+                    }))}
+                    placeholder={
+                      isLoadingDistritos ? "Cargando..." : "Buscar distrito"
+                    }
+                    icon={MapPin}
+                    disabled={isLoadingDistritos}
+                    className="[&>button]:w-full"
+                  />
                   <div className="space-y-2">
                     <Label
                       htmlFor="buscar-documento"
@@ -391,6 +448,16 @@ export function SeleccionarPreviaModal({
                               icon={MapPin}
                               label="Dirección"
                               value={direccion}
+                            />
+                            <DetailRow
+                              icon={CircleDollarSign}
+                              label="Subtotal"
+                              value={formatCurrency(lg.sub_total)}
+                            />
+                            <DetailRow
+                              icon={CircleDollarSign}
+                              label="Total"
+                              value={formatCurrency(lg.total)}
                             />
                           </div>
 

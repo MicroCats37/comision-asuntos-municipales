@@ -2,9 +2,10 @@
 """
 RHReparticionEstacional Controller — thin HTTP controller.
 
-Endpoints for RH Reparticion Estacional (cotizar, crear, list, detail, delete).
+Endpoints for RH Reparticion Estacional (cotizar, crear, list, delete).
 All delegation to RHReparticionEstacionalOrchestrator.
 """
+
 from ninja import Query
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
@@ -12,13 +13,13 @@ from injector import inject
 
 from core.responses import ApiResponse, success_response
 from modules.finanzas.domain.schemas import (
+    RHReparticionEstacionalActualizarIn,
     RHReparticionEstacionalCotizarIn,
     RHReparticionEstacionalCrearIn,
 )
 from modules.finanzas.presentation.schemas.rh_reparticion_estacional_schemas import (
     RHReparticionEstacionalCotizarOut,
-    RHReparticionEstacionalListItemOut,
-    RHReparticionEstacionalDetalleOut,
+    RHReparticionEstacionalOut,
     RHReparticionEstacionalDeleteOut,
 )
 from modules.finanzas.domain.services.orchestrators.rh_reparticion_estacional_orchestrator import (
@@ -29,7 +30,9 @@ from modules.finanzas.presentation.presenters.rh_reparticion_estacional_presente
 )
 
 
-@api_controller("/finanzas", tags=["Finanzas-RH-Reparticion-Estacional"], permissions=[AllowAny])
+@api_controller(
+    "/finanzas", tags=["Finanzas-RH-Reparticion-Estacional"], permissions=[AllowAny]
+)
 class RHReparticionEstacionalController:
     """
     Controlador para Repartición Estacional del Fondo Común.
@@ -38,7 +41,7 @@ class RHReparticionEstacionalController:
     - POST /finanzas/reparticiones-estacionales/cotizar
     - POST /finanzas/reparticiones-estacionales
     - GET  /finanzas/reparticiones-estacionales
-    - GET  /finanzas/reparticiones-estacionales/{id}
+    - PATCH /finanzas/reparticiones-estacionales/{id}
     - DELETE /finanzas/reparticiones-estacionales/{id}
     """
 
@@ -57,7 +60,9 @@ class RHReparticionEstacionalController:
         Calcula la distribución del fondo_comun sin guardar nada.
         """
         result = self.orchestrator.cotizar_proceso(payload)
-        return success_response(RHReparticionEstacionalPresenter.present_cotizar(result))
+        return success_response(
+            RHReparticionEstacionalPresenter.present_cotizar(result)
+        )
 
     @route.post(
         "/reparticiones-estacionales",
@@ -70,20 +75,25 @@ class RHReparticionEstacionalController:
         Valida, calcula y persiste atómicamente.
         """
         result = self.orchestrator.crear_proceso(payload)
-        return success_response(RHReparticionEstacionalPresenter.present_cotizar(result), message="Repartición estacional creada correctamente.")
+        return success_response(
+            RHReparticionEstacionalPresenter.present_cotizar(result),
+            message="Repartición estacional creada correctamente.",
+        )
 
     @route.get(
         "/reparticiones-estacionales",
-        response={200: ApiResponse[list[RHReparticionEstacionalListItemOut]]},
+        response={200: ApiResponse[list[RHReparticionEstacionalOut]]},
     )
     def listar(
         self,
         request,
-        especialidad_revision_id: str | None = Query(None, description="UUID de EspecialidadRevision"),
+        especialidad_revision_id: str | None = Query(
+            None, description="UUID de EspecialidadRevision"
+        ),
         periodo: int | None = Query(None, description="Año de la repartición"),
     ):
         """
-        GET /finanzas/reparticiones-estacionales — lista reparticiones activas.
+        GET /finanzas/reparticiones-estacionales — lista activa con distribución completa.
 
         Filtros opcionales por especialidad_revision_id y/o periodo.
         """
@@ -91,21 +101,36 @@ class RHReparticionEstacionalController:
             especialidad_revision_id=especialidad_revision_id,
             periodo=periodo,
         )
-        presented = [RHReparticionEstacionalPresenter.present_list_item(r) for r in results]
+        presented = [
+            RHReparticionEstacionalPresenter.present_reparticion(r) for r in results
+        ]
         return success_response(presented)
 
-    @route.get(
+    @route.patch(
         "/reparticiones-estacionales/{reparticion_id}",
-        response={200: ApiResponse[RHReparticionEstacionalDetalleOut]},
+        response={200: ApiResponse[RHReparticionEstacionalOut]},
     )
-    def obtener_detalle(self, request, reparticion_id: str):
+    def actualizar(
+        self,
+        request,
+        reparticion_id: str,
+        payload: RHReparticionEstacionalActualizarIn,
+    ):
         """
-        GET /finanzas/reparticiones-estacionales/{id} — detalle completo.
+        PATCH /finanzas/reparticiones-estacionales/{id} — edita la distribución.
 
-        Incluye los detalles de delegados y capítulos.
+        Recalcula la distribución completa con la misma lógica de cálculo y
+        reemplaza el conjunto final de detalles. La identidad del registro
+        (id) y su identidad de creación (created_at) se conservan.
+
+        Devuelve el mismo item compuesto del listado
+        (identidad + general + distribucion).
         """
-        result = self.orchestrator.obtener_detalle_proceso(reparticion_id)
-        return success_response(RHReparticionEstacionalPresenter.present_detalle(result))
+        result = self.orchestrator.actualizar_proceso(reparticion_id, payload)
+        return success_response(
+            RHReparticionEstacionalPresenter.present_reparticion(result),
+            message="Repartición estacional actualizada correctamente.",
+        )
 
     @route.delete(
         "/reparticiones-estacionales/{reparticion_id}",
@@ -115,7 +140,14 @@ class RHReparticionEstacionalController:
         """
         DELETE /finanzas/reparticiones-estacionales/{id} — soft-delete.
 
-        No elimina físicamente el registro.
+        No elimina físicamente el registro: se marca ``is_deleted`` y se
+        sella ``deleted_at`` para conservar la trazabilidad.
+
+        El mensaje humano se publica únicamente en el primer nivel del
+        envelope (contract/next-app-architecture-contract.md §11).
         """
-        result = self.orchestrator.eliminar_proceso(reparticion_id)
-        return success_response(RHReparticionEstacionalDeleteOut(message=result["message"]))
+        reparticion_id = self.orchestrator.eliminar_proceso(reparticion_id)
+        return success_response(
+            RHReparticionEstacionalPresenter.present_delete(reparticion_id),
+            message="Repartición estacional eliminada correctamente.",
+        )

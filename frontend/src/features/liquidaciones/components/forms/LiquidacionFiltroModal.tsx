@@ -22,6 +22,7 @@ import {
  */
 import { useCallback } from "react";
 import { z } from "zod";
+import { GenericInput } from "@/components/genericForm/GenericInput";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -31,19 +32,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
+import { useDistritos } from "../../hooks/useDistritos";
 import type { LiquidacionFiltros } from "../../hooks/useLiquidacionList";
 import { useMunicipalidades } from "../../hooks/useMunicipalidades";
 
 const filtroSchema = z.object({
   entidad_id: z.string().optional(),
+  distrito_id: z.string().optional(),
   propietario: z.string().optional(),
   fecha_desde: z.string().optional(),
   fecha_hasta: z.string().optional(),
@@ -144,9 +140,11 @@ export function LiquidacionFiltroModal({
 }: LiquidacionFiltroModalProps) {
   const { data: municipalidades, isLoading: isLoadingMunicipalidades } =
     useMunicipalidades();
+  const { data: distritos, isLoading: isLoadingDistritos } = useDistritos();
 
   const initialData: FiltroFormData = {
     entidad_id: initialFiltros?.entidad_id ?? "",
+    distrito_id: initialFiltros?.distrito_id ?? "",
     propietario: initialFiltros?.propietario ?? "",
     fecha_desde: initialFiltros?.fecha_desde ?? "",
     fecha_hasta: initialFiltros?.fecha_hasta ?? "",
@@ -163,6 +161,7 @@ export function LiquidacionFiltroModal({
     async (data: FiltroFormData) => {
       const filtros: LiquidacionFiltros = {};
       if (data.entidad_id) filtros.entidad_id = data.entidad_id;
+      if (data.distrito_id) filtros.distrito_id = data.distrito_id;
       if (data.propietario) filtros.propietario = data.propietario;
       if (data.fecha_desde) filtros.fecha_desde = data.fecha_desde;
       if (data.fecha_hasta) filtros.fecha_hasta = data.fecha_hasta;
@@ -182,7 +181,7 @@ export function LiquidacionFiltroModal({
       open={open}
       onOpenChange={onOpenChange}
       title="Filtrar Liquidaciones"
-      description="Filtra la lista por municipalidad, propietario, fechas, entidad, etc."
+      description="Filtra la lista por municipalidad, distrito, propietario, fechas y otros datos."
       eyebrow="Liquidación"
       icon={<Filter className="h-5 w-5 text-primary" />}
       primaryLabel="Aplicar Filtros"
@@ -197,39 +196,56 @@ export function LiquidacionFiltroModal({
     >
       {({ methods }) => (
         <div className="space-y-4">
-          {/* Fila 1: Municipalidad + Propietario */}
+          {/* Fila 1: Municipalidad + Distrito */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="filtro-entidad">Municipalidad</Label>
-              <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-                <Select
-                  value={methods.watch("entidad_id") || ""}
-                  onValueChange={(v) => methods.setValue("entidad_id", v)}
-                >
-                  <SelectTrigger
-                    id="filtro-entidad"
-                    className="pl-10 h-10 w-full"
-                  >
-                    <SelectValue
-                      placeholder={
-                        isLoadingMunicipalidades
-                          ? "Cargando..."
-                          : "Seleccionar municipalidad"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(municipalidades || []).map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.codigo ? `${m.codigo} - ` : ""}
-                        {m.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <GenericInput
+              field={{
+                name: "entidad_id",
+                label: "Municipalidad",
+                type: "searchable-select",
+                containerClassName: "col-span-1",
+                className: "[&_button]:w-full",
+                placeholder: isLoadingMunicipalidades
+                  ? "Cargando..."
+                  : "Buscar municipalidad",
+                icon: Building2,
+                isLoading: isLoadingMunicipalidades,
+                options: (municipalidades || []).map((municipalidad) => ({
+                  value: municipalidad.id,
+                  label: `${
+                    municipalidad.codigo ? `${municipalidad.codigo} - ` : ""
+                  }${municipalidad.nombre}`,
+                })),
+              }}
+              register={methods.register as never}
+              control={methods.control as never}
+              errors={methods.formState.errors}
+            />
+            <GenericInput
+              field={{
+                name: "distrito_id",
+                label: "Distrito",
+                type: "searchable-select",
+                containerClassName: "col-span-1",
+                className: "[&_button]:w-full",
+                placeholder: isLoadingDistritos
+                  ? "Cargando..."
+                  : "Buscar distrito",
+                icon: MapPin,
+                isLoading: isLoadingDistritos,
+                options: (distritos || []).map((distrito) => ({
+                  value: distrito.id,
+                  label: `${distrito.nombre} - ${distrito.provinciaNombre}`,
+                })),
+              }}
+              register={methods.register as never}
+              control={methods.control as never}
+              errors={methods.formState.errors}
+            />
+          </div>
+
+          {/* Fila 2: Propietario + Dirección */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <CampoTexto
               name="propietario"
               label="Propietario"
@@ -237,9 +253,16 @@ export function LiquidacionFiltroModal({
               register={methods.register}
               icon={User}
             />
+            <CampoTexto
+              name="direccion"
+              label="Dirección"
+              placeholder="Dirección del proyecto"
+              register={methods.register}
+              icon={MapPin}
+            />
           </div>
 
-          {/* Fila 2: Fechas */}
+          {/* Fila 3: Fechas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <CampoFecha
               label="Fecha Desde"
@@ -253,7 +276,7 @@ export function LiquidacionFiltroModal({
             />
           </div>
 
-          {/* Fila 3: Razón Social + Número */}
+          {/* Fila 4: Razón Social + Número */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <CampoTexto
               name="razon_social"
@@ -271,7 +294,7 @@ export function LiquidacionFiltroModal({
             />
           </div>
 
-          {/* Fila 4: Creado por + N° Revisiones */}
+          {/* Fila 5: Creado por + N° Revisiones */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <CampoTexto
               name="creado_por"
@@ -288,15 +311,6 @@ export function LiquidacionFiltroModal({
               icon={IdCard}
             />
           </div>
-
-          {/* Fila 5: Dirección */}
-          <CampoTexto
-            name="direccion"
-            label="Dirección"
-            placeholder="Dirección del proyecto"
-            register={methods.register}
-            icon={MapPin}
-          />
         </div>
       )}
     </AppFormModal>

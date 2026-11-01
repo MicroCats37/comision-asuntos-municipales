@@ -148,6 +148,22 @@ class LiquidacionInspectorController:
         return success_response(self.presenter.present_seleccionables(domain_result))
 
     @route.get(
+        "/seleccionables-por-cip",
+        response={200: ApiResponse[InspectoresSeleccionablesOut]},
+    )
+    def listar_inspectores_seleccionables_por_cip(
+        self,
+        cip: str,
+        vigente: Optional[bool] = None,
+    ):
+        """Operatividades históricas para el selector Legacy IO, no para RH."""
+        domain_result = self.orchestrator.listar_inspectores_seleccionables_por_cip_proceso(
+            cip=cip,
+            vigente=vigente,
+        )
+        return success_response(self.presenter.present_seleccionables(domain_result))
+
+    @route.get(
         "/inspectores-asignaciones",
         response={200: ApiResponse[PaginatedData[LiquidacionInspectorAsignacionOut]]},
     )

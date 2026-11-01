@@ -6,6 +6,7 @@ import {
   Link2,
   Mountain,
   RefreshCw,
+  Ruler,
 } from "lucide-react";
 /**
  * LiquidacionMecanicaSuelosFormModal — Modal unificado para MS (M2).
@@ -15,7 +16,6 @@ import {
  */
 import { useCallback, useState } from "react";
 import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
-import { notify } from "@/errors";
 import {
   composeDetalleSections,
   LiquidacionDetalleMecanicaSuelosSection,
@@ -31,6 +31,7 @@ import {
   type MecanicaSuelosFormData,
   mecanicaSuelosFormSchema,
 } from "../../../schemas/liquidacion-mecanica-suelos-form.schema";
+import { withLegacyRegistroFields } from "../../../schemas/liquidacion-legacy-registro-form.schema";
 import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
 import { formatPublicId } from "../../../utils/formatPublicId";
@@ -50,6 +51,7 @@ interface BaseProps {
 }
 
 type CreateProps = BaseProps & { mode: "create" };
+type LegacyProps = BaseProps & { mode: "legacy" };
 type EditProps = BaseProps & {
   mode: "edit";
   item: LiquidacionMecanicaSuelosListItem;
@@ -65,6 +67,7 @@ type RelacionadaProps = BaseProps & {
 
 export type LiquidacionMecanicaSuelosFormModalProps =
   | CreateProps
+  | LegacyProps
   | EditProps
   | NuevaRevisionProps
   | RelacionadaProps;
@@ -99,9 +102,15 @@ export function LiquidacionMecanicaSuelosFormModal(
   const [detalleOpen, setDetalleOpen] = useState(false);
 
   const sourceItem: LiquidacionMecanicaSuelosListItem | null =
-    mode === "edit" ? props.item : mode !== "create" ? props.previa : null;
+    mode === "edit"
+      ? props.item
+      : mode === "nueva-revision" || mode === "relacionada"
+        ? props.previa
+        : null;
 
-  const crearMutation = useCrearMecanicaSuelos();
+  const crearMutation = useCrearMecanicaSuelos(
+    mode === "legacy" ? "legacy" : "create",
+  );
   const editarMutation = useEditarMecanicaSuelos(
     mode === "edit" ? props.item.liquidacion_general.id : "",
   );
@@ -123,6 +132,8 @@ export function LiquidacionMecanicaSuelosFormModal(
     switch (mode) {
       case "create":
         return "Nueva Liquidación";
+      case "legacy":
+        return "Registro Legacy";
       case "edit":
         return "Editar Liquidación";
       case "nueva-revision":
@@ -136,6 +147,8 @@ export function LiquidacionMecanicaSuelosFormModal(
     switch (mode) {
       case "create":
         return "Crear Liquidación";
+      case "legacy":
+        return "Registrar Legacy";
       case "edit":
         return "Guardar cambios";
       case "nueva-revision":
@@ -148,7 +161,7 @@ export function LiquidacionMecanicaSuelosFormModal(
   const primaryLoadingLabel = mode === "edit" ? "Guardando..." : "Creando...";
 
   const primaryLoading =
-    mode === "create"
+    mode === "create" || mode === "legacy"
       ? crearMutation.isPending
       : mode === "edit"
         ? editarMutation.isPending
@@ -165,7 +178,7 @@ export function LiquidacionMecanicaSuelosFormModal(
 
   const computeCanEditProyecto = useCallback(
     (m: typeof mode, item: typeof sourceItem): boolean => {
-      if (m === "create" || m === "nueva-revision") return true;
+      if (m === "create" || m === "legacy" || m === "nueva-revision") return true;
       if (m === "edit" && item) {
         return canEditLiquidacion(item.liquidacion_general).canEditProyecto;
       }
@@ -193,6 +206,7 @@ export function LiquidacionMecanicaSuelosFormModal(
         <MoneyInput
           name="area_solicitada"
           label="Área Solicitada (m²)"
+          icon={Ruler}
           required
           control={methods.control}
           defaultValue={isEdit || isRevisionLike ? areaInicial : 0}
@@ -202,10 +216,15 @@ export function LiquidacionMecanicaSuelosFormModal(
 
       const motorSection = (
         <div className="space-y-3">
-          <TarifasM2SmartField methods={methods} tipo="mecanica-suelos" />
+          <TarifasM2SmartField
+            methods={methods}
+            tipo="mecanica-suelos"
+            legacy={mode === "legacy"}
+          />
           <CotizacionM2SmartField
             methods={methods}
             tipo="mecanica-suelos"
+            {...(mode === "legacy" ? { mode: "legacy" as const } : {})}
             {...(isEdit
               ? {
                   mode: "edit",
@@ -231,7 +250,7 @@ export function LiquidacionMecanicaSuelosFormModal(
   );
 
   const initialData: Partial<MecanicaSuelosFormData> = (() => {
-    if (mode === "create") {
+    if (mode === "create" || mode === "legacy") {
       return {
         area_solicitada: 0,
         numero_revision: resolveNumeroRevisionInicial("create"),
@@ -261,7 +280,6 @@ export function LiquidacionMecanicaSuelosFormModal(
   const onSubmitEdit = useCallback(
     async (data: MecanicaSuelosFormData) => {
       const result = await editarMutation.mutateAsync(data);
-      notify.success("Liquidación editada correctamente");
       return result;
     },
     [editarMutation],
@@ -312,7 +330,11 @@ export function LiquidacionMecanicaSuelosFormModal(
         onSuccess={onSuccess}
         mode={mode}
         sourceItem={sourceItem}
-        schema={mecanicaSuelosFormSchema}
+        schema={
+          mode === "legacy"
+            ? withLegacyRegistroFields(mecanicaSuelosFormSchema)
+            : mecanicaSuelosFormSchema
+        }
         initialData={initialData}
         eyebrow="Mecánica de Suelos"
         icon={icon}

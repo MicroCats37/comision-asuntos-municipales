@@ -18,14 +18,19 @@ const LIST_KEY = ["liquidaciones", "impacto-vial"] as const;
  * `LiquidacionImpactoVialInput` = `NumeroRevisionRequeridoMixin` + wrappers):
  * es obligatorio y lo elige el usuario.
  */
-export function buildCrearImpactoVialPayload(payload: ImpactoVialFormData) {
+export function buildCrearImpactoVialPayload(
+  payload: ImpactoVialFormData,
+  legacy = false,
+) {
   const {
     tarifa_unica_id,
     especialidades_seleccionadas,
     numero_revision,
+    numero,
+    fecha_registro,
     ...rest
   } = payload;
-  return {
+  const apiPayload = {
     numero_revision,
     liquidacion_general: {
       municipalidad_id: rest.municipalidad_id,
@@ -53,16 +58,17 @@ export function buildCrearImpactoVialPayload(payload: ImpactoVialFormData) {
       })),
     },
   };
+  return legacy ? { ...apiPayload, numero, fecha_registro } : apiPayload;
 }
 
-export function useCrearImpactoVial() {
+export function useCrearImpactoVial(mode: "create" | "legacy" = "create") {
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_general: unknown;
     liquidacion_especifica: unknown;
     numero_revision: number;
   }>({
     tipoQueryKey: LIST_KEY,
-    url: `${BASE_URL}/nueva-liquidacion/primera-revision`,
+    url: `${BASE_URL}/nueva-liquidacion/${mode === "legacy" ? "legacy" : "primera-revision"}`,
   });
 
   // Wrapper that formats payload as { liquidacion_general, liquidacion_especifica } for the API
@@ -70,13 +76,17 @@ export function useCrearImpactoVial() {
     () => ({
       ...mutation,
       mutate: (payload: ImpactoVialFormData) => {
-        mutation.mutate(buildCrearImpactoVialPayload(payload));
+        mutation.mutate(
+          buildCrearImpactoVialPayload(payload, mode === "legacy"),
+        );
       },
       mutateAsync: async (payload: ImpactoVialFormData) => {
-        return mutation.mutateAsync(buildCrearImpactoVialPayload(payload));
+        return mutation.mutateAsync(
+          buildCrearImpactoVialPayload(payload, mode === "legacy"),
+        );
       },
     }),
-    [mutation],
+    [mode, mutation],
   );
 
   return crearMutation;

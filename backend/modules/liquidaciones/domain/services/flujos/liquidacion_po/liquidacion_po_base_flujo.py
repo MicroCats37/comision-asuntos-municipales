@@ -52,6 +52,9 @@ from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_
 from modules.liquidaciones.domain.schemas.liquidacion_especifico.primera_revision_data import (
     LiquidacionEspecificaPrimeraRevisionData,
 )
+from modules.liquidaciones.domain.schemas.liquidacion_legacy.legacy_registro_data import (
+    LegacyRegistroContexto,
+)
 from modules.liquidaciones.domain.results.liquidacion_especifico.primera_revision_result import (
     LiquidacionEspecificaPrimeraRevisionResult,
 )
@@ -94,8 +97,11 @@ class LiquidacionPOBaseFlujo:
         igv_porcentaje: Decimal,
         derecho,
         uit_valor: Decimal,
+        registro_legacy: LegacyRegistroContexto | None = None,
     ) -> LiquidacionEspecificaPrimeraRevisionResult:
-        return self._ejecutar_primera_revision_sync(usuario_id, data, igv_porcentaje, derecho, uit_valor)
+        return self._ejecutar_primera_revision_sync(
+            usuario_id, data, igv_porcentaje, derecho, uit_valor, registro_legacy
+        )
 
     @transaction.atomic()
     def _ejecutar_primera_revision_sync(
@@ -105,6 +111,7 @@ class LiquidacionPOBaseFlujo:
         igv_porcentaje: Decimal,
         derecho,
         uit_valor: Decimal,
+        registro_legacy: LegacyRegistroContexto | None = None,
     ) -> LiquidacionEspecificaPrimeraRevisionResult:
         gen_data = data.liquidacion_general
         po_data = data.liquidacion_especifica
@@ -127,8 +134,15 @@ class LiquidacionPOBaseFlujo:
         proyecto = self.general_core.create_proyecto(proyecto_data, entidad)
 
         # Step 3: Resolve IGV/UIT upfront (no DB dependency on LG creation).
-        igv_vigente = self.general_core.get_igv_vigente()
-        uit_vigente = self.general_core.get_uit_vigente()
+        # En registro legacy el orchestrator YA resolvió las entidades
+        # históricas (IGV/UIT vigentes en `fecha_registro`): se usan esas,
+        # nunca las vigentes de hoy.
+        if registro_legacy is not None:
+            igv_vigente = registro_legacy.igv
+            uit_vigente = registro_legacy.uit
+        else:
+            igv_vigente = self.general_core.get_igv_vigente()
+            uit_vigente = self.general_core.get_uit_vigente()
 
         # Step 4: Resolve contacto if present (convert Pydantic schema to ORM instance).
         contacto = None
@@ -159,6 +173,10 @@ class LiquidacionPOBaseFlujo:
             uit_id=uit_vigente,
             usuario_creador_id=usuario_id,
             contacto=contacto,
+            fecha_registro=(
+                registro_legacy.fecha_registro if registro_legacy is not None else None
+            ),
+            legacy=registro_legacy is not None,
         )
 
         # Step 6: Create LiquidacionPorcentajeObra + detalles (shared)
@@ -170,7 +188,12 @@ class LiquidacionPOBaseFlujo:
         )
 
         # Step 7: Create type-specific PO wrapper (abstract)
-        wrapper = self._crear_wrapper(liquidacion_general)
+        wrapper = self._crear_wrapper(
+            liquidacion_general,
+            numero=(
+                registro_legacy.numero if registro_legacy is not None else None
+            ),
+        )
 
         # Step 7.5: Create relation group and member for primera revision
         # Uses base class helper that derives relacion_key from _get_tipo_liquidacion_code + tipo_tramite
@@ -383,10 +406,14 @@ class LiquidacionPOBaseFlujo:
         raise NotImplementedError
 
     @abstractmethod
-    def _crear_wrapper(self, liquidacion_general) -> object:
+    def _crear_wrapper(self, liquidacion_general, numero: int | None = None) -> object:
         """
         Create the type-specific PO wrapper (Edificacion/Taludes/ImpactoVial).
         The wrapper is an identity model with a OneToOne FK to LiquidacionGeneral.
+
+        `numero` carries the EXPLICIT historical number of the legacy record
+        (informative, repeatable). When None the wrapper keeps the automatic
+        sequential numbering.
         """
         raise NotImplementedError
 

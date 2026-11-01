@@ -1318,7 +1318,7 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
 from modules.liquidaciones.domain.models.proyecto import Proyecto
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion
 from modules.usuarios.domain.models.perfil_ingeniero import (
-    EspecialidadRevision,
+    EspecialidadRevisionCapitulo,
     PerfilIngeniero,
 )
 from modules.usuarios.domain.services.core.perfil_ingeniero_core_service import (
@@ -1468,20 +1468,29 @@ def _lookup_tarifa_categoria_visitas(
     return qs.order_by("-tarifa_base__periodo_inicio").first()
 
 
-def _get_or_create_io_especialidad_revision() -> EspecialidadRevision:
-    """Return fallback specialty for standalone legacy IO inspector details."""
-    especialidad, _ = EspecialidadRevision.objects.get_or_create(
-        slug="inspeccion-obra",
-        defaults={"nombre": "Inspección de Obra"},
+def _resolve_especialidad_revision_por_capitulo(
+    inspector: Inspector,
+):
+    """Resolve the review specialty from the inspector's professional chapter."""
+    capitulo_id = inspector.perfil_ingeniero.capitulo_id
+    if not capitulo_id:
+        return None
+
+    mappings = list(
+        EspecialidadRevisionCapitulo.objects.filter(
+            capitulo_id=capitulo_id,
+        ).select_related("especialidad_revision")[:2]
     )
-    return especialidad
+    if len(mappings) != 1:
+        return None
+    return mappings[0].especialidad_revision
 
 
 def _resolve_inspector_operacion_for_legacy_io(
     inspector: Inspector,
     row: "ParsedRow",
-) -> InspectorOperacion:
-    """Find an existing inspector operation or create an IO fallback operation."""
+) -> InspectorOperacion | None:
+    """Find or create an IO operation with specialty resolved by chapter."""
     preferred_codes = [
         TipoLiquidacionConstants.EDIFICACION,
         TipoLiquidacionConstants.HABILITACION_URBANA,
@@ -1492,6 +1501,10 @@ def _resolve_inspector_operacion_for_legacy_io(
         if row.categoria_mapped in {"1", "2", "3", "4"}
         else "1"
     )
+    especialidad = _resolve_especialidad_revision_por_capitulo(inspector)
+    if especialidad is None:
+        return None
+
     existing = (
         InspectorOperacion.objects.filter(
             inspector=inspector,
@@ -1503,16 +1516,26 @@ def _resolve_inspector_operacion_for_legacy_io(
         .first()
     )
     if existing is not None:
+        # Old imports may have stored the synthetic `inspeccion-obra` specialty.
+        # Repair it as soon as a chapter mapping is available.
+        if especialidad and existing.especialidad_revision_id != especialidad.id:
+            existing.especialidad_revision = especialidad
+            existing.save(update_fields=["especialidad_revision"])
         return existing
 
+    if especialidad is None:
+        return None
+
     tipo_io = TipoLiquidacion.objects.get(codigo=TipoLiquidacionConstants.INSPECCION_OBRA)
-    especialidad = _get_or_create_io_especialidad_revision()
     existing_io = InspectorOperacion.objects.filter(
         inspector=inspector,
         tipo_liquidacion=tipo_io,
         categoria=categoria,
     ).first()
     if existing_io is not None:
+        if existing_io.especialidad_revision_id != especialidad.id:
+            existing_io.especialidad_revision = especialidad
+            existing_io.save(update_fields=["especialidad_revision"])
         return existing_io
     return InspectorOperacion.objects.create(
         inspector=inspector,
@@ -1632,6 +1655,12 @@ def _create_legacy_inspector_detail(
 
     inspector, _ = Inspector.objects.get_or_create(perfil_ingeniero=perfil)
     inspector_operacion = _resolve_inspector_operacion_for_legacy_io(inspector, row)
+    if inspector_operacion is None:
+        command._log_warning(
+            f"  Fila {row.row_index}: CIP {row.cip} sin capítulo con especialidad de revisión; "
+            "saltando inspector."
+        )
+        return False, "SIN_ESPECIALIDAD_CAPITULO", False
     LiquidacionInspector.objects.get_or_create(
         liquidacion=liquidacion_visitas,
         inspector=inspector,

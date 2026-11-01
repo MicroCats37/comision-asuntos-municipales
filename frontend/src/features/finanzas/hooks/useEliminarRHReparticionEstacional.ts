@@ -1,6 +1,9 @@
 /**
  * Hook para eliminar (soft-delete) una Reparticion Estacional.
  * Endpoint: DELETE /finanzas/reparticiones-estacionales/{id}
+ *
+ * El mensaje humano llega en el primer nivel del envelope: lo publica la
+ * capa de mutación (useApiDelete), sin toasts duplicados en el componente.
  */
 import { useQueryClient } from "@tanstack/react-query";
 import { useApiDelete } from "@/hooks";

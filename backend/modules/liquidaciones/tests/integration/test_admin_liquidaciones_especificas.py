@@ -14,6 +14,7 @@ from datetime import date
 from django.test import Client, override_settings
 from django.contrib.auth import get_user_model
 from django.contrib.staticfiles.storage import staticfiles_storage
+from django.utils import timezone
 
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_edificaciones import (
     LiquidacionEdificacion,
@@ -43,6 +44,7 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacio
 )
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
 from modules.finanzas.domain.models.impuestos import IGV, UIT
+from modules.finanzas.domain.models.registro_pago_inspector import RegistroPagoInspector
 from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.entidades.domain.models import Entidad
@@ -433,7 +435,7 @@ def io_obj(db, liquidacion_general_io, tarifa_visitas_io):
     LiquidacionPorCategoriaVisitas.objects.create(
         liquidacion_general=liquidacion_general_io,
         cantidad_visitas=3,
-        categoria="INSPECCION",
+        categoria="1",
         porcentaje_uit=Decimal("0.10"),
         tarifa_aplicada=tarifa_visitas_io,
     )
@@ -580,11 +582,96 @@ def test_admin_taludes_change_view_renders_200(admin_client, taludes_obj):
 @pytest.mark.django_db
 def test_admin_inspeccion_obra_change_view_renders_200(admin_client, io_obj):
     """Verify LiquidacionInspeccionObraProxy admin change view renders without errors."""
+    visitas = io_obj.liquidacion.liquidacion_visitas.get()
+    RegistroPagoInspector.objects.create(
+        liquidacion_por_categoria_visitas=visitas,
+        periodo=2026,
+        mes=10,
+        inspecciones_pagadas=2,
+    )
     lg_id = io_obj.liquidacion_id
     url = f"/admin/liquidaciones/liquidacioninspeccionobraproxy/{lg_id}/change/"
     response = admin_client.get(url)
     assert response.status_code == 200, (
         f"Expected 200 for IO proxy change view, got {response.status_code}: {response.content[:500]}"
+    )
+    content = response.content.decode("utf-8")
+    assert "Programadas" in content
+    assert "Pagadas" in content
+    assert "Saldo pendiente" in content
+    assert 'name="categoria_inspeccion"' in content
+    assert '<option value="1" selected>Categoría 1</option>' in content
+    assert 'id="registros_pago_inspector-group"' in content
+    assert "Registros de visitas" in content
+    assert "empty-form" in content
+    assert "addText" in content
+    model_admin = response.context["adminform"].model_admin
+    original = response.context["original"]
+    assert model_admin.visitas_programadas(original) == 3
+    assert model_admin.inspecciones_pagadas(original) == 2
+    assert model_admin.saldo_inspecciones(original) == 1
+    model_admin._save_categoria(original, "2")
+    visitas.refresh_from_db()
+    assert visitas.categoria == "2"
+
+    inline = next(
+        inline
+        for inline in model_admin.get_inline_instances(response.wsgi_request, original)
+        if inline.model is RegistroPagoInspector
+    )
+    formset_class = inline.get_formset(response.wsgi_request, original)
+    prefix = formset_class.get_default_prefix()
+    registro_existente = visitas.registros_pago.get(periodo=2026, mes=10)
+    formset = formset_class(
+        data={
+            f"{prefix}-TOTAL_FORMS": "2",
+            f"{prefix}-INITIAL_FORMS": "1",
+            f"{prefix}-MIN_NUM_FORMS": "0",
+            f"{prefix}-MAX_NUM_FORMS": "1000",
+            f"{prefix}-0-id": str(registro_existente.id),
+            f"{prefix}-0-periodo": "2026",
+            f"{prefix}-0-mes": "10",
+            f"{prefix}-0-inspecciones_pagadas": "2",
+            f"{prefix}-1-periodo": "2026",
+            f"{prefix}-1-mes": "10",
+            f"{prefix}-1-inspecciones_pagadas": "1",
+        },
+        instance=original,
+        prefix=prefix,
+    )
+    assert formset.is_valid(), formset.errors
+    formset.save()
+    registro_nuevo = visitas.registros_pago.get(
+        periodo=2026,
+        mes=10,
+        inspecciones_pagadas=1,
+    )
+
+    future_year = timezone.localdate().year + 1
+    future_formset = formset_class(
+        data={
+            f"{prefix}-TOTAL_FORMS": "3",
+            f"{prefix}-INITIAL_FORMS": "2",
+            f"{prefix}-MIN_NUM_FORMS": "0",
+            f"{prefix}-MAX_NUM_FORMS": "1000",
+            f"{prefix}-0-id": str(registro_existente.id),
+            f"{prefix}-0-periodo": "2026",
+            f"{prefix}-0-mes": "10",
+            f"{prefix}-0-inspecciones_pagadas": "2",
+            f"{prefix}-1-id": str(registro_nuevo.id),
+            f"{prefix}-1-periodo": "2026",
+            f"{prefix}-1-mes": "10",
+            f"{prefix}-1-inspecciones_pagadas": "1",
+            f"{prefix}-2-periodo": str(future_year),
+            f"{prefix}-2-mes": "1",
+            f"{prefix}-2-inspecciones_pagadas": "1",
+        },
+        instance=original,
+        prefix=prefix,
+    )
+    assert not future_formset.is_valid()
+    assert "No se pueden registrar visitas en un período futuro." in str(
+        future_formset.errors
     )
 
 

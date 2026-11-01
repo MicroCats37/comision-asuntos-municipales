@@ -4,6 +4,7 @@ LiquidacionMecanicaSuelosOrchestrator — sync facade for Mecanica de Suelos.
 Thin sync facade. Validates input and delegates to Core/Flujo for calculation.
 """
 import uuid
+from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Optional
 from injector import inject
@@ -15,6 +16,15 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
 )
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
+)
+from modules.liquidaciones.domain.services.core.liquidacion_historico_core_service import (
+    LiquidacionHistoricoCoreService,
+)
+from modules.liquidaciones.domain.schemas.liquidacion_legacy.legacy_registro_data import (
+    LegacyRegistroContexto,
+)
+from modules.liquidaciones.domain.services.orchestrators._shared.legacy_registro_resolution import (
+    LegacyRegistroResolutionMixin,
 )
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaPorMetroCuadrado,
@@ -56,13 +66,14 @@ from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_m2_data i
 from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 
 
-class LiquidacionMecanicaSuelosOrchestrator:
+class LiquidacionMecanicaSuelosOrchestrator(LegacyRegistroResolutionMixin):
     """
     Sync facade for Mecanica de Suelos liquidacion.
 
     Responsibilities:
     - Input validation (area_solicitada > 0)
     - Delegates to M2 Core service for calculation
+    - Historical resolution for the typed legacy registration route
     """
 
     @inject
@@ -72,37 +83,69 @@ class LiquidacionMecanicaSuelosOrchestrator:
         general_core_service: LiquidacionGeneralCoreService,
         general_orchestrator: LiquidacionGeneralOrchestrator,
         flujo: LiquidacionMecanicaSuelosFlujo,
+        historico_core: LiquidacionHistoricoCoreService,
     ):
         self.m2_core_service = m2_core_service
         self.general_core_service = general_core_service
         self.general_orchestrator = general_orchestrator
         self.flujo = flujo
+        self.historico_core = historico_core
 
     def crear_primera_revision_proceso(
         self,
         usuario_id: int,
         payload_in: LiquidacionMecanicaSuelosInput,
+        registro_legacy: LegacyRegistroContexto | None = None,
     ) -> MecanicaSuelosPrimeraRevisionResult:
         """
         Valida y orquesta la creacion de Mecanica de Suelos (Primera Revision).
+
+        `registro_legacy` (registro manual histórico): la fecha efectiva es
+        `registro_legacy.fecha_registro`; IGV, UIT, tarifa M2 y derecho se
+        resuelven a esa fecha con el resolver canónico (sin fallback a los
+        valores de hoy). Los totales siempre se calculan.
         """
         area = payload_in.liquidacion_especifica.datos.area_solicitada
         if area <= 0:
             raise HttpError(400, "area_solicitada debe ser mayor a 0")
 
-        # Resolve IGV vigente
-        igv_vigente = self.general_core_service.get_igv_vigente()
-        if not igv_vigente:
-            raise HttpError(400, "No hay IGV vigente configurado")
-        igv_porcentaje = Decimal(str(igv_vigente.valor))
+        if registro_legacy is not None:
+            fecha_efectiva = registro_legacy.fecha_registro
+            igv_vigente, uit_vigente = self._resolver_igv_uit_historicos(fecha_efectiva)
+            derecho = self._resolver_derecho_m2_historico(fecha_efectiva)
+            tarifa = self._resolver_tarifa_m2_historica(
+                TipoLiquidacion.MECANICA_SUELOS, fecha_efectiva
+            )
+            # La tarifa del payload DEBE ser la vigente en la fecha efectiva:
+            # el registro histórico no puede usar una tarifa de otra fecha.
+            tarifa_payload = str(payload_in.liquidacion_especifica.tarifa.tarifa_m2_id)
+            if tarifa_payload != str(tarifa.id):
+                raise HttpError(
+                    400,
+                    "La tarifa indicada no está vigente en la fecha de registro.",
+                )
+            igv_porcentaje = Decimal(str(igv_vigente.valor))
+            cotizacion = self.m2_core_service.calcular_cotizacion_m2(
+                tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
+                area_solicitada=area,
+                tarifa_m2_id=str(tarifa.id),
+                derecho=derecho,
+                igv_porcentaje=igv_porcentaje,
+            )
+        else:
+            # Resolve IGV vigente
+            igv_vigente = self.general_core_service.get_igv_vigente()
+            if not igv_vigente:
+                raise HttpError(400, "No hay IGV vigente configurado")
+            igv_porcentaje = Decimal(str(igv_vigente.valor))
 
-        # Calculate M2 cotizacion with IGV
-        cotizacion = self.m2_core_service.calcular_cotizacion_m2(
-            tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
-            area_solicitada=area,
-            tarifa_m2_id=str(payload_in.liquidacion_especifica.tarifa.tarifa_m2_id),
-            igv_porcentaje=igv_porcentaje,
-        )
+            # Calculate M2 cotizacion with IGV
+            cotizacion = self.m2_core_service.calcular_cotizacion_m2(
+                tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
+                area_solicitada=area,
+                tarifa_m2_id=str(payload_in.liquidacion_especifica.tarifa.tarifa_m2_id),
+                igv_porcentaje=igv_porcentaje,
+            )
 
         # Apply min/max clamping on TOTAL (bruto) — Orchestrator owns clamping logic
         if cotizacion.total < cotizacion.minimo:
@@ -156,7 +199,22 @@ class LiquidacionMecanicaSuelosOrchestrator:
             cotizacion=cotizacion,
         )
 
-        response = self.flujo.ejecutar_primera_revision(usuario_id=usuario_id, data=domain_data)
+        response = self.flujo.ejecutar_primera_revision(
+            usuario_id=usuario_id,
+            data=domain_data,
+            registro_legacy=(
+                registro_legacy.model_copy(
+                    update={
+                        "igv": igv_vigente,
+                        "uit": uit_vigente,
+                        "derecho": derecho,
+                        "tarifa": tarifa,
+                    }
+                )
+                if registro_legacy is not None
+                else None
+            ),
+        )
 
         return response
 
@@ -363,25 +421,45 @@ class LiquidacionMecanicaSuelosOrchestrator:
         self,
         area_solicitada: Decimal,
         tarifa_m2_id: str,
+        fecha: Optional[date] = None,
     ) -> CotizacionM2Result:
         """
         Validates area and executes quote calculation with min/max clamping.
+
+        `fecha` es la fecha EFECTIVA opcional del preview: `None` significa hoy
+        (comportamiento vigente); con fecha, IGV, UIT, tarifa M2 y derecho se
+        resuelven a esa fecha con el resolver canónico (modo legacy).
         """
         if area_solicitada <= 0:
             raise HttpError(400, "area_solicitada must be greater than 0")
 
-        # Resolve IGV vigente
-        igv_vigente = self.general_core_service.get_igv_vigente()
-        if not igv_vigente:
-            raise HttpError(400, "No hay IGV vigente configurado")
-        igv_porcentaje = Decimal(str(igv_vigente.valor))
+        if fecha is not None:
+            igv_vigente, uit_vigente = self._resolver_igv_uit_historicos(fecha)
+            derecho = self._resolver_derecho_m2_historico(fecha)
+            tarifa = self._resolver_tarifa_m2_historica(
+                TipoLiquidacion.MECANICA_SUELOS, fecha
+            )
+            igv_porcentaje = Decimal(str(igv_vigente.valor))
+            response = self.m2_core_service.calcular_cotizacion_m2(
+                tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
+                area_solicitada=area_solicitada,
+                tarifa_m2_id=str(tarifa.id),
+                derecho=derecho,
+                igv_porcentaje=igv_porcentaje,
+            )
+        else:
+            # Resolve IGV vigente
+            igv_vigente = self.general_core_service.get_igv_vigente()
+            if not igv_vigente:
+                raise HttpError(400, "No hay IGV vigente configurado")
+            igv_porcentaje = Decimal(str(igv_vigente.valor))
 
-        response = self.m2_core_service.calcular_cotizacion_m2(
-            tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
-            area_solicitada=area_solicitada,
-            tarifa_m2_id=tarifa_m2_id,
-            igv_porcentaje=igv_porcentaje,
-        )
+            response = self.m2_core_service.calcular_cotizacion_m2(
+                tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
+                area_solicitada=area_solicitada,
+                tarifa_m2_id=tarifa_m2_id,
+                igv_porcentaje=igv_porcentaje,
+            )
 
         # Apply min/max clamping on TOTAL (bruto)
         if response.total < response.minimo:
@@ -399,11 +477,23 @@ class LiquidacionMecanicaSuelosOrchestrator:
 
     def obtener_tarifas_vigentes_proceso(
         self,
+        fecha: Optional[date] = None,
     ) -> tuple[TarifaPorMetroCuadrado, DerechoPorMetroCuadrado]:
         """
         Fetches currently active M2 tariff and derecho for Mecanica de Suelos.
         Returns (tarifa, derecho) tuple.
+
+        `fecha` es la fecha EFECTIVA opcional: `None` significa hoy (comportamiento
+        vigente); con fecha, la tarifa y el derecho se resuelven a esa fecha con
+        el resolver canónico (modo legacy).
         """
+        if fecha is not None:
+            tarifa = self._resolver_tarifa_m2_historica(
+                TipoLiquidacion.MECANICA_SUELOS, fecha
+            )
+            derecho = self._resolver_derecho_m2_historico(fecha)
+            return (tarifa, derecho)
+
         tarifa = self.m2_core_service.get_tarifa_m2_vigente(
             tipo_liquidacion=TipoLiquidacion.MECANICA_SUELOS,
         )
@@ -413,6 +503,7 @@ class LiquidacionMecanicaSuelosOrchestrator:
     def listar_liquidaciones(
         self, page: int, page_size: int,
         municipalidad_id=None,
+        distrito_id=None,
         propietario=None,
         razon_social=None,
         creador_username=None,
@@ -441,6 +532,7 @@ class LiquidacionMecanicaSuelosOrchestrator:
             page=page,
             page_size=page_size,
             municipalidad_id=municipalidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creador_username,

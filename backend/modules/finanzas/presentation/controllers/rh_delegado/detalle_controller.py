@@ -5,6 +5,7 @@ GET /finanzas/recibos-delegados/detalle
 
 Informational only — no POST/PUT/PATCH/DELETE.
 """
+
 import uuid
 
 from injector import inject
@@ -27,7 +28,9 @@ from modules.finanzas.presentation.schemas.finanzas_schemas import (
 from modules.liquidaciones.domain.constants import TipoLiquidacion
 
 
-@api_controller("/finanzas", tags=["Finanzas-RH-Delegado-Detalle"], permissions=[AllowAny])
+@api_controller(
+    "/finanzas", tags=["Finanzas-RH-Delegado-Detalle"], permissions=[AllowAny]
+)
 class RHDelegadoDetalleController:
     """
     Controlador para listar filas sueltas de DetalleHonorarioDelegado (detalle flat).
@@ -48,12 +51,19 @@ class RHDelegadoDetalleController:
         self,
         request,
         page: int = Query(1, ge=1, description="Página (1-indexed)"),
-        page_size: int = Query(20, ge=1, le=100, description="Elementos por página (max 100)"),
+        page_size: int = Query(
+            20, ge=1, le=100, description="Elementos por página (max 100)"
+        ),
         delegado_id: uuid.UUID | None = Query(None, description="UUID del delegado"),
         delegado_cip: str | None = Query(None, description="CIP del delegado"),
-        periodo: int | None = Query(None, ge=2000, le=2100, description="Año del periodo (e.g. 2026). Opcional."),
+        periodo: int | None = Query(
+            None, ge=2000, le=2100, description="Año del periodo (e.g. 2026). Opcional."
+        ),
         mes: int | None = Query(None, ge=1, le=12, description="Mes (1-12). Opcional."),
-        municipalidad_id: uuid.UUID | None = Query(None, description="UUID de la municipalidad (liquidacion source, not operation). Opcional."),
+        municipalidad_id: uuid.UUID | None = Query(
+            None,
+            description="UUID de la municipalidad (liquidacion source, not operation). Opcional.",
+        ),
         tipo_liquidacion_codigo: str | None = Query(
             None,
             description=f"Código del tipo de liquidación. REQUERIDO. Valores válidos: {', '.join(TipoLiquidacion.values)}",
@@ -61,6 +71,13 @@ class RHDelegadoDetalleController:
         numero_liquidacion: int | None = Query(
             None,
             description="Número de liquidación específico (requiere tipo_liquidacion_codigo). Opcional.",
+        ),
+        sin_paginacion: bool = Query(
+            False,
+            description=(
+                "Devuelve el conjunto completo filtrado en una sola respuesta "
+                "(sin paginación). Útil para exportar la lista completa."
+            ),
         ),
     ):
         """
@@ -95,8 +112,9 @@ class RHDelegadoDetalleController:
             municipalidad_id=municipalidad_id,
             tipo_liquidacion_codigo=tipo_liquidacion_codigo,
             numero_liquidacion=numero_liquidacion,
+            sin_paginacion=sin_paginacion,
         )
         presented = FinanzasPresenter.present_rh_detalle_delegados_list(
-            domain_results, total, page, page_size
+            domain_results, total, page, page_size, sin_paginacion
         )
         return success_response(presented)

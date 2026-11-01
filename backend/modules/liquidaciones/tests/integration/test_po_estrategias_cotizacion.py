@@ -130,7 +130,7 @@ def _contexto(estrategia, participantes, derecho, **overrides):
     datos = {
         "estrategia": estrategia,
         "participantes": list(participantes),
-        "count_habilitadas": HABILITADAS_CATALOGO,
+        "cantidad_especialidades_habilitadas": HABILITADAS_CATALOGO,
         "porcentaje_tarifa": F_TARIFA,
         "valor_declarado": VALOR_DECLARADO,
         "igv_porcentaje": IGV_PORCENTAJE,
@@ -469,7 +469,7 @@ def test_motor_exige_habilitadas_resueltas_en_los_modos_con_universo(
     derecho_po_sin_rangos, especialidad_estructuras
 ):
     """
-    GIVEN: un contexto sin H resuelto (count_habilitadas=None).
+    GIVEN: un contexto sin H resuelto (cantidad_especialidades_habilitadas=None).
     WHEN:  se cotiza con TARIFA_HABILITADAS_PARTICIPANTES.
     THEN:  se RECHAZA: el motor nunca deduce H a partir de los participantes.
     """
@@ -481,7 +481,7 @@ def test_motor_exige_habilitadas_resueltas_en_los_modos_con_universo(
                 HABILITADAS,
                 [_participante(especialidad_estructuras)],
                 derecho_po_sin_rangos,
-                count_habilitadas=None,
+                cantidad_especialidades_habilitadas=None,
             )
         )
 
@@ -511,7 +511,7 @@ def test_motor_rechaza_participantes_sobre_las_habilitadas(
                 HABILITADAS,
                 participantes,
                 derecho_po_sin_rangos,
-                count_habilitadas=1,
+                cantidad_especialidades_habilitadas=1,
             )
         )
 
@@ -553,7 +553,7 @@ def test_verificar_invariantes_detecta_subtotal_inconsistente():
     service = LiquidacionPorcentajeObraCoreService()
     cotizacion = CotizacionPOEstrategiaData(
         estrategia=NORMAL,
-        count_habilitadas=1,
+        cantidad_especialidades_habilitadas=1,
         count_participantes=0,
         detalles=[],
         total_subtotal=Decimal("100.00"),
@@ -576,7 +576,7 @@ def test_verificar_invariantes_rechaza_acumulacion_en_modo_normal():
     service = LiquidacionPorcentajeObraCoreService()
     cotizacion = CotizacionPOEstrategiaData(
         estrategia=NORMAL,
-        count_habilitadas=1,
+        cantidad_especialidades_habilitadas=1,
         count_participantes=0,
         detalles=[],
         total_subtotal=Decimal("10.00"),
@@ -673,7 +673,7 @@ def test_motor_consume_las_tasas_historicas_resueltas_por_fecha_efectiva(
         CotizacionPOContexto(
             estrategia=HABILITADAS,
             participantes=[_participante(especialidad_estructuras)],
-            count_habilitadas=HABILITADAS_CATALOGO,
+            cantidad_especialidades_habilitadas=HABILITADAS_CATALOGO,
             porcentaje_tarifa=F_TARIFA,
             valor_declarado=VALOR_DECLARADO,
             igv_porcentaje=igv_resuelto.valor,

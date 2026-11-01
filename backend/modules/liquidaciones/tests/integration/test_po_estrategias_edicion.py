@@ -192,7 +192,7 @@ def liquidacion_historica(
         valor_declarado=VALOR_DECLARADO,
         porcentaje_liquidacion=Decimal("0.0010"),
         estrategia_cotizacion=NORMAL,
-        count_habilitadas=H_CATALOGO,
+        cantidad_especialidades_habilitadas=H_CATALOGO,
         porcentaje_tarifa=F_TARIFA,
         tarifa_aplicada=tarifa_po_unica_edificaciones,
         derecho_minimo=Decimal("0.00"),
@@ -253,7 +253,7 @@ def test_cotizar_edicion_habilitadas_proyecta_acumulacion_sin_persistir(
     data = response.json()["data"]
 
     assert data["estrategia_cotizacion"] == HABILITADAS
-    assert data["count_habilitadas"] == H_CATALOGO
+    assert data["cantidad_especialidades_habilitadas"] == H_CATALOGO
     assert _dec(data["porcentaje_liquidacion"]) == pytest.approx(Decimal("0.0015"))
     assert _dec(data["total_subtotal"]) == pytest.approx(Decimal("1500.0"))
     assert _dec(data["total"]) == pytest.approx(Decimal("1770.0"))
@@ -479,14 +479,14 @@ def test_patch_normal_seleccionadas_persiste_estrategia_y_snapshots(
     tipo = response.json()["data"]["liquidacion_tipo"]
 
     assert tipo["estrategia_cotizacion"] == NORMAL
-    assert tipo["count_habilitadas"] == H_CATALOGO
+    assert tipo["cantidad_especialidades_habilitadas"] == H_CATALOGO
     assert _dec(tipo["porcentaje_liquidacion"]) == pytest.approx(Decimal("0.0005"))
     assert tipo["total_explicito"] is None
     assert tipo["acumulacion"] is None
 
     po = LiquidacionPorcentajeObra.objects.get()
     assert po.estrategia_cotizacion == NORMAL
-    assert po.count_habilitadas == H_CATALOGO
+    assert po.cantidad_especialidades_habilitadas == H_CATALOGO
     assert po.total_explicito is None
     assert po.detalles.count() == 1
     assert LiquidacionPorcentajeObraAcumulacion.objects.count() == 0
@@ -956,7 +956,7 @@ def test_patch_matriz_de_transiciones_3x3(
     po = LiquidacionPorcentajeObra.objects.get()
     lg = LiquidacionGeneral.objects.get()
     assert po.estrategia_cotizacion == destino
-    assert po.count_habilitadas == H_CATALOGO
+    assert po.cantidad_especialidades_habilitadas == H_CATALOGO
     assert po.detalles.count() == 1, "No puede sobrevivir ningún detalle obsoleto"
 
     if destino == TOTAL:
@@ -1325,7 +1325,7 @@ def test_nueva_revision_hereda_la_estrategia_de_la_previa(
     tipo = response.json()["data"]["liquidacion_tipo"]
 
     assert tipo["estrategia_cotizacion"] == HABILITADAS
-    assert tipo["count_habilitadas"] == H_CATALOGO
+    assert tipo["cantidad_especialidades_habilitadas"] == H_CATALOGO
     assert _dec(tipo["porcentaje_liquidacion"]) == pytest.approx(Decimal("0.0015"))
     assert _dec(tipo["acumulacion"]["subtotal_acumulado"]) == pytest.approx(Decimal("1000.0"))
 
@@ -1415,7 +1415,7 @@ def test_relacionada_acepta_la_estrategia_y_persiste_la_acumulacion(
     tipo = response.json()["data"]["liquidacion_tipo"]
 
     assert tipo["estrategia_cotizacion"] == HABILITADAS
-    assert tipo["count_habilitadas"] == H_CATALOGO
+    assert tipo["cantidad_especialidades_habilitadas"] == H_CATALOGO
     assert _dec(tipo["porcentaje_liquidacion"]) == pytest.approx(Decimal("0.0015"))
     assert _dec(tipo["acumulacion"]["subtotal_acumulado"]) == pytest.approx(Decimal("1000.0"))
     assert _dec(tipo["acumulacion"]["porcentaje_acumulado"]) == pytest.approx(Decimal("0.0010"))
@@ -1475,6 +1475,6 @@ def test_taludes_conserva_su_contrato_en_el_patch(
     tipo = response.json()["data"]["liquidacion_tipo"]
 
     assert "estrategia_cotizacion" not in tipo
-    assert "count_habilitadas" not in tipo
+    assert "cantidad_especialidades_habilitadas" not in tipo
     assert "acumulacion" not in tipo
     assert _dec(tipo["valor_declarado"]) == pytest.approx(Decimal("2000000.0"))

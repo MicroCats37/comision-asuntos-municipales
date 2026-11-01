@@ -20,6 +20,9 @@ class RHInspectorCotizarItemResult(BaseModel):
     exp_liqui: str
     liquidacion_inspector_id: str
     liquidacion_categoria_visitas_id: str
+    # Identificador estable del DetalleHonorarioInspector. Permite que el PATCH
+    # de sincronización distinga "conservar esta fila" de "agregar una nueva".
+    detalle_id: str | None = None
     nombre_propietario: str  # from LiquidacionGeneral.proyecto.nombre_propietario
     importe_bruto: Decimal  # sub_total of LiquidacionGeneral (total de referencia sin IGV)
     inspecciones_programadas: int
@@ -34,6 +37,10 @@ class RHInspectorCotizarItemResult(BaseModel):
     sub_total: Decimal  # equals monto_contribuido (frozen at item level)
     descuento: Decimal  # proportional share of total descuento (frozen)
     honorarios: Decimal  # sub_total - descuento (frozen)
+    # Tasa de descuento cotizada que se aplicó a este item (fracción decimal,
+    # ej. 0.20). La escala depende del sub total del mes, así que se asigna
+    # cuando el total ya es conocido; el default es solo un placeholder.
+    tasa_descuento_aplicada: Decimal = Decimal("0")
     periodo: int | None = None
     mes: int | None = None
     # Specific liquidation numero (e.g. LiquidacionInspeccionObra numero) — resolved from the
@@ -103,6 +110,9 @@ class RHInspectorMensualDetalleResult(BaseModel):
     """
     Detalle individual de un RH mensual del inspector (una LiquidacionPorCategoriaVisitas).
     """
+    # Identificador estable del DetalleHonorarioInspector (fila del RH). Es el
+    # token que el PATCH de sincronización usa para conservar la fila.
+    detalle_id: str | None = None
     expediente: str  # from LiquidacionGeneral.expediente
     nombre_propietario: str  # from LiquidacionGeneral.proyecto.nombre_propietario
     distrito: str | None = None  # from LiquidacionGeneral.proyecto.distrito.nombre
@@ -120,6 +130,10 @@ class RHInspectorMensualDetalleResult(BaseModel):
     # Specific liquidation numero (e.g. LiquidacionInspeccionObra numero) — resolved from
     # liquidacion_por_categoria_visitas.liquidacion_general via the inspeccion_obra one-to-one
     liquidacion_especifica_numero: int | None = None
+    # Número de revisión de la liquidación (LiquidacionGeneral.numero_revision).
+    # Es un dato DISTINTO del número específico de liquidación y del número de RH
+    # de cabecera: no deben confundirse en el contrato HTTP.
+    numero_revision: int | None = None
     # Active comprobante for this liquidation (activo=True)
     comprobante_activo: "LiquidacionComprobanteMinimalResult | None" = None
     # Dates from LiquidacionInspector (through table linking inspector to lcv)

@@ -1,12 +1,15 @@
 """
 LiquidacionLegacyPorVisitasCoreService — consultas ORM para liquidaciones legacy basadas en visitas.
 
-ORM PURO — sin lógica de negocio.
-Maneja: TarifaPorCategoriaVisitas, IGV, UIT resueltos por fecha_registro.
+Adaptador sobre el resolver canónico (LiquidacionHistoricoCoreService).
+La resolución histórica (tarifas base, tarifas por categoría, IGV y UIT) la
+realiza exclusivamente el resolver canónico; este adaptador solo conserva el
+contrato nullable que consumen los importadores legacy.
 
 Usado por flujos legacy para inspección de obra (visitas por categoría).
 IGV y UIT requieren filtrado manual por fecha porque los métodos vigente()
-de sus managers ignoran el parámetro fecha.
+de sus managers ignoran el parámetro fecha — ese filtrado vive hoy en el
+resolver canónico.
 """
 import functools
 from datetime import date
@@ -18,6 +21,11 @@ from modules.finanzas.domain.models.impuestos import IGV, UIT
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaPorCategoriaVisitas,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_historico_core_service import (
+    LiquidacionHistoricoCoreService,
+    NoIGVVigenteError,
+    NoUITVigenteError,
+)
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.tarifas_historicas_core_service import (
     TarifasHistoricasCoreService,
 )
@@ -27,12 +35,17 @@ class LiquidacionLegacyPorVisitasCoreService:
     """
     Core service for legacy Inspección de Obra (visitas) tariff queries resolved by date.
 
-    All methods are pure ORM — no business logic, no conditionals.
+    Historical reads are delegated to the canonical resolver
+    (LiquidacionHistoricoCoreService); this adapter preserves the nullable
+    return contract expected by the legacy importers.
+
+    `tarifas_service` remains the injection point (and the constructor keyword
+    used by the legacy import commands) so the importer contracts stay intact.
     """
 
     @inject
     def __init__(self, tarifas_service: TarifasHistoricasCoreService) -> None:
-        self._tarifas_service = tarifas_service
+        self._historico = LiquidacionHistoricoCoreService(tarifas_service=tarifas_service)
 
     def get_tarifa_visitas_por_fecha(
         self,
@@ -42,46 +55,53 @@ class LiquidacionLegacyPorVisitasCoreService:
         """
         Get all TarifaPorCategoriaVisitas records vigentes at the given fecha for a tipo_liquidacion.
 
-        Resolution path:
-        1. TarifaLiquidacionBase.objects.vigentes(fecha=fecha) filtered by tipo_liquidacion
+        Resolution path (delegated to the canonical resolver):
+        1. TarifaLiquidacionBase vigentes at fecha for the tipo_liquidacion
         2. Join child TarifaPorCategoriaVisitas via ForeignKey tarifa_base
 
-        Returns an empty list if no base tariff is vigentes at fecha.
+        Returns an empty list if no base tariff is vigente at fecha.
         """
-        tarifas_base = self._tarifas_service.get_tarifas_vigentes(tipo_liquidacion, fecha)
+        tarifas_base = self._historico.get_tarifa_base_vigente_list(tipo_liquidacion, fecha)
         if not tarifas_base:
             return []
-        return self._tarifas_service.get_tarifas_categoria_visitas_por_base(
-            [tb.id for tb in tarifas_base]
+        return self._historico.get_tarifa_categoria_visitas(
+            [str(tb.id) for tb in tarifas_base]
         )
 
     def get_igv_por_fecha(self, fecha: date) -> IGV | None:
         """
         Get the IGV vigente at the given fecha.
 
-        IGV.objects.vigente() ignores the fecha parameter (only filters periodo_fin__isnull=True).
-        Manual filter required: periodo_inicio__lte=fecha AND (periodo_fin__isnull OR periodo_fin__gte=fecha),
-        ordered by periodo_inicio descending (most recent first).
+        The canonical resolver raises NoIGVVigenteError when no IGV covers the
+        fecha; this adapter keeps the nullable contract of the legacy importers.
 
         Returns None if no IGV covers the given fecha.
         """
-        return (
-            IGV.objects.filter(
-                periodo_inicio__lte=fecha,
-            )
-            .filter(
-                models.Q(periodo_fin__isnull=True) | models.Q(periodo_fin__gte=fecha)
-            )
-            .order_by("-periodo_inicio")
-            .first()
-        )
+        try:
+            return self._historico.get_igv_por_fecha(fecha)
+        except NoIGVVigenteError:
+            return None
+
+    def get_uit_por_fecha(self, fecha: date) -> UIT | None:
+        """
+        Get the UIT vigente at the given fecha.
+
+        The canonical resolver raises NoUITVigenteError when no UIT covers the
+        fecha; this adapter keeps the nullable contract of the legacy importers.
+
+        Returns None if no UIT covers the given fecha.
+        """
+        try:
+            return self._historico.get_uit_por_fecha(fecha)
+        except NoUITVigenteError:
+            return None
 
     def get_tarifas_base_list(self, tipo_liquidacion: str, fecha: date) -> list:
         """
         Returns the raw list of TarifaLiquidacionBase vigentes at fecha for a tipo.
         Used by legacy orchestrators for overlap validation.
         """
-        return self._tarifas_service.get_tarifas_vigentes(tipo_liquidacion, fecha)
+        return self._historico.get_tarifa_base_vigente_list(tipo_liquidacion, fecha)
 
     @staticmethod
     @functools.cache
@@ -154,24 +174,3 @@ class LiquidacionLegacyPorVisitasCoreService:
             periodo_fin=None,
         )
         return nuevo
-
-    def get_uit_por_fecha(self, fecha: date) -> UIT | None:
-        """
-        Get the UIT vigente at the given fecha.
-
-        UIT.objects.vigente() ignores the fecha parameter (only filters periodo_fin__isnull=True).
-        Manual filter required: periodo_inicio__lte=fecha AND (periodo_fin__isnull OR periodo_fin__gte=fecha),
-        ordered by periodo_inicio descending (most recent first).
-
-        Returns None if no UIT covers the given fecha.
-        """
-        return (
-            UIT.objects.filter(
-                periodo_inicio__lte=fecha,
-            )
-            .filter(
-                models.Q(periodo_fin__isnull=True) | models.Q(periodo_fin__gte=fecha)
-            )
-            .order_by("-periodo_inicio")
-            .first()
-        )

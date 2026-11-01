@@ -22,4 +22,5 @@ from modules.liquidaciones.tests.fixtures import (
     setup_po_fixtures,
     setup_m2_fixtures,
     setup_io_fixtures,
+    legacy_historico_fixtures,
 )

@@ -44,6 +44,9 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_inspeccion_obra import (
     LiquidacionInspeccionObra,
 )
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.comprobante import (
+    LiquidacionComprobante,
+)
 from modules.liquidaciones.domain.constants import TipoLiquidacion as TipoLiquidacionConst
 from modules.finanzas.domain.models.descuento_inspector import (
     EscalaDescuentoInspector,
@@ -64,9 +67,26 @@ from modules.finanzas.domain.services.flujos.rh_inspector_mensual_flujo import (
     RHInspectorMensualCrearFlujo,
     RHInspectorMensualListFlujo,
     RHInspectorMensualDeleteFlujo,
+    RHInspectorMensualActualizarFlujo,
 )
-from modules.finanzas.domain.schemas import RHInspectorCotizarIn, RHInspectorCotizarItemIn
+from modules.finanzas.domain.schemas import (
+    RHInspectorActualizarIn,
+    RHInspectorActualizarItemIn,
+    RHInspectorCotizarIn,
+    RHInspectorCotizarItemIn,
+)
+from modules.finanzas.domain.results.rh_delegado_mensual_result import (
+    DelegadoRHMinimalResult,
+    LiquidacionComprobanteMinimalResult,
+    RHDelegadoMensualDetalleResult,
+    RHDelegadoMensualListItemResult,
+    RHDelegadoMensualTotalesResult,
+    RHDelegadoVariablesCalculoResult,
+)
+from modules.finanzas.presentation.presenters.finanzas_presenter import FinanzasPresenter
 from django.contrib.auth import get_user_model
+import json
+import uuid
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
@@ -134,6 +154,24 @@ def proyecto_test(db, municipalidad_test, ubigeo_test):
         entidad_tipo_documento="RUC",
         entidad_numero_documento="20456789012",
         entidad_razon_social="Propietario IO SAC",
+    )
+
+
+@pytest.fixture
+def segundo_proyecto_test(db, municipalidad_test, ubigeo_test):
+    """Second Proyecto.
+
+    `LiquidacionGeneral.proyecto` is a OneToOneField, so every LiquidacionGeneral
+    needs its own Proyecto. Sharing `proyecto_test` between two liquidaciones
+    violates the unique constraint on `proyecto_id`.
+    """
+    return Proyecto.objects.create(
+        nombre_propietario="Propietario IO Dos SAC",
+        direccion="Av. Test 456",
+        distrito=ubigeo_test,
+        entidad_tipo_documento="RUC",
+        entidad_numero_documento="20456789013",
+        entidad_razon_social="Propietario IO Dos SAC",
     )
 
 
@@ -284,6 +322,42 @@ def _payload(cip: str, periodo: int, mes: int, items: list[dict]):
 
 
 # ── Tests ──────────────────────────────────────────────────────────────────────
+
+@pytest.mark.django_db
+def test_endpoint_list_rh_inspector_sin_paginacion(
+    auth_client,
+    db,
+    inspector,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Un RH mensual de inspector del periodo 2026-01
+    WHEN:  GET /finanzas/recibos-inspectores con sin_paginacion=true
+    THEN:  Devuelve el conjunto completo en una sola respuesta (total_pages=1)
+    """
+    ReciboHonorarioInspectorMensual.objects.create(
+        inspector=inspector,
+        periodo=2026,
+        mes=1,
+        escala_descuento=escala_descuento_15,
+        sub_total=Decimal("1000.00"),
+        descuento=Decimal("150.00"),
+        honorarios=Decimal("850.00"),
+    )
+
+    response = auth_client.get(
+        "/finanzas/recibos-inspectores"
+        "?page=1&page_size=20&sin_paginacion=true&periodo=2026&mes=1"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    data = body["data"]
+    assert data["total"] == 1
+    assert len(data["items"]) == 1
+    assert data["total_pages"] == 1
+
 
 @pytest.mark.django_db
 def test_cotizar_con_cip_valido_inspector_asociado(
@@ -1786,3 +1860,1488 @@ def test_delete_non_latest_rh_returns_conflict(
     assert excinfo.value.status_code == 409
 
 
+@pytest.mark.django_db
+def test_delete_non_latest_rh_no_modifica_estado(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Dos RH Inspector Mensuales (mes 1 y mes 2) con su ledger y marcador.
+    WHEN: Se intenta eliminar el RH no latest.
+    THEN: 409 y ningún estado cambia (RH, ledger ni marcador de periodo).
+    """
+    from ninja.errors import HttpError
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+                "periodo": 2027,
+                "mes": 3,
+            }],
+        )
+    )
+    rh_mes1 = ReciboHonorarioInspectorMensual.objects.filter(mes=1).first()
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=2,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 3,
+                "periodo": 2027,
+                "mes": 4,
+            }],
+        )
+    )
+
+    liquidacion_inspector.refresh_from_db()
+    marcador_antes = (liquidacion_inspector.periodo, liquidacion_inspector.mes)
+    registros_antes = RegistroPagoInspector.objects.count()
+
+    with pytest.raises(HttpError) as excinfo:
+        delete_flujo.eliminar(rh_mes1.id)
+    assert excinfo.value.status_code == 409
+
+    # Ningún estado cambió.
+    assert ReciboHonorarioInspectorMensual.objects.filter(id=rh_mes1.id).exists()
+    assert RegistroPagoInspector.objects.count() == registros_antes
+    liquidacion_inspector.refresh_from_db()
+    assert (liquidacion_inspector.periodo, liquidacion_inspector.mes) == marcador_antes
+
+
+@pytest.mark.django_db
+def test_delete_latest_rh_limpia_marcador_sin_ledger(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Un RH Inspector Mensual (único) que avanzó el marcador de periodo.
+    WHEN: Se elimina.
+    THEN: Se borran sus filas de ledger y el marcador se recalcula (queda vacío).
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+                "periodo": 2027,
+                "mes": 3,
+            }],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+
+    liquidacion_inspector.refresh_from_db()
+    assert liquidacion_inspector.periodo == 2027
+    assert liquidacion_inspector.mes == 3
+    assert RegistroPagoInspector.objects.filter(recibo_mensual_id=rh.id).count() == 1
+
+    delete_flujo.eliminar(rh.id)
+
+    # Sin ledger restante el marcador se limpia.
+    assert RegistroPagoInspector.objects.filter(recibo_mensual_id=rh.id).count() == 0
+    liquidacion_inspector.refresh_from_db()
+    assert liquidacion_inspector.periodo is None
+    assert liquidacion_inspector.mes is None
+
+
+@pytest.mark.django_db
+def test_delete_latest_rh_recalcula_marcador_con_ledger_restante(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Dos RH Inspector Mensuales (2026-01 y 2026-02) sobre la misma IO.
+    WHEN: Se elimina el último (2026-02).
+    THEN: El marcador vuelve al periodo del ledger restante (2026-01).
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+            }],
+        )
+    )
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=2,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 3,
+            }],
+        )
+    )
+    rh_mes2 = ReciboHonorarioInspectorMensual.objects.filter(mes=2).first()
+
+    liquidacion_inspector.refresh_from_db()
+    assert liquidacion_inspector.periodo == 2026
+    assert liquidacion_inspector.mes == 2
+    assert RegistroPagoInspector.objects.count() == 2
+
+    delete_flujo.eliminar(rh_mes2.id)
+
+    # Solo queda el ledger de 2026-01 → el marcador retrocede a ese periodo.
+    assert RegistroPagoInspector.objects.count() == 1
+    liquidacion_inspector.refresh_from_db()
+    assert liquidacion_inspector.periodo == 2026
+    assert liquidacion_inspector.mes == 1
+
+
+@pytest.mark.django_db
+def test_admin_delete_rh_inspector_rechaza_rh_no_latest(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Dos RH Inspector Mensuales (mes 1 y mes 2).
+    WHEN: Se intenta eliminar desde el admin el RH no latest.
+    THEN: El admin rechaza la operación (PermissionDenied) y nada cambia.
+    """
+    from django.contrib import admin as django_admin
+    from django.core.exceptions import PermissionDenied
+    from modules.finanzas.admin.rh_admin import ReciboHonorarioInspectorMensualAdmin
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+            }],
+        )
+    )
+    rh_mes1 = ReciboHonorarioInspectorMensual.objects.filter(mes=1).first()
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=2,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 3,
+            }],
+        )
+    )
+
+    admin_obj = ReciboHonorarioInspectorMensualAdmin(
+        ReciboHonorarioInspectorMensual,
+        django_admin.site,
+    )
+    with pytest.raises(PermissionDenied):
+        admin_obj.delete_model(request=None, obj=rh_mes1)
+
+    assert ReciboHonorarioInspectorMensual.objects.filter(id=rh_mes1.id).exists()
+
+
+@pytest.mark.django_db
+def test_admin_delete_rh_inspector_usa_el_lifecycle(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Un RH Inspector Mensual (único).
+    WHEN: Se elimina desde el admin (delete_model).
+    THEN: Pasa por el lifecycle: borra el RH, su ledger y recalcula el marcador.
+    """
+    from django.contrib import admin as django_admin
+    from modules.finanzas.admin.rh_admin import ReciboHonorarioInspectorMensualAdmin
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "exp_liqui": liquidacion_general_io.expediente,
+                "cantidad_visitas": 4,
+                "periodo": 2027,
+                "mes": 3,
+            }],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+
+    admin_obj = ReciboHonorarioInspectorMensualAdmin(
+        ReciboHonorarioInspectorMensual,
+        django_admin.site,
+    )
+    admin_obj.delete_model(request=None, obj=rh)
+
+    assert not ReciboHonorarioInspectorMensual.objects.filter(id=rh.id).exists()
+    assert RegistroPagoInspector.objects.filter(recibo_mensual_id=rh.id).count() == 0
+    liquidacion_inspector.refresh_from_db()
+    assert liquidacion_inspector.periodo is None
+    assert liquidacion_inspector.mes is None
+
+
+
+
+# ── PATCH (Sincronización del conjunto final) ───────────────────────────────────
+#
+# El PATCH define el conjunto FINAL de liquidaciones del RH:
+#   - items con `detalle_id`  -> la fila persistida se CONSERVA (se re-cotiza
+#                                 excluyendo el propio RH de su balance).
+#   - items sin `detalle_id` -> la fila se AGREGA.
+#   - detalles persistidos ausentes del payload -> se RETIRAN (y su fila del
+#     ledger de pagos vinculada al RH se reemplaza).
+
+
+@pytest.fixture
+def actualizar_flujo(core_service, cotizar_flujo):
+    return RHInspectorMensualActualizarFlujo(core=core_service, cotizar_flujo=cotizar_flujo)
+
+
+@pytest.fixture
+def segunda_general_io(db, segundo_proyecto_test, municipalidad_test, tipo_inspeccion_obra, usuario_liquidacion):
+    """Segunda LiquidacionGeneral de tipo INSPECCION_OBRA (para pruebas multi-IO).
+
+    Usa su propio Proyecto: `LiquidacionGeneral.proyecto` es OneToOneField.
+    """
+    return LiquidacionGeneral.objects.create(
+        proyecto=segundo_proyecto_test,
+        municipalidad=municipalidad_test,
+        tipo_liquidacion=tipo_inspeccion_obra,
+        usuario_creador=usuario_liquidacion,
+        expediente="EXP-MENSUAL-002",
+        estado="REGISTRADO",
+        sub_total=Decimal("2000.00"),
+        total=Decimal("2360.00"),
+    )
+
+
+@pytest.fixture
+def segunda_visitas_io(db, segunda_general_io, tarifa_visitas_io):
+    """Segunda LiquidacionPorCategoriaVisitas con 10 visitas programadas."""
+    return LiquidacionPorCategoriaVisitas.objects.create(
+        liquidacion_general=segunda_general_io,
+        cantidad_visitas=10,
+        porcentaje_uit=Decimal("0.05"),
+        categoria="B",
+        tarifa_aplicada=tarifa_visitas_io,
+    )
+
+
+@pytest.fixture
+def segunda_liquidacion_inspector(db, segunda_visitas_io, inspector, especialidad_revision):
+    """LiquidacionInspector asociando el inspector a la segunda IO."""
+    return LiquidacionInspector.objects.create(
+        liquidacion=segunda_visitas_io,
+        inspector=inspector,
+        especialidad_revision=especialidad_revision,
+    )
+
+
+def _payload_actualizar(cip: str, periodo: int, mes: int, items: list[dict]):
+    """Helper para construir el payload de PATCH (sincronización) del inspector."""
+    return RHInspectorActualizarIn(
+        cip=cip,
+        periodo=periodo,
+        mes=mes,
+        items=[RHInspectorActualizarItemIn(**i) for i in items],
+    )
+
+
+@pytest.mark.django_db
+def test_patch_rh_inspector_conserva_el_detalle_y_actualiza_los_totales(
+    crear_flujo,
+    actualizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    escala_descuento_15,
+    liquidacion_general_io,
+    liquidacion_visitas,
+    liquidacion_inspector,
+):
+    """
+    GIVEN: Un RH Inspector Mensual con un detalle persistido.
+    WHEN: Se hace PATCH con el mismo detalle (conservar).
+    THEN: La fila conserva su identidad, los totales se recalculan y el
+          resultado expone el identificador estable del detalle.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 3,
+            }],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+    detalle = rh.detalles.first()
+
+    resultado = actualizar_flujo.actualizar(
+        rh.id,
+        _payload_actualizar(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 3,
+                "detalle_id": str(detalle.id),
+            }],
+        ),
+    )
+
+    rh.refresh_from_db()
+    assert rh.detalles.count() == 1
+    assert rh.detalles.filter(id=detalle.id).exists()
+    assert rh.sub_total == Decimal("300.00")
+    assert rh.descuento == Decimal("45.00")
+    assert rh.honorarios == Decimal("255.00")
+    assert resultado.items[0].detalle_id == str(detalle.id)
+
+
+@pytest.mark.django_db
+def test_cotizar_edicion_resuelve_la_liquidacion_desde_el_detalle_persistido(
+    crear_flujo,
+    actualizar_flujo,
+    perfil_ingeniero_inspector,
+    escala_descuento_15,
+    liquidacion_general_io,
+    liquidacion_visitas,
+    liquidacion_inspector,
+):
+    """La previsualización de edición no vuelve a resolver por expediente."""
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026,
+            mes=1,
+            items=[
+                {
+                    "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                    "cantidad_visitas": 3,
+                }
+            ],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+    detalle = rh.detalles.first()
+
+    resultado = actualizar_flujo.cotizar_actualizacion(
+        rh.id,
+        _payload_actualizar(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026,
+            mes=1,
+            items=[
+                {
+                    "detalle_id": str(detalle.id),
+                    "exp_liqui": "EXPEDIENTE-AMBIGUO-O-DESACTUALIZADO",
+                    "cantidad_visitas": 3,
+                }
+            ],
+        ),
+    )
+
+    assert len(resultado.items) == 1
+    assert resultado.items[0].liquidacion_categoria_visitas_id == str(
+        liquidacion_visitas.id
+    )
+    assert resultado.items[0].inspecciones_liquidadas == 3
+    detalle.refresh_from_db()
+    assert detalle.inspecciones_liquidadas == 3
+
+
+@pytest.mark.django_db
+def test_patch_rh_inspector_excluye_el_rh_de_su_propio_balance(
+    crear_flujo,
+    actualizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    escala_descuento_15,
+    liquidacion_general_io,
+    liquidacion_visitas,
+    liquidacion_inspector,
+):
+    """
+    GIVEN: Un RH Inspector Mensual que consumió 9 de las 10 visitas programadas.
+    WHEN: Se hace PATCH pidiendo las mismas 9 visitas.
+    THEN: Se acepta: el saldo se calcula excluyendo al propio RH de su balance.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 9,
+            }],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+    detalle = rh.detalles.first()
+
+    resultado = actualizar_flujo.actualizar(
+        rh.id,
+        _payload_actualizar(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 9,
+                "detalle_id": str(detalle.id),
+            }],
+        ),
+    )
+
+    assert resultado.totales.sub_total == Decimal("900.00")
+    rh.refresh_from_db()
+    assert rh.sub_total == Decimal("900.00")
+    assert rh.honorarios == Decimal("765.00")
+
+
+@pytest.mark.django_db
+def test_patch_rh_inspector_404_si_el_rh_no_existe(
+    actualizar_flujo,
+    perfil_ingeniero_inspector,
+    escala_descuento_15,
+    liquidacion_general_io,
+    liquidacion_visitas,
+    liquidacion_inspector,
+):
+    """
+    GIVEN: Un identificador de RH que no existe.
+    WHEN: Se hace PATCH.
+    THEN: Se responde 404.
+    """
+    from ninja.errors import HttpError
+
+    with pytest.raises(HttpError) as exc_info:
+        actualizar_flujo.actualizar(
+            uuid.uuid4(),
+            _payload_actualizar(
+                cip=perfil_ingeniero_inspector.cip,
+                periodo=2026, mes=1,
+                items=[{
+                    "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                    "cantidad_visitas": 1,
+                }],
+            ),
+        )
+
+    assert exc_info.value.status_code == 404
+
+
+@pytest.mark.django_db
+def test_patch_rh_inspector_400_si_la_seleccion_es_vacia(
+    crear_flujo,
+    actualizar_flujo,
+    perfil_ingeniero_inspector,
+    escala_descuento_15,
+    liquidacion_general_io,
+    liquidacion_visitas,
+    liquidacion_inspector,
+):
+    """
+    GIVEN: Un RH Inspector Mensual existente.
+    WHEN: Se hace PATCH con un conjunto final vacío.
+    THEN: Se responde 400 y el recibo conserva sus detalles.
+    """
+    from ninja.errors import HttpError
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+            }],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+
+    with pytest.raises(HttpError) as exc_info:
+        actualizar_flujo.actualizar(
+            rh.id,
+            _payload_actualizar(
+                cip=perfil_ingeniero_inspector.cip,
+                periodo=2026, mes=1,
+                items=[],
+            ),
+        )
+
+    assert exc_info.value.status_code == 400
+    assert rh.detalles.count() == 1
+
+
+@pytest.mark.django_db
+def test_patch_rh_inspector_permite_editar_cualquier_rh_no_solo_el_ultimo(
+    crear_flujo,
+    actualizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    escala_descuento_15,
+    liquidacion_general_io,
+    liquidacion_visitas,
+    liquidacion_inspector,
+):
+    """
+    GIVEN: Dos RH Inspector Mensuales del mismo inspector (el segundo es el último).
+    WHEN: Se hace PATCH sobre el primero (no latest).
+    THEN: El PATCH se aplica: cualquier RH es editable.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+            }],
+        )
+    )
+    rh_mes1 = ReciboHonorarioInspectorMensual.objects.filter(mes=1).first()
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=2,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+            }],
+        )
+    )
+    rh_mes2 = ReciboHonorarioInspectorMensual.objects.filter(mes=2).first()
+    totales_previos = (rh_mes1.sub_total, rh_mes1.honorarios)
+
+    resultado = actualizar_flujo.actualizar(
+        rh_mes1.id,
+        _payload_actualizar(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 5,
+            }],
+        ),
+    )
+
+    rh_mes1.refresh_from_db()
+    assert (rh_mes1.sub_total, rh_mes1.honorarios) != totales_previos
+    assert resultado.items[0].inspecciones_liquidadas == 5
+    # El RH más reciente no se ve afectado.
+    rh_mes2.refresh_from_db()
+    assert rh_mes2.detalles.count() == 1
+
+
+
+@pytest.mark.django_db
+def test_patch_rh_inspector_422_si_el_rango_de_fechas_esta_invertido(
+    crear_flujo,
+    actualizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    escala_descuento_15,
+    liquidacion_general_io,
+    liquidacion_visitas,
+    liquidacion_inspector,
+):
+    """
+    GIVEN: Un RH Inspector Mensual existente.
+    WHEN: Se hace PATCH con un item cuya revisión es posterior a la presentación.
+    THEN: Se responde 422 y el recibo no se modifica.
+    """
+    from ninja.errors import HttpError
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+            }],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+    totales_previos = (rh.sub_total, rh.honorarios)
+
+    with pytest.raises(HttpError) as exc_info:
+        actualizar_flujo.actualizar(
+            rh.id,
+            _payload_actualizar(
+                cip=perfil_ingeniero_inspector.cip,
+                periodo=2026, mes=1,
+                items=[{
+                    "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                    "cantidad_visitas": 2,
+                    "fecha_revision": date(2026, 2, 10),
+                    "fecha_presentacion": date(2026, 1, 10),
+                }],
+            ),
+        )
+
+    assert exc_info.value.status_code == 422
+    rh.refresh_from_db()
+    assert (rh.sub_total, rh.honorarios) == totales_previos
+
+
+@pytest.mark.django_db
+def test_patch_rh_inspector_retira_detalles_no_seleccionados_y_reemplaza_el_ledger(
+    crear_flujo,
+    actualizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    escala_descuento_15,
+    liquidacion_general_io,
+    liquidacion_visitas,
+    liquidacion_inspector,
+    segunda_general_io,
+    segunda_visitas_io,
+    segunda_liquidacion_inspector,
+):
+    """
+    GIVEN: Un RH Inspector Mensual con 2 IOs (2 detalles y 2 filas de ledger).
+    WHEN: Se hace PATCH conservando solo una IO.
+    THEN: El detalle retirado se elimina, el ledger del RH queda con una sola fila
+          y las filas de otros RH (o legacy sin FK) no se tocan.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[
+                {
+                    "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                    "cantidad_visitas": 2,
+                },
+                {
+                    "liquidacion_categoria_visitas_id": str(segunda_visitas_io.id),
+                    "cantidad_visitas": 3,
+                },
+            ],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+    assert rh.detalles.count() == 2
+    assert RegistroPagoInspector.objects.filter(recibo_mensual_id=rh.id).count() == 2
+
+    detalle_conservado = rh.detalles.filter(
+        liquidacion_por_categoria_visitas_id=liquidacion_visitas.id
+    ).first()
+    detalle_retirado = rh.detalles.filter(
+        liquidacion_por_categoria_visitas_id=segunda_visitas_io.id
+    ).first()
+
+    actualizar_flujo.actualizar(
+        rh.id,
+        _payload_actualizar(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+                "detalle_id": str(detalle_conservado.id),
+            }],
+        ),
+    )
+
+    rh.refresh_from_db()
+    assert rh.detalles.count() == 1
+    assert rh.detalles.filter(id=detalle_conservado.id).exists()
+    assert not DetalleHonorarioInspector.objects.filter(id=detalle_retirado.id).exists()
+    ledger = RegistroPagoInspector.objects.filter(recibo_mensual_id=rh.id)
+    assert ledger.count() == 1
+    assert ledger.first().liquidacion_por_categoria_visitas_id == liquidacion_visitas.id
+    # Los totales reflejan el conjunto final (2 visitas × 100.00).
+    assert rh.sub_total == Decimal("200.00")
+    assert rh.descuento == Decimal("30.00")
+    assert rh.honorarios == Decimal("170.00")
+
+
+@pytest.mark.django_db
+def test_patch_rh_inspector_recalcula_el_marcador_de_periodo(
+    crear_flujo,
+    actualizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    escala_descuento_15,
+    liquidacion_general_io,
+    liquidacion_visitas,
+    liquidacion_inspector,
+):
+    """
+    GIVEN: Un RH Inspector Mensual cuyo marcador de periodo quedó desactualizado.
+    WHEN: Se hace PATCH del mismo conjunto.
+    THEN: El marcador de la LiquidacionInspector se recalcula desde el ledger
+          (periodo y mes del recibo).
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+            }],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+    detalle = rh.detalles.first()
+
+    liquidacion_inspector.periodo = 2025
+    liquidacion_inspector.mes = 12
+    liquidacion_inspector.save(update_fields=["periodo", "mes"])
+
+    actualizar_flujo.actualizar(
+        rh.id,
+        _payload_actualizar(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+                "detalle_id": str(detalle.id),
+            }],
+        ),
+    )
+
+    liquidacion_inspector.refresh_from_db()
+    assert liquidacion_inspector.periodo == 2026
+    assert liquidacion_inspector.mes == 1
+
+
+@pytest.mark.django_db
+def test_patch_rh_inspector_400_si_el_detalle_no_pertenece_al_rh(
+    crear_flujo,
+    actualizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    escala_descuento_15,
+    liquidacion_general_io,
+    liquidacion_visitas,
+    liquidacion_inspector,
+    segunda_general_io,
+    segunda_visitas_io,
+segunda_liquidacion_inspector,
+):
+    """
+    GIVEN: Dos RH Inspector Mensuales del mismo inspector.
+    WHEN: Se hace PATCH sobre el ÚLTIMO RH usando el detalle del otro.
+    THEN: Se responde 400 y el recibo no se modifica.
+
+    El PATCH solo se permite sobre el último RH del inspector (el de mes 2):
+    el detalle ajeno es el del RH de mes 1.
+    """
+    from ninja.errors import HttpError
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+            }],
+        )
+    )
+    rh_mes1 = ReciboHonorarioInspectorMensual.objects.filter(mes=1).first()
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=2,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+            }],
+        )
+    )
+    rh_mes2 = ReciboHonorarioInspectorMensual.objects.filter(mes=2).first()
+    detalle_ajeno = rh_mes1.detalles.first()
+    totales_previos = (rh_mes2.sub_total, rh_mes2.honorarios)
+
+    with pytest.raises(HttpError) as exc_info:
+        actualizar_flujo.actualizar(
+            rh_mes2.id,
+            _payload_actualizar(
+                cip=perfil_ingeniero_inspector.cip,
+                periodo=2026, mes=2,
+                items=[{
+                    "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                    "cantidad_visitas": 2,
+                    "detalle_id": str(detalle_ajeno.id),
+                }],
+            ),
+        )
+
+    assert exc_info.value.status_code == 400
+    rh_mes2.refresh_from_db()
+    assert (rh_mes2.sub_total, rh_mes2.honorarios) == totales_previos
+    assert rh_mes2.detalles.count() == 1
+    # El RH ajeno tampoco se modifica.
+    assert rh_mes1.detalles.count() == 1
+
+
+@pytest.mark.django_db
+def test_patch_rh_inspector_revierte_los_cambios_si_la_reconciliacion_falla(
+    crear_flujo,
+    actualizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    escala_descuento_15,
+    liquidacion_general_io,
+    liquidacion_visitas,
+    liquidacion_inspector,
+    segunda_general_io,
+    segunda_visitas_io,
+    segunda_liquidacion_inspector,
+):
+    """
+    GIVEN: Dos RH Inspector Mensuales del mismo inspector.
+    WHEN: Se hace PATCH sobre el ÚLTIMO RH agregando una IO nueva y usando, en el
+           mismo payload, el detalle del RH anterior (400).
+    THEN: La transacción se revierte: no queda el detalle agregado ni su fila de
+           ledger, y los totales del recibo son los originales.
+
+    El PATCH solo se permite sobre el último RH del inspector (el de mes 2):
+    el detalle ajeno es el del RH de mes 1.
+    """
+    from ninja.errors import HttpError
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+            }],
+        )
+    )
+    rh_mes1 = ReciboHonorarioInspectorMensual.objects.filter(mes=1).first()
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=2,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+            }],
+        )
+    )
+    rh_mes2 = ReciboHonorarioInspectorMensual.objects.filter(mes=2).first()
+    detalle_ajeno = rh_mes1.detalles.first()
+    totales_previos = (rh_mes2.sub_total, rh_mes2.honorarios)
+
+    with pytest.raises(HttpError) as exc_info:
+        actualizar_flujo.actualizar(
+            rh_mes2.id,
+            _payload_actualizar(
+                cip=perfil_ingeniero_inspector.cip,
+                periodo=2026, mes=2,
+                items=[
+                    {
+                        "liquidacion_categoria_visitas_id": str(segunda_visitas_io.id),
+                        "cantidad_visitas": 1,
+                    },
+                    {
+                        "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                        "cantidad_visitas": 2,
+                        "detalle_id": str(detalle_ajeno.id),
+                    },
+                ],
+            ),
+        )
+
+    assert exc_info.value.status_code == 400
+    rh_mes2.refresh_from_db()
+    assert rh_mes2.detalles.count() == 1
+    assert (rh_mes2.sub_total, rh_mes2.honorarios) == totales_previos
+    assert RegistroPagoInspector.objects.filter(recibo_mensual_id=rh_mes2.id).count() == 1
+
+
+@pytest.mark.django_db
+def test_patch_rh_inspector_redistribuye_el_descuento_sobre_el_conjunto_final(
+    crear_flujo,
+    actualizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    escala_descuento_15,
+    liquidacion_general_io,
+    liquidacion_visitas,
+    liquidacion_inspector,
+    segunda_general_io,
+    segunda_visitas_io,
+    segunda_liquidacion_inspector,
+):
+    """
+    GIVEN: Un RH Inspector Mensual con 2 IOs.
+    WHEN: Se hace PATCH con un conjunto final que redistribuye el descuento.
+    THEN: La suma de los descuentos por item es exactamente el descuento del
+          recibo y los honorarios son el sub total menos ese descuento.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[
+                {
+                    "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                    "cantidad_visitas": 2,
+                },
+                {
+                    "liquidacion_categoria_visitas_id": str(segunda_visitas_io.id),
+                    "cantidad_visitas": 1,
+                },
+            ],
+        )
+    )
+    rh = ReciboHonorarioInspectorMensual.objects.first()
+    detalle_io1 = rh.detalles.filter(
+        liquidacion_por_categoria_visitas_id=liquidacion_visitas.id
+    ).first()
+    detalle_io2 = rh.detalles.filter(
+        liquidacion_por_categoria_visitas_id=segunda_visitas_io.id
+    ).first()
+
+    resultado = actualizar_flujo.actualizar(
+        rh.id,
+        _payload_actualizar(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[
+                {
+                    "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                    "cantidad_visitas": 3,
+                    "detalle_id": str(detalle_io1.id),
+                },
+                {
+                    "liquidacion_categoria_visitas_id": str(segunda_visitas_io.id),
+                    "cantidad_visitas": 1,
+                    "detalle_id": str(detalle_io2.id),
+                },
+            ],
+        ),
+    )
+
+    rh.refresh_from_db()
+    # IO1: 3 × 100.00 = 300.00 ; IO2: 1 × 200.00 = 200.00 → sub total 500.00
+    assert rh.sub_total == Decimal("500.00")
+    assert rh.descuento == Decimal("75.00")
+    assert rh.honorarios == Decimal("425.00")
+    # La suma de los descuentos por item absorbe el resto sin residuo.
+    assert sum(item.descuento for item in resultado.items) == rh.descuento
+    # El reparto es proporcional al sub total de cada item.
+    descuentos = {item.liquidacion_categoria_visitas_id: item.descuento for item in resultado.items}
+    assert descuentos[str(liquidacion_visitas.id)] == Decimal("45.00")
+    assert descuentos[str(segunda_visitas_io.id)] == Decimal("30.00")
+
+
+# ── Contrato de datos del listado mensual (Result → Presenter → Schema Out) ────
+#
+# El listado mensual del RH Inspector calcula en su Result datos que el
+# Presenter y el Schema Out descartaban: el número de RH de cabecera, el número
+# de revisión de la liquidación y las fechas de revisión/presentación con su
+# dictamen. Estos tests fijan el contrato HTTP para que ningún campo calculado
+# vuelva a perderse en silencio, y verifican que el RH Delegado no se degrade.
+#
+# Estos tests se ESCRIBEN pero NO se ejecutan en esta fase del change
+# (la ejecución consolidada ocurre en la fase final de verificación).
+
+
+@pytest.fixture
+def listar_flujo(core_service):
+    return RHInspectorMensualListFlujo(core=core_service)
+
+
+@pytest.fixture
+def comprobante_activo_io(db, liquidacion_general_io):
+    """Comprobante activo (factura) de la liquidación de IO."""
+    return LiquidacionComprobante.objects.create(
+        liquidacion_general=liquidacion_general_io,
+        tipo_comprobante="FACTURA",
+        serie="F001",
+        numero="0001-45",
+        fecha_emision=date(2026, 1, 10),
+        activo=True,
+    )
+
+
+def _crear_rh_inspector(crear_flujo, perfil_ingeniero_inspector, liquidacion_visitas):
+    """Crea un RH Inspector Mensual con un detalle (IO) y devuelve el recibo."""
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+            }],
+        )
+    )
+    return ReciboHonorarioInspectorMensual.objects.first()
+
+
+@pytest.mark.django_db
+def test_listado_rh_inspector_filtra_por_cip_periodo_y_mes(
+    crear_flujo,
+    listar_flujo,
+    inspector,
+    liquidacion_inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_visitas,
+    escala_descuento_15,
+):
+    """
+    GIVEN: RH Inspectores Mensuales de dos periodos y dos inspectores.
+    WHEN: Se lista con los filtros de CIP, año y mes.
+    THEN: Solo devuelve los RH que coinciden con el filtro.
+    """
+    _crear_rh_inspector(
+        crear_flujo, perfil_ingeniero_inspector, liquidacion_visitas
+    )
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026,
+            mes=2,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 2,
+            }],
+        )
+    )
+
+    resultados, total = listar_flujo.listar_rh_mensuales_inspectores_proceso(
+        page=1,
+        page_size=10,
+        inspector_cip=perfil_ingeniero_inspector.cip,
+        periodo=2026,
+        mes=2,
+    )
+
+    assert total == 1
+    assert resultados[0].mes == 2
+
+    # Un mes que no existe no devuelve nada.
+    _, total_sin_coincidencia = (
+        listar_flujo.listar_rh_mensuales_inspectores_proceso(
+            page=1,
+            page_size=10,
+            inspector_cip=perfil_ingeniero_inspector.cip,
+            periodo=2026,
+            mes=7,
+        )
+    )
+    assert total_sin_coincidencia == 0
+
+
+@pytest.mark.django_db
+def test_listado_rh_inspector_expone_el_numero_de_rh_de_cabecera(
+    crear_flujo,
+    listar_flujo,
+    inspector,
+    liquidacion_inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_visitas,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Un RH Inspector Mensual con número de cabecera asignado.
+    WHEN: Se lista el RH y se mapea con el Presenter.
+    THEN: El número del RH viaja en el Result, en el Schema Out y en el JSON.
+    """
+    rh = _crear_rh_inspector(crear_flujo, perfil_ingeniero_inspector, liquidacion_visitas)
+    rh.numero = 7
+    rh.save(update_fields=["numero"])
+
+    resultados, total = listar_flujo.listar_rh_mensuales_inspectores_proceso(
+        page=1, page_size=10
+    )
+
+    assert total == 1
+    assert resultados[0].numero == 7
+
+    out = FinanzasPresenter._map_rh_mensual_inspector_out(resultados[0])
+    assert out.numero == 7
+
+    payload = json.loads(out.model_dump_json())
+    assert payload["numero"] == 7
+
+
+@pytest.mark.django_db
+def test_listado_rh_inspector_expone_fechas_y_dictamen_de_revision(
+    crear_flujo,
+    listar_flujo,
+    perfil_ingeniero_inspector,
+    liquidacion_visitas,
+    liquidacion_inspector,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Una asignación inspector-IO con fecha de revisión, fecha de
+           presentación y dictamen de revisión.
+    WHEN: Se lista el RH mensual.
+    THEN: Las tres fechas/dictamen llegan al Result, al Schema Out y al JSON.
+    """
+    _crear_rh_inspector(crear_flujo, perfil_ingeniero_inspector, liquidacion_visitas)
+    liquidacion_inspector.fecha_revision = date(2026, 1, 15)
+    liquidacion_inspector.fecha_presentacion = date(2026, 1, 20)
+    liquidacion_inspector.dictamen_revision = "CONFORME"
+    liquidacion_inspector.save()
+
+    resultados, _ = listar_flujo.listar_rh_mensuales_inspectores_proceso(
+        page=1, page_size=10
+    )
+    detalle = resultados[0].detalles[0]
+
+    assert detalle.fecha_revision == "2026-01-15"
+    assert detalle.fecha_presentacion == "2026-01-20"
+    assert detalle.dictamen_revision == "CONFORME"
+
+    out = FinanzasPresenter._map_rh_mensual_inspector_out(resultados[0])
+    assert out.detalles[0].fecha_revision == "2026-01-15"
+    assert out.detalles[0].fecha_presentacion == "2026-01-20"
+    assert out.detalles[0].dictamen_revision == "CONFORME"
+
+    payload = json.loads(out.model_dump_json())
+    assert payload["detalles"][0]["fecha_revision"] == "2026-01-15"
+    assert payload["detalles"][0]["fecha_presentacion"] == "2026-01-20"
+    assert payload["detalles"][0]["dictamen_revision"] == "CONFORME"
+
+
+@pytest.mark.django_db
+def test_listado_rh_inspector_distingue_numero_de_rh_de_revision_y_de_liquidacion(
+    crear_flujo,
+    listar_flujo,
+    inspector,
+    liquidacion_inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    liquidacion_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Un RH Inspector con nº de RH (7), revisión (3) y una liquidación
+           específica con su propio número.
+    WHEN: Se lista el RH mensual.
+    THEN: Los tres números viajan por separado y sin confundirse entre sí.
+    """
+    rh = _crear_rh_inspector(crear_flujo, perfil_ingeniero_inspector, liquidacion_visitas)
+    rh.numero = 7
+    rh.save(update_fields=["numero"])
+    liquidacion_general_io.numero_revision = 3
+    liquidacion_general_io.save(update_fields=["numero_revision"])
+
+    resultados, _ = listar_flujo.listar_rh_mensuales_inspectores_proceso(
+        page=1, page_size=10
+    )
+    resultado = resultados[0]
+    detalle = resultado.detalles[0]
+
+    assert resultado.numero == 7
+    assert detalle.numero_revision == 3
+    assert detalle.liquidacion_especifica_numero == liquidacion_io.numero
+    assert detalle.liquidacion_especifica_numero not in {
+        resultado.numero,
+        detalle.numero_revision,
+    }
+
+    out = FinanzasPresenter._map_rh_mensual_inspector_out(resultado)
+    assert out.numero == 7
+    assert out.detalles[0].numero_revision == 3
+    assert out.detalles[0].liquidacion_especifica_numero == liquidacion_io.numero
+
+
+@pytest.mark.django_db
+def test_listado_rh_inspector_expone_el_comprobante_activo_tipado(
+    crear_flujo,
+    listar_flujo,
+    inspector,
+    liquidacion_inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_visitas,
+    comprobante_activo_io,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Una liquidación de IO con comprobante activo.
+    WHEN: Se lista el RH mensual.
+    THEN: El comprobante viaja tipado (tipo, serie, número y fecha de emisión).
+    """
+    _crear_rh_inspector(crear_flujo, perfil_ingeniero_inspector, liquidacion_visitas)
+
+    resultados, _ = listar_flujo.listar_rh_mensuales_inspectores_proceso(
+        page=1, page_size=10
+    )
+    detalle = resultados[0].detalles[0]
+
+    assert detalle.comprobante_activo is not None
+    assert detalle.comprobante_activo.tipo_comprobante == "FACTURA"
+    assert detalle.comprobante_activo.serie == "F001"
+    assert detalle.comprobante_activo.numero == "0001-45"
+    assert detalle.comprobante_activo.fecha_emision == "2026-01-10"
+
+    out = FinanzasPresenter._map_rh_mensual_inspector_out(resultados[0])
+    assert out.detalles[0].comprobante_activo is not None
+    assert out.detalles[0].comprobante_activo.tipo_comprobante == "FACTURA"
+    assert out.detalles[0].comprobante_activo.serie == "F001"
+    assert out.detalles[0].comprobante_activo.numero == "0001-45"
+    assert out.detalles[0].comprobante_activo.fecha_emision == "2026-01-10"
+
+
+def test_contrato_delegado_mensual_no_se_degrada():
+    """
+    GIVEN: Un Result de RH Delegado mensual con todos sus campos poblados.
+    WHEN: Se mapea con el Presenter.
+    THEN: Ningún campo por fila se pierde (nº de RH, revisión, liquidación
+          específica, comprobante, fechas y dictamen).
+    """
+    resultado = RHDelegadoMensualListItemResult(
+        id=str(uuid.uuid4()),
+        numero=11,
+        periodo=2026,
+        mes=1,
+        fecha_registro="2026-01-31T10:00:00",
+        delegado=DelegadoRHMinimalResult(
+            id=str(uuid.uuid4()),
+            nombre_completo="Delegado Uno",
+            cip="CIP-00001",
+            dni="11111111",
+        ),
+        totales=RHDelegadoMensualTotalesResult(
+            sub_total=Decimal("1000.00"),
+            renta_cip=Decimal("250.00"),
+            aporte_codemu=Decimal("50.00"),
+            fondo_comun=Decimal("100.00"),
+            neto_honorario=Decimal("600.00"),
+        ),
+        detalles=[
+            RHDelegadoMensualDetalleResult(
+                liquidacion_delegado_id=str(uuid.uuid4()),
+                detalle_id=str(uuid.uuid4()),
+                expediente="EXP-002",
+                fecha_revision="2026-01-05",
+                numero_revision=3,
+                total_liquidacion=Decimal("1180.00"),
+                sub_total_liquidacion=Decimal("1000.00"),
+                numero_rh="1",
+                imp_bruto=Decimal("1000.00"),
+                renta_cip=Decimal("250.00"),
+                aporte_codemu=Decimal("50.00"),
+                fondo_comun=Decimal("100.00"),
+                neto_honorario=Decimal("600.00"),
+                periodo=2026,
+                mes=1,
+                dictamen_revision="CONFORME",
+                fecha_presentacion="2026-01-10",
+                delegado_operacion_id=str(uuid.uuid4()),
+                liquidacion_especifica_numero=42,
+                comprobante_activo=LiquidacionComprobanteMinimalResult(
+                    tipo_comprobante="FACTURA",
+                    serie="F001",
+                    numero="0001-45",
+                    fecha_emision="2026-01-10",
+                ),
+            )
+        ],
+        variables_calculo=RHDelegadoVariablesCalculoResult(
+            tasa_renta_cip=Decimal("0.25"),
+            tasa_aporte_codemu=Decimal("0.05"),
+            tasa_fondo_comun=Decimal("0.10"),
+        ),
+    )
+
+    out = FinanzasPresenter._map_rh_mensual_delegado_out(resultado)
+    detalle = out.detalles[0]
+
+    assert out.numero == 11
+    assert detalle.expediente == "EXP-002"
+    assert detalle.fecha_revision == "2026-01-05"
+    assert detalle.fecha_presentacion == "2026-01-10"
+    assert detalle.dictamen_revision == "CONFORME"
+    assert detalle.numero_revision == 3
+    assert detalle.numero_rh == "1"
+    assert detalle.liquidacion_especifica_numero == 42
+    assert detalle.comprobante_activo is not None
+    assert detalle.comprobante_activo.tipo_comprobante == "FACTURA"
+    assert detalle.comprobante_activo.serie == "F001"
+    assert detalle.comprobante_activo.numero == "0001-45"
+    assert detalle.comprobante_activo.fecha_emision == "2026-01-10"
+
+
+# ── Contrato de datos de las candidatas del inspector ──────────────────────────
+#
+# Las candidatas del inspector perded el número de la liquidación específica y el
+# comprobante activo, datos que las candidatas del delegado SÍ exponen. Además el
+# DNI del inspector se declaraba obligatorio en el Result aunque el modelo lo
+# permite nulo (ingenieros extranjeros). Estos tests fijan el contrato HTTP para
+# que la paridad Inspector/Delegado no vuelva a romperse.
+#
+# Estos tests se ESCRIBEN pero NO se ejecutan en esta fase del change
+# (la ejecución consolidada ocurre en la fase final de verificación).
+
+
+@pytest.mark.django_db
+def test_candidatas_inspector_exponen_numero_especifico_y_comprobante_activo(
+    listar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    liquidacion_io,
+    liquidacion_inspector,
+    comprobante_activo_io,
+):
+    """
+    GIVEN: Un inspector con una IO candidata que tiene liquidación específica
+           con número propio y comprobante activo.
+    WHEN: Se listan las candidatas del inspector.
+    THEN: El número específico y el comprobante tipado viajan en el Result, en el
+          Schema Out y en el JSON, y el número específico NO se confunde con el
+          número de revisión.
+    """
+    liquidacion_general_io.numero_revision = 3
+    liquidacion_general_io.save(update_fields=["numero_revision"])
+
+    resultado = listar_flujo.list_candidatos_inspector_proceso(
+        cip=perfil_ingeniero_inspector.cip,
+        periodo="2026-01",
+    )
+
+    assert resultado.total == 1
+    candidata = resultado.candidatos[0]
+    assert candidata.liquidacion_especifica_numero == liquidacion_io.numero
+    assert candidata.numero_revision == 3
+    assert candidata.liquidacion_especifica_numero != candidata.numero_revision
+    assert candidata.comprobante_activo is not None
+    assert candidata.comprobante_activo.tipo_comprobante == "FACTURA"
+    assert candidata.comprobante_activo.serie == "F001"
+    assert candidata.comprobante_activo.numero == "0001-45"
+    assert candidata.comprobante_activo.fecha_emision == "2026-01-10"
+
+    out = FinanzasPresenter.present_inspector_candidatos(resultado)
+    assert out.candidatos[0].liquidacion_especifica_numero == liquidacion_io.numero
+    assert out.candidatos[0].comprobante_activo is not None
+    assert out.candidatos[0].comprobante_activo.tipo_comprobante == "FACTURA"
+    assert out.candidatos[0].comprobante_activo.serie == "F001"
+    assert out.candidatos[0].comprobante_activo.numero == "0001-45"
+    assert out.candidatos[0].comprobante_activo.fecha_emision == "2026-01-10"
+
+    payload = json.loads(out.model_dump_json())
+    assert payload["candidatos"][0]["liquidacion_especifica_numero"] == liquidacion_io.numero
+    assert payload["candidatos"][0]["comprobante_activo"]["serie"] == "F001"
+    assert payload["candidatos"][0]["comprobante_activo"]["numero"] == "0001-45"
+
+
+@pytest.mark.django_db
+def test_candidatas_inspector_paginado_exponen_numero_especifico_y_comprobante_activo(
+    listar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_visitas,
+    liquidacion_general_io,
+    liquidacion_io,
+    liquidacion_inspector,
+    comprobante_activo_io,
+):
+    """
+    GIVEN: Un inspector con una IO candidata con liquidación específica y
+           comprobante activo.
+    WHEN: Se listan las candidatas del inspector con paginación.
+    THEN: La ruta paginada expone los mismos datos que la no paginada.
+    """
+    resultado = listar_flujo.list_candidatos_inspector_proceso_paginated(
+        cip=perfil_ingeniero_inspector.cip,
+        page=1,
+        page_size=10,
+        periodo="2026-01",
+    )
+
+    assert resultado.total == 1
+    item = resultado.items[0]
+    assert item.liquidacion_especifica_numero == liquidacion_io.numero
+    assert item.comprobante_activo is not None
+    assert item.comprobante_activo.serie == "F001"
+
+    out = FinanzasPresenter.present_inspector_candidatos_paginated(resultado)
+    assert out.items[0].liquidacion_especifica_numero == liquidacion_io.numero
+    assert out.items[0].comprobante_activo is not None
+    assert out.items[0].comprobante_activo.numero == "0001-45"
+
+
+@pytest.mark.django_db
+def test_candidatas_inspector_tolera_inspector_sin_dni(
+    listar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_visitas,
+    liquidacion_inspector,
+):
+    """
+    GIVEN: Un inspector cuyo PerfilIngeniero no tiene DNI (nullable en el modelo).
+    WHEN: Se listan las candidatas del inspector.
+    THEN: El endpoint responde con DNI nulo en vez de fallar la validación.
+    """
+    perfil_ingeniero_inspector.dni = None
+    perfil_ingeniero_inspector.save(update_fields=["dni"])
+
+    resultado = listar_flujo.list_candidatos_inspector_proceso(
+        cip=perfil_ingeniero_inspector.cip,
+        periodo="2026-01",
+    )
+
+    assert resultado.inspector_dni is None
+    assert resultado.candidatos[0].inspector_dni is None
+
+    out = FinanzasPresenter.present_inspector_candidatos(resultado)
+    assert out.inspector_dni is None
+    assert out.candidatos[0].inspector_dni is None
+
+    payload = json.loads(out.model_dump_json())
+    assert payload["inspector_dni"] is None
+    assert payload["candidatos"][0]["inspector_dni"] is None

@@ -67,7 +67,7 @@ export interface PdfLiquidacionItem {
     /** Estrategia persistida: NORMAL_SELECCIONADAS, TARIFA_HABILITADAS_PARTICIPANTES o TOTAL_EXPLICITO. */
     estrategia_cotizacion?: string | null;
     /** Snapshot de H (habilitadas del catálogo en la fecha efectiva). */
-    count_habilitadas?: number | null;
+    cantidad_especialidades_habilitadas?: number | null;
     /** Total final autoritativo persistido (TOTAL_EXPLICITO). */
     total_explicito?: number | null;
     /** Snapshot del porcentaje unitario (f) de la tarifa aplicada. */

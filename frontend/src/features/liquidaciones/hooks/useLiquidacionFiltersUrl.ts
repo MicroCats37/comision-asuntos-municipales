@@ -30,6 +30,7 @@ export function useLiquidacionFiltersUrl(): {
     useUrlFilters<LiquidacionFiltros>({
       config: [
         { filterKey: "entidad_id", paramKey: "muni" },
+        { filterKey: "distrito_id", paramKey: "distrito" },
         { filterKey: "propietario", paramKey: "prop" },
         { filterKey: "fecha_desde", paramKey: "desde" },
         { filterKey: "fecha_hasta", paramKey: "hasta" },

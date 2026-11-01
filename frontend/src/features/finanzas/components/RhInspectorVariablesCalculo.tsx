@@ -11,7 +11,7 @@
  * @param compact           - If true, renders smaller text suitable for cards.
  */
 
-import React from "react";
+import { formatPorcentaje } from "@/features/finanzas/utils/rh-porcentaje";
 
 export interface RhInspectorVariablesCalculoProps {
   escala_nombre?: string;
@@ -29,7 +29,8 @@ export function RhInspectorVariablesCalculo({
   monto_maximo,
   compact = false,
 }: RhInspectorVariablesCalculoProps) {
-  const pctDescuento = (porcentaje_descuento * 100).toFixed(0);
+  // La conversión fracción → porcentaje ocurre UNA sola vez, en el helper compartido.
+  const pctDescuento = formatPorcentaje(porcentaje_descuento) ?? "0";
 
   // Build range label if both bounds are available
   let rangeLabel = "";
@@ -44,7 +45,8 @@ export function RhInspectorVariablesCalculo({
       <div className="text-[10px] text-muted-foreground">
         <span className="font-semibold">Desc. </span>
         <span>
-          {pctDescuento}%{rangeLabel}
+          {pctDescuento}
+          {rangeLabel}
         </span>
       </div>
     );
@@ -54,7 +56,8 @@ export function RhInspectorVariablesCalculo({
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border-t border-primary/10 pt-2 mt-1">
       <span className="font-semibold">Escala: {escala_nombre || "—"}</span>
       <span>
-        Descuento aplicado {pctDescuento}%{rangeLabel}
+        Descuento aplicado {pctDescuento}
+        {rangeLabel}
       </span>
     </div>
   );

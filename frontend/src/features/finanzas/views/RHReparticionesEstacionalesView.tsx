@@ -8,141 +8,207 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
-  Banknote,
-  Calendar,
+  FilePenLine,
   FileText,
   PieChart,
   Plus,
   RefreshCw,
+  Trash2,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useState } from "react";
+import { useConfirmationDialog } from "@/components/confirmationDialog/useConfirmationDialog";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
-import { NuevaRHReparticionEstacionalModal } from "@/features/finanzas/components/modals/NuevaRHReparticionEstacionalModal";
-import { useRHReparticionesEstacionales } from "@/features/finanzas/hooks/useRHReparticionesEstacionales";
-import type { RHReparticionEstacionalListItem } from "@/features/finanzas/schemas/rh-reparticion-estacional.schema";
 import {
-  formatCurrency,
-  formatDate,
-} from "@/features/liquidaciones/components/liquidacion-ui";
+  type RhCardAction,
+  RhMensualCardShell,
+} from "@/features/finanzas/components/cards/RhMensualCardShell";
+import { NuevaRHReparticionEstacionalModal } from "@/features/finanzas/components/modals/NuevaRHReparticionEstacionalModal";
+import { useEliminarRHReparticionEstacional } from "@/features/finanzas/hooks/useEliminarRHReparticionEstacional";
+import { useRHReparticionesEstacionales } from "@/features/finanzas/hooks/useRHReparticionesEstacionales";
+import type { RHReparticionEstacional } from "@/features/finanzas/schemas/rh-reparticion-estacional.schema";
+import { formatCurrency } from "@/features/liquidaciones/components/liquidacion-ui";
 
 const KIND_ICON: LucideIcon = PieChart;
 
-function ReparticionCard({ item }: { item: RHReparticionEstacionalListItem }) {
+const MONTH_NAMES = [
+  "",
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Setiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
+
+interface ReparticionCardProps {
+  item: RHReparticionEstacional;
+  /** Abre el modal de RH Trimestral en modo edición con este item. */
+  onEdit?: (item: RHReparticionEstacional) => void;
+  /** Solicita la eliminación (soft-delete) de este item. */
+  onDelete?: (id: string) => void;
+}
+
+export function ReparticionCard({
+  item,
+  onEdit,
+  onDelete,
+}: ReparticionCardProps) {
+  const { identidad, general, distribucion } = item;
+  const trimestre = `T${Math.ceil(general.mes_desde / 3)}`;
+  const periodoLabel = `${general.periodo} · ${trimestre} (${MONTH_NAMES[general.mes_desde].slice(0, 3)}–${MONTH_NAMES[general.mes_hasta].slice(0, 3)})`;
+  const actions: RhCardAction[] = [];
+
+  if (onEdit) {
+    actions.push({
+      key: "edit",
+      icon: <FilePenLine className="h-3 w-3" />,
+      label: "Editar",
+      ariaLabel: "Editar RH trimestral",
+      onAction: () => onEdit(item),
+    });
+  }
+
+  if (onDelete) {
+    actions.push({
+      key: "delete",
+      icon: <Trash2 className="h-3 w-3" />,
+      label: "Eliminar",
+      ariaLabel: "Eliminar RH trimestral",
+      onAction: () => onDelete(identidad.id),
+      variant: "danger",
+    });
+  }
+
   return (
-    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b border-border">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            Trimestral
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Calendar className="h-3.5 w-3.5" />
-            <span>{formatDate(item.created_at)}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 space-y-4">
-        {/* Periodo + Especialidad */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-border/60 bg-muted/10">
-            <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-              <Calendar className="h-4 w-4 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Periodo
-              </p>
-              <p className="text-sm font-bold truncate">{item.periodo}</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-border/60 bg-muted/10">
-            <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-              <PieChart className="h-4 w-4 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Especialidad
-              </p>
-              <p
-                className="text-sm font-semibold truncate"
-                title={item.especialidad_revision_nombre}
-              >
-                {item.especialidad_revision_nombre || "—"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Montos y participantes */}
-        <div className="rounded-lg border border-border/60 overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 border-b border-border">
-            <Banknote className="h-3.5 w-3.5 text-muted-foreground" />
+    <RhMensualCardShell
+      kindIcon={PieChart}
+      kindLabel="Trimestral"
+      title="Recibo de Honorario Trimestral"
+      fechaRegistro={identidad.created_at}
+      periodo={{ periodo: general.periodo }}
+      periodoLabel={periodoLabel}
+      personaNombre={general.especialidad_revision.nombre}
+      identityLabel="Especialidad"
+      identityIcon={PieChart}
+      totalLabel="Fondo común distribuido"
+      total={distribucion.total_fondo_comun}
+      summaryItems={[
+        {
+          label: "Por participación",
+          value: formatCurrency(distribucion.monto_por_participacion),
+        },
+        { label: "Delegados", value: String(distribucion.numero_delegados) },
+        { label: "Capítulos", value: String(distribucion.numero_capitulos) },
+        ...(distribucion.residual !== 0
+          ? [
+              {
+                label: "Residual",
+                value: formatCurrency(distribucion.residual),
+                tone: "muted" as const,
+              },
+            ]
+          : []),
+      ]}
+      actions={actions}
+    >
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <section className="p-3 rounded-lg border border-border/60 bg-muted/10 min-w-0">
+          <div className="flex items-center gap-2 mb-2">
+            <Users className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-              Detalle de Distribución
+              Distribución por delegado
+            </span>
+            <span className="ml-auto text-xs font-semibold text-primary">
+              {distribucion.detalles_delegados.length}
             </span>
           </div>
-          <div className="p-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <p className="text-[10px] text-muted-foreground">Fondo Común</p>
-                <p className="text-sm font-semibold">
-                  {formatCurrency(item.total_fondo_comun)}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">
-                  x Participación
-                </p>
-                <p className="text-sm font-semibold">
-                  {formatCurrency(item.monto_por_participacion)}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">
-                  <Users className="h-3 w-3 inline mr-1" />
-                  Delegados
-                </p>
-                <p className="text-sm font-semibold">{item.numero_delegados}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">
-                  <FileText className="h-3 w-3 inline mr-1" />
-                  Capítulos
-                </p>
-                <p className="text-sm font-semibold">{item.numero_capitulos}</p>
-              </div>
-            </div>
-
-            {item.residual != null && item.residual !== 0 && (
-              <div className="mt-3 pt-3 border-t border-border/60">
-                <p className="text-[10px] text-muted-foreground">Residual</p>
-                <p className="text-sm font-semibold text-muted-foreground">
-                  {formatCurrency(item.residual)}
-                </p>
-              </div>
-            )}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border/50">
+                  <th className="pb-1.5 pr-3 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Delegado
+                  </th>
+                  <th className="pb-1.5 px-3 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    CIP
+                  </th>
+                  <th className="pb-1.5 pl-3 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Monto
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {distribucion.detalles_delegados.map((detalle) => (
+                  <tr
+                    key={detalle.delegado.id}
+                    className="border-b border-border/30 last:border-b-0 hover:bg-muted/20 transition-colors"
+                  >
+                    <td className="py-1.5 pr-3 font-medium">
+                      {detalle.delegado.nombre_completo}
+                    </td>
+                    <td className="py-1.5 px-3 font-mono text-muted-foreground">
+                      {detalle.delegado.cip}
+                    </td>
+                    <td className="py-1.5 pl-3 text-right font-semibold whitespace-nowrap">
+                      {formatCurrency(detalle.monto)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
+        </section>
 
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-2 pt-2">
-          <Button variant="outline" size="sm" className="gap-1.5 h-8" asChild>
-            <Link href={`/liquidaciones/reparticiones-estacionales/${item.id}`}>
-              Ver detalle
-            </Link>
-          </Button>
-        </div>
+        <section className="p-3 rounded-lg border border-border/60 bg-muted/10 min-w-0">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+              Distribución por capítulo
+            </span>
+            <span className="ml-auto text-xs font-semibold text-primary">
+              {distribucion.detalles_capitulos.length}
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border/50">
+                  <th className="pb-1.5 pr-3 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Capítulo
+                  </th>
+                  <th className="pb-1.5 pl-3 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Monto
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {distribucion.detalles_capitulos.map((detalle) => (
+                  <tr
+                    key={detalle.capitulo.id}
+                    className="border-b border-border/30 last:border-b-0 hover:bg-muted/20 transition-colors"
+                  >
+                    <td className="py-1.5 pr-3 font-medium">
+                      {detalle.capitulo.nombre}
+                    </td>
+                    <td className="py-1.5 pl-3 text-right font-semibold whitespace-nowrap">
+                      {formatCurrency(detalle.monto)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
-    </div>
+    </RhMensualCardShell>
   );
 }
 
@@ -151,13 +217,48 @@ export function RHReparticionesEstacionalesView() {
     {},
   );
   const [modalOpen, setModalOpen] = useState(false);
+  const [rhEnEdicion, setRhEnEdicion] =
+    useState<RHReparticionEstacional | null>(null);
+  const { confirm, Dialog } = useConfirmationDialog();
+  const eliminarMutation = useEliminarRHReparticionEstacional();
 
-  const handleOpenModal = useCallback(() => setModalOpen(true), []);
-  const handleCloseModal = useCallback(
-    (open: boolean) => setModalOpen(open),
-    [],
+  const handleOpenModal = useCallback(() => {
+    setRhEnEdicion(null);
+    setModalOpen(true);
+  }, []);
+  const handleCloseModal = useCallback((open: boolean) => {
+    setModalOpen(open);
+    if (!open) setRhEnEdicion(null);
+  }, []);
+  const handleModalSuccess = useCallback(() => {
+    setModalOpen(false);
+    setRhEnEdicion(null);
+    refetch();
+  }, [refetch]);
+
+  /** Abre el wizard de RH Trimestral en modo edición sobre el item elegido. */
+  const handleEdit = useCallback((item: RHReparticionEstacional) => {
+    setRhEnEdicion(item);
+    setModalOpen(true);
+  }, []);
+
+  /** Elimina (soft-delete) la repartición confirmada por el usuario. */
+  const handleDelete = useCallback(
+    (id: string) => {
+      confirm({
+        title: "Eliminar repartición trimestral",
+        description:
+          "¿Estás seguro de que deseas eliminar esta repartición trimestral? Esta acción no se puede deshacer.",
+        confirmLabel: "Eliminar",
+        variant: "danger",
+      }).then((confirmed) => {
+        if (confirmed) {
+          eliminarMutation.eliminar(id);
+        }
+      });
+    },
+    [confirm, eliminarMutation],
   );
-  const handleModalSuccess = useCallback(() => setModalOpen(false), []);
 
   return (
     <div className="page-section">
@@ -219,7 +320,12 @@ export function RHReparticionesEstacionalesView() {
           ) : (
             <div className="flex flex-col gap-4">
               {items.map((item) => (
-                <ReparticionCard key={item.id} item={item} />
+                <ReparticionCard
+                  key={item.identidad.id}
+                  item={item}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
               ))}
             </div>
           )}
@@ -230,7 +336,10 @@ export function RHReparticionesEstacionalesView() {
         open={modalOpen}
         onOpenChange={handleCloseModal}
         onSuccess={handleModalSuccess}
+        editContext={rhEnEdicion}
       />
+
+      {Dialog}
     </div>
   );
 }

@@ -7,12 +7,17 @@ import { LiquidacionFormShell } from "./LiquidacionFormShell";
 vi.mock("@/components-app/forms/AppFormModal", () => ({
   AppFormModal: ({
     onSubmit,
+    primaryLoading,
   }: {
     onSubmit: (data: { amount: number }) => Promise<void>;
+    primaryLoading: boolean;
   }) => (
-    <button type="button" onClick={() => void onSubmit({ amount: 10 })}>
-      Submit
-    </button>
+    <>
+      <button type="button" onClick={() => void onSubmit({ amount: 10 })}>
+        Submit
+      </button>
+      <span>{primaryLoading ? "loading" : "idle"}</span>
+    </>
   ),
 }));
 
@@ -25,6 +30,33 @@ vi.mock("@/errors", () => ({
 }));
 
 describe("LiquidacionFormShell", () => {
+  it("reutiliza el submit de creación y conserva el loading en modo legacy", async () => {
+    const onSubmitCreate = vi.fn().mockResolvedValue({ id: "legacy-id" });
+
+    render(
+      <LiquidacionFormShell
+        open
+        onOpenChange={vi.fn()}
+        mode="legacy"
+        sourceItem={null}
+        schema={z.object({ amount: z.number() })}
+        initialData={{ amount: 10 }}
+        eyebrow="Test"
+        icon={<span />}
+        titlePrefix="Legacy"
+        primaryLabel="Register"
+        primaryLoadingLabel="Registering"
+        primaryLoading
+        renderBody={() => null}
+        onSubmitCreate={onSubmitCreate}
+      />,
+    );
+
+    expect(screen.getByText("loading")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    await waitFor(() => expect(onSubmitCreate).toHaveBeenCalledWith({ amount: 10 }));
+  });
+
   it("closes an edited liquidation before running its post-submit action", async () => {
     const onOpenChange = vi.fn();
     const onSuccess = vi.fn();

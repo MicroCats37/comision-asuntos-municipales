@@ -6,7 +6,14 @@ the parent model is LiquidacionGeneral and the specific models (edificaciones,
 etc.) have FK back to it.
 """
 
+from django import forms
 from django.contrib import admin
+from django.contrib.admin.checks import InlineModelAdminChecks
+from django.core.exceptions import ValidationError
+from django.db.models import IntegerField, Sum, Value
+from django.db.models.functions import Coalesce
+from django.forms.models import BaseModelFormSet, modelformset_factory
+from django.utils import timezone
 
 # Import from domain/models (re-exported via models.py)
 from modules.liquidaciones.models import (
@@ -43,7 +50,8 @@ from modules.liquidaciones.models import (
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
     LiquidacionCodigo,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion
+from modules.liquidaciones.domain.constants import CategoriaIO, TipoLiquidacion
+from modules.finanzas.domain.models.registro_pago_inspector import RegistroPagoInspector
 
 
 # =============================================================================
@@ -161,8 +169,110 @@ class LiquidacionPorCategoriaVisitasInline(admin.StackedInline):
     """Inline for LiquidacionPorCategoriaVisitas (visits calculation, IO only)."""
 
     model = LiquidacionPorCategoriaVisitas
+    exclude = ["categoria"]
     extra = 0
     readonly_fields = ["created_at", "updated_at"]
+
+
+class RegistroPagoInspectorFormSet(BaseModelFormSet):
+    """Formset indirecto: LiquidacionGeneral -> Visitas -> RegistroPagoInspector."""
+
+    @classmethod
+    def get_default_prefix(cls):
+        return "registros_pago_inspector"
+
+    def __init__(self, *args, instance=None, save_as_new=False, **kwargs):
+        self.parent_instance = instance
+        self.visitas = None
+        if instance and instance.pk:
+            self.visitas = instance.liquidacion_visitas.order_by("id").first()
+        queryset = (
+            RegistroPagoInspector.objects.filter(
+                liquidacion_por_categoria_visitas=self.visitas
+            )
+            if self.visitas
+            else RegistroPagoInspector.objects.none()
+        )
+        kwargs["queryset"] = queryset
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        if any(self.errors) or not self.visitas:
+            return
+        periodo_actual = timezone.localdate()
+        for form in self.extra_forms:
+            if not form.cleaned_data or not form.has_changed():
+                continue
+            periodo = form.cleaned_data.get("periodo")
+            mes = form.cleaned_data.get("mes")
+            if periodo and mes and (periodo, mes) > (
+                periodo_actual.year,
+                periodo_actual.month,
+            ):
+                form.add_error(
+                    "mes",
+                    "No se pueden registrar visitas en un período futuro.",
+                )
+        total_pagadas = sum(
+            form.cleaned_data.get("inspecciones_pagadas") or 0
+            for form in self.forms
+            if form.cleaned_data
+        )
+        programadas = self.visitas.cantidad_visitas or 0
+        if total_pagadas > programadas:
+            raise ValidationError(
+                f"Las inspecciones pagadas ({total_pagadas}) superan las "
+                f"programadas ({programadas})."
+            )
+
+    def save_new(self, form, commit=True):
+        registro = form.save(commit=False)
+        registro.liquidacion_por_categoria_visitas = self.visitas
+        if not registro.fecha_registro:
+            registro.fecha_registro = timezone.localdate()
+        if commit:
+            registro.save()
+        return registro
+
+
+class RegistroPagoInspectorInlineChecks(InlineModelAdminChecks):
+    """Omite solo el check de FK directa; la relación la resuelve el formset."""
+
+    def _check_relation(self, obj, parent_model):
+        return []
+
+    def _check_exclude_of_parent_model(self, obj, parent_model):
+        return []
+
+
+class RegistroPagoInspectorInline(admin.TabularInline):
+    model = RegistroPagoInspector
+    checks_class = RegistroPagoInspectorInlineChecks
+    extra = 1
+    can_delete = False
+    verbose_name = "registro de visita"
+    verbose_name_plural = "Registros de visitas"
+    fields = [
+        "periodo",
+        "mes",
+        "inspecciones_pagadas",
+        "fecha_registro",
+        "recibo_mensual",
+    ]
+    readonly_fields = ["fecha_registro", "recibo_mensual"]
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def get_formset(self, request, obj=None, **kwargs):
+        return modelformset_factory(
+            RegistroPagoInspector,
+            formset=RegistroPagoInspectorFormSet,
+            fields=["periodo", "mes", "inspecciones_pagadas"],
+            extra=self.get_extra(request, obj),
+            can_delete=False,
+        )
 
 
 class LiquidacionPorcentajeObraInline(admin.StackedInline):
@@ -296,7 +406,9 @@ class BaseLiquidacionProxyAdmin(admin.ModelAdmin):
                 "tipo_liquidacion",
                 "usuario_creador",
             )
-        return qs
+        if related_name:
+            return qs.order_by("legacy", f"-{related_name}__numero", "-fecha_registro")
+        return qs.order_by("legacy", "-fecha_registro")
 
     # ── Display methods ────────────────────────────────────────────
 
@@ -454,6 +566,25 @@ class LiquidacionTaludesProxyAdmin(BaseLiquidacionProxyAdmin):
     tipo_tramite_list.short_description = "Tipo Trámite"
 
 
+class LiquidacionInspeccionObraAdminForm(forms.ModelForm):
+    categoria_inspeccion = forms.ChoiceField(
+        choices=CategoriaIO.choices,
+        required=False,
+        label="Categoría de Inspección",
+    )
+
+    class Meta:
+        model = LiquidacionInspeccionObraProxy
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            visitas = self.instance.liquidacion_visitas.order_by("id").first()
+            if visitas:
+                self.initial["categoria_inspeccion"] = visitas.categoria
+
+
 @admin.register(LiquidacionInspeccionObraProxy)
 class LiquidacionInspeccionObraProxyAdmin(BaseLiquidacionProxyAdmin):
     """Admin for LiquidacionGeneral filtered to Inspección de Obra type."""
@@ -462,30 +593,85 @@ class LiquidacionInspeccionObraProxyAdmin(BaseLiquidacionProxyAdmin):
     specific_inline = LiquidacionInspeccionObraInline
     calc_inline = LiquidacionPorCategoriaVisitasInline
     specific_related_name = "inspeccion_obra"
+    form = LiquidacionInspeccionObraAdminForm
 
-    list_display = BaseLiquidacionProxyAdmin.list_display + ["categoria_list", "visitas_list"]
+    list_display = BaseLiquidacionProxyAdmin.list_display + [
+        "categoria_list",
+        "visitas_programadas",
+        "inspecciones_pagadas",
+        "saldo_inspecciones",
+    ]
+    fields = BaseLiquidacionProxyAdmin.fields.copy()
+    fields[fields.index("sub_total"):fields.index("sub_total")] = [
+        "categoria_inspeccion",
+        "visitas_programadas",
+        "inspecciones_pagadas",
+        "saldo_inspecciones",
+    ]
+    readonly_fields = BaseLiquidacionProxyAdmin.readonly_fields + [
+        "visitas_programadas",
+        "inspecciones_pagadas",
+        "saldo_inspecciones",
+    ]
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        self._save_categoria(
+            form.instance,
+            form.cleaned_data.get("categoria_inspeccion") or None,
+        )
+
+    @staticmethod
+    def _save_categoria(obj, categoria):
+        visitas = obj.liquidacion_visitas.order_by("id").first()
+        if visitas and visitas.categoria != categoria:
+            visitas.categoria = categoria
+            visitas.save(update_fields=["categoria", "updated_at"])
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("liquidacion_visitas").annotate(
+            inspecciones_pagadas_total=Coalesce(
+                Sum("liquidacion_visitas__registros_pago__inspecciones_pagadas"),
+                Value(0),
+                output_field=IntegerField(),
+            )
+        )
+
+    @staticmethod
+    def _visitas(obj):
+        visitas = list(obj.liquidacion_visitas.all())
+        return visitas[0] if visitas else None
 
     def categoria_list(self, obj):
-        calc = getattr(obj, "liquidacion_visitas", None)
-        if not calc:
+        visitas = self._visitas(obj)
+        if not visitas or not visitas.categoria:
             return "-"
-        calc = calc.first()
-        if not calc:
-            return "-"
-        return calc.categoria if calc.categoria else "-"
+        return dict(CategoriaIO.choices).get(visitas.categoria, visitas.categoria)
 
     categoria_list.short_description = "Categoría"
 
-    def visitas_list(self, obj):
-        calc = getattr(obj, "liquidacion_visitas", None)
-        if not calc:
-            return "-"
-        calc = calc.first()
-        if not calc:
-            return "-"
-        return str(calc.cantidad_visitas) if calc.cantidad_visitas else "-"
+    def visitas_programadas(self, obj):
+        visitas = self._visitas(obj)
+        return visitas.cantidad_visitas if visitas else 0
 
-    visitas_list.short_description = "Visitas"
+    visitas_programadas.short_description = "Programadas"
+
+    def inspecciones_pagadas(self, obj):
+        return obj.inspecciones_pagadas_total
+
+    inspecciones_pagadas.short_description = "Pagadas"
+    inspecciones_pagadas.admin_order_field = "inspecciones_pagadas_total"
+
+    def saldo_inspecciones(self, obj):
+        return self.visitas_programadas(obj) - self.inspecciones_pagadas(obj)
+
+    saldo_inspecciones.short_description = "Saldo pendiente"
+
+    def get_inlines(self, request, obj):
+        inlines = super().get_inlines(request, obj)
+        if obj is not None:
+            inlines.append(RegistroPagoInspectorInline)
+        return inlines
 
 
 @admin.register(LiquidacionImpactoVialProxy)

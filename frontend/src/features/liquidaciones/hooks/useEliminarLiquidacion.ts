@@ -9,20 +9,10 @@
  * Remueve el item de todas las listas visibles y marca el detalle como eliminado.
  */
 
-import { z } from "zod";
 import { useApiUpdate } from "@/hooks/callsApi/useApiUpdate";
 import { useLiquidacionesCacheUtils } from "./cache";
 
-const EliminarLiquidacionSchema = z.object({
-  motivo: z
-    .string()
-    .trim()
-    .min(1, "El motivo de eliminación es obligatorio")
-    .max(500, "El motivo no puede superar los 500 caracteres"),
-});
-export type EliminarLiquidacionPayload = z.infer<
-  typeof EliminarLiquidacionSchema
->;
+export type EliminarLiquidacionPayload = { motivo: string };
 
 export function useEliminarLiquidacion(id: string) {
   const cacheUtils = useLiquidacionesCacheUtils();
@@ -30,7 +20,6 @@ export function useEliminarLiquidacion(id: string) {
   const mutation = useApiUpdate<unknown, EliminarLiquidacionPayload>({
     url: `/liquidaciones/generales/${id}/eliminar`,
     method: "PATCH",
-    schema: EliminarLiquidacionSchema,
     options: {
       onSuccess: () => {
         // Remover de todas las listas visibles (tipo-específicas y generales)

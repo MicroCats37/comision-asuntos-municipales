@@ -50,24 +50,6 @@ from modules.liquidaciones.presentation.controllers.inspector_controller import 
 from modules.liquidaciones.presentation.controllers.tarifas_historicas_controller import (
     TarifasHistoricasController,
 )
-from modules.liquidaciones.presentation.controllers.liquidacion_legacy.liquidacion_edificaciones_legacy_controller import (
-    LiquidacionEdificacionesLegacyController,
-)
-from modules.liquidaciones.presentation.controllers.liquidacion_legacy.liquidacion_taludes_legacy_controller import (
-    LiquidacionTaludesLegacyController,
-)
-from modules.liquidaciones.presentation.controllers.liquidacion_legacy.liquidacion_impacto_vial_legacy_controller import (
-    LiquidacionImpactoVialLegacyController,
-)
-from modules.liquidaciones.presentation.controllers.liquidacion_legacy.liquidacion_habilitacion_urbana_legacy_controller import (
-    LiquidacionHabilitacionUrbanaLegacyController,
-)
-from modules.liquidaciones.presentation.controllers.liquidacion_legacy.liquidacion_mecanica_suelos_legacy_controller import (
-    LiquidacionMecanicaSuelosLegacyController,
-)
-from modules.liquidaciones.presentation.controllers.liquidacion_legacy.liquidacion_inspeccion_obra_legacy_controller import (
-    LiquidacionInspeccionObraLegacyController,
-)
 from modules.finanzas.presentation.controllers.variables_controller import VariablesController
 from modules.finanzas.presentation.controllers.rh_delegado.mensual_controller import (
     RHDelegadoMensualController,
@@ -210,14 +192,6 @@ api.register_controllers(LiquidacionImpactoVialController)
 api.register_controllers(LiquidacionTaludesController)
 api.register_controllers(LiquidacionGeneralController)
 
-# ── Liquidaciones Legacy Controllers (T7) ─
-api.register_controllers(LiquidacionEdificacionesLegacyController)
-api.register_controllers(LiquidacionTaludesLegacyController)
-api.register_controllers(LiquidacionImpactoVialLegacyController)
-api.register_controllers(LiquidacionHabilitacionUrbanaLegacyController)
-api.register_controllers(LiquidacionMecanicaSuelosLegacyController)
-api.register_controllers(LiquidacionInspeccionObraLegacyController)
-
 # ── Delegados Controllers ─
 api.register_controllers(DelegadoController)
 
@@ -233,10 +207,10 @@ api.register_controllers(TarifasHistoricasController)
 
 # ── Finanzas Controllers ─
 api.register_controllers(VariablesController)
-api.register_controllers(RHDelegadoMensualController)
 api.register_controllers(RHDelegadoDetalleController)
-api.register_controllers(RHInspectorMensualController)
+api.register_controllers(RHDelegadoMensualController)
 api.register_controllers(RHInspectorDetalleController)
+api.register_controllers(RHInspectorMensualController)
 api.register_controllers(RHReparticionEstacionalController)
 
 # ── Exception handlers globales ────────────────────────────────

@@ -3,6 +3,7 @@ LiquidacionInspeccionObraController — Single unified HTTP controller for Inspe
 """
 import uuid
 from datetime import date
+from typing import Optional
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
@@ -39,6 +40,12 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.visitas_schemas
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_cotizar_edicion_schemas import (
     CotizarEdicionVisitasWrapperIn,
 )
+from modules.liquidaciones.presentation.schemas.liquidacion_legacy.legacy_registration_schemas import (
+    LiquidacionInspeccionObraLegacyInput,
+)
+from modules.liquidaciones.domain.schemas.liquidacion_legacy.legacy_registro_data import (
+    LegacyRegistroContexto,
+)
 
 @api_controller("/liquidaciones/inspeccion-obra", tags=["Inspección de Obra"], permissions=[AllowAny])
 class LiquidacionInspeccionObraController:
@@ -63,12 +70,18 @@ class LiquidacionInspeccionObraController:
         "/tarifas/vigentes",
         response={200: ApiResponse[TarifasVigentesPorCategoriaVisitasOutputSchema]},
     )
-    def get_tarifas_vigentes(self):
+    def get_tarifas_vigentes(
+        self,
+        fecha: Optional[date] = Query(
+            default=None,
+            description="Optional date to get vigentes at that date (YYYY-MM-DD). If omitted, returns current vigentes.",
+        ),
+    ):
         """
-        Get the currently active tariffs for Inspeccion Obra (Visitas).
-        Delegates fetching and validation to the Orchestrator.
+        Get the currently active (or historical at fecha) tariffs for Inspeccion
+        Obra (Visitas). Delegates fetching and validation to the Orchestrator.
         """
-        tarifas, uit_vigente = self.orchestrator.obtener_tarifas_vigentes_proceso()
+        tarifas, uit_vigente = self.orchestrator.obtener_tarifas_vigentes_proceso(fecha=fecha)
         result = self.visitas_presenter.present_tarifas_vigentes(tarifas=tarifas, uit_vigente=uit_vigente)
         return success_response(result)
 
@@ -81,6 +94,7 @@ class LiquidacionInspeccionObraController:
         page: int = Query(default=1, ge=1),
         page_size: int = Query(default=10, ge=1, le=100),
         entidad_id: uuid.UUID = Query(default=None, description="Filter by municipalidad ID"),
+        distrito_id: uuid.UUID = Query(default=None, description="Filter by proyecto distrito ID"),
         propietario: str = Query(default=None, description="Filter by propietario name (icontains)"),
         fecha_desde: date = Query(default=None, description="Filter by fecha_registro >= date"),
         fecha_hasta: date = Query(default=None, description="Filter by fecha_registro <= date"),
@@ -97,6 +111,7 @@ class LiquidacionInspeccionObraController:
             page=page,
             page_size=page_size,
             municipalidad_id=entidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creado_por,
@@ -164,11 +179,22 @@ class LiquidacionInspeccionObraController:
         "/cotizar",
         response={200: ApiResponse[CotizarPorCategoriaVisitasOutputSchema]},
     )
-    def cotizar(self, payload: CotizarPorCategoriaVisitasInputSchema):
+    def cotizar(
+        self,
+        payload: CotizarPorCategoriaVisitasInputSchema,
+        fecha: Optional[date] = Query(
+            default=None,
+            description="Optional effective date to quote at (YYYY-MM-DD). If omitted, quotes today.",
+        ),
+    ):
         """
         Calculates a quote for Inspeccion Obra liquidacion.
 
         The selected tariff is the source of truth for the category.
+
+        `fecha` es la fecha efectiva OPCIONAL del preview: sin ella el
+        comportamiento es el vigente (hoy); con ella, IGV, UIT y la tarifa de
+        visitas se resuelven a esa fecha (modo legacy).
         """
         le = payload.liquidacion_especifica
         cantidad_visitas = le.datos.cantidad_visitas
@@ -177,6 +203,7 @@ class LiquidacionInspeccionObraController:
         result = self.orchestrator.cotizar_proceso(
             cantidad_visitas=cantidad_visitas,
             tarifa_id=str(tarifa_visitas_id),
+            fecha=fecha,
         )
 
         return success_response(self.visitas_presenter.present_cotizacion(result))
@@ -216,6 +243,39 @@ class LiquidacionInspeccionObraController:
 
         result = self.presenter.present_primera_revision(domain_result)
         return success_response(result, message="Inspección de obra creada correctamente.")
+
+    @route.post(
+        "/nueva-liquidacion/legacy",
+        response={200: ApiResponse[LiquidacionInspeccionObraOutput]},
+    )
+    def crear_registro_legacy(self, request, payload: LiquidacionInspeccionObraLegacyInput):
+        """
+        Registro MANUAL de una liquidación histórica de Inspección de Obra.
+
+        La ruta es el discriminador: el servidor asigna `legacy=True` y el
+        cliente nunca envía el flag. El `numero` es explícito e informativo
+        (puede repetirse) y `fecha_registro` gobierna TODA la resolución
+        histórica. Los totales SIEMPRE se calculan.
+
+        El registro histórico de IO NO tiene liquidación previa ni
+        `inspector_operacion_id`: se crea sin ese vínculo. La funcionalidad
+        existente de crear-desde-previa (`/relacionada`) no se modifica.
+        """
+        usuario_id = self.auth_core_service.get_authenticated_user_id(request)
+
+        registro_legacy = LegacyRegistroContexto(
+            numero=payload.numero,
+            fecha_registro=payload.fecha_registro,
+        )
+
+        domain_result = self.orchestrator.crear_nueva_liquidacion_proceso(
+            usuario_id=usuario_id,
+            payload_in=payload,
+            registro_legacy=registro_legacy,
+        )
+
+        result = self.presenter.present_primera_revision(domain_result)
+        return success_response(result, message="Registro legacy de inspección de obra creado correctamente.")
 
     @route.post(
         "/nueva-liquidacion",

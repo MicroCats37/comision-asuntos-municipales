@@ -46,7 +46,7 @@ class LiquidacionPorcentajeObraResult(BaseModel):
     detalles: List[DetallePorcentajeObraResult]
     # ── Estrategia PO (Edificaciones). Los demás motores los dejan en None. ──
     estrategia_cotizacion: Optional[str] = None
-    count_habilitadas: Optional[int] = None
+    cantidad_especialidades_habilitadas: Optional[int] = None
     total_explicito: Optional[Decimal] = None
     porcentaje_tarifa: Optional[Decimal] = None
     tarifa_aplicada_id: Optional[str] = None

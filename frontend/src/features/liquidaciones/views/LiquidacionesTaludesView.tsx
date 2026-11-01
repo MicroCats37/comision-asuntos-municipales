@@ -34,6 +34,7 @@ import { GestionarDelegadosModal } from "../components/GestionarDelegadosModal";
 import {
   LiquidacionesListContent,
   NuevaLiquidacionButton,
+  RegistroLegacyButton,
   type UseLiquidacionListReturn,
 } from "../components/LiquidacionesListContent";
 import type { TableColumn } from "../components/tables/LiquidacionesTable";
@@ -71,6 +72,7 @@ function buildPdfItem(item: LiquidacionTaludesListItem): PdfLiquidacionItem {
 
 export function LiquidacionesTaludesView() {
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const [legacyModalOpen, setLegacyModalOpen] = useState(false);
   const [selectPreviaOpen, setSelectPreviaOpen] = useState(false);
   const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
   const [previa, setPrevia] = useState<LiquidacionPreviaItem | null>(null);
@@ -173,14 +175,17 @@ export function LiquidacionesTaludesView() {
           <NuevaLiquidacionButton onClick={() => setFormModalOpen(true)} />
         }
         extraAction={
-          <Button
-            variant="outline"
-            className="gap-2 h-10 rounded-xl font-semibold shrink-0"
-            onClick={() => setSelectPreviaOpen(true)}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Nueva Revisión
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              className="gap-2 h-10 rounded-xl font-semibold shrink-0"
+              onClick={() => setSelectPreviaOpen(true)}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Nueva Revisión
+            </Button>
+            <RegistroLegacyButton onClick={() => setLegacyModalOpen(true)} />
+          </>
         }
         useListData={useTaludesData}
         renderCard={(item, refetch) => (
@@ -204,6 +209,12 @@ export function LiquidacionesTaludesView() {
         open={formModalOpen}
         onOpenChange={setFormModalOpen}
         onSuccess={() => setFormModalOpen(false)}
+      />
+      <LiquidacionTaludesFormModal
+        mode="legacy"
+        open={legacyModalOpen}
+        onOpenChange={setLegacyModalOpen}
+        onSuccess={() => setLegacyModalOpen(false)}
       />
 
       <SeleccionarPreviaModal

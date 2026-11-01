@@ -22,7 +22,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { handleApiError, notify } from "@/errors";
+import {
+  clearSuccessMessage,
+  extractSuccessMessage,
+  handleApiError,
+  notify,
+  peekSuccessMessage,
+} from "@/errors";
 import { buildUpdatePayload } from "@/lib/forms/buildUpdatePayload";
 import { isFileKindSchema } from "@/lib/forms/imageField";
 import {
@@ -40,6 +46,12 @@ import {
 // Safe by default (false) — only logs when explicitly enabled.
 
 const DEBUG_FORM = process.env.NEXT_PUBLIC_DEBUG_GENERIC_FORM_ERRORS === "true";
+
+/**
+ * Fallback shown when the API does not provide a success message.
+ * It is only used when the endpoint answers without a `message`.
+ */
+const DEFAULT_SUCCESS_MESSAGE = "Operación completada correctamente.";
 
 function isDeepEqual(left: unknown, right: unknown): boolean {
   if (Object.is(left, right)) return true;
@@ -440,10 +452,15 @@ export const GenericForm = <T extends FieldValues>({
         );
 
     try {
-      await onSubmit(finalData as T);
+      // The success banner shows the message supplied by the API. The mutation
+      // layer publishes it (toast + registry); the resolved value of onSubmit
+      // is used when it carries the envelope directly.
+      clearSuccessMessage();
+      const result = await onSubmit(finalData as T);
+      const apiMessage = extractSuccessMessage(result) ?? peekSuccessMessage();
       setSubmissionMessage({
         type: "success",
-        message: "Operation successful!",
+        message: apiMessage ?? DEFAULT_SUCCESS_MESSAGE,
       });
     } catch (e: any) {
       const errorRes = handleApiError(e);

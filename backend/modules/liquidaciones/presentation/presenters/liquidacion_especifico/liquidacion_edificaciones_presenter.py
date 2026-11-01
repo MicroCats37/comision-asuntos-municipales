@@ -4,7 +4,7 @@ Presenter for Edificaciones (PorcentajeObra).
 Inherits common logic from LiquidacionPorcentajeObraPresenter.
 
 Añade la proyección de la estrategia PO: `estrategia_cotizacion`, sus snapshots
-(`count_habilitadas`, `total_explicito`, `porcentaje_tarifa`, `tarifa_aplicada_id`)
+(`cantidad_especialidades_habilitadas`, `total_explicito`, `porcentaje_tarifa`, `tarifa_aplicada_id`)
 y la acumulación vigente. Son campos EXCLUSIVOS de Edificaciones: Taludes,
 Impacto Vial, edge y legacy conservan el wrapper PO compartido sin cambios.
 
@@ -47,7 +47,9 @@ class LiquidacionEdificacionesPresenter(LiquidacionPorcentajeObraPresenter):
         """Campos propios de la estrategia PO de Edificaciones."""
         return {
             "estrategia_cotizacion": getattr(tipo, "estrategia_cotizacion", None),
-            "count_habilitadas": getattr(tipo, "count_habilitadas", None),
+            "cantidad_especialidades_habilitadas": getattr(
+                tipo, "cantidad_especialidades_habilitadas", None
+            ),
             "total_explicito": getattr(tipo, "total_explicito", None),
             "porcentaje_tarifa": getattr(tipo, "porcentaje_tarifa", None),
             "tarifa_aplicada_id": (

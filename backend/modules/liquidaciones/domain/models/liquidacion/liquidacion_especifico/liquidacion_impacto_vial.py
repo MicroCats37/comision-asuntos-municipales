@@ -24,6 +24,7 @@ class LiquidacionImpactoVial(BaseModel, AutoNumeroModel):
     """
 
     history = HistoricalRecords()
+    autonumero_legacy_lookup = "liquidacion__legacy"
 
     liquidacion = models.OneToOneField(
         LiquidacionGeneral,

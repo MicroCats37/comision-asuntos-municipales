@@ -65,6 +65,7 @@ BUSINESS_TABLES = [
     "liquidaciones_liquidacionproyectista",
     "liquidaciones_liquidacionedificacion",
     "liquidaciones_liquidacionporcentajeobra",
+    "liquidaciones_liquidacionporcentajeobraacumulacion",
     "liquidaciones_liquidacionporcentajeobradetalle",
     "liquidaciones_liquidacionhabilitacionurbana",
     "liquidaciones_liquidacionpormetrocuadrado",

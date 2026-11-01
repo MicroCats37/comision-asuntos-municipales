@@ -191,8 +191,8 @@ class DelegadoTiposLiquidacionOut(BaseSchema):
     tipos: list[TipoLiquidacionListItem]
 
 
-class DelegadoOperacionVigenteOut(BaseSchema):
-    """Output schema for a single DelegadoOperacion vigencia entry."""
+class DelegadoOperacionOut(BaseSchema):
+    """Output schema for a single DelegadoOperacion entry."""
     id: uuid.UUID
     municipalidad_id: uuid.UUID
     municipalidad_nombre: str
@@ -204,14 +204,15 @@ class DelegadoOperacionVigenteOut(BaseSchema):
     tipo: str  # TITULAR or ALTERNO
     periodo_inicio: Optional[date] = None
     periodo_fin: Optional[date] = None
+    es_vigente: bool
 
 
-class DelegadoOperatividadesVigentesOut(BaseSchema):
-    """Output schema for GET /delegados/operatividades-vigentes."""
+class DelegadoOperatividadesOut(BaseSchema):
+    """Output schema for GET /delegados/operatividades."""
     delegado_id: uuid.UUID
     cip: str
     nombre_completo: str
-    operatividades: list[DelegadoOperacionVigenteOut]
+    operatividades: list[DelegadoOperacionOut]
 
 
 # ── Especialidades Revision (catalog for RH Reparticion Estacional) ─────────────

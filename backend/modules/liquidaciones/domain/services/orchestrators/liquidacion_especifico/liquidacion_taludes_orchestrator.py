@@ -7,6 +7,7 @@ maps Presentation Schema -> Domain DTO.
 Architecture: Orchestrator owns business rules (clamping). No @transaction.atomic.
 """
 import uuid
+from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 from django.utils import timezone
@@ -18,6 +19,15 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
 )
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
+)
+from modules.liquidaciones.domain.services.core.liquidacion_historico_core_service import (
+    LiquidacionHistoricoCoreService,
+)
+from modules.liquidaciones.domain.schemas.liquidacion_legacy.legacy_registro_data import (
+    LegacyRegistroContexto,
+)
+from modules.liquidaciones.domain.services.orchestrators._shared.legacy_registro_resolution import (
+    LegacyRegistroResolutionMixin,
 )
 from modules.liquidaciones.domain.services.flujos.liquidacion_especifico.liquidacion_taludes_flujo import (
     LiquidacionTaludesFlujo,
@@ -60,12 +70,14 @@ from modules.liquidaciones.domain.services.orchestrators._shared.vigencia_valida
 from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 
 
-class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
+class LiquidacionTaludesOrchestrator(LegacyRegistroResolutionMixin, LiquidacionPOValidationMixin):
     """
     Orchestrator for Taludes (PorcentajeObra).
 
     Mirrors the Edificaciones pattern but for TALUDES.
-    Uses LiquidacionPOValidationMixin for shared validation helpers.
+    Uses LiquidacionPOValidationMixin for shared validation helpers and
+    LegacyRegistroResolutionMixin for the historical resolution of the typed
+    legacy registration route.
     """
 
     @inject
@@ -75,16 +87,19 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
         general_core_service: LiquidacionGeneralCoreService,
         general_orchestrator: LiquidacionGeneralOrchestrator,
         flujo: LiquidacionTaludesFlujo,
+        historico_core: LiquidacionHistoricoCoreService,
     ):
         self.porcentaje_core = porcentaje_core_service
         self.general_core = general_core_service
         self.general_orchestrator = general_orchestrator
         self.flujo = flujo
+        self.historico_core = historico_core
 
     def crear_primera_revision_proceso(
         self,
         usuario_id: int,
         payload_in,
+        registro_legacy: LegacyRegistroContexto | None = None,
     ) -> LiquidacionEspecificaPrimeraRevisionResult:
         """
         Validates input, resolves tarifas (hybrid), calculates, delegates to Flujo.
@@ -95,7 +110,17 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
         3. Validate IGV/UIT vigentes exist
         4. Build domain DTO
         5. Delegate to Flujo
+
+        `registro_legacy` (registro manual histórico): la fecha efectiva es
+        `registro_legacy.fecha_registro` y TODOS los valores (IGV, UIT,
+        tarifas, derechos) se resuelven a esa fecha con el resolver canónico.
+        Los totales siempre se calculan: no hay bypass ni totales manuales.
         """
+        # Fecha efectiva: hoy en el camino normal, `fecha_registro` en legacy.
+        fecha_efectiva = (
+            registro_legacy.fecha_registro if registro_legacy is not None else None
+        )
+
         # Step 1: Validation
         valor_declarado = payload_in.liquidacion_especifica.datos.valor_declarado
         if valor_declarado <= 0:
@@ -106,12 +131,16 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
         # especialidad_id (from LiquidacionEspecialidadDisponibles).
         input_tarifas = payload_in.liquidacion_especifica.tarifas
         payload_tarifas_ids = list(dict.fromkeys(str(t.tarifa_porcentaje_obra_id) for t in input_tarifas))
-        tarifas = self.porcentaje_core.resolver_tarifas(payload_tarifas_ids, TipoLiquidacion.TALUDES)
+        tarifas = self.porcentaje_core.resolver_tarifas(
+            payload_tarifas_ids, TipoLiquidacion.TALUDES, fecha=fecha_efectiva
+        )
 
         # Validate each tarifa (only in explicit mode)
         if payload_tarifas_ids:
             for tarifa in tarifas:
-                self._validar_tarifa_explicita(tarifa, TipoLiquidacion.TALUDES)
+                self._validar_tarifa_explicita(
+                    tarifa, TipoLiquidacion.TALUDES, fecha=fecha_efectiva
+                )
 
         if not tarifas:
             raise HttpError(400, "No hay tarifas vigentes para taludes")
@@ -120,14 +149,18 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
         tarifa_map = {str(t.id): t for t in tarifas}
 
         # Step 3: Get vigente IGV and UIT
-        igv_vigente = self.general_core.get_igv_vigente()
-        uit_vigente = self.general_core.get_uit_vigente()
-        if not igv_vigente or not uit_vigente:
-            raise HttpError(400, "No hay IGV o UIT vigente configurado")
+        if registro_legacy is not None:
+            igv_vigente, uit_vigente = self._resolver_igv_uit_historicos(fecha_efectiva)
+            derecho = self._resolver_derecho_porcentaje_historico(fecha_efectiva)
+        else:
+            igv_vigente = self.general_core.get_igv_vigente()
+            uit_vigente = self.general_core.get_uit_vigente()
+            if not igv_vigente or not uit_vigente:
+                raise HttpError(400, "No hay IGV o UIT vigente configurado")
 
-        derecho = self.porcentaje_core.get_derecho_porcentaje_vigente()
-        if not derecho:
-            raise HttpError(400, "No hay DerechoPorcentajeObra vigente")
+            derecho = self.porcentaje_core.get_derecho_porcentaje_vigente()
+            if not derecho:
+                raise HttpError(400, "No hay DerechoPorcentajeObra vigente")
 
         # Step 4: Build domain DTOs with explicit especialidad from INPUT
         if input_tarifas:
@@ -144,7 +177,9 @@ class LiquidacionTaludesOrchestrator(LiquidacionPOValidationMixin):
             # Auto-fill: combine one tarifa per base x every vigente especialidad.
             # In tarifa-unica design there is ONE tarifa per TarifaLiquidacionBase/periodo,
             # so deduplicate by tarifa_base to avoid duplicate (liquidacion_porcentaje, especialidad).
-            especialidades = self._obtener_especialidades_vigentes_para_tipo(TipoLiquidacion.TALUDES)
+            especialidades = self._obtener_especialidades_vigentes_para_tipo(
+                TipoLiquidacion.TALUDES, fecha=fecha_efectiva
+            )
             tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas}.values())
             tarifas_aplicadas = [
                 TarifaPorcentajeObraAplicada(
@@ -189,6 +224,13 @@ liquidacion_general=LiquidacionGeneralData(
             igv_porcentaje=Decimal(str(igv_vigente.valor)),
             derecho=derecho,
             uit_valor=Decimal(str(uit_vigente.valor)),
+            registro_legacy=(
+                registro_legacy.model_copy(
+                    update={"igv": igv_vigente, "uit": uit_vigente}
+                )
+                if registro_legacy is not None
+                else None
+            ),
         )
 
     def crear_nueva_revision_proceso(
@@ -337,12 +379,17 @@ liquidacion_general=LiquidacionGeneralData(
         self,
         valor_declarado: Decimal,
         tarifas_input: List[LiquidacionPorcentajeObraTarifaIn],
+        fecha: Optional[date] = None,
     ) -> CotizacionPorcentajeObraResult:
         """
         Quote-only calculation. Does NOT persist.
 
         Same hybrid resolution as crear_primera_revision_proceso.
         Returns CotizacionPorcentajeObraResult with totals and per-detalle breakdown.
+
+        `fecha` es la fecha EFECTIVA opcional del preview: `None` significa hoy
+        (comportamiento vigente); con fecha, IGV, UIT, tarifas y derechos se
+        resuelven a esa fecha con el resolver canónico (modo legacy).
         """
         # Step 1: Validation
         if valor_declarado <= 0:
@@ -350,31 +397,39 @@ liquidacion_general=LiquidacionGeneralData(
 
         # Step 2: Hybrid resolution (dedupe IDs for ORM query)
         payload_tarifas_ids = list(dict.fromkeys(str(t.tarifa_porcentaje_obra_id) for t in tarifas_input))
-        tarifas = self.porcentaje_core.resolver_tarifas(payload_tarifas_ids, TipoLiquidacion.TALUDES)
+        tarifas = self.porcentaje_core.resolver_tarifas(
+            payload_tarifas_ids, TipoLiquidacion.TALUDES, fecha=fecha
+        )
 
         # Validate explicit mode
         if payload_tarifas_ids:
             for tarifa in tarifas:
-                self._validar_tarifa_explicita(tarifa, TipoLiquidacion.TALUDES)
-        
+                self._validar_tarifa_explicita(
+                    tarifa, TipoLiquidacion.TALUDES, fecha=fecha
+                )
+
         if not tarifas:
             raise HttpError(400, "No hay tarifas vigentes para taludes")
-        
+
         # Build a map of tarifa_id -> ORM object for quick lookup
         tarifa_map = {str(t.id): t for t in tarifas}
-        
+
         # Step 3: Get vigente IGV, UIT and derecho
-        igv_vigente = self.general_core.get_igv_vigente()
-        uit_vigente = self.general_core.get_uit_vigente()
-        if not igv_vigente:
-            raise HttpError(400, "No hay IGV vigente")
-        if not uit_vigente:
-            raise HttpError(400, "No hay UIT vigente configurado")
-        
-        derecho = self.porcentaje_core.get_derecho_porcentaje_vigente()
-        if not derecho:
-            raise HttpError(400, "No hay DerechoPorcentajeObra vigente")
-        
+        if fecha is not None:
+            igv_vigente, uit_vigente = self._resolver_igv_uit_historicos(fecha)
+            derecho = self._resolver_derecho_porcentaje_historico(fecha)
+        else:
+            igv_vigente = self.general_core.get_igv_vigente()
+            uit_vigente = self.general_core.get_uit_vigente()
+            if not igv_vigente:
+                raise HttpError(400, "No hay IGV vigente")
+            if not uit_vigente:
+                raise HttpError(400, "No hay UIT vigente configurado")
+
+            derecho = self.porcentaje_core.get_derecho_porcentaje_vigente()
+            if not derecho:
+                raise HttpError(400, "No hay DerechoPorcentajeObra vigente")
+
         # Step 4: Build DTOs with explicit especialidad from input
         if tarifas_input:
             especialidad_nombres = {
@@ -396,7 +451,9 @@ liquidacion_general=LiquidacionGeneralData(
             # Auto-fill: combine one tarifa per base x every vigente especialidad.
             # In tarifa-unica design there is ONE tarifa per TarifaLiquidacionBase/periodo,
             # so deduplicate by tarifa_base to avoid duplicate (liquidacion_porcentaje, especialidad).
-            especialidades = self._obtener_especialidades_vigentes_para_tipo(TipoLiquidacion.TALUDES)
+            especialidades = self._obtener_especialidades_vigentes_para_tipo(
+                TipoLiquidacion.TALUDES, fecha=fecha
+            )
             tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas}.values())
             tarifas_aplicadas = [
                 TarifaPorcentajeObraAplicada(
@@ -445,6 +502,7 @@ liquidacion_general=LiquidacionGeneralData(
     def listar_liquidaciones(
         self, page: int, page_size: int,
         municipalidad_id=None,
+        distrito_id=None,
         propietario=None,
         razon_social=None,
         creador_username=None,
@@ -473,6 +531,7 @@ liquidacion_general=LiquidacionGeneralData(
             page=page,
             page_size=page_size,
             municipalidad_id=municipalidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creador_username,

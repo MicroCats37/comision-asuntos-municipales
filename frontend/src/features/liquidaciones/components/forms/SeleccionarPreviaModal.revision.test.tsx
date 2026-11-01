@@ -91,6 +91,16 @@ vi.mock("../../hooks/useLiquidacionesPrevias", () => ({
   }),
 }));
 
+// Los catálogos de Municipalidad/Distrito alimentan los filtros del modal; este
+// test se centra en la lógica de selección, así que se mockean vacíos.
+vi.mock("../../hooks/useMunicipalidades", () => ({
+  useMunicipalidades: () => ({ data: [], isLoading: false }),
+}));
+
+vi.mock("../../hooks/useDistritos", () => ({
+  useDistritos: () => ({ data: [], isLoading: false }),
+}));
+
 function buscarEnElSelector() {
   fireEvent.change(screen.getByLabelText("N° Documento (RUC/DNI)"), {
     target: { value: "20123456789" },

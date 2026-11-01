@@ -36,7 +36,7 @@ const QUOTE = {
   porcentaje_minimo_uit: 0,
   derecho_aplicado_id: "derecho-1",
   estrategia_cotizacion: "TARIFA_HABILITADAS_PARTICIPANTES",
-  count_habilitadas: 3,
+  cantidad_especialidades_habilitadas: 3,
   total_explicito: null,
   porcentaje_tarifa: 0.0005,
   acumulacion: {

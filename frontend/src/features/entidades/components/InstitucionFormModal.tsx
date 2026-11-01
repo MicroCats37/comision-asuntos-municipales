@@ -5,7 +5,6 @@ import { z } from "zod";
 import { GenericInput } from "@/components/genericForm/GenericInput";
 import { Button } from "@/components/ui/button";
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { notify } from "@/errors";
 import { useDistritos } from "@/features/entidades/hooks/useDistritos";
 import { useInstitucionUpsert } from "@/features/entidades/hooks/useEntidad";
 import type { EntidadResult } from "@/features/entidades/types/entidad";
@@ -67,7 +66,7 @@ export function InstitucionFormModal({
         activo: result.data.activo,
         creado: result.data.creado,
       };
-      notify.success("Institución guardada correctamente");
+      // The success toast comes from the mutation hook (server message).
       onSaved(entidadResult);
     }
   };

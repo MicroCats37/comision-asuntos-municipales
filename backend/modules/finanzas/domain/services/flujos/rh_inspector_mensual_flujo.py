@@ -7,13 +7,19 @@ RH Inspector Mensual Flujos — cotización y creación del RH mensual del inspe
 Único lugar con @transaction.atomic para la creación (contrato 4).
 """
 from decimal import Decimal, ROUND_HALF_UP
+from typing import Any
 
 from django.db import transaction
+from django.db.models import Prefetch
 from injector import inject
 from ninja.errors import HttpError
 
 from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreService
-from modules.finanzas.domain.schemas import RHInspectorCotizarIn
+from modules.finanzas.domain.schemas import (
+    RHInspectorActualizarIn,
+    RHInspectorCotizarIn,
+    RHInspectorCotizarItemIn,
+)
 from modules.finanzas.domain.results.rh_inspector_mensual_result import (
     RHInspectorCotizarItemResult,
     RHInspectorTotalesResult,
@@ -23,8 +29,67 @@ from modules.finanzas.domain.services.flujos.rh_delegado_mensual_flujo import (
     _resolve_liquidacion_especifica_numero,
     _resolve_comprobante_activo,
 )
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
+    LiquidacionGeneral,
+)
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.comprobante import (
+    LiquidacionComprobante,
+)
 
 TWO_PLACES = Decimal("0.01")
+
+# Reverse one-to-one accessors of LiquidacionGeneral that hold the specific
+# liquidation `numero`. Mirrors RELATED_NAME_BY_TIPO of the RH Delegado helpers so
+# the resolution never falls back to a lazy per-row query (N+1).
+_RELATED_NAME_ESPECIFICAS = (
+    "edificaciones",
+    "taludes",
+    "habilitacion_urbana",
+    "mecanica_suelos",
+    "inspeccion_obra",
+    "impacto_vial",
+)
+
+
+def _enriquecer_candidatas_inspector(candidatos_data: list[dict]) -> list[dict]:
+    """
+    Agrega a cada candidata los datos de la liquidación que el listado mensual del
+    inspector ya expone: `liquidacion_especifica_numero` y `comprobante_activo`.
+
+    El core service devuelve dicts planos (descarta el modelo LiquidacionGeneral),
+    así que el flujo resuelve ambos datos con UNA consulta batch (select_related de
+    las liquidaciones específicas) + un prefetch del comprobante activo, sin N+1.
+    Reutiliza los mismos helpers del RH Delegado para no duplicar reglas.
+
+    Modifica los dicts in-place y los devuelve.
+    """
+    if not candidatos_data:
+        return candidatos_data
+
+    comprobantes_activos = LiquidacionComprobante.objects.filter(activo=True).order_by(
+        "-fecha_emision", "-id"
+    )
+    liquidaciones = {
+        str(lg.id): lg
+        for lg in LiquidacionGeneral.objects.filter(
+            id__in=[data["liquidacion_general_id"] for data in candidatos_data]
+        )
+        .select_related("tipo_liquidacion", *_RELATED_NAME_ESPECIFICAS)
+        .prefetch_related(
+            Prefetch("comprobantes", queryset=comprobantes_activos, to_attr="comprobantes_activos")
+        )
+    }
+
+    for data in candidatos_data:
+        lg = liquidaciones.get(data["liquidacion_general_id"])
+        data["liquidacion_especifica_numero"] = (
+            _resolve_liquidacion_especifica_numero(lg) if lg is not None else None
+        )
+        data["comprobante_activo"] = (
+            _resolve_comprobante_activo(lg) if lg is not None else None
+        )
+
+    return candidatos_data
 
 
 class RHInspectorMensualCotizarFlujo:
@@ -38,12 +103,23 @@ class RHInspectorMensualCotizarFlujo:
     def __init__(self, core: FinanzasCoreService):
         self.core = core
 
-    def cotizar(self, payload: RHInspectorCotizarIn) -> RHInspectorCotizarResult:
+    def cotizar(
+        self,
+        payload: RHInspectorCotizarIn,
+        exclude_recibo_mensual_id=None,
+        escala_override=None,
+    ) -> RHInspectorCotizarResult:
         """
         Valida y calcula el RH mensual sin guardar nada.
 
         Args:
             payload: Datos de cotización con CIP, periodo e items.
+            exclude_recibo_mensual_id: Recibo mensual a EXCLUIR del cálculo de
+                saldo. Lo usa la reconciliación (PATCH) para que el RH no se
+                descuente a sí mismo de su propio balance.
+            escala_override: EscalaDescuentoInspector opcional. Cuando se
+                entrega, la cotización usa esa escala congelada en lugar de la
+                escala vigente.
 
         Returns:
             RHInspectorCotizarResult con el detalle de cálculos.
@@ -59,8 +135,11 @@ class RHInspectorMensualCotizarFlujo:
         if not inspector:
             raise HttpError(404, f"Inspector con CIP '{payload.cip}' no encontrado")
 
-        # 2. Escala vigente
-        escala = self.core.get_escala_descuento_vigente()
+        # 2. Escala vigente (o la escala congelada del recibo en la reconciliación)
+        if escala_override is not None:
+            escala = escala_override
+        else:
+            escala = self.core.get_escala_descuento_vigente()
         if not escala:
             raise HttpError(400, "No hay escala de descuento vigente")
 
@@ -144,6 +223,11 @@ class RHInspectorMensualCotizarFlujo:
                 Q(periodo__lt=header_periodo)
                 | Q(periodo=header_periodo, mes__lte=header_mes)
             )
+            if exclude_recibo_mensual_id is not None:
+                # El RH que se está editando no se descuenta de su propio saldo.
+                registros_previos = registros_previos.exclude(
+                    recibo_mensual_id=exclude_recibo_mensual_id,
+                )
             pagadas_hasta_mes_anterior = sum(
                 r.inspecciones_pagadas for r in registros_previos
             )
@@ -199,8 +283,10 @@ class RHInspectorMensualCotizarFlujo:
                     saldo_restante=saldo_restante,
                     escala_descuento_id=str(escala.id),
                     sub_total=item_sub_total,
-                    descuento=Decimal("0"),  # computed after total descuento is known
-                    honorarios=Decimal("0"),  # computed after total descuento is known
+                    descuento=Decimal("0"),  # computed after total discount is known
+                    honorarios=Decimal("0"),  # computed after total discount is known
+                    # Placeholder: la tasa depende del sub total del mes.
+                    tasa_descuento_aplicada=Decimal("0"),
                     periodo=item.periodo or header_periodo,
                     mes=item.mes or header_mes,
                     liquidacion_especifica_numero=liquidacion_especifica_numero,
@@ -238,6 +324,7 @@ class RHInspectorMensualCotizarFlujo:
             # Update in-place (items list was built above with placeholder values)
             item.descuento = item_descuento
             item.honorarios = item_honorarios
+            item.tasa_descuento_aplicada = tasa
             running_descuento += item_descuento
 
         from modules.finanzas.domain.results.rh_inspector_mensual_result import (
@@ -367,7 +454,7 @@ class RHInspectorMensualCrearFlujo:
         # 4. Crear detalles (uno por liquidación) y actualizar registro de pago
         # liquidacion_categoria_visitas_id es un UUID string — se pasa directo a Django FK
         for item in resultado.items:
-            self.core.crear_detalle_honorario(
+            detalle = self.core.crear_detalle_honorario(
                 recibo_mensual_id=rh.id,
                 liquidacion_categoria_visitas_id=item.liquidacion_categoria_visitas_id,
                 inspecciones_liquidadas=item.inspecciones_liquidadas,
@@ -383,6 +470,9 @@ class RHInspectorMensualCrearFlujo:
                 honorarios=Decimal(str(item.honorarios)),
                 tasa_descuento=Decimal(str(resultado.totales.tasa_descuento_aplicada)),
             )
+            # Identificador estable de la fila: permite que el PATCH de
+            # sincronización conserve este detalle sin recrearlo.
+            item.detalle_id = str(detalle.id)
             self.core.upsert_registro_pago(
                 liquidacion_categoria_visitas_id=item.liquidacion_categoria_visitas_id,
                 periodo=resultado.periodo,
@@ -398,6 +488,329 @@ class RHInspectorMensualCrearFlujo:
 
         # 5. Enriquecer el resultado con inspector_operacion_id para el caller
         resultado.inspector_operacion_id = inspector_operacion_id
+
+        return resultado
+
+
+# ── RH Inspector Mensual Update (PATCH) Flujo ────────────────────────────────────
+
+
+class RHInspectorMensualActualizarFlujo:
+    """
+    Sincroniza el conjunto final de detalles de un RH Inspector Mensual (PATCH).
+
+    Reglas de negocio:
+    - Cualquier RH del inspector es editable: no se exige que sea el más
+      reciente.
+    - El conjunto de items del payload es el conjunto FINAL de detalles: los
+      detalles persistidos que no aparecen en el payload se retiran.
+    - El conjunto final se re-cotiza COMPLETO usando la escala CONGELADA del
+      recibo y excluyendo el propio RH del cálculo de saldo (el RH no se
+      descuenta de su propio balance).
+    - El ledger de pagos (RegistroPagoInspector) se reemplaza SOLO por las
+      filas vinculadas a este RH; los registros de otros RH y los legacy con
+      FK nula no se tocan.
+    - Los marcadores de periodo (LiquidacionInspector.periodo / .mes) se
+      recalculan desde el ledger resultante de cada IO afectada.
+    - Todo el proceso ocurre dentro de un único ``transaction.atomic``.
+    """
+
+    @inject
+    def __init__(
+        self,
+        core: FinanzasCoreService,
+        cotizar_flujo: RHInspectorMensualCotizarFlujo,
+    ):
+        self.core = core
+        self.cotizar_flujo = cotizar_flujo
+
+    def _obtener_contexto_edicion(
+        self,
+        rh_id: int | str,
+        payload: RHInspectorActualizarIn,
+    ):
+        rh = self.core.get_rh_inspector_mensual_by_id(rh_id)
+        if not rh:
+            raise HttpError(
+                404,
+                f"Recibo de honorario mensual de inspector con id '{rh_id}' no encontrado",
+            )
+
+        perfil = getattr(rh.inspector, "perfil_ingeniero", None)
+        if not perfil or not payload.cip or payload.cip != perfil.cip:
+            raise HttpError(
+                409,
+                "El recibo de honorario mensual no corresponde al inspector indicado (cip).",
+            )
+        # Cualquier RH del inspector es editable: no se exige que sea el más
+        # reciente. El periodo/mes de la cabecera también es editable, igual
+        # que en la creación.
+
+        detalles_existentes = list(rh.detalles.all())
+        por_id = {str(detalle.id): detalle for detalle in detalles_existentes}
+        return rh, detalles_existentes, por_id
+
+    def _cotizar_actualizacion(
+        self,
+        rh,
+        payload: RHInspectorActualizarIn,
+        por_id: dict[str, Any],
+    ) -> RHInspectorCotizarResult:
+        if not payload.items:
+            raise HttpError(400, "La selección de liquidaciones no puede estar vacía.")
+
+        detalle_ids = [item.detalle_id for item in payload.items if item.detalle_id]
+        if len(set(detalle_ids)) != len(detalle_ids):
+            raise HttpError(400, "La selección contiene detalles duplicados.")
+
+        items_cotizacion: list[RHInspectorCotizarItemIn] = []
+        seleccion: list[str] = []
+        for item in payload.items:
+            if (
+                item.fecha_revision is not None
+                and item.fecha_presentacion is not None
+                and item.fecha_revision > item.fecha_presentacion
+            ):
+                raise HttpError(
+                    422,
+                    "Rango de fechas invertido: la fecha de revisión no puede ser "
+                    "posterior a la fecha de presentación.",
+                )
+
+            liquidacion_categoria_visitas_id = item.liquidacion_categoria_visitas_id
+            if item.detalle_id:
+                detalle = por_id.get(str(item.detalle_id))
+                if detalle is None:
+                    raise HttpError(
+                        400,
+                        f"El detalle '{item.detalle_id}' no pertenece al recibo '{rh.id}'.",
+                    )
+                persisted_id = str(detalle.liquidacion_por_categoria_visitas_id)
+                if (
+                    liquidacion_categoria_visitas_id
+                    and str(liquidacion_categoria_visitas_id) != persisted_id
+                ):
+                    raise HttpError(
+                        400,
+                        "La liquidación del detalle no coincide con la selección.",
+                    )
+                liquidacion_categoria_visitas_id = persisted_id
+
+            selection_key = liquidacion_categoria_visitas_id or item.exp_liqui
+            if not selection_key:
+                raise HttpError(
+                    400,
+                    "Se requiere exp_liqui o liquidacion_categoria_visitas_id.",
+                )
+            seleccion.append(str(selection_key))
+            items_cotizacion.append(
+                RHInspectorCotizarItemIn(
+                    exp_liqui=(
+                        None if liquidacion_categoria_visitas_id else item.exp_liqui
+                    ),
+                    liquidacion_categoria_visitas_id=liquidacion_categoria_visitas_id,
+                    cantidad_visitas=item.cantidad_visitas,
+                    periodo=item.periodo,
+                    mes=item.mes,
+                )
+            )
+
+        if len(set(seleccion)) != len(seleccion):
+            raise HttpError(400, "La selección contiene liquidaciones duplicadas.")
+
+        return self.cotizar_flujo.cotizar(
+            RHInspectorCotizarIn(
+                cip=payload.cip,
+                periodo=payload.periodo,
+                mes=payload.mes,
+                items=items_cotizacion,
+            ),
+            exclude_recibo_mensual_id=rh.id,
+            escala_override=rh.escala_descuento,
+        )
+
+    def cotizar_actualizacion(
+        self,
+        rh_id: int | str,
+        payload: RHInspectorActualizarIn,
+    ) -> RHInspectorCotizarResult:
+        """Cotiza una edición sin persistir ni descontar el propio RH."""
+        rh, _, por_id = self._obtener_contexto_edicion(rh_id, payload)
+        return self._cotizar_actualizacion(rh, payload, por_id)
+
+    @transaction.atomic
+    def actualizar(
+        self,
+        rh_id: int | str,
+        payload: RHInspectorActualizarIn,
+    ) -> RHInspectorCotizarResult:
+        """
+        Aplica el conjunto final de liquidaciones sobre un RH de inspector.
+
+        Args:
+            rh_id: PK del ReciboHonorarioInspectorMensual a sincronizar.
+            payload: Conjunto final de items (agregar / conservar / retirar).
+
+        Returns:
+            RHInspectorCotizarResult con el estado final del recibo.
+
+        Raises:
+            HttpError(404): El RH no existe.
+            HttpError(400): Selección malformada (detalle ajeno, duplicados, etc.).
+            HttpError(422): Rango de fechas invertido en un item.
+            HttpError(409): Conflicto (otro inspector u operaciones de
+                            inspector mezcladas).
+        """
+        rh, detalles_existentes, por_id = self._obtener_contexto_edicion(
+            rh_id, payload
+        )
+        resultado = self._cotizar_actualizacion(rh, payload, por_id)
+        if len(resultado.items) != len(payload.items):
+            raise HttpError(
+                400,
+                "La selección de liquidaciones no pudo ser cotizada.",
+            )
+
+        # 6. Operaciones de inspector mezcladas — 409 (misma regla que la creación)
+        inspector_operacion_ids: set[str] = set()
+        for item in resultado.items:
+            li = self.core.get_liquidacion_inspector_by_id(item.liquidacion_inspector_id)
+            if li and li.inspector_operacion_id:
+                inspector_operacion_ids.add(str(li.inspector_operacion_id))
+        if len(inspector_operacion_ids) > 1:
+            raise HttpError(
+                409,
+                "No se puede actualizar un RH mensual con operaciones diferentes: "
+                f"{sorted(inspector_operacion_ids)}. "
+                "Seleccione items de la misma operación.",
+            )
+        inspector_operacion_id = (
+            next(iter(inspector_operacion_ids)) if inspector_operacion_ids else None
+        )
+
+        # 7. Reconciliación de detalles
+        ids_retenidos: set[str] = set()
+
+        for item_in, item_cotizado in zip(payload.items, resultado.items):
+            if item_in.detalle_id:
+                # ── CONSERVAR fila existente ──────────────────────────────────
+                detalle = por_id.get(str(item_in.detalle_id))
+                if detalle is None:
+                    raise HttpError(
+                        400,
+                        f"El detalle '{item_in.detalle_id}' no pertenece al recibo '{rh.id}'.",
+                    )
+                if str(detalle.liquidacion_por_categoria_visitas_id) != str(
+                    item_cotizado.liquidacion_categoria_visitas_id
+                ):
+                    raise HttpError(
+                        400,
+                        "La liquidación del detalle no coincide con la selección.",
+                    )
+                detalle = self.core.actualizar_detalle_honorario_inspector(
+                    detalle.id,
+                    inspecciones_liquidadas=item_cotizado.inspecciones_liquidadas,
+                    costo_por_inspeccion=Decimal(str(item_cotizado.costo_por_inspeccion)),
+                    monto_contribuido=Decimal(str(item_cotizado.monto_contribuido)),
+                    escala_descuento_id=item_cotizado.escala_descuento_id,
+                    importe_bruto=Decimal(str(item_cotizado.importe_bruto)),
+                    inspecciones_programadas=item_cotizado.inspecciones_programadas,
+                    inspecciones_pagadas_hasta_mes_anterior=(
+                        item_cotizado.inspecciones_pagadas_hasta_mes_anterior
+                    ),
+                    saldo_restante=Decimal(str(item_cotizado.saldo_restante)),
+                    sub_total=Decimal(str(item_cotizado.sub_total)),
+                    descuento=Decimal(str(item_cotizado.descuento)),
+                    honorarios=Decimal(str(item_cotizado.honorarios)),
+                    tasa_descuento=Decimal(
+                        str(resultado.totales.tasa_descuento_aplicada)
+                    ),
+                )
+                ids_retenidos.add(str(detalle.id))
+            else:
+                # ── AGREGAR fila nueva ────────────────────────────────────────
+                detalle = self.core.crear_detalle_honorario(
+                    recibo_mensual_id=rh.id,
+                    liquidacion_categoria_visitas_id=item_cotizado.liquidacion_categoria_visitas_id,
+                    inspecciones_liquidadas=item_cotizado.inspecciones_liquidadas,
+                    costo_por_inspeccion=Decimal(str(item_cotizado.costo_por_inspeccion)),
+                    monto_contribuido=Decimal(str(item_cotizado.monto_contribuido)),
+                    escala_descuento_id=item_cotizado.escala_descuento_id,
+                    importe_bruto=Decimal(str(item_cotizado.importe_bruto)),
+                    inspecciones_programadas=item_cotizado.inspecciones_programadas,
+                    inspecciones_pagadas_hasta_mes_anterior=(
+                        item_cotizado.inspecciones_pagadas_hasta_mes_anterior
+                    ),
+                    saldo_restante=Decimal(str(item_cotizado.saldo_restante)),
+                    sub_total=Decimal(str(item_cotizado.sub_total)),
+                    descuento=Decimal(str(item_cotizado.descuento)),
+                    honorarios=Decimal(str(item_cotizado.honorarios)),
+                    tasa_descuento=Decimal(
+                        str(resultado.totales.tasa_descuento_aplicada)
+                    ),
+                )
+            item_cotizado.detalle_id = str(detalle.id)
+
+        # 8. RETIRAR filas que no están en el conjunto final
+        lcv_afectadas: set[str] = set()
+        for detalle in detalles_existentes:
+            lcv_afectadas.add(str(detalle.liquidacion_por_categoria_visitas_id))
+            if str(detalle.id) in ids_retenidos:
+                continue
+            self.core.delete_detalle_honorario_inspector(detalle.id)
+
+        # 9. Ledger: se reemplazan SOLO las filas de este RH
+        lcv_afectadas.update(
+            str(item.liquidacion_categoria_visitas_id) for item in resultado.items
+        )
+        self.core.delete_registros_pago_por_recibo_mensual(rh.id)
+        for item in resultado.items:
+            self.core.upsert_registro_pago(
+                liquidacion_categoria_visitas_id=item.liquidacion_categoria_visitas_id,
+                periodo=payload.periodo,
+                mes=payload.mes,
+                inspecciones_pagadas=item.inspecciones_liquidadas,
+                recibo_mensual_id=rh.id,
+            )
+
+        # 9b. Cabecera del recibo: el periodo/mes es editable en el mismo flujo
+        # que la creación, así que se persiste junto con el conjunto final.
+        self.core.actualizar_periodo_rh_inspector_mensual(
+            rh.id,
+            periodo=payload.periodo,
+            mes=payload.mes,
+        )
+
+        # 10. Marcadores de periodo: primero se recalculan desde el ledger
+        #     resultante y luego se aplica el periodo/mes por fila, igual que
+        #     en el flujo de creación (editar es el mismo flujo que crear).
+        self.core.recalcular_marcadores_periodo_inspector(lcv_afectadas)
+        for item in resultado.items:
+            self.core.update_liquidacion_inspector_periodo_mes(
+                liquidacion_inspector_id=item.liquidacion_inspector_id,
+                periodo=item.periodo,
+                mes=item.mes,
+            )
+
+        # 11. Totales del recibo = suma del conjunto final
+        self.core.actualizar_totales_rh_inspector_mensual(
+            rh.id,
+            sub_total=Decimal(str(resultado.totales.sub_total)),
+            descuento=Decimal(str(resultado.totales.descuento)),
+            honorarios=Decimal(str(resultado.totales.honorarios)),
+            tasa_descuento=Decimal(str(resultado.totales.tasa_descuento_aplicada)),
+        )
+
+        # 12. Backfill de la operatividad del inspector (solo si estaba vacía)
+        if rh.inspector_operacion_id is None and inspector_operacion_id:
+            self.core.actualizar_inspector_operacion_rh(
+                rh.id,
+                inspector_operacion_id,
+            )
+
+        resultado.inspector_operacion_id = inspector_operacion_id or (
+            str(rh.inspector_operacion_id) if rh.inspector_operacion_id else None
+        )
 
         return resultado
 
@@ -422,6 +835,10 @@ class RHInspectorMensualListFlujo:
         page: int = 1,
         page_size: int = 10,
         inspector_id: int | None = None,
+        inspector_cip: str | None = None,
+        periodo: int | None = None,
+        mes: int | None = None,
+        sin_paginacion: bool = False,
     ) -> tuple[list, int]:
         """
         Lista RecibosHonorariosInspectorMensuales con paginación.
@@ -430,6 +847,11 @@ class RHInspectorMensualListFlujo:
             page: Número de página (1-indexed).
             page_size: Elementos por página.
             inspector_id: Filter by inspector_id (already int, not UUID here).
+            inspector_cip: Filter by CIP del inspector.
+            periodo: Filter por año del periodo.
+            mes: Filter por mes (1-12).
+            sin_paginacion: Devuelve el conjunto completo filtrado en una sola
+                respuesta (sin paginación).
 
         Returns:
             Tuple (list of RHInspectorMensualListItemResult, total count).
@@ -445,6 +867,9 @@ class RHInspectorMensualListFlujo:
             page=page,
             page_size=page_size,
             inspector_id=inspector_id,
+            inspector_cip=inspector_cip,
+            periodo=periodo,
+            mes=mes,
         )
 
         results: list[RHInspectorMensualListItemResult] = [
@@ -544,6 +969,7 @@ class RHInspectorMensualListFlujo:
 
             detalles.append(
                 RHInspectorMensualDetalleResult(
+                    detalle_id=str(d.id),
                     expediente=expediente,
                     nombre_propietario=nombre_propietario,
                     distrito=distrito,
@@ -558,6 +984,9 @@ class RHInspectorMensualListFlujo:
                     descuento=d.descuento,
                     honorarios=d.honorarios,
                     liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(lg),
+                    numero_revision=(
+                        lg.numero_revision if hasattr(lg, "numero_revision") else None
+                    ),
                     comprobante_activo=_resolve_comprobante_activo(lg),
                     fecha_revision=fecha_revision,
                     fecha_presentacion=fecha_presentacion,
@@ -682,6 +1111,7 @@ class RHInspectorMensualListFlujo:
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
         )
+        _enriquecer_candidatas_inspector(candidatos_data)
 
         perfil = inspector.perfil_ingeniero
         candidatos = [
@@ -772,6 +1202,7 @@ class RHInspectorMensualListFlujo:
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
         )
+        _enriquecer_candidatas_inspector(candidatos_data)
 
         perfil = inspector.perfil_ingeniero
         items = [
@@ -806,10 +1237,12 @@ class RHInspectorMensualDeleteFlujo:
       Si no es el último, levanta HttpError 409.
     - Los RegistroPagoInspector con recibo_mensual_id == rh.id son eliminados
       (revierte el efecto de pago acumulado).
+    - Los marcadores de periodo (LiquidacionInspector.periodo / .mes) se
+      recalculan desde el ledger restante de cada IO afectada.
     - Los DetalleHonorarioInspector se eliminan en CASCADE por Django.
     - Los RegistroPagoInspector legacy con recibo_mensual=null NO son tocados.
-    - LiquidacionInspector NO es tocada (el saldo se recalcula dinámicamente
-      a partir de RegistroPagoInspector).
+    - LiquidacionInspector NO es eliminada (el saldo se recalcula dinámicamente
+      a partir de RegistroPagoInspector); solo se recalcula su marcador.
     """
 
     @inject
@@ -842,11 +1275,20 @@ class RHInspectorMensualDeleteFlujo:
                 f"El recibo con id '{rh_id}' no es el más reciente.",
             )
 
-        # 3. Eliminar RegistroPagoInspector vinculados (reversión de pago).
+        # 3. Recolectar las IO afectadas (antes de eliminar: el CASCADE borra
+        #    los DetalleHonorarioInspector).
+        lcv_ids = list(
+            rh.detalles.values_list("liquidacion_por_categoria_visitas_id", flat=True)
+        )
+
+        # 4. Eliminar RegistroPagoInspector vinculados (reversión de pago).
         #    Solo los que tienen recibo_mensual_id == rh.id — los null-FK quedan intactos.
         registros_pago = self.core.get_registros_pago_by_recibo_mensual(rh_id)
         for registro in registros_pago:
             self.core.delete_registro_pago_inspector(registro.id)
 
-        # 4. Eliminar el RH padre — CASCADE elimina DetalleHonorarioInspector
+        # 5. Recalcular los marcadores de periodo afectados desde el ledger restante.
+        self.core.recalcular_marcadores_periodo_inspector(lcv_ids)
+
+        # 6. Eliminar el RH padre — CASCADE elimina DetalleHonorarioInspector
         self.core.delete_rh_inspector_mensual(rh_id)

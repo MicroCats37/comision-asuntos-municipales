@@ -8,6 +8,9 @@ Payload structures match the actual API schemas:
 - PO (Edificaciones, Taludes, Impacto Vial): valor_declarado + tarifas[]
 - M2 (HU, MS): area_solicitada + tarifa_m2_id
 - IO (Inspección Obra): cantidad_visitas + categoria + tarifa_visitas_id
+- Legacy (los seis): los bloques de la ruta tipada
+  `POST /liquidaciones/{tipo}/nueva-liquidacion/legacy` — identidad histórica
+  (`numero` + `fecha_registro`) + bloque general + bloque del motor.
 """
 
 
@@ -775,3 +778,280 @@ def make_payload_po_relacionada_estrategia(
         ),
     }
     return payload
+
+
+# ── Legacy: identidad histórica + bloques por motor ─────────────────────────
+#
+# La ruta legacy (`POST /liquidaciones/{tipo}/nueva-liquidacion/legacy`) usa
+# el input COMPUESTO de
+# `presentation/schemas/liquidacion_legacy/legacy_registration_schemas.py`:
+#
+#   numero           ┐ identidad histórica (raíz del payload)
+#   fecha_registro   ┘
+#   liquidacion_general   → bloque general estricto
+#   liquidacion_especifica → bloque del motor estricto (PO / M2 / Visitas)
+#   numero_revision  → sólo en los tipos con revisión (NO en Inspección de Obra)
+#
+# El flag `legacy` NO viaja en el payload: la RUTA es el discriminador y el
+# servidor asigna `legacy=True`. Los totales SIEMPRE se calculan: no hay
+# totales manuales ni bypass (se rechazan con 422).
+
+
+def _legacy_fecha(fecha_registro):
+    """Normaliza la fecha de registro a texto ISO (YYYY-MM-DD)."""
+    if hasattr(fecha_registro, "isoformat"):
+        return fecha_registro.isoformat()
+    return str(fecha_registro)
+
+
+def make_legacy_identidad(numero, fecha_registro):
+    """Build the historical identity block of a legacy payload.
+
+    `numero` is informative and REPEATABLE (no uniqueness, no 409).
+    `fecha_registro` is mandatory: it governs the whole historical resolution.
+
+    Args:
+        numero: int — explicit historical number of the record.
+        fecha_registro: date | str — effective date of the record.
+
+    Returns:
+        dict with keys: numero, fecha_registro
+    """
+    return {
+        "numero": int(numero),
+        "fecha_registro": _legacy_fecha(fecha_registro),
+    }
+
+
+def make_legacy_general_payload(
+    municipalidad_id,
+    distrito_id,
+    *,
+    expediente="EXP-LEGACY-001",
+    observacion="Test registro legacy",
+    contacto=None,
+    denominacion_de_proyecto=None,
+    denominacion="Proyecto Test Legacy",
+):
+    """Build the strict general block (`LegacyGeneralIn`) of a legacy payload.
+
+    Mirrors `make_liquidacion_general_payload` (the current, non-strict block)
+    but WITHOUT any legacy-only seam (`fecha_registro`, `descripcion_legacy`,
+    `retencion`): those belong to the importer, not to the manual registration.
+
+    Args:
+        municipalidad_id: str — municipalidad.id
+        distrito_id: str — ubigeo_distrito.id
+        expediente: str
+        observacion: str
+        contacto: dict or None — contacto sub-dict
+        denominacion_de_proyecto: str or None
+        denominacion: str — project name
+
+    Returns:
+        dict — the `liquidacion_general` block.
+    """
+    proyecto = make_proyecto_payload(
+        distrito_id=distrito_id,
+        denominacion=denominacion,
+    )
+    return make_liquidacion_general_payload(
+        municipalidad_id=municipalidad_id,
+        expediente=expediente,
+        observacion=observacion,
+        proyecto=proyecto,
+        contacto=contacto,
+        denominacion_de_proyecto=denominacion_de_proyecto,
+    )
+
+
+def make_payload_legacy_po(
+    municipalidad_id,
+    distrito_id,
+    *,
+    numero,
+    fecha_registro,
+    valor_declarado=1000000.00,
+    expediente="EXP-LEGACY-PO-001",
+    observacion="Test registro legacy PO",
+    tarifas=None,
+    numero_revision=1,
+    tipo_tramite=None,
+):
+    """Build a complete legacy payload for a PorcentajeObra type.
+
+    Applies to Edificaciones, Taludes and Impacto Vial
+    (`POST /liquidaciones/{tipo}/nueva-liquidacion/legacy`).
+
+    `tarifas=None` sends an empty list → the backend auto-fills with the
+    tarifas and the specialties viable at `fecha_registro`.
+
+    Args:
+        municipalidad_id: str — municipalidad.id
+        distrito_id: str — ubigeo_distrito.id
+        numero: int — explicit historical number (repeatable).
+        fecha_registro: date | str — effective date of the record.
+        valor_declarado: float
+        expediente: str
+        observacion: str
+        tarifas: list or None — [{"tarifa_porcentaje_obra_id", "especialidad_id"}].
+        numero_revision: int — 1, 3 or 5.
+        tipo_tramite: str or None — only Edificaciones consumes it.
+
+    Returns:
+        dict with keys: numero, fecha_registro, liquidacion_general,
+            liquidacion_especifica, numero_revision
+    """
+    especifica = {
+        "datos": {"valor_declarado": float(valor_declarado)},
+        "tarifas": [] if tarifas is None else tarifas,
+    }
+    if tipo_tramite is not None:
+        especifica["tipo_tramite"] = tipo_tramite
+
+    return {
+        **make_legacy_identidad(numero, fecha_registro),
+        "liquidacion_general": make_legacy_general_payload(
+            municipalidad_id,
+            distrito_id,
+            expediente=expediente,
+            observacion=observacion,
+        ),
+        "liquidacion_especifica": especifica,
+        "numero_revision": numero_revision,
+    }
+
+
+def make_payload_legacy_m2(
+    municipalidad_id,
+    distrito_id,
+    tarifa_m2_id,
+    *,
+    numero,
+    fecha_registro,
+    area_solicitada=100.0,
+    expediente="EXP-LEGACY-M2-001",
+    observacion="Test registro legacy M2",
+    numero_revision=1,
+):
+    """Build a complete legacy payload for a Por Metro Cuadrado type.
+
+    Applies to Habilitación Urbana and Mecánica de Suelos
+    (`POST /liquidaciones/{tipo}/nueva-liquidacion/legacy`).
+
+    The `tarifa_m2_id` MUST be the one vigente at `fecha_registro`: the route
+    rejects (400) any other tariff.
+
+    Args:
+        municipalidad_id: str — municipalidad.id
+        distrito_id: str — ubigeo_distrito.id
+        tarifa_m2_id: str — TarifaPorMetroCuadrado.id
+        numero: int — explicit historical number (repeatable).
+        fecha_registro: date | str — effective date of the record.
+        area_solicitada: float
+        expediente: str
+        observacion: str
+        numero_revision: int — 1, 3 or 5.
+
+    Returns:
+        dict with keys: numero, fecha_registro, liquidacion_general,
+            liquidacion_especifica, numero_revision
+    """
+    return {
+        **make_legacy_identidad(numero, fecha_registro),
+        "liquidacion_general": make_legacy_general_payload(
+            municipalidad_id,
+            distrito_id,
+            expediente=expediente,
+            observacion=observacion,
+        ),
+        "liquidacion_especifica": {
+            "datos": {"area_solicitada": float(area_solicitada)},
+            "tarifa": {"tarifa_m2_id": str(tarifa_m2_id)},
+        },
+        "numero_revision": numero_revision,
+    }
+
+
+def make_payload_legacy_io(
+    municipalidad_id,
+    distrito_id,
+    tarifa_visitas_id,
+    *,
+    numero,
+    fecha_registro,
+    cantidad_visitas=3,
+    categoria=None,
+    expediente="EXP-LEGACY-IO-001",
+    observacion="Test registro legacy IO",
+):
+    """Build a complete legacy payload for Inspección de Obra.
+
+    `POST /liquidaciones/inspeccion-obra/nueva-liquidacion/legacy`.
+
+    IO is revision-less: the payload does NOT carry `numero_revision` (the
+    record is always revision 1). The legacy IO record is created WITHOUT a
+    previous liquidation and WITHOUT an inspector link.
+
+    Args:
+        municipalidad_id: str — municipalidad.id
+        distrito_id: str — ubigeo_distrito.id
+        tarifa_visitas_id: str — TarifaPorCategoriaVisitas.id
+        numero: int — explicit historical number (repeatable).
+        fecha_registro: date | str — effective date of the record.
+        cantidad_visitas: int
+        categoria: str or None — informative; the server derives it from the
+            tariff viable at `fecha_registro`.
+        expediente: str
+        observacion: str
+
+    Returns:
+        dict with keys: numero, fecha_registro, liquidacion_general,
+            liquidacion_especifica
+    """
+    datos = {"cantidad_visitas": cantidad_visitas}
+    if categoria is not None:
+        datos["categoria"] = categoria
+
+    return {
+        **make_legacy_identidad(numero, fecha_registro),
+        "liquidacion_general": make_legacy_general_payload(
+            municipalidad_id,
+            distrito_id,
+            expediente=expediente,
+            observacion=observacion,
+        ),
+        "liquidacion_especifica": {
+            "datos": datos,
+            "tarifa": {"tarifa_visitas_id": str(tarifa_visitas_id)},
+        },
+    }
+
+
+# ── Visitas: payload de cotización (preview) ─────────────────────────────────
+
+def make_payload_visitas_cotizar(tarifa_visitas_id, cantidad_visitas=3, categoria=None):
+    """Build a Visitas quote preview payload (no `liquidacion_general` needed).
+
+    Used by the legacy E2E flow: the same payload drives `/cotizar` (preview)
+    and, through `make_payload_legacy_io`, the legacy registration.
+
+    Args:
+        tarifa_visitas_id: str — TarifaPorCategoriaVisitas.id
+        cantidad_visitas: int
+        categoria: str or None — informative; the server derives it from the
+            tariff viable at the effective date.
+
+    Returns:
+        dict with key: liquidacion_especifica
+    """
+    datos = {"cantidad_visitas": int(cantidad_visitas)}
+    if categoria is not None:
+        datos["categoria"] = categoria
+
+    return {
+        "liquidacion_especifica": {
+            "datos": datos,
+            "tarifa": {"tarifa_visitas_id": str(tarifa_visitas_id)},
+        },
+    }

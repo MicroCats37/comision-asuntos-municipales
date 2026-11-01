@@ -208,8 +208,8 @@ class DelegadoCandidatasPaginatedResult(BaseModel):
     total_pages: int
 
 
-class DelegadoOperacionVigenteResult(BaseModel):
-    """Domain DTO for a single DelegadoOperacion vigencia entry."""
+class DelegadoOperacionResult(BaseModel):
+    """Domain DTO for a single DelegadoOperacion entry."""
     id: str
     municipalidad_id: str
     municipalidad_nombre: str
@@ -221,14 +221,15 @@ class DelegadoOperacionVigenteResult(BaseModel):
     tipo: str  # TITULAR or ALTERNO
     periodo_inicio: Optional[date] = None
     periodo_fin: Optional[date] = None
+    es_vigente: bool
 
 
-class DelegadoOperatividadesVigentesResult(BaseModel):
-    """Domain DTO for GET /delegados/operatividades-vigentes response."""
+class DelegadoOperatividadesResult(BaseModel):
+    """Domain DTO for GET /delegados/operatividades response."""
     delegado_id: str
     cip: str
     nombre_completo: str
-    operatividades: list[DelegadoOperacionVigenteResult]
+    operatividades: list[DelegadoOperacionResult]
 
 
 class EspecialidadesRevisionResult(BaseModel):

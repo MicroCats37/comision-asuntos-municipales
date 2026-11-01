@@ -1,12 +1,14 @@
 /**
- * Hooks para cotización y creación de RH Mensual de Delegado.
+ * Hooks para cotización, creación y sincronización (PATCH) de RH Mensual de Delegado.
  * Endpoints:
- *   POST /finanzas/recibos-delegados/cotizar
- *   POST /finanzas/recibos-delegados/crear
+ *   POST  /finanzas/recibos-delegados/cotizar
+ *   POST  /finanzas/recibos-delegados/crear
+ *   PATCH /finanzas/recibos-delegados/{rh_id}
  */
 import { useQueryClient } from "@tanstack/react-query";
-import { useApiCreate } from "@/hooks";
+import { useApiCreate, useApiUpdate } from "@/hooks";
 import type {
+  RHDelegadoActualizarIn,
   RHDelegadoCotizar,
   RHDelegadoCotizarIn,
 } from "../schemas/rh-delegado-mensual.schema";
@@ -61,5 +63,34 @@ export function useCrearRHDelegado() {
   return {
     ...mutation,
     crear: mutation.mutateAsync,
+  };
+}
+
+/**
+ * Sincroniza el conjunto final de detalles de un RH mensual de delegado.
+ *
+ * El `items` del payload ES el conjunto final: las filas con `detalle_id` se
+ * conservan, las que no lo tienen se agregan y las persistidas ausentes se
+ * retiran. La metadata compartida de la asignación nunca se modifica.
+ */
+export function useActualizarRHDelegado(rhId: string) {
+  const queryClient = useQueryClient();
+
+  const mutation = useApiUpdate<CrearResponseType, RHDelegadoActualizarIn>({
+    url: `/finanzas/recibos-delegados/${rhId}`,
+    method: "PATCH",
+    schema: crearResponseSchema,
+    options: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["finanzas", "recibos-delegados"],
+        });
+      },
+    },
+  });
+
+  return {
+    ...mutation,
+    actualizar: mutation.mutateAsync,
   };
 }

@@ -85,6 +85,9 @@ class InspectorVigenteFormResult(BaseModel):
     categoria: Optional[str] = None
     numero_registro: str
     vigencia: Optional[str] = None
+    periodo_inicio: Optional[date] = None
+    periodo_fin: Optional[date] = None
+    es_vigente: bool
     inspector_operacion_id: str
 
 

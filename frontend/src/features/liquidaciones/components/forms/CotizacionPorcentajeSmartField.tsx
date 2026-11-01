@@ -26,6 +26,7 @@ import { Calculator, Info, Layers, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useWatch } from "react-hook-form";
+import { getErrorMessage } from "@/errors";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import { useLatestRequestGuard } from "@/hooks/system/useLatestRequestGuard";
 import api from "@/lib/api";
@@ -51,8 +52,9 @@ interface CotizacionPorcentajeSmartFieldProps {
   /** Liquidation type path segment for quote endpoints. */
   tipo?: string;
   /** Edit mode calls /{id}/cotizar-edicion and sends liquidacion_tipo. */
-  mode?: "create" | "edit";
+  mode?: "create" | "legacy" | "edit";
   liquidacionId?: string;
+  fecha?: string;
   /** Fixed declared value used when the value is inherited instead of form-owned. */
   valorDeclaradoFijo?: number;
   /**
@@ -90,6 +92,7 @@ export function CotizacionPorcentajeSmartField({
   tipo = "edificaciones",
   mode = "create",
   liquidacionId,
+  fecha,
   valorDeclaradoFijo,
   hasTipoTramite = false,
   soportaEstrategia = false,
@@ -97,6 +100,11 @@ export function CotizacionPorcentajeSmartField({
   const [quote, setQuote] = useState<CotizacionOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requestGuard = useLatestRequestGuard();
+  const fechaRegistro = useWatch({
+    control: methods.control,
+    name: "fecha_registro",
+  }) as string | undefined;
+  const fechaEfectiva = fecha ?? fechaRegistro;
 
   const cotizacionMutation = useMutation({
     mutationFn: async (payload: {
@@ -132,10 +140,14 @@ export function CotizacionPorcentajeSmartField({
             tarifas,
           };
 
-      const endpoint =
+      const endpointBase =
         mode === "edit" && liquidacionId
           ? `/liquidaciones/${tipo}/${liquidacionId}/cotizar-edicion`
           : `/liquidaciones/${tipo}/cotizar`;
+      const endpoint =
+        mode !== "edit" && fechaEfectiva
+          ? `${endpointBase}?fecha=${encodeURIComponent(fechaEfectiva)}`
+          : endpointBase;
 
       const body =
         mode === "edit"
@@ -155,9 +167,7 @@ export function CotizacionPorcentajeSmartField({
     onError: (err, variables) => {
       if (!requestGuard.isLatest(variables.requestId)) return;
       setQuote(null);
-      setError(
-        err instanceof Error ? err.message : "Error al calcular cotización",
-      );
+      setError(getErrorMessage(err) || "Error al calcular cotización");
     },
   });
 
@@ -219,6 +229,7 @@ export function CotizacionPorcentajeSmartField({
       valorActivo <= 0 ||
       !tarifaId ||
       espIds.length === 0 ||
+      (mode === "legacy" && !fechaEfectiva) ||
       (mode === "edit" && !liquidacionId)
     ) {
       requestGuard.invalidate();
@@ -251,6 +262,7 @@ export function CotizacionPorcentajeSmartField({
     tipoTramite,
     mode,
     liquidacionId,
+    fechaEfectiva,
     cotizacionMutation.mutate,
     requestGuard,
   ]);
@@ -282,7 +294,9 @@ export function CotizacionPorcentajeSmartField({
 
   // IGV derivado por RESTA de los dos totales que devuelve el backend:
   // no se recalcula la fórmula de cotización en el frontend.
-  const igv = quote ? toNumber(quote.total) - toNumber(quote.total_subtotal) : 0;
+  const igv = quote
+    ? toNumber(quote.total) - toNumber(quote.total_subtotal)
+    : 0;
   return (
     <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/[0.03] p-4 shadow-sm">
       <div className="flex items-center gap-2">

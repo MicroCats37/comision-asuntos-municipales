@@ -90,6 +90,9 @@ from modules.liquidaciones.domain.services.flujos.inspectores_batch_flujo import
 from modules.liquidaciones.presentation.presenters.inspector_presenter import (
     InspectorPresenter,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_historico_core_service import (
+    LiquidacionHistoricoCoreService,
+)
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.tarifas_historicas_core_service import (
     TarifasHistoricasCoreService,
 )
@@ -229,6 +232,9 @@ class LiquidacionesModule(Module):
 
         # Presenters — Inspector
         binder.bind(InspectorPresenter, to=InspectorPresenter)
+
+        # Core — Resolver Histórico Canónico
+        binder.bind(LiquidacionHistoricoCoreService, to=LiquidacionHistoricoCoreService)
 
         # Core — Tarifas Historicas
         binder.bind(TarifasHistoricasCoreService, to=TarifasHistoricasCoreService)

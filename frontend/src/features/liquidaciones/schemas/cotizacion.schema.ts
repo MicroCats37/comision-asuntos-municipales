@@ -34,7 +34,7 @@ export type CotizacionAcumulacion = z.infer<typeof CotizacionAcumulacionSchema>;
 /**
  * Output de cotización (PorcentajeObra).
  *
- * Los campos de estrategia (`estrategia_cotizacion`, `count_habilitadas`,
+ * Los campos de estrategia (`estrategia_cotizacion`, `cantidad_especialidades_habilitadas`,
  * `total_explicito`, `porcentaje_tarifa`, `acumulacion`) SOLO llegan en
  * Edificaciones: el resto de motores PO no exponen campos de estrategia y los
  * declaramos opcionales para no romper su contrato.
@@ -47,7 +47,7 @@ export const CotizacionOutputSchema = z.object({
   porcentaje_minimo_uit: num().nullish(),
   derecho_aplicado_id: z.string().nullish(),
   estrategia_cotizacion: z.string().nullish(),
-  count_habilitadas: z.number().int().nullish(),
+  cantidad_especialidades_habilitadas: z.number().int().nullish(),
   total_explicito: num().nullish(),
   porcentaje_tarifa: num().nullish(),
   acumulacion: CotizacionAcumulacionSchema.nullish(),

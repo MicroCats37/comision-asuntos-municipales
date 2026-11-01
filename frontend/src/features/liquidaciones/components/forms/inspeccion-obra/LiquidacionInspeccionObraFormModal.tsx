@@ -20,7 +20,6 @@ import { FilePenLine, FileText, Link2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { IncrementerInput } from "@/components/genericForm/inputs/IncrementerInput";
-import { notify } from "@/errors";
 import {
   composeDetalleSections,
   LiquidacionDetalleInspeccionObraSection,
@@ -36,11 +35,13 @@ import type { LiquidacionInspeccionObraListItem } from "../../../schemas/liquida
 import {
   type VisitasFormData,
   visitasFormSchema,
+  visitasLegacyFormSchema,
 } from "../../../schemas/liquidacion-visitas-form.schema";
 import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
 import { formatPublicId } from "../../../utils/formatPublicId";
 import { getLiquidacionTipoInfo } from "../../../utils/liquidacionTipoInfo";
+import { BuscarInspectorPorCipModal } from "../BuscarInspectorPorCipModal";
 import { LiquidacionFormBodyBase } from "../LiquidacionFormBodyBase";
 import { LiquidacionFormShell } from "../LiquidacionFormShell";
 import { SeleccionarInspectorModal } from "../SeleccionarInspectorModal";
@@ -55,6 +56,7 @@ interface BaseProps {
 }
 
 type CreateProps = BaseProps & { mode: "create" };
+type LegacyProps = BaseProps & { mode: "legacy" };
 type EditProps = BaseProps & {
   mode: "edit";
   item: LiquidacionInspeccionObraListItem;
@@ -69,6 +71,7 @@ type RelacionadaProps = BaseProps & {
 
 export type LiquidacionInspeccionObraFormModalProps =
   | CreateProps
+  | LegacyProps
   | EditProps
   | RelacionadaProps;
 
@@ -152,7 +155,9 @@ export function LiquidacionInspeccionObraFormModal(
   const [inspectorNombre, setInspectorNombre] = useState("");
 
   // ── Hooks ──────────────────────────────────────────────────────────
-  const crearMutation = useCrearInspeccionObra();
+  const crearMutation = useCrearInspeccionObra(
+    mode === "legacy" ? "legacy" : "create",
+  );
   const editarMutation = useEditarInspeccionObra(
     mode === "edit" ? props.item.liquidacion_general.id : "",
   );
@@ -197,6 +202,8 @@ export function LiquidacionInspeccionObraFormModal(
     switch (mode) {
       case "create":
         return "Nueva Liquidación";
+      case "legacy":
+        return "Registro Legacy";
       case "edit":
         return "Editar Liquidación";
       case "relacionada":
@@ -208,6 +215,8 @@ export function LiquidacionInspeccionObraFormModal(
     switch (mode) {
       case "create":
         return "Crear Liquidación";
+      case "legacy":
+        return "Registrar Legacy";
       case "edit":
         return "Guardar cambios";
       case "relacionada":
@@ -218,7 +227,7 @@ export function LiquidacionInspeccionObraFormModal(
   const primaryLoadingLabel = mode === "edit" ? "Guardando..." : "Creando...";
 
   const primaryLoading =
-    mode === "create"
+    mode === "create" || mode === "legacy"
       ? crearMutation.isPending
       : mode === "edit"
         ? editarMutation.isPending
@@ -234,10 +243,10 @@ export function LiquidacionInspeccionObraFormModal(
 
   const computeCanEditProyecto = useCallback(
     (
-      m: "create" | "edit" | "nueva-revision" | "relacionada",
+      m: "create" | "legacy" | "edit" | "nueva-revision" | "relacionada",
       item: typeof sourceItem,
     ): boolean => {
-      if (m === "create") return true;
+      if (m === "create" || m === "legacy") return true;
       if (m === "relacionada") return true;
       if (m === "edit" && item) {
         return canEditLiquidacion(item.liquidacion_general).canEditProyecto;
@@ -288,6 +297,7 @@ export function LiquidacionInspeccionObraFormModal(
           methods={methods}
           inspectorNombre={inspectorNombre}
           onOpenInspector={() => setInspectorModalOpen(true)}
+          legacy={mode === "legacy"}
         />
       );
 
@@ -311,53 +321,71 @@ export function LiquidacionInspeccionObraFormModal(
             // liquidación permanece fija en revisión 1.
             showRevisionField={false}
           />
-          {/* Modal inspector — sibling del body, solo IO */}
-          <SeleccionarInspectorModal
-            open={inspectorModalOpen}
-            onOpenChange={setInspectorModalOpen}
-            tiposLiquidacion={tipos}
-            tipoLiquidacionId={tipoLiquidacionIdSeleccionable}
-            // En relacionada el tipo de liquidación es fijo (heredado de la previa).
-            // En create/edit se muestra selector porque IO necesita filtrar por
-            // EDIFICACION o HABILITACION_URBANA, no por INSPECCION_OBRA.
-            fallbackTipoLiquidacionCodigo={
-              mode === "create" || mode === "edit"
-                ? null
-                : ((
-                    sourceItem?.liquidacion_general as {
-                      tipo_liquidacion?: { codigo?: string };
-                    }
-                  )?.tipo_liquidacion?.codigo ?? null)
-            }
-            // Pasar onTipoLiquidacionChange hace visible el selector de tipo.
-            // Create y edit deben poder elegir EDIFICACION/HU para filtrar inspector.
-            {...(mode === "create" || mode === "edit"
-              ? {
-                  onTipoLiquidacionChange: (id: string) => {
-                    methods.setValue("tipo_liquidacion_id", id, {
-                      shouldValidate: false,
-                    });
-                    // Reset inspector selection when tipo changes — the inspector list
-                    // will be different for the new tipo, so the old selection is invalid.
-                    methods.setValue("inspector_id", "", {
-                      shouldValidate: false,
-                    });
-                    methods.setValue("inspector_operacion_id", "", {
-                      shouldValidate: false,
-                    });
-                    setInspectorNombre("");
+          {/* La búsqueda histórica conserva la misma operación seleccionada. */}
+          {mode === "legacy" ? (
+            <BuscarInspectorPorCipModal
+              open={inspectorModalOpen}
+              onOpenChange={setInspectorModalOpen}
+              selectedOperacionId={
+                methods.watch("inspector_operacion_id") || undefined
+              }
+              onSelect={(id, nombre, inspectorOperacionId) => {
+                methods.setValue("inspector_id", id, { shouldValidate: false });
+                methods.setValue(
+                  "inspector_operacion_id",
+                  inspectorOperacionId,
+                  {
+                    shouldValidate: false,
                   },
-                }
-              : {})}
-            selectedId={methods.watch("inspector_id") || undefined}
-            onSelect={(id, nombre, inspectorOperacionId) => {
-              methods.setValue("inspector_id", id, { shouldValidate: false });
-              methods.setValue("inspector_operacion_id", inspectorOperacionId, {
-                shouldValidate: false,
-              });
-              setInspectorNombre(nombre);
-            }}
-          />
+                );
+                setInspectorNombre(nombre);
+              }}
+            />
+          ) : (
+            <SeleccionarInspectorModal
+              open={inspectorModalOpen}
+              onOpenChange={setInspectorModalOpen}
+              tiposLiquidacion={tipos}
+              tipoLiquidacionId={tipoLiquidacionIdSeleccionable}
+              fallbackTipoLiquidacionCodigo={
+                mode === "create" || mode === "edit"
+                  ? null
+                  : ((
+                      sourceItem?.liquidacion_general as {
+                        tipo_liquidacion?: { codigo?: string };
+                      }
+                    )?.tipo_liquidacion?.codigo ?? null)
+              }
+              {...(mode === "create" || mode === "edit"
+                ? {
+                    onTipoLiquidacionChange: (id: string) => {
+                      methods.setValue("tipo_liquidacion_id", id, {
+                        shouldValidate: false,
+                      });
+                      methods.setValue("inspector_id", "", {
+                        shouldValidate: false,
+                      });
+                      methods.setValue("inspector_operacion_id", "", {
+                        shouldValidate: false,
+                      });
+                      setInspectorNombre("");
+                    },
+                  }
+                : {})}
+              selectedId={methods.watch("inspector_id") || undefined}
+              onSelect={(id, nombre, inspectorOperacionId) => {
+                methods.setValue("inspector_id", id, {
+                  shouldValidate: false,
+                });
+                methods.setValue(
+                  "inspector_operacion_id",
+                  inspectorOperacionId,
+                  { shouldValidate: false },
+                );
+                setInspectorNombre(nombre);
+              }}
+            />
+          )}
         </>
       );
     },
@@ -365,7 +393,9 @@ export function LiquidacionInspeccionObraFormModal(
   );
 
   const initialData: Partial<VisitasFormData> = (() => {
-    if (mode === "create") return { cantidad_visitas: 1 };
+    if (mode === "create" || mode === "legacy") {
+      return { cantidad_visitas: 1 };
+    }
     if (sourceItem) {
       return buildInitialData(sourceItem, {
         skipSmartFieldDefaults: mode === "relacionada",
@@ -385,7 +415,6 @@ export function LiquidacionInspeccionObraFormModal(
   const onSubmitEdit = useCallback(
     async (data: VisitasFormData) => {
       const result = await editarMutation.mutateAsync(data);
-      notify.success("Liquidación editada correctamente");
       return result;
     },
     [editarMutation],
@@ -437,7 +466,7 @@ export function LiquidacionInspeccionObraFormModal(
         onSuccess={onSuccess}
         mode={mode}
         sourceItem={sourceItem}
-        schema={visitasFormSchema}
+        schema={mode === "legacy" ? visitasLegacyFormSchema : visitasFormSchema}
         initialData={initialData}
         eyebrow="Inspección de Obra"
         icon={icon}

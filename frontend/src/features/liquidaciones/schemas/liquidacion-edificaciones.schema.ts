@@ -23,7 +23,7 @@ export const estrategiaCotizacionPOOutSchema = z.object({
   /** Estrategia persistida: NORMAL_SELECCIONADAS, TARIFA_HABILITADAS_PARTICIPANTES o TOTAL_EXPLICITO. */
   estrategia_cotizacion: z.string().nullish(),
   /** Snapshot de H (habilitadas del catálogo en la fecha efectiva). */
-  count_habilitadas: z.number().int().nullish(),
+  cantidad_especialidades_habilitadas: z.number().int().nullish(),
   /** Total final autoritativo persistido (TOTAL_EXPLICITO). */
   total_explicito: num().nullish(),
   /** Snapshot del porcentaje unitario (f) de la tarifa aplicada. */

@@ -11,11 +11,14 @@
  * login de Mesa de Partes) — excluye INSPECCION_OBRA. Por defecto se activa
  * EDIFICACION al primer mount. El resto de filtros secundarios vive en el
  * modal de filtros y cada chip activo puede eliminarse individualmente.
+ *
+ * La exportación a Excel vive en un modal aparte (2 pasos) y no altera la
+ * paginación de esta tabla.
  */
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Eye, Filter, RefreshCw, User, X } from "lucide-react";
+import { Eye, FileSpreadsheet, Filter, RefreshCw, User, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import { FilterChip } from "@/components/ui/active-filters";
@@ -23,6 +26,10 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { RHDetalleVerDetalleModal } from "@/features/finanzas/components/detail/RHDetalleVerDetalleModal";
 import { RHDetalleDelegadosFiltroModal } from "@/features/finanzas/components/filtros";
+import {
+  RH_DETALLE_TIPOS_LIQUIDACION,
+  RHDetalleExcelModal,
+} from "@/features/finanzas/components/modals/RHDetalleExcelModal";
 import { RHDetalleDelegadosTable } from "@/features/finanzas/components/tables/RHDetalleDelegadosTable";
 import type {
   DetalleDelegadoRow,
@@ -41,18 +48,13 @@ const KIND_ICON: LucideIcon = User;
  * ese flujo es exclusivo de inspectores, no de delegados).
  * El orden define el índice para el sliding indicator del segmented control.
  */
-const TIPOS_LIQUIDACION_TABS: Array<{ codigo: string; label: string }> = [
-  { codigo: "EDIFICACION", label: "Edificación" },
-  { codigo: "HABILITACION_URBANA", label: "Habilitación Urbana" },
-  { codigo: "MECANICA_SUELOS", label: "Mecánica de Suelos" },
-  { codigo: "IMPACTO_VIAL", label: "Impacto Vial" },
-  { codigo: "TALUDES", label: "Taludes" },
-];
+const TIPOS_LIQUIDACION_TABS = RH_DETALLE_TIPOS_LIQUIDACION;
 
 const DEFAULT_TIPO_CODIGO = TIPOS_LIQUIDACION_TABS[0].codigo;
 
 export function RHDetalleDelegadosView() {
   const [filtroModalOpen, setFiltroModalOpen] = useState(false);
+  const [excelModalOpen, setExcelModalOpen] = useState(false);
   const [verDetalleId, setVerDetalleId] = useState<string | null>(null);
 
   const { page, pageSize, setPage, setPageSize } = useUrlPagination();
@@ -154,19 +156,29 @@ export function RHDetalleDelegadosView() {
           description="Listado de filas detalle de recibos de honorarios de delegados"
           icon={KIND_ICON}
           actionNodes={
-            <Button
-              variant={hasActiveFilters ? "default" : "outline"}
-              className="gap-2 h-11 rounded-xl font-bold shrink-0"
-              onClick={() => setFiltroModalOpen(true)}
-            >
-              <Filter className="h-4 w-4" />
-              Filtros
-              {hasActiveFilters && (
-                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-foreground/20 text-xs font-bold">
-                  {activeFilterCount}
-                </span>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="gap-2 h-11 rounded-xl font-bold shrink-0"
+                onClick={() => setExcelModalOpen(true)}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Exportar Excel
+              </Button>
+              <Button
+                variant={hasActiveFilters ? "default" : "outline"}
+                className="gap-2 h-11 rounded-xl font-bold shrink-0"
+                onClick={() => setFiltroModalOpen(true)}
+              >
+                <Filter className="h-4 w-4" />
+                Filtros
+                {hasActiveFilters && (
+                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-foreground/20 text-xs font-bold">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            </div>
           }
         />
 
@@ -341,6 +353,13 @@ export function RHDetalleDelegadosView() {
         onOpenChange={(open) => {
           if (!open) setVerDetalleId(null);
         }}
+      />
+
+      {/* Exportador a Excel (2 pasos: filtros → registros completos) */}
+      <RHDetalleExcelModal
+        open={excelModalOpen}
+        onOpenChange={setExcelModalOpen}
+        variante="delegados"
       />
 
       <RHDetalleDelegadosFiltroModal

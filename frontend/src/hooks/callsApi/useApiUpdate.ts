@@ -6,7 +6,12 @@ import {
 } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import type { ZodType } from "zod";
-import { handleApiError, notify } from "@/errors";
+import {
+  extractSuccessMessage,
+  handleApiError,
+  notify,
+  recordSuccessMessage,
+} from "@/errors";
 import api from "@/lib/api";
 import { buildApiPayload } from "@/utils";
 
@@ -106,7 +111,8 @@ export function useApiUpdate<TData, TVariables>(
         try {
           const payload = buildApiPayload(variables);
           const response = await api.request({ url, method, data: payload });
-          const message = response.data?.message;
+          const message = extractSuccessMessage(response.data);
+          recordSuccessMessage(message);
           if (showToast && message) {
             notify.success(message);
           }
@@ -141,7 +147,8 @@ export function useApiUpdate<TData, TVariables>(
           method,
           data: payload,
         });
-        const message = response.data?.message;
+        const message = extractSuccessMessage(response.data);
+        recordSuccessMessage(message);
         if (showToast && message) {
           notify.success(message);
         }

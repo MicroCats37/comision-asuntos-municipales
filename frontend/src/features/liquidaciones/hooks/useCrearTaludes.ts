@@ -18,14 +18,19 @@ const LIST_KEY = ["liquidaciones", "taludes"] as const;
  * `LiquidacionTaludesInput` = `NumeroRevisionRequeridoMixin` + wrappers):
  * es obligatorio y lo elige el usuario.
  */
-export function buildCrearTaludesPayload(payload: TaludesFormData) {
+export function buildCrearTaludesPayload(
+  payload: TaludesFormData,
+  legacy = false,
+) {
   const {
     tarifa_unica_id,
     especialidades_seleccionadas,
     numero_revision,
+    numero,
+    fecha_registro,
     ...rest
   } = payload;
-  return {
+  const apiPayload = {
     numero_revision,
     liquidacion_general: {
       municipalidad_id: rest.municipalidad_id,
@@ -55,16 +60,17 @@ export function buildCrearTaludesPayload(payload: TaludesFormData) {
       })),
     },
   };
+  return legacy ? { ...apiPayload, numero, fecha_registro } : apiPayload;
 }
 
-export function useCrearTaludes() {
+export function useCrearTaludes(mode: "create" | "legacy" = "create") {
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_general: unknown;
     liquidacion_especifica: unknown;
     numero_revision: number;
   }>({
     tipoQueryKey: LIST_KEY,
-    url: `${BASE_URL}/nueva-liquidacion/primera-revision`,
+    url: `${BASE_URL}/nueva-liquidacion/${mode === "legacy" ? "legacy" : "primera-revision"}`,
   });
 
   // Wrapper that formats payload as { liquidacion_general, liquidacion_especifica } for the API
@@ -72,13 +78,15 @@ export function useCrearTaludes() {
     () => ({
       ...mutation,
       mutate: (payload: TaludesFormData) => {
-        mutation.mutate(buildCrearTaludesPayload(payload));
+        mutation.mutate(buildCrearTaludesPayload(payload, mode === "legacy"));
       },
       mutateAsync: async (payload: TaludesFormData) => {
-        return mutation.mutateAsync(buildCrearTaludesPayload(payload));
+        return mutation.mutateAsync(
+          buildCrearTaludesPayload(payload, mode === "legacy"),
+        );
       },
     }),
-    [mutation],
+    [mode, mutation],
   );
 
   return crearMutation;

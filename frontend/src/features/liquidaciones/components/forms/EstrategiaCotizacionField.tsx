@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, Settings2 } from "lucide-react";
+import { Calculator, Info, Landmark, Settings2 } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 import { useWatch } from "react-hook-form";
 import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
@@ -160,6 +160,7 @@ export function EstrategiaValorField({
         <MoneyInput
           name="valor_declarado"
           label="Valor de la obra (S/)"
+          icon={Landmark}
           placeholder="S/ 0.00"
           control={methods.control}
           required
@@ -169,6 +170,7 @@ export function EstrategiaValorField({
         <MoneyInput
           name="total_explicito"
           label="Total final (S/)"
+          icon={Calculator}
           placeholder="S/ 0.00"
           control={methods.control}
           required
@@ -183,6 +185,7 @@ export function EstrategiaValorField({
     <MoneyInput
       name="valor_declarado"
       label="Valor Declarado (S/)"
+      icon={Landmark}
       placeholder="S/ 0.00"
       control={methods.control}
       required

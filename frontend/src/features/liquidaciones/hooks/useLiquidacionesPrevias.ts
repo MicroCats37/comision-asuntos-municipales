@@ -86,6 +86,10 @@ interface UseLiquidacionesPreviasProps {
   direccion?: string;
   /** Filter by proyecto nombre propietario (icontains) */
   nombrePropietario?: string;
+  /** Filter by municipalidad ID */
+  municipalidadId?: string;
+  /** Filter by proyecto distrito ID */
+  distritoId?: string;
 }
 
 export function useLiquidacionesPrevias({
@@ -99,6 +103,8 @@ export function useLiquidacionesPrevias({
   expediente,
   direccion,
   nombrePropietario,
+  municipalidadId,
+  distritoId,
 }: UseLiquidacionesPreviasProps = {}) {
   const params = new URLSearchParams();
   params.set("page", String(page));
@@ -110,6 +116,8 @@ export function useLiquidacionesPrevias({
   if (expediente) params.set("expediente", expediente);
   if (direccion) params.set("direccion", direccion);
   if (nombrePropietario) params.set("nombre_propietario", nombrePropietario);
+  if (municipalidadId) params.set("entidad_id", municipalidadId);
+  if (distritoId) params.set("distrito_id", distritoId);
 
   const queryString = params.toString();
   const endpoint = getLiquidacionesPreviasEndpoint(tipoLiquidacion);
@@ -127,6 +135,8 @@ export function useLiquidacionesPrevias({
       expediente,
       direccion,
       nombrePropietario,
+      municipalidadId,
+      distritoId,
     ],
     url: `${endpoint ?? "/liquidaciones/edificaciones/"}?${queryString}`,
     schema: paginatedSchema,

@@ -5,6 +5,7 @@ NO business logic. Only parses input, calls orchestrator, maps via presenter.
 """
 import uuid
 from datetime import date
+from typing import Optional
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import AllowAny
 from injector import inject
@@ -42,6 +43,12 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_cotizar_edicion_schemas import (
     CotizarEdicionM2WrapperIn,
 )
+from modules.liquidaciones.presentation.schemas.liquidacion_legacy.legacy_registration_schemas import (
+    LiquidacionMecanicaSuelosLegacyInput,
+)
+from modules.liquidaciones.domain.schemas.liquidacion_legacy.legacy_registro_data import (
+    LegacyRegistroContexto,
+)
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.m2_edge_schemas import (
     M2EdgeIn,
 )
@@ -70,11 +77,18 @@ class LiquidacionMecanicaSuelosController:
         "/tarifas/vigentes",
         response={200: ApiResponse[TarifasVigentesPorMetroCuadradoOutputSchema]},
     )
-    def get_tarifas_vigentes(self):
+    def get_tarifas_vigentes(
+        self,
+        fecha: Optional[date] = Query(
+            default=None,
+            description="Optional date to get vigentes at that date (YYYY-MM-DD). If omitted, returns current vigentes.",
+        ),
+    ):
         """
-        Get the currently active tariff and derecho for Mecánica de Suelos.
+        Get the currently active (or historical at fecha) tariff and derecho for
+        Mecánica de Suelos.
         """
-        tarifa, derecho = self.cotizar_orchestrator.obtener_tarifas_vigentes_proceso()
+        tarifa, derecho = self.cotizar_orchestrator.obtener_tarifas_vigentes_proceso(fecha=fecha)
 
         result = self.m2_presenter.present_tarifas_vigentes(tarifa=tarifa, derecho=derecho)
         return success_response(result)
@@ -88,6 +102,7 @@ class LiquidacionMecanicaSuelosController:
         page: int = Query(default=1, ge=1),
         page_size: int = Query(default=10, ge=1, le=100),
         entidad_id: uuid.UUID = Query(default=None, description="Filter by municipalidad ID"),
+        distrito_id: uuid.UUID = Query(default=None, description="Filter by proyecto distrito ID"),
         propietario: str = Query(default=None, description="Filter by propietario name (icontains)"),
         fecha_desde: date = Query(default=None, description="Filter by fecha_registro >= date"),
         fecha_hasta: date = Query(default=None, description="Filter by fecha_registro <= date"),
@@ -106,6 +121,7 @@ class LiquidacionMecanicaSuelosController:
             page=page,
             page_size=page_size,
             municipalidad_id=entidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creado_por,
@@ -189,6 +205,35 @@ class LiquidacionMecanicaSuelosController:
         return success_response(result, message="Liquidación de mecánica de suelos creada correctamente.")
 
     @route.post(
+        "/nueva-liquidacion/legacy",
+        response={200: ApiResponse[LiquidacionMecanicaSuelosOutput]},
+    )
+    def crear_registro_legacy(self, request, payload: LiquidacionMecanicaSuelosLegacyInput):
+        """
+        Registro MANUAL de una liquidación histórica de Mecánica de Suelos.
+
+        La ruta es el discriminador: el servidor asigna `legacy=True` y el
+        cliente nunca envía el flag. El `numero` es explícito e informativo
+        (puede repetirse) y `fecha_registro` gobierna TODA la resolución
+        histórica. Los totales SIEMPRE se calculan.
+        """
+        usuario_id = self.auth_core_service.get_authenticated_user_id(request)
+
+        registro_legacy = LegacyRegistroContexto(
+            numero=payload.numero,
+            fecha_registro=payload.fecha_registro,
+        )
+
+        domain_result = self.cotizar_orchestrator.crear_primera_revision_proceso(
+            usuario_id=usuario_id,
+            payload_in=payload,
+            registro_legacy=registro_legacy,
+        )
+
+        result = self.presenter.present_primera_revision(domain_result)
+        return success_response(result, message="Registro legacy de mecánica de suelos creado correctamente.")
+
+    @route.post(
         "/nueva-revision",
         response={200: ApiResponse[LiquidacionMecanicaSuelosOutput]},
     )
@@ -234,9 +279,20 @@ class LiquidacionMecanicaSuelosController:
         "/cotizar",
         response={200: ApiResponse[CotizarPorMetroCuadradoOutputSchema]},
     )
-    def cotizar(self, payload: CotizarPorMetroCuadradoInputSchema):
+    def cotizar(
+        self,
+        payload: CotizarPorMetroCuadradoInputSchema,
+        fecha: Optional[date] = Query(
+            default=None,
+            description="Optional effective date to quote at (YYYY-MM-DD). If omitted, quotes today.",
+        ),
+    ):
         """
         Calculates a quote for Mecánica de Suelos liquidacion.
+
+        `fecha` es la fecha efectiva OPCIONAL del preview: sin ella el
+        comportamiento es el vigente (hoy); con ella, IGV, UIT, tarifa M2 y
+        derecho se resuelven a esa fecha (modo legacy).
         """
         le = payload.liquidacion_especifica
         area_solicitada = le.datos.area_solicitada
@@ -245,6 +301,7 @@ class LiquidacionMecanicaSuelosController:
         result = self.cotizar_orchestrator.cotizar_proceso(
             area_solicitada=area_solicitada,
             tarifa_m2_id=str(tarifa_m2_id),
+            fecha=fecha,
         )
 
         return success_response(self.m2_presenter.present_cotizacion(result))

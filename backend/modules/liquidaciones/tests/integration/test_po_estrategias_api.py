@@ -154,7 +154,7 @@ def test_preview_normal_seleccionadas_conserva_el_contrato_vigente(
     data = response.json()["data"]
 
     assert data["estrategia_cotizacion"] == NORMAL
-    assert data["count_habilitadas"] == H_CATALOGO
+    assert data["cantidad_especialidades_habilitadas"] == H_CATALOGO
     assert _dec(data["porcentaje_tarifa"]) == pytest.approx(Decimal("0.0005"))
     assert _dec(data["valor_declarado"]) == pytest.approx(Decimal("1000000.0"))
     assert _dec(data["porcentaje_liquidacion"]) == pytest.approx(Decimal("0.0010"))
@@ -193,7 +193,7 @@ def test_preview_tarifa_habilitadas_participantes_cobra_H_y_proyecta_acumulacion
     data = response.json()["data"]
 
     assert data["estrategia_cotizacion"] == HABILITADAS
-    assert data["count_habilitadas"] == H_CATALOGO
+    assert data["cantidad_especialidades_habilitadas"] == H_CATALOGO
     assert _dec(data["porcentaje_liquidacion"]) == pytest.approx(Decimal("0.0015"))
     assert _dec(data["total_subtotal"]) == pytest.approx(Decimal("1500.0"))
     assert _dec(data["total"]) == pytest.approx(Decimal("1770.0"))
@@ -351,7 +351,7 @@ def test_preview_rechaza_campo_obligatorio_ausente(
 
 
 @pytest.mark.django_db
-def test_preview_rechaza_count_habilitadas_enviado_por_el_cliente(
+def test_preview_rechaza_cantidad_especialidades_habilitadas_enviado_por_el_cliente(
     auth_client, municipalidad, igv_vigente, uit_vigente,
     tarifa_po_unica_edificaciones, derecho_po_sin_rangos,
     especialidad_estructuras, especialidades_disponibles_edificacion,
@@ -366,7 +366,7 @@ def test_preview_rechaza_count_habilitadas_enviado_por_el_cliente(
         valor_declarado=float(VALOR_DECLARADO),
         tarifas=_tarifas(tarifa_po_unica_edificaciones, especialidad_estructuras),
     )
-    payload["liquidacion_especifica"]["count_habilitadas"] = 99
+    payload["liquidacion_especifica"]["cantidad_especialidades_habilitadas"] = 99
 
     response = auth_client.post(COTIZAR_URL, json=payload)
 
@@ -401,7 +401,7 @@ def test_crear_normal_seleccionadas_persiste_estrategia_y_snapshots_sin_acumulac
     tipo = response.json()["data"]["liquidacion_tipo"]
 
     assert tipo["estrategia_cotizacion"] == NORMAL
-    assert tipo["count_habilitadas"] == H_CATALOGO
+    assert tipo["cantidad_especialidades_habilitadas"] == H_CATALOGO
     assert tipo["total_explicito"] is None
     assert _dec(tipo["porcentaje_tarifa"]) == pytest.approx(Decimal("0.0005"))
     assert tipo["acumulacion"] is None
@@ -409,7 +409,7 @@ def test_crear_normal_seleccionadas_persiste_estrategia_y_snapshots_sin_acumulac
 
     po = LiquidacionPorcentajeObra.objects.get()
     assert po.estrategia_cotizacion == NORMAL
-    assert po.count_habilitadas == H_CATALOGO
+    assert po.cantidad_especialidades_habilitadas == H_CATALOGO
     assert po.total_explicito is None
     assert po.porcentaje_tarifa == F_TARIFA
     assert po.tarifa_aplicada_id == tarifa_po_unica_edificaciones.id
@@ -445,7 +445,7 @@ def test_crear_tarifa_habilitadas_participantes_persiste_acumulacion(
     tipo = response.json()["data"]["liquidacion_tipo"]
 
     assert tipo["estrategia_cotizacion"] == HABILITADAS
-    assert tipo["count_habilitadas"] == H_CATALOGO
+    assert tipo["cantidad_especialidades_habilitadas"] == H_CATALOGO
     assert _dec(tipo["porcentaje_liquidacion"]) == pytest.approx(Decimal("0.0015"))
     assert len(tipo["detalles"]) == 1
     assert _dec(tipo["detalles"][0]["subtotal"]) == pytest.approx(Decimal("500.0"))
@@ -457,7 +457,7 @@ def test_crear_tarifa_habilitadas_participantes_persiste_acumulacion(
 
     po = LiquidacionPorcentajeObra.objects.get()
     assert po.estrategia_cotizacion == HABILITADAS
-    assert po.count_habilitadas == H_CATALOGO
+    assert po.cantidad_especialidades_habilitadas == H_CATALOGO
     assert po.detalles.count() == 1
 
     fila = LiquidacionPorcentajeObraAcumulacion.objects.get()
@@ -585,7 +585,7 @@ def test_crear_usa_H_del_catalogo_y_no_de_los_participantes(
     assert response.status_code == 200, f"{response.status_code}: {response.content}"
     po = LiquidacionPorcentajeObra.objects.get()
 
-    assert po.count_habilitadas == H_CATALOGO
+    assert po.cantidad_especialidades_habilitadas == H_CATALOGO
     assert po.detalles.count() == 1
 
     fila = LiquidacionPorcentajeObraAcumulacion.objects.get()
@@ -732,7 +732,7 @@ def test_taludes_conserva_su_contrato_sin_campos_de_estrategia(
     tipo = response.json()["data"]["liquidacion_tipo"]
 
     assert "estrategia_cotizacion" not in tipo
-    assert "count_habilitadas" not in tipo
+    assert "cantidad_especialidades_habilitadas" not in tipo
     assert "acumulacion" not in tipo
     assert _dec(tipo["valor_declarado"]) == pytest.approx(Decimal("1000000.0"))
     assert len(tipo["detalles"]) == 1
@@ -770,7 +770,7 @@ def test_impacto_vial_conserva_su_contrato_sin_campos_de_estrategia(
     tipo = response.json()["data"]["liquidacion_tipo"]
 
     assert "estrategia_cotizacion" not in tipo
-    assert "count_habilitadas" not in tipo
+    assert "cantidad_especialidades_habilitadas" not in tipo
     assert "acumulacion" not in tipo
     assert len(tipo["detalles"]) == 1
 

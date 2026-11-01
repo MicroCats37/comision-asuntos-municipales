@@ -21,7 +21,6 @@ import {
  */
 import { useCallback, useState } from "react";
 import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
-import { notify } from "@/errors";
 import {
   composeDetalleSections,
   LiquidacionDetalleModal,
@@ -37,6 +36,7 @@ import {
   type TaludesFormData,
   taludesFormSchema,
 } from "../../../schemas/liquidacion-taludes-form.schema";
+import { withLegacyRegistroFields } from "../../../schemas/liquidacion-legacy-registro-form.schema";
 import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
 import { formatPublicId } from "../../../utils/formatPublicId";
@@ -56,6 +56,7 @@ interface BaseProps {
 }
 
 type CreateProps = BaseProps & { mode: "create" };
+type LegacyProps = BaseProps & { mode: "legacy" };
 type EditProps = BaseProps & { mode: "edit"; item: LiquidacionTaludesListItem };
 type NuevaRevisionProps = BaseProps & {
   mode: "nueva-revision";
@@ -68,6 +69,7 @@ type RelacionadaProps = BaseProps & {
 
 export type LiquidacionTaludesFormModalProps =
   | CreateProps
+  | LegacyProps
   | EditProps
   | NuevaRevisionProps
   | RelacionadaProps;
@@ -108,9 +110,13 @@ export function LiquidacionTaludesFormModal(
   const [detalleOpen, setDetalleOpen] = useState(false);
 
   const sourceItem: LiquidacionTaludesListItem | null =
-    mode === "edit" ? props.item : mode !== "create" ? props.previa : null;
+    mode === "edit"
+      ? props.item
+      : mode === "nueva-revision" || mode === "relacionada"
+        ? props.previa
+        : null;
 
-  const crearMutation = useCrearTaludes();
+  const crearMutation = useCrearTaludes(mode === "legacy" ? "legacy" : "create");
   const editarMutation = useEditarTaludes(
     mode === "edit" ? props.item.liquidacion_general.id : "",
   );
@@ -132,6 +138,8 @@ export function LiquidacionTaludesFormModal(
     switch (mode) {
       case "create":
         return "Nueva Liquidación";
+      case "legacy":
+        return "Registro Legacy";
       case "edit":
         return "Editar Liquidación";
       case "nueva-revision":
@@ -145,6 +153,8 @@ export function LiquidacionTaludesFormModal(
     switch (mode) {
       case "create":
         return "Crear Liquidación";
+      case "legacy":
+        return "Registrar Legacy";
       case "edit":
         return "Guardar cambios";
       case "nueva-revision":
@@ -157,7 +167,7 @@ export function LiquidacionTaludesFormModal(
   const primaryLoadingLabel = mode === "edit" ? "Guardando..." : "Creando...";
 
   const primaryLoading =
-    mode === "create"
+    mode === "create" || mode === "legacy"
       ? crearMutation.isPending
       : mode === "edit"
         ? editarMutation.isPending
@@ -174,7 +184,7 @@ export function LiquidacionTaludesFormModal(
 
   const computeCanEditProyecto = useCallback(
     (m: typeof mode, item: typeof sourceItem): boolean => {
-      if (m === "create" || m === "nueva-revision") return true;
+      if (m === "create" || m === "legacy" || m === "nueva-revision") return true;
       if (m === "edit" && item) {
         return canEditLiquidacion(item.liquidacion_general).canEditProyecto;
       }
@@ -216,6 +226,7 @@ export function LiquidacionTaludesFormModal(
           <TarifasYEspecialidadesSmartField
             methods={methods}
             tipo="taludes"
+            {...(mode === "legacy" ? { mode: "legacy" as const } : {})}
             {...(isEdit || isRevisionLike
               ? {
                   mode: "edit",
@@ -227,6 +238,7 @@ export function LiquidacionTaludesFormModal(
           <CotizacionPorcentajeSmartField
             methods={methods}
             tipo="taludes"
+            {...(mode === "legacy" ? { mode: "legacy" as const } : {})}
             {...(isEdit
               ? {
                   mode: "edit",
@@ -252,7 +264,7 @@ export function LiquidacionTaludesFormModal(
   );
 
   const initialData: Partial<TaludesFormData> = (() => {
-    if (mode === "create") {
+    if (mode === "create" || mode === "legacy") {
       return {
         valor_declarado: 0,
         numero_revision: resolveNumeroRevisionInicial("create"),
@@ -284,7 +296,6 @@ export function LiquidacionTaludesFormModal(
   const onSubmitEdit = useCallback(
     async (data: TaludesFormData) => {
       const result = await editarMutation.mutateAsync(data);
-      notify.success("Liquidación editada correctamente");
       return result;
     },
     [editarMutation],
@@ -332,7 +343,11 @@ export function LiquidacionTaludesFormModal(
         onSuccess={onSuccess}
         mode={mode}
         sourceItem={sourceItem}
-        schema={taludesFormSchema}
+        schema={
+          mode === "legacy"
+            ? withLegacyRegistroFields(taludesFormSchema)
+            : taludesFormSchema
+        }
         initialData={initialData}
         eyebrow="Taludes"
         icon={icon}

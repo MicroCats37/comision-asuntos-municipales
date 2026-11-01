@@ -14,11 +14,15 @@ Fixtures are shared via conftest.py (tests/conftest.py).
 """
 import pytest
 from decimal import Decimal
+from django.contrib import admin
+from django.test import RequestFactory
 
+from modules.liquidaciones.admin.liquidacion_admin import LiquidacionEdificacionProxyAdmin
 from modules.liquidaciones.domain.constants import EstadoLiquidacion
 from modules.liquidaciones.tests.fixtures.http_helpers import status_de_ruta_retirada
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
     LiquidacionGeneral,
+    LiquidacionEdificacionProxy,
 )
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_edificaciones import (
     LiquidacionEdificacion,
@@ -27,6 +31,33 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacio
     LiquidacionPorcentajeObra,
     LiquidacionPorcentajeObraDetalle,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
+    LiquidacionGeneralCoreService,
+)
+
+
+def _crear_edificacion_para_numeracion(base, *, legacy=False, numero=None):
+    """Create an isolated Edificaciones row while preserving required relations."""
+    from modules.liquidaciones.domain.models.proyecto import Proyecto
+
+    proyecto = Proyecto.objects.create(
+        nombre_propietario=f"Proyecto numeracion {LiquidacionGeneral.objects.count()}",
+        direccion="Av. Numeracion 123",
+    )
+    liquidacion = LiquidacionGeneral.objects.create(
+        proyecto=proyecto,
+        municipalidad=base.municipalidad,
+        usuario_creador=base.usuario_creador,
+        expediente=f"EXP-NUM-{LiquidacionGeneral.objects.count()}",
+        estado=base.estado,
+        tipo_liquidacion=base.tipo_liquidacion,
+        sub_total=base.sub_total,
+        total=base.total,
+        igv_id=base.igv_id,
+        uit_id=base.uit_id,
+        legacy=legacy,
+    )
+    return LiquidacionEdificacion.objects.create(liquidacion=liquidacion, numero=numero)
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
@@ -161,6 +192,93 @@ def test_listado_general_conserva_la_total_real(
     assert result["page_size"] == 10
     assert result["total"] == 2
     assert len(result["items"]) == 2
+
+
+@pytest.mark.django_db
+def test_listados_ordenan_no_legacy_primero_y_por_numero_dentro_del_grupo(
+    liquidaciones_revisiones_del_mismo_proyecto,
+):
+    numero_55163, numero_0 = liquidaciones_revisiones_del_mismo_proyecto
+    LiquidacionEdificacion.objects.filter(liquidacion=numero_55163).update(numero=55163)
+    LiquidacionEdificacion.objects.filter(liquidacion=numero_0).update(numero=0)
+
+    service = LiquidacionGeneralCoreService()
+
+    generales, _ = service.list_liquidaciones_generales_paginated(
+        page=1,
+        page_size=10,
+    )
+    assert [item.id for item in generales] == [
+        numero_55163.id,
+        numero_0.id,
+    ]
+
+    por_tipo, _ = service.list_liquidaciones_by_type_paginated(
+        tipo_liquidacion="EDIFICACION",
+        page=1,
+        page_size=10,
+    )
+    assert [item.id for item in por_tipo] == [
+        numero_55163.id,
+        numero_0.id,
+    ]
+
+    numero_55163.legacy = True
+    numero_55163.save(update_fields=["legacy"])
+
+    por_tipo, _ = service.list_liquidaciones_by_type_paginated(
+        tipo_liquidacion="EDIFICACION",
+        page=1,
+        page_size=10,
+    )
+    assert [item.id for item in por_tipo] == [numero_0.id, numero_55163.id]
+
+
+@pytest.mark.django_db
+def test_autonumero_de_edificaciones_ignora_legacy_al_crear(
+    liquidaciones_revisiones_del_mismo_proyecto,
+):
+    normal, legacy = liquidaciones_revisiones_del_mismo_proyecto
+    LiquidacionEdificacion.objects.filter(liquidacion=normal).update(numero=2)
+    legacy.legacy = True
+    legacy.save(update_fields=["legacy"])
+    LiquidacionEdificacion.objects.filter(liquidacion=legacy).update(numero=9000)
+
+    creada = _crear_edificacion_para_numeracion(normal)
+
+    assert creada.numero == 3
+
+
+@pytest.mark.django_db
+def test_autonumero_de_edificaciones_inicia_en_uno_si_solo_hay_legacy(
+    liquidaciones_revisiones_del_mismo_proyecto,
+):
+    primera, segunda = liquidaciones_revisiones_del_mismo_proyecto
+    LiquidacionGeneral.objects.filter(id__in=[primera.id, segunda.id]).update(legacy=True)
+    LiquidacionEdificacion.objects.filter(liquidacion=primera).update(numero=35)
+    LiquidacionEdificacion.objects.filter(liquidacion=segunda).update(numero=9000)
+
+    creada = _crear_edificacion_para_numeracion(primera)
+
+    assert creada.numero == 1
+
+
+@pytest.mark.django_db
+def test_admin_de_edificaciones_agrupa_no_legacy_antes_de_legacy(
+    liquidaciones_revisiones_del_mismo_proyecto,
+):
+    normal, legacy = liquidaciones_revisiones_del_mismo_proyecto
+    LiquidacionEdificacion.objects.filter(liquidacion=normal).update(numero=2)
+    legacy.legacy = True
+    legacy.save(update_fields=["legacy"])
+    LiquidacionEdificacion.objects.filter(liquidacion=legacy).update(numero=9000)
+
+    model_admin = LiquidacionEdificacionProxyAdmin(
+        LiquidacionEdificacionProxy, admin.site
+    )
+    queryset = model_admin.get_queryset(RequestFactory().get("/admin/"))
+
+    assert list(queryset.values_list("id", flat=True)) == [normal.id, legacy.id]
 
 
 @pytest.mark.django_db

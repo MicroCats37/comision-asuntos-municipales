@@ -14,6 +14,7 @@ import { Calculator, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useWatch } from "react-hook-form";
+import { getErrorMessage } from "@/errors";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import { useLatestRequestGuard } from "@/hooks/system/useLatestRequestGuard";
 import api from "@/lib/api";
@@ -39,8 +40,9 @@ interface CotizacionM2SmartFieldProps {
   // biome-ignore lint/suspicious/noExplicitAny: Smart field is reused by HU/MS schemas with shared field names but distinct form types.
   methods: UseFormReturn<any>;
   tipo?: "habilitacion-urbana" | "mecanica-suelos";
-  mode?: "create" | "edit";
+  mode?: "create" | "legacy" | "edit";
   liquidacionId?: string;
+  fecha?: string;
 }
 
 const toNumber = (value: unknown): number => {
@@ -55,10 +57,16 @@ export function CotizacionM2SmartField({
   tipo = "habilitacion-urbana",
   mode = "create",
   liquidacionId,
+  fecha,
 }: CotizacionM2SmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionM2Output | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requestGuard = useLatestRequestGuard();
+  const fechaRegistro = useWatch({
+    control: methods.control,
+    name: "fecha_registro",
+  }) as string | undefined;
+  const fechaEfectiva = fecha ?? fechaRegistro;
 
   const cotizacionMutation = useMutation({
     mutationFn: async (payload: {
@@ -71,10 +79,14 @@ export function CotizacionM2SmartField({
         tarifa: { tarifa_m2_id: payload.tarifa_m2_id },
       };
 
-      const endpoint =
+      const endpointBase =
         mode === "edit" && liquidacionId
           ? `/liquidaciones/${tipo}/${liquidacionId}/cotizar-edicion`
           : `/liquidaciones/${tipo}/cotizar`;
+      const endpoint =
+        mode !== "edit" && fechaEfectiva
+          ? `${endpointBase}?fecha=${encodeURIComponent(fechaEfectiva)}`
+          : endpointBase;
 
       const body =
         mode === "edit"
@@ -94,9 +106,7 @@ export function CotizacionM2SmartField({
     onError: (err, variables) => {
       if (!requestGuard.isLatest(variables.requestId)) return;
       setQuote(null);
-      setError(
-        err instanceof Error ? err.message : "Error al calcular cotización",
-      );
+      setError(getErrorMessage(err) || "Error al calcular cotización");
     },
   });
 
@@ -118,6 +128,7 @@ export function CotizacionM2SmartField({
       !area ||
       area <= 0 ||
       !tarifaM2Id ||
+      (mode === "legacy" && !fechaEfectiva) ||
       (mode === "edit" && !liquidacionId)
     ) {
       requestGuard.invalidate();
@@ -139,6 +150,7 @@ export function CotizacionM2SmartField({
     tarifaM2Id,
     mode,
     liquidacionId,
+    fechaEfectiva,
     cotizacionMutation.mutate,
     requestGuard,
   ]);

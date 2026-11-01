@@ -275,7 +275,7 @@ class LiquidacionEdificacionesPorcentajeObraDatosOut(LiquidacionPorcentajeObraDa
         description="Estrategia de cotización persistida: NORMAL_SELECCIONADAS, "
         "TARIFA_HABILITADAS_PARTICIPANTES o TOTAL_EXPLICITO.",
     )
-    count_habilitadas: Optional[int] = Field(
+    cantidad_especialidades_habilitadas: Optional[int] = Field(
         None,
         description="Snapshot de H (habilitadas del catálogo en la fecha efectiva).",
     )
@@ -513,7 +513,7 @@ class LiquidacionEdificacionesCotizarOutput(BaseSchema):
         description="Estrategia aplicada en la cotización: NORMAL_SELECCIONADAS, "
         "TARIFA_HABILITADAS_PARTICIPANTES o TOTAL_EXPLICITO.",
     )
-    count_habilitadas: Optional[int] = Field(
+    cantidad_especialidades_habilitadas: Optional[int] = Field(
         None,
         description="H (habilitadas del catálogo) resuelto para la fecha efectiva.",
     )

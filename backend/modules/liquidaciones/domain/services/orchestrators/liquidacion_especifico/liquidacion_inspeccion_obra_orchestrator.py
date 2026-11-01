@@ -4,12 +4,14 @@ Mapea los Schemas de Presentacion (Input) hacia los DTOs de Dominio (Data).
 Ejecuta el Flujo de forma sincrona.
 """
 import uuid
+from datetime import date
 from typing import List, Optional
 from decimal import Decimal
 from django.core.exceptions import ObjectDoesNotExist
 from injector import inject
 from ninja.errors import HttpError
 
+from modules.liquidaciones.domain.constants import TipoLiquidacion
 from modules.liquidaciones.domain.exceptions import LiquidacionNotFoundError
 
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_inspeccion_obra_schemas import (
@@ -50,8 +52,18 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_historico_core_service import (
+    LiquidacionHistoricoCoreService,
+)
+from modules.liquidaciones.domain.schemas.liquidacion_legacy.legacy_registro_data import (
+    LegacyRegistroContexto,
+)
+from modules.liquidaciones.domain.services.orchestrators._shared.legacy_registro_resolution import (
+    LegacyRegistroResolutionMixin,
+)
 
-class LiquidacionInspeccionObraOrchestrator:
+
+class LiquidacionInspeccionObraOrchestrator(LegacyRegistroResolutionMixin):
     @inject
     def __init__(
         self,
@@ -59,16 +71,19 @@ class LiquidacionInspeccionObraOrchestrator:
         visitas_core: LiquidacionPorCategoriaVisitasCoreService,
         general_core: LiquidacionGeneralCoreService,
         general_orchestrator: LiquidacionGeneralOrchestrator,
+        historico_core: LiquidacionHistoricoCoreService,
     ):
         self.flujo = flujo
         self.visitas_core = visitas_core
         self.general_core = general_core
         self.general_orchestrator = general_orchestrator
+        self.historico_core = historico_core
 
     def cotizar_proceso(
         self,
         cantidad_visitas: int,
         tarifa_id: str,
+        fecha: Optional[date] = None,
     ) -> CotizacionVisitasResult:
         """
         Orchestrates the quote calculation for Inspeccion de Obra.
@@ -77,14 +92,28 @@ class LiquidacionInspeccionObraOrchestrator:
         NO aplica clamping de UIT (a diferencia del motor PorcentajeObra) —
         Visitas se cobra por visita según la categoría, sin mínimo de 1 UIT.
         Debe coincidir EXACTAMENTE con la creación (ejecutar_primera_revision_desde_previa).
-        """
-        uit_vigente = self.general_core.get_uit_vigente()
-        if not uit_vigente:
-            raise HttpError(404, "No hay UIT vigente configurada.")
 
-        igv_vigente = self.general_core.get_igv_vigente()
-        if not igv_vigente:
-            raise HttpError(404, "No hay IGV vigente configurado.")
+        `fecha` es la fecha EFECTIVA opcional del preview: `None` significa hoy
+        (comportamiento vigente); con fecha, IGV, UIT y la tarifa de visitas se
+        resuelven a esa fecha con el resolver canónico (modo legacy).
+        """
+        if fecha is not None:
+            igv_vigente, uit_vigente = self._resolver_igv_uit_historicos(fecha)
+            tarifas = self._resolver_tarifas_visitas_historicas(
+                TipoLiquidacion.INSPECCION_OBRA, fecha
+            )
+            tarifa = next((t for t in tarifas if str(t.id) == str(tarifa_id)), None)
+            if tarifa is None:
+                raise HttpError(404, "No se encontró una tarifa vigente en la fecha indicada.")
+            tarifa_id = str(tarifa.id)
+        else:
+            uit_vigente = self.general_core.get_uit_vigente()
+            if not uit_vigente:
+                raise HttpError(404, "No hay UIT vigente configurada.")
+
+            igv_vigente = self.general_core.get_igv_vigente()
+            if not igv_vigente:
+                raise HttpError(404, "No hay IGV vigente configurado.")
 
         result = self.visitas_core.calcular_cotizacion_visitas(
             cantidad_visitas=cantidad_visitas,
@@ -98,11 +127,24 @@ class LiquidacionInspeccionObraOrchestrator:
 
         return result
 
-    def obtener_tarifas_vigentes_proceso(self) -> tuple:
+    def obtener_tarifas_vigentes_proceso(self, fecha: Optional[date] = None) -> tuple:
         """
         Orchestrates fetching vigente tarifas and UIT.
         Returns (tarifas, uit_vigente) tuple.
+
+        `fecha` es la fecha EFECTIVA opcional: `None` significa hoy (comportamiento
+        vigente); con fecha, las tarifas y la UIT se resuelven a esa fecha con el
+        resolver canónico (modo legacy).
         """
+        if fecha is not None:
+            uit_vigente = self.historico_core.get_uit_por_fecha(fecha)
+            if not uit_vigente:
+                raise HttpError(404, "No hay UIT vigente configurada.")
+            tarifas = self._resolver_tarifas_visitas_historicas(
+                TipoLiquidacion.INSPECCION_OBRA, fecha
+            )
+            return (tarifas, uit_vigente)
+
         uit_vigente = self.general_core.get_uit_vigente()
         if not uit_vigente:
             raise HttpError(404, "No hay UIT vigente configurada.")
@@ -113,6 +155,7 @@ class LiquidacionInspeccionObraOrchestrator:
     def listar_liquidaciones(
         self, page: int, page_size: int,
         municipalidad_id=None,
+        distrito_id=None,
         propietario=None,
         razon_social=None,
         creador_username=None,
@@ -139,6 +182,7 @@ class LiquidacionInspeccionObraOrchestrator:
             page=page,
             page_size=page_size,
             municipalidad_id=municipalidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creador_username,
@@ -364,6 +408,7 @@ class LiquidacionInspeccionObraOrchestrator:
         self,
         usuario_id: int,
         payload_in,
+        registro_legacy: LegacyRegistroContexto | None = None,
     ) -> InspeccionObraPrimeraRevisionResult:
         """
         Crea una IO primera-revision SIN liquidación previa.
@@ -374,7 +419,17 @@ class LiquidacionInspeccionObraOrchestrator:
         - tariff exists (if provided)
         - inspector exists
         - inspector_operacion belongs to inspector (if provided)
+
+        `registro_legacy` (registro manual histórico): se crea SIN liquidación
+        previa y SIN vínculo de inspector, con la fecha efectiva explícita y los
+        valores financieros resueltos a esa fecha.
         """
+        if registro_legacy is not None:
+            return self._crear_registro_legacy_proceso(
+                usuario_id=usuario_id,
+                payload_in=payload_in,
+                registro_legacy=registro_legacy,
+            )
         from modules.liquidaciones.domain.constants import TipoLiquidacion
 
         # Step 1: Pre-validate UIT and IGV
@@ -463,6 +518,132 @@ class LiquidacionInspeccionObraOrchestrator:
             data=domain_data,
             inspector=inspector_operacion.inspector,
             inspector_operacion=inspector_operacion,
+        )
+
+    def _crear_registro_legacy_proceso(
+        self,
+        usuario_id: int,
+        payload_in,
+        registro_legacy: "LegacyRegistroContexto",
+    ) -> InspeccionObraPrimeraRevisionResult:
+        """
+        Registro manual histórico de Inspección de Obra.
+
+        Diferencias respecto a `crear_nueva_liquidacion_proceso` (camino normal):
+        - la fecha efectiva es `registro_legacy.fecha_registro`: IGV, UIT y la
+          tarifa de visitas se resuelven a esa fecha con el resolver canónico
+          (sin fallback a los valores de hoy);
+        - NO hay liquidación previa (el registro histórico no la tiene);
+        - El inspector es opcional. Cuando se entrega una operación existente,
+          se conserva aunque ya no esté vigente hoy.
+        - los totales SIEMPRE se calculan con la fórmula de visitas: no hay
+          bypass ni totales manuales.
+        """
+        fecha_efectiva = registro_legacy.fecha_registro
+
+        # IGV/UIT efectivos en la fecha del registro (sin fallback a hoy).
+        igv, uit = self._resolver_igv_uit_historicos(fecha_efectiva)
+
+        # Tarifa de visitas vigente en la fecha efectiva.
+        tarifas = self._resolver_tarifas_visitas_historicas(
+            TipoLiquidacion.INSPECCION_OBRA, fecha_efectiva
+        )
+        tarifa_id = str(payload_in.liquidacion_especifica.tarifa.tarifa_visitas_id)
+        tarifa = next((t for t in tarifas if str(t.id) == tarifa_id), None)
+        if tarifa is None:
+            raise HttpError(
+                404,
+                "No se encontró una tarifa vigente para la fecha indicada.",
+            )
+
+        cantidad_visitas = payload_in.liquidacion_especifica.datos.cantidad_visitas
+        if cantidad_visitas < 1:
+            raise HttpError(400, "cantidad_visitas debe ser >= 1")
+
+        inspector_id = getattr(payload_in.liquidacion_especifica, "inspector_id", None)
+        inspector_operacion_id = getattr(
+            payload_in.liquidacion_especifica,
+            "inspector_operacion_id",
+            None,
+        )
+        if bool(inspector_id) != bool(inspector_operacion_id):
+            raise HttpError(
+                400,
+                "El inspector y su operación deben seleccionarse juntos.",
+            )
+
+        inspector = None
+        inspector_operacion = None
+        if inspector_operacion_id:
+            from modules.liquidaciones.domain.models.inspector import InspectorOperacion
+
+            try:
+                inspector_operacion = InspectorOperacion.objects.select_related(
+                    "inspector",
+                ).get(id=inspector_operacion_id)
+            except InspectorOperacion.DoesNotExist:
+                raise HttpError(404, "No se encontró la operación del inspector.")
+
+            if inspector_operacion.inspector_id != inspector_id:
+                raise HttpError(
+                    400,
+                    "El inspector no coincide con la operación seleccionada.",
+                )
+            inspector = inspector_operacion.inspector
+
+        # Domain DTO: entidad y proyecto se crean desde cero.
+        visitas_data = LiquidacionCategoriaVisitasData(
+            datos=DatosVisitas(
+                cantidad_visitas=cantidad_visitas,
+                categoria=tarifa.categoria_visitas,
+            ),
+            tarifa=TarifaVisitas(tarifa_visitas_id=tarifa_id),
+        )
+
+        lg_in = payload_in.liquidacion_general
+        domain_data = InspeccionObraNuevaRevisionData(
+            liquidacion_general=LiquidacionGeneralData(
+                municipalidad_id=str(lg_in.municipalidad_id),
+                expediente=lg_in.expediente,
+                observacion=lg_in.observacion,
+                denominacion_de_proyecto=lg_in.denominacion_de_proyecto,
+                proyecto=ProyectoData(
+                    nombre_propietario=lg_in.proyecto.nombre_propietario,
+                    direccion=lg_in.proyecto.direccion,
+                    distrito_id=str(lg_in.proyecto.distrito_id) if lg_in.proyecto.distrito_id else None,
+                    entidad_razon_social=getattr(lg_in.proyecto.entidad, "razon_social", None),
+                    entidad=EntidadData(
+                        tipo_documento=getattr(lg_in.proyecto.entidad, "tipo_documento", None) or "",
+                        numero_documento=getattr(lg_in.proyecto.entidad, "numero_documento", None) or "",
+                    ),
+                ),
+                contacto=(
+                    ContactoData(
+                        nombres=lg_in.contacto.nombres,
+                        apellidos=lg_in.contacto.apellidos,
+                        dni=lg_in.contacto.dni,
+                        cargo=lg_in.contacto.cargo,
+                        telefono=lg_in.contacto.telefono,
+                        celular=lg_in.contacto.celular,
+                        email=lg_in.contacto.email,
+                    )
+                    if lg_in.contacto
+                    else None
+                ),
+            ),
+            liquidacion_especifica=visitas_data,
+        )
+
+        # Step: Execute in flujo. The selected operation may be historical;
+        # validity is a selection concern, not a creation constraint.
+        return self.flujo.ejecutar_nueva_liquidacion(
+            usuario_id=usuario_id,
+            data=domain_data,
+            inspector=inspector,
+            inspector_operacion=inspector_operacion,
+            registro_legacy=registro_legacy.model_copy(
+                update={"igv": igv, "uit": uit, "tarifa": tarifa}
+            ),
         )
 
     def recalcular_visitas(

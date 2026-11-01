@@ -78,7 +78,6 @@ def register_exception_handlers(api):
         body, status = error_response(
             code="NOT_FOUND",
             message="El recurso solicitado no existe.",
-            details={"non_field_errors": "No se pudo encontrar el objeto solicitado."},
             status=404,
         )
         return api.create_response(request, body, status=status)
@@ -89,9 +88,6 @@ def register_exception_handlers(api):
         body, status = error_response(
             code="PERMISSION_DENIED",
             message="No tienes permisos suficientes.",
-            details={
-                "non_field_errors": "No tienes autorización para realizar esta acción."
-            },
             status=403,
         )
         return api.create_response(request, body, status=status)
@@ -106,7 +102,7 @@ def register_exception_handlers(api):
         """
         body, status = error_response(
             code="VALIDATION_ERROR",
-            message="Validation failed",
+            message="Error de validación.",
             details=format_errors(exc.errors(include_input=False)),
             status=422,
         )
@@ -119,7 +115,7 @@ def register_exception_handlers(api):
         """
         body, status = error_response(
             code="VALIDATION_ERROR",
-            message="Validation failed",
+            message="Error de validación.",
             details=format_errors(exc.errors),
             status=422,
         )
@@ -127,16 +123,25 @@ def register_exception_handlers(api):
 
     @api.exception_handler(HttpError)
     def on_http_error(request: HttpRequest, exc: HttpError):
-        """Maneja errores explícitos del tipo HttpError o sus subclases."""
+        """
+        Maneja errores explícitos del tipo HttpError o sus subclases.
+
+        `error.message` ES el mensaje humano: no se duplica dentro de
+        `details` (el frontend lo lee directamente y nunca debe pintar la clave
+        `non_field_errors`). `details` sólo se usa cuando el mensaje trae
+        estructura de campo (lista o diccionario).
+        """
         code = getattr(exc, "code", "HTTP_ERROR")
-        details = None
-        if isinstance(exc.message, (list, dict)):
-            details = exc.message
+        raw_message = exc.message
+        if isinstance(raw_message, (list, dict)):
+            details = raw_message
+            message = "Error de validación."
         else:
-            details = {"non_field_errors": exc.message}
+            details = None
+            message = raw_message
         body, status = error_response(
             code=code,
-            message=exc.message,
+            message=message,
             details=details,
             status=exc.status_code,
         )
@@ -152,7 +157,7 @@ def register_exception_handlers(api):
         )
         body, status = error_response(
             code="VALIDATION_ERROR",
-            message="Error de validación interna.",
+            message="Error de validación.",
             details=errors,
             status=400,
         )
@@ -164,7 +169,6 @@ def register_exception_handlers(api):
         body, status = error_response(
             code="AUTH_ERROR",
             message=str(exc),
-            details={"non_field_errors": str(exc)},
             status=401,
         )
         return api.create_response(request, body, status=status)
@@ -172,15 +176,10 @@ def register_exception_handlers(api):
     @api.exception_handler(IntegrityError)
     def on_integrity_error(request: HttpRequest, exc: IntegrityError):
         """Maneja conflictos de base de datos (Unique constraints, etc.)."""
-        import traceback
-        print("==== INTEGRITY ERROR ====")
-        traceback.print_exc()
+        logger.exception("Integrity error: %s", exc)
         body, status = error_response(
             code="CONFLICT",
             message="Conflicto de integridad en la base de datos.",
-            details={
-                "non_field_errors": "Un campo único ya existe o hay una violación de integridad."
-            },
             status=409,
         )
         return api.create_response(request, body, status=status)
@@ -191,7 +190,7 @@ def register_exception_handlers(api):
         logger.exception("Unhandled exception: %s", exc)
         body, status = error_response(
             code="INTERNAL_ERROR",
-            message="An unexpected error occurred",
+            message="Ocurrió un error inesperado. Inténtelo nuevamente.",
             status=500,
         )
         return api.create_response(request, body, status=status)

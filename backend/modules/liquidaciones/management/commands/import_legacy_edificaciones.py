@@ -1025,12 +1025,12 @@ class Command(BaseCommand):
             self._generar_reporte_detallado(rows, orchestrator, data_path.parent)
             return
 
-        # Resolve system user (first superuser or create 'system') for fallback
-        system_user = _get_or_create_system_user()
-        self._log(f"  System user fallback: username={system_user.username}")
+        if not self.dry_run:
+            system_user = _get_or_create_system_user()
+            self._log(f"  System user fallback: username={system_user.username}")
 
         # Optional reset: wipe all existing liquidaciones before importing
-        if self.reset:
+        if self.reset and not self.dry_run:
             self._log(self.style.WARNING("  --reset: eliminando LiquidacionGeneral existentes..."))
             self._reset_liquidaciones()
             self._log(self.style.SUCCESS("  Reset completado."))
@@ -1234,8 +1234,10 @@ class Command(BaseCommand):
                             continue
 
                     # Get usuario from USUARIO column (per-row)
-                    usuario_raw = row[COL_USUARIO] if len(row) > COL_USUARIO else None
-                    usuario = _get_or_create_usuario_from_usuario(usuario_raw)
+                    usuario = None
+                    if not self.dry_run:
+                        usuario_raw = row[COL_USUARIO] if len(row) > COL_USUARIO else None
+                        usuario = _get_or_create_usuario_from_usuario(usuario_raw)
 
                     created_liquidacion_general = existing_edificacion.liquidacion if existing_edificacion is not None else None
                     if not self.dry_run and created_liquidacion_general is None:
@@ -2228,16 +2230,16 @@ class Command(BaseCommand):
         # especialidad revisada de la fila -> porcentaje parcial de esa tarifa.
         # Solo ESPECIALIDAD == TODAS -> auto-fill (tarifas=[]).
         tarifas_explicit: list[LiquidacionPorcentajeObraTarifaIn] = []
-        if especialidad_str and especialidad_str.strip().upper() != "TODAS":
+        if not especialidad_str or especialidad_str.strip().upper() != "TODAS":
             esp_revision = _resolve_especialidad_revision(especialidad_str)
             if esp_revision is None:
-                anomalies.append(f"Especialidad no encontrada: {especialidad_str}")
+                raise ValueError(f"Especialidad no encontrada: {especialidad_str}")
             else:
                 tarifas_vigentes = orchestrator.legacy_po_core.get_tarifa_por_fecha(
                     TipoLiquidacion.EDIFICACION, fecha_registro
                 )
                 if not tarifas_vigentes:
-                    anomalies.append("No hay tarifa vigente para la fecha — se usa auto-fill")
+                    raise ValueError("No hay tarifa vigente para la fecha")
                 else:
                     tarifas_dedup = list({t.tarifa_base_id: t for t in tarifas_vigentes}.values())
                     tarifas_explicit = [

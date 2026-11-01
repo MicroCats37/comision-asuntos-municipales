@@ -245,7 +245,7 @@ def liquidacion_po_padre(
         porcentaje_minimo_uit=Decimal("0.10"),
         derecho_aplicado=derecho_porcentaje_vigente,
         estrategia_cotizacion=HABILITADAS,
-        count_habilitadas=3,
+        cantidad_especialidades_habilitadas=3,
         porcentaje_tarifa=Decimal("0.0005"),
         tarifa_aplicada=tarifa_porcentaje_obra,
     )

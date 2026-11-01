@@ -21,11 +21,6 @@
       "slug": "ingenier-a-electr-nica",
       "nombre": "Ingeniería Electrónica",
       "capitulos": ["16"]
-    },
-    {
-      "slug": "inspeccion-obra",
-      "nombre": "Inspección de Obra",
-      "capitulos": []
     }
   ]
 }

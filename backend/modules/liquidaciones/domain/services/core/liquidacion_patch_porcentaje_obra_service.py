@@ -7,7 +7,7 @@ Aplica a tipos PO: Edificaciones, Impacto Vial, Taludes.
 
 Reglas clave:
 - Resuelve IGV/UIT/tarifas/derecho por LiquidacionGeneral.fecha_registro.date()
-  vía LiquidacionPatchHistoricoCoreService (NO vigentes actuales).
+  vía LiquidacionHistoricoCoreService (NO vigentes actuales).
 - Recalcula vía calcular_cotizacion_po existente (aritmética pura, sin lógica de fecha).
 - Filas de detalle: eliminar + recrear atómicamente (UniqueConstraint
   (liquidacion_porcentaje, especialidad) impide upsert simple).
@@ -41,8 +41,8 @@ from modules.liquidaciones.domain.schemas.liquidacion_tipo.liquidacion_porcentaj
     CotizacionPorcentajeObraData,
     TarifaPorcentajeObraAplicada,
 )
-from modules.liquidaciones.domain.services.core.liquidacion_patch_historico_core_service import (
-    LiquidacionPatchHistoricoCoreService,
+from modules.liquidaciones.domain.services.core.liquidacion_historico_core_service import (
+    LiquidacionHistoricoCoreService,
 )
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_porcentaje_obra_core_service import (
     LiquidacionPorcentajeObraCoreService,
@@ -103,7 +103,7 @@ class PatchPorcentajeObraInput:
       TOTAL_EXPLICITO. `None` = camino LEGACY (Taludes, Impacto Vial): se usa la
       fachada `calcular_cotizacion_po` y NO se toca la acumulación.
     - `total_explicito`: total final autoritativo (TOTAL_EXPLICITO).
-    - `count_habilitadas`: H ya resuelto por el llamador (snapshot/catálogo).
+    - `cantidad_especialidades_habilitadas`: H ya resuelto por el llamador (snapshot/catálogo).
       NUNCA se deduce de los participantes.
     """
     valor_declarado: Optional[Decimal] = None
@@ -111,7 +111,7 @@ class PatchPorcentajeObraInput:
     tipo_tramite: Optional[str] = None
     estrategia: Optional[str] = None
     total_explicito: Optional[Decimal] = None
-    count_habilitadas: Optional[int] = None
+    cantidad_especialidades_habilitadas: Optional[int] = None
 
 
 class LiquidacionPatchPorcentajeObraService:
@@ -127,7 +127,7 @@ class LiquidacionPatchPorcentajeObraService:
     """
 
     def __init__(self) -> None:
-        self._historico_service = LiquidacionPatchHistoricoCoreService()
+        self._historico_service = LiquidacionHistoricoCoreService()
         self._po_core = LiquidacionPorcentajeObraCoreService()
 
     def verificar_editable(self, liquidacion_general: LiquidacionGeneral) -> None:
@@ -299,7 +299,7 @@ class LiquidacionPatchPorcentajeObraService:
                 cotizacion=cotizacion,
                 derecho=derecho,
                 tipo_tramite=patch.tipo_tramite,
-                count_habilitadas=patch.count_habilitadas,
+                cantidad_especialidades_habilitadas=patch.cantidad_especialidades_habilitadas,
             )
 
         # ── 8. Update LiquidacionGeneral totals ───────────────────────────────
@@ -354,7 +354,7 @@ class LiquidacionPatchPorcentajeObraService:
         return CotizacionPOContexto(
             estrategia=patch.estrategia,
             participantes=tarifas_aplicadas,
-            count_habilitadas=patch.count_habilitadas,
+            cantidad_especialidades_habilitadas=patch.cantidad_especialidades_habilitadas,
             valor_declarado=valor_declarado_contexto,
             total_explicito=total_explicito,
             igv_porcentaje=igv_porcentaje,
@@ -455,7 +455,7 @@ class LiquidacionPatchPorcentajeObraService:
             TarifaPorcentajeObra,
             TarifaLiquidacionBase,
         )
-        from modules.liquidaciones.domain.services.core.liquidacion_patch_historico_core_service import (
+        from modules.liquidaciones.domain.services.core.liquidacion_historico_core_service import (
             NoTarifaVigenteError,
         )
 

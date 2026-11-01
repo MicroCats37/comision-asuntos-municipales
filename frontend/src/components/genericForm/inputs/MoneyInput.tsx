@@ -1,7 +1,7 @@
 // MoneyInput.tsx
 "use client";
 
-import type { LucideIcon } from "lucide-react";
+import { CircleDollarSign, type LucideIcon } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
@@ -10,7 +10,11 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { formatCurrencyTrimmed } from "@/utils/number-formatter";
 
-function normalizeMoneyText(raw: string): string {
+function normalizeMoneyText(
+  raw: string,
+  maxIntegerDigits: number,
+  decimalPlaces: number,
+): string {
   const cleaned = raw
     .replace(/S\/\s*/g, "")
     .replace(/\s/g, "")
@@ -22,8 +26,10 @@ function normalizeMoneyText(raw: string): string {
 
   const hasDecimalSeparator = unsigned.includes(".");
   const [rawIntegerPart = "", ...decimalParts] = unsigned.split(".");
-  const integerPart = rawIntegerPart.replace(/^0+(?=\d)/, "");
-  const decimals = decimalParts.join("").slice(0, 2);
+  const integerPart = rawIntegerPart
+    .replace(/^0+(?=\d)/, "")
+    .slice(0, maxIntegerDigits);
+  const decimals = decimalParts.join("").slice(0, decimalPlaces);
   return `${isNegative ? "-" : ""}${integerPart || "0"}${
     hasDecimalSeparator ? `.${decimals}` : ""
   }`;
@@ -43,7 +49,7 @@ interface MoneyInputProps<TFieldValues extends FieldValues = FieldValues> {
   /** Display label */
   label?: string;
   /** Icon component */
-  icon?: LucideIcon;
+  icon?: LucideIcon | null;
   /** Placeholder text */
   placeholder?: string;
   /** Disabled state */
@@ -62,6 +68,10 @@ interface MoneyInputProps<TFieldValues extends FieldValues = FieldValues> {
   defaultValue?: number | "";
   /** Called when Enter key is pressed */
   onEnter?: () => void;
+  /** Maximum integer digits accepted by the backend (default: 10). */
+  maxIntegerDigits?: number;
+  /** Maximum decimal digits (default: 2). */
+  decimalPlaces?: number;
 }
 
 /**
@@ -82,7 +92,7 @@ interface MoneyInputProps<TFieldValues extends FieldValues = FieldValues> {
 export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
   name,
   label,
-  icon: Icon,
+  icon: Icon = CircleDollarSign,
   placeholder = "S/ 0.00",
   disabled,
   required,
@@ -92,6 +102,8 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
   control,
   defaultValue = "",
   onEnter,
+  maxIntegerDigits = 10,
+  decimalPlaces = 2,
 }: MoneyInputProps<TFieldValues>) {
   // ── Controller for RHF (like EntidadLookupField) ─────────────────────────
   const {
@@ -117,9 +129,9 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
       const num = Number(val);
       if (!Number.isFinite(num)) return "";
 
-      return formatCurrencyTrimmed(num, 2);
+      return formatCurrencyTrimmed(num, decimalPlaces);
     },
-    [],
+    [decimalPlaces],
   );
 
   // ── Sync displayValue from RHF field value (external changes: reset, defaultValues) ──
@@ -135,15 +147,15 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
       const input = e.target;
       const raw = input.value;
       const prevCursor = input.selectionStart ?? raw.length;
-      const stripped = normalizeMoneyText(raw);
-      const formatted = stripped === "" ? "" : `S/ ${stripped}`;
-      setDisplayValue(formatted);
+      const stripped = normalizeMoneyText(raw, maxIntegerDigits, decimalPlaces);
+      setDisplayValue(stripped);
 
       const normalizedBeforeCursor = normalizeMoneyText(
         raw.slice(0, prevCursor),
+        maxIntegerDigits,
+        decimalPlaces,
       );
-      const newCursor =
-        normalizedBeforeCursor === "" ? 0 : 3 + normalizedBeforeCursor.length;
+      const newCursor = normalizedBeforeCursor.length;
       requestAnimationFrame(() => {
         if (inputRef.current) {
           inputRef.current.setSelectionRange(newCursor, newCursor);
@@ -152,23 +164,27 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
 
       field.onChange(parseMoneyText(stripped) as never);
     },
-    [field],
+    [decimalPlaces, field, maxIntegerDigits],
   );
 
   // ── Handle blur (re-format on leave) ──────────────────────────────────────
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
-      const stripped = normalizeMoneyText(e.target.value);
+      const stripped = normalizeMoneyText(
+        e.target.value,
+        maxIntegerDigits,
+        decimalPlaces,
+      );
       const parsed = parseMoneyText(stripped);
       isFocusedRef.current = false;
       setDisplayValue(formatDisplay(parsed));
       field.onChange(parsed as never);
       field.onBlur();
     },
-    [field, formatDisplay],
+    [decimalPlaces, field, formatDisplay, maxIntegerDigits],
   );
 
-  const hasIcon = !!Icon;
+  const hasIcon = Icon !== null;
   const visibleError = error ?? rhfError;
 
   const inputElement = (
@@ -194,8 +210,11 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
         className ?? "",
       )}
       value={displayValue}
-      onFocus={() => {
+      onFocus={(e) => {
         isFocusedRef.current = true;
+        setDisplayValue(
+          normalizeMoneyText(e.target.value, maxIntegerDigits, decimalPlaces),
+        );
       }}
       onChange={handleChange}
       onBlur={handleBlur}

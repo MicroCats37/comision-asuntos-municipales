@@ -249,7 +249,8 @@ def test_multiple_tarifas_por_base_raises_error(
 
     assert response.status_code == 400, \
         f"Expected 400 for multiple children per base, got {response.status_code}"
-    error_details = response.json().get("error", {}).get("details", {})
-    non_field_errors = error_details.get("non_field_errors", "") if isinstance(error_details, dict) else ""
-    assert "Data inconsistency" in non_field_errors, \
-        f"Expected 'Data inconsistency' in error details, got: {error_details}"
+    error_body = response.json().get("error", {})
+    # El mensaje humano vive en `error.message`; `details` ya no duplica el
+    # mensaje bajo la clave global `non_field_errors`.
+    assert "Data inconsistency" in error_body.get("message", ""), \
+        f"Expected 'Data inconsistency' in the error message, got: {error_body}"

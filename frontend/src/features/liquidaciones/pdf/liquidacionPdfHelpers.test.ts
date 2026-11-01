@@ -107,7 +107,7 @@ describe("buildExtraFieldRows — contexto interno PO", () => {
         valor_declarado: 1_000_000,
         porcentaje_liquidacion: 0.0015,
         estrategia_cotizacion: "TARIFA_HABILITADAS_PARTICIPANTES",
-        count_habilitadas: 3,
+        cantidad_especialidades_habilitadas: 3,
         porcentaje_tarifa: 0.0005,
       }),
       "edificacion",
@@ -125,7 +125,7 @@ describe("buildExtraFieldRows — contexto interno PO", () => {
         valor_declarado: 1_000_000,
         porcentaje_liquidacion: 0.001,
         estrategia_cotizacion: "NORMAL_SELECCIONADAS",
-        count_habilitadas: 3,
+        cantidad_especialidades_habilitadas: 3,
         porcentaje_tarifa: 0.0005,
       }),
       "edificacion",
@@ -142,7 +142,7 @@ describe("buildExtraFieldRows — contexto interno PO", () => {
     const rows = buildExtraFieldRows(
       edificacionItem({
         estrategia_cotizacion: "TARIFA_HABILITADAS_PARTICIPANTES",
-        count_habilitadas: 3,
+        cantidad_especialidades_habilitadas: 3,
         porcentaje_tarifa: 0.0005,
         acumulacion: {
           porcentaje_acumulado: 0.001,
@@ -160,7 +160,7 @@ describe("buildExtraFieldRows — contexto interno PO", () => {
     const rows = buildExtraFieldRows(
       edificacionItem({
         estrategia_cotizacion: "TOTAL_EXPLICITO",
-        count_habilitadas: 3,
+        cantidad_especialidades_habilitadas: 3,
         acumulacion: {
           porcentaje_acumulado: null,
           subtotal_acumulado: 100,
@@ -178,7 +178,7 @@ describe("buildExtraFieldRows — contexto interno PO", () => {
       valor_declarado: 1_000_000,
       porcentaje_liquidacion: 0.001,
       estrategia_cotizacion: "TARIFA_HABILITADAS_PARTICIPANTES",
-      count_habilitadas: 3,
+      cantidad_especialidades_habilitadas: 3,
       porcentaje_tarifa: 0.0005,
       acumulacion: {
         porcentaje_acumulado: 0.001,
@@ -301,7 +301,7 @@ describe("buildLiquidacionPdfDom", () => {
       valor_declarado: 1_000_000,
       porcentaje_liquidacion: 0.0015,
       estrategia_cotizacion: "TARIFA_HABILITADAS_PARTICIPANTES",
-      count_habilitadas: 3,
+      cantidad_especialidades_habilitadas: 3,
       porcentaje_tarifa: 0.0005,
       acumulacion: {
         porcentaje_acumulado: 0.001,

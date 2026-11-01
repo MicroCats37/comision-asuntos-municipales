@@ -24,6 +24,11 @@ interface UseRHDetalleInspectoresProps {
   municipalidadId?: string;
   numeroLiquidacion?: number;
   enabled?: boolean;
+  /**
+   * Pide el conjunto completo filtrado en una sola respuesta (sin paginación).
+   * Lo usa la vista para listar el mes/año completo y exportar a Excel.
+   */
+  sinPaginacion?: boolean;
 }
 
 export function useRHDetalleInspectores({
@@ -36,8 +41,13 @@ export function useRHDetalleInspectores({
   municipalidadId,
   numeroLiquidacion,
   enabled = true,
+  sinPaginacion = false,
 }: UseRHDetalleInspectoresProps = {}) {
-  const params: Record<string, string | number> = { page, page_size: pageSize };
+  const params: Record<string, string | number | boolean> = {
+    page,
+    page_size: pageSize,
+  };
+  if (sinPaginacion) params.sin_paginacion = true;
   if (inspectorCip) params.inspector_cip = inspectorCip;
   else if (inspectorId) params.inspector_id = inspectorId;
   if (periodo) params.periodo = periodo;

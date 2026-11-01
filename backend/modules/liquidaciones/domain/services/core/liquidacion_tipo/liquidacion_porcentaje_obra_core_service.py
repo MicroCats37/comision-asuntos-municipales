@@ -101,7 +101,7 @@ class CotizacionPOContexto(BaseSchema):
     """
     estrategia: str = EstrategiaCotizacionPO.NORMAL_SELECCIONADAS
     participantes: List[TarifaPorcentajeObraAplicada] = Field(default_factory=list)
-    count_habilitadas: Optional[int] = Field(
+    cantidad_especialidades_habilitadas: Optional[int] = Field(
         default=None,
         description="H (habilitadas del catálogo en la fecha efectiva). "
         "Obligatorio en TARIFA_HABILITADAS_PARTICIPANTES y TOTAL_EXPLICITO.",
@@ -139,7 +139,7 @@ class CotizacionPOEstrategiaData(BaseSchema):
     derecho_maximo: Optional[Decimal] = None
     porcentaje_minimo_uit: Optional[Decimal] = None
     derecho_aplicado_id: Optional[str] = None
-    count_habilitadas: int = 0
+    cantidad_especialidades_habilitadas: int = 0
     count_participantes: int = 0
     detalles: List[DetallePorcentajeObraData] = Field(default_factory=list)
     total_subtotal: Decimal
@@ -155,6 +155,7 @@ class LiquidacionPorcentajeObraCoreService:
         self,
         payload_tarifas_ids: List[str],
         tipo_liquidacion: str,
+        fecha=None,
     ) -> List[TarifaPorcentajeObra]:
         """
         Hybrid resolution: empty list → auto-fill, non-empty → validate each.
@@ -165,6 +166,9 @@ class LiquidacionPorcentajeObraCoreService:
         Args:
             payload_tarifas_ids: List of tariff IDs to validate, or empty for auto-fill.
             tipo_liquidacion: The liquidacion type (e.g., TipoLiquidacion.EDIFICACION).
+            fecha: Optional effective date for the auto-fill. Defaults to today.
+                El registro legacy lo usa para auto-rellenar con las tarifas
+                vigentes en la fecha histórica, no con las de hoy.
 
         Note: With tarifa-unica-especialidades, TarifaPorcentajeObra no longer has
         especialidad FK. Caller receives ORM objects (for validation) but must build
@@ -172,7 +176,7 @@ class LiquidacionPorcentajeObraCoreService:
         """
         if not payload_tarifas_ids:
             # Auto-fill mode: get all vigentes for the specified tipo_liquidacion
-            bases = TarifaLiquidacionBase.objects.vigentes().filter(
+            bases = TarifaLiquidacionBase.objects.vigentes(fecha=fecha).filter(
                 tipo_liquidacion__codigo=tipo_liquidacion
             )
             return list(
@@ -513,9 +517,9 @@ class LiquidacionPorcentajeObraCoreService:
             derecho_maximo=contexto.derecho.derecho_maximo,
             porcentaje_minimo_uit=contexto.derecho.porcentaje_minimo_uit,
             derecho_aplicado_id=contexto.derecho.derecho_aplicado_id,
-            count_habilitadas=(
-                contexto.count_habilitadas
-                if contexto.count_habilitadas is not None
+            cantidad_especialidades_habilitadas=(
+                contexto.cantidad_especialidades_habilitadas
+                if contexto.cantidad_especialidades_habilitadas is not None
                 else len(tarifas)
             ),
             count_participantes=len(tarifas),
@@ -617,7 +621,7 @@ class LiquidacionPorcentajeObraCoreService:
             derecho_maximo=contexto.derecho.derecho_maximo,
             porcentaje_minimo_uit=contexto.derecho.porcentaje_minimo_uit,
             derecho_aplicado_id=contexto.derecho.derecho_aplicado_id,
-            count_habilitadas=habilitadas,
+            cantidad_especialidades_habilitadas=habilitadas,
             count_participantes=n,
             detalles=detalles,
             total_subtotal=subtotal_total,
@@ -714,7 +718,7 @@ class LiquidacionPorcentajeObraCoreService:
             derecho_maximo=contexto.derecho.derecho_maximo,
             porcentaje_minimo_uit=contexto.derecho.porcentaje_minimo_uit,
             derecho_aplicado_id=contexto.derecho.derecho_aplicado_id,
-            count_habilitadas=habilitadas,
+            cantidad_especialidades_habilitadas=habilitadas,
             count_participantes=n,
             detalles=detalles,
             total_subtotal=subtotal,
@@ -882,17 +886,17 @@ class LiquidacionPorcentajeObraCoreService:
         H NUNCA se deduce de los participantes: es el universo de cobro y lo
         resuelve el llamador (catálogo por fecha efectiva o snapshot persistido).
         """
-        if contexto.count_habilitadas is None:
+        if contexto.cantidad_especialidades_habilitadas is None:
             raise BusinessError(
                 "No se resolvió la cantidad de especialidades habilitadas (H).",
                 code="PO_HABILITADAS_NO_RESUELTAS",
             )
-        if contexto.count_habilitadas <= 0:
+        if contexto.cantidad_especialidades_habilitadas <= 0:
             raise BusinessError(
                 "No hay especialidades habilitadas para cotizar.",
                 code="PO_SIN_HABILITADAS",
             )
-        return contexto.count_habilitadas
+        return contexto.cantidad_especialidades_habilitadas
 
     def _resolver_porcentaje_tarifa(
         self, contexto: CotizacionPOContexto
@@ -1002,7 +1006,7 @@ class LiquidacionPorcentajeObraCoreService:
         Persistencia (sin fórmulas: la aritmética ya viene del motor único):
 
         - `estrategia_cotizacion`: la estrategia cotizada.
-        - `count_habilitadas`: snapshot de H (habilitadas del catálogo).
+        - `cantidad_especialidades_habilitadas`: snapshot de H (habilitadas del catálogo).
         - `total_explicito`: total autoritativo (TOTAL_EXPLICITO).
         - `porcentaje_tarifa`: snapshot del porcentaje unitario (f) del padre.
         - `tarifa_aplicada`: tarifa que genera el subtotal del padre (puede no
@@ -1027,7 +1031,9 @@ class LiquidacionPorcentajeObraCoreService:
             valor_declarado=cotizacion.valor_declarado,
             porcentaje_liquidacion=cotizacion.porcentaje_liquidacion,
             estrategia_cotizacion=str(cotizacion.estrategia),
-            count_habilitadas=cotizacion.count_habilitadas,
+            cantidad_especialidades_habilitadas=(
+                cotizacion.cantidad_especialidades_habilitadas
+            ),
             total_explicito=cotizacion.total_explicito,
             porcentaje_tarifa=cotizacion.porcentaje_tarifa,
             tarifa_aplicada=tarifa_padre,
@@ -1077,7 +1083,7 @@ class LiquidacionPorcentajeObraCoreService:
         cotizacion: CotizacionPOEstrategiaData,
         derecho,
         tipo_tramite: Optional[str] = None,
-        count_habilitadas=SIN_HABILITADAS_RESUELTAS,
+        cantidad_especialidades_habilitadas=SIN_HABILITADAS_RESUELTAS,
     ) -> LiquidacionPorcentajeObra:
         """
         Reemplaza el estado calculado de un PO EXISTENTE por la proyección del
@@ -1087,12 +1093,12 @@ class LiquidacionPorcentajeObraCoreService:
 
         - los detalles anteriores se ELIMINAN y se recrean desde el motor: no
           sobreviven detalles obsoletos ni con porcentajes de otra estrategia;
-        - el padre queda con la estrategia y sus snapshots (`count_habilitadas`,
+        - el padre queda con la estrategia y sus snapshots (`cantidad_especialidades_habilitadas`,
           `total_explicito`, `porcentaje_tarifa`, `tarifa_aplicada`);
         - la fila de acumulación se CREA, ACTUALIZA o ELIMINA según la
           diferencia (invariante I-5: nunca hay acumulación con diferencia cero).
 
-        `count_habilitadas` permite al llamador fijar el snapshot de H EXACTO
+        `cantidad_especialidades_habilitadas` permite al llamador fijar el snapshot de H EXACTO
         que resolvió (contrato de snapshot/catálogo). Por defecto se usa el
         que devolvió el motor.
 
@@ -1115,10 +1121,10 @@ class LiquidacionPorcentajeObraCoreService:
         liquidacion_po.valor_declarado = cotizacion.valor_declarado
         liquidacion_po.porcentaje_liquidacion = cotizacion.porcentaje_liquidacion
         liquidacion_po.estrategia_cotizacion = str(cotizacion.estrategia)
-        liquidacion_po.count_habilitadas = (
-            cotizacion.count_habilitadas
-            if count_habilitadas is SIN_HABILITADAS_RESUELTAS
-            else count_habilitadas
+        liquidacion_po.cantidad_especialidades_habilitadas = (
+            cotizacion.cantidad_especialidades_habilitadas
+            if cantidad_especialidades_habilitadas is SIN_HABILITADAS_RESUELTAS
+            else cantidad_especialidades_habilitadas
         )
         liquidacion_po.total_explicito = cotizacion.total_explicito
         liquidacion_po.porcentaje_tarifa = cotizacion.porcentaje_tarifa

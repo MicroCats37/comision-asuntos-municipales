@@ -11,15 +11,21 @@ import { useLiquidacionesCreateMutation } from "./cache";
 const BASE_URL = "/liquidaciones/inspeccion-obra";
 const LIST_KEY = ["liquidaciones", "inspeccion-obra"] as const;
 
-export function buildCrearInspeccionObraPayload(payload: VisitasFormData) {
+export function buildCrearInspeccionObraPayload(
+  payload: VisitasFormData,
+  legacy = false,
+) {
   const {
     tarifa_visitas_id,
     cantidad_visitas,
+    inspector_id,
     inspector_operacion_id,
+    numero,
+    fecha_registro,
     ...rest
   } = payload;
 
-  return {
+  const apiPayload = {
     liquidacion_general: {
       municipalidad_id: rest.municipalidad_id,
       expediente: rest.expediente,
@@ -40,22 +46,31 @@ export function buildCrearInspeccionObraPayload(payload: VisitasFormData) {
     liquidacion_especifica: {
       datos: { cantidad_visitas },
       tarifa: { tarifa_visitas_id },
-      inspector_operacion_id,
+      ...(!legacy
+        ? { inspector_operacion_id }
+        : inspector_id && inspector_operacion_id
+          ? { inspector_id, inspector_operacion_id }
+          : {}),
     },
   };
+  return legacy ? { ...apiPayload, numero, fecha_registro } : apiPayload;
 }
 
-export function useCrearInspeccionObra() {
+export function useCrearInspeccionObra(mode: "create" | "legacy" = "create") {
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_general: unknown;
     liquidacion_especifica: {
       datos: { cantidad_visitas: number };
       tarifa: { tarifa_visitas_id: string | undefined };
-      inspector_operacion_id: string;
+      inspector_id?: string;
+      inspector_operacion_id?: string;
     };
   }>({
     tipoQueryKey: LIST_KEY,
-    url: `${BASE_URL}/nueva-liquidacion`,
+    url:
+      mode === "legacy"
+        ? `${BASE_URL}/nueva-liquidacion/legacy`
+        : `${BASE_URL}/nueva-liquidacion`,
   });
 
   // Wrapper that formats payload as { liquidacion_general, liquidacion_especifica } for the API.
@@ -67,13 +82,17 @@ export function useCrearInspeccionObra() {
     () => ({
       ...mutation,
       mutate: (payload: VisitasFormData) => {
-        mutation.mutate(buildCrearInspeccionObraPayload(payload));
+        mutation.mutate(
+          buildCrearInspeccionObraPayload(payload, mode === "legacy"),
+        );
       },
       mutateAsync: async (payload: VisitasFormData) => {
-        return mutation.mutateAsync(buildCrearInspeccionObraPayload(payload));
+        return mutation.mutateAsync(
+          buildCrearInspeccionObraPayload(payload, mode === "legacy"),
+        );
       },
     }),
-    [mutation],
+    [mode, mutation],
   );
 
   return crearMutation;

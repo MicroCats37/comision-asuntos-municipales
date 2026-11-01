@@ -43,6 +43,7 @@ import { GestionarDelegadosModal } from "../components/GestionarDelegadosModal";
 import {
   LiquidacionesListContent,
   NuevaLiquidacionButton,
+  RegistroLegacyButton,
   type UseLiquidacionListReturn,
 } from "../components/LiquidacionesListContent";
 import type { TableColumn } from "../components/tables/LiquidacionesTable";
@@ -93,6 +94,7 @@ function buildPdfItem(
 export function LiquidacionesEdificacionesView() {
   // Form modals (Edificaciones-specific).
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const [legacyModalOpen, setLegacyModalOpen] = useState(false);
   const [selectPreviaOpen, setSelectPreviaOpen] = useState(false);
   const [nuevaRevisionOpen, setNuevaRevisionOpen] = useState(false);
   const [previa, setPrevia] = useState<LiquidacionPreviaItem | null>(null);
@@ -212,14 +214,17 @@ export function LiquidacionesEdificacionesView() {
           <NuevaLiquidacionButton onClick={() => setFormModalOpen(true)} />
         }
         extraAction={
-          <Button
-            variant="outline"
-            className="gap-2 h-10 rounded-xl font-semibold shrink-0"
-            onClick={() => setSelectPreviaOpen(true)}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Tercera Revisión
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              className="gap-2 h-10 rounded-xl font-semibold shrink-0"
+              onClick={() => setSelectPreviaOpen(true)}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Tercera Revisión
+            </Button>
+            <RegistroLegacyButton onClick={() => setLegacyModalOpen(true)} />
+          </>
         }
         useListData={useEdificacionesData}
         renderCard={(item, refetch) => (
@@ -248,6 +253,15 @@ export function LiquidacionesEdificacionesView() {
           open={formModalOpen}
           onOpenChange={setFormModalOpen}
           onSuccess={() => setFormModalOpen(false)}
+        />
+      </ClientOnly>
+
+      <ClientOnly>
+        <LiquidacionEdificacionFormModal
+          mode="legacy"
+          open={legacyModalOpen}
+          onOpenChange={setLegacyModalOpen}
+          onSuccess={() => setLegacyModalOpen(false)}
         />
       </ClientOnly>
 

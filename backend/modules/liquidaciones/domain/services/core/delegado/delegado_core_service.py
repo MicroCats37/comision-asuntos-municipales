@@ -27,6 +27,14 @@ from modules.liquidaciones.domain.results.delegado.delegado_result import (
     MunicipalidadBasicResult,
     DelegadoForMunicipalidadResult,
 )
+# Modelos del módulo finanzas que referencian la asignación (LiquidacionDelegado).
+# El import es de solo modelos: no genera ciclo con modules.finanzas.domain.services.
+from modules.finanzas.domain.models.detalle_honorario_delegado import (
+    DetalleHonorarioDelegado,
+)
+from modules.finanzas.domain.models.recibo_honorario import (
+    ReciboHonorarioDelegado,
+)
 
 
 class DelegadoCoreService:
@@ -451,13 +459,25 @@ class DelegadoCoreService:
         liquidacion,
         delegado,
         especialidad_revision,
+        creado_por_rh: bool = False,
         **kwargs,
     ) -> LiquidacionDelegado:
-        """Crea una asociación LiquidacionDelegado (wrapper ORM puro)."""
+        """
+        Crea una asociación LiquidacionDelegado (wrapper ORM puro).
+
+        Args:
+            liquidacion: FK a LiquidacionGeneral.
+            delegado: FK a Delegado.
+            especialidad_revision: FK a EspecialidadRevision.
+            creado_por_rh: Provenance de la asignación. False (default) la
+                conserva siempre al eliminar un RH; solo el flujo RH mensual
+                crea asignaciones con provenance RH.
+        """
         return LiquidacionDelegado.objects.create(
             liquidacion=liquidacion,
             delegado=delegado,
             especialidad_revision=especialidad_revision,
+            creado_por_rh=creado_por_rh,
             **kwargs,
         )
 
@@ -543,6 +563,168 @@ class DelegadoCoreService:
             "delegado__perfil_ingeniero",
             "especialidad_revision",
         ).first()
+
+    # ── Alcance RH: provenance y verificación de referencias ─────────────────────
+
+    def get_liquidacion_delegado_por_id(
+        self,
+        liquidacion_delegado_id,
+    ) -> Optional[LiquidacionDelegado]:
+        """
+        Retorna la asignación (LiquidacionDelegado) por su PK, o None.
+        """
+        return (
+            LiquidacionDelegado.objects
+            .filter(id=liquidacion_delegado_id)
+            .select_related(
+                "liquidacion",
+                "delegado__perfil_ingeniero",
+                "delegado_operacion",
+                "especialidad_revision",
+            )
+            .first()
+        )
+
+    def list_liquidaciones_delegadas_por_ids(
+        self,
+        liquidacion_delegado_ids,
+    ) -> list[LiquidacionDelegado]:
+        """
+        Retorna las asignaciones (LiquidacionDelegado) de una lista de PK.
+
+        Los PK inexistentes se omiten del resultado.
+        """
+        ids = [i for i in dict.fromkeys(liquidacion_delegado_ids) if i is not None]
+        if not ids:
+            return []
+        return list(
+            LiquidacionDelegado.objects
+            .filter(id__in=ids)
+            .select_related(
+                "liquidacion",
+                "delegado__perfil_ingeniero",
+                "delegado_operacion",
+                "especialidad_revision",
+            )
+        )
+
+    def tiene_proveniencia_rh(
+        self,
+        liquidacion_delegado_id,
+    ) -> bool:
+        """
+        Indica si la asignación fue creada por el flujo RH mensual.
+
+        Las asignaciones históricas o manuales NO tienen provenance RH — en ese
+        caso la asignación se conserva siempre.
+        """
+        return LiquidacionDelegado.objects.filter(
+            id=liquidacion_delegado_id,
+            creado_por_rh=True,
+        ).exists()
+
+    def contar_referencias_asignacion(
+        self,
+        liquidacion_delegado_id,
+        exclude_recibo_mensual_id=None,
+    ) -> int:
+        """
+        Cuenta las referencias vivas a una asignación (LiquidacionDelegado).
+
+        Considera:
+        - DetalleHonorarioDelegado (detalle de RH mensual) — FK con PROTECT.
+        - ReciboHonorarioDelegado (recibo de honorario) — FK con PROTECT.
+
+        Args:
+            liquidacion_delegado_id: PK de la asignación.
+            exclude_recibo_mensual_id: Opcional — excluye los detalles que
+                pertenecen a ese RH mensual (ya retirado).
+
+        Returns:
+            Número de referencias vivas.
+        """
+        detalles_qs = DetalleHonorarioDelegado.objects.filter(
+            liquidacion_delegado_id=liquidacion_delegado_id,
+        )
+        if exclude_recibo_mensual_id is not None:
+            detalles_qs = detalles_qs.exclude(
+                recibo_mensual_id=exclude_recibo_mensual_id,
+            )
+        return (
+            detalles_qs.count()
+            + ReciboHonorarioDelegado.objects.filter(
+                liquidacion_delegado_id=liquidacion_delegado_id,
+            ).count()
+        )
+
+    def eliminar_asignacion_creada_por_rh(
+        self,
+        liquidacion_delegado_id,
+    ) -> bool:
+        """
+        Elimina la asignación SOLO si tiene provenance RH (creado_por_rh=True).
+
+        No modifica ningún metadato compartido (número de RH, periodo, mes,
+        dictamen ni fechas) y nunca toca Delegado ni DelegadoOperacion.
+
+        Returns:
+            True si la asignación fue eliminada, False si se retiene.
+        """
+        eliminada, _ = LiquidacionDelegado.objects.filter(
+            id=liquidacion_delegado_id,
+            creado_por_rh=True,
+        ).delete()
+        return eliminada > 0
+
+    def limpiar_asignaciones_por_rh(
+        self,
+        liquidacion_delegado_ids,
+        exclude_recibo_mensual_id=None,
+    ) -> dict[str, list[str]]:
+        """
+        Limpieza acotada de asignaciones tras retirar los detalles de un RH.
+
+        Una asignación se elimina únicamente cuando:
+        1. tiene provenance RH (fue creada por el flujo RH), y
+        2. no está referenciada por ningún otro detalle ni recibo.
+
+        Las asignaciones compartidas o históricas se conservan intactas.
+
+        Args:
+            liquidacion_delegado_ids: PKs de las asignaciones a evaluar.
+            exclude_recibo_mensual_id: Opcional — excluye los detalles que
+                pertenecen a ese RH mensual.
+
+        Returns:
+            Dict con las listas de ids eliminadas y retenidas.
+        """
+        eliminadas: list[str] = []
+        retenidas: list[str] = []
+
+        for asignacion_id in dict.fromkeys(liquidacion_delegado_ids):
+            if asignacion_id is None:
+                continue
+
+            if not self.tiene_proveniencia_rh(asignacion_id):
+                # Asignación histórica o manual — se conserva siempre.
+                retenidas.append(str(asignacion_id))
+                continue
+
+            referencias = self.contar_referencias_asignacion(
+                asignacion_id,
+                exclude_recibo_mensual_id=exclude_recibo_mensual_id,
+            )
+            if referencias > 0:
+                # Asignación compartida con otro RH o recibo — se conserva.
+                retenidas.append(str(asignacion_id))
+                continue
+
+            if self.eliminar_asignacion_creada_por_rh(asignacion_id):
+                eliminadas.append(str(asignacion_id))
+            else:
+                retenidas.append(str(asignacion_id))
+
+        return {"eliminadas": eliminadas, "retenidas": retenidas}
 
     def list_liquidacion_delegado_paginated(
         self,
@@ -656,16 +838,15 @@ class DelegadoCoreService:
         # Caso: no se encontró coincidencia
         raise HttpError(404, "No se encontró operación activa para los criterios dados")
 
-    def get_operatividades_vigentes_delegado(
+    def get_operatividades_delegado(
         self,
         delegado: Delegado,
         fecha: date,
+        vigente: Optional[bool] = None,
     ) -> list:
         """
-        Retorna todos los registros de DelegadoOperacion activos para un delegado que tengan
-        un periodo vigente en la fecha dada.
-
-        Cada registro incluye las fechas de vigencia del periodo actual.
+        Retorna los registros de DelegadoOperacion para un delegado, filtrados
+        opcionalmente por su vigencia en la fecha dada.
 
         Args:
             delegado: El objeto ORM Delegado.
@@ -674,19 +855,21 @@ class DelegadoCoreService:
         Returns:
             Lista de objetos ORM DelegadoOperacion con relaciones prefetched.
         """
+        qs = DelegadoOperacion.objects.filter(delegado=delegado)
+        periodo_vigente = Q(
+            periodos__periodo_inicio__lte=fecha,
+            periodos__periodo_fin__isnull=True,
+        ) | Q(
+            periodos__periodo_inicio__lte=fecha,
+            periodos__periodo_fin__gte=fecha,
+        )
+        if vigente is True:
+            qs = qs.filter(periodo_vigente)
+        elif vigente is False:
+            qs = qs.exclude(periodo_vigente)
+
         return list(
-            DelegadoOperacion.objects.filter(
-                delegado=delegado,
-            ).filter(
-                Q(
-                    periodos__periodo_inicio__lte=fecha,
-                    periodos__periodo_fin__isnull=True,
-                )
-                | Q(
-                    periodos__periodo_inicio__lte=fecha,
-                    periodos__periodo_fin__gte=fecha,
-                )
-            ).select_related(
+            qs.select_related(
                 "delegado__perfil_ingeniero",
                 "municipalidad",
                 "tipo_liquidacion",

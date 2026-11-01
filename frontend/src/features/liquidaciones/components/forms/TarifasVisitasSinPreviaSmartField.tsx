@@ -24,6 +24,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
+import { getErrorMessage } from "@/errors";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import { useLatestRequestGuard } from "@/hooks/system/useLatestRequestGuard";
 import api from "@/lib/api";
@@ -50,6 +51,9 @@ interface TarifasVisitasSinPreviaSmartFieldProps {
   inspectorNombre?: string;
   /** Callback al hacer click en el botón "Inspector Asignado" */
   onOpenInspector: () => void;
+  fecha?: string;
+  hideInspector?: boolean;
+  legacy?: boolean;
 }
 
 const toNumber = (value: unknown): number => {
@@ -80,10 +84,18 @@ export function TarifasVisitasSinPreviaSmartField({
   methods,
   inspectorNombre,
   onOpenInspector,
+  fecha,
+  hideInspector = false,
+  legacy = false,
 }: TarifasVisitasSinPreviaSmartFieldProps) {
   const [quote, setQuote] = useState<CotizacionVisitasOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requestGuard = useLatestRequestGuard();
+  const fechaRegistro = useWatch({
+    control: methods.control,
+    name: "fecha_registro",
+  }) as string | undefined;
+  const fechaEfectiva = fecha ?? fechaRegistro;
 
   // Lee del form (sin local state, sin bridge)
   const cantidadVisitasForm = useWatch({
@@ -101,7 +113,10 @@ export function TarifasVisitasSinPreviaSmartField({
 
   // Tarifas para mostrar info de la categoría seleccionada
   const { data: tarifasData, isLoading: isTarifasLoading } =
-    useTarifasVigentesVisitas();
+    useTarifasVigentesVisitas("inspeccion-obra", {
+      fecha: fechaEfectiva,
+      enabled: !legacy || Boolean(fechaEfectiva),
+    });
   const tarifas = useMemo(
     () => tarifasData?.tarifas ?? [],
     [tarifasData?.tarifas],
@@ -152,8 +167,11 @@ export function TarifasVisitasSinPreviaSmartField({
       cantidad_visitas: number;
       tarifa_visitas_id: string;
     }): Promise<CotizacionVisitasOutput> => {
+      const endpoint = fechaEfectiva
+        ? `/liquidaciones/inspeccion-obra/cotizar?fecha=${encodeURIComponent(fechaEfectiva)}`
+        : "/liquidaciones/inspeccion-obra/cotizar";
       const { data } = await api.post(
-        "/liquidaciones/inspeccion-obra/cotizar",
+        endpoint,
         buildCotizacionVisitasPayload(
           payload.cantidad_visitas,
           payload.tarifa_visitas_id,
@@ -169,9 +187,7 @@ export function TarifasVisitasSinPreviaSmartField({
     onError: (err, variables) => {
       if (!requestGuard.isLatest(variables.requestId)) return;
       setQuote(null);
-      setError(
-        err instanceof Error ? err.message : "Error al calcular cotización",
-      );
+      setError(getErrorMessage(err) || "Error al calcular cotización");
     },
   });
 
@@ -184,6 +200,7 @@ export function TarifasVisitasSinPreviaSmartField({
       !debouncedCantidad ||
       debouncedCantidad <= 0 ||
       !tarifaVisitasId ||
+      (legacy && !fechaEfectiva) ||
       !categoriaNorm
     ) {
       requestGuard.invalidate();
@@ -202,6 +219,8 @@ export function TarifasVisitasSinPreviaSmartField({
     debouncedCantidad,
     tarifaVisitasId,
     categoriaNorm,
+    fechaEfectiva,
+    legacy,
     cotizacionMutation.mutate,
     requestGuard,
   ]);
@@ -212,6 +231,8 @@ export function TarifasVisitasSinPreviaSmartField({
     <div className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4 shadow-sm">
       <input type="hidden" {...methods.register("categoria")} />
       <input type="hidden" {...methods.register("tarifa_visitas_id")} />
+      <input type="hidden" {...methods.register("inspector_id")} />
+      <input type="hidden" {...methods.register("inspector_operacion_id")} />
       <div className="flex items-center gap-2">
         <Calculator className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
@@ -222,27 +243,33 @@ export function TarifasVisitasSinPreviaSmartField({
         )}
       </div>
 
-      {/* Botón Inspector Asignado (top) */}
-      <div className="rounded-xl border border-border/50 bg-card p-3 space-y-2">
-        <div className="flex items-center gap-2">
-          <HardHat className="h-4 w-4 text-primary" />
-          <h4 className="text-sm font-semibold uppercase tracking-wide">
-            Inspector Asignado
-          </h4>
+      {!hideInspector && (
+        <div className="rounded-xl border border-border/50 bg-card p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <HardHat className="h-4 w-4 text-primary" />
+            <h4 className="text-sm font-semibold uppercase tracking-wide">
+              Inspector Asignado
+            </h4>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onOpenInspector}
+            className="w-full gap-1"
+          >
+            <HardHat className="h-3 w-3" />
+            {inspectorNombre
+              ? `Inspector: ${inspectorNombre}`
+              : "Seleccionar inspector"}
+          </Button>
+          {methods.formState.errors.inspector_operacion_id?.message && (
+            <p className="text-xs font-medium text-destructive">
+              {String(methods.formState.errors.inspector_operacion_id.message)}
+            </p>
+          )}
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onOpenInspector}
-          className="w-full gap-1"
-        >
-          <HardHat className="h-3 w-3" />
-          {inspectorNombre
-            ? `Inspector: ${inspectorNombre}`
-            : "Seleccionar inspector"}
-        </Button>
-      </div>
+      )}
 
       {/* Selector de Categoría — sin label ni dot, solo el nombre */}
       {isTarifasLoading ? (

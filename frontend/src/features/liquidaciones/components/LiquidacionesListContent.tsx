@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter, type LucideIcon, Plus } from "lucide-react";
+import { Filter, History, Info, type LucideIcon, Plus } from "lucide-react";
 import { type ReactNode, Suspense, useMemo, useState } from "react";
 import { Pagination } from "@/components/genericPagination/Pagination";
 import {
@@ -8,13 +8,21 @@ import {
   type FilterEntry,
 } from "@/components/ui/active-filters";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { PageHeader } from "@/components-app/pages/PageHeader";
 import { useUrlViewMode } from "@/hooks/system/useUrlViewMode";
 import { ConsultarIngenieroButton } from "../components/forms/ConsultarIngenieroButton";
 import { LiquidacionFiltroModal } from "../components/forms/LiquidacionFiltroModal";
 import { ViewModeToggle } from "../components/view-toggle/ViewModeToggle";
+import { useDistritos } from "../hooks/useDistritos";
 import { useLiquidacionFiltersUrl } from "../hooks/useLiquidacionFiltersUrl";
 import type { LiquidacionFiltros } from "../hooks/useLiquidacionList";
+import { useMunicipalidades } from "../hooks/useMunicipalidades";
 import {
   LiquidacionesTable,
   type LiquidacionTableRow,
@@ -67,6 +75,8 @@ function LiquidacionesListContentInner<TItem>({
   extraColumns,
 }: LiquidacionesListContentProps<TItem>) {
   const { filtros, setFiltros, clearFiltros } = useLiquidacionFiltersUrl();
+  const { data: municipalidades = [] } = useMunicipalidades();
+  const { data: distritos = [] } = useDistritos();
   const [view] = useUrlViewMode();
   const [filtroModalOpen, setFiltroModalOpen] = useState(false);
 
@@ -103,7 +113,16 @@ function LiquidacionesListContentInner<TItem>({
         filtros.entidad_id && {
           key: "entidad_id" as const,
           label: "Municipalidad",
-          value: filtros.entidad_id!,
+          value:
+            municipalidades.find((m) => m.id === filtros.entidad_id)?.nombre ??
+            filtros.entidad_id,
+        },
+        filtros.distrito_id && {
+          key: "distrito_id" as const,
+          label: "Distrito",
+          value:
+            distritos.find((d) => d.id === filtros.distrito_id)?.nombre ??
+            filtros.distrito_id,
         },
         filtros.fecha_desde && {
           key: "fecha_desde" as const,
@@ -136,7 +155,7 @@ function LiquidacionesListContentInner<TItem>({
           value: filtros.direccion!,
         },
       ].filter(Boolean) as FilterEntry<keyof LiquidacionFiltros>[],
-    [filtros],
+    [filtros, municipalidades, distritos],
   );
 
   return (
@@ -312,5 +331,44 @@ export function NuevaLiquidacionButton({
       <Plus className="h-4 w-4" />
       {children}
     </Button>
+  );
+}
+
+export function RegistroLegacyButton({ onClick }: { onClick: () => void }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            className="gap-2 h-10 rounded-xl border-amber-500/40 font-semibold text-amber-700 shrink-0 hover:bg-amber-500/10 dark:text-amber-300"
+            onClick={onClick}
+          >
+            <History className="h-4 w-4" />
+            Registro legacy
+            <Info className="h-3.5 w-3.5 opacity-70" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent
+          side="bottom"
+          sideOffset={8}
+          className="block w-80 max-w-[calc(100vw-2rem)] space-y-1.5 p-3"
+        >
+          <p className="text-xs font-semibold">¿Cuándo usar registro legacy?</p>
+          <p className="text-xs leading-relaxed opacity-90">
+            Para liquidaciones que no se pudieron migrar correctamente por
+            distintos motivos y que siguen existiendo en el historial.
+          </p>
+          <p className="text-xs leading-relaxed opacity-90">
+            Las tarifas se calculan según la <strong>fecha de registro</strong>{" "}
+            que indiques, no según las tarifas vigentes.
+          </p>
+          <p className="text-xs leading-relaxed opacity-90">
+            Puedes ingresar el <strong>número histórico</strong> de la
+            liquidación para que el documento corresponda al registro original.
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

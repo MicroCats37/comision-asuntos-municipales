@@ -139,7 +139,7 @@ def liquidacion_edificaciones_habilitadas(
         porcentaje_minimo_uit=Decimal("0.10"),
         derecho_aplicado=derecho_porcentaje_vigente,
         estrategia_cotizacion=HABILITADAS,
-        count_habilitadas=3,
+        cantidad_especialidades_habilitadas=3,
         porcentaje_tarifa=Decimal("0.0005"),
         tarifa_aplicada=tarifa_porcentaje_obra_estructuras,
     )
@@ -200,7 +200,7 @@ def liquidacion_edificaciones_normal(
         porcentaje_minimo_uit=Decimal("0.10"),
         derecho_aplicado=derecho_porcentaje_vigente,
         estrategia_cotizacion=NORMAL,
-        count_habilitadas=3,
+        cantidad_especialidades_habilitadas=3,
         porcentaje_tarifa=Decimal("0.0005"),
         tarifa_aplicada=tarifa_porcentaje_obra_estructuras,
     )
@@ -313,7 +313,7 @@ def test_detalle_edificaciones_expone_estrategia_snapshots_y_acumulacion(
     tipo = response.json()["data"]["liquidacion_tipo"]
 
     assert tipo["estrategia_cotizacion"] == HABILITADAS
-    assert tipo["count_habilitadas"] == 3
+    assert tipo["cantidad_especialidades_habilitadas"] == 3
     assert _dec(tipo["porcentaje_tarifa"]) == pytest.approx(Decimal("0.0005"))
     assert tipo["tarifa_aplicada_id"] is not None
     assert tipo["total_explicito"] is None
@@ -342,7 +342,7 @@ def test_lista_edificaciones_expone_estrategia_snapshots_y_acumulacion(
 
     tipo = items[0]["liquidacion_tipo"]
     assert tipo["estrategia_cotizacion"] == HABILITADAS
-    assert tipo["count_habilitadas"] == 3
+    assert tipo["cantidad_especialidades_habilitadas"] == 3
     assert _dec(tipo["porcentaje_tarifa"]) == pytest.approx(Decimal("0.0005"))
     assert tipo["acumulacion"] is not None
     assert _dec(tipo["acumulacion"]["subtotal_acumulado"]) == pytest.approx(Decimal("1000.0"))
@@ -432,7 +432,7 @@ def test_detalle_taludes_no_expone_campos_de_estrategia(
 
     for campo in (
         "estrategia_cotizacion",
-        "count_habilitadas",
+        "cantidad_especialidades_habilitadas",
         "total_explicito",
         "porcentaje_tarifa",
         "acumulacion",
@@ -454,7 +454,7 @@ def test_lista_taludes_no_expone_campos_de_estrategia(
     tipo = items[0]["liquidacion_tipo"]
     for campo in (
         "estrategia_cotizacion",
-        "count_habilitadas",
+        "cantidad_especialidades_habilitadas",
         "total_explicito",
         "porcentaje_tarifa",
         "acumulacion",
@@ -476,7 +476,7 @@ def test_detalle_impacto_vial_no_expone_campos_de_estrategia(
 
     for campo in (
         "estrategia_cotizacion",
-        "count_habilitadas",
+        "cantidad_especialidades_habilitadas",
         "total_explicito",
         "porcentaje_tarifa",
         "acumulacion",
@@ -498,7 +498,7 @@ def test_lista_impacto_vial_no_expone_campos_de_estrategia(
     tipo = items[0]["liquidacion_tipo"]
     for campo in (
         "estrategia_cotizacion",
-        "count_habilitadas",
+        "cantidad_especialidades_habilitadas",
         "total_explicito",
         "porcentaje_tarifa",
         "acumulacion",

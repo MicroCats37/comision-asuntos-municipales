@@ -1084,18 +1084,12 @@ class Command(BaseCommand):
         codpago = row[COL_CODPAGO]
         codpago_str = str(codpago).strip().upper() if codpago is not None else ""
         if not codpago_str:
-            anomalies.append("CodPago faltante")
-            municipalidad = Municipalidad.objects.first()  # fallback
-            if not municipalidad:
-                raise ValueError("No hay municipalidades en la base de datos")
+            raise ValueError("CodPago faltante: municipalidad no resuelta")
         else:
             try:
                 municipalidad = Municipalidad.objects.get(codigo=codpago_str)
             except ObjectDoesNotExist:
-                anomalies.append(f"CodPago no encontrado: {codpago_str}")
-                municipalidad = Municipalidad.objects.first()
-                if not municipalidad:
-                    raise ValueError(f"No se encontró municipalidad para {codpago_str!r}")
+                raise ValueError(f"CodPago no encontrado: {codpago_str}")
 
         municipalidad_id = municipalidad.id
 
@@ -1114,13 +1108,8 @@ class Command(BaseCommand):
             if distrito:
                 distrito_id = distrito.id
             else:
-                fallback = UbigeoDistrito.objects.first()
-                if fallback:
-                    distrito_id = fallback.id
-                    anomalies.append(f"Distrito no encontrado: {distrito_nombre}")
-                    self._log(self.style.WARNING(f"  WARNING: Distrito {distrito_nombre!r} not found, fallback to {fallback.nombre}"))
-                else:
-                    raise ValueError("No UbigeoDistrito records found in database")
+                distrito_id = None
+                anomalies.append(f"Distrito no encontrado: {distrito_nombre} (se guarda NULL)")
 
         # ── Entidad / razon_social ────────────────────────────────────────────
         razon_social = row[COL_RAZONSOCIAL]
@@ -1512,9 +1501,9 @@ class Command(BaseCommand):
             self._generar_reporte_detallado(rows, orchestrator, data_path.parent)
             return
 
-        # Resolve system user for fallback
-        system_user = _get_or_create_system_user()
-        self._log(f"  System user fallback: username={system_user.username}")
+        if not self.dry_run:
+            system_user = _get_or_create_system_user()
+            self._log(f"  System user fallback: username={system_user.username}")
 
         # Each run writes to its own folder so migration reports are auditable.
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1641,20 +1630,6 @@ class Command(BaseCommand):
                     self._log(self.style.WARNING(f"  RECHAZADO row {idx}: NRO == 0"))
                     continue
 
-                # ── Rechazo: DPTOPRDI vacío ────────────────────────────────
-                dptoprdri = row[COL_DPTOPRDI]
-                if dptoprdri is None or str(dptoprdri).strip() == "":
-                    rejected_rows.append({"fila": idx, "row": row, "motivo": "Distrito vacío (DPTOPRDI)", "subido": "NO"})
-                    report_writer.writerow([idx, "", "Distrito vacío (DPTOPRDI)", "NO"])
-                    # ── Live write to joined CSV + Excel ─────────────────────────
-                    jw.writerow([idx, "Distrito vacío (DPTOPRDI)", "NO"] + row)
-                    joined_csv_file.flush()
-                    ws_joined.append([idx, "Distrito vacío (DPTOPRDI)", "NO"] + row)
-                    ws_clean.append(row)
-                    rejected += 1
-                    self._log(self.style.WARNING(f"  RECHAZADO row {idx}: DPTOPRDI vacío"))
-                    continue
-
                 # Build payload
                 payload, anomalies = self._build_payload(row, idx, orchestrator)
 
@@ -1713,8 +1688,10 @@ class Command(BaseCommand):
                         continue
 
                 # Get usuario from USUARIO column
-                usuario_raw = row[COL_USUARIO] if len(row) > COL_USUARIO else None
-                usuario = _get_or_create_usuario_from_usuario(usuario_raw)
+                usuario = None
+                if not self.dry_run:
+                    usuario_raw = row[COL_USUARIO] if len(row) > COL_USUARIO else None
+                    usuario = _get_or_create_usuario_from_usuario(usuario_raw)
 
                 created_liquidacion_general = existing_habilitacion.liquidacion if existing_habilitacion is not None else None
                 if not self.dry_run and created_liquidacion_general is None:

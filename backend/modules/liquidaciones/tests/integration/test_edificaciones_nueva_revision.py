@@ -594,9 +594,8 @@ def test_tarifas_vacias_devuelve_400(
         f"Expected 400 for empty tarifas, got {response.status_code}: {response.content}"
     )
     error_data = response.json()
-    # Backend returns explicit error in details.non_field_errors
-    details = error_data.get("error", {}).get("details", {})
-    error_detail = str(details)
-    assert "tarifa" in error_detail.lower(), (
-        f"Expected tarifas-related error in details, got: {error_data}"
+    # El mensaje humano (con el detalle de las tarifas) vive en error.message
+    error_message = str(error_data.get("error", {}).get("message", ""))
+    assert "tarifa" in error_message.lower(), (
+        f"Expected tarifas-related error in the error message, got: {error_data}"
     )

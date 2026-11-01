@@ -10,7 +10,7 @@ Three engines:
 - Visitas (PorCategoriaVisitas): Inspección de Obra
 
 Design rules:
-- Reuses LiquidacionPatchHistoricoCoreService for historical resolution
+- Reuses LiquidacionHistoricoCoreService for historical resolution
 - Reuses existing calcular_cotizacion_* pure arithmetic
 - Does NOT delete/create/update any DB rows
 - No transaction.atomic() wrapper (no writes)
@@ -42,8 +42,8 @@ from modules.liquidaciones.domain.results.liquidacion_tipo.cotizacion import (
     CotizacionVisitasResult,
     EspecialidadResult,
 )
-from modules.liquidaciones.domain.services.core.liquidacion_patch_historico_core_service import (
-    LiquidacionPatchHistoricoCoreService,
+from modules.liquidaciones.domain.services.core.liquidacion_historico_core_service import (
+    LiquidacionHistoricoCoreService,
     NoIGVVigenteError,
     NoUITVigenteError,
     NoTarifaVigenteError,
@@ -96,14 +96,14 @@ class CotizarEdicionPOEstrategiaInput:
     Todas las estrategias conservan `valor_declarado`; TOTAL_EXPLICITO además
     usa `total_explicito` como dato autoritativo para el cálculo.
 
-    `count_habilitadas` (H) lo resuelve el llamador con el contrato de
+    `cantidad_especialidades_habilitadas` (H) lo resuelve el llamador con el contrato de
     snapshot/catálogo: NUNCA se deduce de los participantes.
     """
     estrategia: str = EstrategiaCotizacionPO.NORMAL_SELECCIONADAS
     valor_declarado: Optional[Decimal] = None
     total_explicito: Optional[Decimal] = None
     tarifas: Optional[List[CotizarEdicionPOTarifaInput]] = None
-    count_habilitadas: Optional[int] = None
+    cantidad_especialidades_habilitadas: Optional[int] = None
 
 
 class LiquidacionNoEncontradaError(BusinessError):
@@ -129,7 +129,7 @@ class LiquidacionCotizarEdicionPOService:
     """
 
     def __init__(self) -> None:
-        self._historico = LiquidacionPatchHistoricoCoreService()
+        self._historico = LiquidacionHistoricoCoreService()
         self._po_core = LiquidacionPorcentajeObraCoreService()
 
     def cotizar_edicion(
@@ -297,7 +297,7 @@ class LiquidacionCotizarEdicionPOService:
         contexto = CotizacionPOContexto(
             estrategia=patch.estrategia,
             participantes=participantes,
-            count_habilitadas=patch.count_habilitadas,
+            cantidad_especialidades_habilitadas=patch.cantidad_especialidades_habilitadas,
             valor_declarado=valor_declarado,
             total_explicito=total_explicito,
             igv_porcentaje=Decimal(str(igv.valor)),
@@ -420,7 +420,7 @@ class LiquidacionCotizarEdicionM2Service:
     """
     Read-only quote calculation for M2 motor (Habilitación Urbana, Mecánica de Suelos).
 
-    Uses historical derecho via LiquidacionPatchHistoricoCoreService.
+    Uses historical derecho via LiquidacionHistoricoCoreService.
     Does NOT persist any changes.
 
     Usage:
@@ -429,7 +429,7 @@ class LiquidacionCotizarEdicionM2Service:
     """
 
     def __init__(self) -> None:
-        self._historico = LiquidacionPatchHistoricoCoreService()
+        self._historico = LiquidacionHistoricoCoreService()
         self._m2_core = LiquidacionPorMetroCuadradoCoreService()
 
     def cotizar_edicion(
@@ -585,7 +585,7 @@ class LiquidacionCotizarEdicionVisitasService:
     """
     Read-only quote calculation for Visitas motor (Inspección de Obra).
 
-    Uses historical IGV, UIT via LiquidacionPatchHistoricoCoreService.
+    Uses historical IGV, UIT via LiquidacionHistoricoCoreService.
     Does NOT persist any changes.
 
     Usage:
@@ -594,7 +594,7 @@ class LiquidacionCotizarEdicionVisitasService:
     """
 
     def __init__(self) -> None:
-        self._historico = LiquidacionPatchHistoricoCoreService()
+        self._historico = LiquidacionHistoricoCoreService()
         self._visitas_core = LiquidacionPorCategoriaVisitasCoreService()
 
     def cotizar_edicion(

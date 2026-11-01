@@ -39,22 +39,16 @@ export function useLiquidacionPdfOnAfter(tipoPdf: PdfTipoSlug) {
         | undefined;
       const created =
         envelope?.data ?? (result as PdfLiquidacionItem | undefined);
+      // El mensaje de éxito ya lo muestra el mutation hook (texto del backend):
+      // aquí solo se avisa cuando la IMPRESIÓN falla.
       if (!created) {
-        notify.success("Liquidación guardada correctamente");
         return;
       }
 
-      void printLiquidacionPreview(created, tipoPdf).then(
-        () => notify.success("Liquidación guardada correctamente"),
-        (error) => {
-          console.error(
-            "No se pudo abrir la impresión de la liquidación",
-            error,
-          );
-          notify.success("Liquidación guardada correctamente");
-          notify.error("No se pudo abrir la impresión");
-        },
-      );
+      void printLiquidacionPreview(created, tipoPdf).catch((error) => {
+        console.error("No se pudo abrir la impresión de la liquidación", error);
+        notify.error("No se pudo abrir la impresión");
+      });
     },
     [tipoPdf],
   );

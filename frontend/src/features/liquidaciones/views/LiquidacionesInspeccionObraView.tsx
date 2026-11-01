@@ -36,6 +36,7 @@ import { LiquidacionInspeccionObraFormModal } from "../components/forms/inspecci
 import {
   LiquidacionesListContent,
   NuevaLiquidacionButton,
+  RegistroLegacyButton,
   type UseLiquidacionListReturn,
 } from "../components/LiquidacionesListContent";
 import type { TableColumn } from "../components/tables/LiquidacionesTable";
@@ -74,6 +75,7 @@ function buildPdfItem(
 
 export function LiquidacionesInspeccionObraView() {
   const [createSinPreviaOpen, setCreateSinPreviaOpen] = useState(false);
+  const [legacyModalOpen, setLegacyModalOpen] = useState(false);
 
   const [detalleItem, setDetalleItem] =
     useState<LiquidacionInspeccionObraListItem | null>(null);
@@ -181,6 +183,9 @@ export function LiquidacionesInspeccionObraView() {
             Nueva Liquidación
           </NuevaLiquidacionButton>
         }
+        extraAction={
+          <RegistroLegacyButton onClick={() => setLegacyModalOpen(true)} />
+        }
         useListData={useIoData}
         renderCard={(item, refetch) => (
           <LiquidacionInspeccionObraCard item={item} onUpdated={refetch} />
@@ -205,6 +210,12 @@ export function LiquidacionesInspeccionObraView() {
         onSuccess={() => {
           setCreateSinPreviaOpen(false);
         }}
+      />
+      <LiquidacionInspeccionObraFormModal
+        mode="legacy"
+        open={legacyModalOpen}
+        onOpenChange={setLegacyModalOpen}
+        onSuccess={() => setLegacyModalOpen(false)}
       />
 
       {detalleItem && (

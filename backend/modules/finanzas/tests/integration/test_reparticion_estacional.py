@@ -5,17 +5,21 @@ Integration tests for Reparticion Estacional flows.
 Tests:
 - Cotizar: preview calculation without persisting
 - Crear: persist snapshot with atomic transaction
+- Editar (PATCH): recalcula y reemplaza la distribución persistida
 - Overlap validation: reject overlapping month ranges for same specialty/period
 - Math precision: 4 decimal places for share, residual captured correctly
 - Soft delete: reparticion can be soft-deleted
 
 Fixtures are defined locally following the finanzas test pattern.
 """
+
 import pytest
+import uuid
 from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from unittest.mock import patch
 
 from modules.usuarios.domain.models.perfil_ingeniero import (
     EspecialidadRevision,
@@ -29,8 +33,12 @@ from modules.finanzas.domain.models.rh_reparticion_estacional import (
     RHReparticionEstacionalDelegado,
     RHReparticionEstacionalCapitulo,
 )
-from modules.finanzas.domain.models.detalle_honorario_delegado import DetalleHonorarioDelegado
-from modules.finanzas.domain.models.recibo_honorario_delegado_mensual import ReciboHonorarioDelegadoMensual
+from modules.finanzas.domain.models.detalle_honorario_delegado import (
+    DetalleHonorarioDelegado,
+)
+from modules.finanzas.domain.models.recibo_honorario_delegado_mensual import (
+    ReciboHonorarioDelegadoMensual,
+)
 from modules.finanzas.domain.services.core.rh_reparticion_estacional_core_service import (
     RHReparticionEstacionalCoreService,
 )
@@ -43,6 +51,7 @@ from modules.finanzas.domain.services.orchestrators.rh_reparticion_estacional_or
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def create_user(db):
@@ -114,7 +123,9 @@ def especialidad_revision_electrica(db):
 
 
 @pytest.fixture
-def especialidad_capitulo_mapping_civil(db, especialidad_revision_civil, capitulo_civil):
+def especialidad_capitulo_mapping_civil(
+    db, especialidad_revision_civil, capitulo_civil
+):
     """Map Civil especialidad to CIVIL chapter."""
     return EspecialidadRevisionCapitulo.objects.create(
         especialidad_revision=especialidad_revision_civil,
@@ -123,7 +134,9 @@ def especialidad_capitulo_mapping_civil(db, especialidad_revision_civil, capitul
 
 
 @pytest.fixture
-def especialidad_capitulo_mapping_sanitaria(db, especialidad_revision_sanitaria, capitulo_sanitaria):
+def especialidad_capitulo_mapping_sanitaria(
+    db, especialidad_revision_sanitaria, capitulo_sanitaria
+):
     """Map Sanitaria especialidad to SANITARIA chapter."""
     return EspecialidadRevisionCapitulo.objects.create(
         especialidad_revision=especialidad_revision_sanitaria,
@@ -132,7 +145,9 @@ def especialidad_capitulo_mapping_sanitaria(db, especialidad_revision_sanitaria,
 
 
 @pytest.fixture
-def especialidad_capitulo_mapping_electrica(db, especialidad_revision_electrica, capitulo_electrica):
+def especialidad_capitulo_mapping_electrica(
+    db, especialidad_revision_electrica, capitulo_electrica
+):
     """Map Electrical/Mechanical especialidad to ELECTRICA chapter."""
     return EspecialidadRevisionCapitulo.objects.create(
         especialidad_revision=especialidad_revision_electrica,
@@ -196,6 +211,7 @@ def recibo_mensual(db, delegado_1):
 
 
 # ── Tests ──────────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.django_db
 def test_core_service_get_capitulos_for_especialidad(
@@ -300,16 +316,19 @@ def test_core_service_soft_delete(
 
 # ── Endpoint Tests ─────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.django_db
 def test_endpoint_list_returns_active(
     auth_client,
     especialidad_revision_civil,
+    delegado_1,
+    capitulo_civil,
 ):
     """
-    GET /finanzas/reparticiones-estacionales returns active reparticiones.
+    GET /finanzas/reparticiones-estacionales returns complete active items.
     """
     # Create an active reparticion
-    RHReparticionEstacional.objects.create(
+    active = RHReparticionEstacional.objects.create(
         especialidad_revision=especialidad_revision_civil,
         periodo=2026,
         total_fondo_comun=Decimal("1000.00"),
@@ -319,6 +338,16 @@ def test_endpoint_list_returns_active(
         residual=Decimal("0.00"),
         mes_desde=1,
         mes_hasta=3,
+    )
+    RHReparticionEstacionalDelegado.objects.create(
+        reparticion=active,
+        delegado=delegado_1,
+        monto=Decimal("333.3333"),
+    )
+    RHReparticionEstacionalCapitulo.objects.create(
+        reparticion=active,
+        capitulo=capitulo_civil,
+        monto=Decimal("333.3333"),
     )
     # Create a deleted reparticion
     RHReparticionEstacional.objects.create(
@@ -340,7 +369,49 @@ def test_endpoint_list_returns_active(
     results = data["data"]
     # Only active (non-deleted) should be returned
     assert len(results) == 1
-    assert results[0]["periodo"] == 2026
+    item = results[0]
+    assert item["identidad"]["id"] == str(active.id)
+    assert item["general"] == {
+        "especialidad_revision": {
+            "id": str(especialidad_revision_civil.id),
+            "nombre": "Ingeniería Civil",
+        },
+        "periodo": 2026,
+        "mes_desde": 1,
+        "mes_hasta": 3,
+    }
+    assert (
+        item["distribucion"]["detalles_delegados"][0]["delegado"]["nombre_completo"]
+        == "Carlos Ramirez Lopez"
+    )
+    assert item["distribucion"]["detalles_capitulos"][0]["capitulo"] == {
+        "id": str(capitulo_civil.id),
+        "nombre": "Ingeniería Civil",
+    }
+    assert "delegado_id" not in item["distribucion"]["detalles_delegados"][0]
+    assert "capitulo_id" not in item["distribucion"]["detalles_capitulos"][0]
+
+
+@pytest.mark.django_db
+def test_endpoint_detail_is_not_exposed(
+    auth_client,
+    especialidad_revision_civil,
+):
+    rep = RHReparticionEstacional.objects.create(
+        especialidad_revision=especialidad_revision_civil,
+        periodo=2026,
+        total_fondo_comun=Decimal("1000.00"),
+        numero_capitulos=1,
+        numero_delegados=2,
+        monto_por_participacion=Decimal("333.3333"),
+        residual=Decimal("0.00"),
+        mes_desde=1,
+        mes_hasta=3,
+    )
+
+    response = auth_client.get(f"/finanzas/reparticiones-estacionales/{rep.id}")
+
+    assert response.status_code in {404, 405}
 
 
 @pytest.mark.django_db
@@ -370,6 +441,100 @@ def test_endpoint_delete_soft_deletes(
 
 
 @pytest.mark.django_db
+def test_endpoint_delete_exposes_the_top_level_message(
+    auth_client,
+    especialidad_revision_civil,
+):
+    """
+    DELETE /finanzas/reparticiones-estacionales/{id} publica el mensaje en el
+    primer nivel del envelope (contract/next-app-architecture-contract.md §11).
+
+    El mensaje NO se duplica dentro del payload: `data` sólo identifica la
+    repartición eliminada.
+    """
+    rep = RHReparticionEstacional.objects.create(
+        especialidad_revision=especialidad_revision_civil,
+        periodo=2026,
+        total_fondo_comun=Decimal("1000.00"),
+        numero_capitulos=1,
+        numero_delegados=2,
+        monto_por_participacion=Decimal("333.3333"),
+        residual=Decimal("0.00"),
+        mes_desde=1,
+        mes_hasta=3,
+    )
+    response = auth_client.delete(f"/finanzas/reparticiones-estacionales/{rep.id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["message"] == "Repartición estacional eliminada correctamente."
+    assert body["data"]["id"] == str(rep.id)
+    assert "message" not in body["data"]
+    # Nunca se expone el nombre interno del modelo.
+    assert "ReparticionEstacional" not in body["message"]
+
+
+@pytest.mark.django_db
+def test_endpoint_delete_rejects_invalid_uuid(auth_client):
+    """
+    DELETE con un identificador que no es UUID responde 400 con mensaje humano.
+    """
+    response = auth_client.delete("/finanzas/reparticiones-estacionales/no-es-uuid")
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["success"] is False
+    assert body["error"]["message"] == "reparticion_id no es un UUID válido"
+
+
+@pytest.mark.django_db
+def test_endpoint_delete_returns_404_for_unknown_reparticion(auth_client):
+    """
+    DELETE de una repartición inexistente responde 404 (nada se elimina).
+    """
+    response = auth_client.delete(
+        f"/finanzas/reparticiones-estacionales/{uuid.uuid4()}"
+    )
+
+    assert response.status_code == 404
+    body = response.json()
+    assert body["success"] is False
+    assert body["error"]["message"] == "La repartición trimestral no existe."
+
+
+@pytest.mark.django_db
+def test_endpoint_delete_rejects_an_already_deleted_reparticion(
+    auth_client,
+    especialidad_revision_civil,
+):
+    """
+    DELETE de una repartición ya eliminada responde 409 (no se re-elimina).
+    """
+    rep = RHReparticionEstacional.objects.create(
+        especialidad_revision=especialidad_revision_civil,
+        periodo=2026,
+        total_fondo_comun=Decimal("1000.00"),
+        numero_capitulos=1,
+        numero_delegados=2,
+        monto_por_participacion=Decimal("333.3333"),
+        residual=Decimal("0.00"),
+        mes_desde=1,
+        mes_hasta=3,
+        is_deleted=True,
+    )
+    deleted_at = rep.deleted_at
+
+    response = auth_client.delete(f"/finanzas/reparticiones-estacionales/{rep.id}")
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["error"]["message"] == "La repartición trimestral ya fue eliminada."
+    rep.refresh_from_db()
+    assert rep.is_deleted is True
+    assert rep.deleted_at == deleted_at
+
+
+@pytest.mark.django_db
 def test_endpoint_cotizar_validates_especialidad_not_found(
     auth_client,
 ):
@@ -377,6 +542,7 @@ def test_endpoint_cotizar_validates_especialidad_not_found(
     POST /finanzas/reparticiones-estacionales/cotizar returns 404 for unknown especialidad.
     """
     import uuid
+
     payload = {
         "especialidad_revision_id": str(uuid.uuid4()),
         "periodo": 2026,
@@ -400,6 +566,7 @@ def test_endpoint_crear_validates_delegate_not_found(
     POST /finanzas/reparticiones-estacionales returns 404 for unknown delegate.
     """
     import uuid
+
     payload = {
         "especialidad_revision_id": str(especialidad_revision_civil.id),
         "periodo": 2026,
@@ -434,8 +601,8 @@ class TestDistributeFondoComunCents:
         capitulo_ids = [5]
         delegado_ids = [10, 20]
 
-        capitulo_amounts, delegado_amounts, base, residual = distribute_fondo_comun_cents(
-            total, capitulo_ids, delegado_ids
+        capitulo_amounts, delegado_amounts, base, residual = (
+            distribute_fondo_comun_cents(total, capitulo_ids, delegado_ids)
         )
 
         assert base == Decimal("33.33")
@@ -467,8 +634,8 @@ class TestDistributeFondoComunCents:
         capitulo_ids = [1, 2]
         delegado_ids = [10, 11]
 
-        capitulo_amounts, delegado_amounts, base, residual = distribute_fondo_comun_cents(
-            total, capitulo_ids, delegado_ids
+        capitulo_amounts, delegado_amounts, base, residual = (
+            distribute_fondo_comun_cents(total, capitulo_ids, delegado_ids)
         )
 
         assert base == Decimal("1.00")
@@ -495,8 +662,8 @@ class TestDistributeFondoComunCents:
         capitulo_ids = [1]
         delegado_ids = [10, 20, 30]
 
-        capitulo_amounts, delegado_amounts, base, residual = distribute_fondo_comun_cents(
-            total, capitulo_ids, delegado_ids
+        capitulo_amounts, delegado_amounts, base, residual = (
+            distribute_fondo_comun_cents(total, capitulo_ids, delegado_ids)
         )
 
         assert base == Decimal("2.50")
@@ -517,8 +684,8 @@ class TestDistributeFondoComunCents:
         capitulo_ids = [1]
         delegado_ids = [10, 20]
 
-        capitulo_amounts, delegado_amounts, base, residual = distribute_fondo_comun_cents(
-            total, capitulo_ids, delegado_ids
+        capitulo_amounts, delegado_amounts, base, residual = (
+            distribute_fondo_comun_cents(total, capitulo_ids, delegado_ids)
         )
 
         assert base == Decimal("0.33")
@@ -526,7 +693,11 @@ class TestDistributeFondoComunCents:
         assert delegado_amounts[10] == Decimal("0.33")
         assert delegado_amounts[20] == Decimal("0.33")
 
-        sum_cents = int(capitulo_amounts[1] * 100) + int(delegado_amounts[10] * 100) + int(delegado_amounts[20] * 100)
+        sum_cents = (
+            int(capitulo_amounts[1] * 100)
+            + int(delegado_amounts[10] * 100)
+            + int(delegado_amounts[20] * 100)
+        )
         assert sum_cents == 100
         assert residual == Decimal("0.00")
 
@@ -536,7 +707,7 @@ class TestDistributeFondoComunCents:
         1.05 / 5: 3 chapters + 2 delegates (evenly divisible).
         """
         total = Decimal("1.05")
-        capitulo_ids = [3, 1, 2]    # unsorted input
+        capitulo_ids = [3, 1, 2]  # unsorted input
         delegado_ids = [20, 10]
 
         capitulo_amounts, _, base, residual = distribute_fondo_comun_cents(
@@ -551,8 +722,8 @@ class TestDistributeFondoComunCents:
 
     def test_empty_inputs(self):
         """Empty capitulo and delegado lists — residual is the whole amount."""
-        capitulo_amounts, delegado_amounts, base, residual = distribute_fondo_comun_cents(
-            Decimal("100.00"), [], []
+        capitulo_amounts, delegado_amounts, base, residual = (
+            distribute_fondo_comun_cents(Decimal("100.00"), [], [])
         )
         assert capitulo_amounts == {}
         assert delegado_amounts == {}
@@ -561,9 +732,6 @@ class TestDistributeFondoComunCents:
 
 
 # ── Integration Tests for Cotizar Exact Distribution ──────────────────────────────────────────────
-
-
-from unittest.mock import patch
 
 
 @pytest.mark.django_db
@@ -652,7 +820,9 @@ def test_cotizar_exact_403_over_4_chapters_and_delegados(
     delegado_montos = [d.monto for d in result.detalles_delegados]
     assert all(m == Decimal("1.00") for m in delegado_montos)
 
-    total_sum = sum(d.monto for d in result.detalles_delegados) + sum(d.monto for d in result.detalles_capitulos)
+    total_sum = sum(d.monto for d in result.detalles_delegados) + sum(
+        d.monto for d in result.detalles_capitulos
+    )
     assert total_sum == Decimal("4.03")
     assert result.residual == Decimal("0.00")
     assert result.monto_por_participacion == Decimal("1.00")
@@ -755,3 +925,484 @@ def test_cotizar_returns_delegado_profile_fields(
 
     # All montos are present and non-zero
     assert all(d.monto > 0 for d in result.detalles_delegados)
+
+
+# ── Edición (PATCH) ────────────────────────────────────────────────────────────
+
+
+def _make_reparticion(
+    especialidad_revision,
+    periodo=2026,
+    mes_desde=1,
+    mes_hasta=3,
+    delegados=(),
+    capitulos=(),
+):
+    """Crea una repartición persistida con sus detalles (snapshot completo)."""
+    reparticion = RHReparticionEstacional.objects.create(
+        especialidad_revision=especialidad_revision,
+        periodo=periodo,
+        total_fondo_comun=Decimal("100.00"),
+        numero_capitulos=len(capitulos),
+        numero_delegados=len(delegados),
+        monto_por_participacion=Decimal("50.0000"),
+        residual=Decimal("0.00"),
+        mes_desde=mes_desde,
+        mes_hasta=mes_hasta,
+    )
+    for delegado in delegados:
+        RHReparticionEstacionalDelegado.objects.create(
+            reparticion=reparticion,
+            delegado=delegado,
+            monto=Decimal("50.0000"),
+        )
+    for capitulo in capitulos:
+        RHReparticionEstacionalCapitulo.objects.create(
+            reparticion=reparticion,
+            capitulo=capitulo,
+            monto=Decimal("50.0000"),
+        )
+    return reparticion
+
+
+def _patch_payload(
+    especialidad_revision_id,
+    delegado_ids,
+    periodo=2026,
+    mes_desde=4,
+    mes_hasta=6,
+):
+    """Payload de edición (mismo bloque general que cotizar/crear)."""
+    return {
+        "especialidad_revision_id": str(especialidad_revision_id),
+        "periodo": periodo,
+        "mes_desde": mes_desde,
+        "mes_hasta": mes_hasta,
+        "delegado_ids": [str(d) for d in delegado_ids],
+    }
+
+
+@pytest.mark.django_db
+def test_core_service_check_overlap_excludes_the_current_record(
+    especialidad_revision_civil,
+    delegado_1,
+    capitulo_civil,
+):
+    """
+    El registro actual se excluye de la validación de solapamiento.
+    """
+    core = RHReparticionEstacionalCoreService()
+    reparticion = _make_reparticion(
+        especialidad_revision_civil,
+        mes_desde=1,
+        mes_hasta=3,
+        delegados=[delegado_1],
+        capitulos=[capitulo_civil],
+    )
+
+    sin_exclusion = core.check_overlapping_reparticion(
+        especialidad_revision_id=especialidad_revision_civil.id,
+        periodo=2026,
+        mes_desde=1,
+        mes_hasta=3,
+    )
+    con_exclusion = core.check_overlapping_reparticion(
+        especialidad_revision_id=especialidad_revision_civil.id,
+        periodo=2026,
+        mes_desde=1,
+        mes_hasta=3,
+        exclude_id=str(reparticion.id),
+    )
+
+    assert sin_exclusion is True
+    assert con_exclusion is False
+
+
+@pytest.mark.django_db
+def test_endpoint_patch_recalculates_and_replaces_the_distribution(
+    auth_client,
+    especialidad_revision_civil,
+    especialidad_capitulo_mapping_civil,
+    capitulo_civil,
+    delegado_1,
+    delegado_2,
+):
+    """
+    PATCH recalcula la distribución y reemplaza el conjunto final de detalles.
+
+    - devuelve el item compuesto del listado (identidad + general + distribucion)
+    - el conjunto de delegados es el FINAL (no sobreviven filas obsoletas)
+    - la identidad del registro y su created_at se conservan
+    """
+    reparticion = _make_reparticion(
+        especialidad_revision_civil,
+        mes_desde=1,
+        mes_hasta=3,
+        delegados=[delegado_1],
+        capitulos=[capitulo_civil],
+    )
+    created_at = reparticion.created_at
+
+    payload = _patch_payload(
+        especialidad_revision_civil.id,
+        [delegado_2.id],
+        periodo=2026,
+        mes_desde=4,
+        mes_hasta=6,
+    )
+
+    with patch.object(
+        RHReparticionEstacionalCoreService,
+        "get_fondo_comun_total",
+        return_value=Decimal("100.00"),
+    ):
+        response = auth_client.patch(
+            f"/finanzas/reparticiones-estacionales/{reparticion.id}",
+            json=payload,
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["message"] == "Repartición estacional actualizada correctamente."
+
+    data = body["data"]
+    # Misma forma compuesta que devuelve el listado
+    assert set(data.keys()) == {"identidad", "general", "distribucion"}
+    assert data["identidad"]["id"] == str(reparticion.id)
+    assert data["identidad"]["created_at"] == created_at.isoformat()
+    assert data["general"]["especialidad_revision"]["id"] == str(
+        especialidad_revision_civil.id
+    )
+    assert data["general"]["periodo"] == 2026
+    assert data["general"]["mes_desde"] == 4
+    assert data["general"]["mes_hasta"] == 6
+
+    # Distribución recalculada: 1 capítulo + 1 delegado → 50.00 cada uno
+    assert data["distribucion"]["total_fondo_comun"] == 100.0
+    assert data["distribucion"]["numero_capitulos"] == 1
+    assert data["distribucion"]["numero_delegados"] == 1
+    assert data["distribucion"]["residual"] == 0.0
+    assert len(data["distribucion"]["detalles_delegados"]) == 1
+    assert data["distribucion"]["detalles_delegados"][0]["delegado"]["id"] == str(
+        delegado_2.id
+    )
+    assert data["distribucion"]["detalles_delegados"][0]["monto"] == 50.0
+
+    # El conjunto persistido es el FINAL: el delegado anterior ya no existe
+    reparticion.refresh_from_db()
+    assert reparticion.mes_desde == 4
+    assert reparticion.mes_hasta == 6
+    assert reparticion.numero_delegados == 1
+    assert list(
+        reparticion.detalles_delegados.values_list("delegado_id", flat=True)
+    ) == [delegado_2.id]
+    assert list(
+        reparticion.detalles_capitulos.values_list("capitulo_id", flat=True)
+    ) == [capitulo_civil.id]
+
+
+@pytest.mark.django_db
+def test_endpoint_patch_with_the_same_range_succeeds(
+    auth_client,
+    especialidad_revision_civil,
+    especialidad_capitulo_mapping_civil,
+    capitulo_civil,
+    delegado_1,
+):
+    """
+    Editar la repartición con su propio rango NO se considera solapamiento.
+    """
+    reparticion = _make_reparticion(
+        especialidad_revision_civil,
+        mes_desde=1,
+        mes_hasta=3,
+        delegados=[delegado_1],
+        capitulos=[capitulo_civil],
+    )
+
+    payload = _patch_payload(
+        especialidad_revision_civil.id,
+        [delegado_1.id],
+        periodo=2026,
+        mes_desde=1,
+        mes_hasta=3,
+    )
+
+    with patch.object(
+        RHReparticionEstacionalCoreService,
+        "get_fondo_comun_total",
+        return_value=Decimal("100.00"),
+    ):
+        response = auth_client.patch(
+            f"/finanzas/reparticiones-estacionales/{reparticion.id}",
+            json=payload,
+        )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["identidad"]["id"] == str(reparticion.id)
+
+
+@pytest.mark.django_db
+def test_endpoint_patch_rejects_invalid_month_range(
+    auth_client,
+    especialidad_revision_civil,
+    especialidad_capitulo_mapping_civil,
+    capitulo_civil,
+    delegado_1,
+):
+    """
+    Un rango de meses invertido se rechaza con 400 antes de persistir.
+    """
+    reparticion = _make_reparticion(
+        especialidad_revision_civil,
+        mes_desde=1,
+        mes_hasta=3,
+        delegados=[delegado_1],
+        capitulos=[capitulo_civil],
+    )
+
+    payload = _patch_payload(
+        especialidad_revision_civil.id,
+        [delegado_1.id],
+        periodo=2026,
+        mes_desde=6,
+        mes_hasta=2,
+    )
+
+    response = auth_client.patch(
+        f"/finanzas/reparticiones-estacionales/{reparticion.id}",
+        json=payload,
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert (
+        body["error"]["message"]
+        == "El mes inicial no puede ser mayor que el mes final."
+    )
+    reparticion.refresh_from_db()
+    assert reparticion.mes_desde == 1
+
+
+@pytest.mark.django_db
+def test_endpoint_patch_rejects_invalid_uuid(
+    auth_client,
+    especialidad_revision_civil,
+    delegado_1,
+):
+    """
+    PATCH con un identificador que no es UUID responde 400 con mensaje humano.
+    """
+    payload = _patch_payload(especialidad_revision_civil.id, [delegado_1.id])
+
+    response = auth_client.patch(
+        "/finanzas/reparticiones-estacionales/no-es-uuid",
+        json=payload,
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["error"]["message"] == "reparticion_id no es un UUID válido"
+
+
+@pytest.mark.django_db
+def test_endpoint_patch_returns_404_for_unknown_reparticion(
+    auth_client,
+    especialidad_revision_civil,
+    delegado_1,
+):
+    """
+    PATCH de una repartición inexistente responde 404.
+    """
+    payload = _patch_payload(especialidad_revision_civil.id, [delegado_1.id])
+
+    response = auth_client.patch(
+        f"/finanzas/reparticiones-estacionales/{uuid.uuid4()}",
+        json=payload,
+    )
+
+    assert response.status_code == 404
+    body = response.json()
+    assert body["error"]["message"] == "La repartición trimestral no existe."
+
+
+@pytest.mark.django_db
+def test_endpoint_patch_rejects_an_already_deleted_reparticion(
+    auth_client,
+    especialidad_revision_civil,
+    especialidad_capitulo_mapping_civil,
+    capitulo_civil,
+    delegado_1,
+):
+    """
+    Una repartición eliminada NO se revive al editarla (409).
+    """
+    reparticion = _make_reparticion(
+        especialidad_revision_civil,
+        mes_desde=1,
+        mes_hasta=3,
+        delegados=[delegado_1],
+        capitulos=[capitulo_civil],
+    )
+    reparticion.is_deleted = True
+    reparticion.save(update_fields=["is_deleted"])
+
+    payload = _patch_payload(
+        especialidad_revision_civil.id,
+        [delegado_1.id],
+        periodo=2026,
+        mes_desde=4,
+        mes_hasta=6,
+    )
+
+    with patch.object(
+        RHReparticionEstacionalCoreService,
+        "get_fondo_comun_total",
+        return_value=Decimal("100.00"),
+    ):
+        response = auth_client.patch(
+            f"/finanzas/reparticiones-estacionales/{reparticion.id}",
+            json=payload,
+        )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert (
+        body["error"]["message"]
+        == "La repartición trimestral ya fue eliminada y no puede editarse."
+    )
+    reparticion.refresh_from_db()
+    assert reparticion.is_deleted is True
+    assert reparticion.mes_desde == 1
+
+
+@pytest.mark.django_db
+def test_endpoint_patch_rejects_unknown_delegate(
+    auth_client,
+    especialidad_revision_civil,
+    especialidad_capitulo_mapping_civil,
+    capitulo_civil,
+    delegado_1,
+):
+    """
+    Un delegado inexistente en el payload se rechaza con 404.
+    """
+    reparticion = _make_reparticion(
+        especialidad_revision_civil,
+        mes_desde=1,
+        mes_hasta=3,
+        delegados=[delegado_1],
+        capitulos=[capitulo_civil],
+    )
+
+    payload = _patch_payload(
+        especialidad_revision_civil.id,
+        [uuid.uuid4()],
+        periodo=2026,
+        mes_desde=4,
+        mes_hasta=6,
+    )
+
+    response = auth_client.patch(
+        f"/finanzas/reparticiones-estacionales/{reparticion.id}",
+        json=payload,
+    )
+
+    assert response.status_code == 404
+    body = response.json()
+    assert body["error"]["message"] == "Delegado no encontrado"
+    reparticion.refresh_from_db()
+    assert reparticion.mes_desde == 1
+
+
+@pytest.mark.django_db
+def test_endpoint_patch_rejects_unknown_especialidad(
+    auth_client,
+    especialidad_revision_civil,
+    especialidad_capitulo_mapping_civil,
+    capitulo_civil,
+    delegado_1,
+):
+    """
+    Una especialidad de revisión inexistente se rechaza con 404.
+    """
+    reparticion = _make_reparticion(
+        especialidad_revision_civil,
+        mes_desde=1,
+        mes_hasta=3,
+        delegados=[delegado_1],
+        capitulos=[capitulo_civil],
+    )
+
+    payload = _patch_payload(uuid.uuid4(), [delegado_1.id], periodo=2026)
+
+    response = auth_client.patch(
+        f"/finanzas/reparticiones-estacionales/{reparticion.id}",
+        json=payload,
+    )
+
+    assert response.status_code == 404
+    body = response.json()
+    assert body["error"]["message"] == "EspecialidadRevision no encontrada"
+
+
+@pytest.mark.django_db
+def test_endpoint_patch_returns_409_when_the_target_specialty_period_exists(
+    auth_client,
+    especialidad_revision_civil,
+    especialidad_revision_sanitaria,
+    especialidad_capitulo_mapping_sanitaria,
+    delegado_1,
+):
+    """
+    Editar hacia una especialidad+periodo que ya tiene una repartición activa
+    responde 409 y NO altera el registro original (rollback atómico).
+    """
+    editable = _make_reparticion(
+        especialidad_revision_civil,
+        periodo=2026,
+        mes_desde=1,
+        mes_hasta=3,
+        delegados=[delegado_1],
+        capitulos=[],
+    )
+    _make_reparticion(
+        especialidad_revision_sanitaria,
+        periodo=2026,
+        mes_desde=1,
+        mes_hasta=3,
+        delegados=[],
+        capitulos=[],
+    )
+
+    payload = _patch_payload(
+        especialidad_revision_sanitaria.id,
+        [delegado_1.id],
+        periodo=2026,
+        mes_desde=7,
+        mes_hasta=9,
+    )
+
+    with patch.object(
+        RHReparticionEstacionalCoreService,
+        "get_fondo_comun_total",
+        return_value=Decimal("100.00"),
+    ):
+        response = auth_client.patch(
+            f"/finanzas/reparticiones-estacionales/{editable.id}",
+            json=payload,
+        )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert (
+        body["error"]["message"]
+        == "Ya existe una repartición activa para esa especialidad y periodo."
+    )
+    # El registro original queda intacto (rollback atómico)
+    editable.refresh_from_db()
+    assert editable.especialidad_revision_id == especialidad_revision_civil.id
+    assert editable.periodo == 2026
+    assert editable.mes_desde == 1
+    assert editable.mes_hasta == 3

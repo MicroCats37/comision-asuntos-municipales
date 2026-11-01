@@ -12,6 +12,7 @@ import { Calculator, Loader2 } from "lucide-react";
  * Auto-recalcula con debounce cuando cambia la tarifa seleccionada.
  */
 import { useEffect, useState } from "react";
+import { getErrorMessage } from "@/errors";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import api from "@/lib/api";
 import { formatCurrencyTrimmed } from "@/utils/number-formatter";
@@ -67,9 +68,7 @@ export function CotizacionNuevaRevisionSmartField({
     },
     onError: (err) => {
       setQuote(null);
-      setError(
-        err instanceof Error ? err.message : "Error al calcular cotización",
-      );
+      setError(getErrorMessage(err) || "Error al calcular cotización");
     },
   });
 

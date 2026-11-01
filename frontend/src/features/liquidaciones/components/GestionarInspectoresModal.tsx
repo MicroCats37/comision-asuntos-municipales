@@ -7,7 +7,7 @@ import type { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 
 import { AppFormModal } from "@/components-app/forms/AppFormModal";
-import { handleApiError, notify } from "@/errors";
+import { extractSuccessMessage, handleApiError, notify } from "@/errors";
 import type { InspectorVigente } from "@/features/inspectores/types/inspectores.types";
 import api from "@/lib/api";
 import {
@@ -86,9 +86,13 @@ export function GestionarInspectoresModal({
       );
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["liquidaciones"] });
-      notify.success("Inspectores actualizados correctamente");
+      // The backend message is authoritative; the hardcoded text is only a
+      // fallback for endpoints that answer without a `message`.
+      notify.success(
+        extractSuccessMessage(data) ?? "Inspectores actualizados correctamente",
+      );
       onSuccess?.();
     },
     onError: (error) => {

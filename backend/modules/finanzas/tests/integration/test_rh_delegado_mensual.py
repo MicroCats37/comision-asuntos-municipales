@@ -12,6 +12,9 @@ Covers:
 - Validación: liquidación sin detalle porcentual → 400
 - crear() retorna liquidacion_delegado_id populated en cada item (BUG FIX)
 - cotizar() retorna liquidacion_delegado_id=None (expected — record not created yet)
+- Borrado con provenance: la asignación creada por el RH y referenciada solo por
+  ese RH se elimina; las asignaciones compartidas o históricas se conservan.
+- El borrado desde el admin pasa por el mismo lifecycle del RH.
 """
 import pytest
 import uuid
@@ -57,8 +60,14 @@ from modules.finanzas.domain.services.flujos.rh_delegado_mensual_flujo import (
     RHDelegadoMensualCotizarFlujo,
     RHDelegadoMensualCrearFlujo,
     RHDelegadoMensualDeleteFlujo,
+    RHDelegadoMensualActualizarFlujo,
 )
-from modules.finanzas.domain.schemas import RHDelegadoCotizarIn, RHDelegadoCotizarItemIn
+from modules.finanzas.domain.schemas import (
+    RHDelegadoActualizarIn,
+    RHDelegadoActualizarItemIn,
+    RHDelegadoCotizarIn,
+    RHDelegadoCotizarItemIn,
+)
 from django.contrib.auth import get_user_model
 
 
@@ -108,6 +117,37 @@ def proyecto(db, municipalidad, ubigeo_distrito):
         entidad_tipo_documento="RUC",
         entidad_numero_documento="20456789012",
         entidad_razon_social="Propietario Test SAC",
+    )
+
+
+@pytest.fixture
+def segundo_proyecto(db, municipalidad, ubigeo_distrito):
+    """Second Proyecto.
+
+    `LiquidacionGeneral.proyecto` is a OneToOneField, so every LiquidacionGeneral
+    needs its own Proyecto. Sharing the `proyecto` fixture between two
+    liquidaciones violates the unique constraint on `proyecto_id`.
+    """
+    return Proyecto.objects.create(
+        nombre_propietario="Propietario Test Dos SAC",
+        direccion="Av. Test 456",
+        distrito_id=ubigeo_distrito.id,
+        entidad_tipo_documento="RUC",
+        entidad_numero_documento="20456789013",
+        entidad_razon_social="Propietario Test Dos SAC",
+    )
+
+
+@pytest.fixture
+def tercer_proyecto(db, municipalidad, ubigeo_distrito):
+    """Third Proyecto — same OneToOne constraint as `segundo_proyecto`."""
+    return Proyecto.objects.create(
+        nombre_propietario="Propietario Test Tres SAC",
+        direccion="Av. Test 789",
+        distrito_id=ubigeo_distrito.id,
+        entidad_tipo_documento="RUC",
+        entidad_numero_documento="20456789014",
+        entidad_razon_social="Propietario Test Tres SAC",
     )
 
 
@@ -311,11 +351,14 @@ def liquidacion_porcentaje_detalle_con_ajuste(
 
 @pytest.fixture
 def segundo_liquidacion_general_porcentaje(
-    db, proyecto, municipalidad, tipo_edificacion, usuario_liquidacion, igv_vigente, uit_vigente
+    db, segundo_proyecto, municipalidad, tipo_edificacion, usuario_liquidacion, igv_vigente, uit_vigente
 ):
-    """Second LiquidacionGeneral of EDIFICACION type for multi-item RH tests."""
+    """Second LiquidacionGeneral of EDIFICACION type for multi-item RH tests.
+
+    Uses its own Proyecto: `LiquidacionGeneral.proyecto` is a OneToOneField.
+    """
     return LiquidacionGeneral.objects.create(
-        proyecto=proyecto,
+        proyecto=segundo_proyecto,
         municipalidad=municipalidad,
         tipo_liquidacion=tipo_edificacion,
         usuario_creador=usuario_liquidacion,
@@ -362,6 +405,51 @@ def segunda_liquidacion_porcentaje_detalle_con_ajuste(
         subtotal=Decimal("600.01"),
         importe_parcial=Decimal("600.00"),
         ajuste_redondeo=Decimal("0.01"),
+    )
+
+
+@pytest.fixture
+def liquidacion_porcentaje_detalle_sin_importe_parcial(
+    db, liquidacion_porcentaje_obra, tarifa_porcentaje_obra, especialidad_estructuras
+):
+    """Detalle PO con `importe_parcial` / `ajuste_redondeo` en NULL.
+
+    Reproduce el estado previo al backfill `backfill_redondeo_fase1`: el detalle
+    conserva su `subtotal` pero los campos de redondeo de alta precisión nunca
+    se escribieron.
+
+    Semántica documentada del backfill:
+        importe_parcial = subtotal
+        ajuste_redondeo = 0.00
+    """
+    return LiquidacionPorcentajeObraDetalle.objects.create(
+        liquidacion_porcentaje=liquidacion_porcentaje_obra,
+        tarifa_aplicada=tarifa_porcentaje_obra,
+        especialidad=especialidad_estructuras,
+        porcentaje_aplicado=Decimal("0.0010"),
+        subtotal=Decimal("500.00"),
+        importe_parcial=None,
+        ajuste_redondeo=None,
+    )
+
+
+@pytest.fixture
+def segunda_liquidacion_porcentaje_detalle_con_importe_parcial_explicito_cero(
+    db, segunda_liquidacion_porcentaje_obra, tarifa_porcentaje_obra, especialidad_estructuras
+):
+    """Detalle PO con `importe_parcial` EXPRESAMENTE en cero (no NULL).
+
+    El fallback de runtime sólo aplica cuando el valor es NULL: un cero
+    explícito es una decisión de cálculo y debe preservarse.
+    """
+    return LiquidacionPorcentajeObraDetalle.objects.create(
+        liquidacion_porcentaje=segunda_liquidacion_porcentaje_obra,
+        tarifa_aplicada=tarifa_porcentaje_obra,
+        especialidad=especialidad_estructuras,
+        porcentaje_aplicado=Decimal("0.0010"),
+        subtotal=Decimal("500.00"),
+        importe_parcial=Decimal("0.00"),
+        ajuste_redondeo=Decimal("0.00"),
     )
 
 
@@ -571,6 +659,7 @@ def test_crear_multiple_items_cada_uno_retorna_su_liquidacion_delegado_id(
     tasa_delegado_vigente,
     tipo_edificacion,
     proyecto,
+    segundo_proyecto,
     municipalidad,
     usuario_liquidacion,
     igv_vigente,
@@ -584,9 +673,10 @@ def test_crear_multiple_items_cada_uno_retorna_su_liquidacion_delegado_id(
     # NOTE: liquidacion_delegado_porcentaje NOT included intentionally —
     # both items should be created fresh by crear().
 ):
-    # Crear segunda LiquidacionGeneral + detalle para el segundo item
+    # Crear segunda LiquidacionGeneral + detalle para el segundo item.
+    # Necesita su propio Proyecto (LiquidacionGeneral.proyecto es OneToOne).
     lg2 = LiquidacionGeneral.objects.create(
-        proyecto=proyecto,
+        proyecto=segundo_proyecto,
         municipalidad=municipalidad,
         tipo_liquidacion=tipo_edificacion,
         usuario_creador=usuario_liquidacion,
@@ -1013,10 +1103,15 @@ def test_cotizar_operatividad_sin_tipo_retorna_400(
 
 
 @pytest.mark.django_db
-def test_seed_tasas_delegado_replica_para_los_6_tipos(db):
+def test_seed_tasas_delegado_replica_el_catalogo_de_tasas(db):
     """
-    seed_tasas_delegado debe crear/actualizar una TasaDelegado por cada uno de
-    los 6 TipoLiquidacion canónicos (misma tasa 0.25/0.05/0.10, 1900-01-01, fin NULL).
+    seed_tasas_delegado debe crear/actualizar una TasaDelegado por cada tipo de
+    liquidación del catálogo vigente
+    (core_application/seeds/catalogos/tasas_delegado.json).
+
+    El catálogo cubre EDIFICACION, HABILITACION_URBANA y MECANICA_SUELOS con
+    vigencia 2000-01-01 y sin fin; renta_cip 0.25 y aporte_codemu 0.05 para todas,
+    y fondo_comun 0.10 solo para EDIFICACION (0 en los tipos M2).
     """
     call_command("seed_tasas_delegado")
 
@@ -1024,30 +1119,27 @@ def test_seed_tasas_delegado_replica_para_los_6_tipos(db):
         TipoLiquidacion as TipoLiquidacionConst,
     )
 
-    codigos = [
-        TipoLiquidacionConst.EDIFICACION,
-        TipoLiquidacionConst.HABILITACION_URBANA,
-        TipoLiquidacionConst.MECANICA_SUELOS,
-        TipoLiquidacionConst.IMPACTO_VIAL,
-        TipoLiquidacionConst.TALUDES,
-        TipoLiquidacionConst.INSPECCION_OBRA,
-    ]
+    catalogo = {
+        TipoLiquidacionConst.EDIFICACION: Decimal("0.10"),
+        TipoLiquidacionConst.HABILITACION_URBANA: Decimal("0"),
+        TipoLiquidacionConst.MECANICA_SUELOS: Decimal("0"),
+    }
 
-    # Los 6 TipoLiquidacion deben existir (la semilla los crea si faltan).
-    assert TipoLiquidacionModel.objects.count() == 6
+    # Un TipoLiquidacion por cada entrada del catálogo (la semilla los crea si faltan).
+    assert TipoLiquidacionModel.objects.count() == len(catalogo)
 
-    tasas = TasaDelegado.objects.filter(periodo_inicio=date(1900, 1, 1))
-    assert tasas.count() == 6
+    tasas = TasaDelegado.objects.filter(periodo_inicio=date(2000, 1, 1))
+    assert tasas.count() == len(catalogo)
 
-    for codigo in codigos:
+    for codigo, fondo_comun in catalogo.items():
         tipo = TipoLiquidacionModel.objects.get(codigo=codigo)
         tasa = TasaDelegado.objects.get(
-            tipo_liquidacion=tipo, periodo_inicio=date(1900, 1, 1)
+            tipo_liquidacion=tipo, periodo_inicio=date(2000, 1, 1)
         )
         assert tasa.periodo_fin is None
         assert tasa.renta_cip == Decimal("0.25")
         assert tasa.aporte_codemu == Decimal("0.05")
-        assert tasa.fondo_comun == Decimal("0.10")
+        assert tasa.fondo_comun == fondo_comun
 
 
 @pytest.mark.django_db
@@ -1179,6 +1271,118 @@ def test_cotizar_renta_cip_includes_ajuste_redondeo_sum_and_populates_all_decima
 
     # No LiquidacionDelegado records created (cotizar is read-only)
     assert LiquidacionDelegado.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_cotizar_con_importe_parcial_null_usa_el_subtotal_del_detalle_como_base(
+    cotizar_flujo,
+    core_service,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle_sin_importe_parcial,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    REGRESIÓN: un `importe_parcial` NULL no puede colapsar las tasas a cero.
+
+    GIVEN: un detalle PO con `subtotal = 500.00` y `importe_parcial` /
+           `ajuste_redondeo` en NULL (estado previo al backfill
+           `backfill_redondeo_fase1`).
+    WHEN:  el core de finanzas resuelve los importes y el flujo cotiza el RH.
+    THEN:  el fallback de runtime usa el `subtotal` del detalle como base
+           imponible (semántica documentada del backfill:
+           `importe_parcial = subtotal`, `ajuste_redondeo = 0.00`), de modo que
+           las tasas se reparten 25% Renta CIP / 5% Aporte CODEMU /
+           10% Fondo Común y el neto es 60%.
+
+           Con el fallback anterior (`importe_parcial = 0.00`) las tasas puras
+           se calculaban sobre cero y el 100% del subtotal caía en Renta CIP
+           por sustracción.
+    """
+    importes = core_service.get_importes_po_detalle(
+        liquidacion_general_porcentaje.id,
+        liquidacion_porcentaje_detalle_sin_importe_parcial.especialidad_id,
+    )
+
+    assert importes is not None
+    importe_parcial, ajuste_redondeo, subtotal = importes
+
+    # Fallback alineado con `backfill_redondeo_fase1`.
+    assert importe_parcial == Decimal("500.00"), (
+        f"importe_parcial={importe_parcial} debe caer al subtotal del detalle "
+        f"(500.00), no a 0.00"
+    )
+    assert ajuste_redondeo == Decimal("0.00")
+    assert subtotal == Decimal("500.00")
+
+    result = cotizar_flujo.cotizar(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=6,
+            items=[
+                {
+                    "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(
+                        liquidacion_porcentaje_detalle_sin_importe_parcial.especialidad_id
+                    ),
+                    "periodo": 2026,
+                    "mes": 6,
+                },
+            ],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+
+    assert len(result.items) == 1
+    item = result.items[0]
+
+    # Base imponible = subtotal del detalle.
+    assert item.imp_bruto == Decimal("500.00")
+
+    # Tasas puras sobre la base real: 25% / 5% / 10% y neto 60%.
+    assert item.renta_cip == Decimal("125.00"), (
+        f"renta_cip={item.renta_cip} debe ser el 25% de 500.00, no el 100%"
+    )
+    assert item.aporte_codemu == Decimal("25.00")
+    assert item.fondo_comun == Decimal("50.00")
+    assert item.neto_honorario == Decimal("300.00")
+
+    # Los totales agregan el mismo reparto.
+    assert result.totales.sub_total == Decimal("500.00")
+    assert result.totales.renta_cip == Decimal("125.00")
+    assert result.totales.aporte_codemu == Decimal("25.00")
+    assert result.totales.fondo_comun == Decimal("50.00")
+    assert result.totales.neto_honorario == Decimal("300.00")
+
+    # No se crea ninguna asignación (cotizar es read-only).
+    assert LiquidacionDelegado.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_get_importes_po_detalle_preserva_un_importe_parcial_explicito_en_cero(
+    core_service,
+    segundo_liquidacion_general_porcentaje,
+    segunda_liquidacion_porcentaje_detalle_con_importe_parcial_explicito_cero,
+):
+    """
+    GIVEN: un detalle PO con `importe_parcial = 0.00` EXPRESAMENTE persistido
+           (no NULL) y `subtotal = 500.00`.
+    WHEN:  el core de finanzas resuelve los importes del detalle.
+    THEN:  el cero explícito se preserva: NO se reemplaza por el `subtotal`.
+           El fallback de runtime sólo aplica cuando el valor es NULL.
+    """
+    importes = core_service.get_importes_po_detalle(
+        segundo_liquidacion_general_porcentaje.id,
+        segunda_liquidacion_porcentaje_detalle_con_importe_parcial_explicito_cero.especialidad_id,
+    )
+
+    assert importes is not None
+    importe_parcial, ajuste_redondeo, subtotal = importes
+
+    assert importe_parcial == Decimal("0.00")
+    assert ajuste_redondeo == Decimal("0.00")
+    assert subtotal == Decimal("500.00")
 
 
 # ── Tests: recibo_mensual nullable ──────────────────────────────────────────────────
@@ -2341,7 +2545,42 @@ def test_delete_rh_delegado_cascades_to_detalle_honorario_delegado(
 
 
 @pytest.mark.django_db
-def test_delete_rh_delegado_preserves_liquidacion_delegado(
+def test_crear_rh_marca_asignacion_como_creada_por_rh(
+    crear_flujo,
+    cotizar_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual creado por el flujo RH.
+    WHEN: Se crea la asignación de la liquidación.
+    THEN: La asignación queda marcada con provenance RH (creado_por_rh=True).
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026,
+                "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+
+    ld = LiquidacionDelegado.objects.first()
+    assert ld is not None
+    assert ld.creado_por_rh is True
+
+
+@pytest.mark.django_db
+def test_delete_rh_delegado_elimina_asignacion_exclusiva_creada_por_rh(
     crear_flujo,
     cotizar_flujo,
     delete_flujo,
@@ -2353,9 +2592,10 @@ def test_delete_rh_delegado_preserves_liquidacion_delegado(
     delegado_operacion,
 ):
     """
-    GIVEN: Un RH Delegado Mensual con DetalleHonorarioDelegado + LiquidacionDelegado.
+    GIVEN: Un RH Delegado Mensual cuya asignación fue creada por el RH y solo la
+           referencia ese RH.
     WHEN: Se elimina el RH.
-    THEN: LiquidacionDelegado NO es tocada (es una entidad independiente).
+    THEN: El detalle y la asignación se eliminan (la liquidación queda elegible).
     """
     crear_flujo.crear(
         _payload(
@@ -2371,16 +2611,1016 @@ def test_delete_rh_delegado_preserves_liquidacion_delegado(
         )
     )
     rh = ReciboHonorarioDelegadoMensual.objects.first()
-    detalle_ids = list(rh.detalles.values_list("id", flat=True))
-    liquidacion_delegado_ids = list(
-        DetalleHonorarioDelegado.objects.filter(id__in=detalle_ids)
-        .values_list("liquidacion_delegado_id", flat=True)
-    )
-    assert len(liquidacion_delegado_ids) > 0
+    ld_id = rh.detalles.first().liquidacion_delegado_id
+    assert LiquidacionDelegado.objects.filter(id=ld_id).exists()
 
     delete_flujo.eliminar(rh.id)
 
-    # LiquidacionDelegado sobrevive
-    for ld_id in liquidacion_delegado_ids:
-        assert LiquidacionDelegado.objects.filter(id=ld_id).exists()
+    # El detalle se eliminó en cascada y la asignación exclusiva también.
+    assert DetalleHonorarioDelegado.objects.filter(recibo_mensual_id=rh.id).count() == 0
+    assert not LiquidacionDelegado.objects.filter(id=ld_id).exists()
 
+    # La liquidación vuelve a estar elegible: no queda asignación bloqueándola.
+    assert (
+        LiquidacionDelegado.objects.filter(
+            liquidacion_id=liquidacion_general_porcentaje.id,
+            especialidad_revision_id=liquidacion_porcentaje_detalle.especialidad_id,
+        ).count()
+        == 0
+    )
+
+
+@pytest.mark.django_db
+def test_delete_rh_delegado_retiene_asignacion_compartida_con_otro_rh(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Dos RH Delegado Mensuales (mes 1 y mes 2) que comparten la misma
+           asignación (creada por el RH).
+    WHEN: Se elimina uno de los RH.
+    THEN: La asignación se conserva porque el otro RH todavía la referencia.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026,
+                "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh_mes1 = ReciboHonorarioDelegadoMensual.objects.filter(mes=1).first()
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=2,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026,
+                "mes": 2,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh_mes2 = ReciboHonorarioDelegadoMensual.objects.filter(mes=2).first()
+
+    # Ambos RH comparten la misma asignación.
+    assert LiquidacionDelegado.objects.count() == 1
+    ld_id = rh_mes2.detalles.first().liquidacion_delegado_id
+    assert rh_mes1.detalles.first().liquidacion_delegado_id == ld_id
+
+    delete_flujo.eliminar(rh_mes2.id)
+
+    # La asignación sobrevive: el RH de mes 1 sigue referenciándola.
+    assert LiquidacionDelegado.objects.filter(id=ld_id).exists()
+    assert DetalleHonorarioDelegado.objects.filter(recibo_mensual_id=rh_mes1.id).count() == 1
+
+
+@pytest.mark.django_db
+def test_delete_rh_delegado_retiene_asignacion_historica_sin_proveniencia(
+    delete_flujo,
+    delegado,
+    delegado_operacion,
+    especialidad_estructuras,
+    liquidacion_general_porcentaje,
+):
+    """
+    GIVEN: Un RH Delegado Mensual cuyo detalle apunta a una asignación histórica
+           (creado_por_rh=False, creada fuera del flujo RH).
+    WHEN: Se elimina el RH.
+    THEN: Solo se elimina el detalle; la asignación se conserva intacta.
+    """
+    rh = ReciboHonorarioDelegadoMensual.objects.create(
+        delegado=delegado,
+        delegado_operacion=delegado_operacion,
+        periodo=2026,
+        mes=1,
+        sub_total=Decimal("1000.00"),
+        renta_cip=Decimal("250.00"),
+        aporte_codemu=Decimal("50.00"),
+        fondo_comun=Decimal("100.00"),
+        neto_honorario=Decimal("600.00"),
+    )
+    asignacion = LiquidacionDelegado.objects.create(
+        liquidacion=liquidacion_general_porcentaje,
+        delegado=delegado,
+        especialidad_revision=especialidad_estructuras,
+        creado_por_rh=False,
+        numero_rh="RH-LEGACY-001",
+        periodo=2025,
+        mes=12,
+        dictamen_revision="APROBADO",
+    )
+    DetalleHonorarioDelegado.objects.create(
+        recibo_mensual=rh,
+        liquidacion_delegado=asignacion,
+        imp_bruto=Decimal("1000.00"),
+    )
+
+    delete_flujo.eliminar(rh.id)
+
+    # El detalle se eliminó, la asignación histórica sobrevive.
+    assert DetalleHonorarioDelegado.objects.filter(recibo_mensual_id=rh.id).count() == 0
+    asignacion.refresh_from_db()
+    assert asignacion.creado_por_rh is False
+    assert asignacion.numero_rh == "RH-LEGACY-001"
+    assert asignacion.periodo == 2025
+    assert asignacion.mes == 12
+    assert asignacion.dictamen_revision == "APROBADO"
+
+
+@pytest.mark.django_db
+def test_delete_rh_delegado_no_elimina_delegado_ni_operatividad(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual de un delegado con operatividad.
+    WHEN: Se elimina el RH.
+    THEN: Delegado y DelegadoOperacion sobreviven (entidades protegidas).
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026,
+                "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+
+    delete_flujo.eliminar(rh.id)
+
+    assert Delegado.objects.filter(id=delegado.id).exists()
+    assert DelegadoOperacion.objects.filter(id=delegado_operacion.id).exists()
+
+
+@pytest.mark.django_db
+def test_admin_delete_rh_delegado_usa_el_lifecycle(
+    crear_flujo,
+    cotizar_flujo,
+    delete_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual creado por el flujo RH.
+    WHEN: Se elimina desde el admin (delete_model).
+    THEN: Pasa por el lifecycle: borra el RH y la asignación exclusiva.
+    """
+    from django.contrib import admin as django_admin
+    from modules.finanzas.admin.rh_admin import ReciboHonorarioDelegadoMensualAdmin
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026,
+                "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+    ld_id = rh.detalles.first().liquidacion_delegado_id
+
+    admin_obj = ReciboHonorarioDelegadoMensualAdmin(
+        ReciboHonorarioDelegadoMensual,
+        django_admin.site,
+    )
+    admin_obj.delete_model(request=None, obj=rh)
+
+    assert not ReciboHonorarioDelegadoMensual.objects.filter(id=rh.id).exists()
+    assert not LiquidacionDelegado.objects.filter(id=ld_id).exists()
+
+
+# ── PATCH (Sincronización del conjunto final) ───────────────────────────────────
+#
+# El PATCH define el conjunto FINAL de liquidaciones del RH:
+#   - items con `detalle_id`  -> la fila persistida se CONSERVA (se recalcula
+#                                 con la tasa congelada del recibo).
+#   - items sin `detalle_id` -> la fila se AGREGA (crea la asignación RH si
+#                                 no existía).
+#   - detalles persistidos ausentes del payload -> se RETIRAN.
+
+
+@pytest.fixture
+def actualizar_flujo(core_service, cotizar_flujo):
+    return RHDelegadoMensualActualizarFlujo(core=core_service, cotizar_flujo=cotizar_flujo)
+
+
+def _payload_actualizar(
+    cip: str,
+    periodo: int,
+    mes: int,
+    items: list[dict],
+    delegado_operacion_id: str,
+):
+    """Helper para construir el payload de PATCH (sincronización) del delegado."""
+    return RHDelegadoActualizarIn(
+        cip=cip,
+        periodo=periodo,
+        mes=mes,
+        delegado_operacion_id=delegado_operacion_id,
+        items=[RHDelegadoActualizarItemIn(**i) for i in items],
+    )
+
+
+@pytest.mark.django_db
+def test_patch_rh_delegado_agrega_y_conserva_detalles(
+    crear_flujo,
+    actualizar_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    segundo_liquidacion_general_porcentaje,
+    segunda_liquidacion_porcentaje_detalle_con_ajuste,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual con un detalle persistido.
+    WHEN: Se hace PATCH con ese detalle (conservar) + una liquidación nueva (agregar).
+    THEN: El RH queda con 2 detalles, el original conserva su fila y su asignación,
+          y la asignación nueva queda marcada como creada por el RH.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026,
+                "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+    detalle_original = rh.detalles.first()
+    asignacion_original_id = detalle_original.liquidacion_delegado_id
+
+    resultado = actualizar_flujo.actualizar(
+        rh.id,
+        _payload_actualizar(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[
+                {
+                    "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                    "detalle_id": str(detalle_original.id),
+                },
+                {
+                    "liquidacion_general_id": str(segundo_liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(
+                        segunda_liquidacion_porcentaje_detalle_con_ajuste.especialidad_id
+                    ),
+                },
+            ],
+            delegado_operacion_id=str(delegado_operacion.id),
+        ),
+    )
+
+    rh.refresh_from_db()
+    assert rh.detalles.count() == 2
+    # La fila conservada mantiene su identidad y su asignación.
+    assert rh.detalles.filter(id=detalle_original.id).exists()
+    assert rh.detalles.filter(liquidacion_delegado_id=asignacion_original_id).count() == 1
+    # La fila agregada usa una asignación nueva creada por el flujo RH.
+    detalle_nuevo = rh.detalles.exclude(id=detalle_original.id).first()
+    assert detalle_nuevo is not None
+    assert detalle_nuevo.liquidacion_delegado.creado_por_rh is True
+    # Los totales del recibo reflejan el conjunto final.
+    assert rh.sub_total == Decimal("1600.01")
+    assert rh.neto_honorario == Decimal("960.00")
+    # El resultado expone el identificador estable de cada fila.
+    assert all(item.detalle_id for item in resultado.items)
+
+
+@pytest.mark.django_db
+def test_patch_rh_delegado_retira_detalle_y_limpia_asignacion_exclusiva(
+    crear_flujo,
+    actualizar_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    segundo_liquidacion_general_porcentaje,
+    segunda_liquidacion_porcentaje_detalle_con_ajuste,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual con 2 liquidaciones (asignaciones creadas por el RH).
+    WHEN: Se hace PATCH conservando solo una de ellas.
+    THEN: El detalle retirado se elimina y su asignación exclusiva (creada por el RH y
+          sin otras referencias) también; la asignacion conservada permanece.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[
+                {
+                    "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                    "periodo": 2026, "mes": 1,
+                },
+                {
+                    "liquidacion_general_id": str(segundo_liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(
+                        segunda_liquidacion_porcentaje_detalle_con_ajuste.especialidad_id
+                    ),
+                    "periodo": 2026, "mes": 1,
+                },
+            ],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+    assert rh.detalles.count() == 2
+    detalle_conservado = rh.detalles.order_by("created_at").first()
+    detalle_retirado = rh.detalles.exclude(id=detalle_conservado.id).first()
+    asignacion_retirada_id = detalle_retirado.liquidacion_delegado_id
+    asignacion_conservada_id = detalle_conservado.liquidacion_delegado_id
+
+    actualizar_flujo.actualizar(
+        rh.id,
+        _payload_actualizar(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "detalle_id": str(detalle_conservado.id),
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        ),
+    )
+
+    rh.refresh_from_db()
+    assert rh.detalles.count() == 1
+    assert rh.detalles.filter(id=detalle_conservado.id).exists()
+    assert not DetalleHonorarioDelegado.objects.filter(id=detalle_retirado.id).exists()
+    # La asignación exclusiva del detalle retirado se limpia.
+    assert not LiquidacionDelegado.objects.filter(id=asignacion_retirada_id).exists()
+    # La asignación conservada permanece.
+    assert LiquidacionDelegado.objects.filter(id=asignacion_conservada_id).exists()
+    # Los totales se recalculan sobre el conjunto final.
+    assert rh.sub_total == Decimal("1000.00")
+    assert rh.neto_honorario == Decimal("600.00")
+
+
+@pytest.mark.django_db
+def test_patch_rh_delegado_retiene_asignacion_compartida_al_retirar_un_detalle(
+    crear_flujo,
+    actualizar_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    segundo_liquidacion_general_porcentaje,
+    segunda_liquidacion_porcentaje_detalle_con_ajuste,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH de mes 1 con una asignación compartida y un RH de mes 2 con esa
+           misma asignación (compartida) más otra exclusiva del propio RH.
+    WHEN: Se hace PATCH del RH de mes 2 conservando solo la asignación compartida.
+    THEN: La asignación exclusiva se limpia y la compartida sobrevive porque el
+          RH de mes 1 todavía la referencia.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026, "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh_mes1 = ReciboHonorarioDelegadoMensual.objects.filter(mes=1).first()
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=2,
+            items=[
+                {
+                    "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                    "periodo": 2026, "mes": 2,
+                },
+                {
+                    "liquidacion_general_id": str(segundo_liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(
+                        segunda_liquidacion_porcentaje_detalle_con_ajuste.especialidad_id
+                    ),
+                    "periodo": 2026, "mes": 2,
+                },
+            ],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh_mes2 = ReciboHonorarioDelegadoMensual.objects.filter(mes=2).first()
+    assert rh_mes2.detalles.count() == 2
+
+    detalle_compartido = rh_mes2.detalles.filter(
+        liquidacion_delegado_id=rh_mes1.detalles.first().liquidacion_delegado_id
+    ).first()
+    detalle_exclusivo = rh_mes2.detalles.exclude(id=detalle_compartido.id).first()
+    asignacion_compartida_id = detalle_compartido.liquidacion_delegado_id
+    asignacion_exclusiva_id = detalle_exclusivo.liquidacion_delegado_id
+
+    actualizar_flujo.actualizar(
+        rh_mes2.id,
+        _payload_actualizar(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=2,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "detalle_id": str(detalle_compartido.id),
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        ),
+    )
+
+    rh_mes2.refresh_from_db()
+    assert rh_mes2.detalles.count() == 1
+    assert rh_mes2.detalles.filter(id=detalle_compartido.id).exists()
+    # La asignación exclusiva (creada por el RH, sin otras referencias) se limpia.
+    assert not LiquidacionDelegado.objects.filter(id=asignacion_exclusiva_id).exists()
+    # La asignación compartida sobrevive porque el RH de mes 1 la referencia.
+    assert LiquidacionDelegado.objects.filter(id=asignacion_compartida_id).exists()
+    assert DetalleHonorarioDelegado.objects.filter(recibo_mensual_id=rh_mes1.id).count() == 1
+
+
+
+@pytest.mark.django_db
+def test_endpoint_list_rh_delegado_sin_paginacion(
+    auth_client,
+    db,
+    delegado,
+):
+    """
+    GIVEN: Un RH mensual de delegado del periodo 2026-01
+    WHEN:  GET /finanzas/recibos-delegados con sin_paginacion=true
+    THEN:  Devuelve el conjunto completo en una sola respuesta (total_pages=1)
+    """
+    ReciboHonorarioDelegadoMensual.objects.create(
+        delegado=delegado,
+        periodo=2026,
+        mes=1,
+        sub_total=Decimal("1000.00"),
+        renta_cip=Decimal("250.00"),
+        aporte_codemu=Decimal("50.00"),
+        fondo_comun=Decimal("100.00"),
+        neto_honorario=Decimal("600.00"),
+    )
+
+    response = auth_client.get(
+        "/finanzas/recibos-delegados"
+        "?page=1&page_size=20&sin_paginacion=true&periodo=2026&mes=1"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    data = body["data"]
+    assert data["total"] == 1
+    assert len(data["items"]) == 1
+    assert data["total_pages"] == 1
+
+
+@pytest.mark.django_db
+def test_patch_rh_delegado_no_muta_la_metadata_compartida_de_la_asignacion(
+    crear_flujo,
+    actualizar_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual cuyo detalle apunta a una asignación con metadata.
+    WHEN: Se hace PATCH conservando ese detalle.
+    THEN: La metadata compartida (numero, periodo, mes, dictamen, fechas) queda intacta
+          y Delegado/DelegadoOperacion siguen existiendo.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "numero_rh": "RH-0001",
+                "periodo": 2026, "mes": 1,
+                "dictamen_revision": "APROBADO",
+                "fecha_revision": date(2026, 1, 10),
+                "fecha_presentacion": date(2026, 1, 12),
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+    detalle = rh.detalles.first()
+    asignacion_id = detalle.liquidacion_delegado_id
+
+    actualizar_flujo.actualizar(
+        rh.id,
+        _payload_actualizar(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "detalle_id": str(detalle.id),
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        ),
+    )
+
+    asignacion = LiquidacionDelegado.objects.get(id=asignacion_id)
+    assert asignacion.numero_rh == "RH-0001"
+    assert asignacion.periodo == 2026
+    assert asignacion.mes == 1
+    assert asignacion.dictamen_revision == "APROBADO"
+    assert asignacion.fecha_revision == date(2026, 1, 10)
+    assert asignacion.fecha_presentacion == date(2026, 1, 12)
+    # Entidades protegidas intactas.
+    assert Delegado.objects.filter(id=delegado.id).exists()
+    assert DelegadoOperacion.objects.filter(id=delegado_operacion.id).exists()
+
+
+@pytest.mark.django_db
+def test_patch_rh_delegado_409_si_solicita_mutar_la_metadata_compartida(
+    crear_flujo,
+    actualizar_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual con una asignación identificada.
+    WHEN: Se hace PATCH pidiendo cambiar el número de RH de esa asignación.
+    THEN: Se responde 409 y el recibo queda sin cambios.
+    """
+    from ninja.errors import HttpError
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "numero_rh": "RH-0001",
+                "periodo": 2026, "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+    detalle = rh.detalles.first()
+    totales_previos = (rh.sub_total, rh.neto_honorario)
+
+    with pytest.raises(HttpError) as exc_info:
+        actualizar_flujo.actualizar(
+            rh.id,
+            _payload_actualizar(
+                cip=perfil_ingeniero_delegado.cip,
+                periodo=2026, mes=1,
+                items=[{
+                    "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                    "detalle_id": str(detalle.id),
+                    "numero_rh": "RH-9999",
+                }],
+                delegado_operacion_id=str(delegado_operacion.id),
+            ),
+        )
+
+    assert exc_info.value.status_code == 409
+    rh.refresh_from_db()
+    assert (rh.sub_total, rh.neto_honorario) == totales_previos
+    asignacion = LiquidacionDelegado.objects.get(id=detalle.liquidacion_delegado_id)
+    assert asignacion.numero_rh == "RH-0001"
+
+
+@pytest.mark.django_db
+def test_patch_rh_delegado_404_si_el_rh_no_existe(
+    actualizar_flujo,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un identificador de RH que no existe.
+    WHEN: Se hace PATCH.
+    THEN: Se responde 404.
+    """
+    from ninja.errors import HttpError
+
+    with pytest.raises(HttpError) as exc_info:
+        actualizar_flujo.actualizar(
+            uuid.uuid4(),
+            _payload_actualizar(
+                cip=perfil_ingeniero_delegado.cip,
+                periodo=2026, mes=1,
+                items=[{
+                    "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                }],
+                delegado_operacion_id=str(delegado_operacion.id),
+            ),
+        )
+
+    assert exc_info.value.status_code == 404
+
+
+@pytest.mark.django_db
+def test_patch_rh_delegado_400_si_la_seleccion_es_vacia(
+    crear_flujo,
+    actualizar_flujo,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual existente.
+    WHEN: Se hace PATCH con un conjunto final vacío.
+    THEN: Se responde 400 y el recibo conserva sus detalles.
+    """
+    from ninja.errors import HttpError
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026, "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+
+    with pytest.raises(HttpError) as exc_info:
+        actualizar_flujo.actualizar(
+            rh.id,
+            _payload_actualizar(
+                cip=perfil_ingeniero_delegado.cip,
+                periodo=2026, mes=1,
+                items=[],
+                delegado_operacion_id=str(delegado_operacion.id),
+            ),
+        )
+
+    assert exc_info.value.status_code == 400
+    assert rh.detalles.count() == 1
+
+
+@pytest.mark.django_db
+def test_patch_rh_delegado_400_si_el_detalle_no_pertenece_al_rh(
+    crear_flujo,
+    actualizar_flujo,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Dos RH Delegado Mensuales del mismo delegado.
+    WHEN: Se hace PATCH sobre uno de ellos usando el detalle del otro.
+    THEN: Se responde 400 y el recibo no se modifica.
+    """
+    from ninja.errors import HttpError
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026, "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh_mes1 = ReciboHonorarioDelegadoMensual.objects.filter(mes=1).first()
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=2,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026, "mes": 2,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh_mes2 = ReciboHonorarioDelegadoMensual.objects.filter(mes=2).first()
+    detalle_ajeno = rh_mes2.detalles.first()
+
+    with pytest.raises(HttpError) as exc_info:
+        actualizar_flujo.actualizar(
+            rh_mes1.id,
+            _payload_actualizar(
+                cip=perfil_ingeniero_delegado.cip,
+                periodo=2026, mes=1,
+                items=[{
+                    "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                    "detalle_id": str(detalle_ajeno.id),
+                }],
+                delegado_operacion_id=str(delegado_operacion.id),
+            ),
+        )
+
+    assert exc_info.value.status_code == 400
+    assert rh_mes1.detalles.count() == 1
+
+
+@pytest.mark.django_db
+def test_patch_rh_delegado_409_si_el_cip_no_corresponde(
+    crear_flujo,
+    actualizar_flujo,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual de un delegado.
+    WHEN: Se hace PATCH con el CIP de otro delegado.
+    THEN: Se responde 409 y el recibo no se modifica.
+    """
+    from ninja.errors import HttpError
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026, "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+
+    with pytest.raises(HttpError) as exc_info:
+        actualizar_flujo.actualizar(
+            rh.id,
+            _payload_actualizar(
+                cip="CIP-DE-OTRO-DELEGADO",
+                periodo=2026, mes=1,
+                items=[{
+                    "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                    "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                }],
+                delegado_operacion_id=str(delegado_operacion.id),
+            ),
+        )
+
+    assert exc_info.value.status_code == 409
+    assert rh.detalles.count() == 1
+
+
+@pytest.mark.django_db
+def test_patch_rh_delegado_usa_la_tasa_congelada_del_recibo(
+    crear_flujo,
+    actualizar_flujo,
+    perfil_ingeniero_delegado,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual creado con una tasa congelada (25/5/10).
+    WHEN: Cambia la tasa vigente y se hace PATCH del mismo conjunto.
+    THEN: El PATCH usa la tasa congelada del recibo: los totales no cambian.
+    """
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "periodo": 2026, "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+    detalle = rh.detalles.first()
+
+    # Nueva tasa vigente (distinta a la congelada del recibo).
+    tasa_delegado_vigente.periodo_fin = date(2025, 12, 31)
+    tasa_delegado_vigente.save(update_fields=["periodo_fin"])
+    TasaDelegado.objects.create(
+        nombre="Tasas Delegado 2026",
+        tipo_liquidacion=tasa_delegado_vigente.tipo_liquidacion,
+        renta_cip=Decimal("0.40"),
+        aporte_codemu=Decimal("0.10"),
+        fondo_comun=Decimal("0.10"),
+        periodo_inicio=date(2026, 1, 1),
+        periodo_fin=None,
+    )
+
+    resultado = actualizar_flujo.actualizar(
+        rh.id,
+        _payload_actualizar(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+"detalle_id": str(detalle.id),
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        ),
+    )
+
+    assert resultado.variables_calculo.tasa_renta_cip == Decimal("0.25")
+    assert resultado.variables_calculo.tasa_aporte_codemu == Decimal("0.05")
+    assert resultado.variables_calculo.tasa_fondo_comun == Decimal("0.10")
+    rh.refresh_from_db()
+    assert rh.renta_cip == Decimal("250.00")
+    assert rh.aporte_codemu == Decimal("50.00")
+    assert rh.fondo_comun == Decimal("100.00")
+    assert rh.neto_honorario == Decimal("600.00")
+
+
+@pytest.mark.django_db
+def test_patch_rh_delegado_revierte_los_cambios_si_la_reconciliacion_falla(
+    crear_flujo,
+    actualizar_flujo,
+    delegado,
+    perfil_ingeniero_delegado,
+proyecto,
+    tercer_proyecto,
+    municipalidad,
+    tipo_edificacion,
+    usuario_liquidacion,
+    igv_vigente,
+    uit_vigente,
+    tarifa_porcentaje_obra,
+    derecho_porcentaje_vigente,
+    especialidad_estructuras,
+    liquidacion_general_porcentaje,
+    liquidacion_porcentaje_detalle,
+    tasa_delegado_vigente,
+    delegado_operacion,
+):
+    """
+    GIVEN: Un RH Delegado Mensual con un detalle.
+    WHEN: Se hace PATCH agregando una liquidación nueva y, en el mismo payload,
+           pidiendo mutar la metadata compartida de un detalle retenido (409).
+    THEN: La transacción se revierte: no queda el detalle nuevo, ni su asignación,
+          y los totales del recibo son los originales.
+    """
+    from ninja.errors import HttpError
+
+    crear_flujo.crear(
+        _payload(
+            cip=perfil_ingeniero_delegado.cip,
+            periodo=2026, mes=1,
+            items=[{
+                "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                "numero_rh": "RH-0001",
+                "periodo": 2026, "mes": 1,
+            }],
+            delegado_operacion_id=str(delegado_operacion.id),
+        )
+    )
+    rh = ReciboHonorarioDelegadoMensual.objects.first()
+    detalle = rh.detalles.first()
+    totales_previos = (rh.sub_total, rh.renta_cip, rh.neto_honorario)
+
+# Tercera liquidación para el item que debe agregarse antes del conflicto.
+    # Necesita su propio Proyecto (LiquidacionGeneral.proyecto es OneToOne).
+    tercera_general = LiquidacionGeneral.objects.create(
+        proyecto=tercer_proyecto,
+        municipalidad=municipalidad,
+        tipo_liquidacion=tipo_edificacion,
+        usuario_creador=usuario_liquidacion,
+        expediente="EXP-DEL-MEN-003",
+        estado="REGISTRADO",
+        sub_total=Decimal("2000.00"),
+        total=Decimal("2360.00"),
+        igv_id=igv_vigente,
+        uit_id=uit_vigente,
+        numero_revision=1,
+    )
+    tercera_porcentaje_obra = LiquidacionPorcentajeObra.objects.create(
+        liquidacion_general=tercera_general,
+        tipo_tramite="OBRA_NUEVA",
+        valor_declarado=Decimal("40000.00"),
+        porcentaje_liquidacion=Decimal("0.0010"),
+        derecho_minimo=Decimal("500.00"),
+        derecho_maximo=Decimal("50000.00"),
+        porcentaje_minimo_uit=Decimal("0.10"),
+        derecho_aplicado=derecho_porcentaje_vigente,
+    )
+    LiquidacionPorcentajeObraDetalle.objects.create(
+        liquidacion_porcentaje=tercera_porcentaje_obra,
+        tarifa_aplicada=tarifa_porcentaje_obra,
+        especialidad=especialidad_estructuras,
+        porcentaje_aplicado=Decimal("0.0010"),
+        subtotal=Decimal("300.00"),
+        importe_parcial=Decimal("300.00"),
+        ajuste_redondeo=Decimal("0.00"),
+    )
+
+    with pytest.raises(HttpError) as exc_info:
+        actualizar_flujo.actualizar(
+            rh.id,
+            _payload_actualizar(
+                cip=perfil_ingeniero_delegado.cip,
+                periodo=2026, mes=1,
+                items=[
+                    {
+                        "liquidacion_general_id": str(tercera_general.id),
+                        "especialidad_revision_id": str(especialidad_estructuras.id),
+                    },
+                    {
+                        "liquidacion_general_id": str(liquidacion_general_porcentaje.id),
+                        "especialidad_revision_id": str(liquidacion_porcentaje_detalle.especialidad_id),
+                        "detalle_id": str(detalle.id),
+                        "numero_rh": "RH-9999",
+                    },
+                ],
+                delegado_operacion_id=str(delegado_operacion.id),
+            ),
+        )
+
+    assert exc_info.value.status_code == 409
+    rh.refresh_from_db()
+    assert rh.detalles.count() == 1
+    assert (rh.sub_total, rh.renta_cip, rh.neto_honorario) == totales_previos
+    # La asignación creada por el item agregado también se revierte.
+    assert (
+        LiquidacionDelegado.objects.filter(liquidacion_id=tercera_general.id).count() == 0
+    )

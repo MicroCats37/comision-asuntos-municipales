@@ -21,7 +21,17 @@ from modules.finanzas.domain.services.finanzas_core_service import (
     TIPO_LIQUIDACION_ESTRATEGIA_RH_DETAIL,
     TIPO_LIQUIDACION_ESTRATEGIA_RH_DIRECT,
 )
-from modules.finanzas.domain.schemas import RHDelegadoCotizarIn
+from modules.finanzas.domain.schemas import (
+    RHDelegadoActualizarIn,
+    RHDelegadoCotizarIn,
+    RHDelegadoCotizarItemIn,
+)
+from modules.liquidaciones.domain.services.core.delegado.delegado_core_service import (
+    DelegadoCoreService,
+)
+from modules.finanzas.domain.services.helpers.liquidacion_helpers import (
+    _resolve_estrategia_po,
+)
 from modules.finanzas.domain.results.rh_delegado_mensual_result import (
     RHDelegadoCotizarItemResult,
     RHDelegadoTotalesResult,
@@ -59,13 +69,21 @@ class RHDelegadoMensualCotizarFlujo:
     def __init__(self, core: FinanzasCoreService):
         self.core = core
 
-    def cotizar(self, payload: RHDelegadoCotizarIn) -> RHDelegadoCotizarResult:
+    def cotizar(
+        self,
+        payload: RHDelegadoCotizarIn,
+        tasas_override=None,
+    ) -> RHDelegadoCotizarResult:
         """
         Valida y calcula el RH mensual sin guardar nada.
 
         Args:
             payload: Datos de cotización con CIP, periodo e items
                      (liquidacion_general_id + especialidad_revision_id).
+            tasas_override: TasaDelegado opcional. Cuando se entrega, la
+                cotización usa esa tasa congelada en lugar de la tasa vigente.
+                Lo usa la reconciliación (PATCH) para mantener la base de
+                cálculo histórica del recibo.
 
         Returns:
             RHDelegadoCotizarResult con el detalle de cálculos.
@@ -108,9 +126,14 @@ class RHDelegadoMensualCotizarFlujo:
         total_neto_honorario = Decimal("0")
 
         # Resolve tasas once (all items share the same operativity → same tipo_liquidacion)
-        tasas = self.core.get_tasa_delegado_vigente(
-            operatividad.tipo_liquidacion
-        )
+        # La reconciliación (PATCH) entrega la tasa congelada del recibo para que
+        # la base de cálculo histórica no cambie.
+        if tasas_override is not None:
+            tasas = tasas_override
+        else:
+            tasas = self.core.get_tasa_delegado_vigente(
+                operatividad.tipo_liquidacion
+            )
         if not tasas:
             raise HttpError(400, "No hay tasas de delegado vigentes")
 
@@ -174,9 +197,11 @@ class RHDelegadoMensualCotizarFlujo:
             total_fondo_comun += item_fondo_comun
             total_neto_honorario += item_neto_honorario
 
-            # 6. Resolver liquidacion_especifica_numero y comprobante_activo
+            # 6. Resolver liquidacion_especifica_numero, comprobante_activo y
+            #    la estrategia PO de la liquidación.
             liquidacion_especifica_numero = _resolve_liquidacion_especifica_numero(lg)
             comprobante_activo = _resolve_comprobante_activo(lg)
+            estrategia_cotizacion, total_explicito = _resolve_estrategia_po(lg)
 
             items.append(
                 RHDelegadoCotizarItemResult(
@@ -201,6 +226,8 @@ class RHDelegadoMensualCotizarFlujo:
                     fecha_presentacion=str(item.fecha_presentacion) if item.fecha_presentacion else None,
                     liquidacion_especifica_numero=liquidacion_especifica_numero,
                     comprobante_activo=comprobante_activo,
+                    estrategia_cotizacion=estrategia_cotizacion,
+                    total_explicito=total_explicito,
                 )
             )
 
@@ -335,7 +362,7 @@ class RHDelegadoMensualCrearFlujo:
             item.liquidacion_delegado_id = str(liq_delegado.id)
             # Pass frozen per-item tax values and the tasa_delegado FK.
             # These are already computed in cotizar() — do NOT recalculate here.
-            self.core.crear_detalle_honorario_delegado(
+            detalle = self.core.crear_detalle_honorario_delegado(
                 recibo_mensual_id=rh.id,
                 liquidacion_delegado_id=liq_delegado.id,
                 imp_bruto=item.imp_bruto,
@@ -346,8 +373,336 @@ class RHDelegadoMensualCrearFlujo:
                 neto_honorario=item.neto_honorario,
                 tasa_delegado_id=tasa_delegado_id,
             )
+            # Identificador estable de la fila: permite que el PATCH de
+            # sincronización conserve este detalle sin recrearlo.
+            item.detalle_id = str(detalle.id)
 
         return resultado
+
+
+# ── RH Delegado Mensual Update (PATCH) Flujo ────────────────────────────────────
+
+
+class RHDelegadoMensualActualizarFlujo:
+    """
+    Sincroniza el conjunto final de detalles de un RH Delegado Mensual (PATCH).
+
+    Reglas de negocio:
+    - El conjunto de items del payload es el conjunto FINAL de detalles: los
+      detalles persistidos que no aparecen en el payload se retiran (y su
+      asignación se limpia con el helper acotado de provenance).
+    - Los detalles retenidos se recalculan con la tasa CONGELADA del recibo
+      (``ReciboHonorarioDelegadoMensual.tasa_delegado``): la base de cálculo
+      histórica del RH no cambia aunque las tasas vigentes sí lo hagan.
+    - Las asignaciones nuevas se crean con provenance RH (``creado_por_rh``);
+      las asignaciones compartidas o históricas se conservan intactas.
+    - La metadata compartida de la asignación (número de RH, periodo, mes,
+      dictamen y fechas) NUNCA se modifica. Si el payload intenta cambiarla
+      sobre un detalle retenido se responde 409 y no se altera ningún recibo.
+    - Delegado y DelegadoOperacion nunca se tocan.
+    - Todo el proceso ocurre dentro de un único ``transaction.atomic``.
+    """
+
+    @inject
+    def __init__(
+        self,
+        core: FinanzasCoreService,
+        cotizar_flujo: RHDelegadoMensualCotizarFlujo,
+        delegado_core: DelegadoCoreService | None = None,
+    ):
+        self.core = core
+        self.cotizar_flujo = cotizar_flujo
+        self.delegado_core = delegado_core or DelegadoCoreService()
+
+    @transaction.atomic
+    def actualizar(
+        self,
+        rh_id: int | str,
+        payload: RHDelegadoActualizarIn,
+    ) -> RHDelegadoCotizarResult:
+        """
+        Aplica el conjunto final de liquidaciones sobre un RH de delegado.
+
+        Args:
+            rh_id: PK del ReciboHonorarioDelegadoMensual a sincronizar.
+            payload: Conjunto final de items (agregar / conservar / retirar).
+
+        Returns:
+            RHDelegadoCotizarResult con el estado final del recibo.
+
+        Raises:
+            HttpError(404): El RH no existe.
+            HttpError(400): Selección malformada (detalle ajeno, duplicados, etc.).
+            HttpError(409): Conflicto (otro delegado, otro periodo o mutación
+                            de metadata compartida de la asignación).
+        """
+        # 1. Obtener RH — 404 si no existe
+        rh = self.core.get_rh_delegado_mensual_by_id(rh_id)
+        if not rh:
+            raise HttpError(
+                404,
+                f"Recibo de honorario mensual de delegado con id '{rh_id}' no encontrado",
+            )
+
+        # 2. Identidad del recibo — 409 si el payload apunta a otro delegado
+        #    o a otro periodo (el periodo del recibo es el que manda).
+        perfil = getattr(rh.delegado, "perfil_ingeniero", None)
+        if not perfil or not payload.cip or payload.cip != perfil.cip:
+            raise HttpError(
+                409,
+                "El recibo de honorario mensual no corresponde al delegado indicado (cip).",
+            )
+        # El periodo/mes de la cabecera del RH es editable: editar sigue el
+        # mismo flujo que crear, así que no se bloquea el cambio de periodo.
+
+        # 3. Operatividad — 400/404
+        try:
+            delegado_operacion_uuid = uuid.UUID(str(payload.delegado_operacion_id))
+        except (ValueError, TypeError, AttributeError):
+            raise HttpError(400, "delegado_operacion_id no es un UUID válido")
+
+        operatividad = self.core.get_delegado_operacion_by_id(delegado_operacion_uuid)
+        if not operatividad:
+            raise HttpError(404, "DelegadoOperacion no encontrada")
+        if str(operatividad.delegado_id) != str(rh.delegado_id):
+            raise HttpError(
+                400,
+                "La operatividad no pertenece al delegado del recibo.",
+            )
+
+        # 4. Tasa congelada del recibo (fallback: tasa vigente para RH legacy)
+        tasas = rh.tasa_delegado
+        if tasas is None:
+            if operatividad.tipo_liquidacion is None:
+                raise HttpError(
+                    400,
+                    "La operatividad no tiene tipo de liquidación asignado",
+                )
+            tasas = self.core.get_tasa_delegado_vigente(operatividad.tipo_liquidacion)
+        if tasas is None:
+            raise HttpError(
+                400,
+                "No hay tasas de delegado disponibles para el recibo",
+            )
+
+        # 5. Validación del conjunto final — 400
+        if not payload.items:
+            raise HttpError(
+                400,
+                "La selección de liquidaciones no puede estar vacía.",
+            )
+        detalle_ids = [item.detalle_id for item in payload.items if item.detalle_id]
+        if len(set(detalle_ids)) != len(detalle_ids):
+            raise HttpError(
+                400,
+                "La selección contiene detalles duplicados.",
+            )
+        seleccion = [
+            (item.liquidacion_general_id, item.especialidad_revision_id)
+            for item in payload.items
+        ]
+        if len(set(seleccion)) != len(seleccion):
+            raise HttpError(
+                400,
+                "La selección contiene liquidaciones duplicadas.",
+            )
+
+        # 6. Cotización del conjunto final con la tasa congelada del recibo.
+        resultado = self.cotizar_flujo.cotizar(
+            RHDelegadoCotizarIn(
+                cip=payload.cip,
+                periodo=payload.periodo,
+                mes=payload.mes,
+                delegado_operacion_id=payload.delegado_operacion_id,
+                items=[
+                    RHDelegadoCotizarItemIn(
+                        liquidacion_general_id=item.liquidacion_general_id,
+                        especialidad_revision_id=item.especialidad_revision_id,
+                        numero_rh=item.numero_rh,
+                        periodo=item.periodo,
+                        mes=item.mes,
+                        dictamen_revision=item.dictamen_revision,
+                        fecha_presentacion=item.fecha_presentacion,
+                        fecha_revision=item.fecha_revision,
+                    )
+                    for item in payload.items
+                ],
+            ),
+            tasas_override=tasas,
+        )
+        if len(resultado.items) != len(payload.items):
+            raise HttpError(
+                400,
+                "La selección de liquidaciones no pudo ser cotizada.",
+            )
+
+        # 7. Reconciliación de detalles
+        detalles_existentes = list(
+            rh.detalles.select_related("liquidacion_delegado").all()
+        )
+        por_id = {str(detalle.id): detalle for detalle in detalles_existentes}
+
+        ids_retenidos: set[str] = set()
+        asignaciones_en_uso: set[str] = set()
+
+        for item_in, item_cotizado in zip(payload.items, resultado.items):
+            if item_in.detalle_id:
+                # ── CONSERVAR fila existente ──────────────────────────────────
+                detalle = por_id.get(str(item_in.detalle_id))
+                if detalle is None:
+                    raise HttpError(
+                        400,
+                        f"El detalle '{item_in.detalle_id}' no pertenece al recibo '{rh.id}'.",
+                    )
+
+                asignacion = detalle.liquidacion_delegado
+                if str(asignacion.liquidacion_id) != str(item_cotizado.liquidacion_general_id):
+                    raise HttpError(
+                        400,
+                        "La liquidación del detalle no coincide con la selección.",
+                    )
+                if str(asignacion.especialidad_revision_id) != str(item_cotizado.especialidad_revision_id):
+                    raise HttpError(
+                        400,
+                        "La especialidad del detalle no coincide con la selección.",
+                    )
+
+                # La metadata editable se actualiza en la asignación: es el
+                # mismo destino que usa el flujo de creación. Solo se tocan
+                # los campos realmente enviados en el payload (los no
+                # enviados conservan su valor persistido).
+                self._aplicar_metadata_asignacion(asignacion, item_in)
+
+                detalle = self.core.actualizar_detalle_honorario_delegado(
+                    detalle.id,
+                    imp_bruto=item_cotizado.imp_bruto,
+                    sub_total=item_cotizado.imp_bruto,
+                    renta_cip=item_cotizado.renta_cip,
+                    aporte_codemu=item_cotizado.aporte_codemu,
+                    fondo_comun=item_cotizado.fondo_comun,
+                    neto_honorario=item_cotizado.neto_honorario,
+                    tasa_delegado_id=tasas.id,
+                )
+                ids_retenidos.add(str(detalle.id))
+                asignaciones_en_uso.add(str(asignacion.id))
+            else:
+                # ── AGREGAR fila nueva ────────────────────────────────────────
+                asignacion, _created = self.core.obtener_o_crear_asignacion_delegado(
+                    liquidacion_id=item_cotizado.liquidacion_general_id,
+                    delegado_id=rh.delegado_id,
+                    especialidad_revision_id=item_cotizado.especialidad_revision_id,
+                    delegado_operacion_id=payload.delegado_operacion_id,
+                    numero_rh=item_in.numero_rh,
+                    periodo=(
+                        item_in.periodo
+                        if item_in.periodo is not None
+                        else (rh.periodo if rh.periodo is not None else payload.periodo)
+                    ),
+                    mes=(
+                        item_in.mes
+                        if item_in.mes is not None
+                        else (rh.mes if rh.mes is not None else payload.mes)
+                    ),
+                    dictamen_revision=item_in.dictamen_revision,
+                    fecha_presentacion=item_in.fecha_presentacion,
+                    fecha_revision=item_in.fecha_revision,
+                )
+                # Si la asignación ya existía (compartida o histórica), la
+                # metadata enviada se aplica igual que en la creación: editar
+                # es el mismo flujo que crear.
+                if not _created:
+                    self._aplicar_metadata_asignacion(asignacion, item_in)
+                detalle = self.core.crear_detalle_honorario_delegado(
+                    recibo_mensual_id=rh.id,
+                    liquidacion_delegado_id=asignacion.id,
+                    imp_bruto=item_cotizado.imp_bruto,
+                    sub_total=item_cotizado.imp_bruto,
+                    renta_cip=item_cotizado.renta_cip,
+                    aporte_codemu=item_cotizado.aporte_codemu,
+                    fondo_comun=item_cotizado.fondo_comun,
+                    neto_honorario=item_cotizado.neto_honorario,
+                    tasa_delegado_id=tasas.id,
+                )
+                asignaciones_en_uso.add(str(asignacion.id))
+
+            item_cotizado.liquidacion_delegado_id = str(asignacion.id)
+            item_cotizado.detalle_id = str(detalle.id)
+
+        # 8. RETIRAR filas que no están en el conjunto final.
+        #    Primero se borran los detalles (la asignación está en PROTECT) y
+        #    después se ejecuta la limpieza acotada de assignments.
+        asignaciones_retiradas: list[str] = []
+        for detalle in detalles_existentes:
+            if str(detalle.id) in ids_retenidos:
+                continue
+            asignaciones_retiradas.append(str(detalle.liquidacion_delegado_id))
+            self.core.delete_detalle_honorario_delegado(detalle.id)
+
+        candidatas_a_limpiar = [
+            asignacion_id
+            for asignacion_id in dict.fromkeys(asignaciones_retiradas)
+            if asignacion_id not in asignaciones_en_uso
+        ]
+        self.delegado_core.limpiar_asignaciones_por_rh(
+            candidatas_a_limpiar,
+            exclude_recibo_mensual_id=rh.id,
+        )
+
+        # 9. Totales del recibo = suma del conjunto final
+        self.core.actualizar_totales_rh_delegado_mensual(
+            rh.id,
+            sub_total=resultado.totales.sub_total,
+            renta_cip=resultado.totales.renta_cip,
+            aporte_codemu=resultado.totales.aporte_codemu,
+            fondo_comun=resultado.totales.fondo_comun,
+            neto_honorario=resultado.totales.neto_honorario,
+        )
+
+        # 10. Cabecera del recibo: el periodo/mes es editable en el mismo flujo
+        # que la creación, así que se persiste junto con el conjunto final.
+        self.core.actualizar_periodo_rh_delegado_mensual(
+            rh.id,
+            periodo=payload.periodo,
+            mes=payload.mes,
+        )
+
+        return resultado
+
+    def _aplicar_metadata_asignacion(self, asignacion, item) -> None:
+        """
+        Aplica la metadata editable de un item sobre su asignación.
+
+        Editar es el mismo flujo que crear: la metadata (nº RH, periodo, mes,
+        dictamen y fechas) se guarda en la asignación y el PATCH la actualiza.
+
+        Solo se escriben los campos realmente enviados en el payload; el resto
+        conserva el valor persistido. Para limpiar un campo el cliente envía
+        el valor vacío, que el schema normaliza a None.
+
+        Args:
+            asignacion: LiquidacionDelegado a actualizar.
+            item: RHDelegadoActualizarItemIn con la metadata enviada.
+        """
+        enviados = item.model_fields_set
+        cambios: dict = {}
+
+        if "numero_rh" in enviados:
+            cambios["numero_rh"] = item.numero_rh
+        if "periodo" in enviados:
+            cambios["periodo"] = item.periodo
+        if "mes" in enviados:
+            cambios["mes"] = item.mes
+        if "dictamen_revision" in enviados:
+            cambios["dictamen_revision"] = item.dictamen_revision
+        if "fecha_presentacion" in enviados:
+            cambios["fecha_presentacion"] = item.fecha_presentacion
+        if "fecha_revision" in enviados:
+            cambios["fecha_revision"] = item.fecha_revision
+
+        if not cambios:
+            return
+
+        self.core.actualizar_metadata_asignacion_delegado(asignacion.id, **cambios)
 
 
 # ── RH Delegado Mensual List Flujo ─────────────────────────────────────────────
@@ -373,6 +728,7 @@ class RHDelegadoMensualListFlujo:
         municipalidad_id: uuid.UUID | None = None,
         periodo: int | None = None,
         mes: int | None = None,
+        sin_paginacion: bool = False,
     ) -> tuple[list[RHDelegadoMensualListItemResult], int]:
         """
         Lista RecibosHonorariosDelegadoMensuales con paginación.
@@ -380,10 +736,12 @@ class RHDelegadoMensualListFlujo:
         Args:
             page: Número de página (1-indexed).
             page_size: Elementos por página.
-            delegado_cip: Filter by CIP (delegado__perfil_ingeniero__cip).
+            delegated_cip: Filter by CIP (delegado__perfil_ingeniero__cip).
             municipalidad_id: Filter by delegado_operacion.municipalidad_id.
             periodo: Filter by año (from recibo monthly header).
             mes: Filter by mes (1-12).
+            sin_paginacion: Devuelve el conjunto completo filtrado en una sola
+                respuesta (sin paginación).
 
         Returns:
             Tuple (list of RHDelegadoMensualListItemResult, total count).
@@ -398,6 +756,7 @@ class RHDelegadoMensualListFlujo:
             municipalidad_id=municipalidad_id,
             periodo=periodo,
             mes=mes,
+            sin_paginacion=sin_paginacion,
         )
 
         results: list[RHDelegadoMensualListItemResult] = [
@@ -436,6 +795,7 @@ class RHDelegadoMensualListFlujo:
             ld = d.liquidacion_delegado
             lg = ld.liquidacion
             expediente = getattr(lg, "expediente", "") or ""
+            estrategia_cotizacion, total_explicito = _resolve_estrategia_po(lg)
 
             # Read directly from DB fields on the detail object — no on-the-fly calculation.
             renta_cip = d.renta_cip if d.renta_cip is not None else Decimal("0.00")
@@ -446,6 +806,7 @@ class RHDelegadoMensualListFlujo:
             detalles.append(
                 RHDelegadoMensualDetalleResult(
                     liquidacion_delegado_id=str(ld.id),
+                    detalle_id=str(d.id),
                     expediente=expediente,
                     fecha_revision=str(ld.fecha_revision.isoformat()) if ld.fecha_revision else None,
                     numero_revision=lg.numero_revision if hasattr(lg, "numero_revision") else None,
@@ -464,6 +825,8 @@ class RHDelegadoMensualListFlujo:
                     delegado_operacion_id=str(ld.delegado_operacion_id) if ld.delegado_operacion_id else None,
                     liquidacion_especifica_numero=_resolve_liquidacion_especifica_numero(lg),
                     comprobante_activo=_resolve_comprobante_activo(lg),
+                    estrategia_cotizacion=estrategia_cotizacion,
+                    total_explicito=total_explicito,
                 )
             )
 
@@ -510,6 +873,7 @@ class RHDelegadoMensualListFlujo:
 
         return RHDelegadoMensualListItemResult(
             id=str(recibo_mensual.id),
+            numero=recibo_mensual.numero,
             periodo=periodo_year,
             mes=mes,
             fecha_registro=recibo_mensual.fecha_registro.isoformat() if recibo_mensual.fecha_registro else "",
@@ -554,17 +918,27 @@ class RHDelegadoMensualDeleteFlujo:
     - Sin restricción latest-only para delegados (no hay efecto acumulativo
       en LiquidacionDelegado como sí lo hay en LiquidacionInspector).
     - Los DetalleHonorarioDelegado se eliminan en CASCADE por Django.
-    - LiquidacionDelegado NO es tocada — es una entidad independiente.
+    - Las asignaciones LiquidacionDelegado se eliminan SOLO cuando fueron
+      creadas por el flujo RH (creado_por_rh=True) y no están referenciadas
+      por ningún otro RH o recibo. Las asignaciones compartidas o históricas
+      se conservan intactas.
+    - Delegado, DelegadoOperacion y los metadatos compartidos de la asignación
+      (número de RH, periodo, mes, dictamen, fechas) nunca se tocan.
     """
 
     @inject
-    def __init__(self, core: FinanzasCoreService):
+    def __init__(
+        self,
+        core: FinanzasCoreService,
+        delegado_core: DelegadoCoreService | None = None,
+    ):
         self.core = core
+        self.delegado_core = delegado_core or DelegadoCoreService()
 
     @transaction.atomic
     def eliminar(self, rh_id: int | str) -> None:
         """
-        Elimina un RH de delegado.
+        Elimina un RH de delegado con limpieza acotada de asignaciones.
 
         Args:
             rh_id: PK del ReciboHonorarioDelegadoMensual a eliminar.
@@ -580,9 +954,18 @@ class RHDelegadoMensualDeleteFlujo:
                 f"Recibo de honorario mensual de delegado con id '{rh_id}' no encontrado",
             )
 
-        # 2. Eliminar el RH padre — CASCADE elimina DetalleHonorarioDelegado
-        #    LiquidacionDelegado NO es tocada (es independiente)
+        # 2. Recolectar las asignaciones referenciadas por los detalles del RH
+        #    (antes de eliminar: el CASCADE borra los detalles).
+        asignacion_ids = list(
+            rh.detalles.values_list("liquidacion_delegado_id", flat=True)
+        )
+
+        # 3. Eliminar el RH padre — CASCADE elimina DetalleHonorarioDelegado
         self.core.delete_rh_delegado_mensual(rh_id)
+
+        # 4. Limpieza acotada: solo se eliminan las asignaciones creadas por
+        #    el RH y sin referencias remanentes. El resto se conserva.
+        self.delegado_core.limpiar_asignaciones_por_rh(asignacion_ids)
 
 
 # ── Helper functions ────────────────────────────────────────────────────────────
@@ -640,14 +1023,15 @@ def _resolve_comprobante_activo(
 
     # The prefetch sets 'comprobantes_activos' as a list attribute
     comprobantes_activos = getattr(lg, "comprobantes_activos", None)
-    if not comprobantes_activos:
-        # Fallback: try accessing via the normal related manager
-        # (shouldn't be needed if prefetch was used)
+    if comprobantes_activos is None:
+        # No prefetch available — fall back to a direct query.
         try:
             activo = lg.comprobantes.filter(activo=True).first()
         except Exception:
             return None
     else:
+        # Prefetch present: trust it (an empty list means "no active comprobante")
+        # so a candidate without receipt does not trigger a per-row query (N+1).
         activo = comprobantes_activos[0] if comprobantes_activos else None
 
     if not activo:

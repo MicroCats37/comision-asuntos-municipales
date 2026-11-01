@@ -16,19 +16,32 @@ import type {
  * Selection entry for an inspector candidate.
  * `cotizarItem` fields are used to build the cotizar payload.
  * `candidate` stores the full row for display in the selected-items area.
+ *
+ * En modo edición la fila puede venir ya persistida en el RH: entonces
+ * `detalle_id` la identifica (el PATCH la conserva en vez de re-agregarla) y la
+ * clave de la fila en el store es `detalle:<detalle_id>` (no existe
+ * `liquidacion_categoria_visitas_id` para una fila persistida).
  */
 export interface InspectorSelectionEntry {
   cotizarItem: Pick<
     RHInspectorCotizarItemIn,
     "cantidad_visitas" | "periodo" | "mes"
-  >;
+  > & {
+    /** ID del DetalleHonorarioInspector persistido — conserva la fila. */
+    detalle_id?: string;
+  };
   candidate: InspectorCandidataItem;
 }
 
 /**
- * Selection entry for a delegado candidate.
+ * Selection entry for an delegado candidate.
  * `cotizarItem` fields are used to build the cotizar payload.
  * `candidate` stores the full row for display in the selected-items area.
+ *
+ * En modo edición la fila puede venir ya persistida en el RH: entonces
+ * `detalle_id` la identifica (el PATCH la conserva en vez de re-agregarla) y
+ * `liquidacion_general_id` / `especialidad_revision_id` son los identificadores
+ * con los que se creó la asignación.
  */
 export interface DelegadoSelectionEntry {
   cotizarItem: Pick<
@@ -39,7 +52,14 @@ export interface DelegadoSelectionEntry {
     | "dictamen_revision"
     | "fecha_presentacion"
     | "fecha_revision"
-  >;
+  > & {
+    /** ID del DetalleHonorarioDelegado persistido — conserva la fila. */
+    detalle_id?: string;
+    /** LiquidacionGeneral de la fila persistida. */
+    liquidacion_general_id?: string;
+    /** EspecialidadRevision de la asignación persistida. */
+    especialidad_revision_id?: string;
+  };
   candidate: CandidataDelegado;
 }
 

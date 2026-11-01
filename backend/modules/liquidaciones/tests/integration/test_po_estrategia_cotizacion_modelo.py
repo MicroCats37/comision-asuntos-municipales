@@ -10,7 +10,7 @@ Cubre el modelo persistido de las tres estrategias de cotización del motor PO:
    de subtotal fijo).
 2. `LiquidacionPorcentajeObra.estrategia_cotizacion` tiene default
    `NORMAL_SELECCIONADAS`: toda PO preexistente queda en modo normal.
-3. Los snapshots (`count_habilitadas`, `total_explicito`, `porcentaje_tarifa`,
+3. Los snapshots (`cantidad_especialidades_habilitadas`, `total_explicito`, `porcentaje_tarifa`,
    `tarifa_aplicada`) nacen NULL — retro-compatible con el catálogo vigente.
 4. `LiquidacionPorcentajeObraAcumulacion` es OneToOne con el PO, tiene
    `porcentaje_acumulado` nullable y `subtotal_acumulado` obligatorio, y NO
@@ -206,7 +206,7 @@ def test_snapshots_nacen_null_para_po_historico(po_modelo):
     THEN:  todos son NULL — el motor deriva H del catálogo y no inventa
            total explícito, porcentaje unitario ni tarifa padre.
     """
-    assert po_modelo.count_habilitadas is None
+    assert po_modelo.cantidad_especialidades_habilitadas is None
     assert po_modelo.total_explicito is None
     assert po_modelo.porcentaje_tarifa is None
     assert po_modelo.tarifa_aplicada is None
@@ -224,7 +224,7 @@ def test_campos_de_estrategia_y_snapshot_en_el_modelo():
     assert meta.get_field("estrategia_cotizacion").null is False
 
     for nombre in (
-        "count_habilitadas",
+        "cantidad_especialidades_habilitadas",
         "total_explicito",
         "porcentaje_tarifa",
         "tarifa_aplicada",

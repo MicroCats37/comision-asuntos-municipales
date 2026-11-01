@@ -1,5 +1,6 @@
 import type { AxiosError } from "axios";
 
+import { normalizeErrorPayload } from "./error-normalizer";
 import type { ApiError, ErrorParser } from "./types";
 
 // =====================================================================
@@ -7,54 +8,24 @@ import type { ApiError, ErrorParser } from "./types";
 // =====================================================================
 
 /**
- * Django Ninja / Pydantic (422 Unprocessable Entity)
- * Format: { detail: [{ loc: ["body", "field"], msg: "...", type: "..." }] }
- */
-
-/**
  * Generic REST fallback
  * Format: { message: "..." } or { detail: "..." } or { error: { message, details } }
  * Also handles nested details: { error: { code, message, details: { non_field_errors, ... } } }
+ * and the Django Ninja default validation body:
+ * { detail: [{ loc: ["body", "field"], msg: "...", type: "..." }] }
+ *
+ * The normalization rules live in `error-normalizer.ts` so they can be reused
+ * (and tested) outside of the parser chain.
  */
-const genericRestParser: ErrorParser = (_status, data: any) => {
-  // Handle nested error structure: { success: false, error: { code, message, details: { ... } } }
-  if (data?.error?.details) {
-    const details = data.error.details;
-    // If details is an object with string values (e.g., { non_field_errors: "..." })
-    // flatten them into a single display message
-    if (typeof details === "object" && !Array.isArray(details)) {
-      const detailMessages = Object.entries(details)
-        .filter(([, v]) => typeof v === "string" && v.length > 0)
-        .map(([k, v]) => {
-          // Format key as readable label: non_field_errors -> Non field errors
-          const label = k
-            .replace(/_/g, " ")
-            .replace(/\b\w/g, (c) => c.toUpperCase());
-          return `${label}: ${v}`;
-        });
-      if (detailMessages.length > 0) {
-        return { message: detailMessages.join("; "), status: _status };
-      }
-    }
-    // If details is a string itself
-    if (typeof details === "string" && details.length > 0) {
-      return { message: details, status: _status };
-    }
-  }
+const genericRestParser: ErrorParser = (status, data) => {
+  const normalized = normalizeErrorPayload(data);
+  if (!normalized.message) return null;
 
-  // Standard top-level message fields
-  const msg =
-    data?.errors?.message || data?.message || data?.detail || data?.error;
-  if (typeof msg === "string") {
-    return { message: msg, status: _status };
-  }
-
-  // Fallback to error.message if error object exists but no details
-  if (data?.error?.message && typeof data.error.message === "string") {
-    return { message: data.error.message, status: _status };
-  }
-
-  return null;
+  return {
+    message: normalized.message,
+    ...(normalized.fieldErrors ? { fieldErrors: normalized.fieldErrors } : {}),
+    status,
+  };
 };
 
 // =====================================================================
@@ -85,9 +56,9 @@ export function addErrorParser(parser: ErrorParser) {
 // =====================================================================
 
 const DEFAULT_MESSAGES = {
-  network: "Could not connect to the server. Please check your connection.",
-  unknown: "An unexpected error occurred.",
-  fallback: "An error occurred while processing the request.",
+  network: "No se pudo conectar con el servidor. Verifique su conexión.",
+  unknown: "Ocurrió un error inesperado.",
+  fallback: "Ocurrió un error al procesar la solicitud.",
 };
 
 /**

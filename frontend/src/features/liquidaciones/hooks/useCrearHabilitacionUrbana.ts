@@ -21,9 +21,17 @@ const LIST_KEY = ["liquidaciones", "habilitacion-urbana"] as const;
  */
 export function buildCrearHabilitacionUrbanaPayload(
   payload: HabilitacionUrbanaFormData,
+  legacy = false,
 ) {
-  const { tarifa_m2_id, area_solicitada, numero_revision, ...rest } = payload;
-  return {
+  const {
+    tarifa_m2_id,
+    area_solicitada,
+    numero_revision,
+    numero,
+    fecha_registro,
+    ...rest
+  } = payload;
+  const apiPayload = {
     numero_revision,
     liquidacion_general: {
       municipalidad_id: rest.municipalidad_id,
@@ -51,16 +59,19 @@ export function buildCrearHabilitacionUrbanaPayload(
       tarifa: tarifa_m2_id ? { tarifa_m2_id } : { tarifa_m2_id: "" },
     },
   };
+  return legacy ? { ...apiPayload, numero, fecha_registro } : apiPayload;
 }
 
-export function useCrearHabilitacionUrbana() {
+export function useCrearHabilitacionUrbana(
+  mode: "create" | "legacy" = "create",
+) {
   const mutation = useLiquidacionesCreateMutation<{
     liquidacion_general: unknown;
     liquidacion_especifica: unknown;
     numero_revision: number;
   }>({
     tipoQueryKey: LIST_KEY,
-    url: `${BASE_URL}/nueva-liquidacion/primera-revision`,
+    url: `${BASE_URL}/nueva-liquidacion/${mode === "legacy" ? "legacy" : "primera-revision"}`,
   });
 
   // Wrapper that formats payload as { liquidacion_general, liquidacion_especifica } for the API
@@ -68,15 +79,17 @@ export function useCrearHabilitacionUrbana() {
     () => ({
       ...mutation,
       mutate: (payload: HabilitacionUrbanaFormData) => {
-        mutation.mutate(buildCrearHabilitacionUrbanaPayload(payload));
+        mutation.mutate(
+          buildCrearHabilitacionUrbanaPayload(payload, mode === "legacy"),
+        );
       },
       mutateAsync: async (payload: HabilitacionUrbanaFormData) => {
         return mutation.mutateAsync(
-          buildCrearHabilitacionUrbanaPayload(payload),
+          buildCrearHabilitacionUrbanaPayload(payload, mode === "legacy"),
         );
       },
     }),
-    [mutation],
+    [mode, mutation],
   );
 
   return crearMutation;

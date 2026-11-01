@@ -25,7 +25,6 @@ import {
  *   - 'relacionada'    → useCrearRelacionadaEdificaciones
  */
 import { useCallback, useState } from "react";
-import { notify } from "@/errors";
 import {
   composeDetalleSections,
   LiquidacionDetalleEdificacionesSection,
@@ -42,6 +41,7 @@ import {
   type EdificacionesFormData,
   edificacionesFormSchema,
 } from "../../../schemas/liquidacion-edificaciones-form.schema";
+import { withLegacyRegistroFields } from "../../../schemas/liquidacion-legacy-registro-form.schema";
 import { ESTRATEGIA_NORMAL } from "../../../schemas/liquidacion-po-estrategia.schema";
 import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
@@ -67,6 +67,7 @@ interface BaseProps {
 }
 
 type CreateProps = BaseProps & { mode: "create" };
+type LegacyProps = BaseProps & { mode: "legacy" };
 type EditProps = BaseProps & {
   mode: "edit";
   item: LiquidacionEdificacionesListItem;
@@ -82,6 +83,7 @@ type RelacionadaProps = BaseProps & {
 
 export type LiquidacionEdificacionFormModalProps =
   | CreateProps
+  | LegacyProps
   | EditProps
   | NuevaRevisionProps
   | RelacionadaProps;
@@ -142,10 +144,16 @@ export function LiquidacionEdificacionFormModal(
     | LiquidacionEdificacionesListItem
     | LiquidacionPreviaItem
     | null =
-    mode === "edit" ? props.item : mode !== "create" ? props.previa : null;
+    mode === "edit"
+      ? props.item
+      : mode === "nueva-revision" || mode === "relacionada"
+        ? props.previa
+        : null;
 
   // ── Hooks de mutación (uno por mode; solo se usa el del mode activo) ─────
-  const crearMutation = useCrearEdificaciones();
+  const crearMutation = useCrearEdificaciones(
+    mode === "legacy" ? "legacy" : "create",
+  );
   const editarMutation = useEditarEdificaciones(
     mode === "edit" ? props.item.liquidacion_general.id : "",
   );
@@ -153,7 +161,7 @@ export function LiquidacionEdificacionFormModal(
   const relacionadaMutation = useCrearRelacionadaEdificaciones();
 
   const primaryLoading =
-    mode === "create"
+    mode === "create" || mode === "legacy"
       ? crearMutation.isPending
       : mode === "edit"
         ? editarMutation.isPending
@@ -177,6 +185,8 @@ export function LiquidacionEdificacionFormModal(
     switch (mode) {
       case "create":
         return "Nueva Liquidación";
+      case "legacy":
+        return "Registro Legacy";
       case "edit":
         return "Editar Liquidación";
       case "nueva-revision":
@@ -190,6 +200,8 @@ export function LiquidacionEdificacionFormModal(
     switch (mode) {
       case "create":
         return "Crear Liquidación";
+      case "legacy":
+        return "Registrar Legacy";
       case "edit":
         return "Guardar cambios";
       case "nueva-revision":
@@ -212,7 +224,7 @@ export function LiquidacionEdificacionFormModal(
   // ── canEditProyecto: incluye regla PAGADA además de revision>1
   const computeCanEditProyecto = useCallback(
     (m: typeof mode, item: typeof sourceItem): boolean => {
-      if (m === "create" || m === "nueva-revision") return true;
+      if (m === "create" || m === "legacy" || m === "nueva-revision") return true;
       if (m === "edit" && item) {
         return canEditLiquidacion(
           (item as LiquidacionEdificacionesListItem).liquidacion_general,
@@ -262,6 +274,7 @@ export function LiquidacionEdificacionFormModal(
         <div className="space-y-3">
           <TarifasYEspecialidadesSmartField
             methods={methods}
+            {...(mode === "legacy" ? { mode: "legacy" as const } : {})}
             {...(isEdit || isRevisionLike
               ? {
                   mode: isEdit
@@ -277,6 +290,7 @@ export function LiquidacionEdificacionFormModal(
             hasTipoTramite
             tipo="edificaciones"
             soportaEstrategia
+            {...(mode === "legacy" ? { mode: "legacy" as const } : {})}
             {...(isEdit
               ? {
                   mode: "edit",
@@ -306,7 +320,7 @@ export function LiquidacionEdificacionFormModal(
   // El badge, la denominación auto-completada y el payload leen el MISMO
   // valor vivo del formulario: aquí solo se define con el que se abre.
   const initialData: Partial<EdificacionesFormData> = (() => {
-    if (mode === "create") {
+    if (mode === "create" || mode === "legacy") {
       return {
         valor_declarado: 0,
         estrategia_cotizacion: ESTRATEGIA_NORMAL,
@@ -347,7 +361,6 @@ export function LiquidacionEdificacionFormModal(
   const onSubmitEdit = useCallback(
     async (data: EdificacionesFormData, canEditProyecto: boolean) => {
       const result = await editarMutation.mutateAsync(data, canEditProyecto);
-      notify.success("Liquidación editada correctamente");
       return result;
     },
     [editarMutation],
@@ -399,7 +412,11 @@ export function LiquidacionEdificacionFormModal(
         onSuccess={onSuccess}
         mode={mode}
         sourceItem={sourceItem}
-        schema={edificacionesFormSchema}
+        schema={
+          mode === "legacy"
+            ? withLegacyRegistroFields(edificacionesFormSchema)
+            : edificacionesFormSchema
+        }
         initialData={initialData}
         eyebrow="Edificaciones"
         icon={icon}

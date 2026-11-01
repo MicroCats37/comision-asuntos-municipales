@@ -125,23 +125,19 @@ export function DenominacionField({
   return (
     <div className="space-y-2">
       <Label htmlFor="denominacion">Denominación</Label>
-      <div className="relative">
-        <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          id="denominacion"
-          placeholder="NOMBRE DEL PROYECTO"
-          className="pl-10 w-full uppercase"
-          disabled={field.disabled}
-          value={field.value ?? ""}
-          onChange={(e) => {
-            // Forzar UPPER CASE en cada keystroke para mantener consistencia en BD y UI
-            field.onChange(e.target.value.toUpperCase());
-          }}
-          onBlur={field.onBlur}
-          name={field.name}
-          ref={field.ref}
-        />
-      </div>
+      <Textarea
+        id="denominacion"
+        placeholder="NOMBRE DEL PROYECTO"
+        rows={2}
+        maxLength={500}
+        className="w-full uppercase"
+        disabled={field.disabled}
+        value={field.value ?? ""}
+        onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+        onBlur={field.onBlur}
+        name={field.name}
+        ref={field.ref}
+      />
       {fieldState.error && (
         <p className="text-xs text-destructive">{fieldState.error.message}</p>
       )}

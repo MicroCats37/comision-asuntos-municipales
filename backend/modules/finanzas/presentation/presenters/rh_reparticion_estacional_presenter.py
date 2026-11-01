@@ -2,17 +2,21 @@
 """
 RHReparticionEstacionalPresenter — maps domain results to HTTP schemas.
 """
+
 from modules.finanzas.domain.results.rh_reparticion_estacional_result import (
     RHReparticionEstacionalCotizarResult,
-    RHReparticionEstacionalListItemResult,
-    RHReparticionEstacionalDetalleResult,
+    RHReparticionEstacionalResult,
 )
 from modules.finanzas.presentation.schemas.rh_reparticion_estacional_schemas import (
     RHReparticionEstacionalCotizarOut,
     RHReparticionEstacionalDelegadoOut,
     RHReparticionEstacionalCapituloOut,
-    RHReparticionEstacionalListItemOut,
-    RHReparticionEstacionalDetalleOut,
+    EspecialidadRevisionMinimalOut,
+    RHReparticionEstacionalIdentidadOut,
+    RHReparticionEstacionalGeneralOut,
+    RHReparticionEstacionalDistribucionOut,
+    RHReparticionEstacionalOut,
+    RHReparticionEstacionalDeleteOut,
 )
 
 
@@ -20,7 +24,9 @@ class RHReparticionEstacionalPresenter:
     """Presenter for reparticion estacional — transforms domain results to HTTP schemas."""
 
     @staticmethod
-    def present_cotizar(result: RHReparticionEstacionalCotizarResult) -> RHReparticionEstacionalCotizarOut:
+    def present_cotizar(
+        result: RHReparticionEstacionalCotizarResult,
+    ) -> RHReparticionEstacionalCotizarOut:
         """Map cotizar result to HTTP schema."""
         return RHReparticionEstacionalCotizarOut(
             especialidad_revision_id=result.especialidad_revision_id,
@@ -36,7 +42,6 @@ class RHReparticionEstacionalPresenter:
             residual=float(result.residual),
             detalles_delegados=[
                 RHReparticionEstacionalDelegadoOut(
-                    delegado_id=d.delegado_id,
                     delegado={
                         "id": d.delegado.id,
                         "cip": d.delegado.cip,
@@ -49,7 +54,6 @@ class RHReparticionEstacionalPresenter:
             ],
             detalles_capitulos=[
                 RHReparticionEstacionalCapituloOut(
-                    capitulo_id=c.capitulo_id,
                     capitulo={
                         "id": c.capitulo.id,
                         "nombre": c.capitulo.nombre,
@@ -61,61 +65,56 @@ class RHReparticionEstacionalPresenter:
         )
 
     @staticmethod
-    def present_list_item(result: RHReparticionEstacionalListItemResult) -> RHReparticionEstacionalListItemOut:
-        """Map list item result to HTTP schema."""
-        return RHReparticionEstacionalListItemOut(
-            id=result.id,
-            especialidad_revision_id=result.especialidad_revision_id,
-            especialidad_revision_nombre=result.especialidad_revision_nombre,
-            periodo=result.periodo,
-            total_fondo_comun=float(result.total_fondo_comun),
-            numero_delegados=result.numero_delegados,
-            numero_capitulos=result.numero_capitulos,
-            monto_por_participacion=float(result.monto_por_participacion),
-            residual=float(result.residual),
-            is_deleted=result.is_deleted,
-            created_at=result.created_at,
+    def present_reparticion(
+        result: RHReparticionEstacionalResult,
+    ) -> RHReparticionEstacionalOut:
+        """Compose a persisted reparticion for the list endpoint."""
+        return RHReparticionEstacionalOut(
+            identidad=RHReparticionEstacionalIdentidadOut(
+                id=result.id,
+                created_at=result.created_at,
+            ),
+            general=RHReparticionEstacionalGeneralOut(
+                especialidad_revision=EspecialidadRevisionMinimalOut(
+                    id=result.especialidad_revision_id,
+                    nombre=result.especialidad_revision_nombre,
+                ),
+                periodo=result.periodo,
+                mes_desde=result.mes_desde,
+                mes_hasta=result.mes_hasta,
+            ),
+            distribucion=RHReparticionEstacionalDistribucionOut(
+                total_fondo_comun=float(result.total_fondo_comun),
+                numero_capitulos=result.numero_capitulos,
+                numero_delegados=result.numero_delegados,
+                monto_por_participacion=float(result.monto_por_participacion),
+                residual=float(result.residual),
+                detalles_delegados=[
+                    RHReparticionEstacionalDelegadoOut(
+                        delegado={
+                            "id": d.delegado.id,
+                            "cip": d.delegado.cip,
+                            "dni": d.delegado.dni,
+                            "nombre_completo": d.delegado.nombre_completo,
+                        },
+                        monto=float(d.monto),
+                    )
+                    for d in result.detalles_delegados
+                ],
+                detalles_capitulos=[
+                    RHReparticionEstacionalCapituloOut(
+                        capitulo={
+                            "id": c.capitulo.id,
+                            "nombre": c.capitulo.nombre,
+                        },
+                        monto=float(c.monto),
+                    )
+                    for c in result.detalles_capitulos
+                ],
+            ),
         )
 
     @staticmethod
-    def present_detalle(result: RHReparticionEstacionalDetalleResult) -> RHReparticionEstacionalDetalleOut:
-        """Map detalle result to HTTP schema."""
-        return RHReparticionEstacionalDetalleOut(
-            id=result.id,
-            especialidad_revision_id=result.especialidad_revision_id,
-            especialidad_revision_nombre=result.especialidad_revision_nombre,
-            periodo=result.periodo,
-            mes_desde=result.mes_desde,
-            mes_hasta=result.mes_hasta,
-            total_fondo_comun=float(result.total_fondo_comun),
-            numero_capitulos=result.numero_capitulos,
-            numero_delegados=result.numero_delegados,
-            monto_por_participacion=float(result.monto_por_participacion),
-            residual=float(result.residual),
-            is_deleted=result.is_deleted,
-            created_at=result.created_at,
-            detalles_delegados=[
-                RHReparticionEstacionalDelegadoOut(
-                    delegado_id=d.delegado_id,
-                    delegado={
-                        "id": d.delegado.id,
-                        "cip": d.delegado.cip,
-                        "dni": d.delegado.dni,
-                        "nombre_completo": d.delegado.nombre_completo,
-                    },
-                    monto=float(d.monto),
-                )
-                for d in result.detalles_delegados
-            ],
-            detalles_capitulos=[
-                RHReparticionEstacionalCapituloOut(
-                    capitulo_id=c.capitulo_id,
-                    capitulo={
-                        "id": c.capitulo.id,
-                        "nombre": c.capitulo.nombre,
-                    },
-                    monto=float(c.monto),
-                )
-                for c in result.detalles_capitulos
-            ],
-        )
+    def present_delete(reparticion_id: str) -> RHReparticionEstacionalDeleteOut:
+        """Map the soft-deleted reparticion id to the HTTP delete schema."""
+        return RHReparticionEstacionalDeleteOut(id=reparticion_id)

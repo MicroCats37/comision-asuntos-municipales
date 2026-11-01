@@ -28,6 +28,9 @@ class RHDelegadoCotizarItemResult(BaseModel):
     liquidacion_general_id: str  # UUID string
     especialidad_revision_id: str  # UUID string
     liquidacion_delegado_id: str | None = None  # filled by crear, None in cotizar
+    # Identificador estable del DetalleHonorarioDelegado. Permite que el PATCH
+    # de sincronización distinga "conservar esta fila" de "agregar una nueva".
+    detalle_id: str | None = None
     delegado_operacion_id: str | None = None  # DelegadoOperacion ID — filled from top-level input
     imp_bruto: Decimal
     fecha_revision: str | None = None  # ISO date string
@@ -48,6 +51,10 @@ class RHDelegadoCotizarItemResult(BaseModel):
     liquidacion_especifica_numero: int | None = None
     # Active comprobante for this liquidation (activo=True)
     comprobante_activo: LiquidacionComprobanteMinimalResult | None = None
+    # Estrategia de cotización PO de la liquidación (solo motor PO; None en M2).
+    estrategia_cotizacion: str | None = None
+    # Total final autoritativo de la estrategia TOTAL_EXPLICITO (None en las demás).
+    total_explicito: Decimal | None = None
 
 
 class RHDelegadoTotalesResult(BaseModel):
@@ -106,6 +113,9 @@ class RHDelegadoMensualDetalleResult(BaseModel):
     listar o ver el detalle de un ReciboHonorarioDelegadoMensual.
     """
     liquidacion_delegado_id: str
+    # Identificador estable del DetalleHonorarioDelegado (fila del RH). Es el
+    # token que el PATCH de sincronización usa para conservar la fila.
+    detalle_id: str | None = None
     expediente: str
     fecha_revision: str | None = None
     numero_revision: int | None = None
@@ -127,6 +137,10 @@ class RHDelegadoMensualDetalleResult(BaseModel):
     liquidacion_especifica_numero: int | None = None
     # Active comprobante for this liquidation (activo=True)
     comprobante_activo: LiquidacionComprobanteMinimalResult | None = None
+    # Estrategia de cotización PO de la liquidación (solo motor PO; None en M2).
+    estrategia_cotizacion: str | None = None
+    # Total final autoritativo de la estrategia TOTAL_EXPLICITO (None en las demás).
+    total_explicito: Decimal | None = None
 
 
 class RHDelegadoMensualTotalesResult(BaseModel):
@@ -159,6 +173,7 @@ class RHDelegadoMensualListItemResult(BaseModel):
     Item en la lista paginada de RecibosHonorariosDelegadoMensuales.
     """
     id: str
+    numero: int | None = None  # numero de RH (from ReciboHonorarioDelegadoMensual)
     periodo: int | None = None
     mes: int | None = None
     fecha_registro: str  # ISO datetime string

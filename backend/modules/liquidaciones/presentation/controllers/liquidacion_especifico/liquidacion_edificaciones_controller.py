@@ -41,6 +41,12 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.po_edge_schemas import (
     POEdgeIn,
 )
+from modules.liquidaciones.presentation.schemas.liquidacion_legacy.legacy_registration_schemas import (
+    LiquidacionEdificacionesLegacyInput,
+)
+from modules.liquidaciones.domain.schemas.liquidacion_legacy.legacy_registro_data import (
+    LegacyRegistroContexto,
+)
 
 
 @api_controller("/liquidaciones/edificaciones", tags=["Edificaciones"], permissions=[AllowAny])
@@ -87,6 +93,7 @@ class LiquidacionEdificacionesController:
         page: int = Query(default=1, ge=1),
         page_size: int = Query(default=10, ge=1, le=100),
         entidad_id: uuid.UUID = Query(default=None, description="Filter by municipalidad ID"),
+        distrito_id: uuid.UUID = Query(default=None, description="Filter by proyecto distrito ID"),
         propietario: str = Query(default=None, description="Filter by propietario name (icontains)"),
         fecha_desde: date = Query(default=None, description="Filter by fecha_registro >= date"),
         fecha_hasta: date = Query(default=None, description="Filter by fecha_registro <= date"),
@@ -105,6 +112,7 @@ class LiquidacionEdificacionesController:
             page=page,
             page_size=page_size,
             municipalidad_id=entidad_id,
+            distrito_id=distrito_id,
             propietario=propietario,
             razon_social=razon_social,
             creador_username=creado_por,
@@ -190,6 +198,36 @@ class LiquidacionEdificacionesController:
         return success_response(result, message="Edificación creada correctamente.")
 
     @route.post(
+        "/nueva-liquidacion/legacy",
+        response={200: ApiResponse[LiquidacionEdificacionesOutput]},
+    )
+    def crear_registro_legacy(self, request, payload: LiquidacionEdificacionesLegacyInput):
+        """
+        Registro MANUAL de una liquidación histórica de Edificación.
+
+        La ruta es el discriminador: el servidor asigna `legacy=True` y el
+        cliente nunca envía el flag. El `numero` es explícito e informativo
+        (puede repetirse) y `fecha_registro` gobierna TODA la resolución
+        histórica (IGV, UIT, tarifas, derechos y H). Los totales SIEMPRE se
+        calculan: los totales manuales y los overrides se rechazan con 422.
+        """
+        usuario_id = self.auth_core_service.get_authenticated_user_id(request)
+
+        registro_legacy = LegacyRegistroContexto(
+            numero=payload.numero,
+            fecha_registro=payload.fecha_registro,
+        )
+
+        domain_result = self.orchestrator.crear_primera_revision_proceso(
+            usuario_id=usuario_id,
+            payload_in=payload,
+            registro_legacy=registro_legacy,
+        )
+
+        result = self.presenter.present_primera_revision(domain_result)
+        return success_response(result, message="Registro legacy de edificación creado correctamente.")
+
+    @route.post(
         "/nueva-revision",
         response={200: ApiResponse[LiquidacionEdificacionesOutput]},
     )
@@ -235,16 +273,28 @@ class LiquidacionEdificacionesController:
         "/cotizar",
         response={200: ApiResponse[LiquidacionEdificacionesCotizarOutput]},
     )
-    def cotizar(self, payload: LiquidacionEdificacionesCotizarInput):
+    def cotizar(
+        self,
+        payload: LiquidacionEdificacionesCotizarInput,
+        fecha: Optional[date] = Query(
+            default=None,
+            description="Optional effective date to quote at (YYYY-MM-DD). If omitted, quotes today.",
+        ),
+    ):
         """
         Calculates a quote for Edificaciones liquidacion WITHOUT persisting.
 
         The strategy (union discriminado) travels inside liquidacion_especifica:
         the orchestrator resolves the context and the unique PO engine produces
         the same figures that the first-revision flow will persist.
+
+        `fecha` es la fecha efectiva OPCIONAL del preview: sin ella el
+        comportamiento es el vigente (hoy); con ella, IGV, UIT, tarifas,
+        derechos y H se resuelven a esa fecha (modo legacy).
         """
         domain_result = self.orchestrator.cotizar_proceso(
             estrategia_in=payload.liquidacion_especifica,
+            fecha=fecha,
         )
 
         presented = self.presenter.present_cotizacion(domain_result)

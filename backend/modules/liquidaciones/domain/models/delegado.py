@@ -238,6 +238,16 @@ class LiquidacionDelegado(BaseModel):
         verbose_name="Número de Orden/RH",
     )
 
+    creado_por_rh = models.BooleanField(
+        default=False,
+        verbose_name="Creado por RH",
+        help_text=(
+            "True solo si la asignación fue creada por el flujo RH mensual. "
+            "False (valor por defecto, incluidos los registros históricos) "
+            "significa que la asignación se conserva siempre al eliminar un RH."
+        ),
+    )
+
     class Meta:
         verbose_name = "Delegado de Liquidacion"
         verbose_name_plural = "Delegados de liquidaciones"

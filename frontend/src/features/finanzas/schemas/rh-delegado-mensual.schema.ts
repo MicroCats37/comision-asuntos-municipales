@@ -143,6 +143,11 @@ export const RHDelegadoCotizarItemSchema = z.object({
   // liquidacion_general_id and especialidad_revision_id are NOT returned by the backend
   // in the cotizar response — they are input-only fields.
   liquidacion_delegado_id: z.string().nullable().optional(), // backend may send null or omit
+  /**
+   * Identificador estable de la fila persistida del RH (DetalleHonorarioDelegado).
+   * Es el token que el PATCH usa para CONSERVAR la fila en vez de re-agregarla.
+   */
+  detalle_id: z.string().nullable().optional(),
   delegado_operacion_id: z.string().nullish(), // UUID of DelegadoOperacion
   imp_bruto: z.coerce.number(),
   fecha_revision: z.string().nullish(),
@@ -162,6 +167,10 @@ export const RHDelegadoCotizarItemSchema = z.object({
   liquidacion_especifica_numero: z.coerce.number().int().nullish(),
   // Active comprobante for this liquidation
   comprobante_activo: LiquidacionComprobanteMinimalSchema.nullish(),
+  /** PO quotation strategy (only the PO engine; null for M2) */
+  estrategia_cotizacion: z.string().nullish(),
+  /** Authoritative final total (only TOTAL_EXPLICITO) */
+  total_explicito: z.coerce.number().nullish(),
 });
 
 export const RHDelegadoDelegadoMinimalSchema = z.object({
@@ -183,8 +192,39 @@ export const RHDelegadoCotizarResponseSchema = apiResponseSchema(
   RHDelegadoCotizarSchema,
 );
 
-// ── DelegadoOperacionVigente (from GET /delegados/operatividades-vigentes) ───────────
-export const DelegadoOperacionVigenteSchema = z.object({
+// ── PATCH (sincronización del conjunto final) ─────────────────────────────────
+// Endpoint: PATCH /finanzas/recibos-delegados/{rh_id}
+//
+// El array `items` ES el conjunto final de detalles del recibo:
+//   - item CON `detalle_id` → la fila persistida se CONSERVA (recalculada).
+//   - item SIN `detalle_id` → la fila se AGREGA al recibo.
+//   - filas persistidas ausentes del payload → se RETIRAN.
+//
+// La metadata de una fila retenida puede editarse cuando la asignación no está
+// compartida por otro RH. `null` limpia los campos opcionales.
+export const RHDelegadoActualizarItemInSchema = z.object({
+  liquidacion_general_id: z.string(), // UUID string de la liquidación seleccionada
+  especialidad_revision_id: z.string(), // UUID string de la especialidad de revisión
+  /** UUID del DetalleHonorarioDelegado persistido — conserva la fila. */
+  detalle_id: z.string().optional(),
+  numero_rh: z.string().nullish(),
+  periodo: z.number().int().nullish(),
+  mes: z.number().int().min(1).max(12).nullish(),
+  dictamen_revision: z.string().nullish(),
+  fecha_presentacion: z.string().nullish(), // ISO date string
+  fecha_revision: z.string().nullish(), // ISO date string
+});
+
+export const RHDelegadoActualizarInSchema = z.object({
+  cip: z.string(),
+  periodo: z.number().int().min(2000).max(2100),
+  mes: z.number().int().min(1).max(12),
+  delegado_operacion_id: z.string(), // UUID string de la DelegadoOperacion del recibo
+  items: z.array(RHDelegadoActualizarItemInSchema),
+});
+
+// ── DelegadoOperacion (from GET /delegados/operatividades) ────────────────────────
+export const DelegadoOperacionSchema = z.object({
   id: z.string(), // UUID
   municipalidad_id: z.string(), // UUID
   municipalidad_nombre: z.string(),
@@ -196,31 +236,36 @@ export const DelegadoOperacionVigenteSchema = z.object({
   tipo: z.string(), // TITULAR or ALTERNO
   periodo_inicio: z.string().nullish(), // ISO date
   periodo_fin: z.string().nullish(), // ISO date
+  es_vigente: z.boolean(),
 });
 
-export type DelegadoOperacionVigente = z.infer<
-  typeof DelegadoOperacionVigenteSchema
->;
+export type DelegadoOperacion = z.infer<typeof DelegadoOperacionSchema>;
 
-export const DelegadoOperatividadesVigentesSchema = z.object({
+export const DelegadoOperatividadesSchema = z.object({
   delegado_id: z.string(),
   cip: z.string(),
   nombre_completo: z.string(),
-  operatividades: z.array(DelegadoOperacionVigenteSchema),
+  operatividades: z.array(DelegadoOperacionSchema),
 });
 
-export type DelegadoOperatividadesVigentes = z.infer<
-  typeof DelegadoOperatividadesVigentesSchema
+export type DelegadoOperatividades = z.infer<
+  typeof DelegadoOperatividadesSchema
 >;
 
-export const DelegadoOperatividadesVigentesResponseSchema = apiResponseSchema(
-  DelegadoOperatividadesVigentesSchema,
+export const DelegadoOperatividadesResponseSchema = apiResponseSchema(
+  DelegadoOperatividadesSchema,
 );
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 export type RHDelegadoCotizarIn = z.infer<typeof RHDelegadoCotizarInSchema>;
 export type RHDelegadoCotizarItemIn = z.infer<
   typeof RHDelegadoCotizarItemInSchema
+>;
+export type RHDelegadoActualizarIn = z.infer<
+  typeof RHDelegadoActualizarInSchema
+>;
+export type RHDelegadoActualizarItemIn = z.infer<
+  typeof RHDelegadoActualizarItemInSchema
 >;
 export type RHDelegadoCotizar = z.infer<typeof RHDelegadoCotizarSchema>;
 export type RHDelegadoTotales = z.infer<typeof RHDelegadoTotalesSchema>;

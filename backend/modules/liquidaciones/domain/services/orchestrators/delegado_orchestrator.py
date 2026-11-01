@@ -31,8 +31,8 @@ from modules.liquidaciones.domain.results.delegado.delegado_result import (
     LiquidacionDelegadoDelegadoMinimal,
     TipoLiquidacionMinimalResult,
     EspecialidadRevisionResult,
-    DelegadoOperatividadesVigentesResult,
-    DelegadoOperacionVigenteResult,
+    DelegadoOperatividadesResult,
+    DelegadoOperacionResult,
     ComprobanteActivoMinimal,
 )
 
@@ -649,12 +649,13 @@ class DelegadoOrchestrator:
         from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion
         return list(TipoLiquidacion.objects.all().order_by("nombre"))
 
-    def list_operatividades_vigentes_delegado_proceso(
+    def list_operatividades_delegado_proceso(
         self,
         cip: str,
-    ) -> DelegadoOperatividadesVigentesResult:
+        vigente: Optional[bool] = None,
+    ) -> DelegadoOperatividadesResult:
         """
-        Retorna todas las DelegadoOperacion vigentes para un delegado identificado por CIP.
+        Retorna las DelegadoOperacion de un delegado identificado por CIP.
         Incluye información de municipalidad, tipo_liquidacion, especialidad y período de vigencia.
 
         Lanza 404 si no se encuentra delegado con ese CIP.
@@ -670,10 +671,10 @@ class DelegadoOrchestrator:
 
         today = date.today()
 
-        # Get all active operations with vigentes periods
-        operaciones = self.core_service.get_operatividades_vigentes_delegado(
+        operaciones = self.core_service.get_operatividades_delegado(
             delegado=delegado,
             fecha=today,
+            vigente=vigente,
         )
 
         operatividades = []
@@ -687,14 +688,19 @@ class DelegadoOrchestrator:
                     current_periodo = periodo
                     break
 
-            periodo_inicio = current_periodo.periodo_inicio if current_periodo else None
-            periodo_fin = current_periodo.periodo_fin if current_periodo else None
+            periodo = current_periodo or max(
+                op.periodos.all(),
+                key=lambda item: item.periodo_inicio,
+                default=None,
+            )
+            periodo_inicio = periodo.periodo_inicio if periodo else None
+            periodo_fin = periodo.periodo_fin if periodo else None
 
             tipo_liq_id = str(op.tipo_liquidacion_id) if op.tipo_liquidacion_id else None
             tipo_liq_codigo = op.tipo_liquidacion.codigo if op.tipo_liquidacion else None
             tipo_liq_nombre = op.tipo_liquidacion.nombre if op.tipo_liquidacion else None
 
-            operatividades.append(DelegadoOperacionVigenteResult(
+            operatividades.append(DelegadoOperacionResult(
                 id=str(op.id),
                 municipalidad_id=str(op.municipalidad_id),
                 municipalidad_nombre=op.municipalidad.nombre,
@@ -706,12 +712,12 @@ class DelegadoOrchestrator:
                 tipo=op.tipo,
                 periodo_inicio=periodo_inicio,
                 periodo_fin=periodo_fin,
+                es_vigente=current_periodo is not None,
             ))
 
-        return DelegadoOperatividadesVigentesResult(
+        return DelegadoOperatividadesResult(
             delegado_id=str(delegado.id),
             cip=delegado.perfil_ingeniero.cip or "",
             nombre_completo=delegado.perfil_ingeniero.nombre_completo,
             operatividades=operatividades,
         )
-

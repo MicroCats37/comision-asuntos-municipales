@@ -7,7 +7,7 @@ Aplica a tipo Visitas: Inspección de Obra.
 
 Reglas clave:
 - Resuelve IGV/UIT por LiquidacionGeneral.fecha_registro.date()
-  vía LiquidacionPatchHistoricoCoreService (NO vigentes actuales).
+  vía LiquidacionHistoricoCoreService (NO vigentes actuales).
 - Tarifa resuelta vía TarifaLiquidacionBase vigente en fecha_registro.
 - Si patch.tarifa_visitas_id es proporcionado: valida que exista y su base
   estaba vigente en fecha_registro.
@@ -37,8 +37,8 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     TarifaLiquidacionBase,
     TarifaPorCategoriaVisitas,
 )
-from modules.liquidaciones.domain.services.core.liquidacion_patch_historico_core_service import (
-    LiquidacionPatchHistoricoCoreService,
+from modules.liquidaciones.domain.services.core.liquidacion_historico_core_service import (
+    LiquidacionHistoricoCoreService,
     NoIGVVigenteError,
     NoUITVigenteError,
     NoTarifaVigenteError,
@@ -94,7 +94,7 @@ class LiquidacionPatchVisitasService:
     """
 
     def __init__(self) -> None:
-        self._historico_service = LiquidacionPatchHistoricoCoreService()
+        self._historico_service = LiquidacionHistoricoCoreService()
         self._visitas_core = LiquidacionPorCategoriaVisitasCoreService()
 
     def recalcular(

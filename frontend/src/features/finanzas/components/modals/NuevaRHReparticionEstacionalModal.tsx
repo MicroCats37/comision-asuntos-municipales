@@ -1,18 +1,24 @@
 "use client";
 
 /**
- * NuevaRHReparticionEstacionalModal — Modal wizard for creating RH Reparticion Estacional.
+ * NuevaRHReparticionEstacionalModal — Modal wizard for the RH Trimestral
+ * (Repartición Estacional). Serves BOTH modes:
+ *
+ * - CREATE (default): wizard to quote and persist a new distribution.
+ * - EDIT (`editContext`): the same wizard prefilled from a composed list item;
+ *   it calls PATCH instead of POST.
  *
  * Flow:
  * - Step 1: Configuration (periodo, trimester, especialidad)
  * - Step 2: Select delegates (checkbox list)
- * - Step 3: Preview + Cotizar / Confirm + Crear
+ * - Step 3: Preview + Cotizar / Confirm + save
  *
  * Endpoints:
  *   GET  /liquidaciones/especialidades-revision
  *   GET  /liquidaciones/delegados/vigentes-por-especialidad?especialidad_revision_id=
  *   POST /finanzas/reparticiones-estacionales/cotizar
  *   POST /finanzas/reparticiones-estacionales
+ *   PATCH /finanzas/reparticiones-estacionales/{id}
  */
 import {
   Eye,
@@ -20,10 +26,11 @@ import {
   Loader2,
   PieChart,
   Receipt,
+  Save,
   Settings2,
   Users,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { GenericModal } from "@/components/genericModal/GenericModal";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,9 +44,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { notify } from "@/errors";
+import { useActualizarRHReparticionEstacional } from "@/features/finanzas/hooks/useActualizarRHReparticionEstacional";
 import { useCotizarRHReparticionEstacional } from "@/features/finanzas/hooks/useCotizarRHReparticionEstacional";
 import { useCrearRHReparticionEstacional } from "@/features/finanzas/hooks/useCrearRHReparticionEstacional";
 import type {
+  RHReparticionEstacional,
   RHReparticionEstacionalCotizar,
   RHReparticionEstacionalCotizarIn,
 } from "@/features/finanzas/schemas/rh-reparticion-estacional.schema";
@@ -52,11 +61,23 @@ interface NuevaRHReparticionEstacionalModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  /**
+   * Item compuesto del listado a editar. Cuando viene informado el modal
+   * funciona en modo edición (precarga + PATCH); si es null, crea.
+   */
+  editContext?: RHReparticionEstacional | null;
 }
 
 type Step = 1 | 2 | 3;
 
-const TRIMESTER_OPTIONS = [
+type TrimestreOption = {
+  value: string;
+  label: string;
+  mesDesde: number;
+  mesHasta: number;
+};
+
+const TRIMESTER_OPTIONS: TrimestreOption[] = [
   { value: "T1", label: "T1 (Ene–Mar)", mesDesde: 1, mesHasta: 3 },
   { value: "T2", label: "T2 (Abr–Jun)", mesDesde: 4, mesHasta: 6 },
   { value: "T3", label: "T3 (Jul–Sep)", mesDesde: 7, mesHasta: 9 },
@@ -67,6 +88,27 @@ const getCurrentYear = () => new Date().getFullYear();
 
 const formatCurrency = (value?: number | null) =>
   value == null ? "S/ 0.00" : `S/ ${value.toFixed(2)}`;
+
+/** Rango de meses persistido que no encaja en un trimestre estándar. */
+const CUSTOM_TRIMESTER_VALUE = "CUSTOM";
+
+/**
+ * Resuelve la opción de trimestre que corresponde a un rango de meses.
+ * Si el rango persistido no es un trimestre estándar devuelve una opción
+ * "personalizada" para no perder el dato al editar.
+ */
+function findTrimestre(mesDesde: number, mesHasta: number): TrimestreOption {
+  const standard = TRIMESTER_OPTIONS.find(
+    (t) => t.mesDesde === mesDesde && t.mesHasta === mesHasta,
+  );
+  if (standard) return standard;
+  return {
+    value: CUSTOM_TRIMESTER_VALUE,
+    label: `Personalizado (${mesDesde}–${mesHasta})`,
+    mesDesde,
+    mesHasta,
+  };
+}
 
 /** Step guide entry — icon, short label, and long description per step */
 type StepGuideEntry = {
@@ -97,12 +139,12 @@ export function NuevaRHReparticionEstacionalModal({
   open,
   onOpenChange,
   onSuccess,
+  editContext = null,
 }: NuevaRHReparticionEstacionalModalProps) {
+  const isEdit = Boolean(editContext);
   const [step, setStep] = useState<Step>(1);
   const [periodo, setPeriodo] = useState(String(getCurrentYear()));
-  const [trimester, setTrimester] = useState<
-    (typeof TRIMESTER_OPTIONS)[number] | null
-  >(null);
+  const [trimester, setTrimester] = useState<TrimestreOption | null>(null);
   const [especialidadRevisionId, setEspecialidadRevisionId] =
     useState<string>("");
   const [selectedDelegadoIds, setSelectedDelegadoIds] = useState<Set<string>>(
@@ -113,6 +155,9 @@ export function NuevaRHReparticionEstacionalModal({
 
   const cotizarMutation = useCotizarRHReparticionEstacional();
   const crearMutation = useCrearRHReparticionEstacional();
+  const actualizarMutation = useActualizarRHReparticionEstacional(
+    editContext?.identidad.id ?? "",
+  );
 
   const { data: especialidades, isLoading: isLoadingEspecialidades } =
     useEspecialidadesRevision();
@@ -137,6 +182,20 @@ export function NuevaRHReparticionEstacionalModal({
     resetForm();
     onOpenChange(false);
   }, [onOpenChange, resetForm]);
+
+  // ── Modo edición: precarga desde el item compuesto del listado ──────────
+  useEffect(() => {
+    if (!editContext) return;
+    const { general, distribucion } = editContext;
+    setStep(1);
+    setPeriodo(String(general.periodo));
+    setEspecialidadRevisionId(general.especialidad_revision.id);
+    setTrimester(findTrimestre(general.mes_desde, general.mes_hasta));
+    setSelectedDelegadoIds(
+      new Set(distribucion.detalles_delegados.map((d) => d.delegado.id)),
+    );
+    setCotizarResult(null);
+  }, [editContext]);
 
   // ── Step 1 → 2: validate config and proceed ──────────────────────────────
   const handleNextStep1 = useCallback(() => {
@@ -187,8 +246,8 @@ export function NuevaRHReparticionEstacionalModal({
     cotizarMutation,
   ]);
 
-  // ── Step 3: confirmar + crear ────────────────────────────────────────────
-  const handleCrear = useCallback(async () => {
+  // ── Step 3: confirmar (crear o editar) ───────────────────────────────────
+  const handleConfirmar = useCallback(async () => {
     if (!trimester) return;
 
     const payload: RHReparticionEstacionalCotizarIn = {
@@ -200,8 +259,12 @@ export function NuevaRHReparticionEstacionalModal({
     };
 
     try {
-      await crearMutation.crear(payload);
-      notify.success("Repartición estacional creada correctamente");
+      if (isEdit && editContext) {
+        await actualizarMutation.actualizar(payload);
+      } else {
+        await crearMutation.crear(payload);
+      }
+      // The success toast comes from the mutation hook (server message).
       handleClose();
       onSuccess?.();
     } catch {
@@ -213,11 +276,17 @@ export function NuevaRHReparticionEstacionalModal({
     especialidadRevisionId,
     selectedDelegadoIds,
     crearMutation,
+    actualizarMutation,
+    isEdit,
+    editContext,
     handleClose,
     onSuccess,
   ]);
 
-  const isPending = cotizarMutation.isPending || crearMutation.isPending;
+  const isPending =
+    cotizarMutation.isPending ||
+    crearMutation.isPending ||
+    actualizarMutation.isPending;
 
   // Delegate checkbox helpers
   const toggleDelegado = useCallback((id: string, checked: boolean) => {
@@ -236,9 +305,47 @@ export function NuevaRHReparticionEstacionalModal({
 
   const selectedCount = selectedDelegadoIds.size;
 
+  // Candidatos: los vigentes de la especialidad + los ya persistidos que ya
+  // no están vigentes (se conservan en la edición: no se pierden en silencio).
+  const delegateOptions = useMemo(() => {
+    const base = delegados ?? [];
+    if (!editContext) return base;
+    const known = new Set(base.map((d) => d.id));
+    const specialty = editContext.general.especialidad_revision;
+    const missing = editContext.distribucion.detalles_delegados
+      .filter((d) => !known.has(d.delegado.id))
+      .map((d) => ({
+        id: d.delegado.id,
+        nombre_completo: d.delegado.nombre_completo,
+        cip: d.delegado.cip,
+        tipo: "PERSISTIDO",
+        especialidad: { id: specialty.id, nombre: specialty.nombre },
+      }));
+    return [...base, ...missing];
+  }, [delegados, editContext]);
+
   // Find especialidad nombre for display
   const selectedEspecialidadNombre =
     especialidades?.find((e) => e.id === especialidadRevisionId)?.nombre ?? "";
+
+  // Trimestres disponibles: los estándar + el rango persistido si es propio.
+  const trimestreOptions = useMemo(() => {
+    if (
+      !trimester ||
+      TRIMESTER_OPTIONS.some((t) => t.value === trimester.value)
+    ) {
+      return TRIMESTER_OPTIONS;
+    }
+    return [
+      ...TRIMESTER_OPTIONS,
+      {
+        value: CUSTOM_TRIMESTER_VALUE,
+        label: `Personalizado (${trimester.mesDesde}–${trimester.mesHasta})`,
+        mesDesde: trimester.mesDesde,
+        mesHasta: trimester.mesHasta,
+      },
+    ];
+  }, [trimester]);
 
   return (
     <GenericModal open={open} onOpenChange={handleClose} preventClose={false}>
@@ -256,7 +363,7 @@ export function NuevaRHReparticionEstacionalModal({
                 Finanzas — RH Trimestral
               </span>
               <h2 className="text-2xl font-black tracking-tight text-foreground leading-tight">
-                Nueva Trimestral
+                {isEdit ? "Editar Trimestral" : "Nueva Trimestral"}
               </h2>
               <p className="hidden sm:block text-sm text-muted-foreground leading-relaxed">
                 {STEP_GUIDE[step].description}
@@ -344,7 +451,7 @@ export function NuevaRHReparticionEstacionalModal({
                     value={trimester?.value ?? ""}
                     onValueChange={(v) => {
                       setTrimester(
-                        TRIMESTER_OPTIONS.find((t) => t.value === v) ?? null,
+                        trimestreOptions.find((t) => t.value === v) ?? null,
                       );
                     }}
                   >
@@ -355,7 +462,7 @@ export function NuevaRHReparticionEstacionalModal({
                       <SelectValue placeholder="Seleccionar trimestre" />
                     </SelectTrigger>
                     <SelectContent>
-                      {TRIMESTER_OPTIONS.map((t) => (
+                      {trimestreOptions.map((t) => (
                         <SelectItem key={t.value} value={t.value}>
                           {t.label}
                         </SelectItem>
@@ -416,7 +523,7 @@ export function NuevaRHReparticionEstacionalModal({
                 </div>
                 <div className="flex justify-end mt-2">
                   <span className="text-sm font-bold text-primary">
-                    {selectedCount} de {delegados?.length ?? 0} seleccionado(s)
+                    {selectedCount} de {delegateOptions.length} seleccionado(s)
                   </span>
                 </div>
               </div>
@@ -425,7 +532,7 @@ export function NuevaRHReparticionEstacionalModal({
                 <div className="flex items-center justify-center p-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : !delegados || delegados.length === 0 ? (
+              ) : delegateOptions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-8 text-muted-foreground text-sm border border-dashed border-border rounded-xl">
                   <Users className="h-8 w-8 mb-2" />
                   No hay delegados vigentes para esta especialidad
@@ -440,7 +547,7 @@ export function NuevaRHReparticionEstacionalModal({
                       <div className="flex-1 min-w-0">Nombre completo</div>
                       <div className="w-20 shrink-0">CIP</div>
                     </div>
-                    {delegados.map((d, idx) => {
+                    {delegateOptions.map((d, idx) => {
                       const selected = isDelegadoSelected(d.id);
                       return (
                         <div
@@ -593,11 +700,10 @@ export function NuevaRHReparticionEstacionalModal({
                       </thead>
                       <tbody>
                         {cotizarResult.detalles_delegados.map((det, idx) => {
-                          const label =
-                            det.delegado?.nombre_completo ?? det.delegado_id;
+                          const label = det.delegado.nombre_completo;
                           return (
                             <tr
-                              key={det.delegado_id}
+                              key={det.delegado.id}
                               className="border-t border-border/50 hover:bg-muted/30"
                             >
                               <td className="px-3 py-2 text-muted-foreground">
@@ -644,14 +750,14 @@ export function NuevaRHReparticionEstacionalModal({
                       <tbody>
                         {cotizarResult.detalles_capitulos.map((det, idx) => (
                           <tr
-                            key={det.capitulo_id}
+                            key={det.capitulo.id}
                             className="border-t border-border/50 hover:bg-muted/30"
                           >
                             <td className="px-3 py-2 text-muted-foreground">
                               {idx + 1}
                             </td>
                             <td className="px-3 py-2 font-medium">
-                              {det.capitulo?.nombre ?? det.capitulo_id}
+                              {det.capitulo.nombre}
                             </td>
                             <td className="px-3 py-2 text-right font-semibold">
                               {formatCurrency(det.monto)}
@@ -712,15 +818,17 @@ export function NuevaRHReparticionEstacionalModal({
             {step === 3 && (
               <Button
                 type="button"
-                onClick={handleCrear}
-                disabled={crearMutation.isPending}
+                onClick={handleConfirmar}
+                disabled={isPending}
                 className="h-10 rounded-xl font-bold gap-1.5"
               >
-                {crearMutation.isPending && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isEdit ? (
+                  <Save className="h-4 w-4" />
+                ) : (
+                  <Receipt className="h-4 w-4" />
                 )}
-                <Receipt className="h-4 w-4" />
-                Crear Repartición
+                {isEdit ? "Guardar cambios" : "Crear Repartición"}
               </Button>
             )}
           </div>

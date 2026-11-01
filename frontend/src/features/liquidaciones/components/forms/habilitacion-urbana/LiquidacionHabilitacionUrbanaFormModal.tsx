@@ -6,6 +6,7 @@ import {
   FileText,
   Link2,
   RefreshCw,
+  Ruler,
 } from "lucide-react";
 /**
  * LiquidacionHabilitacionUrbanaFormModal — Modal unificado para HU (M2).
@@ -24,7 +25,6 @@ import {
  */
 import { useCallback, useState } from "react";
 import { MoneyInput } from "@/components/genericForm/inputs/MoneyInput";
-import { notify } from "@/errors";
 import {
   composeDetalleSections,
   LiquidacionDetalleHabilitacionUrbanaSection,
@@ -40,6 +40,7 @@ import {
   type HabilitacionUrbanaFormData,
   habilitacionUrbanaFormSchema,
 } from "../../../schemas/liquidacion-habilitacion-urbana-form.schema";
+import { withLegacyRegistroFields } from "../../../schemas/liquidacion-legacy-registro-form.schema";
 import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
 import { formatPublicId } from "../../../utils/formatPublicId";
@@ -59,6 +60,7 @@ interface BaseProps {
 }
 
 type CreateProps = BaseProps & { mode: "create" };
+type LegacyProps = BaseProps & { mode: "legacy" };
 type EditProps = BaseProps & {
   mode: "edit";
   item: LiquidacionHabilitacionUrbanaListItem;
@@ -74,6 +76,7 @@ type RelacionadaProps = BaseProps & {
 
 export type LiquidacionHabilitacionUrbanaFormModalProps =
   | CreateProps
+  | LegacyProps
   | EditProps
   | NuevaRevisionProps
   | RelacionadaProps;
@@ -108,9 +111,15 @@ export function LiquidacionHabilitacionUrbanaFormModal(
   const [detalleOpen, setDetalleOpen] = useState(false);
 
   const sourceItem: LiquidacionHabilitacionUrbanaListItem | null =
-    mode === "edit" ? props.item : mode !== "create" ? props.previa : null;
+    mode === "edit"
+      ? props.item
+      : mode === "nueva-revision" || mode === "relacionada"
+        ? props.previa
+        : null;
 
-  const crearMutation = useCrearHabilitacionUrbana();
+  const crearMutation = useCrearHabilitacionUrbana(
+    mode === "legacy" ? "legacy" : "create",
+  );
   const editarMutation = useEditarHabilitacionUrbana(
     mode === "edit" ? props.item.liquidacion_general.id : "",
   );
@@ -132,6 +141,8 @@ export function LiquidacionHabilitacionUrbanaFormModal(
     switch (mode) {
       case "create":
         return "Nueva Liquidación";
+      case "legacy":
+        return "Registro Legacy";
       case "edit":
         return "Editar Liquidación";
       case "nueva-revision":
@@ -145,6 +156,8 @@ export function LiquidacionHabilitacionUrbanaFormModal(
     switch (mode) {
       case "create":
         return "Crear Liquidación";
+      case "legacy":
+        return "Registrar Legacy";
       case "edit":
         return "Guardar cambios";
       case "nueva-revision":
@@ -157,7 +170,7 @@ export function LiquidacionHabilitacionUrbanaFormModal(
   const primaryLoadingLabel = mode === "edit" ? "Guardando..." : "Creando...";
 
   const primaryLoading =
-    mode === "create"
+    mode === "create" || mode === "legacy"
       ? crearMutation.isPending
       : mode === "edit"
         ? editarMutation.isPending
@@ -174,7 +187,7 @@ export function LiquidacionHabilitacionUrbanaFormModal(
 
   const computeCanEditProyecto = useCallback(
     (m: typeof mode, item: typeof sourceItem): boolean => {
-      if (m === "create" || m === "nueva-revision") return true;
+      if (m === "create" || m === "legacy" || m === "nueva-revision") return true;
       if (m === "edit" && item) {
         return canEditLiquidacion(item.liquidacion_general).canEditProyecto;
       }
@@ -202,6 +215,7 @@ export function LiquidacionHabilitacionUrbanaFormModal(
         <MoneyInput
           name="area_solicitada"
           label="Área Solicitada (m²)"
+          icon={Ruler}
           required
           control={methods.control}
           defaultValue={isEdit || isRevisionLike ? areaInicial : 0}
@@ -211,10 +225,15 @@ export function LiquidacionHabilitacionUrbanaFormModal(
 
       const motorSection = (
         <div className="space-y-3">
-          <TarifasM2SmartField methods={methods} tipo="habilitacion-urbana" />
+          <TarifasM2SmartField
+            methods={methods}
+            tipo="habilitacion-urbana"
+            legacy={mode === "legacy"}
+          />
           <CotizacionM2SmartField
             methods={methods}
             tipo="habilitacion-urbana"
+            {...(mode === "legacy" ? { mode: "legacy" as const } : {})}
             {...(isEdit
               ? {
                   mode: "edit",
@@ -241,7 +260,7 @@ export function LiquidacionHabilitacionUrbanaFormModal(
   );
 
   const initialData: Partial<HabilitacionUrbanaFormData> = (() => {
-    if (mode === "create") {
+    if (mode === "create" || mode === "legacy") {
       return {
         area_solicitada: 0,
         numero_revision: resolveNumeroRevisionInicial("create"),
@@ -271,7 +290,6 @@ export function LiquidacionHabilitacionUrbanaFormModal(
   const onSubmitEdit = useCallback(
     async (data: HabilitacionUrbanaFormData) => {
       const result = await editarMutation.mutateAsync(data);
-      notify.success("Liquidación editada correctamente");
       return result;
     },
     [editarMutation],
@@ -322,7 +340,11 @@ export function LiquidacionHabilitacionUrbanaFormModal(
         onSuccess={onSuccess}
         mode={mode}
         sourceItem={sourceItem}
-        schema={habilitacionUrbanaFormSchema}
+        schema={
+          mode === "legacy"
+            ? withLegacyRegistroFields(habilitacionUrbanaFormSchema)
+            : habilitacionUrbanaFormSchema
+        }
         initialData={initialData}
         eyebrow="Habilitación Urbana"
         icon={icon}

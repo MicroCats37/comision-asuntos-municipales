@@ -96,6 +96,14 @@ class AutoNumeroModel(models.Model):
     class Meta:
         abstract = True
 
+    def get_autonumero_queryset(self):
+        """Return the records that participate in this model's sequence."""
+        queryset = self.__class__.objects.all()
+        legacy_lookup = getattr(self, "autonumero_legacy_lookup", None)
+        if legacy_lookup:
+            queryset = queryset.filter(**{legacy_lookup: False})
+        return queryset
+
     def save(self, *args, **kwargs):
         """Auto-increment `numero` to the next sequential value on first save."""
         if (
@@ -104,7 +112,7 @@ class AutoNumeroModel(models.Model):
             and not getattr(self, "_skip_autonumero", False)
         ):
             last = (
-                self.__class__.objects.all()
+                self.get_autonumero_queryset()
                 .order_by("numero")
                 .values_list("numero", flat=True)
                 .last()

@@ -44,6 +44,9 @@ from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_
 from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_general_result import (
     ContactoResult,
 )
+from modules.liquidaciones.domain.schemas.liquidacion_legacy.legacy_registro_data import (
+    LegacyRegistroContexto,
+)
 from modules.liquidaciones.domain.constants import ModoCalculoLiquidacion
 
 
@@ -81,10 +84,15 @@ class LiquidacionM2FlujoBase:
         gen_data,
         esp_data,
         cotizacion,
+        registro_legacy: LegacyRegistroContexto | None = None,
     ):
         """
         Shared primera revisión steps for M2 flows.
         Subclass calls this from its transactional method.
+
+        `registro_legacy` transporta la identidad histórica explícita y las
+        entidades financieras ya resueltas por el orchestrator (IGV, UIT,
+        derecho y tarifa vigentes en `fecha_registro`).
         """
         # Step 1: Entidad upsert (shared — identical for HU and MS)
         entidad = self.general_core.create_entidad(
@@ -109,8 +117,15 @@ class LiquidacionM2FlujoBase:
         proyecto = self.general_core.create_proyecto(proyecto_data, entidad)
 
         # Step 3: LiquidacionGeneral with cotizacion totals + vigentes FKs
-        igv_vigente = self.general_core.get_igv_vigente()
-        uit_vigente = self.general_core.get_uit_vigente()
+        # En registro legacy el orchestrator YA resolvió las entidades
+        # históricas (IGV/UIT vigentes en `fecha_registro`): se usan esas,
+        # nunca las vigentes de hoy.
+        if registro_legacy is not None:
+            igv_vigente = registro_legacy.igv
+            uit_vigente = registro_legacy.uit
+        else:
+            igv_vigente = self.general_core.get_igv_vigente()
+            uit_vigente = self.general_core.get_uit_vigente()
         tipo_liquidacion = TipoLiquidacionModel.objects.get(
             codigo=self._get_tipo_liquidacion_code()
         )
@@ -137,11 +152,19 @@ class LiquidacionM2FlujoBase:
             igv_id=igv_vigente if igv_vigente else None,
             uit_id=uit_vigente if uit_vigente else None,
             usuario_creador_id=usuario_id,
+            fecha_registro=(
+                registro_legacy.fecha_registro if registro_legacy is not None else None
+            ),
+            legacy=registro_legacy is not None,
         )
 
         # Step 4: LiquidacionPorMetroCuadrado via m2_core (shared)
-        derecho = self.m2_core.get_derecho_minimo_m2_vigente()
-        tarifa = self.m2_core.get_tarifa_m2_vigente(self._get_tipo_liquidacion_code())
+        if registro_legacy is not None:
+            derecho = registro_legacy.derecho
+            tarifa = registro_legacy.tarifa
+        else:
+            derecho = self.m2_core.get_derecho_minimo_m2_vigente()
+            tarifa = self.m2_core.get_tarifa_m2_vigente(self._get_tipo_liquidacion_code())
         liquidacion_m2 = self.m2_core.create_liquidacion_por_metro_cuadrado(
             liquidacion_general=liquidacion_general,
             area_solicitada=float(esp_data.datos.area_solicitada),
@@ -152,7 +175,12 @@ class LiquidacionM2FlujoBase:
         )
 
         # Step 5: Type-specific wrapper (abstract)
-        wrapper = self._crear_wrapper(liquidacion_general)
+        wrapper = self._crear_wrapper(
+            liquidacion_general,
+            numero=(
+                registro_legacy.numero if registro_legacy is not None else None
+            ),
+        )
 
         # Step 5.5: Create relation group and member for primera revision
         # Uses base class helper that derives relacion_key from _get_tipo_liquidacion_code

@@ -273,10 +273,13 @@ function CotizacionEstrategiaSection({
     { label: "Estrategia", value: etiquetaEstrategia },
   ];
 
-  if (cobraUniversoCompleto && contexto.count_habilitadas != null) {
+  if (
+    cobraUniversoCompleto &&
+    contexto.cantidad_especialidades_habilitadas != null
+  ) {
     celdas.push({
       label: "Habilitadas (H)",
-      value: `${contexto.count_habilitadas}`,
+      value: `${contexto.cantidad_especialidades_habilitadas}`,
     });
   }
   if (cobraUniversoCompleto && contexto.porcentaje_tarifa != null) {

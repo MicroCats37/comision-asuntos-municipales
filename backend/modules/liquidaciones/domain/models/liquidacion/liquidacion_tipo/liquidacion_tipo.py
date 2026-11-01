@@ -215,10 +215,10 @@ class LiquidacionPorcentajeObra(BaseModel):
         "TARIFA_HABILITADAS_PARTICIPANTES o TOTAL_EXPLICITO.",
     )
 
-    count_habilitadas = models.PositiveIntegerField(
+    cantidad_especialidades_habilitadas = models.PositiveIntegerField(
         null=True,
         blank=True,
-        verbose_name="Cantidad de Habilitadas",
+        verbose_name="Cantidad de Especialidades Habilitadas",
         help_text="Snapshot de H (habilitadas del catálogo en la fecha efectiva). "
         "NULL en registros históricos: el motor lo deriva del catálogo.",
     )

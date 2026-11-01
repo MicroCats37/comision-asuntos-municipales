@@ -18,6 +18,7 @@ import { Calculator, Loader2, Minus, Plus } from "lucide-react";
  * - POST /liquidaciones/inspeccion-obra/cotizar → { datos: {...}, calculo: { monto_bruto, subtotal, total } }
  */
 import { useEffect, useMemo, useState } from "react";
+import { getErrorMessage } from "@/errors";
 import { useDebounce } from "@/hooks/system/useDebounce";
 import api from "@/lib/api";
 import { formatCurrencyTrimmed } from "@/utils/number-formatter";
@@ -185,9 +186,7 @@ export function TarifasVisitasNuevaRevisionSmartField({
     },
     onError: (err) => {
       setQuote(null);
-      setError(
-        err instanceof Error ? err.message : "Error al calcular cotización",
-      );
+      setError(getErrorMessage(err) || "Error al calcular cotización");
     },
   });
 

@@ -548,3 +548,61 @@ def test_inspectores_seleccionables_sin_tipo_400(auth_client):
     """
     response = auth_client.get("/liquidaciones/inspectores/seleccionables")
     assert response.status_code == 400
+
+
+# ── Tests: GET /finanzas/recibos-inspectores/operatividades ─────────────────
+
+
+@pytest.mark.django_db
+def test_listar_operatividades_inspector_retorna_operaciones_historicas(
+    auth_client,
+    inspector_habilitacion_urbana,
+    inspector_periodo_pasado,
+):
+    """La búsqueda por CIP no impone vigencia cuando el filtro se omite."""
+    response = auth_client.get("/finanzas/recibos-inspectores/operatividades?cip=54321")
+
+    assert response.status_code == 200
+    inspectores = response.json()["data"]["inspectores"]
+    assert len(inspectores) == 1
+    assert inspectores[0]["id"] == str(inspector_habilitacion_urbana.id)
+    assert inspectores[0]["inspector_operacion_id"]
+    assert inspectores[0]["periodo_inicio"] is not None
+    assert inspectores[0]["periodo_fin"] is not None
+    assert inspectores[0]["es_vigente"] is False
+
+
+@pytest.mark.django_db
+def test_listar_operatividades_inspector_admite_filtro_vigente_opcional(
+    auth_client,
+    inspector_edificacion,
+    inspector_habilitacion_urbana,
+    inspector_periodo_vigente,
+    inspector_periodo_pasado,
+):
+    vigente = auth_client.get("/finanzas/recibos-inspectores/operatividades?cip=12345&vigente=true")
+    no_vigente = auth_client.get("/finanzas/recibos-inspectores/operatividades?cip=54321&vigente=false")
+
+    assert len(vigente.json()["data"]["inspectores"]) == 1
+    assert vigente.json()["data"]["inspectores"][0]["id"] == str(inspector_edificacion.id)
+    assert len(no_vigente.json()["data"]["inspectores"]) == 1
+    assert no_vigente.json()["data"]["inspectores"][0]["id"] == str(
+        inspector_habilitacion_urbana.id
+    )
+
+
+@pytest.mark.django_db
+def test_selector_legacy_io_mantiene_operatividades_historicas(
+    auth_client,
+    inspector_habilitacion_urbana,
+    inspector_periodo_pasado,
+):
+    """Legacy IO conserva su propia ruta y no usa el endpoint RH de Finanzas."""
+    response = auth_client.get(
+        "/liquidaciones/inspectores/seleccionables-por-cip?cip=54321&vigente=false"
+    )
+
+    assert response.status_code == 200
+    inspector = response.json()["data"]["inspectores"][0]
+    assert inspector["id"] == str(inspector_habilitacion_urbana.id)
+    assert inspector["es_vigente"] is False

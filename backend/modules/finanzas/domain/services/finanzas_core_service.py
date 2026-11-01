@@ -3,6 +3,7 @@ FinanzasCoreService — ORM queries for finanzas entities.
 
 Pure ORM access. No business logic.
 """
+
 import uuid
 from datetime import date
 from typing import Optional
@@ -70,16 +71,20 @@ def _parse_periodo_mes(periodo: str) -> Optional[int]:
 
 # ── RH Delegado Tipo Liquidación Classification ──────────────────────────────────
 
-PO_TIPO_LIQUIDACION_CODES = frozenset({
-    "EDIFICACION",
-    "IMPACTO_VIAL",
-    "TALUDES",
-})
+PO_TIPO_LIQUIDACION_CODES = frozenset(
+    {
+        "EDIFICACION",
+        "IMPACTO_VIAL",
+        "TALUDES",
+    }
+)
 
-M2_TIPO_LIQUIDACION_CODES = frozenset({
-    "HABILITACION_URBANA",
-    "MECANICA_SUELOS",
-})
+M2_TIPO_LIQUIDACION_CODES = frozenset(
+    {
+        "HABILITACION_URBANA",
+        "MECANICA_SUELOS",
+    }
+)
 
 # Sentinel values for the strategy returned by get_liquidacion_tipo_estrategia_rh.
 TIPO_LIQUIDACION_ESTRATEGIA_RH_DETAIL = "detail"
@@ -237,8 +242,7 @@ class FinanzasCoreService:
             Inspector instance or None if not found.
         """
         return (
-            Inspector.objects
-            .select_related("perfil_ingeniero")
+            Inspector.objects.select_related("perfil_ingeniero")
             .filter(perfil_ingeniero__cip=cip)
             .first()
         )
@@ -256,8 +260,7 @@ class FinanzasCoreService:
             LiquidacionGeneral instance or None if not found.
         """
         return (
-            LiquidacionGeneral.objects
-            .select_related("tipo_liquidacion")
+            LiquidacionGeneral.objects.select_related("tipo_liquidacion")
             .filter(expediente=expediente)
             .first()
         )
@@ -275,8 +278,7 @@ class FinanzasCoreService:
             LiquidacionGeneral instance or None if not found.
         """
         return (
-            LiquidacionGeneral.objects
-            .select_related("tipo_liquidacion")
+            LiquidacionGeneral.objects.select_related("tipo_liquidacion")
             .filter(id=liquidacion_general_id)
             .first()
         )
@@ -300,11 +302,19 @@ class FinanzasCoreService:
             activo=True
         ).order_by("-fecha_emision", "-id")
         return (
-            LiquidacionGeneral.objects
-            .select_related("tipo_liquidacion")
+            LiquidacionGeneral.objects.select_related(
+                "tipo_liquidacion",
+                # PO wrapper — needed for estrategia_cotizacion / total_explicito.
+                # LEFT OUTER JOIN: M2 and Visitas liquidations have no PO row.
+                "liquidacion_porcentaje_obra",
+            )
             .filter(id=liquidacion_general_id)
             .prefetch_related(
-                Prefetch("comprobantes", queryset=active_comprobantes, to_attr="comprobantes_activos")
+                Prefetch(
+                    "comprobantes",
+                    queryset=active_comprobantes,
+                    to_attr="comprobantes_activos",
+                )
             )
             .first()
         )
@@ -321,11 +331,9 @@ class FinanzasCoreService:
         Returns:
             LiquidacionPorCategoriaVisitas instance or None if not found.
         """
-        return (
-            LiquidacionPorCategoriaVisitas.objects
-            .filter(liquidacion_general_id=liquidacion_general_id)
-            .first()
-        )
+        return LiquidacionPorCategoriaVisitas.objects.filter(
+            liquidacion_general_id=liquidacion_general_id
+        ).first()
 
     def get_liquidacion_categoria_visitas_by_id(
         self, lcv_id: int | str
@@ -356,14 +364,10 @@ class FinanzasCoreService:
         Returns:
             LiquidacionInspector instance or None if not found.
         """
-        return (
-            LiquidacionInspector.objects
-            .filter(
-                liquidacion_id=liquidacion_categoria_visitas_id,
-                inspector_id=inspector_id,
-            )
-            .first()
-        )
+        return LiquidacionInspector.objects.filter(
+            liquidacion_id=liquidacion_categoria_visitas_id,
+            inspector_id=inspector_id,
+        ).first()
 
     def get_liquidacion_inspector_by_id(
         self,
@@ -378,7 +382,9 @@ class FinanzasCoreService:
         Returns:
             LiquidacionInspector instance or None if not found.
         """
-        return LiquidacionInspector.objects.filter(id=str(liquidacion_inspector_id)).first()
+        return LiquidacionInspector.objects.filter(
+            id=str(liquidacion_inspector_id)
+        ).first()
 
     def update_liquidacion_inspector_periodo_mes(
         self,
@@ -393,6 +399,106 @@ class FinanzasCoreService:
         liquidacion_inspector.periodo = periodo
         liquidacion_inspector.mes = mes
         liquidacion_inspector.save(update_fields=["periodo", "mes", "updated_at"])
+
+    def list_liquidaciones_inspector_por_categoria_visitas(
+        self,
+        liquidacion_categoria_visitas_id: int | str,
+    ) -> list[LiquidacionInspector]:
+        """
+        Return every LiquidacionInspector linked to a LiquidacionPorCategoriaVisitas.
+
+        The ledger (RegistroPagoInspector) is shared per IO, so every inspector
+        assignment of that IO is affected when the ledger changes.
+        """
+        return list(
+            LiquidacionInspector.objects.filter(
+                liquidacion_id=liquidacion_categoria_visitas_id,
+            ).select_related("inspector")
+        )
+
+    def get_ultimo_registro_pago_periodo(
+        self,
+        liquidacion_categoria_visitas_id: int | str,
+    ) -> tuple[int, int] | None:
+        """
+        Return the (periodo, mes) of the most recent payment ledger row.
+
+        Returns None when the IO has no payment rows left.
+        """
+        registro = (
+            RegistroPagoInspector.objects.filter(
+                liquidacion_por_categoria_visitas_id=liquidacion_categoria_visitas_id,
+                periodo__isnull=False,
+                mes__isnull=False,
+            )
+            .order_by("-periodo", "-mes")
+            .first()
+        )
+        if registro is None:
+            return None
+        return registro.periodo, registro.mes
+
+    def recalcular_marcador_periodo_inspector(
+        self,
+        liquidacion_inspector_id: int | str,
+    ) -> tuple[int | None, int | None]:
+        """
+        Recalculate a LiquidacionInspector period marker from the remaining ledger.
+
+        The marker reflects the latest payment ledger row of the IO. When no
+        ledger row remains the marker is cleared (periodo=None, mes=None).
+
+        Returns:
+            Tuple (periodo, mes) after recalculation.
+        """
+        liquidacion_inspector = LiquidacionInspector.objects.filter(
+            id=liquidacion_inspector_id
+        ).first()
+        if liquidacion_inspector is None:
+            return (None, None)
+
+        ultimo = self.get_ultimo_registro_pago_periodo(
+            liquidacion_inspector.liquidacion_id,
+        )
+        nuevo_periodo = ultimo[0] if ultimo else None
+        nuevo_mes = ultimo[1] if ultimo else None
+
+        if (
+            liquidacion_inspector.periodo != nuevo_periodo
+            or liquidacion_inspector.mes != nuevo_mes
+        ):
+            liquidacion_inspector.periodo = nuevo_periodo
+            liquidacion_inspector.mes = nuevo_mes
+            liquidacion_inspector.save(update_fields=["periodo", "mes", "updated_at"])
+
+        return (nuevo_periodo, nuevo_mes)
+
+    def recalcular_marcadores_periodo_inspector(
+        self,
+        liquidacion_categoria_visitas_ids,
+    ) -> dict[str, tuple[int | None, int | None]]:
+        """
+        Recalculate every affected LiquidacionInspector period marker.
+
+        Args:
+            liquidacion_categoria_visitas_ids: IDs of the IOs whose ledger changed.
+
+        Returns:
+            Dict mapping liquidacion_inspector id -> (periodo, mes).
+        """
+        marcadores: dict[str, tuple[int | None, int | None]] = {}
+        for lcv_id in dict.fromkeys(liquidacion_categoria_visitas_ids):
+            if lcv_id is None:
+                continue
+            for (
+                liquidacion_inspector
+            ) in self.list_liquidaciones_inspector_por_categoria_visitas(
+                lcv_id,
+            ):
+                marcadores[str(liquidacion_inspector.id)] = (
+                    self.recalcular_marcador_periodo_inspector(liquidacion_inspector.id)
+                )
+        return marcadores
 
     def get_registro_pago(
         self,
@@ -411,15 +517,11 @@ class FinanzasCoreService:
         Returns:
             RegistroPagoInspector instance or None if not found.
         """
-        return (
-            RegistroPagoInspector.objects
-            .filter(
-                liquidacion_por_categoria_visitas_id=liquidacion_categoria_visitas_id,
-                periodo=periodo,
-                mes=mes,
-            )
-            .first()
-        )
+        return RegistroPagoInspector.objects.filter(
+            liquidacion_por_categoria_visitas_id=liquidacion_categoria_visitas_id,
+            periodo=periodo,
+            mes=mes,
+        ).first()
 
     def upsert_registro_pago(
         self,
@@ -574,8 +676,225 @@ class FinanzasCoreService:
             List of DetalleHonorarioInspector instances.
         """
         return list(
-            DetalleHonorarioInspector.objects.filter(recibo_mensual_id=recibo_mensual_id)
+            DetalleHonorarioInspector.objects.filter(
+                recibo_mensual_id=recibo_mensual_id
+            )
         )
+
+    # ── RH Inspector Mensual — Reconciliación (PATCH) ────────────────────────────
+
+    def actualizar_detalle_honorario_inspector(
+        self,
+        detalle_id,
+        inspecciones_liquidadas: int,
+        costo_por_inspeccion: Decimal,
+        monto_contribuido: Decimal,
+        escala_descuento_id=None,
+        importe_bruto: Decimal | None = None,
+        inspecciones_programadas: int | None = None,
+        inspecciones_pagadas_hasta_mes_anterior: int | None = None,
+        saldo_restante: Decimal | None = None,
+        sub_total: Decimal | None = None,
+        descuento: Decimal | None = None,
+        honorarios: Decimal | None = None,
+        tasa_descuento: Decimal | None = None,
+    ) -> DetalleHonorarioInspector:
+        """
+        Actualiza los valores congelados de un DetalleHonorarioInspector existente.
+
+        Solo escribe en la fila del detalle del RH — nunca en la IO, ni en la
+        asignación de inspector ni en el ledger de pagos.
+
+        Args:
+            detalle_id: PK del DetalleHonorarioInspector.
+            inspecciones_liquidadas: Inspecciones liquidadas en este RH.
+            costo_por_inspeccion: Costo por inspección.
+            monto_contribuido: Monto contribuido.
+            escala_descuento_id: FK a EscalaDescuentoInspector (escala congelada).
+            importe_bruto: Sub total de la liquidación (referencia congelada).
+            inspecciones_programadas: Visitas programadas de la IO.
+            inspecciones_pagadas_hasta_mes_anterior: Pagos acumulados previos.
+            saldo_restante: Saldo restante tras la liquidación.
+            sub_total: Subtotal congelado del item.
+            descuento: Descuento congelado del item.
+            honorarios: Honorarios congelados del item.
+            tasa_descuento: Tasa de descuento congelada.
+
+        Returns:
+            DetalleHonorarioInspector actualizado.
+        """
+        detalle = DetalleHonorarioInspector.objects.filter(id=detalle_id).first()
+        if detalle is None:
+            raise DetalleHonorarioInspector.DoesNotExist(
+                f"DetalleHonorarioInspector '{detalle_id}' no encontrado"
+            )
+
+        detalle.inspecciones_liquidadas = inspecciones_liquidadas
+        detalle.costo_por_inspeccion = costo_por_inspeccion
+        detalle.monto_contribuido = monto_contribuido
+        detalle.importe_bruto = importe_bruto
+        detalle.inspecciones_programadas = inspecciones_programadas
+        detalle.inspecciones_pagadas_hasta_mes_anterior = (
+            inspecciones_pagadas_hasta_mes_anterior
+        )
+        detalle.saldo_restante = saldo_restante
+        detalle.sub_total = sub_total
+        detalle.descuento = descuento
+        detalle.honorarios = honorarios
+        detalle.tasa_descuento = tasa_descuento
+        if escala_descuento_id is not None:
+            detalle.escala_descuento_id = escala_descuento_id
+        detalle.save(
+            update_fields=[
+                "inspecciones_liquidadas",
+                "costo_por_inspeccion",
+                "monto_contribuido",
+                "importe_bruto",
+                "inspecciones_programadas",
+                "inspecciones_pagadas_hasta_mes_anterior",
+                "saldo_restante",
+                "sub_total",
+                "descuento",
+                "honorarios",
+                "tasa_descuento",
+                "escala_descuento",
+                "updated_at",
+            ]
+        )
+        return detalle
+
+    def delete_detalle_honorario_inspector(self, detalle_id) -> None:
+        """
+        Elimina una fila de DetalleHonorarioInspector (síncronización PATCH).
+
+        Args:
+            detalle_id: PK del DetalleHonorarioInspector.
+        """
+        DetalleHonorarioInspector.objects.filter(id=detalle_id).delete()
+
+    def actualizar_totales_rh_inspector_mensual(
+        self,
+        rh_id,
+        sub_total: Decimal,
+        descuento: Decimal,
+        honorarios: Decimal,
+        tasa_descuento: Decimal | None = None,
+    ) -> ReciboHonorarioInspectorMensual:
+        """
+        Recalcula los totales del ReciboHonorarioInspectorMensual.
+
+        La escala de descuento del recibo NO se modifica: la reconciliación
+        usa la escala congelada del propio recibo.
+
+        Args:
+            rh_id: PK del ReciboHonorarioInspectorMensual.
+            sub_total: Subtotal del mes.
+            descuento: Descuento recalculado sobre el conjunto final.
+            honorarios: Honorarios netos del mes.
+            tasa_descuento: Tasa de descuento congelada aplicada.
+
+        Returns:
+            ReciboHonorarioInspectorMensual actualizado.
+        """
+        rh = ReciboHonorarioInspectorMensual.objects.filter(id=rh_id).first()
+        if rh is None:
+            raise ReciboHonorarioInspectorMensual.DoesNotExist(
+                f"ReciboHonorarioInspectorMensual '{rh_id}' no encontrado"
+            )
+
+        rh.sub_total = sub_total
+        rh.descuento = descuento
+        rh.honorarios = honorarios
+        if tasa_descuento is not None:
+            rh.tasa_descuento = tasa_descuento
+        rh.save(
+            update_fields=[
+                "sub_total",
+                "descuento",
+                "honorarios",
+                "tasa_descuento",
+                "updated_at",
+            ]
+        )
+        return rh
+
+    def delete_registros_pago_por_recibo_mensual(self, rh_id) -> int:
+        """
+        Elimina las filas del ledger de pagos vinculadas a un RH mensual.
+
+        Solo se borran las filas con ``recibo_mensual_id == rh_id``: los
+        registros legacy con FK nula nunca se tocan.
+
+        Args:
+            rh_id: PK del ReciboHonorarioInspectorMensual.
+
+        Returns:
+            Número de registros eliminados.
+        """
+        count, _ = RegistroPagoInspector.objects.filter(
+            recibo_mensual_id=rh_id
+        ).delete()
+        return count
+
+    def actualizar_periodo_rh_inspector_mensual(
+        self,
+        rh_id,
+        periodo: int,
+        mes: int,
+    ) -> ReciboHonorarioInspectorMensual:
+        """
+        Actualiza el periodo/mes de la cabecera de un RH mensual de inspector.
+
+        La edición de un RH sigue el mismo flujo que la creación: el periodo
+        del recibo es editable y se persiste junto con el conjunto final de
+        detalles.
+
+        Args:
+            rh_id: PK del ReciboHonorarioInspectorMensual.
+            periodo: Año del periodo.
+            mes: Mes del periodo (1-12).
+
+        Returns:
+            ReciboHonorarioInspectorMensual actualizado.
+        """
+        rh = ReciboHonorarioInspectorMensual.objects.filter(id=rh_id).first()
+        if rh is None:
+            raise ReciboHonorarioInspectorMensual.DoesNotExist(
+                f"ReciboHonorarioInspectorMensual '{rh_id}' no encontrado"
+            )
+
+        rh.periodo = periodo
+        rh.mes = mes
+        rh.save(update_fields=["periodo", "mes", "updated_at"])
+        return rh
+
+    def actualizar_inspector_operacion_rh(
+        self,
+        rh_id,
+        inspector_operacion_id,
+    ) -> ReciboHonorarioInspectorMensual:
+        """
+        Asigna (backfill) la operatividad del inspector a un RH mensual.
+
+        Solo se usa cuando el recibo se creó sin operatividad: nunca replaces
+        una operatividad ya existente.
+
+        Args:
+            rh_id: PK del ReciboHonorarioInspectorMensual.
+            inspector_operacion_id: FK a InspectorOperacion.
+
+        Returns:
+            ReciboHonorarioInspectorMensual actualizado.
+        """
+        rh = ReciboHonorarioInspectorMensual.objects.filter(id=rh_id).first()
+        if rh is None:
+            raise ReciboHonorarioInspectorMensual.DoesNotExist(
+                f"ReciboHonorarioInspectorMensual '{rh_id}' no encontrado"
+            )
+
+        rh.inspector_operacion_id = inspector_operacion_id
+        rh.save(update_fields=["inspector_operacion", "updated_at"])
+        return rh
 
     # ── Inspector Candidatas (RH Mensual) ─────────────────────────────────────────
 
@@ -652,6 +971,7 @@ class FinanzasCoreService:
             # - If only periodo (no mes): all RegistroPagoInspector with periodo <= periodo
             # - If no periodo: sum ALL periods (historical total)
             from django.db.models import Q
+
             registro_qs = RegistroPagoInspector.objects.filter(
                 liquidacion_por_categoria_visitas_id=lcv.id,
             )
@@ -671,6 +991,7 @@ class FinanzasCoreService:
             # Calculate costo_por_inspeccion
             sub_total = lg.sub_total or 0
             from decimal import Decimal
+
             TWO_PLACES = Decimal("0.01")
             costo_por_inspeccion = (
                 Decimal(str(sub_total)) / Decimal(programadas)
@@ -681,32 +1002,33 @@ class FinanzasCoreService:
             nombre_propietario = ""
             if lg.proyecto:
                 nombre_propietario = lg.proyecto.nombre_propietario or ""
-            candidates.append({
-                "liquidacion_inspector_id": str(li.id),
-                "liquidacion_categoria_visitas_id": str(lcv.id),
-                "liquidacion_general_id": str(lg.id),
-                "expediente": lg.expediente or "",
-                "numero_revision": lg.numero_revision or 1,
-                "fecha_registro": (
-                    lg.fecha_registro.isoformat() if lg.fecha_registro else ""
-                ),
-                "inspector_nombre": (
-                    perfil.nombre_completo if perfil else ""
-                ),
-                "inspector_cip": perfil.cip if perfil else "",
-                "inspector_dni": perfil.dni if perfil else "",
-                "especialidad_nombre": (
-                    li.especialidad_revision.nombre
-                    if li.especialidad_revision else ""
-                ),
-                "nombre_propietario": nombre_propietario,
-                "cantidad_visitas": programadas,
-                "inspecciones_pagadas": pagadas,
-                "saldo_disponible": saldo,
-                "costo_por_inspeccion": costo_por_inspeccion,
-                "total_liquidacion": sub_total,
-                "sub_total_liquidacion": sub_total,
-            })
+            candidates.append(
+                {
+                    "liquidacion_inspector_id": str(li.id),
+                    "liquidacion_categoria_visitas_id": str(lcv.id),
+                    "liquidacion_general_id": str(lg.id),
+                    "expediente": lg.expediente or "",
+                    "numero_revision": lg.numero_revision or 1,
+                    "fecha_registro": (
+                        lg.fecha_registro.isoformat() if lg.fecha_registro else ""
+                    ),
+                    "inspector_nombre": (perfil.nombre_completo if perfil else ""),
+                    "inspector_cip": perfil.cip if perfil else "",
+                    "inspector_dni": perfil.dni if perfil else "",
+                    "especialidad_nombre": (
+                        li.especialidad_revision.nombre
+                        if li.especialidad_revision
+                        else ""
+                    ),
+                    "nombre_propietario": nombre_propietario,
+                    "cantidad_visitas": programadas,
+                    "inspecciones_pagadas": pagadas,
+                    "saldo_disponible": saldo,
+                    "costo_por_inspeccion": costo_por_inspeccion,
+                    "total_liquidacion": sub_total,
+                    "sub_total_liquidacion": sub_total,
+                }
+            )
 
         return candidates
 
@@ -777,7 +1099,9 @@ class FinanzasCoreService:
 
         # Apply expediente filter (LiquidacionGeneral.expediente icontains)
         if expediente:
-            qs = qs.filter(liquidacion__liquidacion_general__expediente__icontains=expediente)
+            qs = qs.filter(
+                liquidacion__liquidacion_general__expediente__icontains=expediente
+            )
 
         # Apply numero filter (LiquidacionInspeccionObra.numero exact match via
         # liquidacion_general__inspeccion_obra)
@@ -810,7 +1134,7 @@ class FinanzasCoreService:
 
         # Slice for pagination
         offset = (page - 1) * page_size
-        sliced_qs = qs[offset:offset + page_size]
+        sliced_qs = qs[offset : offset + page_size]
 
         # Collect lcv IDs for batch preload of RegistroPagoInspector
         lcv_ids = [li.liquidacion_id for li in sliced_qs]
@@ -862,32 +1186,33 @@ class FinanzasCoreService:
             if lg.proyecto:
                 nombre_propietario = lg.proyecto.nombre_propietario or ""
 
-            candidates.append({
-                "liquidacion_inspector_id": str(li.id),
-                "liquidacion_categoria_visitas_id": str(lcv.id),
-                "liquidacion_general_id": str(lg.id),
-                "expediente": lg.expediente or "",
-                "numero_revision": lg.numero_revision or 1,
-                "fecha_registro": (
-                    lg.fecha_registro.isoformat() if lg.fecha_registro else ""
-                ),
-                "inspector_nombre": (
-                    perfil.nombre_completo if perfil else ""
-                ),
-                "inspector_cip": perfil.cip if perfil else "",
-                "inspector_dni": perfil.dni if perfil else "",
-                "especialidad_nombre": (
-                    li.especialidad_revision.nombre
-                    if li.especialidad_revision else ""
-                ),
-                "nombre_propietario": nombre_propietario,
-                "cantidad_visitas": programadas,
-                "inspecciones_pagadas": pagadas,
-                "saldo_disponible": saldo,
-                "costo_por_inspeccion": costo_por_inspeccion,
-                "total_liquidacion": sub_total,
-                "sub_total_liquidacion": sub_total,
-            })
+            candidates.append(
+                {
+                    "liquidacion_inspector_id": str(li.id),
+                    "liquidacion_categoria_visitas_id": str(lcv.id),
+                    "liquidacion_general_id": str(lg.id),
+                    "expediente": lg.expediente or "",
+                    "numero_revision": lg.numero_revision or 1,
+                    "fecha_registro": (
+                        lg.fecha_registro.isoformat() if lg.fecha_registro else ""
+                    ),
+                    "inspector_nombre": (perfil.nombre_completo if perfil else ""),
+                    "inspector_cip": perfil.cip if perfil else "",
+                    "inspector_dni": perfil.dni if perfil else "",
+                    "especialidad_nombre": (
+                        li.especialidad_revision.nombre
+                        if li.especialidad_revision
+                        else ""
+                    ),
+                    "nombre_propietario": nombre_propietario,
+                    "cantidad_visitas": programadas,
+                    "inspecciones_pagadas": pagadas,
+                    "saldo_disponible": saldo,
+                    "costo_por_inspeccion": costo_por_inspeccion,
+                    "total_liquidacion": sub_total,
+                    "sub_total_liquidacion": sub_total,
+                }
+            )
 
         return candidates, total
 
@@ -904,14 +1229,14 @@ class FinanzasCoreService:
             Delegado instance or None if not found.
         """
         return (
-            Delegado.objects
-            .select_related("perfil_ingeniero")
+            Delegado.objects.select_related("perfil_ingeniero")
             .filter(perfil_ingeniero__cip=cip)
             .first()
         )
 
     def get_delegado_operacion_by_id(
-        self, operacion_id: uuid.UUID,
+        self,
+        operacion_id: uuid.UUID,
     ) -> Optional[DelegadoOperacion]:
         """
         Get a DelegadoOperacion by UUID.
@@ -922,11 +1247,7 @@ class FinanzasCoreService:
         Returns:
             DelegadoOperacion instance or None if not found.
         """
-        return (
-            DelegadoOperacion.objects
-            .filter(id=operacion_id)
-            .first()
-        )
+        return DelegadoOperacion.objects.filter(id=operacion_id).first()
 
     def get_liquidacion_delegado_por_expediente(
         self,
@@ -943,14 +1264,10 @@ class FinanzasCoreService:
         Returns:
             LiquidacionDelegado instance or None if not found.
         """
-        return (
-            LiquidacionDelegado.objects
-            .filter(
-                liquidacion_id=liquidacion_general_id,
-                delegado_id=delegado_id,
-            )
-            .first()
-        )
+        return LiquidacionDelegado.objects.filter(
+            liquidacion_id=liquidacion_general_id,
+            delegado_id=delegado_id,
+        ).first()
 
     def get_imp_bruto_delegado(
         self,
@@ -972,14 +1289,10 @@ class FinanzasCoreService:
         Returns:
             Decimal imp_bruto (subtotal) or None if no matching detail found.
         """
-        detalle = (
-            LiquidacionPorcentajeObraDetalle.objects
-            .filter(
-                liquidacion_porcentaje__liquidacion_general_id=liquidacion_general_id,
-                especialidad_id=especialidad_revision_id,
-            )
-            .first()
-        )
+        detalle = LiquidacionPorcentajeObraDetalle.objects.filter(
+            liquidacion_porcentaje__liquidacion_general_id=liquidacion_general_id,
+            especialidad_id=especialidad_revision_id,
+        ).first()
         if detalle:
             return Decimal(str(detalle.subtotal))
         return None
@@ -995,9 +1308,17 @@ class FinanzasCoreService:
         Returns a 3-tuple:
             (importe_parcial, ajuste_redondeo, subtotal)
 
-        Safe fallbacks when fields are NULL:
+        Safe fallbacks when fields are NULL (same semantics as the
+        ``backfill_redondeo_fase1`` management command):
+            - importe_parcial defaults to the detail ``subtotal``
+              (the backfill sets ``importe_parcial = subtotal``)
             - ajuste_redondeo defaults to Decimal("0.00")
             - subtotal defaults to Decimal("0.00")
+
+        Explicit non-NULL values are ALWAYS preserved, including an explicit
+        zero. Falling back to Decimal("0.00") for ``importe_parcial`` would zero
+        the taxable base while keeping the subtotal, pushing the whole amount
+        into Renta CIP by subtraction.
 
         Args:
             liquidacion_general_id: PK of the LiquidacionGeneral.
@@ -1007,21 +1328,28 @@ class FinanzasCoreService:
             Tuple (importe_parcial, ajuste_redondeo, subtotal) as Decimals,
             or None if no matching detail found.
         """
-        detalle = (
-            LiquidacionPorcentajeObraDetalle.objects
-            .filter(
-                liquidacion_porcentaje__liquidacion_general_id=liquidacion_general_id,
-                especialidad_id=especialidad_revision_id,
-            )
-            .first()
-        )
+        detalle = LiquidacionPorcentajeObraDetalle.objects.filter(
+            liquidacion_porcentaje__liquidacion_general_id=liquidacion_general_id,
+            especialidad_id=especialidad_revision_id,
+        ).first()
         if not detalle:
             return None
 
-        importe_parcial = Decimal(str(detalle.importe_parcial)) if detalle.importe_parcial is not None else Decimal("0.00")
-        ajuste_redondeo = Decimal(str(detalle.ajuste_redondeo)) if detalle.ajuste_redondeo is not None else Decimal("0.00")
         # subtotal is the authoritative amount per specialty (importe_total was redundant with subtotal).
         subtotal_item = Decimal(str(detalle.subtotal))
+        # Fallback aligned with `backfill_redondeo_fase1`: when `importe_parcial` is
+        # NULL the theoretical base is the detail `subtotal` (not zero). An explicit
+        # value — including an explicit zero — is always preserved.
+        importe_parcial = (
+            Decimal(str(detalle.importe_parcial))
+            if detalle.importe_parcial is not None
+            else subtotal_item
+        )
+        ajuste_redondeo = (
+            Decimal(str(detalle.ajuste_redondeo))
+            if detalle.ajuste_redondeo is not None
+            else Decimal("0.00")
+        )
 
         return (importe_parcial, ajuste_redondeo, subtotal_item)
 
@@ -1111,6 +1439,7 @@ class FinanzasCoreService:
         fecha_presentacion=None,
         fecha_revision=None,
         delegado_operacion_id: str | None = None,
+        creado_por_rh: bool = True,
     ) -> tuple["LiquidacionDelegado", bool]:
         """
         Create or retrieve a LiquidacionDelegado assignment.
@@ -1119,6 +1448,10 @@ class FinanzasCoreService:
         creates the assignment that did not exist before.
         Uses get-or-create-then-update to support re-cálculo (re-running crear)
         AND to backfill delegado_operacion_id on existing records that lack it.
+
+        Provenance (``creado_por_rh``) is only stamped on rows created here.
+        Pre-existing assignments keep their provenance untouched: historical or
+        manually created assignments must be retained when an RH is removed.
 
         Args:
             liquidacion_id: FK to LiquidacionGeneral.
@@ -1132,6 +1465,8 @@ class FinanzasCoreService:
             fecha_revision: Optional date.
             delegado_operacion_id: Optional FK to DelegadoOperacion — backfilled
                 on existing records that don't yet have it set.
+            creado_por_rh: Provenance flag applied ONLY when the row is created
+                by this call (default True for the RH workflow).
 
         Returns:
             Tuple of (LiquidacionDelegado, created: bool).
@@ -1160,6 +1495,7 @@ class FinanzasCoreService:
                 liquidacion_id=liquidacion_id,
                 delegado_id=delegado_id,
                 especialidad_revision_id=especialidad_revision_id,
+                creado_por_rh=creado_por_rh,
                 **defaults,
             )
             created = True
@@ -1171,9 +1507,14 @@ class FinanzasCoreService:
                 setattr(obj, field, value)
             if delegado_operacion_id and obj.delegado_operacion_id is None:
                 obj.delegado_operacion_id = delegado_operacion_id
-            obj.save(update_fields=list(defaults.keys()) + (
-                ["delegado_operacion_id"] if delegado_operacion_id and obj.delegado_operacion_id is not None else []
-            ))
+            obj.save(
+                update_fields=list(defaults.keys())
+                + (
+                    ["delegado_operacion_id"]
+                    if delegado_operacion_id and obj.delegado_operacion_id is not None
+                    else []
+                )
+            )
 
         return obj, created
 
@@ -1197,15 +1538,11 @@ class FinanzasCoreService:
         Returns:
             LiquidacionDelegado instance or None.
         """
-        return (
-            LiquidacionDelegado.objects
-            .filter(
-                liquidacion_id=liquidacion_general_id,
-                delegado_id=delegado_id,
-                especialidad_revision_id=especialidad_revision_id,
-            )
-            .first()
-        )
+        return LiquidacionDelegado.objects.filter(
+            liquidacion_id=liquidacion_general_id,
+            delegado_id=delegado_id,
+            especialidad_revision_id=especialidad_revision_id,
+        ).first()
 
     def crear_detalle_honorario_delegado(
         self,
@@ -1269,6 +1606,272 @@ class FinanzasCoreService:
         ).delete()
         return count
 
+    # ── RH Delegado Mensual — Reconciliación (PATCH) ─────────────────────────────
+
+    def obtener_o_crear_asignacion_delegado(
+        self,
+        liquidacion_id,
+        delegado_id,
+        especialidad_revision_id,
+        delegado_operacion_id=None,
+        numero_rh: str | None = None,
+        periodo: int | None = None,
+        mes: int | None = None,
+        dictamen_revision: str | None = None,
+        fecha_presentacion=None,
+        fecha_revision=None,
+    ) -> tuple["LiquidacionDelegado", bool]:
+        """
+        Obtiene (o crea) la asignación RH de una liquidación sin mutar metadatos.
+
+        A diferencia de ``crear_liquidacion_delegado`` (flujo de creación, que
+        actualiza los campos no clave de la asignación existente), este método
+        NO toca la metadata compartida de una asignación ya creada: si la
+        asignación existe se devuelve intacta.
+
+        Solo al CREAR una asignación nueva se aplican los valores de metadata
+        como valores iniciales.
+
+        Args:
+            liquidacion_id: FK to LiquidacionGeneral.
+            delegado_id: FK to Delegado.
+            especialidad_revision_id: FK to EspecialidadRevision.
+            delegado_operacion_id: Optional FK to DelegadoOperacion (solo al crear).
+            numero_rh: Metadata inicial (solo al crear).
+            periodo: Metadata inicial (solo al crear).
+            mes: Metadata inicial (solo al crear).
+            dictamen_revision: Metadata inicial (solo al crear).
+            fecha_presentacion: Metadata inicial (solo al crear).
+            fecha_revision: Metadata inicial (solo al crear).
+
+        Returns:
+            Tuple (LiquidacionDelegado, created: bool).
+        """
+        existing = LiquidacionDelegado.objects.filter(
+            liquidacion_id=liquidacion_id,
+            delegado_id=delegado_id,
+            especialidad_revision_id=especialidad_revision_id,
+        ).first()
+
+        if existing is not None:
+            # Asignación compartida: se devuelve intacta (sin tocar metadata).
+            return existing, False
+
+        obj = LiquidacionDelegado.objects.create(
+            liquidacion_id=liquidacion_id,
+            delegado_id=delegado_id,
+            especialidad_revision_id=especialidad_revision_id,
+            delegado_operacion_id=delegado_operacion_id,
+            numero_rh=numero_rh,
+            periodo=periodo,
+            mes=mes,
+            dictamen_revision=dictamen_revision,
+            fecha_presentacion=fecha_presentacion,
+            fecha_revision=fecha_revision,
+            creado_por_rh=True,
+        )
+        return obj, True
+
+    def actualizar_detalle_honorario_delegado(
+        self,
+        detalle_id,
+        imp_bruto: Decimal,
+        sub_total: Decimal | None = None,
+        renta_cip: Decimal | None = None,
+        aporte_codemu: Decimal | None = None,
+        fondo_comun: Decimal | None = None,
+        neto_honorario: Decimal | None = None,
+        tasa_delegado_id=None,
+    ) -> DetalleHonorarioDelegado:
+        """
+        Actualiza los valores congelados de un DetalleHonorarioDelegado existente.
+
+        Solo escribe en la fila del detalle del RH — nunca en la asignación
+        (LiquidacionDelegado) ni en sus metadatos compartidos.
+
+        Args:
+            detalle_id: PK del DetalleHonorarioDelegado.
+            imp_bruto: Importe bruto recalculado.
+            sub_total: Subtotal congelado del item.
+            renta_cip: Renta CIP congelada.
+            aporte_codemu: Aporte CODEMU congelado.
+            fondo_comun: Fondo Común congelado.
+            neto_honorario: Neto de honorarios congelado.
+            tasa_delegado_id: FK a TasaDelegado (tasa congelada del recibo).
+
+        Returns:
+            DetalleHonorarioDelegado actualizado.
+        """
+        detalle = DetalleHonorarioDelegado.objects.filter(id=detalle_id).first()
+        if detalle is None:
+            raise DetalleHonorarioDelegado.DoesNotExist(
+                f"DetalleHonorarioDelegado '{detalle_id}' no encontrado"
+            )
+
+        detalle.imp_bruto = imp_bruto
+        detalle.sub_total = sub_total
+        detalle.renta_cip = renta_cip
+        detalle.aporte_codemu = aporte_codemu
+        detalle.fondo_comun = fondo_comun
+        detalle.neto_honorario = neto_honorario
+        if tasa_delegado_id is not None:
+            detalle.tasa_delegado_id = tasa_delegado_id
+        detalle.save(
+            update_fields=[
+                "imp_bruto",
+                "sub_total",
+                "renta_cip",
+                "aporte_codemu",
+                "fondo_comun",
+                "neto_honorario",
+                "tasa_delegado",
+                "updated_at",
+            ]
+        )
+        return detalle
+
+    def delete_detalle_honorario_delegado(self, detalle_id) -> None:
+        """
+        Elimina una fila de DetalleHonorarioDelegado (síncronización PATCH).
+
+        Args:
+            detalle_id: PK del DetalleHonorarioDelegado.
+        """
+        DetalleHonorarioDelegado.objects.filter(id=detalle_id).delete()
+
+    def actualizar_metadata_asignacion_delegado(
+        self,
+        asignacion_id,
+        **cambios,
+    ) -> "LiquidacionDelegado":
+        """
+        Actualiza la metadata editable de una asignación de delegado.
+
+        La metadata (nº RH, periodo, mes, dictamen y fechas) se guarda en la
+        asignación, igual que en el flujo de creación. Editar un RH mensual
+        reescribe esos mismos valores.
+
+        Solo se escriben los campos recibidos en ``cambios``: los demás
+        conservan su valor persistido.
+
+        Args:
+            asignacion_id: PK de la LiquidacionDelegado.
+            **cambios: Campos de metadata a escribir.
+
+        Returns:
+            LiquidacionDelegado actualizada.
+        """
+        asignacion = LiquidacionDelegado.objects.filter(id=asignacion_id).first()
+        if asignacion is None:
+            raise LiquidacionDelegado.DoesNotExist(
+                f"LiquidacionDelegado '{asignacion_id}' no encontrada"
+            )
+
+        if not cambios:
+            return asignacion
+
+        campos_permitidos = {
+            "numero_rh",
+            "periodo",
+            "mes",
+            "dictamen_revision",
+            "fecha_presentacion",
+            "fecha_revision",
+        }
+        aplicables = {
+            campo: valor
+            for campo, valor in cambios.items()
+            if campo in campos_permitidos
+        }
+        if not aplicables:
+            return asignacion
+
+        for campo, valor in aplicables.items():
+            setattr(asignacion, campo, valor)
+        asignacion.save(update_fields=list(aplicables.keys()) + ["updated_at"])
+        return asignacion
+
+    def actualizar_periodo_rh_delegado_mensual(
+        self,
+        rh_id,
+        periodo: int,
+        mes: int,
+    ) -> ReciboHonorarioDelegadoMensual:
+        """
+        Actualiza el periodo/mes de la cabecera de un RH mensual de delegado.
+
+        La edición de un RH sigue el mismo flujo que la creación: el periodo
+        del recibo es editable y se persiste junto con el conjunto final de
+        detalles.
+
+        Args:
+            rh_id: PK del ReciboHonorarioDelegadoMensual.
+            periodo: Año del periodo.
+            mes: Mes del periodo (1-12).
+
+        Returns:
+            ReciboHonorarioDelegadoMensual actualizado.
+        """
+        rh = ReciboHonorarioDelegadoMensual.objects.filter(id=rh_id).first()
+        if rh is None:
+            raise ReciboHonorarioDelegadoMensual.DoesNotExist(
+                f"ReciboHonorarioDelegadoMensual '{rh_id}' no encontrado"
+            )
+
+        rh.periodo = periodo
+        rh.mes = mes
+        rh.save(update_fields=["periodo", "mes", "updated_at"])
+        return rh
+
+    def actualizar_totales_rh_delegado_mensual(
+        self,
+        rh_id,
+        sub_total: Decimal,
+        renta_cip: Decimal,
+        aporte_codemu: Decimal,
+        fondo_comun: Decimal,
+        neto_honorario: Decimal,
+    ) -> ReciboHonorarioDelegadoMensual:
+        """
+        Recalcula los totales del ReciboHonorarioDelegadoMensual.
+
+        No modifica la identidad del recibo ni la metadata compartida de las
+        asignaciones: solo los acumulados del mes.
+
+        Args:
+            rh_id: PK del ReciboHonorarioDelegadoMensual.
+            sub_total: Subtotal del mes.
+            renta_cip: Renta CIP acumulada.
+            aporte_codemu: Aporte CODEMU acumulado.
+            fondo_comun: Fondo Común acumulado.
+            neto_honorario: Neto de honorarios del mes.
+
+        Returns:
+            ReciboHonorarioDelegadoMensual actualizado.
+        """
+        rh = ReciboHonorarioDelegadoMensual.objects.filter(id=rh_id).first()
+        if rh is None:
+            raise ReciboHonorarioDelegadoMensual.DoesNotExist(
+                f"ReciboHonorarioDelegadoMensual '{rh_id}' no encontrado"
+            )
+
+        rh.sub_total = sub_total
+        rh.renta_cip = renta_cip
+        rh.aporte_codemu = aporte_codemu
+        rh.fondo_comun = fondo_comun
+        rh.neto_honorario = neto_honorario
+        rh.save(
+            update_fields=[
+                "sub_total",
+                "renta_cip",
+                "aporte_codemu",
+                "fondo_comun",
+                "neto_honorario",
+                "updated_at",
+            ]
+        )
+        return rh
+
     def list_rh_mensuales_delegados_paginated(
         self,
         page: int,
@@ -1277,6 +1880,7 @@ class FinanzasCoreService:
         municipalidad_id: uuid.UUID | None = None,
         periodo: int | None = None,
         mes: int | None = None,
+        sin_paginacion: bool = False,
     ) -> tuple[list[ReciboHonorarioDelegadoMensual], int]:
         """
         List ReciboHonorarioDelegadoMensual records with pagination and optional filter.
@@ -1290,13 +1894,14 @@ class FinanzasCoreService:
             municipalidad_id: Filter by delegado_operacion.municipalidad_id.
             periodo: Filter by año (from ReciboHonorarioDelegadoMensual.periodo).
             mes: Filter by mes (from ReciboHonorarioDelegadoMensual.mes).
+            sin_paginacion: When True devuelve el conjunto COMPLETO filtrado en
+                una sola respuesta (sin slicing).
 
         Returns:
             Tuple of (list of ReciboHonorarioDelegadoMensual, total count).
         """
         qs = (
-            ReciboHonorarioDelegadoMensual.objects
-            .select_related(
+            ReciboHonorarioDelegadoMensual.objects.select_related(
                 "delegado__perfil_ingeniero",
                 "delegado_operacion__municipalidad",
                 "delegado_operacion__tipo_liquidacion",
@@ -1308,10 +1913,12 @@ class FinanzasCoreService:
                     queryset=DetalleHonorarioDelegado.objects.select_related(
                         "liquidacion_delegado__liquidacion",
                         "liquidacion_delegado__delegado_operacion",
+                        # PO wrapper — estrategia_cotizacion / total_explicito.
+                        "liquidacion_delegado__liquidacion__liquidacion_porcentaje_obra",
                     ).filter(recibo_mensual__isnull=False),
                 ),
             )
-            .order_by("-periodo")
+            .order_by("-periodo", "-mes", "-fecha_registro")
         )
 
         if delegado_cip is not None:
@@ -1324,14 +1931,17 @@ class FinanzasCoreService:
             qs = qs.filter(mes=mes)
 
         total = qs.count()
+        if sin_paginacion:
+            return list(qs), total
         offset = (page - 1) * page_size
-        objects = list(qs[offset:offset + page_size])
+        objects = list(qs[offset : offset + page_size])
         return objects, total
 
     # ── RH Inspector Mensual Delete ─────────────────────────────────────────────────
 
     def get_rh_inspector_mensual_by_id(
-        self, rh_id: int | str,
+        self,
+        rh_id: int | str,
     ) -> Optional[ReciboHonorarioInspectorMensual]:
         """
         Get a ReciboHonorarioInspectorMensual by its primary key with relations prefetched.
@@ -1343,15 +1953,17 @@ class FinanzasCoreService:
             ReciboHonorarioInspectorMensual instance or None if not found.
         """
         return (
-            ReciboHonorarioInspectorMensual.objects
-            .select_related("inspector", "escala_descuento")
+            ReciboHonorarioInspectorMensual.objects.select_related(
+                "inspector", "escala_descuento"
+            )
             .prefetch_related("detalles")
             .filter(id=rh_id)
             .first()
         )
 
     def get_latest_rh_inspector_for_inspector(
-        self, inspector_id: int | str,
+        self,
+        inspector_id: int | str,
     ) -> Optional[ReciboHonorarioInspectorMensual]:
         """
         Get the latest ReciboHonorarioInspectorMensual for a given inspector
@@ -1364,14 +1976,14 @@ class FinanzasCoreService:
             ReciboHonorarioInspectorMensual instance or None if no receipts exist.
         """
         return (
-            ReciboHonorarioInspectorMensual.objects
-            .filter(inspector_id=inspector_id)
+            ReciboHonorarioInspectorMensual.objects.filter(inspector_id=inspector_id)
             .order_by("-fecha_registro")
             .first()
         )
 
     def get_registros_pago_by_recibo_mensual(
-        self, rh_id: int | str,
+        self,
+        rh_id: int | str,
     ) -> list[RegistroPagoInspector]:
         """
         Get all RegistroPagoInspector records linked to a given ReciboHonorarioInspectorMensual.
@@ -1384,13 +1996,11 @@ class FinanzasCoreService:
         Returns:
             List of RegistroPagoInspector instances (may be empty).
         """
-        return list(
-            RegistroPagoInspector.objects
-            .filter(recibo_mensual_id=rh_id)
-        )
+        return list(RegistroPagoInspector.objects.filter(recibo_mensual_id=rh_id))
 
     def delete_registro_pago_inspector(
-        self, registro_id: int | str,
+        self,
+        registro_id: int | str,
     ) -> None:
         """
         Delete a single RegistroPagoInspector record.
@@ -1401,7 +2011,8 @@ class FinanzasCoreService:
         RegistroPagoInspector.objects.filter(id=registro_id).delete()
 
     def delete_rh_inspector_mensual(
-        self, rh_id: int | str,
+        self,
+        rh_id: int | str,
     ) -> None:
         """
         Delete a ReciboHonorarioInspectorMensual record.
@@ -1422,6 +2033,10 @@ class FinanzasCoreService:
         page: int,
         page_size: int,
         inspector_id: int | None = None,
+        inspector_cip: str | None = None,
+        periodo: int | None = None,
+        mes: int | None = None,
+        sin_paginacion: bool = False,
     ) -> tuple[list[ReciboHonorarioInspectorMensual], int]:
         """
         List ReciboHonorarioInspectorMensual records with pagination and optional filter.
@@ -1432,13 +2047,17 @@ class FinanzasCoreService:
             page: 1-indexed page number.
             page_size: Elements per page.
             inspector_id: Filter by inspector_id.
+            inspector_cip: Filter by CIP del inspector.
+            periodo: Filter por año del periodo.
+            mes: Filter por mes (1-12).
 
         Returns:
             Tuple of (list of ReciboHonorarioInspectorMensual, total count).
         """
         qs = (
-            ReciboHonorarioInspectorMensual.objects
-            .select_related("inspector__perfil_ingeniero", "escala_descuento")
+            ReciboHonorarioInspectorMensual.objects.select_related(
+                "inspector__perfil_ingeniero", "escala_descuento"
+            )
             .prefetch_related(
                 Prefetch(
                     "detalles",
@@ -1450,15 +2069,23 @@ class FinanzasCoreService:
                 ),
                 "detalles__liquidacion_por_categoria_visitas__liquidacion_general__comprobantes",
             )
-            .order_by("-periodo")
+            .order_by("-periodo", "-mes", "-fecha_registro")
         )
 
         if inspector_id is not None:
             qs = qs.filter(inspector_id=inspector_id)
+        if inspector_cip:
+            qs = qs.filter(inspector__perfil_ingeniero__cip=inspector_cip)
+        if periodo is not None:
+            qs = qs.filter(periodo=periodo)
+        if mes is not None:
+            qs = qs.filter(mes=mes)
 
         total = qs.count()
+        if sin_paginacion:
+            return list(qs), total
         offset = (page - 1) * page_size
-        objects = list(qs[offset:offset + page_size])
+        objects = list(qs[offset : offset + page_size])
         return objects, total
 
     # ── RH Delegado Mensual — Detail by ID ────────────────────────────────────────
@@ -1476,8 +2103,7 @@ class FinanzasCoreService:
             ReciboHonorarioDelegadoMensual instance or None if not found.
         """
         return (
-            ReciboHonorarioDelegadoMensual.objects
-            .select_related(
+            ReciboHonorarioDelegadoMensual.objects.select_related(
                 "delegado__perfil_ingeniero",
                 "delegado_operacion__municipalidad",
                 "delegado_operacion__tipo_liquidacion",
@@ -1489,6 +2115,8 @@ class FinanzasCoreService:
                     queryset=DetalleHonorarioDelegado.objects.select_related(
                         "liquidacion_delegado__liquidacion",
                         "liquidacion_delegado__delegado_operacion",
+                        # PO wrapper — estrategia_cotizacion / total_explicito.
+                        "liquidacion_delegado__liquidacion__liquidacion_porcentaje_obra",
                     ).filter(recibo_mensual__isnull=False),
                 ),
             )
@@ -1516,8 +2144,7 @@ class FinanzasCoreService:
             ReciboHonorarioDelegadoMensual instance or None.
         """
         return (
-            ReciboHonorarioDelegadoMensual.objects
-            .select_related(
+            ReciboHonorarioDelegadoMensual.objects.select_related(
                 "delegado__perfil_ingeniero",
                 "delegado_operacion__municipalidad",
                 "delegado_operacion__tipo_liquidacion",
@@ -1529,6 +2156,8 @@ class FinanzasCoreService:
                     queryset=DetalleHonorarioDelegado.objects.select_related(
                         "liquidacion_delegado__liquidacion",
                         "liquidacion_delegado__delegado_operacion",
+                        # PO wrapper — estrategia_cotizacion / total_explicito.
+                        "liquidacion_delegado__liquidacion__liquidacion_porcentaje_obra",
                     ).filter(recibo_mensual__isnull=False),
                 ),
             )
@@ -1537,7 +2166,8 @@ class FinanzasCoreService:
         )
 
     def delete_rh_delegado_mensual(
-        self, rh_id: int | str,
+        self,
+        rh_id: int | str,
     ) -> None:
         """
         Delete a ReciboHonorarioDelegadoMensual record.
@@ -1546,8 +2176,9 @@ class FinanzasCoreService:
         by Django's on_delete=CASCADE on the FK from DetalleHonorarioDelegado
         to ReciboHonorarioDelegadoMensual.
 
-        LiquidacionDelegado rows are NOT deleted — they are independent entities
-        created alongside the RH and may be reused.
+        LiquidacionDelegado rows are NOT deleted here — the RH lifecycle flow
+        performs the provenance-aware cleanup of the assignments (only those
+        created by the RH and unreferenced).
 
         Args:
             rh_id: PK of the ReciboHonorarioDelegadoMensual to delete.
@@ -1569,8 +2200,9 @@ class FinanzasCoreService:
             ReciboHonorarioInspectorMensual instance or None if not found.
         """
         return (
-            ReciboHonorarioInspectorMensual.objects
-            .select_related("inspector__perfil_ingeniero", "escala_descuento")
+            ReciboHonorarioInspectorMensual.objects.select_related(
+                "inspector__perfil_ingeniero", "escala_descuento"
+            )
             .prefetch_related(
                 Prefetch(
                     "detalles",
@@ -1606,8 +2238,9 @@ class FinanzasCoreService:
             ReciboHonorarioInspectorMensual instance or None.
         """
         return (
-            ReciboHonorarioInspectorMensual.objects
-            .select_related("inspector__perfil_ingeniero", "escala_descuento")
+            ReciboHonorarioInspectorMensual.objects.select_related(
+                "inspector__perfil_ingeniero", "escala_descuento"
+            )
             .prefetch_related(
                 Prefetch(
                     "detalles",
@@ -1636,6 +2269,7 @@ class FinanzasCoreService:
         municipalidad_id: uuid.UUID | None = None,
         tipo_liquidacion_codigo: str | None = None,
         numero_liquidacion: int | None = None,
+        sin_paginacion: bool = False,
     ) -> tuple[list["DetalleHonorarioDelegado"], int]:
         """
         List DetalleHonorarioDelegado rows directly (flat, ungrouped).
@@ -1646,6 +2280,9 @@ class FinanzasCoreService:
         Args:
             page: 1-indexed page number.
             page_size: Elements per page.
+            sin_paginacion: When True, returns the COMPLETE filtered set in a
+                single response (no slicing). Used by the export flows that need
+                every matching row at once.
             delegado_id: Filter by delegado_id (from liquidacion_delegado.delegado).
             delegado_cip: Filter by CIP (from liquidacion_delegado.delegado.perfil_ingeniero.cip).
                 Takes precedence if both delegado_id and delegado_cip are set.
@@ -1674,20 +2311,18 @@ class FinanzasCoreService:
             "-created_at",
             "id",
         ]
-        qs = (
-            DetalleHonorarioDelegado.objects
-            .select_related(
-                "liquidacion_delegado__delegado__perfil_ingeniero",
-                "liquidacion_delegado__liquidacion",
-                "liquidacion_delegado__especialidad_revision",
-                "liquidacion_delegado__liquidacion__municipalidad",
-                "liquidacion_delegado__liquidacion__tipo_liquidacion",
-            )
-            .order_by(*order_fields)
-        )
+        qs = DetalleHonorarioDelegado.objects.select_related(
+            "liquidacion_delegado__delegado__perfil_ingeniero",
+            "liquidacion_delegado__liquidacion",
+            "liquidacion_delegado__especialidad_revision",
+            "liquidacion_delegado__liquidacion__municipalidad",
+            "liquidacion_delegado__liquidacion__tipo_liquidacion",
+        ).order_by(*order_fields)
 
         if delegado_cip:
-            qs = qs.filter(liquidacion_delegado__delegado__perfil_ingeniero__cip=delegado_cip)
+            qs = qs.filter(
+                liquidacion_delegado__delegado__perfil_ingeniero__cip=delegado_cip
+            )
         elif delegado_id is not None:
             qs = qs.filter(liquidacion_delegado__delegado_id=delegado_id)
         if periodo is not None:
@@ -1695,9 +2330,13 @@ class FinanzasCoreService:
         if mes is not None:
             qs = qs.filter(liquidacion_delegado__mes=mes)
         if municipalidad_id is not None:
-            qs = qs.filter(liquidacion_delegado__liquidacion__municipalidad_id=municipalidad_id)
+            qs = qs.filter(
+                liquidacion_delegado__liquidacion__municipalidad_id=municipalidad_id
+            )
         if tipo_liquidacion_codigo is not None:
-            qs = qs.filter(liquidacion_delegado__liquidacion__tipo_liquidacion__codigo=tipo_liquidacion_codigo)
+            qs = qs.filter(
+                liquidacion_delegado__liquidacion__tipo_liquidacion__codigo=tipo_liquidacion_codigo
+            )
 
         # Apply numero_liquidacion filter using type-specific path.
         # Requires tipo_liquidacion_codigo to resolve the correct relation.
@@ -1707,8 +2346,10 @@ class FinanzasCoreService:
                 qs = qs.filter(**{numero_path: numero_liquidacion})
 
         total = qs.count()
+        if sin_paginacion:
+            return list(qs), total
         offset = (page - 1) * page_size
-        objects = list(qs[offset:offset + page_size])
+        objects = list(qs[offset : offset + page_size])
         return objects, total
 
     def list_detalle_honorario_inspector_paginated(
@@ -1721,6 +2362,7 @@ class FinanzasCoreService:
         mes: int | None = None,
         municipalidad_id: uuid.UUID | None = None,
         numero_liquidacion: int | None = None,
+        sin_paginacion: bool = False,
     ) -> tuple[list["DetalleHonorarioInspector"], int]:
         """
         List DetalleHonorarioInspector rows directly (flat, ungrouped).
@@ -1734,6 +2376,9 @@ class FinanzasCoreService:
         Args:
             page: 1-indexed page number.
             page_size: Elements per page.
+            sin_paginacion: When True, returns the COMPLETE filtered set in a
+                single response (no slicing). Used by the export flows that need
+                every matching row at once.
             inspector_id: Filter by inspector_id (from parent ReciboHonorarioInspectorMensual).
             inspector_cip: Filter by CIP (from recibo_mensual__inspector__perfil_ingeniero__cip).
                 Takes precedence if both inspector_id and inspector_cip are set.
@@ -1748,8 +2393,7 @@ class FinanzasCoreService:
         # Stable, cheap ordering: receipt period first, then detail creation time.
         # Avoid ordering by IO numero because it adds a heavy join on large lists.
         qs = (
-            DetalleHonorarioInspector.objects
-            .select_related(
+            DetalleHonorarioInspector.objects.select_related(
                 "liquidacion_por_categoria_visitas__liquidacion_general__proyecto",
                 "recibo_mensual__inspector__perfil_ingeniero",
                 "liquidacion_por_categoria_visitas__liquidacion_general__municipalidad",
@@ -1769,31 +2413,47 @@ class FinanzasCoreService:
         if inspector_cip:
             qs = qs.filter(
                 Q(recibo_mensual__inspector__perfil_ingeniero__cip=inspector_cip)
-                | Q(liquidacion_por_categoria_visitas__inspectores__inspector__perfil_ingeniero__cip=inspector_cip)
+                | Q(
+                    liquidacion_por_categoria_visitas__inspectores__inspector__perfil_ingeniero__cip=inspector_cip
+                )
             ).distinct()
         elif inspector_id is not None:
             qs = qs.filter(
                 Q(recibo_mensual__inspector_id=inspector_id)
-                | Q(liquidacion_por_categoria_visitas__inspectores__inspector_id=inspector_id)
+                | Q(
+                    liquidacion_por_categoria_visitas__inspectores__inspector_id=inspector_id
+                )
             ).distinct()
-        if periodo is not None:
-            qs = qs.filter(
-                Q(recibo_mensual__periodo=periodo)
-                | Q(liquidacion_por_categoria_visitas__inspectores__periodo=periodo)
-            ).distinct()
-        if mes is not None:
-            qs = qs.filter(
-                Q(recibo_mensual__mes=mes)
-                | Q(liquidacion_por_categoria_visitas__inspectores__mes=mes)
-            ).distinct()
+        if periodo is not None or mes is not None:
+            # El payload muestra el periodo del recibo y, solo si la fila no
+            # tiene recibo, el de la asignación. El filtro usa la misma
+            # precedencia y aplica año y mes juntos para no combinar el año de
+            # un recibo con el mes de otra asignación.
+            recibo_match = Q(recibo_mensual__isnull=False)
+            asignacion_match = Q(recibo_mensual__isnull=True)
+            if periodo is not None:
+                recibo_match &= Q(recibo_mensual__periodo=periodo)
+                asignacion_match &= Q(
+                    liquidacion_por_categoria_visitas__inspectores__periodo=periodo
+                )
+            if mes is not None:
+                recibo_match &= Q(recibo_mensual__mes=mes)
+                asignacion_match &= Q(
+                    liquidacion_por_categoria_visitas__inspectores__mes=mes
+                )
+            qs = qs.filter(recibo_match | asignacion_match).distinct()
         if municipalidad_id is not None:
-            qs = qs.filter(liquidacion_por_categoria_visitas__liquidacion_general__municipalidad_id=municipalidad_id)
+            qs = qs.filter(
+                liquidacion_por_categoria_visitas__liquidacion_general__municipalidad_id=municipalidad_id
+            )
         if numero_liquidacion is not None:
             qs = qs.filter(
                 liquidacion_por_categoria_visitas__liquidacion_general__inspeccion_obra__numero=numero_liquidacion
             )
 
         total = qs.count()
+        if sin_paginacion:
+            return list(qs), total
         offset = (page - 1) * page_size
-        objects = list(qs[offset:offset + page_size])
+        objects = list(qs[offset : offset + page_size])
         return objects, total

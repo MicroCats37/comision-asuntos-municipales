@@ -1,6 +1,11 @@
 import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
-import { handleApiError, notify } from "@/errors";
+import {
+  extractSuccessMessage,
+  handleApiError,
+  notify,
+  recordSuccessMessage,
+} from "@/errors";
 import api from "@/lib/api";
 
 /**
@@ -46,11 +51,15 @@ export function useApiDelete<TData = unknown, TPayload = never>({
         }
 
         const response = await api.delete(url);
-        const message = response.data?.message;
+        // The envelope is the mutation result (same contract as create/update).
+        // Some delete endpoints nest their message inside `data`, so the
+        // extractor is the single source of truth.
+        const message = extractSuccessMessage(response.data);
+        recordSuccessMessage(message);
         if (showToast && message) {
           notify.success(message);
         }
-        return response as TData;
+        return response.data as TData;
       } catch (error) {
         const apiError = handleApiError(error);
         if (showToast) notify.error(apiError.message);

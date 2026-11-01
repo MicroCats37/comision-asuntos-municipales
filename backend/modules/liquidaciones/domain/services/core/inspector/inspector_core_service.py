@@ -167,6 +167,47 @@ class InspectorCoreService:
             )
         )
 
+    def list_inspectores_por_cip(
+        self,
+        cip: str,
+        vigente: Optional[bool] = None,
+    ) -> list:
+        """Return every InspectorOperacion for one CIP.
+
+        This lookup is intentionally independent of the liquidation type. When
+        ``vigente`` is omitted it includes both current and historical
+        operations; callers can opt into either status explicitly.
+        """
+        qs = InspectorOperacion.objects.filter(
+            inspector__perfil_ingeniero__cip=cip,
+        )
+
+        if vigente is not None:
+            today = date.today()
+            periodo_vigente = Q(
+                periodos__periodo_inicio__lte=today,
+                periodos__periodo_fin__isnull=True,
+            ) | Q(
+                periodos__periodo_inicio__lte=today,
+                periodos__periodo_fin__gte=today,
+            )
+            qs = qs.filter(periodo_vigente) if vigente else qs.exclude(periodo_vigente)
+
+        return list(
+            qs.select_related(
+                "inspector__perfil_ingeniero",
+                "especialidad_revision",
+                "tipo_liquidacion",
+            )
+            .prefetch_related("periodos")
+            .distinct()
+            .order_by(
+                "tipo_liquidacion__codigo",
+                "categoria",
+                "numero_registro",
+            )
+        )
+
     def list_liquidacion_inspector_paginated(
         self,
         page: int,

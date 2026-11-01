@@ -19,20 +19,26 @@ import {
 } from "../components/LiquidacionesListContent";
 import type { LiquidacionRowAction } from "../components/tables/LiquidacionesTableRowActions";
 import { LiquidacionesTableRowActions } from "../components/tables/LiquidacionesTableRowActions";
-import { useLiquidacionesGenerales } from "../hooks/useLiquidacionesGenerales";
 import type { LiquidacionGeneralItem } from "../hooks/useLiquidacionesGenerales";
+import { useLiquidacionesGenerales } from "../hooks/useLiquidacionesGenerales";
+import { useLiquidacionFiltersUrl } from "../hooks/useLiquidacionFiltersUrl";
 import { getTipoSlugFromCodigo } from "../utils/formatPublicId";
 import { mapLiquidacionRow } from "../utils/mapLiquidacionRow";
 
 const KIND_ICON: LucideIcon = FileText;
 
 function useGeneralesData(): UseLiquidacionListReturn<LiquidacionGeneralItem> {
-  return useLiquidacionesGenerales() as UseLiquidacionListReturn<LiquidacionGeneralItem>;
+  const { filtros } = useLiquidacionFiltersUrl();
+  return useLiquidacionesGenerales({
+    municipalidadId: filtros.entidad_id,
+    distritoId: filtros.distrito_id,
+  }) as UseLiquidacionListReturn<LiquidacionGeneralItem>;
 }
 
 export function LiquidacionesGeneralesView() {
-  const [detalleItem, setDetalleItem] =
-    useState<LiquidacionGeneralItem | null>(null);
+  const [detalleItem, setDetalleItem] = useState<LiquidacionGeneralItem | null>(
+    null,
+  );
 
   const buildRowActions = useCallback(
     (item: LiquidacionGeneralItem): LiquidacionRowAction[] => {
@@ -60,7 +66,13 @@ export function LiquidacionesGeneralesView() {
         formatRow={(item) => {
           // NOTE: workaround for TypeScript incorrectly resolving tipo_liquidacion
           // as liquidacion_especifica type in some module resolution scenarios.
-          const tipoCodigo = (item.tipo_liquidacion as { codigo?: string | null | undefined } | null | undefined)?.codigo ?? null;
+          const tipoCodigo =
+            (
+              item.tipo_liquidacion as
+                | { codigo?: string | null | undefined }
+                | null
+                | undefined
+            )?.codigo ?? null;
           return mapLiquidacionRow(
             getTipoSlugFromCodigo(tipoCodigo),
             item.liquidacion_general,

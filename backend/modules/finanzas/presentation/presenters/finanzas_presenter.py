@@ -4,6 +4,7 @@ FinanzasPresenter — transforma resultados de dominio a esquema HTTP.
 Cumple con el contrato de arquitectura (sección 3A: presenters).
 Solo métodos @staticmethod/@classmethod. PROHIBIDO tocar la base de datos.
 """
+
 import math
 import uuid
 from datetime import datetime
@@ -87,7 +88,9 @@ class FinanzasPresenter:
     """
 
     @staticmethod
-    def present_variables_vigentes(domain_result: VariablesVigentesResult) -> VariablesFinancierasOut:
+    def present_variables_vigentes(
+        domain_result: VariablesVigentesResult,
+    ) -> VariablesFinancierasOut:
         """
         Transforma VariablesVigentesResult (dominio) a VariablesFinancierasOut (HTTP).
 
@@ -111,7 +114,9 @@ class FinanzasPresenter:
         )
 
     @staticmethod
-    def present_recibo(domain_result: ReciboHonorarioDelegadoResult) -> ReciboHonorarioDelegadoOut:
+    def present_recibo(
+        domain_result: ReciboHonorarioDelegadoResult,
+    ) -> ReciboHonorarioDelegadoOut:
         """
         Transforma un ReciboHonorarioDelegadoResult → ReciboHonorarioDelegadoOut.
 
@@ -139,7 +144,9 @@ class FinanzasPresenter:
                 numero_revision=lg.numero_revision,
                 sub_total=Decimal(str(lg.sub_total)),
                 total=Decimal(str(lg.total)),
-                fecha_registro=datetime.fromisoformat(lg.fecha_registro) if lg.fecha_registro else datetime.min,
+                fecha_registro=datetime.fromisoformat(lg.fecha_registro)
+                if lg.fecha_registro
+                else datetime.min,
                 tipo_liquidacion=TipoLiquidacionMinimalOut(
                     codigo=lg.tipo_liquidacion.codigo,
                     nombre=lg.tipo_liquidacion.nombre,
@@ -240,7 +247,9 @@ class FinanzasPresenter:
                 numero_revision=lg.numero_revision,
                 sub_total=Decimal(str(lg.sub_total)),
                 total=Decimal(str(lg.total)),
-                fecha_registro=datetime.fromisoformat(lg.fecha_registro) if lg.fecha_registro else datetime.min,
+                fecha_registro=datetime.fromisoformat(lg.fecha_registro)
+                if lg.fecha_registro
+                else datetime.min,
                 tipo_liquidacion=TipoLiquidacionMinimalOut(
                     codigo=lg.tipo_liquidacion.codigo,
                     nombre=lg.tipo_liquidacion.nombre,
@@ -297,8 +306,7 @@ class FinanzasPresenter:
             PaginatedData lista para success_response().
         """
         items: list[ReciboHonorarioInspectorOut] = [
-            FinanzasPresenter._map_recibo_inspector_out(r)
-            for r in domain_results
+            FinanzasPresenter._map_recibo_inspector_out(r) for r in domain_results
         ]
 
         total_pages = math.ceil(total / page_size) if page_size > 0 else 0
@@ -338,7 +346,10 @@ class FinanzasPresenter:
                 RHInspectorCotizarItemOut(
                     exp_liqui=i.exp_liqui,
                     liquidacion_inspector_id=uuid.UUID(i.liquidacion_inspector_id),
-                    liquidacion_categoria_visitas_id=uuid.UUID(i.liquidacion_categoria_visitas_id),
+                    liquidacion_categoria_visitas_id=uuid.UUID(
+                        i.liquidacion_categoria_visitas_id
+                    ),
+                    detalle_id=uuid.UUID(i.detalle_id) if i.detalle_id else None,
                     nombre_propietario=i.nombre_propietario,
                     importe_bruto=i.importe_bruto,
                     inspecciones_programadas=i.inspecciones_programadas,
@@ -348,15 +359,29 @@ class FinanzasPresenter:
                     monto_contribuido=i.monto_contribuido,
                     saldo_disponible=i.saldo_disponible,
                     saldo_restante=i.saldo_restante,
+                    sub_total=i.sub_total,
+                    descuento=i.descuento,
+                    honorarios=i.honorarios,
+                    tasa_descuento_aplicada=i.tasa_descuento_aplicada,
                     periodo=i.periodo,
                     mes=i.mes,
                     liquidacion_especifica_numero=i.liquidacion_especifica_numero,
                     comprobante_activo=LiquidacionComprobanteMinimalOut(
-                        tipo_comprobante=i.comprobante_activo.tipo_comprobante if i.comprobante_activo else None,
-                        serie=i.comprobante_activo.serie if i.comprobante_activo else None,
-                        numero=i.comprobante_activo.numero if i.comprobante_activo else None,
-                        fecha_emision=i.comprobante_activo.fecha_emision if i.comprobante_activo else None,
-                    ) if i.comprobante_activo else None,
+                        tipo_comprobante=i.comprobante_activo.tipo_comprobante
+                        if i.comprobante_activo
+                        else None,
+                        serie=i.comprobante_activo.serie
+                        if i.comprobante_activo
+                        else None,
+                        numero=i.comprobante_activo.numero
+                        if i.comprobante_activo
+                        else None,
+                        fecha_emision=i.comprobante_activo.fecha_emision
+                        if i.comprobante_activo
+                        else None,
+                    )
+                    if i.comprobante_activo
+                    else None,
                 )
                 for i in result.items
             ],
@@ -400,7 +425,9 @@ class FinanzasPresenter:
             candidatos=[
                 InspectorCandidataItemOut(
                     liquidacion_inspector_id=uuid.UUID(c.liquidacion_inspector_id),
-                    liquidacion_categoria_visitas_id=uuid.UUID(c.liquidacion_categoria_visitas_id),
+                    liquidacion_categoria_visitas_id=uuid.UUID(
+                        c.liquidacion_categoria_visitas_id
+                    ),
                     liquidacion_general_id=uuid.UUID(c.liquidacion_general_id),
                     expediente=c.expediente,
                     numero_revision=c.numero_revision,
@@ -416,6 +443,23 @@ class FinanzasPresenter:
                     costo_por_inspeccion=c.costo_por_inspeccion,
                     total_liquidacion=c.total_liquidacion,
                     sub_total_liquidacion=c.sub_total_liquidacion,
+                    liquidacion_especifica_numero=c.liquidacion_especifica_numero,
+                    comprobante_activo=LiquidacionComprobanteMinimalOut(
+                        tipo_comprobante=c.comprobante_activo.tipo_comprobante
+                        if c.comprobante_activo
+                        else None,
+                        serie=c.comprobante_activo.serie
+                        if c.comprobante_activo
+                        else None,
+                        numero=c.comprobante_activo.numero
+                        if c.comprobante_activo
+                        else None,
+                        fecha_emision=c.comprobante_activo.fecha_emision
+                        if c.comprobante_activo
+                        else None,
+                    )
+                    if c.comprobante_activo
+                    else None,
                 )
                 for c in result.candidatos
             ],
@@ -444,7 +488,9 @@ class FinanzasPresenter:
             items=[
                 InspectorCandidataItemOut(
                     liquidacion_inspector_id=uuid.UUID(c.liquidacion_inspector_id),
-                    liquidacion_categoria_visitas_id=uuid.UUID(c.liquidacion_categoria_visitas_id),
+                    liquidacion_categoria_visitas_id=uuid.UUID(
+                        c.liquidacion_categoria_visitas_id
+                    ),
                     liquidacion_general_id=uuid.UUID(c.liquidacion_general_id),
                     expediente=c.expediente,
                     numero_revision=c.numero_revision,
@@ -460,6 +506,23 @@ class FinanzasPresenter:
                     costo_por_inspeccion=c.costo_por_inspeccion,
                     total_liquidacion=c.total_liquidacion,
                     sub_total_liquidacion=c.sub_total_liquidacion,
+                    liquidacion_especifica_numero=c.liquidacion_especifica_numero,
+                    comprobante_activo=LiquidacionComprobanteMinimalOut(
+                        tipo_comprobante=c.comprobante_activo.tipo_comprobante
+                        if c.comprobante_activo
+                        else None,
+                        serie=c.comprobante_activo.serie
+                        if c.comprobante_activo
+                        else None,
+                        numero=c.comprobante_activo.numero
+                        if c.comprobante_activo
+                        else None,
+                        fecha_emision=c.comprobante_activo.fecha_emision
+                        if c.comprobante_activo
+                        else None,
+                    )
+                    if c.comprobante_activo
+                    else None,
                 )
                 for c in result.items
             ],
@@ -496,8 +559,13 @@ class FinanzasPresenter:
             items=[
                 RHDelegadoCotizarItemOut(
                     exp_liqui=i.exp_liqui,
-                    liquidacion_delegado_id=uuid.UUID(i.liquidacion_delegado_id) if i.liquidacion_delegado_id else None,
-                    delegado_operacion_id=uuid.UUID(i.delegado_operacion_id) if i.delegado_operacion_id else None,
+                    liquidacion_delegado_id=uuid.UUID(i.liquidacion_delegado_id)
+                    if i.liquidacion_delegado_id
+                    else None,
+                    detalle_id=uuid.UUID(i.detalle_id) if i.detalle_id else None,
+                    delegado_operacion_id=uuid.UUID(i.delegado_operacion_id)
+                    if i.delegado_operacion_id
+                    else None,
                     imp_bruto=i.imp_bruto,
                     fecha_revision=i.fecha_revision,
                     numero_revision=i.numero_revision,
@@ -509,12 +577,24 @@ class FinanzasPresenter:
                     fondo_comun=i.fondo_comun,
                     neto_honorario=i.neto_honorario,
                     liquidacion_especifica_numero=i.liquidacion_especifica_numero,
+                    estrategia_cotizacion=i.estrategia_cotizacion,
+                    total_explicito=i.total_explicito,
                     comprobante_activo=LiquidacionComprobanteMinimalOut(
-                        tipo_comprobante=i.comprobante_activo.tipo_comprobante if i.comprobante_activo else None,
-                        serie=i.comprobante_activo.serie if i.comprobante_activo else None,
-                        numero=i.comprobante_activo.numero if i.comprobante_activo else None,
-                        fecha_emision=i.comprobante_activo.fecha_emision if i.comprobante_activo else None,
-                    ) if i.comprobante_activo else None,
+                        tipo_comprobante=i.comprobante_activo.tipo_comprobante
+                        if i.comprobante_activo
+                        else None,
+                        serie=i.comprobante_activo.serie
+                        if i.comprobante_activo
+                        else None,
+                        numero=i.comprobante_activo.numero
+                        if i.comprobante_activo
+                        else None,
+                        fecha_emision=i.comprobante_activo.fecha_emision
+                        if i.comprobante_activo
+                        else None,
+                    )
+                    if i.comprobante_activo
+                    else None,
                 )
                 for i in result.items
             ],
@@ -538,6 +618,7 @@ class FinanzasPresenter:
         total: int,
         page: int,
         page_size: int,
+        sin_paginacion: bool = False,
     ) -> PaginatedData[RHDelegadoMensualListItemOut]:
         """
         Transforma lista de RHDelegadoMensualListItemResult → PaginatedData[RHDelegadoMensualListItemOut].
@@ -547,6 +628,8 @@ class FinanzasPresenter:
             total: Total de registros en la query base (sin paginar).
             page: Página actual.
             page_size: Tamaño de página usado.
+            sin_paginacion: Cuando es True la respuesta trae el conjunto
+                completo y se describe como una sola página.
 
         Returns:
             PaginatedData lista para success_response().
@@ -555,13 +638,20 @@ class FinanzasPresenter:
             FinanzasPresenter._map_rh_mensual_delegado_out(r) for r in domain_results
         ]
 
-        total_pages = math.ceil(total / page_size) if page_size > 0 else 0
+        if sin_paginacion:
+            resp_page = 1
+            resp_page_size = max(1, len(items))
+            resp_total_pages = 1
+        else:
+            resp_page = page
+            resp_page_size = page_size
+            resp_total_pages = math.ceil(total / page_size) if page_size > 0 else 0
         return PaginatedData(
             items=items,
             total=total,
-            page=page,
-            page_size=page_size,
-            total_pages=total_pages,
+            page=resp_page,
+            page_size=resp_page_size,
+            total_pages=resp_total_pages,
         )
 
     @staticmethod
@@ -571,9 +661,12 @@ class FinanzasPresenter:
         """Mapea un RHDelegadoMensualListItemResult → RHDelegadoMensualListItemOut."""
         return RHDelegadoMensualListItemOut(
             id=uuid.UUID(r.id),
+            numero=r.numero,
             periodo=r.periodo,
             mes=r.mes,
-            fecha_registro=datetime.fromisoformat(r.fecha_registro) if r.fecha_registro else datetime.min,
+            fecha_registro=datetime.fromisoformat(r.fecha_registro)
+            if r.fecha_registro
+            else datetime.min,
             delegado=DelegadoMinimalOut(
                 id=uuid.UUID(r.delegado.id),
                 cip=r.delegado.cip,
@@ -590,6 +683,7 @@ class FinanzasPresenter:
             detalles=[
                 RHDelegadoMensualDetalleOut(
                     liquidacion_delegado_id=uuid.UUID(d.liquidacion_delegado_id),
+                    detalle_id=uuid.UUID(d.detalle_id) if d.detalle_id else None,
                     expediente=d.expediente,
                     fecha_revision=d.fecha_revision,
                     numero_revision=d.numero_revision,
@@ -605,14 +699,28 @@ class FinanzasPresenter:
                     mes=d.mes,
                     dictamen_revision=d.dictamen_revision,
                     fecha_presentacion=d.fecha_presentacion,
-                    delegado_operacion_id=uuid.UUID(d.delegado_operacion_id) if d.delegado_operacion_id else None,
+                    delegado_operacion_id=uuid.UUID(d.delegado_operacion_id)
+                    if d.delegado_operacion_id
+                    else None,
                     liquidacion_especifica_numero=d.liquidacion_especifica_numero,
+                    estrategia_cotizacion=d.estrategia_cotizacion,
+                    total_explicito=d.total_explicito,
                     comprobante_activo=LiquidacionComprobanteMinimalOut(
-                        tipo_comprobante=d.comprobante_activo.tipo_comprobante if d.comprobante_activo else None,
-                        serie=d.comprobante_activo.serie if d.comprobante_activo else None,
-                        numero=d.comprobante_activo.numero if d.comprobante_activo else None,
-                        fecha_emision=d.comprobante_activo.fecha_emision if d.comprobante_activo else None,
-                    ) if d.comprobante_activo else None,
+                        tipo_comprobante=d.comprobante_activo.tipo_comprobante
+                        if d.comprobante_activo
+                        else None,
+                        serie=d.comprobante_activo.serie
+                        if d.comprobante_activo
+                        else None,
+                        numero=d.comprobante_activo.numero
+                        if d.comprobante_activo
+                        else None,
+                        fecha_emision=d.comprobante_activo.fecha_emision
+                        if d.comprobante_activo
+                        else None,
+                    )
+                    if d.comprobante_activo
+                    else None,
                 )
                 for d in r.detalles
             ],
@@ -627,7 +735,9 @@ class FinanzasPresenter:
             delegado_operacion_context=(
                 DelegadoOperacionContextOut(
                     id=uuid.UUID(r.delegado_operacion_context.id),
-                    municipalidad_id=uuid.UUID(r.delegado_operacion_context.municipalidad_id),
+                    municipalidad_id=uuid.UUID(
+                        r.delegado_operacion_context.municipalidad_id
+                    ),
                     municipalidad_nombre=r.delegado_operacion_context.municipalidad_nombre,
                     tipo_liquidacion_id=(
                         uuid.UUID(r.delegado_operacion_context.tipo_liquidacion_id)
@@ -636,7 +746,9 @@ class FinanzasPresenter:
                     ),
                     tipo_liquidacion_codigo=r.delegado_operacion_context.tipo_liquidacion_codigo,
                     tipo_liquidacion_nombre=r.delegado_operacion_context.tipo_liquidacion_nombre,
-                    especialidad_id=uuid.UUID(r.delegado_operacion_context.especialidad_id),
+                    especialidad_id=uuid.UUID(
+                        r.delegado_operacion_context.especialidad_id
+                    ),
                     especialidad_nombre=r.delegado_operacion_context.especialidad_nombre,
                     tipo=r.delegado_operacion_context.tipo,
                 )
@@ -653,6 +765,7 @@ class FinanzasPresenter:
         total: int,
         page: int,
         page_size: int,
+        sin_paginacion: bool = False,
     ) -> PaginatedData[RHInspectorMensualListItemOut]:
         """
         Transforma lista de RHInspectorMensualListItemResult → PaginatedData[RHInspectorMensualListItemOut].
@@ -670,13 +783,20 @@ class FinanzasPresenter:
             FinanzasPresenter._map_rh_mensual_inspector_out(r) for r in domain_results
         ]
 
-        total_pages = math.ceil(total / page_size) if page_size > 0 else 0
+        if sin_paginacion:
+            resp_page = 1
+            resp_page_size = max(1, len(items))
+            resp_total_pages = 1
+        else:
+            resp_page = page
+            resp_page_size = page_size
+            resp_total_pages = math.ceil(total / page_size) if page_size > 0 else 0
         return PaginatedData(
             items=items,
             total=total,
-            page=page,
-            page_size=page_size,
-            total_pages=total_pages,
+            page=resp_page,
+            page_size=resp_page_size,
+            total_pages=resp_total_pages,
         )
 
     @staticmethod
@@ -686,9 +806,12 @@ class FinanzasPresenter:
         """Mapea un RHInspectorMensualListItemResult → RHInspectorMensualListItemOut."""
         return RHInspectorMensualListItemOut(
             id=uuid.UUID(r.id),
+            numero=r.numero,
             periodo=r.periodo,
             mes=r.mes,
-            fecha_registro=datetime.fromisoformat(r.fecha_registro) if r.fecha_registro else datetime.min,
+            fecha_registro=datetime.fromisoformat(r.fecha_registro)
+            if r.fecha_registro
+            else datetime.min,
             inspector=InspectorMinimalOut(
                 id=uuid.UUID(r.inspector.id),
                 cip=r.inspector.cip,
@@ -707,6 +830,7 @@ class FinanzasPresenter:
             ),
             detalles=[
                 RHInspectorMensualDetalleOut(
+                    detalle_id=uuid.UUID(d.detalle_id) if d.detalle_id else None,
                     expediente=d.expediente,
                     nombre_propietario=d.nombre_propietario,
                     distrito=d.distrito,
@@ -718,15 +842,29 @@ class FinanzasPresenter:
                     monto_contribuido=d.monto_contribuido,
                     saldo_restante=d.saldo_restante,
                     liquidacion_especifica_numero=d.liquidacion_especifica_numero,
+                    numero_revision=d.numero_revision,
                     sub_total=d.sub_total,
                     descuento=d.descuento,
                     honorarios=d.honorarios,
+                    fecha_revision=d.fecha_revision,
+                    fecha_presentacion=d.fecha_presentacion,
+                    dictamen_revision=d.dictamen_revision,
                     comprobante_activo=LiquidacionComprobanteMinimalOut(
-                        tipo_comprobante=d.comprobante_activo.tipo_comprobante if d.comprobante_activo else None,
-                        serie=d.comprobante_activo.serie if d.comprobante_activo else None,
-                        numero=d.comprobante_activo.numero if d.comprobante_activo else None,
-                        fecha_emision=d.comprobante_activo.fecha_emision if d.comprobante_activo else None,
-                    ) if d.comprobante_activo else None,
+                        tipo_comprobante=d.comprobante_activo.tipo_comprobante
+                        if d.comprobante_activo
+                        else None,
+                        serie=d.comprobante_activo.serie
+                        if d.comprobante_activo
+                        else None,
+                        numero=d.comprobante_activo.numero
+                        if d.comprobante_activo
+                        else None,
+                        fecha_emision=d.comprobante_activo.fecha_emision
+                        if d.comprobante_activo
+                        else None,
+                    )
+                    if d.comprobante_activo
+                    else None,
                 )
                 for d in r.detalles
             ],
@@ -785,6 +923,7 @@ class FinanzasPresenter:
         total: int,
         page: int,
         page_size: int,
+        sin_paginacion: bool = False,
     ) -> PaginatedData[DetalleDelegadoRowOut]:
         """
         Transforma lista de DetalleDelegadoRowResult → PaginatedData[DetalleDelegadoRowOut].
@@ -794,6 +933,9 @@ class FinanzasPresenter:
             total: Total de registros en la query base (sin paginar).
             page: Página actual.
             page_size: Tamaño de página usado.
+            sin_paginacion: Cuando es True la respuesta trae el conjunto
+                completo: se describe como una sola página para que el envelope
+                no sugiera que hay más páginas por cargar.
 
         Returns:
             PaginatedData lista para success_response().
@@ -815,7 +957,8 @@ class FinanzasPresenter:
                             id=uuid.UUID(lg.municipalidad.id),
                             nombre=lg.municipalidad.nombre,
                         )
-                        if lg.municipalidad else None
+                        if lg.municipalidad
+                        else None
                     ),
                     tipo_liquidacion=(
                         TipoLiquidacionNestedOut(
@@ -823,7 +966,8 @@ class FinanzasPresenter:
                             codigo=lg.tipo_liquidacion.codigo,
                             nombre=lg.tipo_liquidacion.nombre,
                         )
-                        if lg.tipo_liquidacion else None
+                        if lg.tipo_liquidacion
+                        else None
                     ),
                 )
 
@@ -864,13 +1008,20 @@ class FinanzasPresenter:
                 )
             )
 
-        total_pages = math.ceil(total / page_size) if page_size > 0 else 0
+        if sin_paginacion:
+            resp_page = 1
+            resp_page_size = max(1, len(items))
+            resp_total_pages = 1
+        else:
+            resp_page = page
+            resp_page_size = page_size
+            resp_total_pages = math.ceil(total / page_size) if page_size > 0 else 0
         return PaginatedData(
             items=items,
             total=total,
-            page=page,
-            page_size=page_size,
-            total_pages=total_pages,
+            page=resp_page,
+            page_size=resp_page_size,
+            total_pages=resp_total_pages,
         )
 
     @staticmethod
@@ -879,6 +1030,7 @@ class FinanzasPresenter:
         total: int,
         page: int,
         page_size: int,
+        sin_paginacion: bool = False,
     ) -> PaginatedData[DetalleInspectorRowOut]:
         """
         Transforma lista de DetalleInspectorRowResult → PaginatedData[DetalleInspectorRowOut].
@@ -910,7 +1062,8 @@ class FinanzasPresenter:
                             id=uuid.UUID(lg.municipalidad.id),
                             nombre=lg.municipalidad.nombre,
                         )
-                        if lg.municipalidad else None
+                        if lg.municipalidad
+                        else None
                     ),
                     tipo_liquidacion=(
                         TipoLiquidacionNestedOut(
@@ -918,7 +1071,8 @@ class FinanzasPresenter:
                             codigo=lg.tipo_liquidacion.codigo,
                             nombre=lg.tipo_liquidacion.nombre,
                         )
-                        if lg.tipo_liquidacion else None
+                        if lg.tipo_liquidacion
+                        else None
                     ),
                 )
 
@@ -949,18 +1103,26 @@ class FinanzasPresenter:
                                 cip=ilq.inspector.cip,
                                 nombre_completo=ilq.inspector.nombre_completo,
                             )
-                            if ilq.inspector else None
+                            if ilq.inspector
+                            else None
                         ),
                         liquidacion=lg_insp_out,
                     ),
                 )
             )
 
-        total_pages = math.ceil(total / page_size) if page_size > 0 else 0
+        if sin_paginacion:
+            resp_page = 1
+            resp_page_size = max(1, len(items))
+            resp_total_pages = 1
+        else:
+            resp_page = page
+            resp_page_size = page_size
+            resp_total_pages = math.ceil(total / page_size) if page_size > 0 else 0
         return PaginatedData(
             items=items,
             total=total,
-            page=page,
-            page_size=page_size,
-            total_pages=total_pages,
+            page=resp_page,
+            page_size=resp_page_size,
+            total_pages=resp_total_pages,
         )

@@ -5,6 +5,7 @@ GET /finanzas/recibos-inspectores/detalle
 
 Informational only — no POST/PUT/PATCH/DELETE.
 """
+
 import uuid
 from ninja import Query
 from ninja_extra import api_controller, route
@@ -17,10 +18,14 @@ from modules.finanzas.presentation.schemas.finanzas_schemas import (
     DetalleInspectorRowOut,
 )
 from modules.finanzas.domain.services.finanzas_orchestrator import FinanzasOrchestrator
-from modules.finanzas.presentation.presenters.finanzas_presenter import FinanzasPresenter
+from modules.finanzas.presentation.presenters.finanzas_presenter import (
+    FinanzasPresenter,
+)
 
 
-@api_controller("/finanzas", tags=["Finanzas-RH-Inspector-Detalle"], permissions=[AllowAny])
+@api_controller(
+    "/finanzas", tags=["Finanzas-RH-Inspector-Detalle"], permissions=[AllowAny]
+)
 class RHInspectorDetalleController:
     """
     Controlador para listar filas sueltas de DetalleHonorarioInspector (detalle flat).
@@ -41,13 +46,28 @@ class RHInspectorDetalleController:
         self,
         request,
         page: int = Query(1, ge=1, description="Página (1-indexed)"),
-        page_size: int = Query(20, ge=1, le=100, description="Elementos por página (max 100)"),
+        page_size: int = Query(
+            20, ge=1, le=100, description="Elementos por página (max 100)"
+        ),
         inspector_id: uuid.UUID | None = Query(None, description="UUID del inspector"),
         inspector_cip: str | None = Query(None, description="CIP del inspector"),
-        periodo: int | None = Query(None, ge=2000, le=2100, description="Año del periodo (e.g. 2026)"),
+        periodo: int | None = Query(
+            None, ge=2000, le=2100, description="Año del periodo (e.g. 2026)"
+        ),
         mes: int | None = Query(None, ge=1, le=12, description="Mes (1-12)"),
-        municipalidad_id: uuid.UUID | None = Query(None, description="UUID de la municipalidad (from Liquidacion)"),
-        numero_liquidacion: int | None = Query(None, description="Número de liquidación específico de Inspección de Obra"),
+        municipalidad_id: uuid.UUID | None = Query(
+            None, description="UUID de la municipalidad (from Liquidacion)"
+        ),
+        numero_liquidacion: int | None = Query(
+            None, description="Número de liquidación específico de Inspección de Obra"
+        ),
+        sin_paginacion: bool = Query(
+            False,
+            description=(
+                "Devuelve el conjunto completo filtrado en una sola respuesta "
+                "(sin paginación). Útil para exportar la lista completa."
+            ),
+        ),
     ):
         """
         GET /finanzas/recibos-inspectores/detalle — lista filas de DetalleHonorarioInspector.
@@ -67,8 +87,9 @@ class RHInspectorDetalleController:
             mes=mes,
             municipalidad_id=municipalidad_id,
             numero_liquidacion=numero_liquidacion,
+            sin_paginacion=sin_paginacion,
         )
         presented = FinanzasPresenter.present_rh_detalle_inspectores_list(
-            domain_results, total, page, page_size
+            domain_results, total, page, page_size, sin_paginacion
         )
         return success_response(presented)

@@ -99,14 +99,23 @@ def format_errors(exc_errors: list) -> Dict[str, str]:
     que el frontend puede mapear directamente a sus inputs.
 
     Ejemplo: {"email": "formato de correo inválido"}
+
+    Los errores que NO pertenecen a un campo concreto se agrupan bajo la clave
+    vacía (""). Antes se usaba la clave literal "non_field_errors", que el
+    frontend terminaba pintando como si fuera el nombre de un campo. El
+    frontend trata la clave vacía como mensaje global: muestra su contenido
+    sin etiqueta y nunca la convierte en un error de campo.
     """
     flattened = {}
     for error in exc_errors:
         loc = error.get("loc", [])
-        field_name = str(loc[-1]) if loc else "non_field_errors"
+        field_name = str(loc[-1]) if loc else ""
         msg = error.get("msg", "Dato inválido")
 
-        flattened[field_name] = msg
+        if field_name in flattened:
+            flattened[field_name] = f"{flattened[field_name]}; {msg}"
+        else:
+            flattened[field_name] = msg
 
     return flattened
 

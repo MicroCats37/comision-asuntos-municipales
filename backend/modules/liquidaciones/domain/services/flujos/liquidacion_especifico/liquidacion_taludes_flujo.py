@@ -91,9 +91,17 @@ class LiquidacionTaludesFlujo(LiquidacionPOBaseFlujo):
             **kwargs,
         )
 
-    def _crear_wrapper(self, liquidacion_general) -> LiquidacionTaludes:
-        """Create Taludes identity wrapper."""
-        return LiquidacionTaludes.objects.create(liquidacion=liquidacion_general)
+    def _crear_wrapper(self, liquidacion_general, numero: int | None = None) -> LiquidacionTaludes:
+        """
+        Create Taludes identity wrapper.
+
+        `numero` es el número explícito del registro legacy (informativo y
+        repetible). Si no se informa, el modelo asigna el autonumerado.
+        """
+        return LiquidacionTaludes.objects.create(
+            liquidacion=liquidacion_general,
+            numero=numero,
+        )
 
     def _build_result(
         self,

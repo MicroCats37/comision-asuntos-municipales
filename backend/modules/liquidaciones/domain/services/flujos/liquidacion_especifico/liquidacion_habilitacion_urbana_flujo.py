@@ -27,6 +27,9 @@ from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_genera
 from modules.liquidaciones.domain.schemas.liquidacion_especifico.habilitacion_urbana_primera_revision_data import (
     HabilitacionUrbanaPrimeraRevisionData,
 )
+from modules.liquidaciones.domain.schemas.liquidacion_legacy.legacy_registro_data import (
+    LegacyRegistroContexto,
+)
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
 )
@@ -62,8 +65,9 @@ class LiquidacionHabilitacionUrbanaFlujo(LiquidacionM2FlujoBase):
         self,
         usuario_id: int,
         data: HabilitacionUrbanaPrimeraRevisionData,
+        registro_legacy: LegacyRegistroContexto | None = None,
     ) -> HabilitacionUrbanaPrimeraRevisionResult:
-        return self._ejecutar_primera_revision_sync(usuario_id, data)
+        return self._ejecutar_primera_revision_sync(usuario_id, data, registro_legacy)
 
     def ejecutar_legacy(
         self,
@@ -106,6 +110,7 @@ class LiquidacionHabilitacionUrbanaFlujo(LiquidacionM2FlujoBase):
         self,
         usuario_id: int,
         data: HabilitacionUrbanaPrimeraRevisionData,
+        registro_legacy: LegacyRegistroContexto | None = None,
     ) -> HabilitacionUrbanaPrimeraRevisionResult:
         gen_data = data.liquidacion_general
         esp_data = data.liquidacion_especifica
@@ -116,6 +121,7 @@ class LiquidacionHabilitacionUrbanaFlujo(LiquidacionM2FlujoBase):
             gen_data=gen_data,
             esp_data=esp_data,
             cotizacion=cotizacion,
+            registro_legacy=registro_legacy,
         )
 
     # ── Relacionada (HU-specific) ───────────────────────────────────────────

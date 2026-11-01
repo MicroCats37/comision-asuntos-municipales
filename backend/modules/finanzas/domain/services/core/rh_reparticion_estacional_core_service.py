@@ -8,6 +8,7 @@ Operations:
 - Check for overlapping month ranges
 - Query active reparticiones by especialidad/periodo
 """
+
 from decimal import Decimal
 from typing import Optional
 
@@ -67,7 +68,9 @@ def distribute_fondo_comun_cents(
 
     # Extra per chapter: distribute leftover evenly among chapters first
     extra_per_chapter = leftover_cents // len(capitulo_ids) if capitulo_ids else 0
-    remainder_to_first_chapters = leftover_cents % len(capitulo_ids) if capitulo_ids else 0
+    remainder_to_first_chapters = (
+        leftover_cents % len(capitulo_ids) if capitulo_ids else 0
+    )
 
     capitulo_amounts: dict[int, Decimal] = {}
     capitulo_counter = 0
@@ -124,17 +127,13 @@ class RHReparticionEstacionalCoreService:
         """
         from modules.finanzas.domain.models import DetalleHonorarioDelegado
 
-        result = (
-            DetalleHonorarioDelegado.objects
-            .filter(
-                liquidacion_delegado__especialidad_revision_id=especialidad_revision_id,
-                liquidacion_delegado__periodo=periodo,
-                liquidacion_delegado__mes__gte=mes_desde,
-                liquidacion_delegado__mes__lte=mes_hasta,
-                fondo_comun__isnull=False,
-            )
-            .aggregate(total=Sum("fondo_comun"))
-        )
+        result = DetalleHonorarioDelegado.objects.filter(
+            liquidacion_delegado__especialidad_revision_id=especialidad_revision_id,
+            liquidacion_delegado__periodo=periodo,
+            liquidacion_delegado__mes__gte=mes_desde,
+            liquidacion_delegado__mes__lte=mes_hasta,
+            fondo_comun__isnull=False,
+        ).aggregate(total=Sum("fondo_comun"))
         return result["total"] or Decimal("0.00")
 
     def get_capitulos_for_especialidad(
@@ -156,9 +155,9 @@ class RHReparticionEstacionalCoreService:
         )
 
         return list(
-            EspecialidadRevisionCapitulo.objects
-            .filter(especialidad_revision_id=especialidad_revision_id)
-            .values_list("capitulo_id", flat=True)
+            EspecialidadRevisionCapitulo.objects.filter(
+                especialidad_revision_id=especialidad_revision_id
+            ).values_list("capitulo_id", flat=True)
         )
 
     def check_overlapping_reparticion(
@@ -197,7 +196,10 @@ class RHReparticionEstacionalCoreService:
 
         for reparticion in qs:
             # Check overlap: existing.mes_desde <= new.mes_hasta AND existing.mes_hasta >= new.mes_desde
-            if reparticion.mes_desde <= mes_hasta and reparticion.mes_hasta >= mes_desde:
+            if (
+                reparticion.mes_desde <= mes_hasta
+                and reparticion.mes_hasta >= mes_desde
+            ):
                 return True
         return False
 
@@ -216,14 +218,23 @@ class RHReparticionEstacionalCoreService:
         Returns:
             QuerySet of RHReparticionEstacional
         """
-        qs = RHReparticionEstacional.objects.filter(is_deleted=False)
+        qs = (
+            RHReparticionEstacional.objects.filter(is_deleted=False)
+            .select_related("especialidad_revision")
+            .prefetch_related(
+                "detalles_delegados__delegado__perfil_ingeniero",
+                "detalles_capitulos__capitulo",
+            )
+        )
         if especialidad_revision_id is not None:
             qs = qs.filter(especialidad_revision_id=especialidad_revision_id)
         if periodo is not None:
             qs = qs.filter(periodo=periodo)
         return qs.order_by("-periodo", "-created_at")
 
-    def get_reparticion_by_id(self, reparticion_id: str) -> Optional[RHReparticionEstacional]:
+    def get_reparticion_by_id(
+        self, reparticion_id: str
+    ) -> Optional[RHReparticionEstacional]:
         """
         Get a reparticion by ID with related objects prefetched.
 
@@ -231,8 +242,7 @@ class RHReparticionEstacionalCoreService:
         detalles_capitulos->capitulo to avoid N+1 when building nested results.
         """
         return (
-            RHReparticionEstacional.objects
-            .select_related("especialidad_revision")
+            RHReparticionEstacional.objects.select_related("especialidad_revision")
             .prefetch_related(
                 "detalles_delegados__delegado__perfil_ingeniero",
                 "detalles_capitulos__capitulo",
@@ -274,6 +284,71 @@ class RHReparticionEstacionalCoreService:
             mes_hasta=mes_hasta,
         )
 
+    def update_reparticion(
+        self,
+        reparticion: RHReparticionEstacional,
+        especialidad_revision_id,
+        periodo: int,
+        total_fondo_comun: Decimal,
+        numero_capitulos: int,
+        numero_delegados: int,
+        monto_por_participacion: Decimal,
+        residual: Decimal,
+        mes_desde: int,
+        mes_hasta: int,
+    ) -> RHReparticionEstacional:
+        """
+        Update the header of an existing reparticion in place.
+
+        The record identity (id) and the creation identity (created_at) are
+        preserved — only the business snapshot fields are rewritten.
+
+        Args:
+            reparticion: The instance to update.
+            All header fields of the new snapshot.
+
+        Returns:
+            The updated RHReparticionEstacional instance.
+        """
+        reparticion.especialidad_revision_id = especialidad_revision_id
+        reparticion.periodo = periodo
+        reparticion.total_fondo_comun = total_fondo_comun
+        reparticion.numero_capitulos = numero_capitulos
+        reparticion.numero_delegados = numero_delegados
+        reparticion.monto_por_participacion = monto_por_participacion
+        reparticion.residual = residual
+        reparticion.mes_desde = mes_desde
+        reparticion.mes_hasta = mes_hasta
+        reparticion.save(
+            update_fields=[
+                "especialidad_revision",
+                "periodo",
+                "total_fondo_comun",
+                "numero_capitulos",
+                "numero_delegados",
+                "monto_por_participacion",
+                "residual",
+                "mes_desde",
+                "mes_hasta",
+                "updated_at",
+            ]
+        )
+        return reparticion
+
+    def delete_detalles(self, reparticion: RHReparticionEstacional) -> None:
+        """
+        Remove every delegate and chapter detail of a reparticion.
+
+        Used by the edit flow to replace the previous distribution: the
+        persisted detail set is the FINAL set of the payload, so no stale
+        row may survive the replacement.
+
+        Args:
+            reparticion: The reparticion whose details are replaced.
+        """
+        reparticion.detalles_delegados.all().delete()
+        reparticion.detalles_capitulos.all().delete()
+
     def create_detalle_delegado(
         self,
         reparticion: RHReparticionEstacional,
@@ -303,6 +378,7 @@ class RHReparticionEstacionalCoreService:
     def soft_delete_reparticion(self, reparticion: RHReparticionEstacional) -> None:
         """Soft-delete a reparticion."""
         from django.utils import timezone
+
         reparticion.is_deleted = True
         reparticion.deleted_at = timezone.now()
         reparticion.save(update_fields=["is_deleted", "deleted_at"])

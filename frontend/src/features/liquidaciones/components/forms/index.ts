@@ -1,5 +1,6 @@
 // Barrel export for liquidacion forms.
 
+export { BuscarInspectorPorCipModal } from "./BuscarInspectorPorCipModal";
 export { ComprobanteFormModal } from "./ComprobanteFormModal";
 export { ContactoCard } from "./ContactoCard";
 export { ContactoFormModal } from "./ContactoFormModal";

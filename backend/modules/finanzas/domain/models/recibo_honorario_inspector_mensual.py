@@ -53,7 +53,7 @@ class ReciboHonorarioInspectorMensual(BaseModel):
     class Meta:
         verbose_name = "Recibo de Honorarios Mensual del Inspector"
         verbose_name_plural = "Recibos de Honorarios Mensuales del Inspector"
-        ordering = ["-periodo"]
+        ordering = ["-periodo", "-mes", "-fecha_registro"]
 
     def __str__(self):
         return f"RH Inspector {self.inspector_id} - {self.periodo}-{self.mes:02d}" if self.periodo and self.mes else f"RH Inspector {self.inspector_id}"

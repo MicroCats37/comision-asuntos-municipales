@@ -7,7 +7,12 @@ import {
 } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import type { ZodType } from "zod";
-import { handleApiError, notify } from "@/errors";
+import {
+  extractSuccessMessage,
+  handleApiError,
+  notify,
+  recordSuccessMessage,
+} from "@/errors";
 import api from "@/lib/api";
 import { buildApiPayload } from "@/utils";
 
@@ -65,6 +70,13 @@ export function useGenericCreateMutation<
         try {
           const payload = buildApiPayload(variables);
           const { data } = await api.post(url, payload);
+          // The success toast lives in the mutationFn (not in onSuccess) so a
+          // feature-provided `options.onSuccess` can no longer suppress it.
+          const message = extractSuccessMessage(data);
+          recordSuccessMessage(message);
+          if (showToast && message) {
+            notify.success(message);
+          }
           return schema ? schema.parse(data) : data;
         } catch (error) {
           const apiError = handleApiError(error);
@@ -72,21 +84,28 @@ export function useGenericCreateMutation<
           throw error;
         }
       }
-    : ((mutationFn ??
-        (async () => {
-          throw new Error(
-            "useGenericCreateMutation: se requiere url o mutationFn",
-          );
-        })) as MutationFunction<unknown, TVars>);
+    : async (variables, context) => {
+        const userMutationFn =
+          mutationFn ??
+          (async () => {
+            throw new Error(
+              "useGenericCreateMutation: se requiere url o mutationFn",
+            );
+          });
+        const result = await userMutationFn(variables, context);
+        // Same rule as the `url` branch: the toast belongs to the mutation
+        // itself, never to `onSuccess` (which a feature may override).
+        const message = extractSuccessMessage(result);
+        recordSuccessMessage(message);
+        if (showToast && message) {
+          notify.success(message);
+        }
+        return result;
+      };
 
   return useMutation<unknown, AxiosError, TVars>({
     mutationFn: internalMutationFn,
     onSuccess: (rawResult) => {
-      // Surface backend success message as toast when present
-      const raw = rawResult as { message?: string };
-      if (showToast && raw?.message) {
-        notify.success(raw.message);
-      }
       // Desenvuelve el envelope ApiResponse para obtener el item de la lista
       const newItem = ((rawResult as { data?: TItem })?.data ??
         rawResult) as TItem;

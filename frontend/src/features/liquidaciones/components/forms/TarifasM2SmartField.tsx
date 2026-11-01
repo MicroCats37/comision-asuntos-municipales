@@ -21,6 +21,8 @@ interface TarifasM2SmartFieldProps {
   // biome-ignore lint/suspicious/noExplicitAny: HU and MS share these fields but use distinct form schemas.
   methods: UseFormReturn<any>;
   tipo?: "habilitacion-urbana" | "mecanica-suelos";
+  fecha?: string;
+  legacy?: boolean;
 }
 
 const formatSoles = (value: number | undefined): string =>
@@ -29,8 +31,17 @@ const formatSoles = (value: number | undefined): string =>
 export function TarifasM2SmartField({
   methods,
   tipo = "habilitacion-urbana",
+  fecha,
+  legacy = false,
 }: TarifasM2SmartFieldProps) {
-  const { data, isLoading } = useTarifasVigentesM2(tipo);
+  const fechaRegistro = useWatch({
+    control: methods.control,
+    name: "fecha_registro",
+  }) as string | undefined;
+  const { data, isLoading } = useTarifasVigentesM2(tipo, {
+    fecha: fecha ?? fechaRegistro,
+    enabled: !legacy || Boolean(fecha ?? fechaRegistro),
+  });
   const selectedId = useWatch({
     control: methods.control,
     name: "tarifa_m2_id",

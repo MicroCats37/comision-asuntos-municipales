@@ -47,8 +47,8 @@ from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas 
     DelegadosVigentesOut,
     LiquidacionDelegadoOut,
     LiquidacionDelegadoBatchOut,
-    DelegadoOperatividadesVigentesOut,
-    DelegadoOperacionVigenteOut,
+    DelegadoOperatividadesOut,
+    DelegadoOperacionOut,
 )
 from core.pagination import PaginatedData
 
@@ -493,15 +493,15 @@ class DelegadoPresenter:
         )
 
     @staticmethod
-    def present_operatividades_vigentes(
-        domain_result: "DelegadoOperatividadesVigentesResult",
-    ) -> DelegadoOperatividadesVigentesOut:
+    def present_operatividades(
+        domain_result: "DelegadoOperatividadesResult",
+    ) -> DelegadoOperatividadesOut:
         """
-        Maps DelegadoOperatividadesVigentesResult to DelegadoOperatividadesVigentesOut.
+        Maps DelegadoOperatividadesResult to DelegadoOperatividadesOut.
         """
         from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas import (
-            DelegadoOperatividadesVigentesOut as Out,
-            DelegadoOperacionVigenteOut as OpOut,
+            DelegadoOperatividadesOut as Out,
+            DelegadoOperacionOut as OpOut,
         )
 
         operatividades = []
@@ -528,6 +528,7 @@ class DelegadoPresenter:
                 tipo=op.tipo,
                 periodo_inicio=op.periodo_inicio.isoformat() if op.periodo_inicio else None,
                 periodo_fin=op.periodo_fin.isoformat() if op.periodo_fin else None,
+                es_vigente=op.es_vigente,
             ))
 
         return Out(

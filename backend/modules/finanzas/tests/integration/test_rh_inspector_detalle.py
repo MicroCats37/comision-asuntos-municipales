@@ -575,3 +575,224 @@ def test_detalle_inspector_filtro_cip_sin_resultados(
 
     assert total == 0
     assert len(rows) == 0
+
+
+@pytest.mark.django_db
+def test_detalle_inspector_sin_paginacion_devuelve_el_conjunto_completo(
+    db,
+    core_service,
+    perfil_ingeniero_inspector,
+    inspector,
+    liquidacion_visitas,
+    segunda_liquidacion_visitas,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Dos filas detalle del mismo periodo (2026-01)
+    WHEN:  list_detalle_honorario_inspector_paginated se llama con sin_paginacion=True
+    THEN:  Devuelve TODAS las filas en una sola respuesta, ignorando el page_size
+    """
+    recibo = ReciboHonorarioInspectorMensual.objects.create(
+        inspector=inspector,
+        periodo=2026,
+        mes=1,
+        escala_descuento=escala_descuento_15,
+        sub_total=Decimal("1000.00"),
+        descuento=Decimal("150.00"),
+        honorarios=Decimal("850.00"),
+    )
+
+    detalle1 = DetalleHonorarioInspector.objects.create(
+        recibo_mensual=recibo,
+        liquidacion_por_categoria_visitas=liquidacion_visitas,
+        inspecciones_programadas=5,
+        inspecciones_liquidadas=3,
+        inspecciones_pagadas_hasta_mes_anterior=0,
+        saldo_restante=2,
+        importe_bruto=Decimal("1500.00"),
+        costo_por_inspeccion=Decimal("500.00"),
+        monto_contribuido=Decimal("750.00"),
+        sub_total=Decimal("1500.00"),
+        descuento=Decimal("225.00"),
+        honorarios=Decimal("1275.00"),
+    )
+    detalle2 = DetalleHonorarioInspector.objects.create(
+        recibo_mensual=recibo,
+        liquidacion_por_categoria_visitas=segunda_liquidacion_visitas,
+        inspecciones_programadas=8,
+        inspecciones_liquidadas=5,
+        inspecciones_pagadas_hasta_mes_anterior=0,
+        saldo_restante=3,
+        importe_bruto=Decimal("2500.00"),
+        costo_por_inspeccion=Decimal("500.00"),
+        monto_contribuido=Decimal("1250.00"),
+        sub_total=Decimal("2500.00"),
+        descuento=Decimal("375.00"),
+        honorarios=Decimal("2125.00"),
+    )
+
+    rows, total = core_service.list_detalle_honorario_inspector_paginated(
+        page=1,
+        page_size=1,
+        periodo=2026,
+        mes=1,
+        sin_paginacion=True,
+    )
+
+    assert total == 2
+    assert len(rows) == 2
+    assert {r.id for r in rows} == {detalle1.id, detalle2.id}
+
+    # Sin sin_paginacion el page_size se respeta (paginación normal).
+    rows_paginados, total_paginados = (
+        core_service.list_detalle_honorario_inspector_paginated(
+            page=1,
+            page_size=1,
+            periodo=2026,
+            mes=1,
+        )
+    )
+
+    assert total_paginados == 2
+    assert len(rows_paginados) == 1
+
+
+@pytest.mark.django_db
+def test_detalle_inspector_filtra_por_periodo_del_recibo(
+    db,
+    core_service,
+    perfil_ingeniero_inspector,
+    inspector,
+    liquidacion_visitas,
+    segunda_liquidacion_visitas,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Filas detalle de dos recibos con periodos distintos (2026-01 y 2026-04)
+    WHEN:  list_detalle_honorario_inspector_paginated se filtra por periodo y mes
+    THEN:  Solo devuelve las filas del recibo de ese periodo (año y mes juntos)
+    """
+    recibo_enero = ReciboHonorarioInspectorMensual.objects.create(
+        inspector=inspector,
+        periodo=2026,
+        mes=1,
+        escala_descuento=escala_descuento_15,
+        sub_total=Decimal("1000.00"),
+        descuento=Decimal("150.00"),
+        honorarios=Decimal("850.00"),
+    )
+    recibo_abril = ReciboHonorarioInspectorMensual.objects.create(
+        inspector=inspector,
+        periodo=2026,
+        mes=4,
+        escala_descuento=escala_descuento_15,
+        sub_total=Decimal("2000.00"),
+        descuento=Decimal("300.00"),
+        honorarios=Decimal("1700.00"),
+    )
+
+    DetalleHonorarioInspector.objects.create(
+        recibo_mensual=recibo_enero,
+        liquidacion_por_categoria_visitas=liquidacion_visitas,
+        inspecciones_programadas=5,
+        inspecciones_liquidadas=3,
+        inspecciones_pagadas_hasta_mes_anterior=0,
+        saldo_restante=2,
+        importe_bruto=Decimal("1500.00"),
+        costo_por_inspeccion=Decimal("500.00"),
+        monto_contribuido=Decimal("750.00"),
+        sub_total=Decimal("1500.00"),
+        descuento=Decimal("225.00"),
+        honorarios=Decimal("1275.00"),
+    )
+    DetalleHonorarioInspector.objects.create(
+        recibo_mensual=recibo_abril,
+        liquidacion_por_categoria_visitas=segunda_liquidacion_visitas,
+        inspecciones_programadas=8,
+        inspecciones_liquidadas=5,
+        inspecciones_pagadas_hasta_mes_anterior=0,
+        saldo_restante=3,
+        importe_bruto=Decimal("2500.00"),
+        costo_por_inspeccion=Decimal("500.00"),
+        monto_contribuido=Decimal("1250.00"),
+        sub_total=Decimal("2500.00"),
+        descuento=Decimal("375.00"),
+        honorarios=Decimal("2125.00"),
+    )
+
+    rows_enero, total_enero = (
+        core_service.list_detalle_honorario_inspector_paginated(
+            page=1,
+            page_size=20,
+            periodo=2026,
+            mes=1,
+        )
+    )
+    assert total_enero == 1
+    assert len(rows_enero) == 1
+
+    # El filtro NO cruza el año de un recibo con el mes de otro.
+    rows_cruzados, total_cruzados = (
+        core_service.list_detalle_honorario_inspector_paginated(
+            page=1,
+            page_size=20,
+            periodo=2026,
+            mes=4,
+        )
+    )
+    assert total_cruzados == 1
+    assert len(rows_cruzados) == 1
+    assert rows_cruzados[0].recibo_mensual_id == recibo_abril.id
+
+
+@pytest.mark.django_db
+def test_endpoint_detalle_inspector_sin_paginacion(
+    auth_client,
+    db,
+    perfil_ingeniero_inspector,
+    inspector,
+    liquidacion_visitas,
+    escala_descuento_15,
+):
+    """
+    GIVEN: Una fila detalle del periodo 2026-01
+    WHEN:  GET /finanzas/recibos-inspectores/detalle con sin_paginacion=true
+    THEN:  Devuelve la fila en una sola respuesta y el envelope lo describe
+           como una única página
+    """
+    recibo = ReciboHonorarioInspectorMensual.objects.create(
+        inspector=inspector,
+        periodo=2026,
+        mes=1,
+        escala_descuento=escala_descuento_15,
+        sub_total=Decimal("1000.00"),
+        descuento=Decimal("150.00"),
+        honorarios=Decimal("850.00"),
+    )
+    DetalleHonorarioInspector.objects.create(
+        recibo_mensual=recibo,
+        liquidacion_por_categoria_visitas=liquidacion_visitas,
+        inspecciones_programadas=5,
+        inspecciones_liquidadas=3,
+        inspecciones_pagadas_hasta_mes_anterior=0,
+        saldo_restante=2,
+        importe_bruto=Decimal("1500.00"),
+        costo_por_inspeccion=Decimal("500.00"),
+        monto_contribuido=Decimal("750.00"),
+        sub_total=Decimal("1500.00"),
+        descuento=Decimal("225.00"),
+        honorarios=Decimal("1275.00"),
+    )
+
+    response = auth_client.get(
+        "/finanzas/recibos-inspectores/detalle"
+        "?page=1&page_size=20&sin_paginacion=true&periodo=2026&mes=1"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    data = body["data"]
+    assert data["total"] == 1
+    assert len(data["items"]) == 1
+    assert data["total_pages"] == 1

@@ -4,6 +4,7 @@ import {
   Eye,
   FilePenLine,
   FileText,
+  History,
   Link2,
   type LucideIcon,
   RefreshCw,
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 export type LiquidacionFormMode =
   | "create"
+  | "legacy"
   | "edit"
   | "nueva-revision"
   | "relacionada";
@@ -46,6 +48,13 @@ const MODE_BADGE: Record<
     classes: "bg-primary/10 border-primary/30 text-primary",
     icon: FileText,
     titlePrefix: "Nueva Liquidación",
+  },
+  legacy: {
+    label: "LEGACY",
+    classes:
+      "bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300",
+    icon: History,
+    titlePrefix: "Registro Legacy",
   },
   edit: {
     label: "EDITAR",

@@ -91,9 +91,17 @@ class LiquidacionImpactoVialFlujo(LiquidacionPOBaseFlujo):
             **kwargs,
         )
 
-    def _crear_wrapper(self, liquidacion_general) -> LiquidacionImpactoVial:
-        """Create Impacto Vial identity wrapper."""
-        return LiquidacionImpactoVial.objects.create(liquidacion=liquidacion_general)
+    def _crear_wrapper(self, liquidacion_general, numero: int | None = None) -> LiquidacionImpactoVial:
+        """
+        Create Impacto Vial identity wrapper.
+
+        `numero` es el número explícito del registro legacy (informativo y
+        repetible). Si no se informa, el modelo asigna el autonumerado.
+        """
+        return LiquidacionImpactoVial.objects.create(
+            liquidacion=liquidacion_general,
+            numero=numero,
+        )
 
     def _build_result(
         self,

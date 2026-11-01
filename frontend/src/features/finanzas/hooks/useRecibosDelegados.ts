@@ -22,6 +22,11 @@ interface UseRecibosDelegadosProps {
   periodo?: number;
   mes?: number;
   enabled?: boolean;
+  /**
+   * Pide el conjunto completo filtrado en una sola respuesta (sin paginación).
+   * Lo usa el modal de exportación a Excel.
+   */
+  sinPaginacion?: boolean;
 }
 
 export function useRecibosDelegados({
@@ -32,8 +37,13 @@ export function useRecibosDelegados({
   periodo,
   mes,
   enabled = true,
+  sinPaginacion = false,
 }: UseRecibosDelegadosProps = {}) {
-  const params: Record<string, string | number> = { page, page_size: pageSize };
+  const params: Record<string, string | number | boolean> = {
+    page,
+    page_size: pageSize,
+  };
+  if (sinPaginacion) params.sin_paginacion = true;
   if (delegadoCip) params.delegado_cip = delegadoCip;
   if (municipalidadId) params.municipalidad_id = municipalidadId;
   if (periodo) params.periodo = periodo;

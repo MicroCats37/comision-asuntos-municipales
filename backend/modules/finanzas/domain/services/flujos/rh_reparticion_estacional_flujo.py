@@ -13,9 +13,10 @@ Formula:
     each selected delegado receives one share
     each linked capitulo receives one share
 """
+
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from injector import inject
 from ninja.errors import HttpError
 
@@ -89,7 +90,9 @@ class RHReparticionEstacionalFlujo:
             )
 
         # 2. Get chapters linked to this especialidad_revision
-        capitulo_ids = self.core.get_capitulos_for_especialidad(especialidad_revision_id)
+        capitulo_ids = self.core.get_capitulos_for_especialidad(
+            especialidad_revision_id
+        )
         numero_capitulos = len(capitulo_ids)
 
         # 3. Delegate count
@@ -107,10 +110,12 @@ class RHReparticionEstacionalFlujo:
         # 4. Calculate exact-cent distribution
         # Chapters get all leftover cents (distributed evenly); delegates get base only.
         divisor_total = cantidad_delegados + numero_capitulos
-        capitulo_amounts, delegado_amounts, monto_por_participacion, residual = distribute_fondo_comun_cents(
-            total=total_fondo_comun,
-            capitulo_ids=capitulo_ids,
-            delegado_ids=delegado_ids,
+        capitulo_amounts, delegado_amounts, monto_por_participacion, residual = (
+            distribute_fondo_comun_cents(
+                total=total_fondo_comun,
+                capitulo_ids=capitulo_ids,
+                delegado_ids=delegado_ids,
+            )
         )
 
         # 5. Batch-fetch delegate profile data (avoid N+1)
@@ -135,15 +140,18 @@ class RHReparticionEstacionalFlujo:
         # Use sorted lists for deterministic order matching the helper's internal ordering
         detalles_delegados = [
             RHReparticionEstacionalDelegadoResult(
-                delegado_id=str(delegado_id),
                 delegado=DelegadoMinimalResult(
                     id=str(delegados_map[delegado_id].id),
                     cip=delegados_map[delegado_id].perfil_ingeniero.cip,
                     dni=delegados_map[delegado_id].perfil_ingeniero.dni,
-                    nombre_completo=delegados_map[delegado_id].perfil_ingeniero.nombre_completo,
+                    nombre_completo=delegados_map[
+                        delegado_id
+                    ].perfil_ingeniero.nombre_completo,
                 )
                 if delegado_id in delegados_map
-                else DelegadoMinimalResult(id=str(delegado_id), cip="", dni="", nombre_completo=""),
+                else DelegadoMinimalResult(
+                    id=str(delegado_id), cip="", dni="", nombre_completo=""
+                ),
                 monto=delegado_amounts.get(delegado_id, monto_por_participacion),
             )
             for delegado_id in sorted(delegado_ids)
@@ -151,7 +159,6 @@ class RHReparticionEstacionalFlujo:
 
         detalles_capitulos = [
             RHReparticionEstacionalCapituloResult(
-                capitulo_id=str(capitulo_id),
                 capitulo=CapituloMinimalResult(
                     id=str(capitulos_map[capitulo_id].id),
                     nombre=capitulos_map[capitulo_id].nombre,
@@ -167,7 +174,10 @@ class RHReparticionEstacionalFlujo:
 
         # 8. Get especialidad_revision nombre for response
         from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
-        esp_rev = EspecialidadRevision.objects.filter(id=especialidad_revision_id).first()
+
+        esp_rev = EspecialidadRevision.objects.filter(
+            id=especialidad_revision_id
+        ).first()
         esp_rev_nombre = esp_rev.nombre if esp_rev else str(especialidad_revision_id)
 
         return RHReparticionEstacionalCotizarResult(
@@ -257,7 +267,7 @@ class RHReparticionEstacionalFlujo:
             for detalle in result.detalles_delegados:
                 self.core.create_detalle_delegado(
                     reparticion=reparticion,
-                    delegado_id=str(detalle.delegado_id),
+                    delegado_id=detalle.delegado.id,
                     monto=detalle.monto,
                 )
 
@@ -265,8 +275,128 @@ class RHReparticionEstacionalFlujo:
             for detalle in result.detalles_capitulos:
                 self.core.create_detalle_capitulo(
                     reparticion=reparticion,
-                    capitulo_id=str(detalle.capitulo_id),
+                    capitulo_id=detalle.capitulo.id,
                     monto=detalle.monto,
                 )
 
         return result
+
+    def _editar(
+        self,
+        reparticion_id: str,
+        especialidad_revision_id,
+        periodo: int,
+        mes_desde: int,
+        mes_hasta: int,
+        delegado_ids: list,
+    ):
+        """
+        Recalcula y reemplaza la distribución persistida de una repartición.
+
+        El registro conserva su identidad (id) y su identidad de creación
+        (created_at): solo se reescriben los campos del snapshot y el conjunto
+        FINAL de detalles (delegados y capítulos), que se reemplaza por
+        completo para que no sobreviva ninguna fila obsoleta.
+
+        Args:
+            reparticion_id: UUID string de la repartición a editar.
+            especialidad_revision_id: PK of EspecialidadRevision
+            periodo: Year (e.g., 2026)
+            mes_desde: Starting month (1-12)
+            mes_hasta: Ending month (1-12)
+            delegado_ids: List of Delegado PKs selected for this distribution
+
+        Returns:
+            The persisted RHReparticionEstacional (reloaded with its details).
+
+        Raises:
+            HttpError(404): La repartición no existe.
+            HttpError(409): La repartición ya fue eliminada (no se revive).
+            HttpError(400): Rango de meses inválido, superposición con otra
+                           repartición activa, o falta de fondo común.
+        """
+        # 1. Cargar el registro actual — 404 si no existe
+        reparticion = self.core.get_reparticion_by_id(reparticion_id)
+        if not reparticion:
+            raise HttpError(404, "La repartición trimestral no existe.")
+
+        # 2. Un registro eliminado (soft delete) no se revive
+        if reparticion.is_deleted:
+            raise HttpError(
+                409,
+                "La repartición trimestral ya fue eliminada y no puede editarse.",
+            )
+
+        # 3. Validar el rango de meses
+        if mes_desde > mes_hasta:
+            raise HttpError(
+                400,
+                "El mes inicial no puede ser mayor que el mes final.",
+            )
+
+        # 4. Validar superposición con otra repartición activa.
+        #    El registro actual queda excluido: editarlo NO es solaparse.
+        has_overlap = self.core.check_overlapping_reparticion(
+            especialidad_revision_id=especialidad_revision_id,
+            periodo=periodo,
+            mes_desde=mes_desde,
+            mes_hasta=mes_hasta,
+            exclude_id=str(reparticion.id),
+        )
+        if has_overlap:
+            raise HttpError(
+                400,
+                f"Ya existe una repartición activa para la especialidad "
+                f"en el periodo {periodo} con rango de meses que se superpone a {mes_desde}-{mes_hasta}.",
+            )
+
+        # 5. Recalcular con la MISMA lógica de cotización (no se duplica la fórmula)
+        cotizacion = self._cotizar(
+            especialidad_revision_id=especialidad_revision_id,
+            periodo=periodo,
+            mes_desde=mes_desde,
+            mes_hasta=mes_hasta,
+            delegado_ids=delegado_ids,
+        )
+
+        # 6. Persistir cabecera + conjunto final de detalles atómicamente
+        try:
+            with transaction.atomic():
+                self.core.update_reparticion(
+                    reparticion,
+                    especialidad_revision_id=especialidad_revision_id,
+                    periodo=periodo,
+                    total_fondo_comun=cotizacion.total_fondo_comun,
+                    numero_capitulos=cotizacion.numero_capitulos,
+                    numero_delegados=cotizacion.numero_delegados,
+                    monto_por_participacion=cotizacion.monto_por_participacion,
+                    residual=cotizacion.residual,
+                    mes_desde=mes_desde,
+                    mes_hasta=mes_hasta,
+                )
+
+                # El conjunto persistido es el FINAL: se borra el anterior
+                # completo antes de escribir el nuevo (no quedan filas obsoletas).
+                self.core.delete_detalles(reparticion)
+
+                for detalle in cotizacion.detalles_delegados:
+                    self.core.create_detalle_delegado(
+                        reparticion=reparticion,
+                        delegado_id=detalle.delegado.id,
+                        monto=detalle.monto,
+                    )
+
+                for detalle in cotizacion.detalles_capitulos:
+                    self.core.create_detalle_capitulo(
+                        reparticion=reparticion,
+                        capitulo_id=detalle.capitulo.id,
+                        monto=detalle.monto,
+                    )
+        except IntegrityError as exc:
+            raise HttpError(
+                409,
+                "Ya existe una repartición activa para esa especialidad y periodo.",
+            ) from exc
+
+        # 7. Recargar con los detalles ya persistidos (prefetches frescos)
+        return self.core.get_reparticion_by_id(str(reparticion.id))

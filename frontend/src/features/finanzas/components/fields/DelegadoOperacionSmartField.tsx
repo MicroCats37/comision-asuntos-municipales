@@ -1,20 +1,20 @@
 "use client";
 
 /**
- * DelegadoOperacionSmartField — Smart Field para elegir el periodo vigente del delegado.
+ * DelegadoOperacionSmartField — Smart Field para elegir una operatividad del delegado.
  *
  * BAJO DEMANDA:
  * - Cuando el usuario ingresa un CIP válido, consulta automáticamente
- *   GET /delegados/operatividades-vigentes?cip={cip}
- *   y muestra los periodos vigentes como tarjetas seleccionables.
- * - `onSelect` retorna el periodo vigente seleccionado con todos los datos derivados:
+ *   GET /delegados/operatividades?cip={cip}&vigente={boolean}
+ *   y muestra las operatividades filtradas por vigencia como tarjetas seleccionables.
+ * - `onSelect` retorna la operatividad seleccionada con todos los datos derivados:
  *   id, municipalidad_id, tipo_liquidacion_id, tipo_delegado
  * - El componente maneja el estado de loading/error/empty internamente.
  */
-import { Building2, Briefcase, Loader2, MapPin, User } from "lucide-react";
+import { Briefcase, Building2, Loader2, MapPin } from "lucide-react";
 import { useCallback } from "react";
-import type { DelegadoOperacionVigente } from "@/features/finanzas/schemas/rh-delegado-mensual.schema";
-import { useDelegadoOperatividadesVigentes } from "@/features/finanzas/hooks/useDelegadoOperatividadesVigentes";
+import { useDelegadoOperatividades } from "@/features/finanzas/hooks/useDelegadoOperatividades";
+import type { DelegadoOperacion } from "@/features/finanzas/schemas/rh-delegado-mensual.schema";
 
 export interface DelegadoOperacionSelection {
   /** ID de la DelegadoOperacion seleccionada */
@@ -40,10 +40,11 @@ export interface DelegadoOperacionSelection {
 interface DelegadoOperacionSmartFieldProps {
   /** CIP del delegado (ingresado por el usuario) */
   cip: string;
-  /** Callback cuando se selecciona un periodo vigente */
+  /** Callback cuando se selecciona una operatividad */
   onSelect: (selection: DelegadoOperacionSelection | null) => void;
-  /** Periodo vigente actualmente seleccionado (para mostrar feedback) */
+  /** Operatividad actualmente seleccionada (para mostrar feedback) */
   selectedId?: string | null;
+  vigente?: boolean;
   /** Si está deshabilitado */
   disabled?: boolean;
 }
@@ -62,21 +63,23 @@ export function DelegadoOperacionSmartField({
   cip,
   onSelect,
   selectedId,
+  vigente,
   disabled = false,
 }: DelegadoOperacionSmartFieldProps) {
   const {
     data: operatividadesData,
     isLoading,
     isError,
-  } = useDelegadoOperatividadesVigentes({
+  } = useDelegadoOperatividades({
     cip,
+    vigente,
     enabled: cip.length === 6,
   });
 
   const operatividades = operatividadesData?.operatividades ?? [];
 
   const handleSelect = useCallback(
-    (op: DelegadoOperacionVigente) => {
+    (op: DelegadoOperacion) => {
       const selection: DelegadoOperacionSelection = {
         id: op.id,
         municipalidad_id: op.municipalidad_id,
@@ -98,7 +101,7 @@ export function DelegadoOperacionSmartField({
     return (
       <div className="space-y-2">
         <p className="text-xs text-muted-foreground">
-          Ingresa el CIP del delegado para cargar sus periodos vigentes.
+          Ingresa el CIP del delegado para cargar sus operatividades.
         </p>
       </div>
     );
@@ -121,7 +124,7 @@ export function DelegadoOperacionSmartField({
       <div className="flex items-center gap-2 py-3">
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
         <span className="text-sm text-muted-foreground">
-          Buscando periodos vigentes para CIP {cip}...
+          Buscando operatividades para CIP {cip}...
         </span>
       </div>
     );
@@ -132,7 +135,7 @@ export function DelegadoOperacionSmartField({
     return (
       <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
         <p className="text-xs text-destructive">
-          No se pudieron cargar los periodos vigentes. Verifica el CIP e intenta
+          No se pudieron cargar las operatividades. Verifica el CIP e intenta
           nuevamente.
         </p>
       </div>
@@ -144,7 +147,7 @@ export function DelegadoOperacionSmartField({
     return (
       <div className="rounded-lg border border-border bg-muted/20 p-3">
         <p className="text-xs text-muted-foreground">
-          No hay periodos vigentes para el CIP{" "}
+          No hay operatividades para el CIP{" "}
           <span className="font-semibold">{cip}</span>.
         </p>
       </div>
@@ -156,7 +159,7 @@ export function DelegadoOperacionSmartField({
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground">
-          {operatividades.length} periodo(s) vigente(s) encontrado(s) para{" "}
+          {operatividades.length} operatividad(es) encontrada(s) para{" "}
           <span className="font-semibold">{cip}</span>
         </span>
       </div>
