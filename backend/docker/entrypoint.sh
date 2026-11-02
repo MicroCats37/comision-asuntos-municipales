@@ -3,7 +3,7 @@ set -e
 
 echo "Waiting for database to be ready..."
 # Wait for db to be truly ready using env vars (DB_*)
-until uv run python -c "import psycopg2; psycopg2.connect(host='${DB_HOST:-db}', user='${DB_USER:-cam_user}', password='${DB_PASSWORD:-changeme}', dbname='${DB_NAME:-cam_db}')" 2>/dev/null; do
+until uv run python -c "import psycopg2; psycopg2.connect(host='${DB_HOST:-db}', port='${DB_PORT:-5432}', user='${DB_USER:-cam_user}', password='${DB_PASSWORD:-changeme}', dbname='${DB_NAME:-cam_db}')" 2>/dev/null; do
     echo "Database is unavailable - sleeping"
     sleep 2
 done

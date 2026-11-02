@@ -66,9 +66,9 @@ services:
     environment:
       # Django settings module — production por defecto, overridear en .env si es necesario
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.production}
-      # Dentro de la red Docker, los servicios se comunican por service name.
-      DB_HOST: db
-      DB_PORT: 5432
+      # Local development defaults to the Compose service; deployments may use a remote database.
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
       SCRAPER_URL: ${SCRAPER_URL}
     depends_on:
       db:
