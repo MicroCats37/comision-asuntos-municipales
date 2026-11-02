@@ -768,29 +768,18 @@ class LiquidacionGeneralAdmin(admin.ModelAdmin):
 
 
 # =============================================================================
-# LIQUIDACIONCODIGO ADMIN (hidden lookup table)
+# LIQUIDACIONCODIGO ADMIN
 # =============================================================================
 
 
 @admin.register(LiquidacionCodigo)
 class LiquidacionCodigoAdmin(admin.ModelAdmin):
-    """
-    Admin for LiquidacionCodigo (account codes by liquidation type).
-
-    NOTE: Hidden from sidebar (show_in_index=False) because it is a configuration
-    lookup table used only when setting up tipo_liquidacion codes, not for daily work.
-    Access via TipoLiquidacion admin inlines instead.
-    """
+    """Admin for account codes by liquidation type."""
 
     list_display = ["tipo_liquidacion", "codigo_cta"]
     search_fields = ["tipo_liquidacion__nombre", "codigo_cta"]
     list_filter = ["tipo_liquidacion"]
     readonly_fields = ["created_at", "updated_at"]
-
-    def has_module_permission(self, request):
-        """Hide from admin sidebar - only accessible via inlines or direct URL."""
-        return False
-
 
 # =============================================================================
 # HIDDEN WRAPPER ADMINS

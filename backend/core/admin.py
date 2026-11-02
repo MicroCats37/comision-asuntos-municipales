@@ -43,7 +43,7 @@ _LIQUIDACIONES_SECTION_ORDER = [
             "Proyectista",
         ],
     ),
-    ("Catálogos", ["TipoLiquidacion"]),
+    ("Catálogos", ["TipoLiquidacion", "LiquidacionCodigo"]),
     ("Proyectos", ["Proyecto"]),
     ("Inspecciones", ["LiquidacionInspector"]),
 ]
