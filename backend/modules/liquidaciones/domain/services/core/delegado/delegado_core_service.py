@@ -18,6 +18,9 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquida
     LiquidacionGeneral,
     LiquidacionEspecialidadDisponibles,
 )
+from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.comprobante import (
+    LiquidacionComprobante,
+)
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorcentajeObra,
     LiquidacionPorcentajeObraDetalle,
@@ -992,6 +995,9 @@ class DelegadoCoreService:
         numero: int | None = None,
         propietario: str | None = None,
         direccion: str | None = None,
+        comprobante_serie: str | None = None,
+        comprobante_numero: str | None = None,
+        documento: str | None = None,
         fecha_inicio: str | None = None,
         fecha_fin: str | None = None,
     ) -> tuple:
@@ -1079,6 +1085,21 @@ class DelegadoCoreService:
                 | Q(taludes__numero=numero)
                 | Q(impacto_vial__numero=numero)
                 | Q(inspeccion_obra__numero=numero)
+            )
+        comprobante_activo = LiquidacionComprobante.objects.filter(
+            liquidacion_general_id=OuterRef("pk"), activo=True
+        )
+        if comprobante_serie:
+            qs = qs.filter(
+                Exists(comprobante_activo.filter(serie__icontains=comprobante_serie))
+            )
+        if comprobante_numero:
+            qs = qs.filter(
+                Exists(comprobante_activo.filter(numero__icontains=comprobante_numero))
+            )
+        if documento:
+            qs = qs.filter(
+                proyecto__entidad_numero_documento__icontains=documento
             )
         if fecha_inicio:
             qs = qs.filter(fecha_registro__date__gte=fecha_inicio)

@@ -164,6 +164,9 @@ class LiquidacionInspeccionObraOrchestrator(LegacyRegistroResolutionMixin):
         numero=None,
         numero_revision=None,
         direccion=None,
+        documento=None,
+        comprobante_serie=None,
+        comprobante_numero=None,
     ) -> tuple[List[InspeccionObraPrimeraRevisionResult], int]:
         """
         Returns paginated InspeccionObraPrimeraRevisionResult list.
@@ -191,6 +194,9 @@ class LiquidacionInspeccionObraOrchestrator(LegacyRegistroResolutionMixin):
             numero=numero,
             numero_revision=numero_revision,
             direccion=direccion,
+            documento=documento,
+            comprobante_serie=comprobante_serie,
+            comprobante_numero=comprobante_numero,
         )
 
         # Build InspeccionObraPrimeraRevisionResult domain DTOs from ORM objects

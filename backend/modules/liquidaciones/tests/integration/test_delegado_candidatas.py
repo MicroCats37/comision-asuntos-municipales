@@ -1239,3 +1239,183 @@ def test_wildcard_operation_includes_hu_candidates_without_po_detail(
     assert result.candidatas[0].expediente == "EXP-HU-WILD"
     assert result.candidatas[0].tipo_delegado == "ALTERNO"
 
+
+# ── Filtros de comprobante vigente y documento de entidad ──────────────────────
+
+
+@pytest.fixture
+def liquidacion_con_comprobantes_delegado(
+    orchestrator,
+    municipalidad_test,
+    tipo_edificacion,
+    especialidad_estructuras,
+    especialidades_disponibles_edificacion,
+    tarifa_po_base,
+    tarifa_po_estructuras,
+    proyecto_test,
+    usuario_liquidacion,
+):
+    """
+    LiquidacionGeneral con DOS comprobantes:
+    - F001 / 000123 → ACTIVO (el vigente)
+    - F002 / 000456 → histórico (reemplazado, activo=False)
+
+    El proyecto tiene entidad_numero_documento = "20456789012".
+    """
+    from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.comprobante import (
+        LiquidacionComprobante,
+    )
+
+    delegado = _crear_delegado("88881", "88881111")
+    _crear_operacion_titular(
+        delegado, municipalidad_test, especialidad_estructuras, tipo_edificacion
+    )
+
+    lg, lpo = _crear_liquidacion_po(
+        proyecto_test, municipalidad_test, tipo_edificacion,
+        usuario_liquidacion, "EXP-COMP-FILT", sub_total=10000.00,
+        tarifa_po=tarifa_po_estructuras,
+    )
+    _crear_detalle_po(lpo, especialidad_estructuras, 10000.00, tarifa_po_estructuras)
+
+    LiquidacionComprobante.objects.create(
+        liquidacion_general=lg,
+        tipo_comprobante="FACTURA",
+        serie="F002",
+        numero="000456",
+        fecha_emision=date(2026, 8, 10),
+        monto=Decimal("11800.00"),
+        activo=False,
+        motivo_reemplazo="Comprobante reemplazado",
+    )
+    LiquidacionComprobante.objects.create(
+        liquidacion_general=lg,
+        tipo_comprobante="FACTURA",
+        serie="F001",
+        numero="000123",
+        fecha_emision=date(2026, 9, 20),
+        monto=Decimal("11800.00"),
+        activo=True,
+    )
+
+    return lg
+
+
+@pytest.mark.django_db
+def test_candidatas_filtra_por_serie_del_comprobante_vigente(
+    orchestrator,
+    liquidacion_con_comprobantes_delegado,
+    municipalidad_test,
+    tipo_edificacion,
+):
+    """
+    GIVEN a candidate liquidacion with an active comprobante (F001) and a
+    replaced one (F002)
+    WHEN the candidates are listed with comprobante_serie="F001"
+    THEN the liquidacion is returned; with the REPLACED serie it is not.
+    """
+    vigente = orchestrator.list_candidatas_delegado_proceso_paginated(
+        cip="88881",
+        municipalidad_id=municipalidad_test.id,
+        tipo_liquidacion_id=tipo_edificacion.id,
+        tipo_delegado="TITULAR",
+        comprobante_serie="F001",
+    )
+    assert vigente.total == 1
+    assert len(vigente.items) == 1
+    assert vigente.items[0].expediente == "EXP-COMP-FILT"
+
+    historico = orchestrator.list_candidatas_delegado_proceso_paginated(
+        cip="88881",
+        municipalidad_id=municipalidad_test.id,
+        tipo_liquidacion_id=tipo_edificacion.id,
+        tipo_delegado="TITULAR",
+        comprobante_serie="F002",
+    )
+    assert historico.total == 0
+    assert historico.items == []
+
+
+@pytest.mark.django_db
+def test_candidatas_filtra_por_numero_del_comprobante_vigente(
+    orchestrator,
+    liquidacion_con_comprobantes_delegado,
+    municipalidad_test,
+    tipo_edificacion,
+):
+    """
+    El filtro por número del comprobante también resuelve contra el ACTIVO.
+    """
+    vigente = orchestrator.list_candidatas_delegado_proceso_paginated(
+        cip="88881",
+        municipalidad_id=municipalidad_test.id,
+        tipo_liquidacion_id=tipo_edificacion.id,
+        tipo_delegado="TITULAR",
+        comprobante_numero="000123",
+    )
+    assert vigente.total == 1
+
+    historico = orchestrator.list_candidatas_delegado_proceso_paginated(
+        cip="88881",
+        municipalidad_id=municipalidad_test.id,
+        tipo_liquidacion_id=tipo_edificacion.id,
+        tipo_delegado="TITULAR",
+        comprobante_numero="000456",
+    )
+    assert historico.total == 0
+
+
+@pytest.mark.django_db
+def test_candidatas_filtra_por_documento_de_entidad(
+    orchestrator,
+    liquidacion_con_comprobantes_delegado,
+    municipalidad_test,
+    tipo_edificacion,
+):
+    """
+    El filtro por N.º de documento de la entidad (snapshot del proyecto) aplica
+    con icontains.
+    """
+    match = orchestrator.list_candidatas_delegado_proceso_paginated(
+        cip="88881",
+        municipalidad_id=municipalidad_test.id,
+        tipo_liquidacion_id=tipo_edificacion.id,
+        tipo_delegado="TITULAR",
+        documento="20456789012",
+    )
+    assert match.total == 1
+
+    sin_match = orchestrator.list_candidatas_delegado_proceso_paginated(
+        cip="88881",
+        municipalidad_id=municipalidad_test.id,
+        tipo_liquidacion_id=tipo_edificacion.id,
+        tipo_delegado="TITULAR",
+        documento="00000000",
+    )
+    assert sin_match.total == 0
+
+
+@pytest.mark.django_db
+def test_candidatas_no_se_duplican_con_historial_de_comprobantes(
+    orchestrator,
+    liquidacion_con_comprobantes_delegado,
+    municipalidad_test,
+    tipo_edificacion,
+):
+    """
+    GIVEN a liquidacion with 2 comprobantes (1 vigente + 1 replaced)
+    WHEN the candidates are listed with the comprobante filter
+    THEN the liquidacion appears ONCE and `total` is not inflated.
+    """
+    result = orchestrator.list_candidatas_delegado_proceso_paginated(
+        cip="88881",
+        municipalidad_id=municipalidad_test.id,
+        tipo_liquidacion_id=tipo_edificacion.id,
+        tipo_delegado="TITULAR",
+        comprobante_serie="F001",
+        page=1,
+        page_size=50,
+    )
+
+    assert result.total == 1
+    assert len(result.items) == 1

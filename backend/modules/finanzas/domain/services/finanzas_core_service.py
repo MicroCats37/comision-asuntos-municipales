@@ -9,7 +9,7 @@ from datetime import date
 from typing import Optional
 
 from decimal import Decimal
-from django.db.models import Prefetch, Q
+from django.db.models import Exists, OuterRef, Prefetch, Q
 
 from modules.finanzas.domain.models.impuestos import IGV, UIT
 from modules.finanzas.domain.models.descuento_inspector import (
@@ -1041,6 +1041,9 @@ class FinanzasCoreService:
         numero: int | None = None,
         propietario: str | None = None,
         direccion: str | None = None,
+        comprobante_serie: str | None = None,
+        comprobante_numero: str | None = None,
+        documento: str | None = None,
         periodo: int | None = None,
         mes: int | None = None,
         fecha_inicio: str | None = None,
@@ -1120,6 +1123,23 @@ class FinanzasCoreService:
         if direccion:
             qs = qs.filter(
                 liquidacion__liquidacion_general__proyecto__direccion__icontains=direccion
+            )
+
+        comprobante_activo = LiquidacionComprobante.objects.filter(
+            liquidacion_general_id=OuterRef("liquidacion__liquidacion_general_id"),
+            activo=True,
+        )
+        if comprobante_serie:
+            qs = qs.filter(
+                Exists(comprobante_activo.filter(serie__icontains=comprobante_serie))
+            )
+        if comprobante_numero:
+            qs = qs.filter(
+                Exists(comprobante_activo.filter(numero__icontains=comprobante_numero))
+            )
+        if documento:
+            qs = qs.filter(
+                liquidacion__liquidacion_general__proyecto__entidad_numero_documento__icontains=documento
             )
 
         # Build the registro filter for saldo computation

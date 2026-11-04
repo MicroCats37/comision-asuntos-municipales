@@ -17,9 +17,13 @@ export interface LiquidacionFiltros {
   fecha_hasta?: string;
   numero?: number;
   razon_social?: string;
-  creado_por?: string;
-  numero_revisiones?: number;
   direccion?: string;
+  /** N.º de documento de la entidad (snapshot del proyecto). */
+  documento?: string;
+  /** Serie del comprobante VIGENTE de la liquidación. */
+  comprobante_serie?: string;
+  /** Número del comprobante VIGENTE de la liquidación. */
+  comprobante_numero?: string;
 }
 
 interface UseLiquidacionListReturn<T> {
@@ -62,10 +66,12 @@ export function useLiquidacionList<T>({
   if (filtros?.fecha_hasta) params.fecha_hasta = filtros.fecha_hasta;
   if (filtros?.numero) params.numero = filtros.numero;
   if (filtros?.razon_social) params.razon_social = filtros.razon_social;
-  if (filtros?.creado_por) params.creado_por = filtros.creado_por;
-  if (filtros?.numero_revisiones)
-    params.numero_revisiones = filtros.numero_revisiones;
   if (filtros?.direccion) params.direccion = filtros.direccion;
+  if (filtros?.documento) params.documento = filtros.documento;
+  if (filtros?.comprobante_serie)
+    params.comprobante_serie = filtros.comprobante_serie;
+  if (filtros?.comprobante_numero)
+    params.comprobante_numero = filtros.comprobante_numero;
 
   const paginatedSchema = apiResponseSchema(paginatedResponseSchema(schema));
 

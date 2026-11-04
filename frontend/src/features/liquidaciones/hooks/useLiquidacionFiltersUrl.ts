@@ -7,7 +7,6 @@ type LiquidacionFilterKey = keyof LiquidacionFiltros;
 
 const FILTER_NUMBER_KEYS: ReadonlySet<LiquidacionFilterKey> = new Set([
   "numero",
-  "numero_revisiones",
 ]);
 
 /**
@@ -36,9 +35,10 @@ export function useLiquidacionFiltersUrl(): {
         { filterKey: "fecha_hasta", paramKey: "hasta" },
         { filterKey: "numero", paramKey: "num" },
         { filterKey: "razon_social", paramKey: "rs" },
-        { filterKey: "creado_por", paramKey: "creador" },
-        { filterKey: "numero_revisiones", paramKey: "rev" },
         { filterKey: "direccion", paramKey: "dir" },
+        { filterKey: "documento", paramKey: "doc" },
+        { filterKey: "comprobante_serie", paramKey: "comp_serie" },
+        { filterKey: "comprobante_numero", paramKey: "comp_num" },
       ],
       numberKeys: FILTER_NUMBER_KEYS,
     });

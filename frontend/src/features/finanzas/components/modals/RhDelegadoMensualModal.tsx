@@ -59,6 +59,7 @@ import {
   RhCipField,
 } from "@/features/finanzas/components/fields/RhCipField";
 import { RhDatePickerField } from "@/features/finanzas/components/fields/RhDatePickerField";
+import { RhMonthPicker } from "@/features/finanzas/components/fields/RhMonthPicker";
 import {
   countActiveFiltros,
   RHActiveFiltersPanel,
@@ -94,6 +95,11 @@ import {
   type RHUnresolvedDetail,
 } from "@/features/finanzas/utils/rh-mensual-edicion";
 import { siguienteNumeroRhSugerido } from "@/features/finanzas/utils/rh-numero-rh";
+import {
+  getPreviousPeriodParts,
+  isFutureRhPeriod,
+  parseRhPeriod,
+} from "@/features/finanzas/utils/rh-periodo";
 import { etiquetaConPorcentaje } from "@/features/finanzas/utils/rh-porcentaje";
 import {
   composeDetalleSections,
@@ -140,12 +146,17 @@ export interface CandidataCardFields {
   fecha_revision: string;
 }
 
+/**
+ * Vocabulario CANÓNICO de dictamen (`DictamenRevision` del backend:
+ * backend/modules/liquidaciones/domain/constants.py). Los valores enviados
+ * se persisten tal cual en `LiquidacionDelegado.dictamen_revision`.
+ */
 const DICTAMEN_OPTIONS = [
   { value: "__sin_dictamen__", label: "Seleccionar…" },
-  { value: "APROBADO", label: "Aprobado" },
-  { value: "OBSERVADO", label: "Observado" },
-  { value: "REVISADO", label: "Revisado" },
+  { value: "CONFORME", label: "Conforme" },
+  { value: "NO_CONFORME", label: "No conforme" },
   { value: "PENDIENTE", label: "Pendiente" },
+  { value: "AP_OB", label: "AP.OB." },
 ];
 
 const SENTINEL_NO_DICTAMEN = "__sin_dictamen__";
@@ -193,14 +204,6 @@ function InlineDatePicker({
     </Popover>
   );
 }
-
-const getCurrentPeriodParts = () => {
-  const now = new Date();
-  return {
-    periodo: String(now.getFullYear()),
-    mes: String(now.getMonth() + 1),
-  };
-};
 
 const isValidPeriodo = (value: string) => /^\d{4}$/.test(value);
 
@@ -288,6 +291,15 @@ export function RhDelegadoMensualModal({
   const [vigente, setVigente] = useState<boolean | undefined>(true);
   const [selectedOperacion, setSelectedOperacion] =
     useState<DelegadoOperacionSelection | null>(null);
+  /**
+   * Período GLOBAL de la cabecera del RH (YYYY-MM).
+   *
+   * Valor inicial: MES CALENDARIO ANTERIOR al actual (con rollover de año).
+   * El usuario lo cambia desde el selector del paso 2; las filas nuevas
+   * nacen con este valor y las ya seleccionadas sólo se reescriben si
+   * seguían el período anterior (las persistidas nunca se tocan).
+   */
+  const [periodo, setPeriodo] = useState(getPreviousPeriodParts().rhPeriod);
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [cotizarResult, setCotizarResult] = useState<RHDelegadoCotizar | null>(
@@ -391,6 +403,9 @@ export function RhDelegadoMensualModal({
     numero: filtros.numero,
     propietario: filtros.propietario,
     direccion: filtros.direccion,
+    documento: filtros.documento,
+    comprobante_serie: filtros.comprobante_serie,
+    comprobante_numero: filtros.comprobante_numero,
     enabled: step === 2,
   });
 
@@ -424,6 +439,12 @@ export function RhDelegadoMensualModal({
     setCip(editRh.delegado?.cip ?? "");
     setSelectedOperacion(buildDelegadoEditOperacionSelection(editRh));
     setDelegadoOperacionId(editRh.delegado_operacion_id ?? "");
+    // En edición el selector arranca con el período del propio recibo.
+    setPeriodo(
+      editRh.periodo != null && editRh.mes != null
+        ? `${editRh.periodo}-${String(editRh.mes).padStart(2, "0")}`
+        : getPreviousPeriodParts().rhPeriod,
+    );
     setCotizarResult(null);
     setPage(1);
     setWizardError(null);
@@ -538,6 +559,48 @@ export function RhDelegadoMensualModal({
   );
 
   /**
+   * Período GLOBAL de la cabecera del RH (YYYY-MM) parseado desde el estado.
+   */
+  const periodoGlobal = useMemo(() => parseRhPeriod(periodo), [periodo]);
+
+  /**
+   * Cambio del período GLOBAL de la cabecera.
+   *
+   * Se propaga SOLO a las filas que todavía seguían el período anterior (el
+   * patrón "la fila aún no fue editada a mano"). Las filas YA PERSISTIDAS
+   * (`detalle_id`) NUNCA se tocan: su período/mes pertenece al recibo y el
+   * backend no debe reescribirlo.
+   */
+  const handlePeriodoChange = useCallback(
+    (value: string) => {
+      const anterior = periodoGlobal;
+      const siguiente = parseRhPeriod(value);
+      setPeriodo(value);
+      if (!anterior || !siguiente) return;
+
+      const entries = getSelectedItems(flowKey) as DelegadoSelectionEntry[];
+      for (const entry of entries) {
+        // Fila persistida → su período/mes no se reescribe.
+        if (entry.cotizarItem.detalle_id) continue;
+        if (
+          entry.cotizarItem.periodo !== anterior.periodo ||
+          entry.cotizarItem.mes !== anterior.mes
+        )
+          continue;
+        addSelection(flowKey, entry.candidate.id, {
+          ...entry,
+          cotizarItem: {
+            ...entry.cotizarItem,
+            periodo: siguiente.periodo,
+            mes: siguiente.mes,
+          },
+        });
+      }
+    },
+    [periodoGlobal, flowKey, getSelectedItems, addSelection],
+  );
+
+  /**
    * Marca / desmarca una candidata.
    *
    * Al MARCAR una asignación nueva se propone un ordinal para `numero_rh`
@@ -545,11 +608,16 @@ export function RhDelegadoMensualModal({
    * UI: el campo es opcional, sigue siendo editable y se puede dejar vacío.
    * Los valores ya escritos (persistidos o editados) no se tocan, y quitar
    * una fila no renumera a las que quedan.
+   *
+   * La fila nueva nace con el PERÍODO GLOBAL seleccionado (no con el mes
+   * actual): el usuario elige el mes en la cabecera y las filas arrancan
+   * alineadas con él.
    */
   const toggleCard = useCallback(
     (c: CandidataDelegado, checked: boolean) => {
       if (checked) {
-        const current = getCurrentPeriodParts();
+        const current =
+          periodoGlobal ?? parseRhPeriod(getPreviousPeriodParts().rhPeriod);
         const yaSeleccionadas = getSelectedItems(
           flowKey,
         ) as DelegadoSelectionEntry[];
@@ -558,8 +626,8 @@ export function RhDelegadoMensualModal({
             numero_rh: siguienteNumeroRhSugerido(
               yaSeleccionadas.map((e) => e.cotizarItem.numero_rh),
             ),
-            periodo: Number(current.periodo),
-            mes: Number(current.mes),
+            periodo: current?.periodo ?? new Date().getFullYear(),
+            mes: current?.mes ?? new Date().getMonth() + 1,
             dictamen_revision: "",
             fecha_presentacion: "",
             fecha_revision: "",
@@ -571,7 +639,7 @@ export function RhDelegadoMensualModal({
         removeSelection(flowKey, c.id);
       }
     },
-    [flowKey, addSelection, removeSelection, getSelectedItems],
+    [flowKey, addSelection, removeSelection, getSelectedItems, periodoGlobal],
   );
 
   const updateCardField = useCallback(
@@ -607,12 +675,25 @@ export function RhDelegadoMensualModal({
     }
 
     const firstEntry = selectedEntries[0];
-    const headerPeriodo = isEdit
-      ? (editRh?.periodo ?? null)
-      : (firstEntry.cotizarItem.periodo ?? null);
-    const headerMes = isEdit
-      ? (editRh?.mes ?? null)
-      : (firstEntry.cotizarItem.mes ?? null);
+    /**
+     * La cabecera del RH es el PERÍODO GLOBAL (selector del paso 2). En modo
+     * edición el selector arranca con el período del propio recibo y el
+     * usuario puede corregirlo (el backend permite editar la cabecera).
+     * Si el período global no fuera interpretable, se usa el del recibo en
+     * edición o el de la primera fila al crear.
+     */
+    const globalPeriod =
+      periodoGlobal ?? parseRhPeriod(getPreviousPeriodParts().rhPeriod);
+    const headerPeriodo = globalPeriod
+      ? globalPeriod.periodo
+      : isEdit
+        ? (editRh?.periodo ?? null)
+        : (firstEntry.cotizarItem.periodo ?? null);
+    const headerMes = globalPeriod
+      ? globalPeriod.mes
+      : isEdit
+        ? (editRh?.mes ?? null)
+        : (firstEntry.cotizarItem.mes ?? null);
 
     if (headerPeriodo == null || !isValidPeriodo(String(headerPeriodo))) {
       notify.error(
@@ -625,6 +706,12 @@ export function RhDelegadoMensualModal({
       notify.error(
         "Ingresa un mes válido (1-12) para cada candidata seleccionada",
       );
+      return null;
+    }
+
+    // El período del RH no puede ser futuro (mismo criterio que el Inspector).
+    if (isFutureRhPeriod(headerPeriodo, headerMes)) {
+      notify.error("El periodo no puede ser posterior al mes actual");
       return null;
     }
 
@@ -679,7 +766,7 @@ export function RhDelegadoMensualModal({
     });
 
     return { periodo: headerPeriodo, mes: headerMes, items };
-  }, [flowKey, getSelectedItems, isEdit, editRh]);
+  }, [flowKey, getSelectedItems, isEdit, editRh, periodoGlobal]);
 
   // ── Paso 2 → 3: cotizar ────────────────────────────────────────────
   const handleCotizar = useCallback(async () => {
@@ -902,6 +989,15 @@ export function RhDelegadoMensualModal({
     crearMutation.isPending ||
     actualizarMutation.isPending;
   const selectedCount = getSelectedCount(flowKey);
+
+  /**
+   * Mes ACTUAL (YYYY-MM) — cota máxima del selector de período: el RH no
+   * puede ser futuro.
+   */
+  const currentRhPeriod = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }, []);
 
   /** Título del wizard — cambia entre creación y edición. */
   const modalTitle = isEdit
@@ -1175,6 +1271,12 @@ export function RhDelegadoMensualModal({
                 </span>
                 <span className="font-bold">{delegado.cip}</span>
               </div>
+              <div className="flex justify-between items-center text-sm gap-2">
+                <span className="text-muted-foreground font-semibold shrink-0">
+                  Periodo:
+                </span>
+                <RhMonthPicker value={periodo} max={currentRhPeriod} onChange={handlePeriodoChange} />
+              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground font-semibold">
                   Disponibles:
@@ -1234,12 +1336,13 @@ export function RhDelegadoMensualModal({
                 </Button>
               </div>
               {/* Selected items table header */}
-              <div className="flex items-center gap-3 px-3 py-2 bg-primary/5 rounded-t-lg border border-primary/20 text-[10px] font-bold uppercase tracking-wider text-primary">
+              <div className="grid grid-cols-[auto_repeat(11,minmax(0,1fr))_auto] items-center gap-3 px-3 py-2 bg-primary/5 rounded-t-lg border border-primary/20 text-[10px] font-bold uppercase tracking-wider text-primary">
                 <div className="w-6 shrink-0" />
                 <div className="w-20 shrink-0">Nro Ord</div>
                 <div className="w-24 shrink-0">Expediente</div>
                 <div className="w-20 shrink-0">N° Liq.</div>
-                <div className="flex-1 min-w-0">Especialidad</div>
+                <div className="flex-1 min-w-fit">Comprobante</div>
+                <div className="flex-1 min-w-fit">Especialidad</div>
                 <div className="w-20 shrink-0 text-right">Monto</div>
                 <div className="w-20 shrink-0">Periodo</div>
                 <div className="w-20 shrink-0">Mes</div>
@@ -1248,14 +1351,14 @@ export function RhDelegadoMensualModal({
                 <div className="flex-1 min-w-0">F. Rev.</div>
                 <div className="w-8 shrink-0" />
               </div>
-              <div className="border border-t-0 border-primary/20 rounded-b-lg overflow-hidden">
+              <div className="border border-t-0 border-primary/20 rounded-b-lg overflow-x-auto">
                 {(getSelectedItems(flowKey) as DelegadoSelectionEntry[]).map(
                   (entry) => {
                     const { cotizarItem, candidate } = entry;
                     return (
                       <div
                         key={candidate.id}
-                        className="flex items-center gap-3 px-3 py-2 border-b border-border/50 last:border-b-0 bg-primary/[0.02] hover:bg-primary/[0.04] transition-all duration-150"
+                        className="grid grid-cols-[auto_repeat(11,minmax(0,1fr))_auto] items-center gap-3 px-3 py-2 border-b border-border/50 last:border-b-0 bg-primary/[0.02] hover:bg-primary/[0.04] transition-all duration-150"
                       >
                         {/* Remove button */}
                         <button
@@ -1297,9 +1400,31 @@ export function RhDelegadoMensualModal({
                           </p>
                         </div>
 
+                        {/* Comprobante vigente (read-only) */}
+                        <div className="flex-1 min-w-fit">
+                          {candidate.comprobante_activo ? (
+                            <>
+                              <p className="font-mono text-xs text-foreground whitespace-nowrap leading-tight">
+                                {`${candidate.comprobante_activo.serie ?? ""}-${candidate.comprobante_activo.numero ?? ""}`}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground truncate leading-tight">
+                                {candidate.comprobante_activo
+                                  .tipo_comprobante ?? ""}
+                                {candidate.comprobante_activo.fecha_emision
+                                  ? ` · ${candidate.comprobante_activo.fecha_emision}`
+                                  : ""}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-[10px] text-muted-foreground italic leading-tight">
+                              Sin comprobante
+                            </p>
+                          )}
+                        </div>
+
                         {/* Especialidad (read-only) */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-foreground truncate">
+                        <div className="flex-1 min-w-fit">
+                          <p className="text-xs font-medium text-foreground whitespace-nowrap">
                             {candidate.especialidad_candidata.nombre}
                           </p>
                           <p className="text-[10px] text-muted-foreground truncate">
@@ -1438,7 +1563,7 @@ export function RhDelegadoMensualModal({
           ) : (
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               {/* Header row — always visible above rows */}
-              <div className="flex items-center gap-3 px-3 py-2 bg-muted/40 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <div className="grid grid-cols-[auto_repeat(5,minmax(0,1fr))_auto] items-center gap-3 px-3 py-2 bg-muted/40 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 <div className="w-6 shrink-0" />
                 <div className="w-24 shrink-0">Expediente</div>
                 <div className="w-20 shrink-0">N° Liq.</div>
@@ -1453,7 +1578,7 @@ export function RhDelegadoMensualModal({
                   .map((c) => (
                     <div
                       key={c.id}
-                      className="flex items-center gap-3 px-3 py-2 border-b border-border/50 last:border-b-0 hover:bg-muted/30 transition-all duration-150"
+                      className="grid grid-cols-[auto_repeat(5,minmax(0,1fr))_auto] items-center gap-3 px-3 py-2 border-b border-border/50 last:border-b-0 hover:bg-muted/30 transition-all duration-150"
                     >
                       <Checkbox
                         id={`card-${c.id}`}

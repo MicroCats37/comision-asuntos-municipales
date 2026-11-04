@@ -134,25 +134,30 @@ function LiquidacionesListContentInner<TItem>({
           label: "Hasta",
           value: filtros.fecha_hasta!,
         },
-        filtros.creado_por && {
-          key: "creado_por" as const,
-          label: "Creado por",
-          value: filtros.creado_por!,
-        },
         filtros.numero != null && {
           key: "numero" as const,
           label: "N°",
           value: String(filtros.numero),
         },
-        filtros.numero_revisiones != null && {
-          key: "numero_revisiones" as const,
-          label: "Rev",
-          value: String(filtros.numero_revisiones),
-        },
         filtros.direccion && {
           key: "direccion" as const,
           label: "Dirección",
           value: filtros.direccion!,
+        },
+        filtros.documento && {
+          key: "documento" as const,
+          label: "N° Documento",
+          value: filtros.documento!,
+        },
+        filtros.comprobante_serie && {
+          key: "comprobante_serie" as const,
+          label: "Comp. Serie",
+          value: filtros.comprobante_serie!,
+        },
+        filtros.comprobante_numero && {
+          key: "comprobante_numero" as const,
+          label: "Comp. Número",
+          value: filtros.comprobante_numero!,
         },
       ].filter(Boolean) as FilterEntry<keyof LiquidacionFiltros>[],
     [filtros, municipalidades, distritos],

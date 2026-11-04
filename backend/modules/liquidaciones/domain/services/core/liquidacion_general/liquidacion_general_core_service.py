@@ -9,7 +9,7 @@ from typing import Optional, Dict, List
 from datetime import date, datetime
 import uuid
 
-from django.db.models import IntegerField, OuterRef, Prefetch, Subquery
+from django.db.models import Exists, IntegerField, OuterRef, Prefetch, Subquery
 from django.db.models import Case, When, Value
 
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import LiquidacionGeneral, LiquidacionCodigo
@@ -411,6 +411,8 @@ class LiquidacionGeneralCoreService:
         direccion=None,
         documento=None,
         expediente=None,
+        comprobante_serie=None,
+        comprobante_numero=None,
         **kwargs
     ) -> tuple:
         """
@@ -418,7 +420,8 @@ class LiquidacionGeneralCoreService:
 
         Applies the same filter set and pagination as the 6 legacy methods
         (municipalidad_id, distrito_id, propietario, razon_social, creador_username, fecha_desde,
-        fecha_hasta, numero, numero_revision, direccion, documento, expediente).
+        fecha_hasta, numero, numero_revision, direccion, documento, expediente,
+        comprobante_serie, comprobante_numero).
         Uses conditional prefetch_related based on tipo_liquidacion.
         Returns (queryset, total_count).
         """
@@ -469,6 +472,24 @@ class LiquidacionGeneralCoreService:
         if expediente:
             qs = qs.filter(expediente__icontains=expediente)
 
+        # Comprobante VIGENTE (activo=True). Se filtra con Exists y no con JOIN
+        # sobre `comprobantes` porque el JOIN multiplicaría filas (una por
+        # comprobante, incluidos los históricos) y descuadraría `total` vs
+        # `items`. La constraint parcial `unique_liquidacion_comprobante_activo`
+        # garantiza como máximo un comprobante activo por liquidación.
+        comprobante_activo = LiquidacionComprobante.objects.filter(
+            liquidacion_general_id=OuterRef("pk"),
+            activo=True,
+        )
+        if comprobante_serie:
+            qs = qs.filter(
+                Exists(comprobante_activo.filter(serie__icontains=comprobante_serie))
+            )
+        if comprobante_numero:
+            qs = qs.filter(
+                Exists(comprobante_activo.filter(numero__icontains=comprobante_numero))
+            )
+
         total = qs.count()
         offset = (page - 1) * page_size
         return qs[offset:offset + page_size], total
@@ -490,6 +511,8 @@ class LiquidacionGeneralCoreService:
         direccion=None,
         documento=None,
         expediente=None,
+        comprobante_serie=None,
+        comprobante_numero=None,
         **kwargs
     ) -> tuple:
         """
@@ -512,6 +535,8 @@ class LiquidacionGeneralCoreService:
             direccion=direccion,
             documento=documento,
             expediente=expediente,
+            comprobante_serie=comprobante_serie,
+            comprobante_numero=comprobante_numero,
         )
 
     def list_liquidaciones_hu_paginated(
@@ -530,6 +555,8 @@ class LiquidacionGeneralCoreService:
         direccion=None,
         documento=None,
         expediente=None,
+        comprobante_serie=None,
+        comprobante_numero=None,
         **kwargs
     ) -> tuple:
         """
@@ -552,6 +579,8 @@ class LiquidacionGeneralCoreService:
             direccion=direccion,
             documento=documento,
             expediente=expediente,
+            comprobante_serie=comprobante_serie,
+            comprobante_numero=comprobante_numero,
         )
 
     def list_liquidaciones_ms_paginated(
@@ -570,6 +599,8 @@ class LiquidacionGeneralCoreService:
         direccion=None,
         documento=None,
         expediente=None,
+        comprobante_serie=None,
+        comprobante_numero=None,
         **kwargs
     ) -> tuple:
         """
@@ -592,6 +623,8 @@ class LiquidacionGeneralCoreService:
             direccion=direccion,
             documento=documento,
             expediente=expediente,
+            comprobante_serie=comprobante_serie,
+            comprobante_numero=comprobante_numero,
         )
 
     def list_liquidaciones_taludes_paginated(
@@ -610,6 +643,8 @@ class LiquidacionGeneralCoreService:
         direccion=None,
         documento=None,
         expediente=None,
+        comprobante_serie=None,
+        comprobante_numero=None,
         **kwargs
     ) -> tuple:
         """
@@ -632,6 +667,8 @@ class LiquidacionGeneralCoreService:
             direccion=direccion,
             documento=documento,
             expediente=expediente,
+            comprobante_serie=comprobante_serie,
+            comprobante_numero=comprobante_numero,
         )
 
     def list_liquidaciones_io_paginated(
@@ -650,6 +687,8 @@ class LiquidacionGeneralCoreService:
         direccion=None,
         documento=None,
         expediente=None,
+        comprobante_serie=None,
+        comprobante_numero=None,
         **kwargs
     ) -> tuple:
         """
@@ -672,6 +711,8 @@ class LiquidacionGeneralCoreService:
             direccion=direccion,
             documento=documento,
             expediente=expediente,
+            comprobante_serie=comprobante_serie,
+            comprobante_numero=comprobante_numero,
         )
 
     def list_liquidaciones_iv_paginated(
@@ -690,6 +731,8 @@ class LiquidacionGeneralCoreService:
         direccion=None,
         documento=None,
         expediente=None,
+        comprobante_serie=None,
+        comprobante_numero=None,
         **kwargs
     ) -> tuple:
         """
@@ -712,6 +755,8 @@ class LiquidacionGeneralCoreService:
             direccion=direccion,
             documento=documento,
             expediente=expediente,
+            comprobante_serie=comprobante_serie,
+            comprobante_numero=comprobante_numero,
         )
 
     # ── Detail (GET /{id}) methods ─────────────────────────────────────────────────

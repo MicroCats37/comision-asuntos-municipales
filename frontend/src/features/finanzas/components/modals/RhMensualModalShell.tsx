@@ -13,7 +13,7 @@
  * No se fusionan los pasos de dominio: el shell solo dibuja la estructura.
  */
 
-import { FileSpreadsheet, type LucideIcon } from "lucide-react";
+import { FileSpreadsheet, type LucideIcon, X } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   GenericModal,
@@ -141,7 +141,13 @@ export function RhMensualModalShell({
   size = "lg",
 }: RhMensualModalShellProps) {
   return (
-    <GenericModal open={open} onOpenChange={onClose} preventClose={false}>
+    /**
+     * `preventClose` — el wizard NO se cierra clicando el backdrop (ni con
+     * ESC): un clic accidental fuera del wizard no debe perder la selección
+     * en curso. El cierre explícito sigue disponible con el botón
+     * "Cancelar"/"Atrás" del footer y con la X del encabezado.
+     */
+    <GenericModal open={open} onOpenChange={onClose} preventClose>
       <GenericModal.Content size={size}>
         {/* Título y descripción accesibles: el header visible es propio del
             wizard, pero Radix exige ambos en el DialogContent. */}
@@ -170,7 +176,16 @@ export function RhMensualModalShell({
                 </p>
               )}
             </div>
-            <div className="w-9 shrink-0" aria-hidden="true" />
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPending}
+              aria-label="Cerrar"
+              title="Cerrar"
+              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full opacity-70 hover:opacity-100 hover:bg-accent transition-all duration-200 border-2 border-transparent hover:border-primary/50 disabled:pointer-events-none disabled:opacity-40"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         </GenericModal.Header>
 
@@ -206,8 +221,6 @@ export function RhMensualModalShell({
         </GenericModal.Footer>
 
         {extraContent}
-
-        <GenericModal.CloseX />
       </GenericModal.Content>
     </GenericModal>
   );

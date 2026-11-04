@@ -41,6 +41,21 @@ export function RHActiveFiltersPanel({
           Dirección: {filtros.direccion}
         </span>
       )}
+      {filtros.documento && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+          N° Documento: {filtros.documento}
+        </span>
+      )}
+      {filtros.comprobante_serie && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+          Comp. Serie: {filtros.comprobante_serie}
+        </span>
+      )}
+      {filtros.comprobante_numero && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium">
+          Comp. Número: {filtros.comprobante_numero}
+        </span>
+      )}
       <Button
         type="button"
         variant="ghost"

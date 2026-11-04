@@ -4,7 +4,12 @@
  * RHCandidatasFiltroModal — Reusable filter modal for RH Candidatas (Inspector & Delegado).
  * Uses AppFormModal as shell.
  *
- * Fields: expediente (text), numero (text), propietario (text), direccion (text)
+ * Fields: expediente (text), numero (text), propietario (text), direccion (text),
+ * documento (text), comprobante_serie (text), comprobante_numero (text).
+ *
+ * "Comprobante" = comprobante VIGENTE (activo=True) de la liquidación; el
+ * backend lo resuelve con `Exists` para no duplicar filas por historial.
+ *
  * On apply: passes filter values to onApply callback; parent resets page to 1 and refetches.
  */
 import { Filter } from "lucide-react";
@@ -19,6 +24,9 @@ const filtroSchema = z.object({
   numero: z.string().optional(),
   propietario: z.string().optional(),
   direccion: z.string().optional(),
+  documento: z.string().optional(),
+  comprobante_serie: z.string().optional(),
+  comprobante_numero: z.string().optional(),
 });
 
 type FiltroFormData = z.infer<typeof filtroSchema>;
@@ -28,6 +36,12 @@ export interface RHCandidatasFiltroValues {
   numero?: string;
   propietario?: string;
   direccion?: string;
+  /** N.º de documento de la entidad (snapshot del proyecto). */
+  documento?: string;
+  /** Serie del comprobante VIGENTE de la liquidación. */
+  comprobante_serie?: string;
+  /** Número del comprobante VIGENTE de la liquidación. */
+  comprobante_numero?: string;
 }
 
 interface RHCandidatasFiltroModalProps {
@@ -48,6 +62,9 @@ export function RHCandidatasFiltroModal({
     numero: initialFiltros?.numero ?? "",
     propietario: initialFiltros?.propietario ?? "",
     direccion: initialFiltros?.direccion ?? "",
+    documento: initialFiltros?.documento ?? "",
+    comprobante_serie: initialFiltros?.comprobante_serie ?? "",
+    comprobante_numero: initialFiltros?.comprobante_numero ?? "",
   };
 
   const handleSubmit = useCallback(
@@ -59,6 +76,11 @@ export function RHCandidatasFiltroModal({
       if (data.propietario?.trim())
         filtros.propietario = data.propietario.trim();
       if (data.direccion?.trim()) filtros.direccion = data.direccion.trim();
+      if (data.documento?.trim()) filtros.documento = data.documento.trim();
+      if (data.comprobante_serie?.trim())
+        filtros.comprobante_serie = data.comprobante_serie.trim();
+      if (data.comprobante_numero?.trim())
+        filtros.comprobante_numero = data.comprobante_numero.trim();
       onApply(filtros);
     },
     [onApply],
@@ -69,7 +91,7 @@ export function RHCandidatasFiltroModal({
       open={open}
       onOpenChange={onOpenChange}
       title="Filtrar Candidatas"
-      description="Filtra por expediente, número, propietario o dirección"
+      description="Filtra por expediente, número, propietario, dirección, documento o comprobante"
       eyebrow="Finanzas"
       icon={<Filter className="h-5 w-5 text-primary" />}
       primaryLabel="Aplicar Filtros"
@@ -133,6 +155,45 @@ export function RHCandidatasFiltroModal({
               {...methods.register("direccion")}
             />
           </div>
+
+          {/* N° Documento Entidad */}
+          <div className="space-y-2">
+            <Label htmlFor="rh-candidatas-filter-documento">
+              N° Documento Entidad
+            </Label>
+            <Input
+              id="rh-candidatas-filter-documento"
+              placeholder="RUC / DNI de la entidad"
+              className="w-full"
+              {...methods.register("documento")}
+            />
+          </div>
+
+          {/* Comprobante vigente — serie */}
+          <div className="space-y-2">
+            <Label htmlFor="rh-candidatas-filter-comprobante-serie">
+              Comprobante — Serie
+            </Label>
+            <Input
+              id="rh-candidatas-filter-comprobante-serie"
+              placeholder="Serie del comprobante vigente"
+              className="w-full"
+              {...methods.register("comprobante_serie")}
+            />
+          </div>
+
+          {/* Comprobante vigente — número */}
+          <div className="space-y-2">
+            <Label htmlFor="rh-candidatas-filter-comprobante-numero">
+              Comprobante — Número
+            </Label>
+            <Input
+              id="rh-candidatas-filter-comprobante-numero"
+              placeholder="Número del comprobante vigente"
+              className="w-full"
+              {...methods.register("comprobante_numero")}
+            />
+          </div>
         </div>
       )}
     </AppFormModal>
@@ -146,5 +207,8 @@ export function countActiveFiltros(filtros: RHCandidatasFiltroValues): number {
     filtros.numero,
     filtros.propietario,
     filtros.direccion,
+    filtros.documento,
+    filtros.comprobante_serie,
+    filtros.comprobante_numero,
   ].filter(Boolean).length;
 }

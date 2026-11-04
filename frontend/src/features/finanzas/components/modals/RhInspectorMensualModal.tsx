@@ -49,6 +49,7 @@ import {
   RhCipField,
 } from "@/features/finanzas/components/fields/RhCipField";
 import { RhDatePickerField } from "@/features/finanzas/components/fields/RhDatePickerField";
+import { RhMonthPicker } from "@/features/finanzas/components/fields/RhMonthPicker";
 import {
   countActiveFiltros,
   RHActiveFiltersPanel,
@@ -84,6 +85,11 @@ import {
   buildInspectorEditSelection,
   collectInspectorUnresolvedDetails,
 } from "@/features/finanzas/utils/rh-mensual-edicion";
+import {
+  getPreviousPeriodParts,
+  isFutureRhPeriod,
+  parseRhPeriod,
+} from "@/features/finanzas/utils/rh-periodo";
 import {
   etiquetaConPorcentaje,
   formatPorcentaje,
@@ -140,9 +146,7 @@ export const isFutureInspectorPeriod = (
   year: number,
   month: number,
   now = new Date(),
-) =>
-  year > now.getFullYear() ||
-  (year === now.getFullYear() && month > now.getMonth() + 1);
+) => isFutureRhPeriod(year, month, now);
 
 const formatCurrency = (value?: number | null) =>
   value == null ? "—" : `S/ ${value.toFixed(2)}`;
@@ -228,12 +232,17 @@ export function RhInspectorMensualModal({
   const editRh = editContext?.rh ?? null;
 
   const currentPeriod = getCurrentPeriodParts();
+  /**
+   * Período por defecto: MES CALENDARIO ANTERIOR al actual (con rollover de
+   * año). El usuario puede cambiarlo desde el selector del paso 2.
+   */
+  const defaultPeriod = getPreviousPeriodParts().rhPeriod;
   const [step, setStep] = useState<Step>(1);
   const [cip, setCip] = useState("");
   const [vigente, setVigente] = useState<boolean | undefined>(true);
   const [selectedOperacion, setSelectedOperacion] =
     useState<InspectorOperacion | null>(null);
-  const [periodo, setPeriodo] = useState(currentPeriod.rhPeriod);
+  const [periodo, setPeriodo] = useState(defaultPeriod);
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [cotizarResult, setCotizarResult] = useState<RHInspectorCotizar | null>(
@@ -308,6 +317,9 @@ export function RhInspectorMensualModal({
     numero: filtros.numero,
     propietario: filtros.propietario,
     direccion: filtros.direccion,
+    documento: filtros.documento,
+    comprobante_serie: filtros.comprobante_serie,
+    comprobante_numero: filtros.comprobante_numero,
     enabled: step === 2,
   });
 
@@ -334,7 +346,7 @@ export function RhInspectorMensualModal({
     setCip("");
     setVigente(true);
     setSelectedOperacion(null);
-    setPeriodo(getCurrentPeriodParts().rhPeriod);
+    setPeriodo(getPreviousPeriodParts().rhPeriod);
     setFechaInicio("");
     setFechaFin("");
     setCotizarResult(null);
@@ -358,7 +370,7 @@ export function RhInspectorMensualModal({
     setPeriodo(
       editRh.periodo != null && editRh.mes != null
         ? `${editRh.periodo}-${String(editRh.mes).padStart(2, "0")}`
-        : getCurrentPeriodParts().rhPeriod,
+        : getPreviousPeriodParts().rhPeriod,
     );
     setCotizarResult(null);
     setPage(1);
@@ -452,29 +464,28 @@ export function RhInspectorMensualModal({
   );
 
   /** Periodo de cabecera del RH (YYYY-MM) parseado desde el estado del wizard. */
-  const headerPeriodo = useMemo(() => {
-    const match = /^(\d{4})-(\d{2})$/.exec(periodo.trim());
-    if (!match) return null;
-    return { periodo: Number(match[1]), mes: Number(match[2]) };
-  }, [periodo]);
+  const headerPeriodo = useMemo(() => parseRhPeriod(periodo), [periodo]);
 
   /**
    * Cambio del periodo de cabecera: se propaga a las filas que todavía
    * tenían el periodo anterior. Editar es el mismo flujo que crear, así que
    * el periodo del RH se puede corregir; las filas con periodo propio ya
    * editado se respetan.
+   *
+   * Las filas YA PERSISTIDAS (`detalle_id`) NUNCA se tocan: su metadata
+   * pertenece al recibo y el backend no la reescribe.
    */
   const handlePeriodoChange = useCallback(
     (value: string) => {
       const anterior = headerPeriodo;
-      const siguiente = /^(\d{4})-(\d{2})$/.exec(value.trim());
+      const siguiente = parseRhPeriod(value);
       setPeriodo(value);
       if (!anterior || !siguiente) return;
 
-      const nuevoPeriodo = Number(siguiente[1]);
-      const nuevoMes = Number(siguiente[2]);
       const entries = getSelectedItems(flowKey) as InspectorSelectionEntry[];
       for (const entry of entries) {
+        // Fila persistida → su período/mes no se reescribe.
+        if (entry.cotizarItem.detalle_id) continue;
         if (
           entry.cotizarItem.periodo !== anterior.periodo ||
           entry.cotizarItem.mes !== anterior.mes
@@ -487,8 +498,8 @@ export function RhInspectorMensualModal({
             ...entry,
             cotizarItem: {
               ...entry.cotizarItem,
-              periodo: nuevoPeriodo,
-              mes: nuevoMes,
+              periodo: siguiente.periodo,
+              mes: siguiente.mes,
             },
           },
         );
@@ -567,12 +578,17 @@ export function RhInspectorMensualModal({
     (c: InspectorCandidataItem, checked: boolean) => {
       const id = c.liquidacion_categoria_visitas_id;
       if (checked) {
-        const rowPeriod = getCurrentPeriodParts();
+        // La fila nueva nace con el PERÍODO GLOBAL seleccionado (no con el
+        // mes actual): el usuario elige el mes en la cabecera y las filas
+        // arrancan alineadas con él.
+        const rowPeriod =
+          parseRhPeriod(periodo) ??
+          parseRhPeriod(getPreviousPeriodParts().rhPeriod);
         const entry: InspectorSelectionEntry = {
           cotizarItem: {
             cantidad_visitas: Math.min(1, c.saldo_disponible),
-            periodo: Number(rowPeriod.year),
-            mes: Number(rowPeriod.month),
+            periodo: rowPeriod?.periodo ?? Number(currentPeriod.year),
+            mes: rowPeriod?.mes ?? Number(currentPeriod.month),
           },
           candidate: c,
         };
@@ -581,7 +597,7 @@ export function RhInspectorMensualModal({
         removeSelection(flowKey, id);
       }
     },
-    [flowKey, addSelection, removeSelection],
+    [flowKey, addSelection, removeSelection, periodo, currentPeriod],
   );
 
   /** Get the full selection entry for a given candidate id */
@@ -1245,15 +1261,7 @@ export function RhInspectorMensualModal({
                 <span className="text-muted-foreground font-semibold shrink-0">
                   Periodo:
                 </span>
-                <Input
-                  id="periodo-step2"
-                  type="month"
-                  value={periodo}
-                  max={currentPeriod.rhPeriod}
-                  onChange={(e) => handlePeriodoChange(e.target.value)}
-                  placeholder="YYYY-MM"
-                  className="h-7 w-28 text-xs rounded border border-input bg-background font-semibold text-right"
-                />
+                  <RhMonthPicker value={periodo} max={currentPeriod.rhPeriod} onChange={handlePeriodoChange} />
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground font-semibold">
@@ -1314,21 +1322,22 @@ export function RhInspectorMensualModal({
                 </Button>
               </div>
               {/* Selected items table header */}
-              <div className="flex items-center gap-3 px-3 py-2 bg-primary/5 rounded-t-lg border border-primary/20 text-[10px] font-bold uppercase tracking-wider text-primary">
-                <div className="w-6 shrink-0" />
-                <div className="flex-1 min-w-0">Expediente</div>
-                <div className="w-14 shrink-0 text-center">N° Liq.</div>
-                <div className="flex-1 min-w-0">Especialidad</div>
-                <div className="w-16 shrink-0 text-right">Prog.</div>
-                <div className="w-16 shrink-0 text-right">Pagadas</div>
-                <div className="w-16 shrink-0 text-right">Saldo</div>
-                <div className="w-20 shrink-0 text-right">Costo/Und.</div>
+              <div className="grid grid-cols-[auto_repeat(11,minmax(0,1fr))_auto] items-center gap-3 px-3 py-2 bg-primary/5 rounded-t-lg border border-primary/20 text-[10px] font-bold uppercase tracking-wider text-primary">
+                <div className="shrink-0" />
+                <div className="flex-1 min-w-fit">Expediente</div>
+                <div className="flex-1 min-w-fit text-center">N° Liq.</div>
+                <div className="flex-1 min-w-fit">Comprobante</div>
+                <div className="flex-1 min-w-fit">Especialidad</div>
+                <div className="flex-1 min-w-fit text-right">Prog.</div>
+                <div className="flex-1 min-w-fit text-right">Pagadas</div>
+                <div className="flex-1 min-w-fit text-right">Saldo</div>
+                <div className="flex-1 min-w-fit text-right">Costo/Und.</div>
                 <div className="w-20 shrink-0">Periodo</div>
                 <div className="w-16 shrink-0">Mes</div>
                 <div className="w-20 shrink-0">Cant. Visitas</div>
-                <div className="w-8 shrink-0" />
+                <div className="shrink-0" />
               </div>
-              <div className="border border-t-0 border-primary/20 rounded-b-lg overflow-hidden">
+              <div className="border border-t-0 border-primary/20 rounded-b-lg overflow-x-auto">
                 {(getSelectedItems(flowKey) as InspectorSelectionEntry[]).map(
                   (entry) => {
                     const { cotizarItem, candidate } = entry;
@@ -1349,7 +1358,7 @@ export function RhInspectorMensualModal({
                     return (
                       <div
                         key={candidate.liquidacion_categoria_visitas_id}
-                        className="flex items-center gap-3 px-3 py-2 border-b border-border/50 last:border-b-0 bg-primary/[0.02] hover:bg-primary/[0.04] transition-all duration-150"
+                        className="grid grid-cols-[auto_repeat(11,minmax(0,1fr))_auto] items-center gap-3 px-3 py-2 border-b border-border/50 last:border-b-0 bg-primary/[0.02] hover:bg-primary/[0.04] transition-all duration-150"
                       >
                         {/* Remove button */}
                         <button
@@ -1367,32 +1376,54 @@ export function RhInspectorMensualModal({
                         </button>
 
                         {/* Expediente (read-only) */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-mono font-bold text-xs text-foreground truncate">
+                        <div className="flex-1 min-w-fit">
+                          <p className="font-mono font-bold text-xs text-foreground whitespace-nowrap">
                             {candidate.expediente ?? "—"}
                           </p>
                         </div>
 
-                        <div className="w-14 shrink-0 text-center text-xs font-semibold">
+                        <div className="flex-1 min-w-fit text-center text-xs font-semibold">
                           {candidate.liquidacion_especifica_numero ?? "—"}
                         </div>
 
+                        {/* Comprobante vigente (read-only) */}
+                        <div className="flex-1 min-w-fit">
+                          {candidate.comprobante_activo ? (
+                            <>
+                              <p className="font-mono text-xs text-foreground whitespace-nowrap leading-tight">
+                                {`${candidate.comprobante_activo.serie ?? ""}-${candidate.comprobante_activo.numero ?? ""}`}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground whitespace-nowrap leading-tight">
+                                {candidate.comprobante_activo
+                                  .tipo_comprobante ?? ""}
+                                {candidate.comprobante_activo.fecha_emision
+                                  ? ` · ${candidate.comprobante_activo.fecha_emision}`
+                                  : ""}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-[10px] text-muted-foreground italic leading-tight">
+                              Sin comprobante
+                            </p>
+                          )}
+                        </div>
+
                         {/* Especialidad (read-only) */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-foreground truncate">
+                        <div className="flex-1 min-w-fit">
+                          <p className="text-xs font-medium text-foreground whitespace-nowrap">
                             {candidate.especialidad_nombre}
                           </p>
                         </div>
 
                         {/* Inspecciones programadas (read-only) */}
-                        <div className="w-16 shrink-0 text-right">
+                        <div className="flex-1 min-w-fit text-right">
                           <p className="text-xs font-semibold text-foreground">
                             {candidate.cantidad_visitas}
                           </p>
                         </div>
 
                         {/* Inspecciones liquidadas (read-only) */}
-                        <div className="w-16 shrink-0 text-right">
+                        <div className="flex-1 min-w-fit text-right">
                           <p
                             className="text-xs text-muted-foreground"
                             data-testid={`selected-liquidated-${candidate.liquidacion_categoria_visitas_id}`}
@@ -1402,7 +1433,7 @@ export function RhInspectorMensualModal({
                         </div>
 
                         {/* Saldo restante después de la selección (read-only) */}
-                        <div className="w-16 shrink-0 text-right">
+                        <div className="flex-1 min-w-fit text-right">
                           <p
                             className={`text-xs font-semibold ${
                               saldoRestante === 0
@@ -1416,7 +1447,7 @@ export function RhInspectorMensualModal({
                         </div>
 
                         {/* Costo por inspección (read-only) */}
-                        <div className="w-20 shrink-0 text-right">
+                        <div className="flex-1 min-w-fit text-right">
                           <p className="text-xs font-black text-primary">
                             {candidate.costo_por_inspeccion != null
                               ? `S/ ${candidate.costo_por_inspeccion.toFixed(2)}`
@@ -1516,16 +1547,17 @@ export function RhInspectorMensualModal({
           ) : (
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               {/* Header row — always visible above rows */}
-              <div className="flex items-center gap-3 px-3 py-2 bg-muted/40 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                <div className="w-6 shrink-0" />
-                <div className="flex-1 min-w-0">Expediente</div>
-                <div className="w-14 shrink-0 text-center">N° Liq.</div>
-                <div className="flex-1 min-w-0">Especialidad</div>
-                <div className="w-16 shrink-0 text-right">Prog.</div>
-                <div className="w-16 shrink-0 text-right">Pagadas</div>
-                <div className="w-16 shrink-0 text-right">Saldo</div>
-                <div className="w-20 shrink-0 text-right">Costo/Und.</div>
-                <div className="w-8 shrink-0" />
+              <div className="grid grid-cols-[auto_repeat(8,minmax(0,1fr))_auto] items-center gap-3 px-3 py-2 bg-muted/40 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <div className="shrink-0" />
+                <div className="flex-1 min-w-fit">Expediente</div>
+                <div className="flex-1 min-w-fit text-center">N° Liq.</div>
+                <div className="flex-1 min-w-fit">Comprobante</div>
+                <div className="flex-1 min-w-fit">Especialidad</div>
+                <div className="flex-1 min-w-fit text-right">Prog.</div>
+                <div className="flex-1 min-w-fit text-right">Pagadas</div>
+                <div className="flex-1 min-w-fit text-right">Saldo</div>
+                <div className="flex-1 min-w-fit text-right">Costo/Und.</div>
+                <div className="shrink-0" />
               </div>
               <ScrollArea>
                 {candidatos
@@ -1535,7 +1567,7 @@ export function RhInspectorMensualModal({
                     return (
                       <div
                         key={id}
-                        className="flex items-center gap-3 px-3 py-2 border-b border-border/50 last:border-b-0 hover:bg-muted/30 transition-all duration-150"
+                        className="grid grid-cols-[auto_repeat(8,minmax(0,1fr))_auto] items-center gap-3 px-3 py-2 border-b border-border/50 last:border-b-0 hover:bg-muted/30 transition-all duration-150"
                       >
                         {/* Checkbox to select */}
                         <Checkbox
@@ -1546,39 +1578,60 @@ export function RhInspectorMensualModal({
                         />
 
                         {/* Expediente (read-only) */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-mono font-bold text-xs text-foreground truncate">
+                        <div className="flex-1 min-w-fit">
+                          <p className="font-mono font-bold text-xs text-foreground whitespace-nowrap">
                             {c.expediente ?? "—"}
                           </p>
                         </div>
 
-                        <div className="w-14 shrink-0 text-center text-xs font-semibold">
+                        <div className="flex-1 min-w-fit text-center text-xs font-semibold">
                           {c.liquidacion_especifica_numero ?? "—"}
                         </div>
 
+                        {/* Comprobante vigente (read-only) */}
+                        <div className="flex-1 min-w-fit">
+                          {c.comprobante_activo ? (
+                            <>
+                              <p className="font-mono text-xs text-foreground whitespace-nowrap leading-tight">
+                                {`${c.comprobante_activo.serie ?? ""}-${c.comprobante_activo.numero ?? ""}`}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground truncate leading-tight">
+                                {c.comprobante_activo.tipo_comprobante ?? ""}
+                                {c.comprobante_activo.fecha_emision
+                                  ? ` · ${c.comprobante_activo.fecha_emision}`
+                                  : ""}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-[10px] text-muted-foreground italic leading-tight">
+                              Sin comprobante
+                            </p>
+                          )}
+                        </div>
+
                         {/* Especialidad (read-only) */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-foreground truncate">
+                        <div className="flex-1 min-w-fit">
+                          <p className="text-xs font-medium text-foreground whitespace-nowrap">
                             {c.especialidad_nombre}
                           </p>
                         </div>
 
                         {/* Inspecciones programadas (read-only) */}
-                        <div className="w-16 shrink-0 text-right">
+                        <div className="flex-1 min-w-fit text-right">
                           <p className="text-xs font-semibold text-foreground">
                             {c.cantidad_visitas}
                           </p>
                         </div>
 
                         {/* Inspecciones pagadas (read-only) */}
-                        <div className="w-16 shrink-0 text-right">
+                        <div className="flex-1 min-w-fit text-right">
                           <p className="text-xs text-muted-foreground">
                             {c.inspecciones_pagadas}
                           </p>
                         </div>
 
                         {/* Saldo disponible (read-only) */}
-                        <div className="w-16 shrink-0 text-right">
+                        <div className="flex-1 min-w-fit text-right">
                           <p
                             className={`text-xs font-semibold ${
                               c.saldo_disponible === 0
@@ -1591,7 +1644,7 @@ export function RhInspectorMensualModal({
                         </div>
 
                         {/* Costo por inspección (read-only) */}
-                        <div className="w-20 shrink-0 text-right">
+                        <div className="flex-1 min-w-fit text-right">
                           <p className="text-xs font-black text-primary">
                             {c.costo_por_inspeccion != null
                               ? `S/ ${c.costo_por_inspeccion.toFixed(2)}`

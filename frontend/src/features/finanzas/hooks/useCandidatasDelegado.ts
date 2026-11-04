@@ -8,7 +8,8 @@
  *   GET /delegados/candidatas?cip={cip}&municipalidad_id={id}&tipo_liquidacion_id={id}&tipo_delegado={tipo}
  *
  * Module 2: agrega soporte para paginación y filtros de texto.
- * Params nuevos: page, page_size, expediente, numero, propietario, direccion
+ * Params nuevos: page, page_size, expediente, numero, propietario, direccion,
+ * documento, comprobante_serie, comprobante_numero
  *
  * Cuando se usa SmartField (delegado_operacion_id), el backend resuelve la operación directamente
  * y usa su municipalidad/especialidad/tipo para filtrar candidatas. No requiere tipo_liquidacion_id.
@@ -45,6 +46,12 @@ interface UseCandidatasDelegadoProps {
   propietario?: string;
   /** Filtrar por dirección. */
   direccion?: string;
+  /** Filtrar por N.º de documento de la entidad (icontains). */
+  documento?: string;
+  /** Filtrar por serie del comprobante VIGENTE (icontains). */
+  comprobante_serie?: string;
+  /** Filtrar por número del comprobante VIGENTE (icontains). */
+  comprobante_numero?: string;
   enabled?: boolean;
 }
 
@@ -73,6 +80,9 @@ export function useCandidatasDelegado({
   numero,
   propietario,
   direccion,
+  documento,
+  comprobante_serie,
+  comprobante_numero,
   enabled = true,
 }: UseCandidatasDelegadoProps) {
   const params: Record<string, string | number> = {
@@ -101,6 +111,9 @@ export function useCandidatasDelegado({
     params.numero = typeof numero === "string" ? Number(numero) : numero;
   if (propietario) params.propietario = propietario;
   if (direccion) params.direccion = direccion;
+  if (documento) params.documento = documento;
+  if (comprobante_serie) params.comprobante_serie = comprobante_serie;
+  if (comprobante_numero) params.comprobante_numero = comprobante_numero;
 
   const queryKey: (string | number | undefined)[] = delegado_operacion_id
     ? [
@@ -117,6 +130,9 @@ export function useCandidatasDelegado({
         numero ?? "no-numero",
         propietario ?? "no-propietario",
         direccion ?? "no-direccion",
+        documento ?? "no-documento",
+        comprobante_serie ?? "no-comprobante-serie",
+        comprobante_numero ?? "no-comprobante-numero",
       ]
     : [
         "delegados",
@@ -134,6 +150,9 @@ export function useCandidatasDelegado({
         numero ?? "no-numero",
         propietario ?? "no-propietario",
         direccion ?? "no-direccion",
+        documento ?? "no-documento",
+        comprobante_serie ?? "no-comprobante-serie",
+        comprobante_numero ?? "no-comprobante-numero",
       ];
 
   // SmartField path: enabled cuando hay cip + delegado_operacion_id

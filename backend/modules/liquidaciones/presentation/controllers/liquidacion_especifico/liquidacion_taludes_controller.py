@@ -90,6 +90,8 @@ class LiquidacionTaludesController:
         numero_revisiones: int = Query(default=None, description="Filter by numero_revision (exact)"),
         direccion: str = Query(default=None, description="Filter by proyecto direccion (icontains)"),
         documento: str = Query(default=None, description="Filter by entidad numero_documento (icontains)"),
+        comprobante_serie: str = Query(default=None, description="Filter by active comprobante serie (icontains)"),
+        comprobante_numero: str = Query(default=None, description="Filter by active comprobante numero (icontains)"),
         expediente: str = Query(default=None, description="Filter by expediente (icontains)"),
     ):
         """
@@ -109,6 +111,8 @@ class LiquidacionTaludesController:
             numero_revision=numero_revisiones,
             direccion=direccion,
             documento=documento,
+            comprobante_serie=comprobante_serie,
+            comprobante_numero=comprobante_numero,
             expediente=expediente,
         )
         result = self.presenter.present_list(

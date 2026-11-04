@@ -5,12 +5,12 @@ import { es } from "date-fns/locale";
 import {
   Building2,
   Calendar as CalendarIcon,
+  FileText,
   Filter,
   Hash,
   IdCard,
   MapPin,
   User,
-  UserRound,
 } from "lucide-react";
 /**
  * LiquidacionFiltroModal — Modal de filtros para listas de liquidaciones.
@@ -18,7 +18,10 @@ import {
  *
  * Filtros del backend (comunes a los 6 tipos):
  *   entidad_id, propietario, fecha_desde, fecha_hasta, numero,
- *   razon_social, creado_por, numero_revisiones
+ *   razon_social, direccion, documento, comprobante_serie, comprobante_numero
+ *
+ * "Comprobante" = comprobante VIGENTE (activo=True) de la liquidación; el
+ * backend lo resuelve con `Exists` para no duplicar filas por historial.
  */
 import { useCallback } from "react";
 import { z } from "zod";
@@ -45,9 +48,10 @@ const filtroSchema = z.object({
   fecha_hasta: z.string().optional(),
   numero: z.string().optional(),
   razon_social: z.string().optional(),
-  creado_por: z.string().optional(),
-  numero_revisiones: z.string().optional(),
   direccion: z.string().optional(),
+  documento: z.string().optional(),
+  comprobante_serie: z.string().optional(),
+  comprobante_numero: z.string().optional(),
 });
 
 type FiltroFormData = z.infer<typeof filtroSchema>;
@@ -150,11 +154,10 @@ export function LiquidacionFiltroModal({
     fecha_hasta: initialFiltros?.fecha_hasta ?? "",
     numero: initialFiltros?.numero ? String(initialFiltros.numero) : "",
     razon_social: initialFiltros?.razon_social ?? "",
-    creado_por: initialFiltros?.creado_por ?? "",
-    numero_revisiones: initialFiltros?.numero_revisiones
-      ? String(initialFiltros.numero_revisiones)
-      : "",
     direccion: initialFiltros?.direccion ?? "",
+    documento: initialFiltros?.documento ?? "",
+    comprobante_serie: initialFiltros?.comprobante_serie ?? "",
+    comprobante_numero: initialFiltros?.comprobante_numero ?? "",
   };
 
   const handleSubmit = useCallback(
@@ -167,10 +170,12 @@ export function LiquidacionFiltroModal({
       if (data.fecha_hasta) filtros.fecha_hasta = data.fecha_hasta;
       if (data.numero) filtros.numero = Number(data.numero);
       if (data.razon_social) filtros.razon_social = data.razon_social;
-      if (data.creado_por) filtros.creado_por = data.creado_por;
-      if (data.numero_revisiones)
-        filtros.numero_revisiones = Number(data.numero_revisiones);
       if (data.direccion) filtros.direccion = data.direccion;
+      if (data.documento) filtros.documento = data.documento;
+      if (data.comprobante_serie)
+        filtros.comprobante_serie = data.comprobante_serie;
+      if (data.comprobante_numero)
+        filtros.comprobante_numero = data.comprobante_numero;
       onApply(filtros);
     },
     [onApply],
@@ -276,8 +281,8 @@ export function LiquidacionFiltroModal({
             />
           </div>
 
-          {/* Fila 4: Razón Social + Número */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Fila 4: Razón Social + Número + N° Documento Entidad */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <CampoTexto
               name="razon_social"
               label="Razón Social"
@@ -292,23 +297,30 @@ export function LiquidacionFiltroModal({
               register={methods.register}
               icon={Hash}
             />
-          </div>
-
-          {/* Fila 5: Creado por + N° Revisiones */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <CampoTexto
-              name="creado_por"
-              label="Creado Por"
-              placeholder="Username del creador"
-              register={methods.register}
-              icon={UserRound}
-            />
-            <CampoTexto
-              name="numero_revisiones"
-              label="N° Revisiones"
-              placeholder="Número de revisión exacto"
+              name="documento"
+              label="N° Documento Entidad"
+              placeholder="RUC / DNI de la entidad"
               register={methods.register}
               icon={IdCard}
+            />
+          </div>
+
+          {/* Fila 5: Comprobante vigente (serie + número) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <CampoTexto
+              name="comprobante_serie"
+              label="Comprobante — Serie"
+              placeholder="Serie del comprobante vigente"
+              register={methods.register}
+              icon={FileText}
+            />
+            <CampoTexto
+              name="comprobante_numero"
+              label="Comprobante — Número"
+              placeholder="Número del comprobante vigente"
+              register={methods.register}
+              icon={Hash}
             />
           </div>
         </div>

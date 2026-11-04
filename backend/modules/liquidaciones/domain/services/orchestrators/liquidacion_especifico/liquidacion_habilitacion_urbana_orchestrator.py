@@ -514,6 +514,8 @@ class LiquidacionHabilitacionUrbanaOrchestrator(LegacyRegistroResolutionMixin):
         direccion=None,
         documento=None,
         expediente=None,
+        comprobante_serie=None,
+        comprobante_numero=None,
     ) -> tuple[List[HabilitacionUrbanaPrimeraRevisionResult], int]:
         """
         Returns paginated HabilitacionUrbanaPrimeraRevisionResult list.
@@ -543,6 +545,8 @@ class LiquidacionHabilitacionUrbanaOrchestrator(LegacyRegistroResolutionMixin):
             direccion=direccion,
             documento=documento,
             expediente=expediente,
+            comprobante_serie=comprobante_serie,
+            comprobante_numero=comprobante_numero,
         )
 
         # Build HabilitacionUrbanaPrimeraRevisionResult domain DTOs from ORM objects

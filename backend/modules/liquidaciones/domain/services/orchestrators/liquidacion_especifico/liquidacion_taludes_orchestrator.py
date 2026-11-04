@@ -513,6 +513,8 @@ liquidacion_general=LiquidacionGeneralData(
         direccion=None,
         documento=None,
         expediente=None,
+        comprobante_serie=None,
+        comprobante_numero=None,
     ) -> tuple[List[LiquidacionEspecificaPrimeraRevisionResult], int]:
         """
         Returns paginated LiquidacionEspecificaPrimeraRevisionResult list.
@@ -542,6 +544,8 @@ liquidacion_general=LiquidacionGeneralData(
             direccion=direccion,
             documento=documento,
             expediente=expediente,
+            comprobante_serie=comprobante_serie,
+            comprobante_numero=comprobante_numero,
         )
 
         # Build LiquidacionEspecificaPrimeraRevisionResult domain DTOs from ORM objects

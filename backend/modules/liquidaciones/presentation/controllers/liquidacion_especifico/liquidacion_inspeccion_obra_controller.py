@@ -103,6 +103,9 @@ class LiquidacionInspeccionObraController:
         creado_por: str = Query(default=None, description="Filter by usuario_creador username (icontains)"),
         numero_revisiones: int = Query(default=None, description="Filter by numero_revision (exact)"),
         direccion: str = Query(default=None, description="Filter by proyecto direccion (icontains)"),
+        documento: str = Query(default=None, description="Filter by entidad numero_documento (icontains)"),
+        comprobante_serie: str = Query(default=None, description="Filter by active comprobante serie (icontains)"),
+        comprobante_numero: str = Query(default=None, description="Filter by active comprobante numero (icontains)"),
     ):
         """
         Returns a paginated list of Inspección de Obra liquidaciones with optional filters.
@@ -120,6 +123,9 @@ class LiquidacionInspeccionObraController:
             numero=numero,
             numero_revision=numero_revisiones,
             direccion=direccion,
+            documento=documento,
+            comprobante_serie=comprobante_serie,
+            comprobante_numero=comprobante_numero,
         )
         result = self.presenter.present_list(
             liquidaciones=liquidaciones,

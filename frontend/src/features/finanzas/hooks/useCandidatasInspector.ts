@@ -3,7 +3,8 @@
  * Endpoint: GET /finanzas/recibos-inspectores/candidatos?cip={cip}&page=1&page_size=10
  *
  * Module 2: agrega soporte para paginación y filtros de texto.
- * Params nuevos: page, page_size, expediente, numero, propietario, direccion
+ * Params nuevos: page, page_size, expediente, numero, propietario, direccion,
+ * documento, comprobante_serie, comprobante_numero
  */
 import { useApiQuery } from "@/hooks";
 import type {
@@ -29,6 +30,12 @@ interface UseCandidatasInspectorProps {
   propietario?: string;
   /** Filtrar por dirección. */
   direccion?: string;
+  /** Filtrar por N.º de documento de la entidad (icontains). */
+  documento?: string;
+  /** Filtrar por serie del comprobante VIGENTE (icontains). */
+  comprobante_serie?: string;
+  /** Filtrar por número del comprobante VIGENTE (icontains). */
+  comprobante_numero?: string;
   enabled?: boolean;
 }
 
@@ -58,6 +65,9 @@ export function useCandidatasInspector({
   numero,
   propietario,
   direccion,
+  documento,
+  comprobante_serie,
+  comprobante_numero,
   enabled = true,
 }: UseCandidatasInspectorProps) {
   const params: Record<string, string | number> = { cip };
@@ -73,6 +83,9 @@ export function useCandidatasInspector({
     params.numero = typeof numero === "string" ? Number(numero) : numero;
   if (propietario) params.propietario = propietario;
   if (direccion) params.direccion = direccion;
+  if (documento) params.documento = documento;
+  if (comprobante_serie) params.comprobante_serie = comprobante_serie;
+  if (comprobante_numero) params.comprobante_numero = comprobante_numero;
 
   const query = useApiQuery({
     queryKey: [
@@ -89,6 +102,9 @@ export function useCandidatasInspector({
       numero ?? "no-numero",
       propietario ?? "no-propietario",
       direccion ?? "no-direccion",
+      documento ?? "no-documento",
+      comprobante_serie ?? "no-comprobante-serie",
+      comprobante_numero ?? "no-comprobante-numero",
     ],
     url: "/finanzas/recibos-inspectores/candidatos",
     schema: InspectorCandidatosPaginatedResponseSchema,

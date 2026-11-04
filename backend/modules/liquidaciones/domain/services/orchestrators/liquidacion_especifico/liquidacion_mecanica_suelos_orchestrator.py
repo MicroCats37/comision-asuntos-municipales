@@ -514,6 +514,8 @@ class LiquidacionMecanicaSuelosOrchestrator(LegacyRegistroResolutionMixin):
         direccion=None,
         documento=None,
         expediente=None,
+        comprobante_serie=None,
+        comprobante_numero=None,
     ) -> tuple[List[MecanicaSuelosPrimeraRevisionResult], int]:
         """
         Returns paginated MecanicaSuelosPrimeraRevisionResult list.
@@ -543,6 +545,8 @@ class LiquidacionMecanicaSuelosOrchestrator(LegacyRegistroResolutionMixin):
             direccion=direccion,
             documento=documento,
             expediente=expediente,
+            comprobante_serie=comprobante_serie,
+            comprobante_numero=comprobante_numero,
         )
 
         # Build MecanicaSuelosPrimeraRevisionResult domain DTOs from ORM objects
