@@ -1802,3 +1802,66 @@ class LiquidacionGeneralCoreService:
             activo=True,
             motivo_reemplazo=motivo_reemplazo,
         )
+
+    def get_comprobante_by_id(
+        self,
+        liquidacion_general: LiquidacionGeneral,
+        comprobante_id: uuid.UUID,
+    ) -> LiquidacionComprobante:
+        """
+        Returns a single comprobante scoped to its liquidacion general.
+
+        Raises LiquidacionComprobante.DoesNotExist when the comprobante does not
+        exist or belongs to a different liquidacion.
+
+        PURE ORM — no business logic.
+        """
+        return liquidacion_general.comprobantes.get(id=comprobante_id)
+
+    def actualizar_comprobante(
+        self,
+        comprobante: LiquidacionComprobante,
+        tipo_comprobante: str,
+        serie: Optional[str] = None,
+        numero: Optional[str] = None,
+        fecha_emision: Optional[str] = None,
+    ) -> LiquidacionComprobante:
+        """
+        Updates the ACTIVE comprobante in place (single UPDATE on the same row).
+
+        PURE ORM — no business logic. The caller (orchestrator) is responsible for
+        the guards (existence + activo) and for opening transaction.atomic().
+
+        NEVER writes `monto`, `activo` nor `motivo_reemplazo`: the amount already
+        registered is preserved, the row stays the only active one, and the
+        replacement history remains untouched.
+
+        Args:
+            comprobante: The active LiquidacionComprobante ORM instance.
+            tipo_comprobante: Type of comprobante (FACTURA, BOLETA, etc.).
+            serie: Optional serie. Only written when not None.
+            numero: Optional numero. Only written when not None.
+            fecha_emision: Optional fecha emision as ISO string (YYYY-MM-DD).
+
+        Returns:
+            The updated LiquidacionComprobante instance.
+        """
+        update_fields = ["tipo_comprobante"]
+
+        comprobante.tipo_comprobante = tipo_comprobante
+
+        if serie is not None:
+            comprobante.serie = serie
+            update_fields.append("serie")
+
+        if numero is not None:
+            comprobante.numero = numero
+            update_fields.append("numero")
+
+        if fecha_emision is not None:
+            comprobante.fecha_emision = date.fromisoformat(fecha_emision)
+            update_fields.append("fecha_emision")
+
+        comprobante.save(update_fields=update_fields)
+
+        return comprobante

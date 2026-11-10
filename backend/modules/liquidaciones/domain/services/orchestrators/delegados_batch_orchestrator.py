@@ -23,11 +23,15 @@ from modules.liquidaciones.domain.constants import (
 from modules.liquidaciones.domain.results.delegado.delegado_result import (
     DelegadoVigenteResult,
     DelegadosVigentesResult,
+    DetalleHonorarioDelegadoResult,
     EspecialidadRevisionResult,
     LiquidacionDelegadoBatchResult,
+    LiquidacionDelegadoDetalleResponseResult,
+    LiquidacionDelegadoDetalleResult,
     LiquidacionDelegadoResult,
     LiquidacionDelegadoLiquidacionMinimal,
     LiquidacionDelegadoDelegadoMinimal,
+    ReciboHonorarioDelegadoMensualResult,
     TipoLiquidacionMinimalResult,
 )
 from modules.liquidaciones.domain.services.core.delegado.delegado_core_service import (
@@ -202,6 +206,8 @@ class DelegadosBatchOrchestrator:
         5. No duplicar asociación existente (400)
         6. Sin delegado_id duplicado dentro del payload (400)
         7. update/delete validan que la asociación exista (400)
+        8. update con liquidacion_delegado_id: la asignación existe (404) y
+           pertenece a la liquidación del path (400)
         """
         liquidacion = self.core_service.get_liquidacion_general_by_id(liquidacion_id)
         if not liquidacion:
@@ -266,6 +272,20 @@ class DelegadosBatchOrchestrator:
 
         # Validate updates
         for item in payload.update:
+            if item.liquidacion_delegado_id is not None:
+                # Camino exacto: el objetivo es la fila (LiquidacionDelegado).
+                asignacion = self.core_service.get_liquidacion_delegado_por_id(
+                    item.liquidacion_delegado_id
+                )
+                if not asignacion:
+                    raise HttpError(404, "Asignación no encontrada")
+                if str(asignacion.liquidacion_id) != str(liquidacion.id):
+                    raise HttpError(
+                        400,
+                        "La asignación no pertenece a la liquidación",
+                    )
+                continue
+            # Camino legacy: el objetivo es el delegado.
             delegado = self.core_service.get_delegado_by_id(item.delegado_id)
             if not delegado:
                 raise HttpError(404, "Delegado no encontrado")
@@ -293,7 +313,10 @@ class DelegadosBatchOrchestrator:
         batch = BatchPayload(
             create=[item for item in payload.create],
             update=[
-                BatchUpdateItem(id=item.delegado_id, body=item)
+                BatchUpdateItem(
+                    id=item.liquidacion_delegado_id or item.delegado_id,
+                    body=item,
+                )
                 for item in payload.update
             ],
             delete=[item.delegado_id for item in payload.delete],
@@ -314,11 +337,24 @@ class DelegadosBatchOrchestrator:
         )
 
     def _validar_delegados_duplicados(self, payload: LiquidacionDelegadoBatchIn) -> None:
-        """Raises HttpError if a delegado_id appears more than once in the payload."""
+        """
+        Raises HttpError if a delegado_id or a liquidacion_delegado_id appears more
+        than once in the payload.
+
+        El discriminador de una fila `update` es `liquidacion_delegado_id` cuando
+        viene; en ese caso su `delegado_id` es informativo y NO cuenta para la
+        detección de duplicados — dos asignaciones del mismo delegado se editan
+        de forma independiente. El camino legacy (solo `delegado_id`) conserva la
+        detección por delegado.
+        """
         delegado_ids = (
             [str(item.delegado_id) for item in payload.create]
-            + [str(item.delegado_id) for item in payload.update]
             + [str(item.delegado_id) for item in payload.delete]
+            + [
+                str(item.delegado_id)
+                for item in payload.update
+                if item.liquidacion_delegado_id is None and item.delegado_id is not None
+            ]
         )
         duplicados = {
             delegado_id
@@ -330,6 +366,23 @@ class DelegadosBatchOrchestrator:
                 400,
                 "Delegado(s) duplicado(s) en el payload: "
                 + ", ".join(sorted(duplicados)),
+            )
+
+        asignacion_ids = [
+            str(item.liquidacion_delegado_id)
+            for item in payload.update
+            if item.liquidacion_delegado_id is not None
+        ]
+        duplicados_asignacion = {
+            asignacion_id
+            for asignacion_id in asignacion_ids
+            if asignacion_ids.count(asignacion_id) > 1
+        }
+        if duplicados_asignacion:
+            raise HttpError(
+                400,
+                "Asignación(es) duplicada(s) en el payload: "
+                + ", ".join(sorted(duplicados_asignacion)),
             )
 
     def _build_liquidacion_delegado_result(self, ld) -> LiquidacionDelegadoResult:
@@ -432,3 +485,144 @@ class DelegadosBatchOrchestrator:
             self._build_liquidacion_delegado_result(ld) for ld in objects
         ]
         return results, total
+
+    # ── Lectura anidada: asignaciones de UNA liquidación con detalle RH ─────────
+
+    def listar_asignaciones_con_detalle_rh_proceso(
+        self,
+        liquidacion_id: uuid.UUID,
+    ) -> LiquidacionDelegadoDetalleResponseResult:
+        """
+        Returns the assignments of a single liquidation enriched with their RH
+        detail and the optional linked monthly RH.
+
+        404 when the liquidation does not exist.
+
+        Reads ONLY relations already loaded by
+        `list_asignaciones_con_detalle_rh` (fixed 3-query budget, no N+1).
+        """
+        liquidacion = self.core_service.get_liquidacion_general_by_id(liquidacion_id)
+        if not liquidacion:
+            raise HttpError(404, "Liquidación no encontrada")
+
+        asignaciones = self.core_service.list_asignaciones_con_detalle_rh(liquidacion_id)
+
+        return LiquidacionDelegadoDetalleResponseResult(
+            liquidacion_id=str(liquidacion_id),
+            asignaciones=[
+                self._build_liquidacion_delegado_detalle_result(ld, liquidacion)
+                for ld in asignaciones
+            ],
+        )
+
+    def _build_liquidacion_delegado_detalle_result(
+        self,
+        ld,
+        liquidacion,
+    ) -> LiquidacionDelegadoDetalleResult:
+        """
+        Builds LiquidacionDelegadoDetalleResult from a LiquidacionDelegado ORM object.
+
+        Only reads relations already prefetched by the core service:
+        `delegado.perfil_ingeniero`, `especialidad_revision`,
+        `delegado_operacion`, `detalles_honorario` and
+        `detalles_honorario.recibo_mensual`. No extra queries.
+        """
+        perfil = ld.delegado.perfil_ingeniero
+        return LiquidacionDelegadoDetalleResult(
+            id=str(ld.id),
+            liquidacion_id=str(ld.liquidacion_id),
+            delegado_id=str(ld.delegado_id),
+            especialidad_revision=EspecialidadRevisionResult(
+                id=str(ld.especialidad_revision.id),
+                nombre=ld.especialidad_revision.nombre,
+            ),
+            liquidacion=self._build_liquidacion_minimal(liquidacion),
+            delegado=LiquidacionDelegadoDelegadoMinimal(
+                id=str(ld.delegado.id),
+                cip=perfil.cip or "",
+                dni=perfil.dni or "",
+                nombre_completo=perfil.nombre_completo,
+            ),
+            periodo=ld.periodo,
+            mes=ld.mes,
+            dictamen_revision=ld.dictamen_revision,
+            fecha_presentacion=ld.fecha_presentacion,
+            fecha_revision=ld.fecha_revision,
+            tipo=ld.delegado_operacion.tipo if ld.delegado_operacion_id else None,
+            numero_rh=ld.numero_rh,
+            creado_por_rh=bool(ld.creado_por_rh),
+            detalle_rh=[
+                self._build_detalle_honorario_result(detalle)
+                for detalle in ld.detalles_honorario.all()
+            ],
+        )
+
+    def _build_detalle_honorario_result(
+        self,
+        detalle,
+    ) -> DetalleHonorarioDelegadoResult:
+        """
+        Builds DetalleHonorarioDelegadoResult from a DetalleHonorarioDelegado ORM
+        object. The monthly RH comes from the prefetched cache (None when the
+        detail is orphaned).
+        """
+        recibo = detalle.recibo_mensual
+        return DetalleHonorarioDelegadoResult(
+            id=str(detalle.id),
+            imp_bruto=float(detalle.imp_bruto),
+            sub_total=float(detalle.sub_total) if detalle.sub_total is not None else None,
+            renta_cip=float(detalle.renta_cip) if detalle.renta_cip is not None else None,
+            aporte_codemu=(
+                float(detalle.aporte_codemu) if detalle.aporte_codemu is not None else None
+            ),
+            fondo_comun=float(detalle.fondo_comun) if detalle.fondo_comun is not None else None,
+            neto_honorario=(
+                float(detalle.neto_honorario) if detalle.neto_honorario is not None else None
+            ),
+            recibo_mensual=(
+                ReciboHonorarioDelegadoMensualResult(
+                    id=str(recibo.id),
+                    numero=recibo.numero,
+                    periodo=recibo.periodo,
+                    mes=recibo.mes,
+                    fecha_registro=recibo.fecha_registro,
+                    sub_total=float(recibo.sub_total),
+                    renta_cip=float(recibo.renta_cip),
+                    aporte_codemu=float(recibo.aporte_codemu),
+                    fondo_comun=float(recibo.fondo_comun),
+                    neto_honorario=float(recibo.neto_honorario),
+                )
+                if recibo is not None
+                else None
+            ),
+        )
+
+    def _build_liquidacion_minimal(
+        self,
+        liquidacion,
+    ) -> LiquidacionDelegadoLiquidacionMinimal:
+        """
+        Builds the nested liquidacion summary from the already-loaded
+        LiquidacionGeneral (municipalidad and tipo_liquidacion come from the
+        core service's select_related — no extra queries).
+        """
+        municipalidad = getattr(liquidacion, "municipalidad", None)
+        tipo_liquidacion = getattr(liquidacion, "tipo_liquidacion", None)
+        return LiquidacionDelegadoLiquidacionMinimal(
+            id=str(liquidacion.id),
+            expediente=liquidacion.expediente,
+            numero_revision=liquidacion.numero_revision,
+            sub_total=float(liquidacion.sub_total) if liquidacion.sub_total else None,
+            total=float(liquidacion.total) if liquidacion.total else None,
+            municipalidad_nombre=municipalidad.nombre if municipalidad else None,
+            proyecto_denominacion=liquidacion.denominacion_de_proyecto,
+            tipo_liquidacion=(
+                TipoLiquidacionMinimalResult(
+                    codigo=tipo_liquidacion.codigo,
+                    nombre=tipo_liquidacion.nombre,
+                )
+                if tipo_liquidacion
+                else None
+            ),
+        )

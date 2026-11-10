@@ -18,6 +18,9 @@ class RHInspectorCotizarItemResult(BaseModel):
     Item individual en la cotización del RH mensual del inspector.
     """
     exp_liqui: str
+    # Draft expediente returned by quotation. `exp_liqui` remains the persisted
+    # identifier used to resolve the inspection liquidation during the RH flow.
+    expediente: str
     liquidacion_inspector_id: str
     liquidacion_categoria_visitas_id: str
     # Identificador estable del DetalleHonorarioInspector. Permite que el PATCH

@@ -13,6 +13,11 @@ from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
 from core_application.models import VigenciaModel, VigenciaQuerySet
+from core_application.vigencia import (
+    SCOPE_TIPO_LIQUIDACION,
+    exclusion_constraint_vigencia,
+    vigencia_rango_valido_constraint,
+)
 
 
 class TasaDelegadoQuerySet(VigenciaQuerySet):
@@ -31,6 +36,9 @@ class TasaDelegado(BaseModel, VigenciaModel):
     objects = TasaDelegadoQuerySet.as_manager()
 
     history = HistoricalRecords()
+
+    # Scope key: each tipo de liquidacion has its own set of delegate rates.
+    vigencia_scope_fields = SCOPE_TIPO_LIQUIDACION
 
     tipo_liquidacion = models.ForeignKey(
         "liquidaciones.TipoLiquidacion",
@@ -88,6 +96,11 @@ class TasaDelegado(BaseModel, VigenciaModel):
                 fields=["tipo_liquidacion", "periodo_inicio"],
                 condition=models.Q(periodo_fin__isnull=True),
                 name="unique_tasa_delegado_vigente_por_tipo",
+            ),
+            vigencia_rango_valido_constraint("tasa_delegado"),
+            exclusion_constraint_vigencia(
+                SCOPE_TIPO_LIQUIDACION,
+                name="exclude_tasa_delegado_overlap",
             ),
         ]
 

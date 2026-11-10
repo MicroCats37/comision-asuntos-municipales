@@ -15,6 +15,7 @@ from decimal import Decimal
 from datetime import date
 
 from ninja.errors import HttpError
+from django.db import IntegrityError
 
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.tarifas_historicas_core_service import (
     TarifasHistoricasCoreService,
@@ -44,8 +45,7 @@ def servicio():
 @pytest.mark.django_db
 def test_get_derechos_porcentaje_vigentes_returns_list(servicio, db):
     """
-    Core returns a list (no HttpError), even with overlapping records.
-    Validation happens in the orchestrator layer.
+    Core returns the single record valid at the requested date.
     """
     # Record 1: Jan-May 2026
     DerechoPorcentajeObra.objects.create(
@@ -55,18 +55,18 @@ def test_get_derechos_porcentaje_vigentes_returns_list(servicio, db):
         periodo_inicio=date(2026, 1, 1),
         periodo_fin=date(2026, 5, 1),
     )
-    # Record 2: Apr 2026-open (overlaps with record 1 at date 2026-04-15)
+    # Record 2: Jun 2026-open (does not overlap with record 1).
     DerechoPorcentajeObra.objects.create(
         derecho_minimo=Decimal("600.00"),
         derecho_maximo=Decimal("60000.00"),
         porcentaje_minimo_uit=Decimal("0.12"),
-        periodo_inicio=date(2026, 4, 1),
+        periodo_inicio=date(2026, 6, 1),
         periodo_fin=None,
     )
 
-    # Core returns list — NO HttpError raised here
+    # Core returns the record active at the requested date.
     result = servicio.get_derechos_porcentaje_vigentes(fecha=date(2026, 4, 15))
-    assert len(result) == 2
+    assert len(result) == 1
 
 
 @pytest.mark.django_db
@@ -89,8 +89,7 @@ def test_get_derechos_porcentaje_vigentes_single_record_ok(servicio, db):
 @pytest.mark.django_db
 def test_get_derechos_m2_vigentes_returns_list(servicio, db):
     """
-    Core returns a list (no HttpError), even with overlapping records.
-    Validation happens in the orchestrator layer.
+    Core returns the single record valid at the requested date.
     """
     # Record 1: Jan-Dec 2026
     DerechoPorMetroCuadrado.objects.create(
@@ -99,17 +98,17 @@ def test_get_derechos_m2_vigentes_returns_list(servicio, db):
         periodo_inicio=date(2026, 1, 1),
         periodo_fin=date(2026, 12, 31),
     )
-    # Record 2: Jun 2026-open (overlaps with record 1 at date 2026-07-01)
+    # Record 2: Jan 2027-open (does not overlap with record 1).
     DerechoPorMetroCuadrado.objects.create(
         derecho_minimo=Decimal("120.00"),
         derecho_maximo=Decimal("12000.00"),
-        periodo_inicio=date(2026, 6, 1),
+        periodo_inicio=date(2027, 1, 1),
         periodo_fin=None,
     )
 
-    # Core returns list — NO HttpError raised here
+    # Core returns the record active at the requested date.
     result = servicio.get_derechos_m2_vigentes(fecha=date(2026, 7, 1))
-    assert len(result) == 2
+    assert len(result) == 1
 
 
 @pytest.mark.django_db
@@ -131,8 +130,7 @@ def test_get_derechos_m2_vigentes_single_record_ok(servicio, db):
 @pytest.mark.django_db
 def test_get_tarifas_vigentes_returns_list(servicio, db, tipo_edificacion):
     """
-    Core returns a list (no HttpError), even with overlapping records.
-    Validation happens in the orchestrator layer.
+    Core returns the single record valid at the requested date.
     """
     # Record 1: Jan-Jun 2026
     TarifaLiquidacionBase.objects.create(
@@ -140,16 +138,16 @@ def test_get_tarifas_vigentes_returns_list(servicio, db, tipo_edificacion):
         periodo_inicio=date(2026, 1, 1),
         periodo_fin=date(2026, 6, 30),
     )
-    # Record 2: Apr 2026-open (overlaps with record 1 at date 2026-05-01)
+    # Record 2: Jul 2026-open (does not overlap with record 1).
     TarifaLiquidacionBase.objects.create(
         tipo_liquidacion=tipo_edificacion,
-        periodo_inicio=date(2026, 4, 1),
+        periodo_inicio=date(2026, 7, 1),
         periodo_fin=None,
     )
 
-    # Core returns list — NO HttpError raised here
+    # Core returns the record active at the requested date.
     result = servicio.get_tarifas_vigentes("EDIFICACION", fecha=date(2026, 5, 1))
-    assert len(result) == 2
+    assert len(result) == 1
 
 
 @pytest.mark.django_db
@@ -198,10 +196,9 @@ def test_get_tarifas_vigentes_single_record_ok(servicio, db, tipo_edificacion):
 
 
 @pytest.mark.django_db
-def test_validar_sin_solapamiento_raises_on_derecho_porcentaje_overlap(db):
+def test_db_rejects_derecho_porcentaje_overlap(db):
     """
-    When two DerechoPorcentajeObra records overlap at the same date,
-    validar_sin_solapamiento raises HttpError(400).
+    PostgreSQL rejects intersecting DerechoPorcentajeObra ranges.
     """
     # Record 1: Jan-May 2026
     DerechoPorcentajeObra.objects.create(
@@ -211,31 +208,20 @@ def test_validar_sin_solapamiento_raises_on_derecho_porcentaje_overlap(db):
         periodo_inicio=date(2026, 1, 1),
         periodo_fin=date(2026, 5, 1),
     )
-    # Record 2: Apr 2026-open (overlaps with record 1 at date 2026-04-15)
-    DerechoPorcentajeObra.objects.create(
-        derecho_minimo=Decimal("600.00"),
-        derecho_maximo=Decimal("60000.00"),
-        porcentaje_minimo_uit=Decimal("0.12"),
-        periodo_inicio=date(2026, 4, 1),
-        periodo_fin=None,
-    )
-
-    servicio = TarifasHistoricasCoreService()
-    records = servicio.get_derechos_porcentaje_vigentes(fecha=date(2026, 4, 15))
-
-    with pytest.raises(HttpError) as exc_info:
-        validar_sin_solapamiento(records, "DerechoPorcentajeObra")
-
-    assert exc_info.value.status_code == 400
-    assert "Solapamiento de vigencias en DerechoPorcentajeObra" in str(exc_info.value.message)
-    assert "2 registros vigentes" in str(exc_info.value.message)
+    with pytest.raises(IntegrityError):
+        DerechoPorcentajeObra.objects.create(
+            derecho_minimo=Decimal("600.00"),
+            derecho_maximo=Decimal("60000.00"),
+            porcentaje_minimo_uit=Decimal("0.12"),
+            periodo_inicio=date(2026, 4, 1),
+            periodo_fin=None,
+        )
 
 
 @pytest.mark.django_db
-def test_validar_sin_solapamiento_raises_on_derecho_m2_overlap(db):
+def test_db_rejects_derecho_m2_overlap(db):
     """
-    When two DerechoPorMetroCuadrado records overlap at the same date,
-    validar_sin_solapamiento raises HttpError(400).
+    PostgreSQL rejects intersecting DerechoPorMetroCuadrado ranges.
     """
     # Record 1: Jan-Dec 2026
     DerechoPorMetroCuadrado.objects.create(
@@ -244,30 +230,19 @@ def test_validar_sin_solapamiento_raises_on_derecho_m2_overlap(db):
         periodo_inicio=date(2026, 1, 1),
         periodo_fin=date(2026, 12, 31),
     )
-    # Record 2: Jun 2026-open (overlaps with record 1 at date 2026-07-01)
-    DerechoPorMetroCuadrado.objects.create(
-        derecho_minimo=Decimal("120.00"),
-        derecho_maximo=Decimal("12000.00"),
-        periodo_inicio=date(2026, 6, 1),
-        periodo_fin=None,
-    )
-
-    servicio = TarifasHistoricasCoreService()
-    records = servicio.get_derechos_m2_vigentes(fecha=date(2026, 7, 1))
-
-    with pytest.raises(HttpError) as exc_info:
-        validar_sin_solapamiento(records, "DerechoPorMetroCuadrado")
-
-    assert exc_info.value.status_code == 400
-    assert "Solapamiento de vigencias en DerechoPorMetroCuadrado" in str(exc_info.value.message)
-    assert "2 registros vigentes" in str(exc_info.value.message)
+    with pytest.raises(IntegrityError):
+        DerechoPorMetroCuadrado.objects.create(
+            derecho_minimo=Decimal("120.00"),
+            derecho_maximo=Decimal("12000.00"),
+            periodo_inicio=date(2026, 6, 1),
+            periodo_fin=None,
+        )
 
 
 @pytest.mark.django_db
-def test_validar_sin_solapamiento_raises_on_tarifa_base_overlap(db, tipo_edificacion):
+def test_db_rejects_tarifa_base_overlap(db, tipo_edificacion):
     """
-    When two TarifaLiquidacionBase records for the same tipo_liquidacion
-    overlap at the same date, validar_sin_solapamiento raises HttpError(400).
+    PostgreSQL rejects intersecting ranges for the same tipo_liquidacion.
     """
     # Record 1: Jan-Jun 2026
     TarifaLiquidacionBase.objects.create(
@@ -275,23 +250,12 @@ def test_validar_sin_solapamiento_raises_on_tarifa_base_overlap(db, tipo_edifica
         periodo_inicio=date(2026, 1, 1),
         periodo_fin=date(2026, 6, 30),
     )
-    # Record 2: Apr 2026-open (overlaps with record 1 at date 2026-05-01)
-    TarifaLiquidacionBase.objects.create(
-        tipo_liquidacion=tipo_edificacion,
-        periodo_inicio=date(2026, 4, 1),
-        periodo_fin=None,
-    )
-
-    servicio = TarifasHistoricasCoreService()
-    records = servicio.get_tarifas_vigentes("EDIFICACION", fecha=date(2026, 5, 1))
-
-    with pytest.raises(HttpError) as exc_info:
-        validar_sin_solapamiento(records, "TarifaLiquidacionBase tipo=EDIFICACION")
-
-    assert exc_info.value.status_code == 400
-    assert "Solapamiento de vigencias en TarifaLiquidacionBase" in str(exc_info.value.message)
-    assert "tipo=EDIFICACION" in str(exc_info.value.message)
-    assert "2 registros vigentes" in str(exc_info.value.message)
+    with pytest.raises(IntegrityError):
+        TarifaLiquidacionBase.objects.create(
+            tipo_liquidacion=tipo_edificacion,
+            periodo_inicio=date(2026, 4, 1),
+            periodo_fin=None,
+        )
 
 
 @pytest.mark.django_db

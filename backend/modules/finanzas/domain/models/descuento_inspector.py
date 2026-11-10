@@ -12,12 +12,20 @@ from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
 from core_application.models import VigenciaModel
+from core_application.vigencia import (
+    SCOPE_GLOBAL,
+    exclusion_constraint_vigencia,
+    vigencia_rango_valido_constraint,
+)
 
 
 class EscalaDescuentoInspector(BaseModel, VigenciaModel):
     """Escala de descuentos vigente para recibos de inspectores."""
 
     history = HistoricalRecords()
+
+    # Scope key: the discount scale is global (one schedule for the whole municipality).
+    vigencia_scope_fields = SCOPE_GLOBAL
 
     nombre = models.CharField(
         max_length=100,
@@ -30,6 +38,13 @@ class EscalaDescuentoInspector(BaseModel, VigenciaModel):
         verbose_name = "Escala de Descuento del Inspector"
         verbose_name_plural = "Escalas de Descuento del Inspector"
         ordering = ["-periodo_inicio"]
+        constraints = [
+            vigencia_rango_valido_constraint("escala_descuento_inspector"),
+            exclusion_constraint_vigencia(
+                SCOPE_GLOBAL,
+                name="exclude_escala_descuento_inspector_overlap",
+            ),
+        ]
 
     def __str__(self):
         return f"Escala {self.nombre or self.id} ({self.periodo_inicio})"

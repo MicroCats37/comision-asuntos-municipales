@@ -42,7 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { notify } from "@/errors";
+import { handleApiError, notify } from "@/errors";
 import { InspectorOperacionSmartField } from "@/features/finanzas/components/fields/InspectorOperacionSmartField";
 import {
   isValidRhCip,
@@ -56,6 +56,7 @@ import {
   RHCandidatasFiltroModal,
 } from "@/features/finanzas/components/filtros";
 import type { RHCandidatasFiltroValues } from "@/features/finanzas/components/filtros/RHCandidatasFiltroModal";
+import { RhBrowseLiquidacionesModal } from "@/features/finanzas/components/modals/RhBrowseLiquidacionesModal";
 import {
   RhMensualModalShell,
   type RhModalStep,
@@ -81,6 +82,7 @@ import {
   type InspectorSelectionEntry,
   useRHSelectionStore,
 } from "@/features/finanzas/stores/rh-selection.store";
+import { resolveExpedienteToSend } from "@/features/finanzas/utils/rh-expediente";
 import {
   buildInspectorEditSelection,
   collectInspectorUnresolvedDetails,
@@ -99,7 +101,9 @@ import {
   getTipoDetalleSection,
   LiquidacionDetalleModal,
 } from "@/features/liquidaciones/components/detail";
+import { ComprobanteFormModal } from "@/features/liquidaciones/components/forms";
 import { useLiquidacionGeneralDetalle } from "@/features/liquidaciones/hooks/useLiquidacionGeneralDetalle";
+import type { LiquidacionGeneralOutput } from "@/features/liquidaciones/schemas/liquidacion-base.schema";
 import type { PorcentajeObraDatosOut } from "@/features/liquidaciones/schemas/liquidacion-porcentaje.schema";
 import { formatPublicId } from "@/features/liquidaciones/utils/formatPublicId";
 import { getLiquidacionTipoInfo } from "@/features/liquidaciones/utils/liquidacionTipoInfo";
@@ -254,11 +258,32 @@ export function RhInspectorMensualModal({
   const [filterModalOpen, setFilterModalOpen] = useState(false);
 
   /**
+   * Browse de liquidaciones EXISTENTES (WU3).
+   *
+   * Es la salida del usuario cuando el paso 2 no arroja ninguna candidata:
+   * el botón está SIEMPRE visible en el paso 2, incluso con la lista vacía.
+   * El browse es de solo lectura y nunca crea revisiones.
+   */
+  const [browseOpen, setBrowseOpen] = useState(false);
+
+  /**
    * Error bloqueante del wizard — se muestra en el ÁREA DE ERROR del shell
    * común (no en un toast) para que el mensaje quede visible junto a los
    * pasos que bloquean el guardado.
    */
   const [wizardError, setWizardError] = useState<string | null>(null);
+
+  /**
+   * Expedientes editados por fila — SÓLO para las liquidaciones SELECCIONADAS.
+   *
+   * El valor de la fila es el borrador cuando existe; si no, el expediente
+   * original de la liquidación. El borrador viaja DENTRO del payload del RH
+   * (creación y edición): el backend lo persiste en la misma transacción que
+   * la mutación del RH, sin ninguna escritura posterior.
+   */
+  const [expedienteDrafts, setExpedienteDrafts] = useState<
+    Record<string, string>
+  >({});
 
   /**
    * Id del RH ya precargado en el store. La hidratación ocurre UNA sola vez
@@ -275,6 +300,25 @@ export function RhInspectorMensualModal({
     useLiquidacionGeneralDetalle({
       id: detalleLiquidacionGeneralId,
     });
+
+  /**
+   * Objetivo de la acción "Gestionar comprobante" sobre la fila SELECCIONADA.
+   *
+   * El id es el de la `LiquidacionGeneral`: la candidata ya lo trae
+   * (`InspectorCandidataItem.liquidacion_general_id`), así que el destino es
+   * EXACTO y la operación nunca crea una revisión.
+   *
+   * El wizard NO decide el flujo del comprobante (alta, reemplazo o edición):
+   * lo decide el modal único `ComprobanteFormModal` a partir del comprobante
+   * vigente. El wizard sólo le entrega la liquidación exacta y sincroniza la
+   * fila y el listado de candidatas cuando el guardado tiene éxito.
+   */
+  const [comprobanteRowId, setComprobanteRowId] = useState<string | null>(null);
+
+  /** Detalle de la liquidación objetivo (historial de comprobantes). */
+  const { data: comprobanteData } = useLiquidacionGeneralDetalle({
+    id: comprobanteRowId,
+  });
 
   /** Tipo código of the liquidación previewed in the "Ver detalle" modal —
    *  drives which tipo-specific detail section is rendered. */
@@ -355,6 +399,7 @@ export function RhInspectorMensualModal({
     setPageSize(20);
     setFiltros({});
     setWizardError(null);
+    setExpedienteDrafts({});
     hydratedRhIdRef.current = null;
   }, [flowKey, clearSelections]);
 
@@ -653,6 +698,95 @@ export function RhInspectorMensualModal({
     [flowKey, getSelectionEntry, addSelection],
   );
 
+  /** Valor del campo expediente de una fila (borrador u original). */
+  const expedienteValue = useCallback(
+    (rowKey: string, original?: string | null) =>
+      expedienteDrafts[rowKey] ?? original ?? "",
+    [expedienteDrafts],
+  );
+
+  /** Edita el expediente de una fila SELECCIONADA. */
+  const handleExpedienteChange = useCallback(
+    (rowKey: string, value: string) => {
+      setExpedienteDrafts((prev) => ({ ...prev, [rowKey]: value }));
+    },
+    [],
+  );
+
+  /**
+   * Éxito del flujo de comprobante sobre la fila SELECCIONADA.
+   *
+   * - Cierra el flujo de comprobante.
+   * - Sincroniza la fila seleccionada con el comprobante VIGENTE que devuelve
+   *   el backend: el store de selección guarda una COPIA de la candidata, así
+   *   que sin esta sincronización la columna "Comprobante" mostraría el valor
+   *   anterior.
+    * - Refetch EXPLÍCITO del query de candidatas (el hook de comprobante sólo
+    *   parchea en caché las claves de liquidaciones; el listado de candidatas
+    *   no está entre ellas).
+    *
+   * La fila se localiza por `liquidacion_general_id` (el objetivo de la
+   * acción) y se guarda bajo su clave de selección
+   * (`liquidacion_categoria_visitas_id`).
+   */
+  const handleComprobanteSuccess = useCallback(
+    (updated: LiquidacionGeneralOutput) => {
+      const rowId = comprobanteRowId;
+      setComprobanteRowId(null);
+
+      const activo = updated.comprobantes.find((c) => c.activo) ?? null;
+      const entries = getSelectedItems(flowKey) as InspectorSelectionEntry[];
+      const entry = entries.find(
+        (e) => e.candidate.liquidacion_general_id === rowId,
+      );
+      if (entry && rowId) {
+        addSelection(
+          flowKey,
+          entry.candidate.liquidacion_categoria_visitas_id,
+          {
+            ...entry,
+            candidate: {
+              ...entry.candidate,
+              comprobante_activo: activo
+                ? {
+                    tipo_comprobante: activo.tipo_comprobante ?? null,
+                    serie: activo.serie ?? null,
+                    numero: activo.numero ?? null,
+                    fecha_emision: activo.fecha_emision ?? null,
+                  }
+                : null,
+            },
+          },
+        );
+      }
+
+      void refetchCandidatos();
+    },
+    [
+      addSelection,
+      comprobanteRowId,
+      flowKey,
+      getSelectedItems,
+      refetchCandidatos,
+    ],
+  );
+
+  /**
+   * Expediente a enviar por item del payload del RH.
+   *
+   * El borrador del wizard manda; si la fila no se editó se envía el valor
+   * persistido de la liquidación (el backend lo trata como no-op). El valor
+   * viaja DENTRO del payload del RH: no hay ninguna escritura posterior.
+   */
+  const expedienteDeFila = useCallback(
+    (entry: InspectorSelectionEntry): string =>
+      resolveExpedienteToSend(
+        expedienteDrafts[entry.candidate.liquidacion_categoria_visitas_id],
+        entry.candidate.expediente,
+      ),
+    [expedienteDrafts],
+  );
+
   const buildActualizarPayload =
     useCallback((): RHInspectorActualizarIn | null => {
       if (!headerPeriodo) {
@@ -705,11 +839,14 @@ export function RhInspectorMensualModal({
             entry.cotizarItem;
           if (detalle_id) {
             return {
+              // `exp_liqui` SIEMPRE es el valor PERSISTIDO: identifica la
+              // liquidación. El valor editado viaja en `expediente`.
               exp_liqui: entry.candidate.expediente,
               cantidad_visitas,
               periodo,
               mes,
               detalle_id,
+              expediente: expedienteDeFila(entry),
             };
           }
           return {
@@ -718,6 +855,7 @@ export function RhInspectorMensualModal({
             cantidad_visitas,
             periodo,
             mes,
+            expediente: expedienteDeFila(entry),
           };
         }),
       };
@@ -728,6 +866,7 @@ export function RhInspectorMensualModal({
       getSelectedItems,
       flowKey,
       cip,
+      expedienteDeFila,
     ]);
 
   const buildItems = useCallback((): BuildItemsResult | null => {
@@ -801,12 +940,15 @@ export function RhInspectorMensualModal({
           cantidad_visitas,
           periodo: itemPeriodo,
           mes: itemMes,
+          // El expediente viaja en el payload del RH: el backend lo persiste
+          // en la misma transacción que la mutación del RH.
+          expediente: expedienteDeFila(entry),
         };
       },
     );
 
     return { headerPeriodo, items };
-  }, [flowKey, getSelectedItems, periodo]);
+  }, [flowKey, getSelectedItems, periodo, expedienteDeFila]);
 
   // ── Paso 2 → 3: cotizar ──────────────────────────────────────────────
   const handleCotizar = useCallback(async () => {
@@ -932,6 +1074,8 @@ export function RhInspectorMensualModal({
     const result = buildItems();
     if (!result) return;
 
+    setWizardError(null);
+
     try {
       await crearMutation.crear({
         cip,
@@ -939,13 +1083,27 @@ export function RhInspectorMensualModal({
         mes: parseInt(result.headerPeriodo.substring(5, 7), 10),
         items: result.items,
       });
-      // The success toast comes from the mutation hook (server message).
-      handleClose();
-      onSuccess?.();
-    } catch {
-      // Error handled by mutation
+    } catch (error) {
+      // El guardado del RH es ATÓMICO: si falla (p.ej. 409
+      // LIQUIDACION_PAGADA_NOT_EDITABLE) no se persistió NI el RH NI el
+      // expediente. Se muestra el error en el wizard y se conservan los
+      // borradores para que el usuario corrija y reintente: nunca se reporta
+      // un éxito falso ni se reintenta solo.
+      setWizardError(handleApiError(error).message);
+      return;
     }
-  }, [cotizarResult, buildItems, cip, crearMutation, handleClose, onSuccess]);
+
+    // The success toast comes from the mutation hook (server message).
+    handleClose();
+    onSuccess?.();
+  }, [
+    cotizarResult,
+    buildItems,
+    cip,
+    crearMutation,
+    handleClose,
+    onSuccess,
+  ]);
 
   // ── Modo edición: sincroniza el conjunto final con PATCH ─────────────────
   const handleActualizar = useCallback(async () => {
@@ -955,13 +1113,25 @@ export function RhInspectorMensualModal({
 
     try {
       await actualizarMutation.actualizar(payload);
-      // The success toast comes from the mutation hook (server message).
-      handleClose();
-      onSuccess?.();
-    } catch {
-      // Error handled by mutation
+    } catch (error) {
+      // El guardado del RH es ATÓMICO: si falla (p.ej. 409
+      // LIQUIDACION_PAGADA_NOT_EDITABLE) no se persistió NI el RH NI el
+      // expediente. Se muestra el error en el wizard y se conservan los
+      // borradores para que el usuario corrija y reintente: nunca se reporta
+      // un éxito falso ni se reintenta solo.
+      setWizardError(handleApiError(error).message);
+      return;
     }
-  }, [buildActualizarPayload, actualizarMutation, handleClose, onSuccess]);
+
+    // The success toast comes from the mutation hook (server message).
+    handleClose();
+    onSuccess?.();
+  }, [
+    buildActualizarPayload,
+    actualizarMutation,
+    handleClose,
+    onSuccess,
+  ]);
 
   const isPending =
     cotizarMutation.isPending ||
@@ -1080,6 +1250,28 @@ export function RhInspectorMensualModal({
               setFilterModalOpen(false);
             }}
           />
+
+          {/* ── Browse de liquidaciones existentes (WU3) ── */}
+          <RhBrowseLiquidacionesModal
+            open={browseOpen}
+            onOpenChange={setBrowseOpen}
+            tipoCodigo={selectedOperacion?.tipo_liquidacion ?? null}
+            filtros={filtros}
+            fechaDesde={fechaInicio}
+            fechaHasta={fechaFin}
+          />
+
+          {/* ── Flujo de comprobante sobre la fila SELECCIONADA (WU4) ── */}
+          {comprobanteRowId && comprobanteData && (
+            <ComprobanteFormModal
+              open
+              onOpenChange={(nextOpen) => {
+                if (!nextOpen) setComprobanteRowId(null);
+              }}
+              liquidacionGeneral={comprobanteData.liquidacion_general}
+              onSuccess={handleComprobanteSuccess}
+            />
+          )}
 
           {/* ── Ver detalle modal (Module 6) ── */}
           {detalleRow && (
@@ -1274,7 +1466,17 @@ export function RhInspectorMensualModal({
             </div>
           )}
 
-          <div className="flex justify-end">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setBrowseOpen(true)}
+              className="h-8 px-3 text-xs rounded-lg gap-1.5 border-warning/40 text-warning hover:bg-warning/5"
+            >
+              <Search className="h-3.5 w-3.5" />
+              Ver liquidaciones existentes
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -1335,7 +1537,7 @@ export function RhInspectorMensualModal({
                 <div className="w-20 shrink-0">Periodo</div>
                 <div className="w-16 shrink-0">Mes</div>
                 <div className="w-20 shrink-0">Cant. Visitas</div>
-                <div className="shrink-0" />
+                <div className="w-16 shrink-0" />
               </div>
               <div className="border border-t-0 border-primary/20 rounded-b-lg overflow-x-auto">
                 {(getSelectedItems(flowKey) as InspectorSelectionEntry[]).map(
@@ -1375,11 +1577,25 @@ export function RhInspectorMensualModal({
                           <X className="h-3.5 w-3.5" />
                         </button>
 
-                        {/* Expediente (read-only) */}
+                        {/* Expediente (editable — sólo en las seleccionadas) */}
                         <div className="flex-1 min-w-fit">
-                          <p className="font-mono font-bold text-xs text-foreground whitespace-nowrap">
-                            {candidate.expediente ?? "—"}
-                          </p>
+                          <Input
+                            id={`sel-expediente-${candidate.liquidacion_categoria_visitas_id}`}
+                            type="text"
+                            value={expedienteValue(
+                              candidate.liquidacion_categoria_visitas_id,
+                              candidate.expediente,
+                            )}
+                            onChange={(e) =>
+                              handleExpedienteChange(
+                                candidate.liquidacion_categoria_visitas_id,
+                                e.target.value,
+                              )
+                            }
+                            placeholder="Expediente"
+                            aria-label="Expediente de la liquidación seleccionada"
+                            className="w-44 h-7 px-1.5 font-mono text-xs rounded border border-input bg-background"
+                          />
                         </div>
 
                         <div className="flex-1 min-w-fit text-center text-xs font-semibold">
@@ -1512,21 +1728,37 @@ export function RhInspectorMensualModal({
                           className="w-20 shrink-0 h-7 text-xs rounded border border-input bg-background"
                         />
 
-                        {/* Ver detalle button */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDetalleLiquidacionGeneralId(
-                              candidate.liquidacion_general_id,
-                            );
-                          }}
-                          className="w-8 shrink-0 h-7 flex items-center justify-center rounded border border-transparent hover:border-primary/30 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors"
-                          aria-label="Ver detalle"
-                          title="Ver detalle"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                        </button>
+                        {/* Acciones de fila: gestionar comprobante + ver detalle */}
+                        <div className="w-16 shrink-0 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setComprobanteRowId(
+                                candidate.liquidacion_general_id,
+                              );
+                            }}
+                            className="w-8 shrink-0 h-7 flex items-center justify-center rounded border border-transparent hover:border-primary/30 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors"
+                            aria-label="Gestionar comprobante"
+                            title="Gestionar comprobante"
+                          >
+                            <Receipt className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDetalleLiquidacionGeneralId(
+                                candidate.liquidacion_general_id,
+                              );
+                            }}
+                            className="w-8 shrink-0 h-7 flex items-center justify-center rounded border border-transparent hover:border-primary/30 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors"
+                            aria-label="Ver detalle"
+                            title="Ver detalle"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                     );
                   },
@@ -1891,9 +2123,9 @@ export function RhInspectorMensualModal({
               </thead>
               <tbody className="divide-y divide-border/60">
                 {cotizarResult.items.map((item) => (
-                  <tr key={item.exp_liqui} className="hover:bg-muted/30">
+                  <tr key={item.liquidacion_categoria_visitas_id} className="hover:bg-muted/30">
                     <td className="px-3 py-2 font-mono font-semibold">
-                      {item.exp_liqui}
+                      {item.expediente ?? item.exp_liqui ?? "—"}
                     </td>
                     <td className="px-3 py-2 text-center">
                       {item.liquidacion_especifica_numero ?? "—"}

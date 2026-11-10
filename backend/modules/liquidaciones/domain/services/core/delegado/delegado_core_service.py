@@ -8,6 +8,7 @@ from typing import Optional
 import uuid
 from django.db.models import Q, Exists, OuterRef
 
+from core.exceptions import ConflictError
 from modules.liquidaciones.domain.models.delegado import (
     Delegado,
     DelegadoOperacion,
@@ -530,26 +531,208 @@ class DelegadoCoreService:
         """
         Actualiza campos de metadatos de una asociación LiquidacionDelegado.
         Retorna la instancia actualizada, o None si la asociación no existe.
+
+        La asignación queda PROTEGIDA si tiene algún detalle de honorario
+        vinculado a un RH mensual: en ese caso se lanza ConflictError (409)
+        ANTES de escribir nada (misma regla de seguridad que la remoción).
         """
-        asociacion = LiquidacionDelegado.objects.filter(
-            liquidacion=liquidacion, delegado=delegado
-        ).first()
+        asociacion = (
+            LiquidacionDelegado.objects
+            .filter(liquidacion=liquidacion, delegado=delegado)
+            .select_related("delegado__perfil_ingeniero")
+            .first()
+        )
         if not asociacion:
             return None
+        self._bloquear_edicion_con_rh_mensual(asignacion)
         for campo, valor in campos.items():
             setattr(asociacion, campo, valor)
         asociacion.save()
         return asociacion
+
+    def actualizar_asignacion_por_id(
+        self,
+        liquidacion,
+        liquidacion_delegado_id,
+        campos: dict,
+    ) -> Optional[LiquidacionDelegado]:
+        """
+        Actualiza una asociación LiquidacionDelegado identificada por su propio PK.
+
+        A diferencia de `actualizar_liquidacion_delegado` (que resuelve por
+        delegado), aquí el objetivo es la fila exacta. La pertenencia a la
+        liquidación se filtra en la query, de modo que una asignación de otra
+        liquidación nunca se toca.
+
+        Retorna la instancia actualizada, o None si la asignación no existe o no
+        pertenece a la liquidación.
+
+        La asignación queda PROTEGIDA si tiene algún detalle de honorario
+        vinculado a un RH mensual: en ese caso se lanza ConflictError (409)
+        ANTES de escribir nada (misma regla de seguridad que la remoción).
+        """
+        asignacion = (
+            LiquidacionDelegado.objects
+            .filter(
+                id=liquidacion_delegado_id,
+                liquidacion_id=liquidacion.id,
+            )
+            .select_related(
+                "liquidacion",
+                "delegado__perfil_ingeniero",
+                "especialidad_revision",
+            )
+            .first()
+        )
+        if not asignacion:
+            return None
+        self._bloquear_edicion_con_rh_mensual(asignacion)
+        for campo, valor in campos.items():
+            setattr(asignacion, campo, valor)
+        asignacion.save()
+        return asignacion
+
+    def _bloquear_edicion_con_rh_mensual(self, asignacion) -> None:
+        """
+        Lanza ConflictError (409) si la asignación está protegida por un RH mensual.
+
+        Espejo de la regla 1 de `eliminar_asignacion_con_guardas_rh`: si algún
+        DetalleHonorarioDelegado de la asignación está vinculado a un
+        ReciboHonorarioDelegadoMensual, sus importes están congelados y son
+        propiedad del flujo RH, así que la metadata de la asignación NO es
+        editable a mano.
+
+        Se evalúa ANTES de cualquier escritura: cuando la guarda salta no se
+        escribe la asignación, ni el detalle, ni el RH mensual, ni la
+        liquidación.
+
+        Args:
+            asignacion: LiquidacionDelegado objetivo de la edición.
+
+        Raises:
+            ConflictError: 409 si un RH mensual protege la asignación.
+        """
+        tiene_rh_mensual = DetalleHonorarioDelegado.objects.filter(
+            liquidacion_delegado_id=asignacion.id,
+            recibo_mensual__isnull=False,
+        ).exists()
+        if not tiene_rh_mensual:
+            return
+        label = self._get_delegado_label(asignacion.delegado)
+        raise ConflictError(
+            f"No se puede editar la asignación del delegado '{label}' porque "
+            "tiene detalles de honorario vinculados a un recibo de honorario "
+            "mensual. Elimina primero el recibo mensual."
+        )
 
     def eliminar_liquidacion_delegado(
         self,
         liquidacion,
         delegado,
     ) -> tuple:
-        """Elimina la asociación LiquidacionDelegado para (liquidacion, delegado)."""
-        return LiquidacionDelegado.objects.filter(
-            liquidacion=liquidacion, delegado=delegado
+        """
+        Elimina la asociación LiquidacionDelegado para (liquidacion, delegado).
+
+        Atajo de `eliminar_asignacion_con_guardas_rh`: la eliminación de una
+        asignación SIEMPRE está guardada por sus referencias financieras.
+        """
+        return self.eliminar_asignacion_con_guardas_rh(
+            liquidacion=liquidacion,
+            delegado=delegado,
+        )
+
+    def eliminar_asignacion_con_guardas_rh(
+        self,
+        liquidacion,
+        delegado,
+    ) -> tuple:
+        """
+        Elimina las asignaciones (LiquidacionDelegado) de (liquidacion, delegado)
+        evaluando antes las referencias financieras que las protegen.
+
+        La decisión se basa en el ESTADO DE REFERENCIA de las asignaciones, no
+        en la procedencia RH (`creado_por_rh`): una asignación creada por el
+        flujo RH y una manual o heredada se evalúan igual.
+
+        1. Si algún DetalleHonorarioDelegado tiene `recibo_mensual` → 409.
+           Ese detalle pertenece a un RH mensual con totales congelados:
+           borrarlo desincronizaría el RH.
+        2. Si existe un ReciboHonorarioDelegado (recibo no mensual) → 409.
+        3. Sin bloqueos: se eliminan primero los detalles huérfanos
+           (`recibo_mensual IS NULL`) y después TODAS las asignaciones del
+           delegado en la liquidación (una por especialidad de revisión).
+
+        Nunca elimina la LiquidacionGeneral ni ningún ReciboHonorarioDelegadoMensual,
+        y nunca recalcula totales de RH.
+
+        Args:
+            liquidacion: FK a LiquidacionGeneral.
+            delegado: FK a Delegado.
+
+        Returns:
+            Tupla (total_eliminado, detalle_por_modelo) de Django.
+
+        Raises:
+            ConflictError: 409 si una referencia financiera bloquea la eliminación.
+        """
+        asignacion_ids = list(
+            LiquidacionDelegado.objects.filter(
+                liquidacion=liquidacion, delegado=delegado,
+            ).values_list("id", flat=True)
+        )
+        if not asignacion_ids:
+            return 0, {}
+
+        label = self._get_delegado_label(delegado)
+
+        tiene_detalle_rh_mensual = (
+            DetalleHonorarioDelegado.objects.filter(
+                liquidacion_delegado_id__in=asignacion_ids,
+                recibo_mensual__isnull=False,
+            ).exists()
+        )
+        if tiene_detalle_rh_mensual:
+            raise ConflictError(
+                f"No se puede quitar el delegado '{label}' porque tiene detalles "
+                "de honorario vinculados a un recibo de honorario mensual. "
+                "Elimina primero el recibo mensual."
+            )
+
+        tiene_recibo_honorario = (
+            ReciboHonorarioDelegado.objects.filter(
+                liquidacion_delegado_id__in=asignacion_ids,
+            ).exists()
+        )
+        if tiene_recibo_honorario:
+            raise ConflictError(
+                f"No se puede quitar el delegado '{label}' porque tiene un "
+                "recibo de honorario asociado."
+            )
+
+        # Detalles huérfanos (sin RH mensual detrás) → se eliminan primero:
+        # la asignación está en PROTECT y no se puede borrar antes.
+        DetalleHonorarioDelegado.objects.filter(
+            liquidacion_delegado_id__in=asignacion_ids,
+            recibo_mensual__isnull=True,
         ).delete()
+
+        # Asignaciones: todas las especialidades de revisión de este delegado.
+        return LiquidacionDelegado.objects.filter(
+            id__in=asignacion_ids,
+        ).delete()
+
+    @staticmethod
+    def _get_delegado_label(delegado) -> str:
+        """
+        Etiqueta legible de un delegado para los mensajes de error.
+
+        Usa el CIP o el nombre completo; nunca el UUID crudo (los mensajes de
+        error no deben filtrar identificadores internos).
+        """
+        perfil = getattr(delegado, "perfil_ingeniero", None)
+        cip = getattr(perfil, "cip", None) if perfil is not None else None
+        nombre = getattr(perfil, "nombre_completo", None) if perfil is not None else None
+        return cip or nombre or str(delegado)
 
     def obtener_liquidacion_delegado(
         self,
@@ -759,6 +942,44 @@ class DelegadoCoreService:
         total = qs.count()
         offset = (page - 1) * page_size
         return list(qs[offset:offset + page_size]), total
+
+    def list_asignaciones_con_detalle_rh(
+        self,
+        liquidacion_id: uuid.UUID,
+    ) -> list[LiquidacionDelegado]:
+        """
+        Retorna las asignaciones (LiquidacionDelegado) de una liquidación con su
+        detalle RH y su RH mensual precargados.
+
+        Presupuesto FIJO de 3 queries (sin N+1, sin count() — no hay paginación):
+          1. Asignaciones + delegado.perfil_ingeniero + especialidad_revision
+             + delegado_operacion (LEFT JOIN: la FK es nullable).
+          2. Detalles de honorario (DetalleHonorarioDelegado) de esas asignaciones.
+          3. Recibos RH mensuales (ReciboHonorarioDelegadoMensual) de esos detalles.
+
+        El orden es estable: apellido paterno, apellido materno y especialidad
+        de revisión.
+
+        Nota: NO se accede a `ld.recibo_honorario` (OneToOneField) — su accessor
+        inverso lanza RelatedObjectDoesNotExist cuando no existe. El RH mensual
+        se cuelga del DETALLE (`detalles_honorario__recibo_mensual`), no de la
+        asignación.
+        """
+        return list(
+            LiquidacionDelegado.objects.filter(
+                liquidacion_id=liquidacion_id,
+            ).select_related(
+                "delegado__perfil_ingeniero",
+                "especialidad_revision",
+                "delegado_operacion",
+            ).prefetch_related(
+                "detalles_honorario__recibo_mensual",
+            ).order_by(
+                "delegado__perfil_ingeniero__apellido_paterno",
+                "delegado__perfil_ingeniero__apellido_materno",
+                "especialidad_revision__nombre",
+            )
+        )
 
     def resolve_delegado_operacion(
         self,

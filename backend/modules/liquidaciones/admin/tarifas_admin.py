@@ -2,8 +2,12 @@
 
 from django.contrib import admin
 
+from core_application.vigencia.admin import VigenciaAdminMixin, VigenteHoyFilter
+from modules.liquidaciones.domain.constants import TipoLiquidacion
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_reglas import (
-    TarifaLiquidacionBase,
+    TarifaBaseMetroCuadradoProxy,
+    TarifaBasePorcentajeObraProxy,
+    TarifaBaseVisitasProxy,
     TarifaPorMetroCuadrado,
     TarifaPorCategoriaVisitas,
     TarifaPorcentajeObra,
@@ -42,19 +46,60 @@ class TarifaPorcentajeObraInline(admin.TabularInline):
 # ── Admins ──────────────────────────────────────────────────────
 
 
-@admin.register(TarifaLiquidacionBase)
-class TarifaLiquidacionBaseAdmin(admin.ModelAdmin):
-    """Admin for TarifaLiquidacionBase with inlines for its tariff details."""
+class BaseTarifaLiquidacionProxyAdmin(VigenciaAdminMixin):
+    """Admin behaviour shared by a tariff family with one calculation method."""
 
     list_display = ["tipo_liquidacion", "periodo_inicio", "periodo_fin"]
     search_fields = ["tipo_liquidacion__nombre"]
-    list_filter = ["tipo_liquidacion"]
+    list_filter = ["tipo_liquidacion", VigenteHoyFilter]
+    ordering = ["tipo_liquidacion", "-periodo_inicio"]
     readonly_fields = ["created_at", "updated_at"]
-    inlines = [
-        TarifaPorMetroCuadradoInline,
-        TarifaPorCategoriaVisitasInline,
-        TarifaPorcentajeObraInline,
-    ]
+    tipo_codigos = ()
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(
+            tipo_liquidacion__codigo__in=self.tipo_codigos
+        )
+
+    def get_form(self, request, obj=None, **kwargs):
+        form_class = super().get_form(request, obj, **kwargs)
+        form_class.base_fields["tipo_liquidacion"].queryset = (
+            form_class.base_fields["tipo_liquidacion"].queryset.filter(
+                codigo__in=self.tipo_codigos
+            )
+        )
+        return form_class
+
+
+@admin.register(TarifaBasePorcentajeObraProxy)
+class TarifaBasePorcentajeObraProxyAdmin(BaseTarifaLiquidacionProxyAdmin):
+    """Tariff bases for Edificación, Impacto Vial, and Taludes."""
+
+    tipo_codigos = (
+        TipoLiquidacion.EDIFICACION,
+        TipoLiquidacion.IMPACTO_VIAL,
+        TipoLiquidacion.TALUDES,
+    )
+    inlines = [TarifaPorcentajeObraInline]
+
+
+@admin.register(TarifaBaseMetroCuadradoProxy)
+class TarifaBaseMetroCuadradoProxyAdmin(BaseTarifaLiquidacionProxyAdmin):
+    """Tariff bases for Habilitación Urbana and Mecánica de Suelos."""
+
+    tipo_codigos = (
+        TipoLiquidacion.HABILITACION_URBANA,
+        TipoLiquidacion.MECANICA_SUELOS,
+    )
+    inlines = [TarifaPorMetroCuadradoInline]
+
+
+@admin.register(TarifaBaseVisitasProxy)
+class TarifaBaseVisitasProxyAdmin(BaseTarifaLiquidacionProxyAdmin):
+    """Tariff bases for Inspección de Obra."""
+
+    tipo_codigos = (TipoLiquidacion.INSPECCION_OBRA,)
+    inlines = [TarifaPorCategoriaVisitasInline]
 
 
 @admin.register(TarifaPorMetroCuadrado)
@@ -90,7 +135,7 @@ class TarifaPorcentajeObraAdmin(admin.ModelAdmin):
 
 
 @admin.register(DerechoPorcentajeObra)
-class DerechoPorcentajeObraAdmin(admin.ModelAdmin):
+class DerechoPorcentajeObraAdmin(VigenciaAdminMixin):
     """Admin for DerechoPorcentajeObra (minimum percentage rights)."""
 
     list_display = [
@@ -101,15 +146,15 @@ class DerechoPorcentajeObraAdmin(admin.ModelAdmin):
         "periodo_fin",
     ]
     search_fields = []
-    list_filter = ["periodo_inicio"]
+    list_filter = [VigenteHoyFilter]
     readonly_fields = ["created_at", "updated_at"]
 
 
 @admin.register(DerechoPorMetroCuadrado)
-class DerechoPorMetroCuadradoAdmin(admin.ModelAdmin):
+class DerechoPorMetroCuadradoAdmin(VigenciaAdminMixin):
     """Admin for DerechoPorMetroCuadrado (minimum M2 rights)."""
 
     list_display = ["derecho_minimo", "derecho_maximo", "periodo_inicio", "periodo_fin"]
     search_fields = []
-    list_filter = ["periodo_inicio"]
+    list_filter = [VigenteHoyFilter]
     readonly_fields = ["created_at", "updated_at"]

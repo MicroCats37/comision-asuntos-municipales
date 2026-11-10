@@ -10,6 +10,11 @@ from django.utils import timezone
 from simple_history.models import HistoricalRecords
 from core.models import BaseModel
 from core_application.models import VigenciaModel
+from core_application.vigencia import (
+    SCOPE_TIPO_LIQUIDACION_ESPECIALIDAD,
+    exclusion_constraint_vigencia,
+    vigencia_rango_valido_constraint,
+)
 from modules.liquidaciones.domain.constants import (
     EstadoLiquidacion,
     TipoLiquidacion,
@@ -388,6 +393,8 @@ class LiquidacionEspecialidadDisponibles(BaseModel,VigenciaModel):
 
     history = HistoricalRecords()
 
+    vigencia_scope_fields = SCOPE_TIPO_LIQUIDACION_ESPECIALIDAD
+
     tipo_liquidacion = models.ForeignKey(
         'liquidaciones.TipoLiquidacion',
         on_delete=models.PROTECT,
@@ -413,9 +420,10 @@ class LiquidacionEspecialidadDisponibles(BaseModel,VigenciaModel):
         verbose_name = "Especialidad de Liquidación"
         verbose_name_plural = "Especialidades de Liquidaciones"
         constraints = [
-            models.UniqueConstraint(
-                fields=["tipo_liquidacion", "especialidad"],
-                name="unique_liquidacion_especialidad",
+            vigencia_rango_valido_constraint("liquidacion_especialidad_disponible"),
+            exclusion_constraint_vigencia(
+                SCOPE_TIPO_LIQUIDACION_ESPECIALIDAD,
+                name="exclude_liquidacion_especialidad_disponible_overlap",
             ),
         ]
 

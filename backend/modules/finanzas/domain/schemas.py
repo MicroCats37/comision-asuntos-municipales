@@ -42,7 +42,39 @@ class VariablesVigentesResult(BaseModel):
 from core.types import BaseSchema as _BaseSchema
 
 
-class RHInspectorCotizarItemIn(_BaseSchema):
+class _RHExpedienteInMixin(_BaseSchema):
+    """
+    Bloque común: expediente de la LiquidacionGeneral asociada al item del RH.
+
+    Se compone en los 4 items del RH mensual (cotizar/actualizar de delegado e
+    inspector) para que el contrato del expediente no pueda divergir entre
+    endpoints (contract/SCHEMA_DRY_INTENTION.md).
+
+    Semántica del valor (idéntica en los 4 payloads):
+    - Campo AUSENTE en el payload → "sin cambio": no se toca ningún expediente.
+    - Valor IGUAL al persistido → no-op: no se escribe y NO dispara el guard PAGADA.
+    - Valor DISTINTO → se persiste en la MISMA transacción que la mutación del RH.
+    - Valor VACÍO ("") → limpiar el expediente de esa liquidación.
+
+    NOTA: ``BaseSchema`` normaliza los strings vacíos a ``None`` antes de
+    validar. Por eso "ausente" y "vacío" se distinguen por ``model_fields_set``
+    (el campo presente en el payload), NO por el valor ya normalizado.
+    """
+
+    expediente: Optional[str] = Field(
+        None,
+        max_length=100,
+        description=(
+            "Expediente deseado de la LiquidacionGeneral del item. "
+            "Ausente = sin cambio; '' = limpiar. Se persiste en la misma "
+            "transacción que la mutación del RH: si la liquidación está PAGADA "
+            "y el valor es distinto del persistido, toda la operación se "
+            "aborta con 409 LIQUIDACION_PAGADA_NOT_EDITABLE."
+        ),
+    )
+
+
+class RHInspectorCotizarItemIn(_RHExpedienteInMixin):
     """
     Item individual para la cotización del RH mensual del inspector.
 
@@ -76,7 +108,7 @@ class RHInspectorCotizarIn(_BaseSchema):
 # ---------------------------------------------------------------------------
 
 
-class RHDelegadoCotizarItemIn(_BaseSchema):
+class RHDelegadoCotizarItemIn(_RHExpedienteInMixin):
     """
     Item individual para la cotización del RH mensual del delegado.
 
@@ -115,7 +147,7 @@ class RHDelegadoCotizarIn(_BaseSchema):
 # ---------------------------------------------------------------------------
 
 
-class RHDelegadoActualizarItemIn(_BaseSchema):
+class RHDelegadoActualizarItemIn(_RHExpedienteInMixin):
     """
     Item del conjunto final de detalles (PATCH) del RH mensual del delegado.
 
@@ -173,7 +205,7 @@ class RHDelegadoActualizarIn(_BaseSchema):
 # ---------------------------------------------------------------------------
 
 
-class RHInspectorActualizarItemIn(_BaseSchema):
+class RHInspectorActualizarItemIn(_RHExpedienteInMixin):
     """
     Item del conjunto final de detalles (PATCH) del RH mensual del inspector.
 

@@ -8,6 +8,11 @@ from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
 from core_application.models import VigenciaModel, VigenciaQuerySet
+from core_application.vigencia import (
+    SCOPE_GLOBAL,
+    exclusion_constraint_vigencia,
+    vigencia_rango_valido_constraint,
+)
 
 
 class IGVQuerySet(VigenciaQuerySet):
@@ -31,6 +36,9 @@ class IGV(BaseModel, VigenciaModel):
 
     history = HistoricalRecords()
 
+    # Scope key: the IGV rate is global (one schedule for the whole municipality).
+    vigencia_scope_fields = SCOPE_GLOBAL
+
     valor = models.DecimalField(
         max_digits=3,
         decimal_places=2,
@@ -46,6 +54,13 @@ class IGV(BaseModel, VigenciaModel):
         verbose_name = "IGV"
         verbose_name_plural = "IGV"
         ordering = ["-periodo_inicio"]
+        constraints = [
+            vigencia_rango_valido_constraint("igv"),
+            exclusion_constraint_vigencia(
+                SCOPE_GLOBAL,
+                name="exclude_igv_overlap",
+            ),
+        ]
 
     def __str__(self):
         porcentaje = float(self.valor) * 100
@@ -68,6 +83,9 @@ class UIT(BaseModel, VigenciaModel):
 
     history = HistoricalRecords()
 
+    # Scope key: the UIT value is global (one schedule for the whole municipality).
+    vigencia_scope_fields = SCOPE_GLOBAL
+
     valor = models.IntegerField(
         verbose_name="Valor UIT (S/)",
         help_text="Valor de la UIT en soles",
@@ -77,6 +95,13 @@ class UIT(BaseModel, VigenciaModel):
         verbose_name = "UIT"
         verbose_name_plural = "UIT"
         ordering = ["-periodo_inicio"]
+        constraints = [
+            vigencia_rango_valido_constraint("uit"),
+            exclusion_constraint_vigencia(
+                SCOPE_GLOBAL,
+                name="exclude_uit_overlap",
+            ),
+        ]
 
     def __str__(self):
         return f"UIT S/ {self.valor} desde {self.periodo_inicio}"

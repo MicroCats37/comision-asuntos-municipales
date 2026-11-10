@@ -8,6 +8,11 @@ from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
 from core_application.models import VigenciaModel
+from core_application.vigencia import (
+    cerrar_actual_y_abrir_nuevo,
+    exclusion_constraint_vigencia,
+    validar_periodo_sin_solapamiento,
+)
 from ..constants import TipoDelegado
 from modules.liquidaciones.domain.constants import DictamenRevision
 
@@ -110,6 +115,9 @@ class DelegadoOperacion(BaseModel):
 class DelegadoOperacionPeriodo(BaseModel, VigenciaModel):
     history = HistoricalRecords()
 
+    # Scope key: periods of different delegated operations are independent.
+    vigencia_scope_fields = ("delegado_municipalidad",)
+
     delegado_municipalidad = models.ForeignKey(
         "DelegadoOperacion",
         on_delete=models.CASCADE,
@@ -127,6 +135,10 @@ class DelegadoOperacionPeriodo(BaseModel, VigenciaModel):
                 condition=models.Q(periodo_fin__isnull=True),
                 name="unique_delegado_operacion_vigente",
             ),
+            exclusion_constraint_vigencia(
+                ("delegado_municipalidad",),
+                name="exclude_delegado_operacion_periodo_overlap",
+            ),
         ]
 
     def __str__(self):
@@ -136,35 +148,16 @@ class DelegadoOperacionPeriodo(BaseModel, VigenciaModel):
         )
 
     def save(self, *args, **kwargs):
-        if self.periodo_fin is None:
-            existe_abierto = (
-                DelegadoOperacionPeriodo.objects
-                .filter(delegado_municipalidad=self.delegado_municipalidad, periodo_fin__isnull=True)
-                .exclude(pk=self.pk)
-                .exists()
-            )
-            if existe_abierto:
-                raise ValueError(
-                    f"Ya existe un periodo abierto para este {self.delegado_municipalidad}. "
-                    "Cierre el periodo actual antes de abrir uno nuevo."
-                )
+        validar_periodo_sin_solapamiento(self)
         super().save(*args, **kwargs)
 
     @classmethod
     def close_current_and_open_new(cls, delegado_municipalidad, fecha_inicio):
         """Cierra el periodo abierto (periodo_fin = fecha_inicio - 1 día) y crea uno nuevo."""
-        from datetime import timedelta
-
-        hoy = fecha_inicio - timedelta(days=1)
-        cls.objects.filter(
-            delegado_municipalidad=delegado_municipalidad,
-            periodo_fin__isnull=True,
-        ).update(periodo_fin=hoy)
-
-        return cls.objects.create(
-            delegado_municipalidad=delegado_municipalidad,
+        return cerrar_actual_y_abrir_nuevo(
+            cls,
             periodo_inicio=fecha_inicio,
-            periodo_fin=None,
+            valores={"delegado_municipalidad": delegado_municipalidad},
         )
 
 

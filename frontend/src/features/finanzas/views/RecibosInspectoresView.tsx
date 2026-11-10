@@ -17,6 +17,7 @@ import {
   HardHat,
   Plus,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { useConfirmationDialog } from "@/components/confirmationDialog/useConfirmationDialog";
@@ -82,13 +83,23 @@ export function RecibosInspectoresView() {
     setRhModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string, cip: string) => {
     confirm({
       title: "Eliminar recibo de inspector",
       description:
         "¿Estás seguro de que deseas eliminar este recibo de honorario mensual? Esta acción no se puede deshacer.",
       confirmLabel: "Eliminar",
       variant: "danger",
+      icon: <Trash2 className="h-5 w-5 text-destructive" />,
+      eyebrow: "Eliminar",
+      typedConfirmation:
+        cip.trim() === ""
+          ? undefined
+          : {
+              expectedText: cip,
+              label: "CIP del inspector",
+              prompt: `Para confirmar, escribe el CIP ${cip}`,
+            },
     }).then((confirmed) => {
       if (confirmed) {
         eliminarMutation.eliminar(id);

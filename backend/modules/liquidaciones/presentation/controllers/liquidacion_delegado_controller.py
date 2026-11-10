@@ -4,6 +4,7 @@ LiquidacionDelegadoController — Thin HTTP controller for delegados de liquidac
 Endpoints:
 - GET   /api/liquidaciones/delegados/vigentes
 - GET   /api/liquidaciones/delegados-asignaciones
+- GET   /api/liquidaciones/{liquidacion_id}/delegados-asignaciones
 - GET   /api/liquidaciones/especialidades-revision
 - GET   /api/liquidaciones/delegados/vigentes-por-especialidad
 - PATCH /api/liquidaciones/{liquidacion_id}/delegados
@@ -31,6 +32,7 @@ from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas 
     DelegadosVigentesOut,
     LiquidacionDelegadoBatchIn,
     LiquidacionDelegadoBatchOut,
+    LiquidacionDelegadoDetalleResponseOut,
     LiquidacionDelegadoOut,
     EspecialidadesRevisionOut,
 )
@@ -107,6 +109,27 @@ class LiquidacionDelegadoController:
         )
         return success_response(
             self.presenter.present_asignaciones_list(results, total, page, page_size)
+        )
+
+    @route.get(
+        "/{liquidacion_id}/delegados-asignaciones",
+        response={200: ApiResponse[LiquidacionDelegadoDetalleResponseOut]},
+    )
+    def list_detalle_asignaciones(self, liquidacion_id: uuid.UUID):
+        """
+        GET /liquidaciones/{liquidacion_id}/delegados-asignaciones
+
+        Asignaciones (LiquidacionDelegado) de ESA liquidación, con su detalle RH
+        y su RH mensual enlazado cuando existe. No paginado: el conjunto está
+        acotado por la liquidación.
+
+        404 si la liquidación no existe · 422 si el id no es UUID.
+        """
+        domain_result = self.orchestrator.listar_asignaciones_con_detalle_rh_proceso(
+            liquidacion_id=liquidacion_id,
+        )
+        return success_response(
+            self.presenter.present_asignaciones_con_detalle_rh(domain_result)
         )
 
     @route.get(

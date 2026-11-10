@@ -80,6 +80,51 @@ def liquidacion_io_created(
     return lg
 
 
+@pytest.fixture
+def segunda_liquidacion_io(
+    db,
+    municipalidad,
+    proyecto,
+    create_user,
+    igv_vigente,
+    uit_vigente,
+    tarifa_visitas_io,
+    tipo_inspeccion_obra,
+):
+    """
+    Segunda liquidación IO con OTRO expediente.
+
+    Existe para comprobar que el filtro `expediente` del listado de IO
+    discrimina de verdad (no devuelve el mismo conjunto con o sin filtro).
+    """
+    lg = LiquidacionGeneral.objects.create(
+        proyecto=proyecto,
+        municipalidad=municipalidad,
+        usuario_creador=create_user,
+        expediente="EXP-IO-2024-002",
+        observacion="Segunda liquidacion IO",
+        estado="PAGADA",
+        tipo_liquidacion=tipo_inspeccion_obra,
+        numero_revision=1,
+        sub_total=Decimal("100.00"),
+        total=Decimal("118.00"),
+        igv_id=igv_vigente,
+        uit_id=uit_vigente,
+    )
+
+    LiquidacionInspeccionObra.objects.create(liquidacion=lg, numero=2)
+
+    LiquidacionPorCategoriaVisitas.objects.create(
+        liquidacion_general=lg,
+        cantidad_visitas=1,
+        porcentaje_uit=Decimal("0.05"),
+        categoria="INSPECCION",
+        tarifa_aplicada=tarifa_visitas_io,
+    )
+
+    return lg
+
+
 # ── Tests ──────────────────────────────────────────────────────────────────────
 
 @pytest.mark.django_db
@@ -280,3 +325,68 @@ def test_list_liquidacion_tipo_has_registros_pago_field(
             "fecha_registro": "2026-09-25",
         }
     ]
+
+
+# ── Filtro por expediente (paridad con el browse del RH) ─────────────────────────
+
+@pytest.mark.django_db
+def test_list_filters_by_expediente(
+    auth_client,
+    liquidacion_io_created,
+    segunda_liquidacion_io,
+):
+    """
+    GIVEN dos liquidaciones IO con expedientes distintos
+    WHEN se consulta el listado filtrando por `expediente`
+    THEN sólo devuelve la liquidación cuyo expediente coincide.
+    """
+    response = auth_client.get(
+        "/liquidaciones/inspeccion-obra/?expediente=EXP-IO-2024-002"
+    )
+
+    assert response.status_code == 200
+    items = response.json()["data"]["items"]
+
+    assert len(items) == 1
+    assert items[0]["liquidacion_general"]["expediente"] == "EXP-IO-2024-002"
+
+
+@pytest.mark.django_db
+def test_list_expediente_filter_matches_partially(
+    auth_client,
+    liquidacion_io_created,
+    segunda_liquidacion_io,
+):
+    """
+    El filtro por expediente es `icontains`: una parte del expediente basta.
+    """
+    response = auth_client.get("/liquidaciones/inspeccion-obra/?expediente=2024-001")
+
+    assert response.status_code == 200
+    items = response.json()["data"]["items"]
+
+    assert len(items) == 1
+    assert items[0]["liquidacion_general"]["expediente"] == "EXP-IO-2024-001"
+
+
+@pytest.mark.django_db
+def test_list_expediente_filter_excludes_non_matching(
+    auth_client,
+    liquidacion_io_created,
+    segunda_liquidacion_io,
+):
+    """
+    Un expediente que no existe NO amplía el resultado: devuelve 0 items.
+
+    Esto fija que el filtro se APLICA (no se ignora en silencio como un
+    parámetro vacío).
+    """
+    response = auth_client.get(
+        "/liquidaciones/inspeccion-obra/?expediente=NO-EXISTE-000"
+    )
+
+    assert response.status_code == 200
+    result = response.json()["data"]
+
+    assert result["items"] == []
+    assert result["total"] == 0

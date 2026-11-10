@@ -152,6 +152,15 @@ export interface LiquidacionCardShellProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onComprobante?: () => void;
+  /**
+   * Etiqueta de la acción de comprobante de la tarjeta.
+   *
+   * El flujo de comprobante es ÚNICO: el rótulo por defecto es
+   * "Gestionar comprobante" y el modal decide internamente si ofrece alta,
+   * reemplazo o edición. Se declara explícito para que el rótulo de las
+   * tarjetas de Liquidaciones no dependa del default del shell.
+   */
+  etiquetaComprobante?: string;
   onVerDetalle?: () => void;
   calculoSlot?: ReactNode;
   delegadosSlot?: ReactNode;
@@ -728,6 +737,7 @@ export function useLiquidacionCardState<TItem extends LiquidacionCardItemLike>(
     onEdit: () => setEditModalOpen(true),
     onDelete: () => setDeleteModalOpen(true),
     onComprobante: () => setComprobanteModalOpen(true),
+    etiquetaComprobante: "Gestionar comprobante",
     onVerDetalle: () => setDetalleModalOpen(true),
     calculoSlot: config.buildCalculoSlot(item),
     delegadosSlot: config.buildDelegadosSlot(item),
@@ -768,6 +778,16 @@ export function useLiquidacionCardState<TItem extends LiquidacionCardItemLike>(
         },
       })}
 
+      {/*
+       * Modal ÚNICO de comprobante (alta + reemplazo + edición en el mismo
+       * diálogo). El rótulo de la acción es "Gestionar comprobante".
+       *
+       * Sin `refetch()`: la mutación parchea la caché de las LISTAS
+       * (`useComprobanteCacheSync`), de modo que la fila refleja el
+       * comprobante vigente real sin volver a pedir el listado. El refetch
+       * manual queda reservado a los flujos que no parchean caché
+       * (editar/eliminar la liquidación) y al browse RH (`["rh-browse", …]`).
+       */}
       <ComprobanteFormModal
         open={comprobanteModalOpen}
         onOpenChange={setComprobanteModalOpen}
@@ -776,7 +796,6 @@ export function useLiquidacionCardState<TItem extends LiquidacionCardItemLike>(
         }
         onSuccess={() => {
           setComprobanteModalOpen(false);
-          onUpdated?.();
         }}
       />
 

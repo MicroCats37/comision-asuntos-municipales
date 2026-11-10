@@ -10,7 +10,9 @@ from .profesionales_admin import (
     ProyectistaAdmin,
 )
 from .tarifas_admin import (
-    TarifaLiquidacionBaseAdmin,
+    TarifaBasePorcentajeObraProxyAdmin,
+    TarifaBaseMetroCuadradoProxyAdmin,
+    TarifaBaseVisitasProxyAdmin,
     TarifaPorMetroCuadradoAdmin,
     TarifaPorCategoriaVisitasAdmin,
     TarifaPorcentajeObraAdmin,
@@ -26,7 +28,9 @@ __all__ = [
     "DelegadoAdmin",
     "InspectorAdmin",
     "ProyectistaAdmin",
-    "TarifaLiquidacionBaseAdmin",
+    "TarifaBasePorcentajeObraProxyAdmin",
+    "TarifaBaseMetroCuadradoProxyAdmin",
+    "TarifaBaseVisitasProxyAdmin",
     "TarifaPorMetroCuadradoAdmin",
     "TarifaPorCategoriaVisitasAdmin",
     "TarifaPorcentajeObraAdmin",

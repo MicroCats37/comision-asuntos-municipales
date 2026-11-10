@@ -90,7 +90,6 @@ export function LiquidacionesInspeccionObraView() {
     (item: LiquidacionInspeccionObraListItem): LiquidacionRowAction[] => {
       const lg = item.liquidacion_general;
       const editState = canEditLiquidacion(lg);
-      const comprobanteActivo = lg.comprobantes?.find((c) => c.activo) ?? null;
       return [
         {
           icon: Eye,
@@ -119,9 +118,7 @@ export function LiquidacionesInspeccionObraView() {
           : []),
         {
           icon: Receipt,
-          label: comprobanteActivo
-            ? "Reemplazar comprobante"
-            : "Agregar comprobante",
+          label: "Gestionar comprobante",
           onAction: () => setComprobanteItem(item),
         },
       ];

@@ -24,7 +24,11 @@ from modules.liquidaciones.domain.results.delegado.delegado_result import (
     LiquidacionDelegadoDelegadoMinimal,
     TipoLiquidacionMinimalResult,
     DelegadoCandidatasResult,
+    DetalleHonorarioDelegadoResult,
     EspecialidadesRevisionResult,
+    LiquidacionDelegadoDetalleResponseResult,
+    LiquidacionDelegadoDetalleResult,
+    ReciboHonorarioDelegadoMensualResult,
 )
 from modules.liquidaciones.presentation.schemas.delegado.delegado_schemas import (
     PerfilIngenieroOut,
@@ -49,6 +53,10 @@ from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas 
     LiquidacionDelegadoBatchOut,
     DelegadoOperatividadesOut,
     DelegadoOperacionOut,
+    DetalleHonorarioDelegadoOut,
+    LiquidacionDelegadoDetalleOut,
+    LiquidacionDelegadoDetalleResponseOut,
+    ReciboHonorarioDelegadoMensualOut,
 )
 from core.pagination import PaginatedData
 
@@ -368,6 +376,86 @@ class DelegadoPresenter:
             page=page,
             page_size=page_size,
             total_pages=total_pages,
+        )
+
+    # ── Lectura anidada: asignaciones con detalle RH ───────────────────────────
+
+    @staticmethod
+    def _map_recibo_honorario_mensual(
+        result: ReciboHonorarioDelegadoMensualResult,
+    ) -> ReciboHonorarioDelegadoMensualOut:
+        """Maps ReciboHonorarioDelegadoMensualResult to ReciboHonorarioDelegadoMensualOut."""
+        return ReciboHonorarioDelegadoMensualOut(
+            id=uuid.UUID(result.id),
+            numero=result.numero,
+            periodo=result.periodo,
+            mes=result.mes,
+            fecha_registro=result.fecha_registro,
+            sub_total=result.sub_total,
+            renta_cip=result.renta_cip,
+            aporte_codemu=result.aporte_codemu,
+            fondo_comun=result.fondo_comun,
+            neto_honorario=result.neto_honorario,
+        )
+
+    @staticmethod
+    def _map_detalle_honorario(
+        result: DetalleHonorarioDelegadoResult,
+    ) -> DetalleHonorarioDelegadoOut:
+        """Maps DetalleHonorarioDelegadoResult to DetalleHonorarioDelegadoOut."""
+        return DetalleHonorarioDelegadoOut(
+            id=uuid.UUID(result.id),
+            imp_bruto=result.imp_bruto,
+            sub_total=result.sub_total,
+            renta_cip=result.renta_cip,
+            aporte_codemu=result.aporte_codemu,
+            fondo_comun=result.fondo_comun,
+            neto_honorario=result.neto_honorario,
+            recibo_mensual=(
+                DelegadoPresenter._map_recibo_honorario_mensual(result.recibo_mensual)
+                if result.recibo_mensual
+                else None
+            ),
+        )
+
+    @staticmethod
+    def _map_liquidacion_delegado_detalle(
+        result: LiquidacionDelegadoDetalleResult,
+    ) -> LiquidacionDelegadoDetalleOut:
+        """Maps LiquidacionDelegadoDetalleResult to LiquidacionDelegadoDetalleOut."""
+        base = DelegadoPresenter._map_liquidacion_delegado(result)
+        return LiquidacionDelegadoDetalleOut(
+            id=base.id,
+            liquidacion_id=base.liquidacion_id,
+            delegado_id=base.delegado_id,
+            especialidad_revision=base.especialidad_revision,
+            liquidacion=base.liquidacion,
+            delegado=base.delegado,
+            periodo=base.periodo,
+            mes=base.mes,
+            dictamen_revision=base.dictamen_revision,
+            fecha_presentacion=base.fecha_presentacion,
+            fecha_revision=base.fecha_revision,
+            tipo=result.tipo,
+            numero_rh=result.numero_rh,
+            creado_por_rh=result.creado_por_rh,
+            detalle_rh=[
+                DelegadoPresenter._map_detalle_honorario(detalle)
+                for detalle in result.detalle_rh
+            ],
+        )
+
+    @staticmethod
+    def present_asignaciones_con_detalle_rh(
+        domain_result: LiquidacionDelegadoDetalleResponseResult,
+    ) -> LiquidacionDelegadoDetalleResponseOut:
+        """Maps LiquidacionDelegadoDetalleResponseResult to LiquidacionDelegadoDetalleResponseOut."""
+        return LiquidacionDelegadoDetalleResponseOut(
+            liquidacion_id=uuid.UUID(domain_result.liquidacion_id),
+            asignaciones=[
+                DelegadoPresenter._map_liquidacion_delegado_detalle(item)
+                for item in domain_result.asignaciones
+            ],
         )
 
     @staticmethod

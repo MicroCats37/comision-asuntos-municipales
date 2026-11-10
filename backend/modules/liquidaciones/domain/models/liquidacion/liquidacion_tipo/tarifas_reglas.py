@@ -12,6 +12,12 @@ from simple_history.models import HistoricalRecords
 from core.models import BaseModel
 from decimal import Decimal
 from core_application.models import VigenciaModel
+from core_application.vigencia import (
+    SCOPE_GLOBAL,
+    SCOPE_TIPO_LIQUIDACION,
+    exclusion_constraint_vigencia,
+    vigencia_rango_valido_constraint,
+)
 
 from modules.liquidaciones.domain.constants import CategoriaIO, TipoLiquidacion
 from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
@@ -21,6 +27,9 @@ class TarifaLiquidacionBase(BaseModel, VigenciaModel):
 
     history = HistoricalRecords()
 
+    # Scope key: each tipo de liquidacion has its own tariff schedule.
+    vigencia_scope_fields = SCOPE_TIPO_LIQUIDACION
+
     tipo_liquidacion = models.ForeignKey(
         'liquidaciones.TipoLiquidacion',
         on_delete=models.PROTECT,
@@ -28,14 +37,48 @@ class TarifaLiquidacionBase(BaseModel, VigenciaModel):
         verbose_name="Tipo de Liquidación",
         help_text="Tipo de liquidación/formulario.",
     )
-        
+
     class Meta:
         verbose_name = "Tarifa Base de Liquidación"
         verbose_name_plural = "Tarifas Base de Liquidaciones"
         ordering = ["tipo_liquidacion"]
+        constraints = [
+            vigencia_rango_valido_constraint("tarifa_liquidacion_base"),
+            exclusion_constraint_vigencia(
+                SCOPE_TIPO_LIQUIDACION,
+                name="exclude_tarifa_liquidacion_base_overlap",
+            ),
+        ]
 
     def __str__(self):
         return f"Tarifa base {self.tipo_liquidacion}"
+
+
+class TarifaBasePorcentajeObraProxy(TarifaLiquidacionBase):
+    """Admin entry for tariff bases calculated as a percentage of the work."""
+
+    class Meta:
+        proxy = True
+        verbose_name = "Tarifa Base Porcentual"
+        verbose_name_plural = "Tarifas Base Porcentuales"
+
+
+class TarifaBaseMetroCuadradoProxy(TarifaLiquidacionBase):
+    """Admin entry for tariff bases calculated per square metre."""
+
+    class Meta:
+        proxy = True
+        verbose_name = "Tarifa Base por Metro Cuadrado"
+        verbose_name_plural = "Tarifas Base por Metro Cuadrado"
+
+
+class TarifaBaseVisitasProxy(TarifaLiquidacionBase):
+    """Admin entry for inspection tariff bases calculated by visit category."""
+
+    class Meta:
+        proxy = True
+        verbose_name = "Tarifa Base por Visitas"
+        verbose_name_plural = "Tarifas Base por Visitas"
 
 
 class TarifaPorMetroCuadrado(BaseModel):
@@ -177,6 +220,9 @@ class DerechoPorcentajeObra(BaseModel, VigenciaModel):
 
     history = HistoricalRecords()
 
+    # Scope key: this rule is global (one schedule for the whole municipality).
+    vigencia_scope_fields = SCOPE_GLOBAL
+
     derecho_minimo = models.DecimalField(
         max_digits=10,
         decimal_places=4,
@@ -205,6 +251,13 @@ class DerechoPorcentajeObra(BaseModel, VigenciaModel):
     class Meta:
         verbose_name = "Derecho Mínimo Porcentual de Obra"
         verbose_name_plural = "Derechos Mínimos Porcentuales de Obra"
+        constraints = [
+            vigencia_rango_valido_constraint("derecho_porcentaje_obra"),
+            exclusion_constraint_vigencia(
+                SCOPE_GLOBAL,
+                name="exclude_derecho_porcentaje_obra_overlap",
+            ),
+        ]
 
     def __str__(self):
         return f"Derecho mínimo porcentual {self.derecho_minimo}"
@@ -220,6 +273,9 @@ class DerechoPorMetroCuadrado(BaseModel, VigenciaModel):
     """
 
     history = HistoricalRecords()
+
+    # Scope key: this rule is global (one schedule for the whole municipality).
+    vigencia_scope_fields = SCOPE_GLOBAL
 
     derecho_minimo = models.DecimalField(
         max_digits=10,
@@ -238,6 +294,13 @@ class DerechoPorMetroCuadrado(BaseModel, VigenciaModel):
     class Meta:
         verbose_name = "Derecho Mínimo por Metro Cuadrado"
         verbose_name_plural = "Derechos Mínimos por Metro Cuadrado"
+        constraints = [
+            vigencia_rango_valido_constraint("derecho_por_metro_cuadrado"),
+            exclusion_constraint_vigencia(
+                SCOPE_GLOBAL,
+                name="exclude_derecho_por_metro_cuadrado_overlap",
+            ),
+        ]
 
     def __str__(self):
         return f"Derecho mínimo M2 {self.derecho_minimo}"

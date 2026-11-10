@@ -14,6 +14,8 @@ from django.db.models import Prefetch
 from injector import inject
 from ninja.errors import HttpError
 
+from core.exceptions import ConflictError, NotFoundError
+
 from modules.finanzas.domain.services.finanzas_core_service import FinanzasCoreService
 from modules.finanzas.domain.schemas import (
     RHInspectorActualizarIn,
@@ -28,6 +30,7 @@ from modules.finanzas.domain.results.rh_inspector_mensual_result import (
 from modules.finanzas.domain.services.flujos.rh_delegado_mensual_flujo import (
     _resolve_liquidacion_especifica_numero,
     _resolve_comprobante_activo,
+    _aplicar_expedientes as _aplicar_expedientes_comun,
 )
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
     LiquidacionGeneral,
@@ -90,6 +93,117 @@ def _enriquecer_candidatas_inspector(candidatos_data: list[dict]) -> list[dict]:
         )
 
     return candidatos_data
+
+
+def _resolver_liquidacion_inspector(
+    core: FinanzasCoreService,
+    item,
+) -> "LiquidacionGeneral":
+    """
+    Resuelve la LiquidacionGeneral de un item del RH de inspector.
+
+    1. Por IO (``liquidacion_categoria_visitas_id``): es la clave estable del
+       item → ``IO.liquidacion_general_id`` → LiquidacionGeneral. Exacto.
+    2. Fallback por ``exp_liqui`` (flujo manual): el valor del payload es
+       SIEMPRE el expediente PERSISTIDO (el valor editado viaja aparte en
+       ``expediente``). La búsqueda se acota a las liquidaciones que TIENEN IO
+       y, si el expediente es ambiguo (varias IO lo comparten), se responde 409
+       en vez de escribir sobre una liquidación arbitraria.
+
+    Args:
+        core: Core service de Finanzas.
+        item: Item del payload del RH (In schema).
+
+    Returns:
+        La LiquidacionGeneral del item.
+
+    Raises:
+        NotFoundError: Si la IO o la liquidación no existen.
+        ConflictError: Si el expediente es ambiguo (varias IO lo comparten).
+        HttpError(400): Si el item no permite identificar la liquidación.
+    """
+    if item.liquidacion_categoria_visitas_id:
+        io = core.get_liquidacion_categoria_visitas_by_id(
+            item.liquidacion_categoria_visitas_id
+        )
+        if not io:
+            raise NotFoundError(
+                resource="LiquidacionPorCategoriaVisitas",
+                detail=(
+                    "Liquidación por categoría de visitas con id="
+                    f"'{item.liquidacion_categoria_visitas_id}' no encontrada"
+                ),
+            )
+        liquidacion = core.get_liquidacion_general_by_id(io.liquidacion_general_id)
+        if not liquidacion:
+            raise NotFoundError(
+                resource="LiquidacionGeneral",
+                detail=(
+                    "Liquidación general con id="
+                    f"'{io.liquidacion_general_id}' no encontrada"
+                ),
+            )
+        return liquidacion
+
+    expediente = (item.exp_liqui or "").strip()
+    if not expediente:
+        raise HttpError(
+            400,
+            "Se requiere exp_liqui o liquidacion_categoria_visitas_id para "
+            "resolver el expediente de la liquidación.",
+        )
+
+    candidatas = core.list_liquidaciones_generales_por_expediente_io(expediente)
+    if not candidatas:
+        raise NotFoundError(
+            resource="LiquidacionGeneral",
+            detail=(
+                "No existe una liquidación de inspección de obra con el "
+                f"expediente '{expediente}'"
+            ),
+        )
+    if len(candidatas) > 1:
+        raise ConflictError(
+            message=(
+                f"El expediente '{expediente}' corresponde a "
+                f"{len(candidatas)} liquidaciones de inspección de obra: la "
+                "resolución del expediente es ambigua."
+            ),
+            code="LIQUIDACION_AMBIGUA",
+        )
+    return candidatas[0]
+
+
+def _aplicar_expedientes(
+    core: FinanzasCoreService,
+    items: list,
+) -> list[str | None]:
+    """
+    Persiste el ``expediente`` recibido por item en su LiquidacionGeneral.
+
+    Misma semántica que el flujo de delegado (helper común), con la
+    resolución por IO propia del inspector.
+
+    Se invoca DENTRO del ``transaction.atomic`` del flujo: el expediente y el
+    RH se guardan o se deshacen juntos (todo o nada).
+
+    Args:
+        core: Core service de Finanzas (escribe la liquidación).
+        items: Items del PAYLOAD original del RH.
+
+    Returns:
+        Lista alineada con ``items`` con el expediente persistido de cada item
+        (``None`` cuando el item no envió el campo: no hubo cambio).
+
+    Raises:
+        NotFoundError: Si la liquidación destino no existe.
+        ConflictError: Si la liquidación está PAGADA y el expediente cambia.
+    """
+    return _aplicar_expedientes_comun(
+        core,
+        items,
+        _resolver_liquidacion_inspector,
+    )
 
 
 class RHInspectorMensualCotizarFlujo:
@@ -270,6 +384,11 @@ class RHInspectorMensualCotizarFlujo:
             items.append(
                 RHInspectorCotizarItemResult(
                     exp_liqui=exp_liqui,
+                    expediente=(
+                        str(item.expediente or "")
+                        if "expediente" in item.model_fields_set
+                        else str(lg.expediente or "")
+                    ),
                     liquidacion_inspector_id=str(li.id),
                     liquidacion_categoria_visitas_id=str(lcv.id),
                     nombre_propietario=nombre_propietario,
@@ -486,6 +605,14 @@ class RHInspectorMensualCrearFlujo:
                 mes=item.mes,
             )
 
+        # 4b. Expediente por liquidación — MISMA transacción que la creación.
+        #     Si una liquidación está PAGADA y su expediente cambia, el guard
+        #     aborta toda la operación (409) y no queda ni RH ni expediente.
+        expedientes = _aplicar_expedientes(self.core, payload.items)
+        for indice, expediente in enumerate(expedientes):
+            if expediente is not None:
+                resultado.items[indice].exp_liqui = expediente
+
         # 5. Enriquecer el resultado con inspector_operacion_id para el caller
         resultado.inspector_operacion_id = inspector_operacion_id
 
@@ -612,6 +739,10 @@ class RHInspectorMensualActualizarFlujo:
                     cantidad_visitas=item.cantidad_visitas,
                     periodo=item.periodo,
                     mes=item.mes,
+                    # La cotización IGNORA el expediente (no escribe): sólo se
+                    # reenvía para que la cotización de reconciliación reciba
+                    # el mismo contrato que la de creación.
+                    expediente=item.expediente,
                 )
             )
 
@@ -758,6 +889,14 @@ class RHInspectorMensualActualizarFlujo:
             if str(detalle.id) in ids_retenidos:
                 continue
             self.core.delete_detalle_honorario_inspector(detalle.id)
+
+        # 8b. Expediente por liquidación — MISMA transacción que el PATCH.
+        #     Si una liquidación está PAGADA y su expediente cambia, el guard
+        #     aborta toda la operación (409) y no queda ni RH ni expediente.
+        expedientes = _aplicar_expedientes(self.core, payload.items)
+        for indice, expediente in enumerate(expedientes):
+            if expediente is not None:
+                resultado.items[indice].exp_liqui = expediente
 
         # 9. Ledger: se reemplazan SOLO las filas de este RH
         lcv_afectadas.update(

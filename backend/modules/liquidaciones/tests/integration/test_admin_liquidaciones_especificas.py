@@ -12,6 +12,8 @@ from decimal import Decimal
 from datetime import date
 
 from django.test import Client, override_settings
+from django.test.client import RequestFactory
+from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.utils import timezone
@@ -36,6 +38,12 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liqu
 )
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
     LiquidacionGeneral,
+    LiquidacionEdificacionProxy,
+    LiquidacionHabilitacionUrbanaProxy,
+    LiquidacionMecanicaSuelosProxy,
+    LiquidacionTaludesProxy,
+    LiquidacionInspeccionObraProxy,
+    LiquidacionImpactoVialProxy,
 )
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorcentajeObra,
@@ -43,8 +51,15 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacio
     LiquidacionPorCategoriaVisitas,
 )
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
+from modules.liquidaciones.domain.models.delegado import LiquidacionDelegado
 from modules.finanzas.domain.models.impuestos import IGV, UIT
 from modules.finanzas.domain.models.registro_pago_inspector import RegistroPagoInspector
+from modules.finanzas.domain.models.detalle_honorario_delegado import (
+    DetalleHonorarioDelegado,
+)
+from modules.finanzas.domain.models.detalle_honorario_inspector import (
+    DetalleHonorarioInspector,
+)
 from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.entidades.domain.models import Entidad
@@ -55,6 +70,26 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     TarifaPorMetroCuadrado,
     TarifaPorCategoriaVisitas,
     DerechoPorMetroCuadrado,
+)
+from modules.liquidaciones.admin.liquidacion_admin import (
+    LiquidacionDelegadoInline,
+    LiquidacionComprobanteInline,
+    LiquidacionEdificacionInline,
+    LiquidacionEdificacionProxyAdmin,
+    LiquidacionHabilitacionUrbanaInline,
+    LiquidacionHabilitacionUrbanaProxyAdmin,
+    LiquidacionImpactoVialInline,
+    LiquidacionImpactoVialProxyAdmin,
+    LiquidacionInspeccionObraInline,
+    LiquidacionInspeccionObraProxyAdmin,
+    LiquidacionMecanicaSuelosInline,
+    LiquidacionMecanicaSuelosProxyAdmin,
+    LiquidacionPorCategoriaVisitasInline,
+    LiquidacionPorMetroCuadradoInline,
+    LiquidacionPorcentajeObraInline,
+    LiquidacionTaludesInline,
+    LiquidacionTaludesProxyAdmin,
+    RegistroPagoInspectorInline,
 )
 
 
@@ -706,3 +741,179 @@ def test_admin_edificaciones_changelist_renders_200(admin_client, edificacion_ob
     assert response.status_code == 200, (
         f"Expected 200 for Edificaciones proxy changelist, got {response.status_code}: {response.content[:500]}"
     )
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("admin_class", "proxy_model", "obj_fixture", "expected_inlines"),
+    [
+        (
+            LiquidacionEdificacionProxyAdmin,
+            LiquidacionEdificacionProxy,
+            "edificacion_obj",
+            [LiquidacionEdificacionInline, LiquidacionPorcentajeObraInline],
+        ),
+        (
+            LiquidacionHabilitacionUrbanaProxyAdmin,
+            LiquidacionHabilitacionUrbanaProxy,
+            "hu_obj",
+            [LiquidacionHabilitacionUrbanaInline, LiquidacionPorMetroCuadradoInline],
+        ),
+        (
+            LiquidacionMecanicaSuelosProxyAdmin,
+            LiquidacionMecanicaSuelosProxy,
+            "ms_obj",
+            [LiquidacionMecanicaSuelosInline, LiquidacionPorMetroCuadradoInline],
+        ),
+        (
+            LiquidacionTaludesProxyAdmin,
+            LiquidacionTaludesProxy,
+            "taludes_obj",
+            [LiquidacionTaludesInline, LiquidacionPorcentajeObraInline],
+        ),
+        (
+            LiquidacionInspeccionObraProxyAdmin,
+            LiquidacionInspeccionObraProxy,
+            "io_obj",
+            [
+                LiquidacionInspeccionObraInline,
+                LiquidacionPorCategoriaVisitasInline,
+                RegistroPagoInspectorInline,
+            ],
+        ),
+        (
+            LiquidacionImpactoVialProxyAdmin,
+            LiquidacionImpactoVialProxy,
+            "iv_obj",
+            [LiquidacionImpactoVialInline, LiquidacionPorcentajeObraInline],
+        ),
+    ],
+)
+def test_proxy_admins_include_only_related_inlines_and_allow_deletion(
+    request, admin_client, admin_class, proxy_model, obj_fixture, expected_inlines
+):
+    obj = request.getfixturevalue(obj_fixture).liquidacion
+    admin_request = RequestFactory().get("/")
+    admin_request.user = admin_client.session.get("_auth_user_id")
+    admin_request.user = get_user_model().objects.get(pk=admin_request.user)
+    model_admin = admin_class(proxy_model, admin.site)
+
+    inlines = model_admin.get_inlines(admin_request, obj)
+
+    assert inlines == [
+        *expected_inlines[:2],
+        LiquidacionComprobanteInline,
+        LiquidacionDelegadoInline,
+        *expected_inlines[2:],
+    ]
+    # The RH detail inlines are never exposed by the liquidation proxies.
+    assert not {DetalleHonorarioDelegado, DetalleHonorarioInspector} & {
+        inline.model for inline in inlines
+    }
+    for inline_class in [LiquidacionDelegadoInline]:
+        inline = inline_class(obj.__class__, admin.site)
+        assert inline.get_formset(admin_request, obj).can_delete
+
+
+def test_liquidacion_delegado_inline_uses_bounded_widgets():
+    """The delegate inline is a direct FK: no empty rows, bounded FK widgets."""
+    inline = LiquidacionDelegadoInline(LiquidacionGeneral, admin.site)
+
+    assert inline.extra == 0
+    assert inline.autocomplete_fields == [
+        "delegado",
+        "especialidad_revision",
+        "delegado_operacion",
+    ]
+    for field_name in inline.autocomplete_fields:
+        related_admin = admin.site._registry.get(
+            LiquidacionDelegado._meta.get_field(field_name).remote_field.model
+        )
+        assert related_admin is not None, (
+            f"'{field_name}' has no registered admin, autocomplete would fail"
+        )
+        assert related_admin.search_fields, (
+            f"'{field_name}' admin has no search_fields, autocomplete would fail"
+        )
+
+
+@pytest.mark.parametrize(
+    ("admin_class", "proxy_model"),
+    [
+        (LiquidacionEdificacionProxyAdmin, LiquidacionEdificacionProxy),
+        (LiquidacionHabilitacionUrbanaProxyAdmin, LiquidacionHabilitacionUrbanaProxy),
+        (LiquidacionMecanicaSuelosProxyAdmin, LiquidacionMecanicaSuelosProxy),
+        (LiquidacionTaludesProxyAdmin, LiquidacionTaludesProxy),
+        (LiquidacionInspeccionObraProxyAdmin, LiquidacionInspeccionObraProxy),
+        (LiquidacionImpactoVialProxyAdmin, LiquidacionImpactoVialProxy),
+    ],
+)
+def test_proxy_admins_allow_editing_subtotal_and_total(admin_class, proxy_model):
+    model_admin = admin_class(proxy_model, admin.site)
+    form_class = model_admin.get_form(RequestFactory().get("/admin/"))
+
+    assert "sub_total" in model_admin.fields
+    assert "total" in model_admin.fields
+    assert "sub_total" not in model_admin.readonly_fields
+    assert "total" not in model_admin.readonly_fields
+    assert "sub_total" in form_class.base_fields
+    assert "total" in form_class.base_fields
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("admin_class", "proxy_model", "obj_fixture", "numero"),
+    [
+        (LiquidacionEdificacionProxyAdmin, LiquidacionEdificacionProxy, "edificacion_obj", 101),
+        (LiquidacionHabilitacionUrbanaProxyAdmin, LiquidacionHabilitacionUrbanaProxy, "hu_obj", 102),
+        (LiquidacionMecanicaSuelosProxyAdmin, LiquidacionMecanicaSuelosProxy, "ms_obj", 103),
+        (LiquidacionTaludesProxyAdmin, LiquidacionTaludesProxy, "taludes_obj", 104),
+        (LiquidacionInspeccionObraProxyAdmin, LiquidacionInspeccionObraProxy, "io_obj", 105),
+        (LiquidacionImpactoVialProxyAdmin, LiquidacionImpactoVialProxy, "iv_obj", 106),
+    ],
+)
+def test_proxy_admin_searches_exact_specific_liquidacion_number(
+    request, admin_client, admin_class, proxy_model, obj_fixture, numero
+):
+    specific = request.getfixturevalue(obj_fixture)
+    specific.numero = numero
+    specific.save(update_fields=["numero"])
+    model_admin = admin_class(proxy_model, admin.site)
+    admin_request = RequestFactory().get("/admin/", {"q": str(numero)})
+    admin_request.user = get_user_model().objects.get(
+        pk=admin_client.session["_auth_user_id"]
+    )
+
+    queryset = model_admin.get_queryset(admin_request)
+    matches, may_have_duplicates = model_admin.get_search_results(
+        admin_request, queryset, str(numero)
+    )
+
+    assert list(matches.values_list("id", flat=True)) == [specific.liquidacion_id]
+    assert not may_have_duplicates
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("admin_class", "proxy_model", "obj_fixture", "related_name"),
+    [
+        (LiquidacionEdificacionProxyAdmin, LiquidacionEdificacionProxy, "edificacion_obj", "edificaciones"),
+        (LiquidacionHabilitacionUrbanaProxyAdmin, LiquidacionHabilitacionUrbanaProxy, "hu_obj", "habilitacion_urbana"),
+        (LiquidacionMecanicaSuelosProxyAdmin, LiquidacionMecanicaSuelosProxy, "ms_obj", "mecanica_suelos"),
+        (LiquidacionTaludesProxyAdmin, LiquidacionTaludesProxy, "taludes_obj", "taludes"),
+        (LiquidacionInspeccionObraProxyAdmin, LiquidacionInspeccionObraProxy, "io_obj", "inspeccion_obra"),
+        (LiquidacionImpactoVialProxyAdmin, LiquidacionImpactoVialProxy, "iv_obj", "impacto_vial"),
+    ],
+)
+def test_proxy_admin_changelist_keeps_performance_configuration(
+    request, admin_class, proxy_model, obj_fixture, related_name
+):
+    obj = request.getfixturevalue(obj_fixture).liquidacion
+    model_admin = admin_class(proxy_model, admin.site)
+    queryset = model_admin.get_queryset(RequestFactory().get("/admin/"))
+
+    assert model_admin.show_full_result_count is False
+    assert model_admin.numero.admin_order_field is None
+    assert queryset.query.order_by == ("legacy", "-fecha_registro")
+    assert related_name in queryset.query.select_related
+    assert obj.pk in queryset.values_list("pk", flat=True)

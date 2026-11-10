@@ -8,6 +8,8 @@ from typing import List, Optional
 import uuid
 from injector import inject
 
+from django.core.exceptions import ObjectDoesNotExist
+
 from core.exceptions import ConflictError, NotFoundError
 from modules.liquidaciones.domain.constants import EstadoLiquidacion, TIPOS_CON_REVISION_EDITABLE
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
@@ -764,6 +766,94 @@ class LiquidacionGeneralOrchestrator:
                 fecha_emision=fecha_emision,
                 monto=monto,
                 motivo_reemplazo=motivo_reemplazo,
+            )
+
+        # Re-fetch with comprobantes prefetch for result building
+        refreshed = self.general_core_service.get_liquidacion_general_by_id(liquidacion_id)
+
+        # Resolve codigo_cta
+        codigo_cta_map = self.general_core_service.get_codigo_cta_map(
+            [refreshed.tipo_liquidacion.codigo]
+        )
+        codigo_cta = codigo_cta_map.get(refreshed.tipo_liquidacion.codigo) if refreshed.tipo_liquidacion else None
+
+        return self._build_general_result(refreshed, codigo_cta)
+
+    def editar_comprobante(
+        self,
+        liquidacion_id: uuid.UUID,
+        comprobante_id: uuid.UUID,
+        tipo_comprobante: str,
+        serie: Optional[str] = None,
+        numero: Optional[str] = None,
+        fecha_emision: Optional[str] = None,
+    ) -> LiquidacionGeneralResult:
+        """
+        Edita IN-PLACE el comprobante ACTIVO de una LiquidacionGeneral.
+
+        Reglas de negocio:
+        - La operación es una UPDATE sobre la fila existente: NO desactiva comprobantes,
+          NO crea filas nuevas y NO incrementa el historial de comprobantes.
+        - `monto` NO se toca: el monto ya registrado se preserva por construcción.
+        - `motivo_reemplazo` NO se toca: el historial de reemplazos permanece intacto.
+        - Sólo el comprobante ACTIVO es editable; el historial es inmutable por esta vía.
+        - Sin guard de estado PAGADA (paridad con el POST de comprobante).
+        - No toca `numero_revision`.
+
+        Args:
+            liquidacion_id: UUID de la liquidación.
+            comprobante_id: UUID del comprobante a editar.
+            tipo_comprobante: Tipo de comprobante (FACTURA, BOLETA, etc.).
+            serie: Serie opcional.
+            numero: Número opcional.
+            fecha_emision: Fecha de emisión opcional como string ISO (YYYY-MM-DD).
+
+        Returns:
+            LiquidacionGeneralResult con la lista de comprobantes actualizada.
+
+        Raises:
+            NotFoundError: Si la liquidación no existe (404).
+            NotFoundError: Si el comprobante no existe o no pertenece a la liquidación (404).
+            ConflictError: Si el comprobante no es el activo (409, COMPROBANTE_NO_ACTIVO).
+        """
+        from django.db import transaction
+
+        # Fetch the liquidacion
+        try:
+            liquidacion = self.general_core_service.get_liquidacion_general_by_id(liquidacion_id)
+        except ObjectDoesNotExist:
+            raise NotFoundError(
+                resource="LiquidacionGeneral",
+                detail=f"Liquidación con id={liquidacion_id} no encontrada",
+            )
+
+        # Fetch the comprobante scoped to the liquidacion (404 if missing or foreign)
+        try:
+            comprobante = self.general_core_service.get_comprobante_by_id(liquidacion, comprobante_id)
+        except ObjectDoesNotExist:
+            raise NotFoundError(
+                resource="LiquidacionComprobante",
+                detail=f"Comprobante con id={comprobante_id} no encontrado en la liquidación {liquidacion_id}",
+            )
+
+        # Only the ACTIVE comprobante is editable — the history is immutable here
+        if not comprobante.activo:
+            raise ConflictError(
+                message=(
+                    f"El comprobante {comprobante_id} no es el comprobante activo de la liquidación "
+                    f"{liquidacion_id}. Sólo el comprobante vigente puede editarse."
+                ),
+                code="COMPROBANTE_NO_ACTIVO",
+            )
+
+        # In-place update inside a transaction (single row, no history growth)
+        with transaction.atomic():
+            self.general_core_service.actualizar_comprobante(
+                comprobante=comprobante,
+                tipo_comprobante=tipo_comprobante,
+                serie=serie,
+                numero=numero,
+                fecha_emision=fecha_emision,
             )
 
         # Re-fetch with comprobantes prefetch for result building

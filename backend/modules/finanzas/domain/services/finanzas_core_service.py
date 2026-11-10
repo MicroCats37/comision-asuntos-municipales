@@ -51,6 +51,8 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacio
     LiquidacionPorCategoriaVisitas,
     LiquidacionPorcentajeObraDetalle,
 )
+from modules.liquidaciones.domain.constants import EstadoLiquidacion
+from core.exceptions import ConflictError, NotFoundError
 
 
 def _parse_periodo_year(periodo: str) -> Optional[int]:
@@ -282,6 +284,87 @@ class FinanzasCoreService:
             .filter(id=liquidacion_general_id)
             .first()
         )
+
+    def list_liquidaciones_generales_por_expediente_io(
+        self,
+        expediente: str,
+    ) -> list[LiquidacionGeneral]:
+        """
+        Liquidaciones de INSPECCIÓN DE OBRA que tienen el expediente dado.
+
+        La resolución del expediente en el RH del inspector NO puede elegir una
+        liquidación al azar: sólo se devuelven las liquidaciones que realmente
+        tienen IO (``LiquidacionPorCategoriaVisitas``), de modo que un
+        expediente compartido con otro tipo de liquidación nunca se resuelve
+        por error. Si el expediente es ambiguo (más de una IO), el flujo
+        responde 409 en vez de escribir sobre una liquidación arbitraria.
+
+        Args:
+            expediente: Expediente persistido de la liquidación.
+
+        Returns:
+            Lista de LiquidacionGeneral (puede estar vacía).
+        """
+        ids_io = list(
+            LiquidacionPorCategoriaVisitas.objects.filter(
+                liquidacion_general__expediente=expediente,
+            ).values_list("liquidacion_general_id", flat=True)
+        )
+        if not ids_io:
+            return []
+        return list(LiquidacionGeneral.objects.filter(id__in=ids_io))
+
+    def actualizar_expediente_liquidacion_general(
+        self,
+        liquidacion_general_id: str | int,
+        expediente: str,
+    ) -> LiquidacionGeneral:
+        """
+        Actualiza SOLO el expediente de una LiquidacionGeneral.
+
+        Reglas de negocio:
+        - 404 si la liquidación no existe.
+        - 409 ``LIQUIDACION_PAGADA_NOT_EDITABLE`` si la liquidación está PAGADA
+          (misma semántica que ``LiquidacionGeneralOrchestrator``): una
+          liquidación pagada no es editable.
+
+        NO abre transacción propia: hereda la del flujo que la invoca (el
+        guardado del RH). El llamador es responsable de comparar el valor
+        ANTES de llamar: un valor igual al persistido es un no-op y no debe
+        llegar aquí (ni disparar el guard de PAGADA).
+
+        Args:
+            liquidacion_general_id: PK de la LiquidacionGeneral.
+            expediente: Nuevo valor del expediente ("" = limpiar).
+
+        Returns:
+            La LiquidacionGeneral con el expediente persistido.
+
+        Raises:
+            NotFoundError: Si la liquidación no existe.
+            ConflictError: Si la liquidación está en estado PAGADA.
+        """
+        liquidacion = self.get_liquidacion_general_by_id(liquidacion_general_id)
+        if not liquidacion:
+            raise NotFoundError(
+                resource="LiquidacionGeneral",
+                detail=f"Liquidación con id='{liquidacion_general_id}' no encontrada",
+            )
+
+        if liquidacion.estado == EstadoLiquidacion.PAGADA:
+            raise ConflictError(
+                message=(
+                    "No se puede editar una liquidación en estado PAGADA. "
+                    "Solo las liquidaciones PENDIENTE son editables."
+                ),
+                code="LIQUIDACION_PAGADA_NOT_EDITABLE",
+            )
+
+        liquidacion.expediente = expediente
+        # `updated_at` se incluye explícitamente: con `update_fields` Django
+        # no refresca los campos `auto_now` salvo que se listen.
+        liquidacion.save(update_fields=["expediente", "updated_at"])
+        return liquidacion
 
     def get_liquidacion_general_with_comprobantes(
         self, liquidacion_general_id: int

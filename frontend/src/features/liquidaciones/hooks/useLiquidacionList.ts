@@ -20,6 +20,8 @@ export interface LiquidacionFiltros {
   direccion?: string;
   /** N.º de documento de la entidad (snapshot del proyecto). */
   documento?: string;
+  /** N.º de expediente de la liquidación (icontains). */
+  expediente?: string;
   /** Serie del comprobante VIGENTE de la liquidación. */
   comprobante_serie?: string;
   /** Número del comprobante VIGENTE de la liquidación. */
@@ -68,6 +70,7 @@ export function useLiquidacionList<T>({
   if (filtros?.razon_social) params.razon_social = filtros.razon_social;
   if (filtros?.direccion) params.direccion = filtros.direccion;
   if (filtros?.documento) params.documento = filtros.documento;
+  if (filtros?.expediente) params.expediente = filtros.expediente;
   if (filtros?.comprobante_serie)
     params.comprobante_serie = filtros.comprobante_serie;
   if (filtros?.comprobante_numero)

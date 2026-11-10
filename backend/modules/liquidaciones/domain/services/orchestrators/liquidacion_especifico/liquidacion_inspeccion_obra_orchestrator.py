@@ -165,6 +165,7 @@ class LiquidacionInspeccionObraOrchestrator(LegacyRegistroResolutionMixin):
         numero_revision=None,
         direccion=None,
         documento=None,
+        expediente=None,
         comprobante_serie=None,
         comprobante_numero=None,
     ) -> tuple[List[InspeccionObraPrimeraRevisionResult], int]:
@@ -195,6 +196,7 @@ class LiquidacionInspeccionObraOrchestrator(LegacyRegistroResolutionMixin):
             numero_revision=numero_revision,
             direccion=direccion,
             documento=documento,
+            expediente=expediente,
             comprobante_serie=comprobante_serie,
             comprobante_numero=comprobante_numero,
         )

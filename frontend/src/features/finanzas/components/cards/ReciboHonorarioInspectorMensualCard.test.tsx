@@ -65,3 +65,16 @@ describe("ReciboHonorarioInspectorMensualCard — acción Editar", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("ReciboHonorarioInspectorMensualCard — acción Eliminar", () => {
+  it("entrega el id y el CIP del inspector al handler", () => {
+    const onDelete = vi.fn();
+
+    render(
+      <ReciboHonorarioInspectorMensualCard item={item} onDelete={onDelete} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar recibo" }));
+
+    expect(onDelete).toHaveBeenCalledWith(item.id, item.inspector.cip);
+  });
+});

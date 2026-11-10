@@ -345,6 +345,7 @@ class FinanzasPresenter:
             items=[
                 RHInspectorCotizarItemOut(
                     exp_liqui=i.exp_liqui,
+                    expediente=i.expediente,
                     liquidacion_inspector_id=uuid.UUID(i.liquidacion_inspector_id),
                     liquidacion_categoria_visitas_id=uuid.UUID(
                         i.liquidacion_categoria_visitas_id
@@ -559,6 +560,7 @@ class FinanzasPresenter:
             items=[
                 RHDelegadoCotizarItemOut(
                     exp_liqui=i.exp_liqui,
+                    expediente=i.expediente,
                     liquidacion_delegado_id=uuid.UUID(i.liquidacion_delegado_id)
                     if i.liquidacion_delegado_id
                     else None,

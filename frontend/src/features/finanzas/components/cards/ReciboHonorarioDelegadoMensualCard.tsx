@@ -31,7 +31,7 @@ import {
 
 interface ReciboHonorarioDelegadoMensualCardProps {
   item: ReciboHonorarioDelegadoMensual;
-  onDelete?: (id: string) => void;
+  onDelete?: (id: string, cip: string) => void;
   /** Abre el modal de RH mensual en modo edición con este recibo. */
   onEdit?: (item: ReciboHonorarioDelegadoMensual) => void;
 }
@@ -62,7 +62,7 @@ export function ReciboHonorarioDelegadoMensualCard({
   };
 
   const handleDelete = () => {
-    onDelete?.(item.id);
+    onDelete?.(item.id, item.delegado?.cip ?? "");
   };
 
   const handleEdit = () => {

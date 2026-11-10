@@ -11,7 +11,13 @@ ensuring the foundational behavior is correct and stable.
 import pytest
 from datetime import date, timedelta
 from decimal import Decimal
+from types import SimpleNamespace
 
+from django.contrib import admin
+from django.db import IntegrityError
+from django.test import RequestFactory
+
+from modules.finanzas.admin.tasa_delegado_admin import TasaDelegadoAdmin
 from modules.finanzas.domain.models import EscalaDescuentoInspector, IGV, TasaDelegado, UIT
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion
 
@@ -232,23 +238,21 @@ class TestVigenciaQuerySetSingular:
         assert result is not None
         assert isinstance(result, EscalaDescuentoInspector)
 
-    def test_vigente_returns_newest_when_multiple_vigentes(self, db):
+    def test_rejects_multiple_vigentes(self, db):
         """
-        When multiple records are vigentes, vigente() returns the newest by periodo_inicio.
+        PostgreSQL prevents multiple vigentes for a global scale.
         """
-        older = EscalaDescuentoInspector.objects.create(
+        EscalaDescuentoInspector.objects.create(
             nombre="Older",
             periodo_inicio=date(2020, 1, 1),
             periodo_fin=None,
         )
-        newer = EscalaDescuentoInspector.objects.create(
-            nombre="Newer",
-            periodo_inicio=date(2024, 1, 1),
-            periodo_fin=None,
-        )
-
-        result = EscalaDescuentoInspector.objects.vigente()
-        assert result == newer
+        with pytest.raises(IntegrityError):
+            EscalaDescuentoInspector.objects.create(
+                nombre="Newer",
+                periodo_inicio=date(2024, 1, 1),
+                periodo_fin=None,
+            )
 
     def test_vigente_returns_none_when_no_match(self, db):
         """
@@ -328,22 +332,21 @@ class TestIGVQuerySet:
         result = IGV.objects.vigente(fecha=date(2026, 1, 1))
         assert result is None
 
-    def test_vigente_returns_newest_when_multiple_vigentes(self, db):
+    def test_rejects_multiple_vigentes(self, db):
         """
-        When multiple IGV records are vigentes, vigente() returns the newest by periodo_inicio.
+        PostgreSQL prevents multiple vigentes for IGV.
         """
-        older = IGV.objects.create(
+        IGV.objects.create(
             valor=Decimal("0.16"),
             periodo_inicio=date(2018, 1, 1),
             periodo_fin=None,
         )
-        newer = IGV.objects.create(
-            valor=Decimal("0.18"),
-            periodo_inicio=date(2024, 1, 1),
-            periodo_fin=None,
-        )
-        result = IGV.objects.vigente()
-        assert result == newer
+        with pytest.raises(IntegrityError):
+            IGV.objects.create(
+                valor=Decimal("0.18"),
+                periodo_inicio=date(2024, 1, 1),
+                periodo_fin=None,
+            )
 
     def test_vigente_excludes_future_start(self, igv_future):
         """
@@ -416,22 +419,21 @@ class TestUITQuerySet:
         result = UIT.objects.vigente(fecha=date(2000, 1, 1))
         assert result is None
 
-    def test_vigente_returns_newest_when_multiple_vigentes(self, db):
+    def test_rejects_multiple_vigentes(self, db):
         """
-        When multiple UIT records are vigentes, vigente() returns the newest by periodo_inicio.
+        PostgreSQL prevents multiple vigentes for UIT.
         """
-        older = UIT.objects.create(
+        UIT.objects.create(
             valor=4400,
             periodo_inicio=date(2021, 1, 1),
             periodo_fin=None,
         )
-        newer = UIT.objects.create(
-            valor=4950,
-            periodo_inicio=date(2024, 1, 1),
-            periodo_fin=None,
-        )
-        result = UIT.objects.vigente()
-        assert result == newer
+        with pytest.raises(IntegrityError):
+            UIT.objects.create(
+                valor=4950,
+                periodo_inicio=date(2024, 1, 1),
+                periodo_fin=None,
+            )
 
     def test_vigente_excludes_future_start(self, uit_future):
         """
@@ -513,12 +515,12 @@ class TestTasaDelegadoQuerySet:
         result = TasaDelegado.objects.vigente(fecha=date(2026, 1, 1))
         assert result is None
 
-    def test_vigente_returns_newest_when_multiple_vigentes(self, db):
+    def test_rejects_multiple_vigentes(self, db):
         """
-        When multiple TasaDelegado records are vigentes, vigente() returns the newest by periodo_inicio.
+        PostgreSQL prevents multiple vigentes for the same liquidacion type.
         """
         tipo = TipoLiquidacion.objects.get_or_create(codigo="MULTI", defaults={"nombre": "Multi"})[0]
-        older = TasaDelegado.objects.create(
+        TasaDelegado.objects.create(
             tipo_liquidacion=tipo,
             nombre="Older",
             renta_cip=Decimal("0.20"),
@@ -527,17 +529,54 @@ class TestTasaDelegadoQuerySet:
             periodo_inicio=date(2020, 1, 1),
             periodo_fin=None,
         )
-        newer = TasaDelegado.objects.create(
+        with pytest.raises(IntegrityError):
+            TasaDelegado.objects.create(
+                tipo_liquidacion=tipo,
+                nombre="Newer",
+                renta_cip=Decimal("0.25"),
+                aporte_codemu=Decimal("0.05"),
+                fondo_comun=Decimal("0.10"),
+                periodo_inicio=date(2024, 1, 1),
+                periodo_fin=None,
+            )
+
+    def test_admin_rollover_closes_previous_open_period(self, db, monkeypatch):
+        """The checked rollover field closes the prior period before saving."""
+        tipo = TipoLiquidacion.objects.get_or_create(
+            codigo="ROLLOVER", defaults={"nombre": "Rollover"}
+        )[0]
+        previous = TasaDelegado.objects.create(
             tipo_liquidacion=tipo,
-            nombre="Newer",
-            renta_cip=Decimal("0.25"),
-            aporte_codemu=Decimal("0.05"),
-            fondo_comun=Decimal("0.10"),
-            periodo_inicio=date(2024, 1, 1),
+            nombre="Previous",
+            renta_cip=Decimal("0.20"),
+            aporte_codemu=Decimal("0.04"),
+            fondo_comun=Decimal("0.08"),
+            periodo_inicio=date(2025, 1, 1),
             periodo_fin=None,
         )
-        result = TasaDelegado.objects.vigente()
-        assert result == newer
+        model_admin = TasaDelegadoAdmin(TasaDelegado, admin.site)
+        request = RequestFactory().post("/")
+        request.user = SimpleNamespace(has_perm=lambda permission: True)
+        monkeypatch.setattr(model_admin, "message_user", lambda *args, **kwargs: None)
+        form = model_admin.get_form(request)(
+            data={
+                "tipo_liquidacion": tipo.pk,
+                "nombre": "Current",
+                "renta_cip": "0.25",
+                "aporte_codemu": "0.05",
+                "fondo_comun": "0.10",
+                "periodo_inicio": "2026-01-01",
+                "periodo_fin": "",
+                "cerrar_vigencia_anterior": "on",
+            }
+        )
+
+        assert form.is_valid(), form.errors
+        request.user = None
+        model_admin.save_model(request, form.save(commit=False), form, change=False)
+
+        previous.refresh_from_db()
+        assert previous.periodo_fin == date(2025, 12, 31)
 
     def test_vigente_excludes_future_start(self, tasa_delegado_future):
         """

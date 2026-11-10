@@ -5,7 +5,7 @@ NO ORM imports. Pure Pydantic BaseModel domain objects.
 """
 from pydantic import BaseModel
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
 
 
 class EspecialidadResult(BaseModel):
@@ -235,3 +235,58 @@ class DelegadoOperatividadesResult(BaseModel):
 class EspecialidadesRevisionResult(BaseModel):
     """Domain DTO for EspecialidadRevision catalog."""
     especialidades: list[EspecialidadRevisionResult]
+
+
+# ── Detalle de asignación con RH (nested read endpoint) ─────────────────────────
+
+
+class ReciboHonorarioDelegadoMensualResult(BaseModel):
+    """
+    Domain DTO for the monthly RH receipt (ReciboHonorarioDelegadoMensual).
+
+    NO expone `imp_bruto`: el modelo del RH mensual no tiene ese campo.
+    """
+    id: str
+    numero: Optional[int] = None
+    periodo: Optional[int] = None
+    mes: Optional[int] = None
+    fecha_registro: datetime
+    sub_total: float
+    renta_cip: float
+    aporte_codemu: float
+    fondo_comun: float
+    neto_honorario: float
+
+
+class DetalleHonorarioDelegadoResult(BaseModel):
+    """
+    Domain DTO for an honorario detail (RH) attached to an assignment.
+
+    `recibo_mensual` is None for an orphaned detail (no monthly RH linked).
+    """
+    id: str
+    imp_bruto: float
+    sub_total: Optional[float] = None
+    renta_cip: Optional[float] = None
+    aporte_codemu: Optional[float] = None
+    fondo_comun: Optional[float] = None
+    neto_honorario: Optional[float] = None
+    recibo_mensual: Optional[ReciboHonorarioDelegadoMensualResult] = None
+
+
+class LiquidacionDelegadoDetalleResult(LiquidacionDelegadoResult):
+    """
+    Domain DTO for an assignment enriched with its RH detail.
+
+    Composes over `LiquidacionDelegadoResult` (no field duplication).
+    """
+    tipo: Optional[str] = None
+    numero_rh: Optional[str] = None
+    creado_por_rh: bool = False
+    detalle_rh: list[DetalleHonorarioDelegadoResult] = []
+
+
+class LiquidacionDelegadoDetalleResponseResult(BaseModel):
+    """Domain DTO for the nested assignment detail response."""
+    liquidacion_id: str
+    asignaciones: list[LiquidacionDelegadoDetalleResult] = []

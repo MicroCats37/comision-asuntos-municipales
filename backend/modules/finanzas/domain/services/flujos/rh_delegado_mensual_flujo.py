@@ -15,6 +15,8 @@ from django.db import transaction
 from injector import inject
 from ninja.errors import HttpError
 
+from core.exceptions import NotFoundError
+
 from modules.finanzas.domain.services.finanzas_core_service import (
     FinanzasCoreService,
     get_liquidacion_tipo_estrategia_rh,
@@ -206,6 +208,11 @@ class RHDelegadoMensualCotizarFlujo:
             items.append(
                 RHDelegadoCotizarItemResult(
                     exp_liqui=str(lg.expediente or ""),
+                    expediente=(
+                        str(item.expediente or "")
+                        if "expediente" in item.model_fields_set
+                        else str(lg.expediente or "")
+                    ),
                     liquidacion_general_id=item.liquidacion_general_id,
                     especialidad_revision_id=item.especialidad_revision_id,
                     liquidacion_delegado_id=None,  # creado en crear()
@@ -377,6 +384,18 @@ class RHDelegadoMensualCrearFlujo:
             # sincronización conserve este detalle sin recrearlo.
             item.detalle_id = str(detalle.id)
 
+        # 4. Expediente por liquidación — MISMA transacción que el RH.
+        #    Si una liquidación está PAGADA y su expediente cambia, el guard
+        #    aborta toda la operación (409) y no queda ni RH ni expediente.
+        expedientes = _aplicar_expedientes(
+            self.core,
+            payload.items,
+            _resolver_liquidacion_delegado,
+        )
+        for indice, expediente in enumerate(expedientes):
+            if expediente is not None:
+                resultado.items[indice].exp_liqui = expediente
+
         return resultado
 
 
@@ -524,6 +543,10 @@ class RHDelegadoMensualActualizarFlujo:
                         dictamen_revision=item.dictamen_revision,
                         fecha_presentacion=item.fecha_presentacion,
                         fecha_revision=item.fecha_revision,
+                        # La cotización IGNORA el expediente (no escribe): sólo
+                        # se reenvía para que la cotización de reconciliación
+                        # reciba el mismo contrato que la de creación.
+                        expediente=item.expediente,
                     )
                     for item in payload.items
                 ],
@@ -647,6 +670,18 @@ class RHDelegadoMensualActualizarFlujo:
             candidatas_a_limpiar,
             exclude_recibo_mensual_id=rh.id,
         )
+
+        # 8b. Expediente por liquidación — MISMA transacción que el PATCH.
+        #     Si una liquidación está PAGADA y su expediente cambia, el guard
+        #     aborta toda la operación (409) y no queda ni RH ni expediente.
+        expedientes = _aplicar_expedientes(
+            self.core,
+            payload.items,
+            _resolver_liquidacion_delegado,
+        )
+        for indice, expediente in enumerate(expedientes):
+            if expediente is not None:
+                resultado.items[indice].exp_liqui = expediente
 
         # 9. Totales del recibo = suma del conjunto final
         self.core.actualizar_totales_rh_delegado_mensual(
@@ -969,6 +1004,96 @@ class RHDelegadoMensualDeleteFlujo:
 
 
 # ── Helper functions ────────────────────────────────────────────────────────────
+
+
+def _resolver_liquidacion_delegado(
+    core: FinanzasCoreService,
+    item,
+) -> "LiquidacionGeneral":
+    """
+    Resuelve la LiquidacionGeneral de un item del RH de delegado.
+
+    La identificación es directa y unívoca: el item trae el PK
+    (``liquidacion_general_id``). No hay heurística: nunca se resuelve una
+    liquidación "parecida".
+
+    Args:
+        core: Core service de Finanzas.
+        item: Item del payload del RH (In schema).
+
+    Returns:
+        La LiquidacionGeneral del item.
+
+    Raises:
+        NotFoundError: Si la liquidación no existe.
+    """
+    liquidacion = core.get_liquidacion_general_by_id(item.liquidacion_general_id)
+    if not liquidacion:
+        raise NotFoundError(
+            resource="LiquidacionGeneral",
+            detail=f"Liquidación con id='{item.liquidacion_general_id}' no encontrada",
+        )
+    return liquidacion
+
+
+def _aplicar_expedientes(
+    core: FinanzasCoreService,
+    items: list,
+    resolver_liquidacion,
+) -> list[str | None]:
+    """
+    Persiste el ``expediente`` recibido por item en su LiquidacionGeneral.
+
+    Se invoca DENTRO del ``transaction.atomic`` del flujo: el expediente y el
+    RH se guardan o se deshacen juntos (todo o nada).
+
+    Semántica del valor enviado (idéntica en delegado e inspector):
+    - El campo AUSENTE en el payload → "sin cambio": no se toca nada.
+    - El valor IGUAL al persistido → no-op: no se escribe y NO se dispara el
+      guard de PAGADA.
+    - El valor DISTINTO → se escribe en la LiquidacionGeneral.
+    - El valor VACÍO ("") → limpia el expediente de esa liquidación.
+
+    La comparación previa (no-op) es la que hace que el guard de PAGADA sólo
+    aborte cuando el usuario REALMENTE cambia el expediente.
+
+    Args:
+        core: Core service de Finanzas (escribe la liquidación).
+        items: Items del PAYLOAD original del RH (nunca los reconstruidos de
+            la cotización: aquéllos ya normalizaron el campo).
+        resolver_liquidacion: Callable ``(core, item) -> LiquidacionGeneral``
+            que resuelve la liquidación destino de cada item.
+
+    Returns:
+        Lista alineada con ``items`` con el expediente persistido de cada item
+        (``None`` cuando el item no envió el campo: no hubo cambio).
+
+    Raises:
+        NotFoundError: Si la liquidación destino no existe.
+        ConflictError: Si la liquidación está PAGADA y el expediente cambia.
+    """
+    expedientes: list[str | None] = []
+
+    for item in items:
+        # `model_fields_set` distingue "campo ausente" de "campo enviado vacío":
+        # BaseSchema normaliza "" a None, así que el valor no sirve para ello.
+        if "expediente" not in item.model_fields_set:
+            expedientes.append(None)
+            continue
+
+        deseado = item.expediente or ""
+        liquidacion = resolver_liquidacion(core, item)
+        actual = liquidacion.expediente or ""
+
+        if actual != deseado:
+            liquidacion = core.actualizar_expediente_liquidacion_general(
+                liquidacion.id,
+                deseado,
+            )
+
+        expedientes.append(liquidacion.expediente or "")
+
+    return expedientes
 
 
 def _resolve_liquidacion_especifica_numero(lg: "LiquidacionGeneral") -> int | None:

@@ -9,7 +9,14 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { FileSpreadsheet, Filter, Plus, RefreshCw, User } from "lucide-react";
+import {
+  FileSpreadsheet,
+  Filter,
+  Plus,
+  RefreshCw,
+  Trash2,
+  User,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { useConfirmationDialog } from "@/components/confirmationDialog/useConfirmationDialog";
 import { Pagination } from "@/components/genericPagination/Pagination";
@@ -67,13 +74,23 @@ export function RecibosDelegadosView() {
       filtros.mes,
   );
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string, cip: string) => {
     confirm({
       title: "Eliminar recibo de delegado",
       description:
         "¿Estás seguro de que deseas eliminar este recibo de honorario mensual? Esta acción no se puede deshacer.",
       confirmLabel: "Eliminar",
       variant: "danger",
+      icon: <Trash2 className="h-5 w-5 text-destructive" />,
+      eyebrow: "Eliminar",
+      typedConfirmation:
+        cip.trim() === ""
+          ? undefined
+          : {
+              expectedText: cip,
+              label: "CIP del delegado",
+              prompt: `Para confirmar, escribe el CIP ${cip}`,
+            },
     }).then((confirmed) => {
       if (confirmed) {
         eliminarMutation.eliminar(id);

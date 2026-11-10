@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,8 @@ export function RhDatePickerField({
   value,
   onChange,
 }: RhDatePickerFieldProps) {
-  const selectedDate = value ? new Date(value) : undefined;
+  // Date-only API values must stay on their calendar day, not be parsed as UTC.
+  const selectedDate = value ? parseISO(value) : undefined;
 
   return (
     <div className="space-y-2">

@@ -88,6 +88,10 @@ class DelegadoOperacionAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = [DelegadoOperacionPeriodoInline]
     resource_classes = [DelegadoOperacionResource]
 
+    def has_add_permission(self, request):
+        """Operations are created exclusively through the Excel import workflow."""
+        return False
+
     @admin.display(description="Delegado", ordering="delegado__perfil_ingeniero__apellido_paterno")
     def delegado_nombre(self, obj):
         return obj.delegado.perfil_ingeniero.nombre_completo
@@ -130,6 +134,10 @@ class InspectorOperacionAdmin(ImportExportMixin, admin.ModelAdmin):
     readonly_fields = ["created_at", "updated_at"]
     inlines = [InspectorOperacionPeriodoInline]
     resource_classes = [InspectorOperacionResource]
+
+    def has_add_permission(self, request):
+        """Operations are created exclusively through the Excel import workflow."""
+        return False
 
     @admin.display(description="Inspector", ordering="inspector__perfil_ingeniero__apellido_paterno")
     def inspector_nombre(self, obj):

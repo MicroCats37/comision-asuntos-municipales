@@ -28,7 +28,7 @@ import { formatCurrency } from "@/features/liquidaciones/components/liquidacion-
 
 interface ReciboHonorarioInspectorMensualCardProps {
   item: ReciboHonorarioInspectorMensual;
-  onDelete?: (id: string) => void;
+  onDelete?: (id: string, cip: string) => void;
   /** Abre el modal de RH mensual en modo edición con este recibo. */
   onEdit?: (item: ReciboHonorarioInspectorMensual) => void;
 }
@@ -48,7 +48,7 @@ export function ReciboHonorarioInspectorMensualCard({
   };
 
   const handleDelete = () => {
-    onDelete?.(item.id);
+    onDelete?.(item.id, item.inspector?.cip ?? "");
   };
 
   const handleEdit = () => {

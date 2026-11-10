@@ -2,6 +2,7 @@
 
 from django.contrib import admin
 
+from core_application.vigencia.admin import VigenciaAdminMixin, VigenteHoyFilter
 from modules.finanzas.domain.models.descuento_inspector import (
     EscalaDescuentoInspector,
     RangoDescuentoInspector,
@@ -19,20 +20,14 @@ class RangoDescuentoInspectorInline(admin.TabularInline):
 
 
 @admin.register(EscalaDescuentoInspector)
-class EscalaDescuentoInspectorAdmin(admin.ModelAdmin):
+class EscalaDescuentoInspectorAdmin(VigenciaAdminMixin):
     """Admin para la escala de descuento de inspectores."""
 
-    list_display = ["nombre", "periodo_inicio", "periodo_fin", "vigente"]
+    list_display = ["nombre", "periodo_inicio", "periodo_fin"]
     search_fields = ["nombre"]
-    list_filter = ["periodo_inicio"]
-    readonly_fields = ["created_at", "updated_at", "vigente"]
+    list_filter = [VigenteHoyFilter]
+    readonly_fields = ["created_at", "updated_at"]
     inlines = [RangoDescuentoInspectorInline]
-
-    def vigente(self, obj):
-        return obj.periodo_fin is None
-
-    vigente.short_description = "Vigente"
-    vigente.boolean = True
 
 
 @admin.register(RangoDescuentoInspector)

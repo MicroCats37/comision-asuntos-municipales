@@ -268,3 +268,29 @@ export const CrearComprobanteInputSchema = z
   });
 
 export type CrearComprobanteInput = z.infer<typeof CrearComprobanteInputSchema>;
+
+// ── Input schema for editing the ACTIVE comprobante ───────────────────────────
+
+/**
+ * Schema for editing the active comprobante IN PLACE.
+ *
+ * Exact mirror of the backend `LiquidacionComprobanteUpdateIn`:
+ * - `tipo_comprobante` is required and restricted to the UI enum (FACTURA | BOLETA);
+ * - `serie`, `numero`, and `fecha_emision` (YYYY-MM-DD) are optional;
+ * - `monto` is NOT part of the contract: the backend preserves the persisted
+ *   amount, so the client can never overwrite it;
+ * - `motivo_reemplazo` does not belong here — replacing is a different
+ *   operation (see `CrearComprobanteInputSchema`).
+ */
+export const EditarComprobanteInputSchema = z.object({
+  tipo_comprobante: z
+    .enum(TIPO_COMPROBANTE_UI_ENUM)
+    .describe("Tipo: FACTURA o BOLETA"),
+  serie: z.string().optional(),
+  numero: z.string().optional(),
+  fecha_emision: z.string().optional().describe("YYYY-MM-DD"),
+});
+
+export type EditarComprobanteInput = z.infer<
+  typeof EditarComprobanteInputSchema
+>;

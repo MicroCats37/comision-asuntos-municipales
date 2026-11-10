@@ -15,14 +15,22 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     DerechoPorMetroCuadrado,
     DerechoPorcentajeObra,
 )
+from modules.usuarios.domain.models.perfil_ingeniero import EspecialidadRevision
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
+@pytest.fixture
+def api_client(auth_client):
+    """Historical tariff endpoints are protected business routes."""
+    return auth_client
+
+
 @pytest.fixture
 def especialidad_estructuras(db):
     """Create an EspecialidadRevision for Edificaciones testing."""
-    return Especialidad.objects.create(
+    return EspecialidadRevision.objects.create(
         slug="estructuras",
         nombre="Estructuras",
     )
@@ -31,7 +39,7 @@ def especialidad_estructuras(db):
 @pytest.fixture
 def especialidad_arquitectura(db):
     """Create an EspecialidadRevision for Edificaciones testing."""
-    return Especialidad.objects.create(
+    return EspecialidadRevision.objects.create(
         slug="arquitectura",
         nombre="Arquitectura",
     )
@@ -164,16 +172,13 @@ def test_tarifas_historicas_inspeccion_obras(
 ):
     """
     GET /liquidaciones/inspeccion-obra/tarifas/historicas returns visitas categories.
-    Note: Due to OneToOne constraint on TarifaPorCategoriaVisitas, each category needs its own base.
     """
-    # Create multiple IO tariff bases, one per category (since OneToOne limits one per base)
-    
-    for i, (categoria, pct_uit) in enumerate([("A", "0.05"), ("B", "0.08")]):
-        base = TarifaLiquidacionBase.objects.create(
-            tipo_liquidacion=tipo_inspeccion_obra,
-            periodo_inicio=date(2024, 1, 1),
-            periodo_fin=None,
-        )
+    base = TarifaLiquidacionBase.objects.create(
+        tipo_liquidacion=tipo_inspeccion_obra,
+        periodo_inicio=date(2024, 1, 1),
+        periodo_fin=None,
+    )
+    for categoria, pct_uit in [("A", "0.05"), ("B", "0.08")]:
         TarifaPorCategoriaVisitas.objects.create(
             tarifa_base=base,
             porcentaje_uit=Decimal(pct_uit),
@@ -190,7 +195,8 @@ def test_tarifas_historicas_inspeccion_obras(
     result = data["data"]
     items = result["items"]
 
-    assert len(items) == 2, f"Expected 2 periods (one per category), got {len(items)}"
+    assert len(items) == 1
+    assert len(items[0]["tarifas_visitas"]) == 2
 
 
 @pytest.mark.django_db
@@ -221,12 +227,16 @@ def test_tarifas_historicas_pagination(
     """
     GET respects page and page_size parameters.
     """
-    # Create multiple tariff bases (new model: no especialidad FK)
-    for i in range(3):
+    # Historical periods for the same type must not overlap.
+    for inicio, fin in [
+        (date(2024, 1, 1), date(2024, 3, 31)),
+        (date(2024, 4, 1), date(2024, 6, 30)),
+        (date(2024, 7, 1), date(2024, 12, 31)),
+    ]:
         base = TarifaLiquidacionBase.objects.create(
             tipo_liquidacion=tipo_edificacion,
-            periodo_inicio=date(2024, 1, 1),
-            periodo_fin=None,
+            periodo_inicio=inicio,
+            periodo_fin=fin,
         )
         TarifaPorcentajeObra.objects.create(
             tarifa_base=base,

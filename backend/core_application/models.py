@@ -57,7 +57,15 @@ class VigenciaModel(models.Model):
     Attributes:
         periodo_inicio: Start date of the validity period.
         periodo_fin: End date of the validity period (optional, null means ongoing).
+        vigencia_scope_fields: Fields that partition the table into independent
+            validity scopes. Rows sharing the same scope values may not overlap
+            in time; an empty tuple means the whole table is one global scope.
+            The same declaration drives the runtime overlap validation and the
+            database exclusion constraint, so both can never disagree.
     """
+
+    #: Scope key — override in concrete models (see core_application.vigencia).
+    vigencia_scope_fields: tuple = ()
 
     periodo_inicio = models.DateField(verbose_name="Periodo de Inicio")
     periodo_fin = models.DateField(
@@ -70,8 +78,8 @@ class VigenciaModel(models.Model):
         abstract = True
         constraints = [
             models.CheckConstraint(
-                check=models.Q(periodo_fin__isnull=True)
-                | models.Q(periodo_inicio__lt=models.F("periodo_fin")),
+                condition=models.Q(periodo_fin__isnull=True)
+                | models.Q(periodo_inicio__lte=models.F("periodo_fin")),
                 name="vigencia_rango_valido",
             ),
         ]

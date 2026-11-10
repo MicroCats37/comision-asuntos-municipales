@@ -8,6 +8,11 @@ from simple_history.models import HistoricalRecords
 
 from core.models import BaseModel
 from core_application.models import VigenciaModel
+from core_application.vigencia import (
+    cerrar_actual_y_abrir_nuevo,
+    exclusion_constraint_vigencia,
+    validar_periodo_sin_solapamiento,
+)
 from modules.liquidaciones.domain.constants import DictamenRevision, CategoriaIO
 
 
@@ -112,6 +117,9 @@ class InspectorOperacionPeriodo(BaseModel, VigenciaModel):
 
     history = HistoricalRecords()
 
+    # Scope key: periods of different inspector assignments are independent.
+    vigencia_scope_fields = ("inspector_tipo_liquidacion",)
+
     inspector_tipo_liquidacion = models.ForeignKey(
         "InspectorOperacion",
         on_delete=models.PROTECT,
@@ -129,38 +137,23 @@ class InspectorOperacionPeriodo(BaseModel, VigenciaModel):
                 condition=models.Q(periodo_fin__isnull=True),
                 name="unique_inspector_operacion_vigente",
             ),
+            exclusion_constraint_vigencia(
+                ("inspector_tipo_liquidacion",),
+                name="exclude_inspector_operacion_periodo_overlap",
+            ),
         ]
 
     def save(self, *args, **kwargs):
-        if self.periodo_fin is None:
-            existe_abierto = (
-                InspectorOperacionPeriodo.objects
-                .filter(inspector_tipo_liquidacion=self.inspector_tipo_liquidacion, periodo_fin__isnull=True)
-                .exclude(pk=self.pk)
-                .exists()
-            )
-            if existe_abierto:
-                raise ValueError(
-                    f"Ya existe un periodo abierto para este {self.inspector_tipo_liquidacion}. "
-                    "Cierre el periodo actual antes de abrir uno nuevo."
-                )
+        validar_periodo_sin_solapamiento(self)
         super().save(*args, **kwargs)
 
     @classmethod
     def close_current_and_open_new(cls, inspector_tipo_liquidacion, fecha_inicio):
         """Cierra el periodo abierto (periodo_fin = fecha_inicio - 1 día) y crea uno nuevo."""
-        from datetime import timedelta
-
-        hoy = fecha_inicio - timedelta(days=1)
-        cls.objects.filter(
-            inspector_tipo_liquidacion=inspector_tipo_liquidacion,
-            periodo_fin__isnull=True,
-        ).update(periodo_fin=hoy)
-
-        return cls.objects.create(
-            inspector_tipo_liquidacion=inspector_tipo_liquidacion,
+        return cerrar_actual_y_abrir_nuevo(
+            cls,
             periodo_inicio=fecha_inicio,
-            periodo_fin=None,
+            valores={"inspector_tipo_liquidacion": inspector_tipo_liquidacion},
         )
 
 

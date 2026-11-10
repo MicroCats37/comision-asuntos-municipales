@@ -4,10 +4,13 @@ Delegado Batch Schemas — API contracts for delegados vigentes y batch de liqui
 Inherit from BaseSchema. Used for API input (In) and output (Out).
 """
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
+from pydantic import Field, model_validator
+
 from core.types import BaseSchema
+from modules.liquidaciones.domain.constants import DictamenRevision
 from modules.liquidaciones.presentation.schemas.delegado.delegado_schemas import DelegadoBaseOut
 
 
@@ -42,13 +45,35 @@ class LiquidacionDelegadoCreateIn(BaseSchema):
 
 
 class LiquidacionDelegadoUpdateIn(BaseSchema):
-    """Input item para actualizar metadata extra de una LiquidacionDelegado."""
-    delegado_id: uuid.UUID
-    periodo: Optional[int] = None
-    mes: Optional[int] = None
-    dictamen_revision: Optional[str] = None
+    """
+    Input item para actualizar metadata extra de una LiquidacionDelegado.
+
+    El objetivo se identifica con `liquidacion_delegado_id` (id exacto de la
+    asignación) o, en el camino legacy, con `delegado_id`. Se exige al menos uno
+    de los dos.
+
+    Semántica de campos: un campo ausente conserva el valor persistido; un
+    `null` explícito lo limpia. La semántica se aplica con `model_fields_set`
+    en el flujo, no aquí.
+    """
+    liquidacion_delegado_id: Optional[uuid.UUID] = None
+    delegado_id: Optional[uuid.UUID] = None
+    periodo: Optional[int] = Field(None, ge=1900, le=2100)
+    mes: Optional[int] = Field(None, ge=1, le=12)
+    dictamen_revision: Optional[DictamenRevision] = None
     fecha_presentacion: Optional[date] = None
     fecha_revision: Optional[date] = None
+    numero_rh: Optional[str] = Field(None, max_length=50)
+
+    @model_validator(mode="after")
+    def exige_al_menos_un_discriminador(self):
+        """Exige `liquidacion_delegado_id` o `delegado_id` (422 si falta ambos)."""
+        if self.liquidacion_delegado_id is None and self.delegado_id is None:
+            raise ValueError(
+                "Se requiere 'liquidacion_delegado_id' o 'delegado_id' "
+                "para identificar la asignación a actualizar"
+            )
+        return self
 
 
 class LiquidacionDelegadoDeleteIn(BaseSchema):
@@ -100,8 +125,63 @@ class LiquidacionDelegadoOut(BaseSchema):
     periodo: Optional[int] = None
     mes: Optional[int] = None
     dictamen_revision: Optional[str] = None
-    fecha_presentacion: Optional[str] = None
-    fecha_revision: Optional[str] = None
+    fecha_presentacion: Optional[date] = None
+    fecha_revision: Optional[date] = None
+
+
+class ReciboHonorarioDelegadoMensualOut(BaseSchema):
+    """
+    Cabecera del RH mensual (ReciboHonorarioDelegadoMensual) enlazado a un
+    detalle de honorario.
+
+    NO expone `imp_bruto`: ese campo no existe en el modelo del RH mensual
+    (solo `sub_total` y sus derivados congelados).
+    """
+    id: uuid.UUID
+    numero: Optional[int] = None
+    periodo: Optional[int] = None
+    mes: Optional[int] = None
+    fecha_registro: datetime
+    sub_total: float
+    renta_cip: float
+    aporte_codemu: float
+    fondo_comun: float
+    neto_honorario: float
+
+
+class DetalleHonorarioDelegadoOut(BaseSchema):
+    """
+    Detalle de honorario (RH) de una asignación, con su RH mensual enlazado.
+
+    `recibo_mensual` es None cuando el detalle está huérfano (sin RH mensual).
+    """
+    id: uuid.UUID
+    imp_bruto: float
+    sub_total: Optional[float] = None
+    renta_cip: Optional[float] = None
+    aporte_codemu: Optional[float] = None
+    fondo_comun: Optional[float] = None
+    neto_honorario: Optional[float] = None
+    recibo_mensual: Optional[ReciboHonorarioDelegadoMensualOut] = None
+
+
+class LiquidacionDelegadoDetalleOut(LiquidacionDelegadoOut):
+    """
+    Asignación (LiquidacionDelegado) enriquecida con su detalle RH.
+
+    Compone sobre `LiquidacionDelegadoOut` (no lo duplica) y añade la
+    provenance RH y el detalle de honorario.
+    """
+    tipo: Optional[str] = None
+    numero_rh: Optional[str] = None
+    creado_por_rh: bool = False
+    detalle_rh: list[DetalleHonorarioDelegadoOut] = []
+
+
+class LiquidacionDelegadoDetalleResponseOut(BaseSchema):
+    """Output schema para GET /liquidaciones/{id}/delegados-asignaciones."""
+    liquidacion_id: uuid.UUID
+    asignaciones: list[LiquidacionDelegadoDetalleOut] = []
 
 
 class ComprobanteActivoMinimalOut(BaseSchema):

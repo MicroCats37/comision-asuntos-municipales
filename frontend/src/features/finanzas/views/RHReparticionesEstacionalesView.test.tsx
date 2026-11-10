@@ -1,7 +1,28 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { RHReparticionEstacional } from "@/features/finanzas/schemas/rh-reparticion-estacional.schema";
-import { ReparticionCard } from "./RHReparticionesEstacionalesView";
+import {
+  ReparticionCard,
+  RHReparticionesEstacionalesView,
+} from "./RHReparticionesEstacionalesView";
+
+vi.mock("@/features/finanzas/hooks/useRHReparticionesEstacionales", () => ({
+  useRHReparticionesEstacionales: () => ({
+    items: [item],
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
+}));
+
+vi.mock("@/features/finanzas/hooks/useEliminarRHReparticionEstacional", () => ({
+  useEliminarRHReparticionEstacional: () => ({ eliminar: vi.fn() }),
+}));
+
+vi.mock(
+  "@/features/finanzas/components/modals/NuevaRHReparticionEstacionalModal",
+  () => ({ NuevaRHReparticionEstacionalModal: () => null }),
+);
 
 const item: RHReparticionEstacional = {
   identidad: {
@@ -73,5 +94,20 @@ describe("ReparticionCard", () => {
 
     expect(onEdit).toHaveBeenCalledWith(item);
     expect(onDelete).toHaveBeenCalledWith(item.identidad.id);
+  });
+});
+
+describe("RHReparticionesEstacionalesView", () => {
+  it("mantiene la confirmación ordinaria en el borrado trimestral", async () => {
+    render(<RHReparticionesEstacionalesView />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Eliminar RH trimestral" }),
+    );
+
+    // Consumidor sin regla escrita: no hay input y el confirmar sigue habilitado.
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.getByRole("button", { name: "Eliminar" })).toBeEnabled();
   });
 });

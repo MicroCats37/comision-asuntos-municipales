@@ -23,6 +23,19 @@ from modules.liquidaciones.presentation.schemas.delegado.delegado_batch_schemas 
 )
 
 
+# Campos editables de una asignación (LiquidacionDelegado).
+# El subconjunto enviado se aplica con `model_fields_set`: ausente = sin cambio,
+# `null` explícito = limpiar.
+CAMPOS_EDITABLES = (
+    "periodo",
+    "mes",
+    "dictamen_revision",
+    "fecha_presentacion",
+    "fecha_revision",
+    "numero_rh",
+)
+
+
 class DelegadosBatchFlujo:
     """
     Flujo for LiquidacionDelegado batch operations.
@@ -68,6 +81,21 @@ class DelegadosBatchFlujo:
             )
 
         def update_fn(id_: UUID, body: LiquidacionDelegadoUpdateIn):
+            if body.liquidacion_delegado_id is not None:
+                # Camino exacto: el objetivo es la fila (LiquidacionDelegado).
+                # `model_fields_set` distingue "campo ausente" (sin cambio) de
+                # "null explícito" (limpiar el valor persistido).
+                campos = {
+                    campo: getattr(body, campo)
+                    for campo in CAMPOS_EDITABLES
+                    if campo in body.model_fields_set
+                }
+                return self.core_service.actualizar_asignacion_por_id(
+                    liquidacion=liquidacion,
+                    liquidacion_delegado_id=body.liquidacion_delegado_id,
+                    campos=campos,
+                )
+            # Camino legacy: el objetivo es el delegado (comportamiento previo).
             delegado = self.core_service.get_delegado_by_id(id_)
             campos = {}
             if body.periodo is not None:
@@ -88,7 +116,9 @@ class DelegadosBatchFlujo:
 
         def delete_fn(id_: UUID) -> str:
             delegado = self.core_service.get_delegado_by_id(id_)
-            self.core_service.eliminar_liquidacion_delegado(
+            # Eliminación guardada: la operación core evalúa las referencias
+            # financieras y puede lanzar ConflictError (409) sin escribir nada.
+            self.core_service.eliminar_asignacion_con_guardas_rh(
                 liquidacion=liquidacion,
                 delegado=delegado,
             )

@@ -17,6 +17,8 @@ export const LiquidacionComprobanteMinimalSchema = z.object({
 
 export const RHInspectorCotizarItemSchema = z.object({
   exp_liqui: z.string(),
+  // Draft expediente returned by quotation; exp_liqui remains the persisted identifier.
+  expediente: z.string().optional(),
   liquidacion_inspector_id: z.string(),
   liquidacion_categoria_visitas_id: z.string(),
   /**
@@ -99,6 +101,15 @@ export const RHInspectorCotizarItemInSchema = z.object({
   cantidad_visitas: z.number().int().min(1),
   periodo: z.number().int().optional(),
   mes: z.number().int().min(1).max(12).optional(),
+  /**
+   * Expediente deseado de la LiquidacionGeneral de este item.
+   *
+   * Viaja DENTRO del payload del RH: el backend lo persiste en la MISMA
+   * transacción que la mutación del RH (todo o nada). "" = limpiar; ausente =
+   * sin cambio. `exp_liqui` sigue siendo SIEMPRE el valor persistido (identifica
+   * la liquidación); el valor editado viaja en este campo.
+   */
+  expediente: z.string().optional(),
 });
 
 export const RHInspectorCotizarInSchema = z.object({
@@ -129,6 +140,15 @@ export const RHInspectorActualizarItemInSchema = z.object({
   detalle_id: z.string().optional(),
   fecha_revision: z.string().optional(), // ISO date string
   fecha_presentacion: z.string().optional(), // ISO date string
+  /**
+   * Expediente deseado de la LiquidacionGeneral de este item.
+   *
+   * Viaja DENTRO del payload del RH: el backend lo persiste en la MISMA
+   * transacción que la mutación del RH (todo o nada). "" = limpiar; ausente =
+   * sin cambio. `exp_liqui` sigue siendo SIEMPRE el valor persistido (identifica
+   * la liquidación); el valor editado viaja en este campo.
+   */
+  expediente: z.string().optional(),
 });
 
 export const RHInspectorActualizarInSchema = z.object({

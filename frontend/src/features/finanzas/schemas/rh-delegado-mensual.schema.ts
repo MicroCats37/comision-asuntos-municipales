@@ -104,6 +104,14 @@ export const RHDelegadoCotizarItemInSchema = z.object({
   fecha_presentacion: z.string().optional(), // ISO date string — se almacena en LiquidacionDelegado.fecha_presentacion
   fecha_revision: z.string().optional(), // ISO date string — se almacena en LiquidacionDelegado.fecha_revision
   delegado_operacion_id: z.string().optional(), // UUID of DelegadoOperacion — falls back to top-level
+  /**
+   * Expediente deseado de la LiquidacionGeneral de este item.
+   *
+   * Viaja DENTRO del payload del RH: el backend lo persiste en la MISMA
+   * transacción que la mutación del RH (todo o nada). "" = limpiar; ausente =
+   * sin cambio.
+   */
+  expediente: z.string().optional(),
 });
 
 export const RHDelegadoCotizarInSchema = z.object({
@@ -140,6 +148,8 @@ export const RHDelegadoVariablesCalculoSchema = z.object({
 
 export const RHDelegadoCotizarItemSchema = z.object({
   exp_liqui: z.string(),
+  // Draft expediente returned by quotation; exp_liqui remains the persisted identifier.
+  expediente: z.string().optional(),
   // liquidacion_general_id and especialidad_revision_id are NOT returned by the backend
   // in the cotizar response — they are input-only fields.
   liquidacion_delegado_id: z.string().nullable().optional(), // backend may send null or omit
@@ -213,6 +223,14 @@ export const RHDelegadoActualizarItemInSchema = z.object({
   dictamen_revision: z.string().nullish(),
   fecha_presentacion: z.string().nullish(), // ISO date string
   fecha_revision: z.string().nullish(), // ISO date string
+  /**
+   * Expediente deseado de la LiquidacionGeneral de este item.
+   *
+   * Viaja DENTRO del payload del RH: el backend lo persiste en la MISMA
+   * transacción que la mutación del RH (todo o nada). "" = limpiar; ausente =
+   * sin cambio.
+   */
+  expediente: z.string().optional(),
 });
 
 export const RHDelegadoActualizarInSchema = z.object({

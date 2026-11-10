@@ -8,6 +8,7 @@ import {
   ChevronUp,
   Loader2,
   UserCog,
+  UserMinus,
   Users,
 } from "lucide-react";
 import { useId, useState } from "react";
@@ -76,6 +77,18 @@ interface DelegadosSectionProps {
   ) => void;
   /** Reference date for vigentes display (read-only mode) */
   fechaReferencia?: string | null;
+  /**
+   * "Quitar delegado" — callback fired with the delegate id.
+   *
+   * ONLY rendered in the read-only block ("Delegados Asignados"). When it is
+   * not provided, no removal action is rendered at all — the delegate
+   * selection mode of the liquidación creation form stays untouched.
+   */
+  onQuitarDelegado?: (delegadoId: string) => void;
+  /** Delegate ids whose removal request is currently in flight. */
+  quitarDelegadoPendientes?: string[];
+  /** Inline error message per delegate id (e.g. the 409 refusal message). */
+  quitarDelegadoErrores?: Record<string, string>;
 }
 
 // ── Section header ────────────────────────────────────────────────────────────
@@ -270,6 +283,9 @@ export function DelegadosSection({
   asignados = [],
   onUpdateAsignacion,
   fechaReferencia,
+  onQuitarDelegado,
+  quitarDelegadoPendientes = [],
+  quitarDelegadoErrores = {},
 }: DelegadosSectionProps) {
   // No municipalidad selected yet — but if we have asignados (read-only display of saved
   // delegates), render them regardless. Only show the prompt when there is truly nothing to show.
@@ -427,6 +443,8 @@ export function DelegadosSection({
                     const delegateInfo = item.delegado;
                     const datos = item.datos;
                     const key = delegateInfo.id;
+                    const quitando = quitarDelegadoPendientes.includes(key);
+                    const errorQuitar = quitarDelegadoErrores[key];
                     return (
                       <div
                         key={key}
@@ -504,6 +522,42 @@ export function DelegadosSection({
                             </div>
                           )}
                         </div>
+
+                        {/* Quitar delegado — solo en la vista de solo lectura.
+                            El rechazo (409) se muestra EN la fila y la fila
+                            permanece: nunca se oculta un fallo como éxito. */}
+                        {onQuitarDelegado && (
+                          <div className="flex flex-col items-end gap-1.5 pl-12 pt-1">
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              disabled={quitando}
+                              aria-label={`Quitar delegado: ${delegateInfo.nombre_completo}`}
+                              onClick={() => onQuitarDelegado(key)}
+                            >
+                              {quitando ? (
+                                <>
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  Quitando...
+                                </>
+                              ) : (
+                                <>
+                                  <UserMinus className="h-3.5 w-3.5" />
+                                  Quitar delegado
+                                </>
+                              )}
+                            </Button>
+                            {errorQuitar && (
+                              <p
+                                role="alert"
+                                className="text-xs text-destructive text-right"
+                              >
+                                {errorQuitar}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

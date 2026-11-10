@@ -359,7 +359,11 @@ describe("RhDelegadoMensualModal — dictamen canónico", () => {
       expect(document.getElementById("sel-dictamen-lg-2")).toBeInTheDocument(),
     );
 
-    fireEvent.click(document.getElementById("sel-dictamen-lg-2"));
+    const selectorDictamen = document.getElementById("sel-dictamen-lg-2");
+    if (!selectorDictamen) {
+      throw new Error("No se encontró el selector de dictamen.");
+    }
+    fireEvent.click(selectorDictamen);
 
     await waitFor(() =>
       expect(

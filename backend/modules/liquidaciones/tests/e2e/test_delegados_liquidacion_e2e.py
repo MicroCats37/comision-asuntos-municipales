@@ -4,11 +4,13 @@ E2E tests for delegados de liquidación endpoints.
 Covers:
 - GET  /liquidaciones/delegados/vigentes
 - PATCH /liquidaciones/{liquidacion_id}/delegados
+  - eliminación con guardas de referencias financieras (409) vs. eliminación limpia
 
 Uses Ninja TestClient (same as integration tests) and shared conftest fixtures.
 """
 import uuid
 from datetime import date, timedelta
+from decimal import Decimal
 
 import pytest
 
@@ -25,6 +27,15 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquida
 from modules.usuarios.domain.models.perfil_ingeniero import (
     EspecialidadRevision,
     PerfilIngeniero,
+)
+from modules.finanzas.domain.models.detalle_honorario_delegado import (
+    DetalleHonorarioDelegado,
+)
+from modules.finanzas.domain.models.recibo_honorario import (
+    ReciboHonorarioDelegado,
+)
+from modules.finanzas.domain.models.recibo_honorario_delegado_mensual import (
+    ReciboHonorarioDelegadoMensual,
 )
 
 
@@ -95,6 +106,73 @@ def liquidacion(db, proyecto, municipalidad, tipo_edificacion, create_user):
         sub_total=0,
         total=0,
         usuario_creador=create_user,
+    )
+
+
+# ── Helpers de referencias financieras (guards de eliminación) ─────────────────
+
+def _crear_rh_mensual(
+    delegado: Delegado,
+    periodo: int = 2026,
+    mes: int = 3,
+) -> ReciboHonorarioDelegadoMensual:
+    """Creates a ReciboHonorarioDelegadoMensual with frozen totals."""
+    return ReciboHonorarioDelegadoMensual.objects.create(
+        delegado=delegado,
+        periodo=periodo,
+        mes=mes,
+        sub_total=Decimal("1000.00"),
+        renta_cip=Decimal("250.00"),
+        aporte_codemu=Decimal("50.00"),
+        fondo_comun=Decimal("100.00"),
+        neto_honorario=Decimal("600.00"),
+    )
+
+
+def _crear_detalle_honorario(
+    liquidacion_delegado: LiquidacionDelegado,
+    recibo_mensual=None,
+    imp_bruto: Decimal = Decimal("1000.00"),
+) -> DetalleHonorarioDelegado:
+    """
+    Creates a DetalleHonorarioDelegado.
+
+    `recibo_mensual=None` → detalle huérfano (legacy, sin RH detrás).
+    `recibo_mensual=<RH>` → detalle vinculado a un RH mensual (bloqueante).
+    """
+    return DetalleHonorarioDelegado.objects.create(
+        recibo_mensual=recibo_mensual,
+        liquidacion_delegado=liquidacion_delegado,
+        imp_bruto=imp_bruto,
+        sub_total=imp_bruto,
+        renta_cip=Decimal("250.00"),
+        aporte_codemu=Decimal("50.00"),
+        fondo_comun=Decimal("100.00"),
+        neto_honorario=Decimal("600.00"),
+    )
+
+
+def _crear_recibo_honorario(
+    liquidacion_delegado: LiquidacionDelegado,
+) -> ReciboHonorarioDelegado:
+    """Creates a ReciboHonorarioDelegado (recibo NO mensual) sobre la asignación."""
+    return ReciboHonorarioDelegado.objects.create(
+        liquidacion_delegado=liquidacion_delegado,
+        sub_total=Decimal("1000.00"),
+        imp_bruto=Decimal("1000.00"),
+        renta_cip=Decimal("250.00"),
+        aporte_codemu=Decimal("50.00"),
+        fondo_comun=Decimal("100.00"),
+        neto_honorario=Decimal("600.00"),
+        honorario=Decimal("600.00"),
+    )
+
+
+def _eliminar_delegado(auth_client, liquidacion, delegado):
+    """PATCH delete de un delegado en el batch endpoint."""
+    return auth_client.patch(
+        f"/liquidaciones/{liquidacion.id}/delegados",
+        json={"delete": [{"delegado_id": str(delegado.id)}]},
     )
 
 
@@ -498,3 +576,306 @@ def test_batch_create_en_liquidacion_io_400(
 
     assert response.status_code == 400, f"Expected 400, got {response.status_code}: {response.content}"
     assert not LiquidacionDelegado.objects.filter(liquidacion=liquidacion_io).exists()
+
+
+# ── PATCH delete con guardas de referencias financieras ───────────────────────
+
+@pytest.mark.django_db
+def test_batch_delete_sin_detalles_elimina_asignacion_y_conserva_liquidacion(
+    auth_client,
+    liquidacion,
+    municipalidad,
+    especialidad_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    GIVEN: una asignación de delegado SIN DetalleHonorarioDelegado.
+    WHEN:  se quita el delegado de la liquidación.
+    THEN:  la asignación se elimina y la LiquidacionGeneral sobrevive intacta.
+    """
+    delegado = _crear_delegado("30001", "30001001")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
+    LiquidacionDelegado.objects.create(
+        liquidacion=liquidacion,
+        delegado=delegado,
+        especialidad_revision=especialidad_estructuras,
+    )
+
+    response = _eliminar_delegado(auth_client, liquidacion, delegado)
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+    assert not LiquidacionDelegado.objects.filter(
+        liquidacion=liquidacion, delegado=delegado
+    ).exists()
+    # La liquidación NO se toca.
+    assert LiquidacionGeneral.objects.filter(id=liquidacion.id).exists()
+    liquidacion.refresh_from_db()
+    assert liquidacion.estado == EstadoLiquidacion.PENDIENTE
+    assert liquidacion.numero_revision == 1
+
+
+@pytest.mark.django_db
+def test_batch_delete_detalles_huerfanos_elimina_detalle_y_asignacion(
+    auth_client,
+    liquidacion,
+    municipalidad,
+    especialidad_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    GIVEN: una asignación cuyos detalles NO tienen recibo_mensual (huérfanos).
+    WHEN:  se quita el delegado de la liquidación.
+    THEN:  el detalle huérfano se elimina primero y la asignación después.
+    """
+    delegado = _crear_delegado("30002", "30002002")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
+    asignacion = LiquidacionDelegado.objects.create(
+        liquidacion=liquidacion,
+        delegado=delegado,
+        especialidad_revision=especialidad_estructuras,
+    )
+    detalle_huerfano = _crear_detalle_honorario(
+        liquidacion_delegado=asignacion,
+        recibo_mensual=None,
+    )
+
+    response = _eliminar_delegado(auth_client, liquidacion, delegado)
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+    assert not DetalleHonorarioDelegado.objects.filter(id=detalle_huerfano.id).exists()
+    assert not LiquidacionDelegado.objects.filter(id=asignacion.id).exists()
+    assert response.json()["data"]["deleted"] == [str(delegado.id)]
+
+
+@pytest.mark.django_db
+def test_batch_delete_con_detalle_rh_mensual_409_no_cambia_nada(
+    auth_client,
+    liquidacion,
+    municipalidad,
+    especialidad_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    GIVEN: una asignación referenciada por un DetalleHonorarioDelegado con recibo_mensual.
+    WHEN:  se quita el delegado de la liquidación.
+    THEN:  409; la asignación, el detalle, el RH mensual y la liquidación quedan intactos.
+    """
+    delegado = _crear_delegado("30003", "30003003")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
+    asignacion = LiquidacionDelegado.objects.create(
+        liquidacion=liquidacion,
+        delegado=delegado,
+        especialidad_revision=especialidad_estructuras,
+    )
+    rh = _crear_rh_mensual(delegado)
+    detalle = _crear_detalle_honorario(
+        liquidacion_delegado=asignacion,
+        recibo_mensual=rh,
+    )
+
+    response = _eliminar_delegado(auth_client, liquidacion, delegado)
+
+    assert response.status_code == 409, f"Expected 409, got {response.status_code}: {response.content}"
+    body = response.json()
+    assert body["error"]["code"] == "CONFLICT"
+    assert body["success"] is False
+    # El mensaje identifica al delegado sin filtrar el UUID crudo.
+    assert "30003" in body["error"]["message"]
+    assert str(delegado.id) not in body["error"]["message"]
+    # Nada se escribe ni se borra.
+    assert LiquidacionDelegado.objects.filter(id=asignacion.id).exists()
+    assert DetalleHonorarioDelegado.objects.filter(id=detalle.id).exists()
+    assert DetalleHonorarioDelegado.objects.filter(
+        liquidacion_delegado_id=asignacion.id, recibo_mensual_id=rh.id
+    ).exists()
+    # El RH mensual no se recalcula ni se elimina.
+    rh.refresh_from_db()
+    assert rh.sub_total == Decimal("1000.00")
+    assert rh.renta_cip == Decimal("250.00")
+    assert rh.aporte_codemu == Decimal("50.00")
+    assert rh.fondo_comun == Decimal("100.00")
+    assert rh.neto_honorario == Decimal("600.00")
+    assert ReciboHonorarioDelegadoMensual.objects.filter(id=rh.id).exists()
+    # La liquidación sobrevive.
+    assert LiquidacionGeneral.objects.filter(id=liquidacion.id).exists()
+
+
+@pytest.mark.django_db
+def test_batch_delete_con_recibo_honorario_no_mensual_409(
+    auth_client,
+    liquidacion,
+    municipalidad,
+    especialidad_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    GIVEN: una asignación referenciada por un ReciboHonorarioDelegado (no mensual).
+    WHEN:  se quita el delegado de la liquidación.
+    THEN:  409 (NUNCA 500); la asignación y el recibo quedan intactos.
+    """
+    delegado = _crear_delegado("30004", "30004004")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
+    asignacion = LiquidacionDelegado.objects.create(
+        liquidacion=liquidacion,
+        delegado=delegado,
+        especialidad_revision=especialidad_estructuras,
+    )
+    recibo = _crear_recibo_honorario(asignacion)
+
+    response = _eliminar_delegado(auth_client, liquidacion, delegado)
+
+    assert response.status_code == 409, f"Expected 409, got {response.status_code}: {response.content}"
+    body = response.json()
+    assert body["error"]["code"] == "CONFLICT"
+    assert str(delegado.id) not in body["error"]["message"]
+    # Nada se escribe ni se borra.
+    assert LiquidacionDelegado.objects.filter(id=asignacion.id).exists()
+    assert ReciboHonorarioDelegado.objects.filter(id=recibo.id).exists()
+    assert LiquidacionGeneral.objects.filter(id=liquidacion.id).exists()
+
+
+@pytest.mark.django_db
+def test_batch_delete_evalua_todas_las_asignaciones_por_especialidad(
+    auth_client,
+    liquidacion,
+    municipalidad,
+    especialidad_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    GIVEN: un delegado con DOS asignaciones en la misma liquidación (dos especialidades).
+    WHEN:  se quita el delegado.
+    THEN:  todas las asignaciones del delegado se evaluan y se eliminan.
+    """
+    especialidad_otra = EspecialidadRevision.objects.create(
+        slug="otra-especialidad-quitar", nombre="Otra Especialidad Quitar"
+    )
+    delegado = _crear_delegado("30005", "30005005")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
+
+    asignacion_a = LiquidacionDelegado.objects.create(
+        liquidacion=liquidacion,
+        delegado=delegado,
+        especialidad_revision=especialidad_estructuras,
+    )
+    asignacion_b = LiquidacionDelegado.objects.create(
+        liquidacion=liquidacion,
+        delegado=delegado,
+        especialidad_revision=especialidad_otra,
+    )
+    detalle_huerfano = _crear_detalle_honorario(
+        liquidacion_delegado=asignacion_b,
+        recibo_mensual=None,
+    )
+
+    response = _eliminar_delegado(auth_client, liquidacion, delegado)
+
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.content}"
+    assert not LiquidacionDelegado.objects.filter(
+        liquidacion=liquidacion, delegado=delegado
+    ).exists()
+    assert not LiquidacionDelegado.objects.filter(id=asignacion_a.id).exists()
+    assert not LiquidacionDelegado.objects.filter(id=asignacion_b.id).exists()
+    assert not DetalleHonorarioDelegado.objects.filter(id=detalle_huerfano.id).exists()
+    assert LiquidacionGeneral.objects.filter(id=liquidacion.id).exists()
+
+
+@pytest.mark.django_db
+def test_batch_delete_bloqueado_en_una_especialidad_conserva_todas(
+    auth_client,
+    liquidacion,
+    municipalidad,
+    especialidad_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    GIVEN: un delegado con dos asignaciones; solo una tiene un detalle de RH mensual.
+    WHEN:  se quita el delegado.
+    THEN:  409 y NINGUNA asignación se elimina (se evalúan todas antes de escribir).
+    """
+    especialidad_otra = EspecialidadRevision.objects.create(
+        slug="otra-especialidad-bloqueo", nombre="Otra Especialidad Bloqueo"
+    )
+    delegado = _crear_delegado("30006", "30006006")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
+
+    asignacion_libre = LiquidacionDelegado.objects.create(
+        liquidacion=liquidacion,
+        delegado=delegado,
+        especialidad_revision=especialidad_estructuras,
+    )
+    asignacion_bloqueada = LiquidacionDelegado.objects.create(
+        liquidacion=liquidacion,
+        delegado=delegado,
+        especialidad_revision=especialidad_otra,
+    )
+    rh = _crear_rh_mensual(delegado)
+    _crear_detalle_honorario(
+        liquidacion_delegado=asignacion_bloqueada,
+        recibo_mensual=rh,
+    )
+
+    response = _eliminar_delegado(auth_client, liquidacion, delegado)
+
+    assert response.status_code == 409, f"Expected 409, got {response.status_code}: {response.content}"
+    assert LiquidacionDelegado.objects.filter(id=asignacion_libre.id).exists()
+    assert LiquidacionDelegado.objects.filter(id=asignacion_bloqueada.id).exists()
+    assert DetalleHonorarioDelegado.objects.filter(recibo_mensual_id=rh.id).exists()
+
+
+@pytest.mark.django_db
+def test_batch_delete_atomicidad_detalles_mixtos_no_escribe_nada(
+    auth_client,
+    liquidacion,
+    municipalidad,
+    especialidad_estructuras,
+    especialidades_disponibles_edificacion,
+):
+    """
+    GIVEN: una asignación con un detalle huérfano Y un detalle de RH mensual.
+    WHEN:  se quita el delegado (la operación se rechaza).
+    THEN:  409 y ningún detalle ni asignación fue borrado (atomicidad).
+    """
+    delegado = _crear_delegado("30007", "30007007")
+    _crear_asignacion_municipal(delegado, municipalidad, especialidad=especialidad_estructuras)
+    asignacion = LiquidacionDelegado.objects.create(
+        liquidacion=liquidacion,
+        delegado=delegado,
+        especialidad_revision=especialidad_estructuras,
+    )
+    detalle_huerfano = _crear_detalle_honorario(
+        liquidacion_delegado=asignacion,
+        recibo_mensual=None,
+    )
+    rh = _crear_rh_mensual(delegado)
+    detalle_rh = _crear_detalle_honorario(
+        liquidacion_delegado=asignacion,
+        recibo_mensual=rh,
+    )
+
+    response = _eliminar_delegado(auth_client, liquidacion, delegado)
+
+    assert response.status_code == 409, f"Expected 409, got {response.status_code}: {response.content}"
+    # El detalle huérfano NO se borra: la operación se evalúa antes de escribir.
+    assert DetalleHonorarioDelegado.objects.filter(id=detalle_huerfano.id).exists()
+    assert DetalleHonorarioDelegado.objects.filter(id=detalle_rh.id).exists()
+    assert LiquidacionDelegado.objects.filter(id=asignacion.id).exists()
+    assert ReciboHonorarioDelegadoMensual.objects.filter(id=rh.id).exists()
+
+
+@pytest.mark.django_db
+def test_batch_delete_delegado_inexistente_404(
+    auth_client,
+    liquidacion,
+):
+    """
+    GIVEN: un payload de delete con un delegado_id que no existe.
+    WHEN:  se envía el batch.
+    THEN:  404 (semántica de validación preservada, no 409 ni 500).
+    """
+    response = auth_client.patch(
+        f"/liquidaciones/{liquidacion.id}/delegados",
+        json={"delete": [{"delegado_id": str(uuid.uuid4())}]},
+    )
+
+    assert response.status_code == 404, f"Expected 404, got {response.status_code}: {response.content}"

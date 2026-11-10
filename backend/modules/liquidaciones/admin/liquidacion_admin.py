@@ -60,10 +60,19 @@ from modules.finanzas.domain.models.registro_pago_inspector import RegistroPagoI
 
 
 class LiquidacionDelegadoInline(admin.TabularInline):
-    """Inline for LiquidacionDelegado (delegate assigned to this liquidation)."""
+    """Inline for LiquidacionDelegado (delegate assigned to this liquidation).
+
+    Direct FK relation (no join to the RH detail tables), so it stays cheap:
+    no pre-populated rows and bounded autocomplete widgets for the foreign keys.
+    """
 
     model = LiquidacionDelegado
-    extra = 1
+    extra = 0
+    autocomplete_fields = [
+        "delegado",
+        "especialidad_revision",
+        "delegado_operacion",
+    ]
     readonly_fields = ["created_at", "updated_at"]
 
 
@@ -371,8 +380,6 @@ class BaseLiquidacionProxyAdmin(admin.ModelAdmin):
         "proyecto",
         "municipalidad",
         "tipo_liquidacion",
-        "total",
-        "sub_total",
         "fecha_registro",
         "legacy",
         "created_at",
@@ -384,6 +391,8 @@ class BaseLiquidacionProxyAdmin(admin.ModelAdmin):
     # Disable expensive full count query in Django admin changelist.
     # The filtered proxy queryset makes a precise count cost-prohibitive for large tables.
     show_full_result_count = False
+    changelist_select_related = ()
+    changelist_prefetch_related = ()
 
     def get_queryset(self, request):
         """Filter by tipo_liquidacion__codigo and optimize with select_related."""
@@ -398,6 +407,7 @@ class BaseLiquidacionProxyAdmin(admin.ModelAdmin):
                 "tipo_liquidacion",
                 "usuario_creador",
                 related_name,
+                *self.changelist_select_related,
             )
         else:
             qs = qs.select_related(
@@ -405,10 +415,27 @@ class BaseLiquidacionProxyAdmin(admin.ModelAdmin):
                 "municipalidad",
                 "tipo_liquidacion",
                 "usuario_creador",
+                *self.changelist_select_related,
             )
-        if related_name:
-            return qs.order_by("legacy", f"-{related_name}__numero", "-fecha_registro")
+        if self.changelist_prefetch_related:
+            qs = qs.prefetch_related(*self.changelist_prefetch_related)
         return qs.order_by("legacy", "-fecha_registro")
+
+    def get_search_results(self, request, queryset, search_term):
+        """Extend text search with an indexed, exact specific-liquidation number lookup."""
+        base_queryset = queryset
+        queryset, may_have_duplicates = super().get_search_results(
+            request, queryset, search_term
+        )
+        try:
+            numero = int(search_term)
+        except (TypeError, ValueError):
+            return queryset, may_have_duplicates
+
+        related_name = getattr(self, "specific_related_name", None)
+        if related_name:
+            queryset |= base_queryset.filter(**{f"{related_name}__numero": numero})
+        return queryset, may_have_duplicates
 
     # ── Display methods ────────────────────────────────────────────
 
@@ -467,12 +494,19 @@ class BaseLiquidacionProxyAdmin(admin.ModelAdmin):
     # ── Inlines ───────────────────────────────────────────────────
 
     def get_inlines(self, request, obj):
-        """Return only the specific identity inline and its calculation inline."""
+        """Return the type-specific, calculation, comprobante and delegate inlines.
+
+        The RH detail inlines are intentionally absent: they join large RH
+        tables and render unbounded ``<select>`` widgets. RH details are
+        managed from their own admin.
+        """
         inlines = []
         if obj is not None:
             inlines.append(self.specific_inline)
             if self.calc_inline is not None:
                 inlines.append(self.calc_inline)
+            inlines.append(LiquidacionComprobanteInline)
+            inlines.append(LiquidacionDelegadoInline)
         return inlines
 
 # =============================================================================
@@ -488,6 +522,7 @@ class LiquidacionEdificacionProxyAdmin(BaseLiquidacionProxyAdmin):
     specific_inline = LiquidacionEdificacionInline
     calc_inline = LiquidacionPorcentajeObraInline
     specific_related_name = "edificaciones"
+    changelist_select_related = ("liquidacion_porcentaje_obra",)
 
     list_display = BaseLiquidacionProxyAdmin.list_display + ["tipo_tramite_list"]
 
@@ -508,6 +543,7 @@ class LiquidacionHabilitacionUrbanaProxyAdmin(BaseLiquidacionProxyAdmin):
     specific_inline = LiquidacionHabilitacionUrbanaInline
     calc_inline = LiquidacionPorMetroCuadradoInline
     specific_related_name = "habilitacion_urbana"
+    changelist_prefetch_related = ("liquidacion_m2",)
 
     list_display = BaseLiquidacionProxyAdmin.list_display + ["area_list"]
 
@@ -531,6 +567,7 @@ class LiquidacionMecanicaSuelosProxyAdmin(BaseLiquidacionProxyAdmin):
     specific_inline = LiquidacionMecanicaSuelosInline
     calc_inline = LiquidacionPorMetroCuadradoInline
     specific_related_name = "mecanica_suelos"
+    changelist_prefetch_related = ("liquidacion_m2",)
 
     list_display = BaseLiquidacionProxyAdmin.list_display + ["area_list"]
 
@@ -554,6 +591,7 @@ class LiquidacionTaludesProxyAdmin(BaseLiquidacionProxyAdmin):
     specific_inline = LiquidacionTaludesInline
     calc_inline = LiquidacionPorcentajeObraInline
     specific_related_name = "taludes"
+    changelist_select_related = ("liquidacion_porcentaje_obra",)
 
     list_display = BaseLiquidacionProxyAdmin.list_display + ["tipo_tramite_list"]
 
@@ -682,6 +720,7 @@ class LiquidacionImpactoVialProxyAdmin(BaseLiquidacionProxyAdmin):
     specific_inline = LiquidacionImpactoVialInline
     calc_inline = LiquidacionPorcentajeObraInline
     specific_related_name = "impacto_vial"
+    changelist_select_related = ("liquidacion_porcentaje_obra",)
 
     list_display = BaseLiquidacionProxyAdmin.list_display + ["tipo_tramite_list"]
 

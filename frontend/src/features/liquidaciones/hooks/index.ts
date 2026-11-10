@@ -6,6 +6,11 @@ export * from "./useCrearInspeccionObra";
 export * from "./useCrearMecanicaSuelos";
 export * from "./useCrearTaludes";
 export * from "./useDelegadosVigentesPorEspecialidad";
+// Edición in-place del comprobante ACTIVO (PATCH /liquidaciones/generales/{id}/comprobante/{comprobante_id})
+export {
+  type UseEditarComprobanteProps,
+  useEditarComprobante,
+} from "./useEditarComprobante";
 export * from "./useEditarEdificaciones";
 export * from "./useEditarHabilitacionUrbana";
 export * from "./useEditarImpactoVial";
@@ -15,6 +20,8 @@ export * from "./useEditarTaludes";
 export * from "./useEliminarLiquidacion";
 export * from "./useEspecialidadesRevision";
 export * from "./useLiquidacionCardState";
+// Detalle anidado de asignaciones (GET /liquidaciones/{id}/delegados-asignaciones)
+export { useLiquidacionDelegadosDetalle } from "./useLiquidacionDelegadosDetalle";
 export * from "./useLiquidacionesEdificaciones";
 export * from "./useLiquidacionesHabilitacionUrbana";
 export * from "./useLiquidacionesImpactoVial";
@@ -22,3 +29,9 @@ export * from "./useLiquidacionesInspeccionObra";
 export * from "./useLiquidacionesMecanicaSuelos";
 export * from "./useLiquidacionesTaludes";
 export * from "./useLiquidacionList";
+// Acción "Quitar delegado" (PATCH /liquidaciones/{id}/delegados)
+export {
+  type QuitarDelegadoPayload,
+  type QuitarDelegadoVariables,
+  useQuitarDelegadoLiquidacion,
+} from "./useQuitarDelegadoLiquidacion";

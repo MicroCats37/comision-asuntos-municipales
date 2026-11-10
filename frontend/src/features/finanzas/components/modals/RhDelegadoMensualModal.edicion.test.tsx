@@ -86,9 +86,15 @@ vi.mock("@/features/liquidaciones/components/detail", () => ({
   LiquidacionDetalleModal: () => null,
 }));
 
-vi.mock("@/errors", () => ({
-  notify: { error: vi.fn(), success: vi.fn() },
-}));
+// Se conserva el `handleApiError` real (el wizard lo usa al fallar el
+// guardado) y sólo se espía el toast.
+vi.mock("@/errors", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/errors")>();
+  return {
+    ...actual,
+    notify: { error: vi.fn(), success: vi.fn() },
+  };
+});
 
 import { RhDelegadoMensualModal } from "./RhDelegadoMensualModal";
 
@@ -190,7 +196,8 @@ describe("RhDelegadoMensualModal — modo edición", () => {
       />,
     );
 
-    expect(screen.getByText("EXP-001")).toBeInTheDocument();
+    // El expediente persistido se muestra en un campo editable (es un input).
+    expect(screen.getByDisplayValue("EXP-001")).toBeInTheDocument();
     // El N° RH persistido se muestra en un input de solo lectura (no es texto).
     expect(screen.getByDisplayValue("RH-001")).toBeInTheDocument();
   });

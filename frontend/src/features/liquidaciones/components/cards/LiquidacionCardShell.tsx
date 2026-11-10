@@ -12,6 +12,14 @@
  *      - financials 2-col (Subtotal | IGV)
  * 2. card-footer (Dirección | Acciones)
  *
+ * Las acciones del pie son TODAS opcionales: Delegados · PDF · Editar ·
+ * Eliminar · Gestionar comprobante · Ver detalle.
+ *
+ * La acción de comprobante tiene UNA sola etiqueta: por defecto "Gestionar
+ * comprobante" (el modal es único y decide internamente si ofrece alta,
+ * reemplazo o edición). `etiquetaComprobante` la sustituye cuando un punto de
+ * entrada necesita otra etiqueta.
+ *
  * La PARTE ESPECÍFICA por tipo se inyecta desde cada card via slots:
  *  - `calculoSlot` → bloque del cálculo por motor (PorcentajeObra | M2 | Visitas).
  *  - `delegadosSlot` → delegados + especialidades agrupados o registros_pago.
@@ -72,6 +80,7 @@ export function LiquidacionCardShell({
   onEdit,
   onDelete,
   onComprobante,
+  etiquetaComprobante,
   onVerDetalle,
   calculoSlot,
   delegadosSlot,
@@ -101,6 +110,15 @@ export function LiquidacionCardShell({
   onEdit?: () => void;
   onDelete?: () => void;
   onComprobante?: () => void;
+  /**
+   * Etiqueta de la acción de comprobante.
+   *
+   * Por defecto la etiqueta es ÚNICA ("Gestionar comprobante"): el modal es
+   * único y decide internamente si ofrece alta, reemplazo o edición según el
+   * comprobante vigente real. Un punto de entrada puede sobrescribirla con
+   * `etiquetaComprobante`.
+   */
+  etiquetaComprobante?: string;
   onVerDetalle?: () => void;
   calculoSlot?: ReactNode;
   delegadosSlot?: ReactNode;
@@ -425,9 +443,7 @@ export function LiquidacionCardShell({
               icon={<Receipt className="h-3 w-3" />}
               label={
                 <span className="hidden sm:inline">
-                  {comprobanteActivo
-                    ? "Reemplazar comprobante"
-                    : "Agregar comprobante"}
+                  {etiquetaComprobante ?? "Gestionar comprobante"}
                 </span>
               }
               onAction={onComprobante}

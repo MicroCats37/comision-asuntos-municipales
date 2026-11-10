@@ -19,6 +19,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_general.general_sche
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_general.comprobante_schemas import (
     LiquidacionComprobanteCreateIn,
+    LiquidacionComprobanteUpdateIn,
 )
 from modules.liquidaciones.domain.services.orchestrators.liquidacion_general_orchestrator import (
     LiquidacionGeneralOrchestrator,
@@ -262,6 +263,44 @@ class LiquidacionGeneralController:
         )
         output = self.presenter.present_liquidacion_general(result)
         return success_response(output, message="Comprobante agregado correctamente.")
+
+    @route.patch(
+        "/{liquidacion_id}/comprobante/{comprobante_id}",
+        response={200: ApiResponse[LiquidacionGeneralOutput]},
+    )
+    def editar_comprobante(
+        self,
+        liquidacion_id: uuid.UUID = Path(..., description="ID de la liquidación general"),
+        comprobante_id: uuid.UUID = Path(..., description="ID del comprobante activo"),
+        data: LiquidacionComprobanteUpdateIn = ...,
+    ):
+        """
+        Edita in-place el comprobante ACTIVO de una LiquidacionGeneral.
+
+        La operación actualiza la fila existente: no desactiva comprobantes, no crea
+        filas nuevas y no incrementa el historial. El `monto` ya registrado se preserva
+        y no forma parte del cuerpo de entrada.
+
+        Campos editables:
+        - tipo_comprobante (requerido): FACTURA, BOLETA, NOTA_CREDITO, NOTA_DEBITO
+        - serie (opcional)
+        - numero (opcional)
+        - fecha_emision (opcional, YYYY-MM-DD)
+
+        Errores:
+        - 404: la liquidación no existe, o el comprobante no existe o no le pertenece.
+        - 409 (COMPROBANTE_NO_ACTIVO): el comprobante indicado no es el vigente.
+        """
+        result = self.orchestrator.editar_comprobante(
+            liquidacion_id=liquidacion_id,
+            comprobante_id=comprobante_id,
+            tipo_comprobante=data.tipo_comprobante,
+            serie=data.serie,
+            numero=data.numero,
+            fecha_emision=data.fecha_emision,
+        )
+        output = self.presenter.present_liquidacion_general(result)
+        return success_response(output, message="Comprobante actualizado correctamente.")
 
     @route.patch(
         "/{liquidacion_id}/eliminar",

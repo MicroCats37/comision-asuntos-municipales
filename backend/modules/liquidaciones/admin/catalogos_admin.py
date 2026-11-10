@@ -2,6 +2,7 @@
 
 from django.contrib import admin
 
+from core_application.vigencia.admin import VigenciaAdminMixin, VigenteHoyFilter
 from modules.liquidaciones.domain.models import TipoLiquidacion
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquidacion import (
     LiquidacionEspecialidadDisponibles,
@@ -18,10 +19,16 @@ class TipoLiquidacionAdmin(admin.ModelAdmin):
 
 
 @admin.register(LiquidacionEspecialidadDisponibles)
-class LiquidacionEspecialidadDisponiblesAdmin(admin.ModelAdmin):
+class LiquidacionEspecialidadDisponiblesAdmin(VigenciaAdminMixin):
     """Admin for LiquidacionEspecialidadDisponibles (available specialties per type)."""
 
-    list_display = ["tipo_liquidacion", "especialidad", "activo"]
+    list_display = [
+        "tipo_liquidacion",
+        "especialidad",
+        "activo",
+        "periodo_inicio",
+        "periodo_fin",
+    ]
     search_fields = ["tipo_liquidacion__nombre", "especialidad__nombre"]
-    list_filter = ["tipo_liquidacion", "activo"]
+    list_filter = ["tipo_liquidacion", "especialidad", "activo", VigenteHoyFilter]
     readonly_fields = ["created_at", "updated_at"]

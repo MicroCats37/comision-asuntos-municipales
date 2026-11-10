@@ -206,6 +206,7 @@ class LiquidacionComprobanteMinimalOut(BaseSchema):
 class RHInspectorCotizarItemOut(BaseSchema):
     """Item individual en la cotización del RH mensual del inspector."""
     exp_liqui: str = Field(..., description="Expediente de la liquidación")
+    expediente: str = Field(..., description="Expediente mostrado en la cotización")
     liquidacion_inspector_id: uuid.UUID = Field(..., description="ID de LiquidacionInspector (asignación inspector-IO)")
     liquidacion_categoria_visitas_id: uuid.UUID = Field(..., description="ID de la IO (LiquidacionPorCategoriaVisitas)")
     detalle_id: Optional[uuid.UUID] = Field(
@@ -339,6 +340,7 @@ class RHDelegadoVariablesCalculoOut(BaseSchema):
 class RHDelegadoCotizarItemOut(BaseSchema):
     """Item individual en la cotización del RH mensual del delegado."""
     exp_liqui: str = Field(..., description="Expediente de la liquidación")
+    expediente: str = Field(..., description="Expediente mostrado en la cotización")
     liquidacion_delegado_id: Optional[uuid.UUID] = Field(None, description="ID de la LiquidacionDelegado (None para liquidaciones candidatadas)")
     detalle_id: Optional[uuid.UUID] = Field(
         None,

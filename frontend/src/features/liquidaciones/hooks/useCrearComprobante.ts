@@ -5,18 +5,23 @@
  * Response: ApiResponse<LiquidacionGeneralOutput> — el data contiene la liquidacion
  * actualizada con comprobantes[] ya mutado en backend.
  *
- * Cache patch strategy:
- * - Lista paginada ['liquidaciones', 'generales', 'todas', ...]: se busca y reemplaza
- *   el item con id matching usando setQueriesData con stale key filtering.
- * - Detalle ['liquidaciones', 'generales', 'detail', liquidacionId]: se reemplaza
- *   el item completo con los datos del response.
+ * Cache patch strategy (política híbrida — `useComprobanteCacheSync`):
+ * - Detalle ['liquidaciones', 'generales', 'detalle', liquidacionId]: se MERGEa
+ *   la liquidación devuelta dentro de `data.liquidacion_general`, conservando
+ *   `liquidacion_especifica` y `liquidacion_tipo` del envelope cacheado.
+ * - Listas ['liquidaciones', …]: se MERGEa la liquidación devuelta dentro de
+ *   `data.items[i].liquidacion_general` (el item es un wrapper), sin alterar
+ *   `total` ni la posición de los items.
+ *
+ * El browse RH NO se parchea (su clave `["rh-browse", …]` queda fuera del
+ * prefijo `["liquidaciones"]`): ese hace `refetch()` explícito.
  *
  * No hay namespace de cache "ultimas-revisiones": ese endpoint fue retirado
  * del backend y no existe una revisión canónica por proyecto.
  *
  * No faz parte del modal UI (Phase D).
  */
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { handleApiError, notify } from "@/errors";
 import api from "@/lib/api";
@@ -25,6 +30,7 @@ import type {
   CrearComprobanteInput,
   LiquidacionGeneralOutput,
 } from "../schemas/liquidacion-base.schema";
+import { useComprobanteCacheSync } from "./cache/useComprobanteCacheSync";
 
 interface UseCrearComprobanteProps {
   /** ID de la liquidacion a la que se agrega el comprobante */
@@ -35,36 +41,11 @@ interface UseCrearComprobanteProps {
 
 const BASE_URL = "/liquidaciones/generales";
 
-/**
- * Builds the cache key prefix used by useLiquidacionesGenerales for the general list.
- * Must stay in sync with useLiquidacionesGenerales queryKey structure.
- */
-function makeListQueryKeyPrefix(): [
-  "liquidaciones",
-  "generales",
-  string,
-  number,
-  number,
-] {
-  // The base prefix without filters — setQueriesData matches by prefix.
-  // useLiquidacionesGenerales builds: ['liquidaciones', 'generales', 'todas', page, pageSize, ...filters]
-  return ["liquidaciones", "generales", "todas", 1, 10];
-}
-
-/**
- * Builds the detail cache key for a specific liquidacion.
- */
-function makeDetailQueryKey(
-  liquidacionId: string,
-): [string, string, string, string] {
-  return ["liquidaciones", "generales", "detail", liquidacionId];
-}
-
 export function useCrearComprobante({
   liquidacionId,
   onSuccess,
 }: UseCrearComprobanteProps) {
-  const queryClient = useQueryClient();
+  const cacheSync = useComprobanteCacheSync();
 
   return useMutation<
     LiquidacionGeneralOutput,
@@ -92,37 +73,13 @@ export function useCrearComprobante({
       return data.data as LiquidacionGeneralOutput;
     },
     onSuccess: (updatedLiquidacion) => {
-      // ── 1. Patch detail cache ─────────────────────────────────────────────
-      queryClient.setQueryData<LiquidacionGeneralOutput>(
-        makeDetailQueryKey(liquidacionId),
-        updatedLiquidacion,
-      );
+      // ── 1. Parche de caché (detalle + listas) ─────────────────────────────
+      // Política híbrida compartida con `useEditarComprobante`: el POST y el
+      // PATCH dejan EXACTAMENTE la misma forma en caché.
+      cacheSync.syncComprobante(liquidacionId, updatedLiquidacion);
 
-      // ── 2. Patch paginated list caches (all pages that may contain this item) ─
-      // Use setQueriesData with predicate to replace matching items.
-      // The prefix matches the list query keys from useLiquidacionesGenerales.
-      const listPrefix = makeListQueryKeyPrefix();
-      queryClient.setQueriesData<
-        { items?: LiquidacionGeneralOutput[] } | undefined
-      >(
-        { queryKey: listPrefix },
-        (old: { items?: LiquidacionGeneralOutput[] } | undefined) => {
-          if (!old) return old;
-          // Handle paginated shape: { items: T[], total, page, page_size, total_pages }
-          if (Array.isArray(old.items)) {
-            return {
-              ...old,
-              items: old.items.map((item: LiquidacionGeneralOutput) =>
-                item.id === updatedLiquidacion.id ? updatedLiquidacion : item,
-              ),
-            };
-          }
-          return old;
-        },
-      );
-
-      // ── 3. Sin invalidate de "ultimas-revisiones" ─────────────────────────
-      //Ese namespace de cache ya no existe: el backend retiró el endpoint
+      // ── 2. Sin invalidate de "ultimas-revisiones" ─────────────────────────
+      // Ese namespace de cache ya no existe: el backend retiró el endpoint
       // `GET /liquidaciones/generales/ultimas-revisiones` y el modelo de datos
       // no tiene una revisión canónica por proyecto. El listado general es el
       // paginado completo y ya fue parcheado arriba.

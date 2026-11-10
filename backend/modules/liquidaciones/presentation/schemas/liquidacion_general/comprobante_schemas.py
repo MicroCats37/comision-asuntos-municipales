@@ -19,12 +19,12 @@ class LiquidacionComprobanteOutput(BaseSchema):
     motivo_reemplazo: Optional[str] = Field(None, description="Motivo de reemplazo")
 
 
-class LiquidacionComprobanteCreateIn(BaseSchema):
+class LiquidacionComprobanteDatosIn(BaseSchema):
     """
-    Input schema for creating/replacing a comprobante on a liquidacion.
+    Bloque general — datos compartidos por cualquier mutación de un comprobante.
 
-    Basic data fields only — no archivo/foto for now.
-    File handling is deferred to a future package.
+    Composición DRY (SCHEMA_DRY_INTENTION.md): este bloque se declara una sola
+    vez y se compone en los bloques específicos de cada endpoint.
     """
     tipo_comprobante: str = Field(
         ...,
@@ -33,8 +33,26 @@ class LiquidacionComprobanteCreateIn(BaseSchema):
     serie: Optional[str] = Field(None, description="Serie del comprobante")
     numero: Optional[str] = Field(None, description="Número del comprobante")
     fecha_emision: Optional[str] = Field(None, description="Fecha de emisión (YYYY-MM-DD)")
+
+
+class LiquidacionComprobanteCreateIn(LiquidacionComprobanteDatosIn):
+    """
+    Input schema for creating/replacing a comprobante on a liquidacion.
+
+    Basic data fields only — no archivo/foto for now.
+    File handling is deferred to a future package.
+    """
     monto: Optional[float] = Field(None, description="Monto del comprobante")
     motivo_reemplazo: Optional[str] = Field(
         None,
         description="Motivo por el cual se reemplaza el comprobante anterior",
     )
+
+
+class LiquidacionComprobanteUpdateIn(LiquidacionComprobanteDatosIn):
+    """
+    Input schema for editing in-place the ACTIVE comprobante of a liquidacion.
+
+    Deliberately does NOT declare `monto`: the amount already registered is
+    preserved by the backend and can never be overwritten from the client.
+    """

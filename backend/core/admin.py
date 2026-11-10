@@ -45,7 +45,6 @@ _LIQUIDACIONES_SECTION_ORDER = [
     ),
     ("Catálogos", ["TipoLiquidacion", "LiquidacionCodigo"]),
     ("Proyectos", ["Proyecto"]),
-    ("Inspecciones", ["LiquidacionInspector"]),
 ]
 
 # Fast lookup: model_name -> section name
@@ -94,6 +93,25 @@ _FINANZAS_SECTION_ORDER = [
 ]
 
 _FINANZAS_MODEL_TO_SECTION = {model_name: section for section, names in _FINANZAS_SECTION_ORDER for model_name in names}
+
+_VIGENCIA_MODEL_ORDER = [
+    "TarifaBasePorcentajeObraProxy",
+    "TarifaBaseMetroCuadradoProxy",
+    "TarifaBaseVisitasProxy",
+    "DerechoPorcentajeObra",
+    "DerechoPorMetroCuadrado",
+    "IGV",
+    "UIT",
+    "EscalaDescuentoInspector",
+    "TasaDelegado",
+    "LiquidacionEspecialidadDisponibles",
+]
+_VIGENCIA_MODEL_NAMES = {
+    *_VIGENCIA_MODEL_ORDER,
+    "TarifaLiquidacionBase",
+}
+
+_HIDDEN_APP_LABELS = {"django_q", "token_blacklist"}
 
 
 def _build_finanzas_sections(finanzas_app):
@@ -166,6 +184,41 @@ def _build_liquidacion_sections(liquidaciones_app):
     return pseudo_apps
 
 
+def _build_vigencias_section(liquidaciones_app, finanzas_app):
+    """Build one sidebar section for every model managed by a validity period."""
+    by_name = {
+        model["object_name"]: model
+        for app in (liquidaciones_app, finanzas_app)
+        if app
+        for model in app["models"]
+    }
+    models = [by_name[name] for name in _VIGENCIA_MODEL_ORDER if name in by_name]
+    if not models:
+        return None
+
+    return {
+        "app_label": "vigencias",
+        "app_name": "Vigencias",
+        "app_url": models[0]["admin_url"],
+        "has_module_perms": True,
+        "has_visible_models": True,
+        "models": models,
+        "name": "Vigencias",
+    }
+
+
+def _sin_modelos_vigencia(app):
+    """Keep validity models out of their former module-specific sidebar groups."""
+    return {
+        **app,
+        "models": [
+            model
+            for model in app["models"]
+            if model["object_name"] not in _VIGENCIA_MODEL_NAMES
+        ],
+    }
+
+
 def _regroup_app_list(original_get_app_list):
     """
     Return a get_app_list wrapper that groups liquidaciones and finanzas
@@ -186,13 +239,25 @@ def _regroup_app_list(original_get_app_list):
         if not liquidaciones_app and not finanzas_app:
             return app_list
 
-        result = [app for app in app_list if app["app_label"] not in ("liquidaciones", "finanzas")]
+        result = [
+            app
+            for app in app_list
+            if app["app_label"] not in {
+                "liquidaciones",
+                "finanzas",
+                *_HIDDEN_APP_LABELS,
+            }
+        ]
+
+        vigencias_section = _build_vigencias_section(liquidaciones_app, finanzas_app)
+        if vigencias_section:
+            result.insert(0, vigencias_section)
 
         if liquidaciones_app:
-            result.extend(_build_liquidacion_sections(liquidaciones_app))
+            result.extend(_build_liquidacion_sections(_sin_modelos_vigencia(liquidaciones_app)))
 
         if finanzas_app:
-            result.extend(_build_finanzas_sections(finanzas_app))
+            result.extend(_build_finanzas_sections(_sin_modelos_vigencia(finanzas_app)))
 
         return result
 
