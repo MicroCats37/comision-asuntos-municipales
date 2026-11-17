@@ -573,15 +573,20 @@ class LiquidacionPorcentajeObraCoreService:
         # El padre cobra H habilitadas: H × f
         porcentaje_padre = Decimal(habilitadas) * porcentaje_tarifa
 
-        subtotal_bruto = contexto.valor_declarado * porcentaje_padre
-        minimo = contexto.uit_valor * contexto.derecho.porcentaje_minimo_uit
-        subtotal_total = max(subtotal_bruto, minimo)
-        if (
-            contexto.derecho.derecho_maximo is not None
-            and subtotal_total > contexto.derecho.derecho_maximo
-        ):
-            subtotal_total = contexto.derecho.derecho_maximo
-        subtotal_total = subtotal_total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        if contexto.override_subtotal is not None:
+            subtotal_total = contexto.override_subtotal.quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+        else:
+            subtotal_bruto = contexto.valor_declarado * porcentaje_padre
+            minimo = contexto.uit_valor * contexto.derecho.porcentaje_minimo_uit
+            subtotal_total = max(subtotal_bruto, minimo)
+            if (
+                contexto.derecho.derecho_maximo is not None
+                and subtotal_total > contexto.derecho.derecho_maximo
+            ):
+                subtotal_total = contexto.derecho.derecho_maximo
+            subtotal_total = subtotal_total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
         cuotas = self._repartir_por_habilitadas(subtotal_total, habilitadas, participantes)
         detalles = self._construir_detalles_cuota(cuotas, porcentaje_tarifa)
@@ -603,12 +608,16 @@ class LiquidacionPorcentajeObraCoreService:
         porcentaje_acumulado = porcentaje_padre - porcentaje_detalles
         acumulacion = self._construir_acumulacion(porcentaje_acumulado, subtotal_acumulado)
 
-        igv_monto = (subtotal_total * contexto.igv_porcentaje).quantize(
-            Decimal("0.01"), rounding=ROUND_HALF_UP
-        )
-        total = (subtotal_total + igv_monto).quantize(
-            Decimal("0.01"), rounding=ROUND_HALF_UP
-        )
+        if contexto.override_subtotal is not None and contexto.override_total is not None:
+            total = contexto.override_total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            igv_monto = total - subtotal_total
+        else:
+            igv_monto = (subtotal_total * contexto.igv_porcentaje).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            total = (subtotal_total + igv_monto).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
 
         return CotizacionPOEstrategiaData(
             estrategia=EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES,

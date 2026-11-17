@@ -72,7 +72,11 @@ class VarianceError(Exception):
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.entidades.domain.models.ubigeo import UbigeoDistrito
 from modules.liquidaciones.di import LiquidacionesModule
-from modules.liquidaciones.domain.constants import TipoDelegado, TipoLiquidacion
+from modules.liquidaciones.domain.constants import (
+    EstrategiaCotizacionPO,
+    TipoDelegado,
+    TipoLiquidacion,
+)
 from modules.liquidaciones.domain.models.delegado import Delegado, DelegadoOperacion, LiquidacionDelegado
 from modules.liquidaciones.domain.models.tipo_liquidacion import (
     TipoLiquidacion as TipoLiquidacionModel,
@@ -119,6 +123,7 @@ logger = logging.getLogger(__name__)
 
 # Default path to legacy data file
 DEFAULT_DATA_PATH = Path(__file__).resolve().parent.parent.parent.parent.parent / "core_application" / "seeds" / "historico" / "EDIF_ALL.csv"
+HABILITADAS_MATCH_TOLERANCE = Decimal("1.00")
 
 # ── Modular constants and parsers from legacy_edif package ──────────────────────
 # Single source of truth lives in commands/legacy_edif/columns.py and
@@ -920,6 +925,11 @@ class Command(BaseCommand):
             help="Phase 1: parse RH delegado slots and produce a summary report. "
                  "No DB writes for RH entities. Implies --dry-run for RH path.",
         )
+        parser.add_argument(
+            "--solo-liquidaciones",
+            action="store_true",
+            help="Importar o validar solo liquidaciones padre; no procesar RH ni delegados.",
+        )
 
     def _reset_liquidaciones(self) -> None:
         """
@@ -973,6 +983,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.dry_run_rh = bool(options.get("dry_run_rh", False))
         self.dry_run = bool(options["dry_run"]) or self.dry_run_rh
+        self.solo_liquidaciones = bool(options.get("solo_liquidaciones", False))
         self.batch_size = int(options["batch_size"])
         self.reset = bool(options.get("reset", False))
         self.solo_reporte = bool(options.get("solo_report", False)) or bool(options.get("solo_reporte", False))
@@ -1162,6 +1173,11 @@ class Command(BaseCommand):
                         )
                     if existing_edificacion is not None:
                         skipped += 1
+                        if self.solo_liquidaciones:
+                            self._log(self.style.WARNING(
+                                f"  EXISTENTE row {idx}: numero {id_val} ya existe; omitido"
+                            ))
+                            continue
                         self._log(self.style.WARNING(
                             f"  EXISTENTE row {idx}: numero {id_val} ya existe; procesando RH/delegados"
                         ))
@@ -1250,6 +1266,9 @@ class Command(BaseCommand):
                         )
 
                     processed += 1
+
+                    if self.solo_liquidaciones:
+                        continue
 
                     # ── Phase 1: RH slot parsing (no DB writes) ─────────────────────
                     rh_rows_parsed += 1
@@ -2279,6 +2298,29 @@ class Command(BaseCommand):
             numero_revision=nrorev_val,
             numero=numero,
         )
+
+        # Some historical rows charged all enabled specialties while naming only
+        # one participant. Use that dated business mode only when the source
+        # subtotal matches its calculated parent amount.
+        if (
+            cotizacion_legacy is not None
+            and tarifas_explicit
+            and especialidad_str.strip().upper() != "TODAS"
+        ):
+            habilitadas_payload = payload.model_copy(deep=True)
+            habilitadas_payload.cotizacion_legacy = None
+            habilitadas_payload.liquidacion_especifica.estrategia_cotizacion = (
+                EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES
+            )
+            cotizacion_habilitadas = orchestrator.cotizar_legacy_proceso(habilitadas_payload)
+            if (
+                abs(cotizacion_legacy.sub_total - cotizacion_habilitadas.total_subtotal)
+                <= HABILITADAS_MATCH_TOLERANCE
+            ):
+                payload.liquidacion_especifica.estrategia_cotizacion = (
+                    EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES
+                )
+                anomalies.append("Estrategia legacy: tarifa habilitadas participantes")
 
         # ── UIT override (opcional): si el TASAUIT del Excel no coincide con
         # la UIT vigente en BD para el año de fecha_registro, pasamos el valor

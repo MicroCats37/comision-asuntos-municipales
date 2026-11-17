@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardCheck, Receipt, User } from "lucide-react";
+import { ClipboardCheck, Link2, Receipt, User } from "lucide-react";
 import type {
   RegistroPagoOut,
   VisitasDatosOut,
@@ -73,6 +73,7 @@ export function LiquidacionDetalleInspeccionObraSection({
 
   const inspectoresCount = lt.inspectores?.length ?? 0;
   const registrosCount = lt.registros_pago?.length ?? 0;
+  const continuidad = lt.continuidad ?? null;
 
   return (
     <TarifaDetailSection
@@ -81,6 +82,78 @@ export function LiquidacionDetalleInspeccionObraSection({
       params={params}
       emptyText="Sin parámetros de visitas registrados."
     >
+      {/* Continuidad: valor completo | crédito de la previa | total a cobrar */}
+      {continuidad && (
+        <div className="rounded-lg border border-border/50 bg-card overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40 bg-muted/20">
+            <Link2 className="h-3 w-3 text-muted-foreground/70" />
+            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+              Continuidad de visitas
+            </h4>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 text-sm">
+            <div className="rounded-md border border-border/40 p-2">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Valor completo
+              </span>
+              <strong className="block tabular-nums">
+                {formatCurrency(continuidad.monto_acumulado ?? 0)}
+              </strong>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                Con IGV: {formatCurrency(continuidad.total_acumulado ?? 0)}
+              </span>
+            </div>
+            <div className="rounded-md border border-border/40 p-2">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Crédito de la previa
+              </span>
+              <strong className="block tabular-nums text-destructive">
+                − {formatCurrency(continuidad.subtotal_credito ?? 0)}
+              </strong>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                Con IGV: {formatCurrency(continuidad.total_credito ?? 0)}
+              </span>
+            </div>
+            <div className="rounded-md border border-primary/30 bg-primary/[0.05] p-2">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Total a cobrar
+              </span>
+              <strong className="block tabular-nums text-primary">
+                {formatCurrency(
+                  (continuidad.total_acumulado ?? 0) -
+                    (continuidad.total_credito ?? 0),
+                )}
+              </strong>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                Neto:{" "}
+                {formatCurrency(
+                  (continuidad.monto_acumulado ?? 0) -
+                    (continuidad.subtotal_credito ?? 0),
+                )}
+              </span>
+            </div>
+          </div>
+          {(continuidad.visitas_previas_pendientes != null ||
+            continuidad.categoria_previa) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 px-3 pb-3 text-xs">
+              <span className="text-muted-foreground">
+                Visitas pendientes de la previa:
+              </span>
+              <span className="text-right font-medium tabular-nums">
+                {continuidad.visitas_previas_pendientes ?? 0}
+                {continuidad.visitas_previas_totales != null
+                  ? ` de ${continuidad.visitas_previas_totales}`
+                  : ""}
+              </span>
+              <span className="text-muted-foreground">Categoría previa:</span>
+              <span className="text-right font-medium">
+                {continuidad.categoria_previa ?? "—"}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Inspectores table */}
       <div className="rounded-lg border border-border/50 bg-card overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40 bg-muted/20">

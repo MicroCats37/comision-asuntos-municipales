@@ -14,6 +14,9 @@ from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_categoria_visitas_core_service import (
     LiquidacionPorCategoriaVisitasCoreService,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_continuidad_visitas_core_service import (
+    LiquidacionContinuidadVisitasCoreService,
+)
 from modules.liquidaciones.domain.schemas.liquidacion_especifico.inspeccion_obra_primera_revision_data import (
     InspeccionObraNuevaRevisionData,
 )
@@ -30,12 +33,17 @@ from modules.liquidaciones.domain.results.liquidacion_general.liquidacion_genera
 )
 from modules.liquidaciones.domain.results.liquidacion_tipo.liquidacion_visitas_result import (
     LiquidacionVisitasResult,
+    LiquidacionContinuidadVisitasResult,
     RegistroPagoResult,
 )
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_especifico.liquidacion_inspeccion_obra import (
     LiquidacionInspeccionObra,
 )
-from modules.liquidaciones.domain.constants import TipoLiquidacion, ModoCalculoLiquidacion
+from modules.liquidaciones.domain.constants import (
+    ModoCalculoLiquidacion,
+    ModoCotizacionVisitas,
+    TipoLiquidacion,
+)
 
 
 class LiquidacionInspeccionObraFlujo:
@@ -49,9 +57,11 @@ class LiquidacionInspeccionObraFlujo:
         self,
         general_core: LiquidacionGeneralCoreService,
         visitas_core: LiquidacionPorCategoriaVisitasCoreService,
+        continuidad_core: LiquidacionContinuidadVisitasCoreService,
     ):
         self.general_core = general_core
         self.visitas_core = visitas_core
+        self.continuidad_core = continuidad_core
 
     @transaction.atomic()
     def ejecutar_primera_revision_desde_previa(
@@ -241,6 +251,69 @@ class LiquidacionInspeccionObraFlujo:
 
         total = subtotal * (1 + igv_vigente.valor)
 
+        # ── CONTINUIDAD (opcional) ────────────────────────────────────────────
+        # Sin continuidad: `sub_total` = valor completo del trabajo (vigente).
+        # Con continuidad: `sub_total`/`total` = la DIFERENCIA a cobrar, y el
+        # valor completo del trabajo queda congelado en la fila de continuidad.
+        #
+        # El MOTOR ÚNICO (C-6) resuelve valor completo, crédito y diferencia en
+        # UN solo lugar: lo que se persiste es EXACTAMENTE lo que devolvió la
+        # cotización (paridad al céntavo, DD-3/R2).
+        continuidad = data.liquidacion_especifica.continuidad
+        sub_total = subtotal
+        monto_acumulado = None
+        total_acumulado = None
+        if continuidad is not None and tarifa is not None:
+            contexto = self.visitas_core.construir_contexto_visitas(
+                modo=ModoCotizacionVisitas.CONTINUAR,
+                cantidad_visitas=data.liquidacion_especifica.datos.cantidad_visitas,
+                porcentaje_uit=Decimal(str(tarifa.porcentaje_uit)),
+                uit_valor=Decimal(str(uit_vigente.valor)),
+                igv_porcentaje=Decimal(str(igv_vigente.valor)),
+                categoria=tarifa.categoria_visitas,
+                tarifa_id=str(tarifa.id),
+                # El BRUTO declarado MANDA: el motor deriva el par (neto, bruto)
+                # con el IGV vigente. Si no viene, el motor usa el par ya
+                # resuelto por el orquestador (neto + bruto congelado).
+                total_pagado_previa=continuidad.total_pagado_previa,
+                credito_neto=(
+                    None
+                    if continuidad.total_pagado_previa is not None
+                    else continuidad.subtotal_credito
+                ),
+                credito_bruto=(
+                    None
+                    if continuidad.total_pagado_previa is not None
+                    else continuidad.total_credito
+                ),
+                uit_id=str(uit_vigente.id),
+                igv_id=str(igv_vigente.id),
+            )
+            estrategia = self.visitas_core.calcular_cotizacion_visitas_estrategia(
+                contexto
+            )
+            bloque = estrategia.continuidad
+            monto_acumulado = bloque.valor_completo_neto
+            total_acumulado = bloque.valor_completo_bruto
+            sub_total = bloque.diferencia_neto
+            total = bloque.diferencia_bruto
+        elif continuidad is not None:
+            # Registro manual/legacy (CATEGORIA=0): no hay tarifa que repreciar
+            # y, por tanto, no hay valor completo que el MOTOR pueda resolver.
+            # Se conserva la aritmética vigente.
+            monto_acumulado, total_acumulado = (
+                self.continuidad_core.calcular_montos_acumulados(
+                    monto_neto_visitas=subtotal,
+                    igv_valor=igv_vigente.valor,
+                )
+            )
+            sub_total, total = self.continuidad_core.calcular_diferencia(
+                monto_acumulado=monto_acumulado,
+                total_acumulado=total_acumulado,
+                subtotal_credito=continuidad.subtotal_credito,
+                total_credito=continuidad.total_credito,
+            )
+
         liquidacion_general = self.general_core.create_liquidacion_general(
             municipalidad_id=str(gen_data.municipalidad_id),
             expediente=gen_data.expediente,
@@ -250,7 +323,7 @@ class LiquidacionInspeccionObraFlujo:
             numero_revision=1,
             denominacion_de_proyecto=gen_data.denominacion_de_proyecto,
             contacto=contacto,
-            sub_total=subtotal,
+            sub_total=sub_total,
             total=total,
             igv_id=igv_vigente,
             uit_id=uit_vigente,
@@ -266,6 +339,24 @@ class LiquidacionInspeccionObraFlujo:
             liquidacion_general=liquidacion_general,
             data=data.liquidacion_especifica,
         )
+
+        # 7b. Crear la fila de continuidad (misma transaction.atomic que B).
+        #     La fila es la que congela el valor completo del trabajo y el
+        #     crédito de la previa, y la que habilita la base RH condicional.
+        continuidad_row = None
+        if continuidad is not None:
+            continuidad_row = self.continuidad_core.crear_continuidad(
+                liquidacion_visitas=liquidacion_visitas,
+                monto_acumulado=monto_acumulado,
+                total_acumulado=total_acumulado,
+                subtotal_credito=continuidad.subtotal_credito,
+                total_credito=continuidad.total_credito,
+                liquidacion_previa=continuidad.liquidacion_previa,
+                visitas_previas_totales=continuidad.visitas_previas_totales,
+                visitas_previas_pendientes=continuidad.visitas_previas_pendientes,
+                categoria_previa=continuidad.categoria_previa,
+                observacion=continuidad.observacion,
+            )
 
         # 8. Crear Específico: LiquidacionInspeccionObra
         liquidacion_io = LiquidacionInspeccionObra.objects.create(
@@ -301,6 +392,7 @@ class LiquidacionInspeccionObraFlujo:
             proyecto=proyecto,
             entidad=entidad,
             usuario_id=usuario_id,
+            continuidad_row=continuidad_row,
         )
 
     def _build_result_from_orm(
@@ -311,6 +403,7 @@ class LiquidacionInspeccionObraFlujo:
         proyecto,
         entidad,
         usuario_id: int,
+        continuidad_row=None,
     ) -> InspeccionObraPrimeraRevisionResult:
         """
         Construye InspeccionObraPrimeraRevisionResult a partir de objetos ORM.
@@ -349,6 +442,7 @@ class LiquidacionInspeccionObraFlujo:
             tarifa_aplicada_id=str(liquidacion_visitas.tarifa_aplicada_id) if liquidacion_visitas.tarifa_aplicada_id else None,
             inspectores=self._build_inspectores_result(liquidacion_visitas),
             registros_pago=self._build_registros_pago_result(liquidacion_visitas),
+            continuidad=self._build_continuidad_result(liquidacion_visitas, continuidad_row),
         )
 
         especifico_result = LiquidacionEspecificaInspeccionObraResult(
@@ -360,6 +454,47 @@ class LiquidacionInspeccionObraFlujo:
             liquidacion_general=general_result,
             liquidacion_tipo=tipo_result,
             liquidacion_especifica=especifico_result,
+        )
+
+    @staticmethod
+    def _build_continuidad_result(liquidacion_visitas, continuidad_row=None):
+        """
+        Construye el LiquidacionContinuidadVisitasResult de la IO.
+
+        Devuelve None cuando la IO NO tiene fila de continuidad (caso normal:
+        IO sin continuidad → comportamiento idéntico al vigente).
+
+        `continuidad_row` permite evitar una consulta extra cuando la fila
+        acaba de crearse en el mismo flujo.
+        """
+        if continuidad_row is None:
+            from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacion_tipo import (
+                LiquidacionContinuidadVisitas,
+            )
+
+            try:
+                continuidad_row = liquidacion_visitas.continuidad
+            except LiquidacionContinuidadVisitas.DoesNotExist:
+                return None
+
+        if continuidad_row is None:
+            return None
+
+        return LiquidacionContinuidadVisitasResult(
+            id=str(continuidad_row.id),
+            liquidacion_previa_id=(
+                str(continuidad_row.liquidacion_previa_id)
+                if continuidad_row.liquidacion_previa_id
+                else None
+            ),
+            monto_acumulado=continuidad_row.monto_acumulado,
+            total_acumulado=continuidad_row.total_acumulado,
+            subtotal_credito=continuidad_row.subtotal_credito,
+            total_credito=continuidad_row.total_credito,
+            visitas_previas_totales=continuidad_row.visitas_previas_totales,
+            visitas_previas_pendientes=continuidad_row.visitas_previas_pendientes,
+            categoria_previa=continuidad_row.categoria_previa,
+            observacion=continuidad_row.observacion,
         )
 
     @staticmethod

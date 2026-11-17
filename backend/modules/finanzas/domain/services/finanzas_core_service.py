@@ -51,6 +51,9 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacio
     LiquidacionPorCategoriaVisitas,
     LiquidacionPorcentajeObraDetalle,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_continuidad_visitas_core_service import (
+    LiquidacionContinuidadVisitasCoreService,
+)
 from modules.liquidaciones.domain.constants import EstadoLiquidacion
 from core.exceptions import ConflictError, NotFoundError
 
@@ -416,6 +419,9 @@ class FinanzasCoreService:
         """
         return LiquidacionPorCategoriaVisitas.objects.filter(
             liquidacion_general_id=liquidacion_general_id
+        ).select_related(
+            "liquidacion_general",
+            "continuidad",
         ).first()
 
     def get_liquidacion_categoria_visitas_by_id(
@@ -430,7 +436,10 @@ class FinanzasCoreService:
         Returns:
             LiquidacionPorCategoriaVisitas instance or None if not found.
         """
-        return LiquidacionPorCategoriaVisitas.objects.filter(id=str(lcv_id)).first()
+        return LiquidacionPorCategoriaVisitas.objects.filter(id=str(lcv_id)).select_related(
+            "liquidacion_general",
+            "continuidad",
+        ).first()
 
     def get_liquidacion_inspector(
         self,
@@ -708,7 +717,11 @@ class FinanzasCoreService:
             costo_por_inspeccion: Cost per inspection for this liquidacion.
             monto_contribuido: Monetary contribution from this liquidacion.
             escala_descuento_id: FK to EscalaDescuentoInspector (frozen reference).
-            importe_bruto: sub_total from LiquidacionGeneral (frozen reference amount).
+            importe_bruto: BASE RH congelada de la liquidación (frozen reference
+                amount). Con fila de continuidad es
+                `continuidad.monto_acumulado`; sin fila es
+                `liquidacion_general.sub_total` — la MISMA regla que usa el
+                listado de candidatas (`resolver_base_rh`).
             inspecciones_programadas: cantidad_visitas from LiquidacionPorCategoriaVisitas.
             inspecciones_pagadas_hasta_mes_anterior: accumulated historical paid inspections.
             saldo_restante: remaining inspections after this quote.
@@ -1020,6 +1033,10 @@ class FinanzasCoreService:
             "liquidacion__liquidacion_general__municipalidad",
             "inspector__perfil_ingeniero",
             "especialidad_revision",
+        ).prefetch_related(
+            # Fila de continuidad de la IO (si existe): evita N+1 al resolver
+            # la base RH condicional.
+            Prefetch("liquidacion__continuidad"),
         )
 
         # Apply date range filter on LiquidacionGeneral.fecha_registro
@@ -1072,12 +1089,15 @@ class FinanzasCoreService:
                 continue
 
             # Calculate costo_por_inspeccion
-            sub_total = lg.sub_total or 0
+            # BASE RH condicional (misma regla que la cotización del RH):
+            # con continuidad → `continuidad.monto_acumulado`; sin continuidad →
+            # `liquidacion_general.sub_total` (comportamiento vigente).
+            base_rh = LiquidacionContinuidadVisitasCoreService.resolver_base_rh(lcv, lg)
             from decimal import Decimal
 
             TWO_PLACES = Decimal("0.01")
             costo_por_inspeccion = (
-                Decimal(str(sub_total)) / Decimal(programadas)
+                base_rh / Decimal(programadas)
             ).quantize(TWO_PLACES, rounding="ROUND_HALF_UP")
 
             perfil = li.inspector.perfil_ingeniero
@@ -1108,8 +1128,8 @@ class FinanzasCoreService:
                     "inspecciones_pagadas": pagadas,
                     "saldo_disponible": saldo,
                     "costo_por_inspeccion": costo_por_inspeccion,
-                    "total_liquidacion": sub_total,
-                    "sub_total_liquidacion": sub_total,
+                    "total_liquidacion": base_rh,
+                    "sub_total_liquidacion": base_rh,
                 }
             )
 
@@ -1171,6 +1191,10 @@ class FinanzasCoreService:
             "liquidacion__liquidacion_general__municipalidad",
             "inspector__perfil_ingeniero",
             "especialidad_revision",
+        ).prefetch_related(
+            # Fila de continuidad de la IO (si existe): evita N+1 al resolver
+            # la base RH condicional.
+            Prefetch("liquidacion__continuidad"),
         )
 
         # Apply date range filter on LiquidacionGeneral.fecha_registro
@@ -1278,10 +1302,13 @@ class FinanzasCoreService:
             if saldo <= 0:
                 continue
 
-            sub_total = lg.sub_total or 0
             TWO_PLACES = Decimal("0.01")
+            # BASE RH condicional (misma regla que la cotización del RH):
+            # con continuidad → `continuidad.monto_acumulado`; sin continuidad →
+            # `liquidacion_general.sub_total` (comportamiento vigente).
+            base_rh = LiquidacionContinuidadVisitasCoreService.resolver_base_rh(lcv, lg)
             costo_por_inspeccion = (
-                Decimal(str(sub_total)) / Decimal(programadas)
+                base_rh / Decimal(programadas)
             ).quantize(TWO_PLACES, rounding="ROUND_HALF_UP")
 
             perfil = li.inspector.perfil_ingeniero
@@ -1312,8 +1339,8 @@ class FinanzasCoreService:
                     "inspecciones_pagadas": pagadas,
                     "saldo_disponible": saldo,
                     "costo_por_inspeccion": costo_por_inspeccion,
-                    "total_liquidacion": sub_total,
-                    "sub_total_liquidacion": sub_total,
+                    "total_liquidacion": base_rh,
+                    "sub_total_liquidacion": base_rh,
                 }
             )
 

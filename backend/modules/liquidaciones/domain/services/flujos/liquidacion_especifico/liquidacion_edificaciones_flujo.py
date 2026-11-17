@@ -110,7 +110,11 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
         if getattr(self, '_override_total', None) is not None:
             kwargs['override_total'] = self._override_total
 
-        if kwargs:
+        estrategia = (
+            getattr(po_data, "estrategia_cotizacion", None)
+            or EstrategiaCotizacionPO.NORMAL_SELECCIONADAS
+        )
+        if kwargs and estrategia == EstrategiaCotizacionPO.NORMAL_SELECCIONADAS:
             # Legacy import: la fachada preserva el bypass histórico.
             return self.porcentaje_core.calcular_cotizacion_po(
                 valor_declarado=po_data.datos.valor_declarado,
@@ -122,10 +126,7 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
             )
 
         contexto = CotizacionPOContexto(
-            estrategia=(
-                getattr(po_data, 'estrategia_cotizacion', None)
-                or EstrategiaCotizacionPO.NORMAL_SELECCIONADAS
-            ),
+            estrategia=estrategia,
             participantes=list(po_data.tarifas),
             cantidad_especialidades_habilitadas=getattr(
                 po_data, 'cantidad_especialidades_habilitadas', None
@@ -135,6 +136,7 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
             igv_porcentaje=igv_porcentaje,
             uit_valor=uit_valor,
             derecho=self.porcentaje_core.derecho_a_contexto(derecho),
+            **kwargs,
         )
         return self.porcentaje_core.calcular_cotizacion_po_estrategia(contexto)
 

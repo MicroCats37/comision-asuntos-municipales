@@ -59,6 +59,7 @@ const ENDPOINT_BY_TIPO: Record<string, string> = {
   MECANICA_SUELOS: "/liquidaciones/mecanica-suelos/",
   TALUDES: "/liquidaciones/taludes/",
   IMPACTO_VIAL: "/liquidaciones/impacto-vial/",
+  INSPECCION_OBRA: "/liquidaciones/inspeccion-obra/",
 };
 
 export function getLiquidacionesPreviasEndpoint(
@@ -115,7 +116,7 @@ export function useLiquidacionesPrevias({
   if (numero !== undefined) params.set("numero", String(numero));
   if (expediente) params.set("expediente", expediente);
   if (direccion) params.set("direccion", direccion);
-  if (nombrePropietario) params.set("nombre_propietario", nombrePropietario);
+  if (nombrePropietario) params.set("propietario", nombrePropietario);
   if (municipalidadId) params.set("entidad_id", municipalidadId);
   if (distritoId) params.set("distrito_id", distritoId);
 

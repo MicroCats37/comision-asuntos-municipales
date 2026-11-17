@@ -45,6 +45,46 @@ class EstadoLiquidacion(models.TextChoices):
     # REINGRESADA = "REINGRESADA", "Reingresada"
     # RECHAZADA = "RECHAZADA", "Rechazada"
 
+class ModoContinuidadVisitas(models.TextChoices):
+    """
+    Modo de la transición del bloque de CONTINUIDAD de visitas (Inspección de Obra).
+
+    Es el discriminador del PATCH de IO (`liquidacion_tipo.continuidad.modo`).
+    Las tres transiciones viajan por la MISMA transacción del PATCH: no existe
+    un endpoint dedicado.
+
+    - ACTIVAR    → crea la fila `LiquidacionContinuidadVisitas` de B; la cabecera
+                   pasa a cobrar la DIFERENCIA (valor completo − crédito).
+    - MANTENER   → actualiza la fila existente (crédito, pendientes, referencia,
+                   observación) y reaplica la diferencia.
+    - DESACTIVAR → elimina la fila y RESTAURA los montos normales de B
+                   (la cabecera vuelve a cobrar el valor completo del trabajo).
+    """
+
+    ACTIVAR = "activar", "Activar continuidad"
+    MANTENER = "mantener", "Mantener continuidad"
+    DESACTIVAR = "desactivar", "Desactivar continuidad"
+
+
+class ModoCotizacionVisitas(models.TextChoices):
+    """
+    Modo de COTIZACIÓN del motor IO (Visitas). Discriminador de la API.
+
+    Es el discriminador del payload de cotización (`modo_cotizacion`): el
+    preview de IO responde con el MISMO motor que usa el guardado.
+
+    - NORMAL     → la cotización vigente: valor completo de B, sin continuidad.
+    - CONTINUAR  → la liquidación continúa un trabajo previo: el valor completo
+                   de B menos el crédito derivado del bruto declarado.
+
+    NO confundir con `ModoContinuidadVisitas` (activar/mantener/desactivar):
+    aquel es el discriminador de la OPERACIÓN de continuidad del PATCH.
+    """
+
+    NORMAL = "NORMAL", "Normal"
+    CONTINUAR = "CONTINUAR", "Continuar"
+
+
 class DictamenRevision(models.TextChoices):
     """Dictamen de revision asociado a un delegado de liquidacion."""
 

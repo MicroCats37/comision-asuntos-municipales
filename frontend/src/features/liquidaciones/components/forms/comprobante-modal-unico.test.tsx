@@ -29,8 +29,7 @@ function resolverRaizSrc(): string {
     resolve(process.cwd(), "frontend", "src"),
   ];
   const encontrada = candidatos.find(
-    (candidato) =>
-      existsSync(candidato) && statSync(candidato).isDirectory(),
+    (candidato) => existsSync(candidato) && statSync(candidato).isDirectory(),
   );
   if (!encontrada) {
     throw new Error("No se encontró la raíz `src` del frontend");
@@ -84,13 +83,48 @@ const FUENTES: Fuente[] = listarFuentes(RAIZ_SRC)
     contenido: readFileSync(ruta, "utf8"),
   }))
   .filter(
-    (fuente) => fuente.relativo.toLowerCase() !== RELATIVO_GUARDIA.toLowerCase(),
+    (fuente) =>
+      fuente.relativo.toLowerCase() !== RELATIVO_GUARDIA.toLowerCase(),
   );
 
 /** Código de producto (sin tests): los puntos de entrada del modal. */
 const FUENTES_PRODUCCION = FUENTES.filter(
   (fuente) => !esFicheroDePrueba(fuente.relativo),
 );
+
+/**
+ * El lookahead evita contar `<ComprobanteFormModalGestionar` (la
+ * implementación interna del modal) como si fuera un punto de entrada.
+ */
+const REGEX_INSTANCIA = /<ComprobanteFormModal(?![A-Za-z0-9_])/g;
+
+/** Ficheros que MONTAN el modal: sus puntos de entrada. */
+const MONTajes_MODAL = FUENTES_PRODUCCION.filter(
+  (fuente) =>
+    // El fichero del modal no es un punto de entrada: renderiza su
+    // implementación interna, no se monta a sí mismo.
+    fuente.relativo !== RELATIVO_MODAL &&
+    (fuente.contenido.match(REGEX_INSTANCIA) ?? []).length > 0,
+);
+
+/**
+ * ÁMBITO de las guardas de `modo`: el modal y SUS puntos de entrada.
+ *
+ * El barrido de `modo` NO puede abarcar todo `src`: `modo` es un nombre
+ * genérico que otro dominio puede usar legítimamente — p. ej. el
+ * discriminador `modo` del bloque de continuidad de la Inspección de Obra
+ * (`liquidacion_tipo.continuidad.modo`), que viaja DENTRO de `continuidad` y
+ * NO es un selector de vista del modal de comprobante.
+ *
+ * El contrato de `unified-comprobante-modal` es "el modal de comprobante no
+ * se bifurca por `modo`", y eso se vigila sobre el modal y quien lo monta.
+ * Con el barrido global, cualquier otro dominio que usara la palabra `modo`
+ * rompía una guarda que no le atañe.
+ */
+const FUENTES_MODAL_COMPROBANTE = [
+  ...MONTajes_MODAL,
+  ...FUENTES.filter((fuente) => fuente.relativo === RELATIVO_MODAL),
+];
 
 describe("ComprobanteFormModal — implementación ÚNICA (guardas de fuente)", () => {
   it("el frontend NO usa el modo 'crear' del modal", () => {
@@ -102,17 +136,7 @@ describe("ComprobanteFormModal — implementación ÚNICA (guardas de fuente)", 
   });
 
   it("cada punto de entrada monta UNA sola instancia del modal", () => {
-    // El lookahead evita contar `<ComprobanteFormModalGestionar` (la
-    // implementación interna del modal) como si fuera un punto de entrada.
-    const REGEX_INSTANCIA = /<ComprobanteFormModal(?![A-Za-z0-9_])/g;
-
-    const montajes = FUENTES_PRODUCCION.filter(
-      (fuente) =>
-        // El fichero del modal no es un punto de entrada: renderiza su
-        // implementación interna, no se monta a sí mismo.
-        fuente.relativo !== RELATIVO_MODAL &&
-        (fuente.contenido.match(REGEX_INSTANCIA) ?? []).length > 0,
-    );
+    const montajes = MONTajes_MODAL;
 
     // Si nadie montase el modal, la guarda no vigilaría nada.
     expect(montajes.length).toBeGreaterThan(0);
@@ -142,15 +166,15 @@ describe("ComprobanteFormModal — implementación ÚNICA (guardas de fuente)", 
     expect(contenido).not.toContain("ComprobanteFormModalCrear");
 
     // El export renderiza SIEMPRE la implementación de gestión.
-    expect(contenido.match(/<ComprobanteFormModalGestionar/g) ?? []).toHaveLength(
-      1,
-    );
+    expect(
+      contenido.match(/<ComprobanteFormModalGestionar/g) ?? [],
+    ).toHaveLength(1);
     // Y no queda ninguna rama de render por "modo".
     expect(contenido).not.toMatch(/if\s*\(\s*modo\s*===/);
   });
 
   it("ningún punto de entrada DECLARA una prop `modo`", () => {
-    const infractores = FUENTES_PRODUCCION.filter((fuente) =>
+    const infractores = FUENTES_MODAL_COMPROBANTE.filter((fuente) =>
       /^\s*modo\??\s*:/m.test(fuente.contenido),
     ).map((fuente) => fuente.relativo);
 
@@ -161,7 +185,7 @@ describe("ComprobanteFormModal — implementación ÚNICA (guardas de fuente)", 
     // El browse RH era el último call site que pasaba `modo="gestionar"`.
     // Ya no hay ninguno: el modal es ÚNICO y deriva su vista del comprobante
     // vigente real.
-    const infractores = FUENTES_PRODUCCION.filter((fuente) =>
+    const infractores = FUENTES_MODAL_COMPROBANTE.filter((fuente) =>
       /\bmodo\s*=/.test(fuente.contenido),
     ).map((fuente) => fuente.relativo);
 

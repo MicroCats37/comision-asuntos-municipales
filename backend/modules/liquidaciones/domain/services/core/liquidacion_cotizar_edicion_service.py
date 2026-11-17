@@ -54,7 +54,7 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
     CotizacionPOEstrategiaData,
     LiquidacionPorcentajeObraCoreService,
 )
-from modules.liquidaciones.domain.constants import EstrategiaCotizacionPO
+from modules.liquidaciones.domain.constants import EstrategiaCotizacionPO, ModoCotizacionVisitas
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_metro_cuadrado_core_service import (
     LiquidacionPorMetroCuadradoCoreService,
 )
@@ -565,10 +565,17 @@ class CotizarEdicionVisitasInput:
     Input for Visitas (IO) cotizar-edicion.
 
     If a field is None, the current stored value is preserved for calculation.
+
+    `modo` y `total_pagado_previa` viajan desde la union discriminada de la
+    ruta de cotización: el bruto declarado es la entrada DECLARADA del
+    cliente y el motor deriva el crédito con el IGV histórico de la fecha de
+    registro.
     """
     cantidad_visitas: Optional[int] = None
     categoria: Optional[str] = None
     tarifa_visitas_id: Optional[str] = None
+    modo: str = ModoCotizacionVisitas.NORMAL
+    total_pagado_previa: Optional[Decimal] = None
 
 
 class NoTarifaVisitasError(BusinessError):
@@ -658,18 +665,25 @@ class LiquidacionCotizarEdicionVisitasService:
             tarifa = liq_visitas.tarifa_aplicada
             categoria = liq_visitas.categoria
 
-        # ── 6. Calculate (pure arithmetic) ───────────────────────────────────
-        result = self._visitas_core.calcular_cotizacion_visitas(
-            cantidad_visitas=cantidad_visitas,
-            tarifa_visitas_id=str(tarifa.id),
-            uit_vigente=uit,
-            igv_vigente=igv,
-        )
-
-        if result is None:
+        if tarifa is None or tarifa.porcentaje_uit is None:
             raise NoTarifaVisitasError(categoria, fecha)
 
-        return result
+        # ── 6. Motor único de cotización (IGV/UIT históricos ya resueltos) ───
+        contexto = self._visitas_core.construir_contexto_visitas(
+            modo=patch.modo,
+            cantidad_visitas=cantidad_visitas,
+            porcentaje_uit=Decimal(str(tarifa.porcentaje_uit)),
+            uit_valor=Decimal(str(uit.valor)),
+            igv_porcentaje=Decimal(str(igv.valor)),
+            categoria=tarifa.categoria_visitas,
+            tarifa_id=str(tarifa.id),
+            total_pagado_previa=patch.total_pagado_previa,
+            uit_id=str(uit.id),
+            igv_id=str(igv.id),
+        )
+        estrategia = self._visitas_core.calcular_cotizacion_visitas_estrategia(contexto)
+
+        return self._visitas_core.resultado_desde_estrategia(estrategia)
 
     def _get_tarifa_validated(
         self,

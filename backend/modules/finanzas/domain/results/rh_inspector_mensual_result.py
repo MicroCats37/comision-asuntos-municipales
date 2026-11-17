@@ -27,7 +27,10 @@ class RHInspectorCotizarItemResult(BaseModel):
     # de sincronización distinga "conservar esta fila" de "agregar una nueva".
     detalle_id: str | None = None
     nombre_propietario: str  # from LiquidacionGeneral.proyecto.nombre_propietario
-    importe_bruto: Decimal  # sub_total of LiquidacionGeneral (total de referencia sin IGV)
+    # BASE RH condicional (regla única `resolver_base_rh`): con fila de
+    # continuidad es `continuidad.monto_acumulado`; sin fila es
+    # `liquidacion_general.sub_total`. Se congela en `DetalleHonorarioInspector`.
+    importe_bruto: Decimal  # base de referencia del RH (neto, sin IGV)
     inspecciones_programadas: int
     inspecciones_liquidadas: int
     inspecciones_pagadas_hasta_mes_anterior: int  # accumulated historical paid inspections

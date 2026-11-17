@@ -8,12 +8,13 @@ describe("getLiquidacionesPreviasEndpoint", () => {
     ["MECANICA_SUELOS", "/liquidaciones/mecanica-suelos/"],
     ["TALUDES", "/liquidaciones/taludes/"],
     ["IMPACTO_VIAL", "/liquidaciones/impacto-vial/"],
+    ["INSPECCION_OBRA", "/liquidaciones/inspeccion-obra/"],
   ])("maps %s to its paginated list", (tipo, endpoint) => {
     expect(getLiquidacionesPreviasEndpoint(tipo)).toBe(endpoint);
   });
 
   it("rejects unsupported or missing types", () => {
     expect(getLiquidacionesPreviasEndpoint()).toBeUndefined();
-    expect(getLiquidacionesPreviasEndpoint("INSPECCION_OBRA")).toBeUndefined();
+    expect(getLiquidacionesPreviasEndpoint("OTRO")).toBeUndefined();
   });
 });

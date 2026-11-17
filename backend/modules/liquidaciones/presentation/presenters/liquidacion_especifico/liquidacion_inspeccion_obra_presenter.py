@@ -6,7 +6,7 @@ Mapea el Result del Dominio al Schema final de Presentación.
 """
 import math
 import uuid
-from typing import List
+from typing import List, Optional
 
 from modules.liquidaciones.domain.results.liquidacion_especifico.inspeccion_obra_primera_revision_result import (
     InspeccionObraPrimeraRevisionResult,
@@ -26,6 +26,7 @@ from modules.liquidaciones.presentation.schemas.liquidacion_tipo.tipo_schemas im
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.visitas_schemas import (
     LiquidacionPorCategoriaVisitasDatosOut,
     LiquidacionInspectorOut,
+    LiquidacionContinuidadVisitasOut,
     RegistroPagoInspectorOut,
 )
 from modules.liquidaciones.presentation.presenters.inspector_presenter import (
@@ -89,6 +90,33 @@ class LiquidacionInspeccionObraPresenter:
         ]
 
     @staticmethod
+    def _map_continuidad(result) -> Optional[LiquidacionContinuidadVisitasOut]:
+        """
+        Mapea el LiquidacionContinuidadVisitasResult → LiquidacionContinuidadVisitasOut.
+
+        Devuelve None cuando la IO no tiene continuidad (caso normal: IO sin
+        fila de continuidad, comportamiento idéntico al vigente).
+        """
+        if result is None:
+            return None
+        return LiquidacionContinuidadVisitasOut(
+            id=uuid.UUID(result.id),
+            liquidacion_previa_id=(
+                uuid.UUID(result.liquidacion_previa_id)
+                if result.liquidacion_previa_id
+                else None
+            ),
+            monto_acumulado=float(result.monto_acumulado or 0),
+            total_acumulado=float(result.total_acumulado or 0),
+            subtotal_credito=float(result.subtotal_credito or 0),
+            total_credito=float(result.total_credito or 0),
+            visitas_previas_totales=result.visitas_previas_totales,
+            visitas_previas_pendientes=result.visitas_previas_pendientes,
+            categoria_previa=result.categoria_previa,
+            observacion=result.observacion,
+        )
+
+    @staticmethod
     def present_primera_revision(
         result: InspeccionObraPrimeraRevisionResult,
     ) -> LiquidacionInspeccionObraOutput:
@@ -112,6 +140,9 @@ class LiquidacionInspeccionObraPresenter:
             tarifa_aplicada_id=uuid.UUID(tipo.tarifa_aplicada_id) if tipo.tarifa_aplicada_id else None,
             inspectores=LiquidacionInspeccionObraPresenter._map_inspectores(tipo),
             registros_pago=LiquidacionInspeccionObraPresenter._map_registros_pago(tipo),
+            continuidad=LiquidacionInspeccionObraPresenter._map_continuidad(
+                getattr(tipo, "continuidad", None)
+            ),
         )
 
         return LiquidacionInspeccionObraOutput(

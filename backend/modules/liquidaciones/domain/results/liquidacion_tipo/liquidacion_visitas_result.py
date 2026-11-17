@@ -43,6 +43,24 @@ class LiquidacionInspectorResult(BaseModel):
     fecha_revision: Optional[str] = None
 
 
+class LiquidacionContinuidadVisitasResult(BaseModel):
+    """Domain DTO de la fila de continuidad de visitas (anclada a la LCV de B).
+
+    Viaja dentro de `LiquidacionVisitasResult` para que el presenter NO tenga
+    que consultar la base de datos (contrato API-wrapper §3).
+    """
+    id: str
+    liquidacion_previa_id: Optional[str] = None
+    monto_acumulado: Decimal = Decimal("0")
+    total_acumulado: Decimal = Decimal("0")
+    subtotal_credito: Decimal = Decimal("0")
+    total_credito: Decimal = Decimal("0")
+    visitas_previas_totales: Optional[int] = None
+    visitas_previas_pendientes: Optional[int] = None
+    categoria_previa: Optional[str] = None
+    observacion: Optional[str] = None
+
+
 class LiquidacionVisitasResult(BaseModel):
     id: str
     cantidad_visitas: int
@@ -51,3 +69,4 @@ class LiquidacionVisitasResult(BaseModel):
     tarifa_aplicada_id: Optional[str] = None
     inspectores: list[LiquidacionInspectorResult] = []
     registros_pago: list[RegistroPagoResult] = []
+    continuidad: Optional[LiquidacionContinuidadVisitasResult] = None

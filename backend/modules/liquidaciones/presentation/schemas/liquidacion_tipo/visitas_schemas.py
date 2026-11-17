@@ -67,6 +67,28 @@ class LiquidacionInspectorOut(BaseSchema):
     fecha_revision: Optional[str] = None
 
 
+class LiquidacionContinuidadVisitasOut(BaseSchema):
+    """Esquema de salida de la fila de continuidad de visitas (si existe).
+
+    `monto_acumulado` / `total_acumulado` = valor completo del trabajo.
+    `subtotal_credito` / `total_credito` = crédito de la liquidación previa.
+    La diferencia a cobrar es `liquidacion_general.sub_total` / `total`.
+
+    Los montos se exponen como `float`, igual que `LiquidacionGeneralOutput`
+    (misma convención monetaria de la API).
+    """
+    id: uuid.UUID
+    liquidacion_previa_id: Optional[uuid.UUID] = None
+    monto_acumulado: float = Field(0.0, description="Valor neto completo del trabajo")
+    total_acumulado: float = Field(0.0, description="Valor bruto completo del trabajo")
+    subtotal_credito: float = Field(0.0, description="Crédito neto de la previa")
+    total_credito: float = Field(0.0, description="Crédito bruto de la previa")
+    visitas_previas_totales: Optional[int] = None
+    visitas_previas_pendientes: Optional[int] = None
+    categoria_previa: Optional[str] = None
+    observacion: Optional[str] = None
+
+
 class LiquidacionPorCategoriaVisitasDatosOut(BaseSchema):
     """Esquema de salida que representa la tabla LiquidacionPorCategoriaVisitas."""
     id: uuid.UUID
@@ -76,6 +98,7 @@ class LiquidacionPorCategoriaVisitasDatosOut(BaseSchema):
     tarifa_aplicada_id: Optional[uuid.UUID] = None
     inspectores: list[LiquidacionInspectorOut] = []
     registros_pago: list["RegistroPagoInspectorOut"] = []
+    continuidad: Optional[LiquidacionContinuidadVisitasOut] = None
 
 
 class RegistroPagoInspectorOut(BaseSchema):

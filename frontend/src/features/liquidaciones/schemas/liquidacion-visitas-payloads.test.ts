@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { buildCotizacionNuevaRevisionVisitasPayload } from "../components/forms/TarifasVisitasNuevaRevisionSmartField";
-import { buildCotizacionVisitasPayload } from "../components/forms/TarifasVisitasSinPreviaSmartField";
 import { buildCrearInspeccionObraPayload } from "../hooks/useCrearInspeccionObra";
 import { buildCrearRelacionadaInspeccionObraPayload } from "../hooks/useCrearRelacionadaInspeccionObra";
+import {
+  construirCotizacionVisitasPayload,
+  MODO_COTIZACION_IO_NORMAL,
+} from "./liquidacion-io-cotizacion.schema";
 import { buildVisitasEditPayload } from "./liquidacion-visitas-edit.schema";
 import type { VisitasFormData } from "./liquidacion-visitas-form.schema";
 
@@ -23,7 +26,11 @@ const visitasFormData = {
 
 describe("IO normal payloads", () => {
   it("omits categoria from normal and edit quote payloads", () => {
-    const normal = buildCotizacionVisitasPayload(3, "tarifa-2");
+    const normal = construirCotizacionVisitasPayload({
+      modo: MODO_COTIZACION_IO_NORMAL,
+      cantidad_visitas: 3,
+      tarifa_visitas_id: "tarifa-2",
+    });
     const create = buildCotizacionNuevaRevisionVisitasPayload(
       3,
       "tarifa-2",

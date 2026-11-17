@@ -33,9 +33,12 @@ class InspectorCandidataItemResult(BaseModel):
     cantidad_visitas: int  # inspecciones_programadas (from LiquidacionPorCategoriaVisitas)
     inspecciones_pagadas: int  # accumulated inspecciones_pagadas until previous period
     saldo_disponible: int  # cantidad_visitas - inspecciones_pagadas
-    costo_por_inspeccion: Decimal  # sub_total / cantidad_visitas
-    total_liquidacion: Decimal  # sub_total of LiquidacionGeneral
-    sub_total_liquidacion: Decimal  # same as total_liquidacion
+    # BASE RH condicional (regla única `resolver_base_rh`): con fila de
+    # continuidad es `continuidad.monto_acumulado`; sin fila es
+    # `liquidacion_general.sub_total`. La misma base usa la cotización del RH.
+    costo_por_inspeccion: Decimal  # base_rh / cantidad_visitas
+    total_liquidacion: Decimal  # base_rh
+    sub_total_liquidacion: Decimal  # base_rh
     # Número de la liquidación específica (e.g. LiquidacionInspeccionObra.numero).
     # Dato DISTINTO de `numero_revision` (revisión) y del `numero` del RH de cabecera.
     liquidacion_especifica_numero: int | None = None

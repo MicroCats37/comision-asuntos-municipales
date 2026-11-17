@@ -12,6 +12,9 @@ from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_relacion_core_service import (
     LiquidacionRelacionCoreService,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_continuidad_visitas_core_service import (
+    LiquidacionContinuidadVisitasCoreService,
+)
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_metro_cuadrado_core_service import (
     LiquidacionPorMetroCuadradoCoreService,
 )
@@ -157,6 +160,9 @@ class LiquidacionesModule(Module):
 
         # Core services — Tipo M2
         binder.bind(LiquidacionPorMetroCuadradoCoreService, to=LiquidacionPorMetroCuadradoCoreService)
+
+        # Core services — Continuidad de visitas (Inspección de Obra)
+        binder.bind(LiquidacionContinuidadVisitasCoreService, to=LiquidacionContinuidadVisitasCoreService)
 
         # Orchestrators — Específico
         binder.bind(LiquidacionHabilitacionUrbanaOrchestrator, to=LiquidacionHabilitacionUrbanaOrchestrator)

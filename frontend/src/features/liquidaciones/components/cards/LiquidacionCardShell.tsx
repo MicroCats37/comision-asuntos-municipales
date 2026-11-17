@@ -84,6 +84,7 @@ export function LiquidacionCardShell({
   onVerDetalle,
   calculoSlot,
   delegadosSlot,
+  accionExtra,
 }: {
   kindIcon: LucideIcon;
   kindLabel?: string;
@@ -122,6 +123,13 @@ export function LiquidacionCardShell({
   onVerDetalle?: () => void;
   calculoSlot?: ReactNode;
   delegadosSlot?: ReactNode;
+  /**
+   * Acción extra del pie de la card (opcional).
+   *
+   * La usa Inspección de Obra para la acción "Continuar", que abre la
+   * creación de una IO con continuidad respecto de esta liquidación.
+   */
+  accionExtra?: ReactNode;
 }) {
   const igvPct =
     subTotal != null && subTotal > 0 && total != null
@@ -449,6 +457,7 @@ export function LiquidacionCardShell({
               onAction={onComprobante}
             />
           )}
+          {accionExtra}
           {onVerDetalle && (
             <LiquidacionCardAction
               variant="primary"

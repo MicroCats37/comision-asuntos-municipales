@@ -4,6 +4,7 @@ import {
   Building2,
   ClipboardCheck,
   FlaskRound,
+  Link2,
   type LucideIcon,
   Map as MapIcon,
   Move3d,
@@ -37,7 +38,10 @@ import {
   LiquidacionTaludesFormModal,
 } from "../components/forms";
 import { GestionarDelegadosModal } from "../components/GestionarDelegadosModal";
-import { formatCurrency } from "../components/liquidacion-ui";
+import {
+  formatCurrency,
+  LiquidacionCardAction,
+} from "../components/liquidacion-ui";
 import { printLiquidacionPreview } from "../pdf/LiquidacionPdfPreview";
 import type { PdfLiquidacionItem, PdfTipoSlug } from "../pdf/pdfTypes";
 import type { LiquidacionEdificacionesListItem } from "../schemas/liquidacion-edificaciones.schema";
@@ -164,6 +168,8 @@ export interface LiquidacionCardShellProps {
   onVerDetalle?: () => void;
   calculoSlot?: ReactNode;
   delegadosSlot?: ReactNode;
+  /** Acción extra del pie (opcional). Solo IO: "Continuar". */
+  accionExtra?: ReactNode;
 }
 
 // ── Config por dominio ───────────────────────────────────────────────
@@ -200,6 +206,21 @@ export interface LiquidacionCardConfig<TItem> {
 
   buildEditFormModal: (props: EditFormModalProps<TItem>) => ReactNode;
   buildDetalleModal: (props: DetalleModalProps<TItem>) => ReactNode;
+
+  /**
+   * Modal de CONTINUIDAD (opcional, solo IO).
+   *
+   * Cuando está presente, la card muestra la acción "Continuar", que abre la
+   * creación de una IO nueva con continuidad respecto de esta liquidación.
+   */
+  buildContinuarModal?: (props: ContinuarModalProps<TItem>) => ReactNode;
+}
+
+export interface ContinuarModalProps<TItem> {
+  item: TItem;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
 }
 
 // ── Helpers comunes ──────────────────────────────────────────────────
@@ -631,6 +652,18 @@ export const INSPECCION_OBRA_CONFIG: LiquidacionCardConfig<LiquidacionInspeccion
       />
     ),
 
+    // Continuidad: "Continuar" crea una IO nueva que continúa el trabajo de
+    // esta liquidación (crédito de las visitas no realizadas).
+    buildContinuarModal: ({ item, open, onOpenChange, onSuccess }) => (
+      <LiquidacionInspeccionObraFormModal
+        mode="create"
+        continuidadPrevia={item}
+        open={open}
+        onOpenChange={onOpenChange}
+        onSuccess={onSuccess}
+      />
+    ),
+
     buildDetalleModal: ({ item, open, onOpenChange, publicId }) => (
       <LiquidacionDetalleModal
         open={open}
@@ -690,6 +723,7 @@ export function useLiquidacionCardState<TItem extends LiquidacionCardItemLike>(
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [comprobanteModalOpen, setComprobanteModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [continuarModalOpen, setContinuarModalOpen] = useState(false);
 
   const publicId = formatPublicId(
     config.tipoSlug,
@@ -741,6 +775,13 @@ export function useLiquidacionCardState<TItem extends LiquidacionCardItemLike>(
     onVerDetalle: () => setDetalleModalOpen(true),
     calculoSlot: config.buildCalculoSlot(item),
     delegadosSlot: config.buildDelegadosSlot(item),
+    accionExtra: config.buildContinuarModal ? (
+      <LiquidacionCardAction
+        icon={<Link2 className="h-3 w-3" />}
+        label={<span className="hidden sm:inline">Continuar</span>}
+        onAction={() => setContinuarModalOpen(true)}
+      />
+    ) : undefined,
   };
 
   const modals = (
@@ -774,6 +815,19 @@ export function useLiquidacionCardState<TItem extends LiquidacionCardItemLike>(
         },
         onSuccess: () => {
           setEditModalOpen(false);
+          onUpdated?.();
+        },
+      })}
+
+      {/* Continuidad (solo IO): crea una IO nueva heredando el trabajo de esta. */}
+      {config.buildContinuarModal?.({
+        item,
+        open: continuarModalOpen,
+        onOpenChange: (open) => {
+          if (!open) setContinuarModalOpen(false);
+        },
+        onSuccess: () => {
+          setContinuarModalOpen(false);
           onUpdated?.();
         },
       })}

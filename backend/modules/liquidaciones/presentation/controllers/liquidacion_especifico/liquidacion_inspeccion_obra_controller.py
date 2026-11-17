@@ -18,6 +18,9 @@ from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidaci
     LiquidacionInspeccionObraOutput,
     LiquidacionInspeccionObraNuevaRevisionInput,
     LiquidacionInspeccionObraNuevaLiquidacionInput,
+    LiquidacionInspeccionObraCotizarInput,
+    LiquidacionInspeccionObraCotizarOutput,
+    LiquidacionInspeccionObraCotizarEdicionInput,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_patch_visitas_schemas import (
     LiquidacionPatchVisitasIn,
@@ -34,11 +37,6 @@ from modules.liquidaciones.presentation.presenters.liquidacion_tipo.liquidacion_
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_tipo.visitas_schemas import (
     TarifasVigentesPorCategoriaVisitasOutputSchema,
-    CotizarPorCategoriaVisitasInputSchema,
-    CotizarPorCategoriaVisitasOutputSchema,
-)
-from modules.liquidaciones.presentation.schemas.liquidacion_especifico.liquidacion_cotizar_edicion_schemas import (
-    CotizarEdicionVisitasWrapperIn,
 )
 from modules.liquidaciones.presentation.schemas.liquidacion_legacy.legacy_registration_schemas import (
     LiquidacionInspeccionObraLegacyInput,
@@ -185,11 +183,11 @@ class LiquidacionInspeccionObraController:
 
     @route.post(
         "/cotizar",
-        response={200: ApiResponse[CotizarPorCategoriaVisitasOutputSchema]},
+        response={200: ApiResponse[LiquidacionInspeccionObraCotizarOutput]},
     )
     def cotizar(
         self,
-        payload: CotizarPorCategoriaVisitasInputSchema,
+        payload: LiquidacionInspeccionObraCotizarInput,
         fecha: Optional[date] = Query(
             default=None,
             description="Optional effective date to quote at (YYYY-MM-DD). If omitted, quotes today.",
@@ -200,17 +198,16 @@ class LiquidacionInspeccionObraController:
 
         The selected tariff is the source of truth for the category.
 
+        El MODO viaja dentro de `liquidacion_especifica` (union discriminada
+        NORMAL | CONTINUAR): el orquestador resuelve el contexto y el motor
+        único produce las mismas cifras que el guardado persistirá.
+
         `fecha` es la fecha efectiva OPCIONAL del preview: sin ella el
         comportamiento es el vigente (hoy); con ella, IGV, UIT y la tarifa de
         visitas se resuelven a esa fecha (modo legacy).
         """
-        le = payload.liquidacion_especifica
-        cantidad_visitas = le.datos.cantidad_visitas
-        tarifa_visitas_id = le.tarifa.tarifa_visitas_id
-
         result = self.orchestrator.cotizar_proceso(
-            cantidad_visitas=cantidad_visitas,
-            tarifa_id=str(tarifa_visitas_id),
+            especifica=payload.liquidacion_especifica,
             fecha=fecha,
         )
 
@@ -218,14 +215,17 @@ class LiquidacionInspeccionObraController:
 
     @route.post(
         "/{uuid:liquidacion_id}/cotizar-edicion",
-        response={200: ApiResponse[CotizarPorCategoriaVisitasOutputSchema]},
+        response={200: ApiResponse[LiquidacionInspeccionObraCotizarOutput]},
     )
-    def cotizar_edicion(self, liquidacion_id: uuid.UUID, payload: CotizarEdicionVisitasWrapperIn):
+    def cotizar_edicion(self, liquidacion_id: uuid.UUID, payload: LiquidacionInspeccionObraCotizarEdicionInput):
         """
         Read-only quote preview for editing an existing Inspección de Obra liquidacion.
 
         Uses historical financial values from the existing liquidacion's fecha_registro.
         Does NOT persist any changes.
+
+        `liquidacion_tipo` es la union discriminada de modos de IO: el preview
+        usa el MISMO motor que el PATCH.
         """
         result = self.orchestrator.cotizar_edicion_proceso(
             liquidacion_id=liquidacion_id,

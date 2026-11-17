@@ -35,6 +35,23 @@ export const RegistroPagoOutSchema = z.object({
   fecha_registro: z.string().nullish(),
 });
 
+// ContinuidadVisitasOut — fila de continuidad de la IO (liquidacion_tipo.continuidad)
+// monto_acumulado/total_acumulado = valor completo del trabajo
+// subtotal_credito/total_credito = crédito de la liquidación previa
+// La diferencia a cobrar es liquidacion_general.sub_total / total
+export const ContinuidadVisitasOutSchema = z.object({
+  id: z.string(),
+  liquidacion_previa_id: z.string().nullish(),
+  monto_acumulado: num(),
+  total_acumulado: num(),
+  subtotal_credito: num(),
+  total_credito: num(),
+  visitas_previas_totales: z.coerce.number().int().nullish(),
+  visitas_previas_pendientes: z.coerce.number().int().nullish(),
+  categoria_previa: z.string().nullish(),
+  observacion: z.string().nullish(),
+});
+
 // VisitasDatosOut (Inspeccion Obra):
 // id, cantidad_visitas, porcentaje_uit, categoria, tarifa_aplicada_id, inspectores, registros_pago
 export const VisitasDatosOutSchema = z.object({
@@ -45,9 +62,11 @@ export const VisitasDatosOutSchema = z.object({
   tarifa_aplicada_id: z.string().nullish(),
   inspectores: z.array(LiquidacionInspectorOutSchema).default([]),
   registros_pago: z.array(RegistroPagoOutSchema).default([]),
+  continuidad: ContinuidadVisitasOutSchema.nullish(),
 });
 
 export type VisitasDatosOut = z.infer<typeof VisitasDatosOutSchema>;
+export type ContinuidadVisitasOut = z.infer<typeof ContinuidadVisitasOutSchema>;
 export type RegistroPagoOut = z.infer<typeof RegistroPagoOutSchema>;
 export type PerfilIngenieroOut = z.infer<typeof PerfilIngenieroOutSchema>;
 export type LiquidacionInspectorOut = z.infer<

@@ -1055,3 +1055,125 @@ def make_payload_visitas_cotizar(tarifa_visitas_id, cantidad_visitas=3, categori
             "tarifa": {"tarifa_visitas_id": str(tarifa_visitas_id)},
         },
     }
+
+
+# ── Visitas: payload de cotización por MODO (NORMAL | CONTINUAR) ─────────────
+#
+# El MODO viaja en el discriminador `modo_cotizacion` de la union de IO:
+#   - modo=None          → payload VIGENTE (sin discriminador): el servidor
+#                           asume NORMAL (compatibilidad byte a byte).
+#   - modo="NORMAL"      → NORMAL explícito (sin bloque de continuidad).
+#   - modo="CONTINUAR"   → incluye el bloque `continuidad` con el BRUTO
+#                           declarado por el cliente (IGV incluido).
+
+
+def make_payload_io_cotizar(
+    tarifa_visitas_id,
+    cantidad_visitas=3,
+    modo=None,
+    total_pagado_previa=None,
+    categoria=None,
+):
+    """Build an IO quote payload for `POST /inspeccion-obra/cotizar`.
+
+    Args:
+        tarifa_visitas_id: str — TarifaPorCategoriaVisitas.id
+        cantidad_visitas: int
+        modo: str | None — "NORMAL" | "CONTINUAR" | None (payload vigente)
+        total_pagado_previa: Decimal | None — BRUTO pagado en la IO previa
+            (IGV incluido). Obligatorio en CONTINUAR.
+        categoria: str | None — informativa; el servidor la deriva de la tarifa.
+
+    Returns:
+        dict con la clave `liquidacion_especifica`.
+    """
+    datos = {"cantidad_visitas": int(cantidad_visitas)}
+    if categoria is not None:
+        datos["categoria"] = categoria
+
+    especifica = {
+        "datos": datos,
+        "tarifa": {"tarifa_visitas_id": str(tarifa_visitas_id)},
+    }
+    if modo is not None:
+        especifica["modo_cotizacion"] = modo
+    if modo == "CONTINUAR":
+        especifica["continuidad"] = {"total_pagado_previa": total_pagado_previa}
+
+    return {"liquidacion_especifica": especifica}
+
+
+def make_payload_io_cotizar_edicion(
+    tarifa_visitas_id,
+    cantidad_visitas=3,
+    modo=None,
+    total_pagado_previa=None,
+    categoria=None,
+):
+    """Build an IO quote payload for `POST /inspeccion-obra/{id}/cotizar-edicion`.
+
+    Misma union de modos que el preview de alta, pero con el wrapper
+    `liquidacion_tipo` (que NO cambia).
+
+    Returns:
+        dict con la clave `liquidacion_tipo`.
+    """
+    datos = {"cantidad_visitas": int(cantidad_visitas)}
+    if categoria is not None:
+        datos["categoria"] = categoria
+
+    tipo = {
+        "datos": datos,
+        "tarifa": {"tarifa_visitas_id": str(tarifa_visitas_id)},
+    }
+    if modo is not None:
+        tipo["modo_cotizacion"] = modo
+    if modo == "CONTINUAR":
+        tipo["continuidad"] = {"total_pagado_previa": total_pagado_previa}
+
+    return {"liquidacion_tipo": tipo}
+
+
+def make_bloque_continuidad_io(
+    liquidacion_previa_id=None,
+    total_pagado_previa=None,
+    subtotal_credito=None,
+    visitas_previas_pendientes=None,
+    visitas_previas_totales=None,
+    categoria_previa=None,
+    observacion=None,
+    modo=None,
+):
+    """Build the `continuidad` block of an IO (alta) or of a PATCH.
+
+    El bloque es el MISMO en el alta (`liquidacion_especifica.continuidad`) y
+    en el PATCH (`liquidacion_tipo.continuidad`); lo que cambia es el
+    discriminador `modo`, que solo existe en el PATCH.
+
+    - `total_pagado_previa`: BRUTO pagado en la IO previa (IGV incluido),
+      DECLARADO por el cliente. Si viene, MANDA sobre `subtotal_credito`: el
+      servidor deriva el crédito neto con el IGV de la ruta.
+    - `subtotal_credito`: crédito NETO (camino legacy).
+    - `modo`: "activar" | "mantener" | "desactivar" (solo PATCH).
+
+    Returns:
+        dict con el bloque de continuidad.
+    """
+    bloque = {}
+    if modo is not None:
+        bloque["modo"] = modo
+    if liquidacion_previa_id is not None:
+        bloque["liquidacion_previa_id"] = str(liquidacion_previa_id)
+    if total_pagado_previa is not None:
+        bloque["total_pagado_previa"] = total_pagado_previa
+    if subtotal_credito is not None:
+        bloque["subtotal_credito"] = subtotal_credito
+    if visitas_previas_pendientes is not None:
+        bloque["visitas_previas_pendientes"] = visitas_previas_pendientes
+    if visitas_previas_totales is not None:
+        bloque["visitas_previas_totales"] = visitas_previas_totales
+    if categoria_previa is not None:
+        bloque["categoria_previa"] = categoria_previa
+    if observacion is not None:
+        bloque["observacion"] = observacion
+    return bloque

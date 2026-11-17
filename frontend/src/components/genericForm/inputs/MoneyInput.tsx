@@ -68,6 +68,8 @@ interface MoneyInputProps<TFieldValues extends FieldValues = FieldValues> {
   defaultValue?: number | "";
   /** Called when Enter key is pressed */
   onEnter?: () => void;
+  /** Receives the parsed value after each input change. */
+  onValueChange?: (value: number | undefined) => void;
   /** Maximum integer digits accepted by the backend (default: 10). */
   maxIntegerDigits?: number;
   /** Maximum decimal digits (default: 2). */
@@ -102,6 +104,7 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
   control,
   defaultValue = "",
   onEnter,
+  onValueChange,
   maxIntegerDigits = 10,
   decimalPlaces = 2,
 }: MoneyInputProps<TFieldValues>) {
@@ -162,9 +165,11 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
         }
       });
 
-      field.onChange(parseMoneyText(stripped) as never);
+      const parsed = parseMoneyText(stripped);
+      field.onChange(parsed as never);
+      onValueChange?.(parsed);
     },
-    [decimalPlaces, field, maxIntegerDigits],
+    [decimalPlaces, field, maxIntegerDigits, onValueChange],
   );
 
   // ── Handle blur (re-format on leave) ──────────────────────────────────────
@@ -179,9 +184,10 @@ export function MoneyInput<TFieldValues extends FieldValues = FieldValues>({
       isFocusedRef.current = false;
       setDisplayValue(formatDisplay(parsed));
       field.onChange(parsed as never);
+      onValueChange?.(parsed);
       field.onBlur();
     },
-    [decimalPlaces, field, formatDisplay, maxIntegerDigits],
+    [decimalPlaces, field, formatDisplay, maxIntegerDigits, onValueChange],
   );
 
   const hasIcon = Icon !== null;

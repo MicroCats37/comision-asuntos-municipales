@@ -4,8 +4,14 @@
  * These replace the inline buildPayload function in useEditarInspeccionObra.
  * Includes contacto fix (Bug 2).
  */
-import type { VisitasEditPayload } from "./liquidacion-edit-payloads.schema";
-import type { VisitasFormData } from "./liquidacion-visitas-form.schema";
+import type {
+  VisitasEditPayload,
+  VisitasTipoEdit,
+} from "./liquidacion-edit-payloads.schema";
+import type {
+  ContinuidadVisitasFormData,
+  VisitasFormData,
+} from "./liquidacion-visitas-form.schema";
 
 // ── Visitas general payload builder ─────────────────────────────────────────
 
@@ -73,6 +79,56 @@ export function buildVisitasGeneralPayload(
 // ── Visitas tipo payload builder ────────────────────────────────────────────
 
 /**
+ * Construye el bloque `liquidacion_tipo.continuidad` del PATCH de IO.
+ *
+ * SOLO se construye si el bloque de formulario trae `modo`: esa es la señal
+ * de que el usuario interactuó con la sección de continuidad. Si el usuario
+ * solo cambió visitas/tarifa de B, el bloque NO viaja y el servidor conserva
+ * el crédito congelado (comportamiento vigente).
+ *
+ * `desactivar` envía solo el discriminador: el servidor ignora el resto del
+ * bloque en ese modo (elimina la fila y restaura el valor completo de B).
+ *
+ * El dato que el usuario DECLARA es el BRUTO (`total_pagado_previa`): si
+ * viaja, MANDA y el neto (`subtotal_credito`) se omite para no enviar dos
+ * cifras del mismo dinero. El neto solo viaja como camino LEGACY cuando no
+ * hay bruto declarado.
+ *
+ * NUNCA se envían `monto_acumulado`, `total_acumulado` ni `total_credito`:
+ * los deriva el servidor aplicando el IGV histórico de `fecha_registro`.
+ */
+export function buildContinuidadEditPayload(
+  continuidad: ContinuidadVisitasFormData | undefined,
+): VisitasTipoEdit["continuidad"] {
+  if (!continuidad?.modo) return undefined;
+
+  if (continuidad.modo === "desactivar") {
+    return { modo: "desactivar" };
+  }
+
+  const payload: NonNullable<VisitasTipoEdit["continuidad"]> = {
+    modo: continuidad.modo,
+  };
+
+  if (continuidad.liquidacion_previa_id) {
+    payload.liquidacion_previa_id = continuidad.liquidacion_previa_id;
+  }
+
+  const totalPagadoPrevia = continuidad.total_pagado_previa;
+  if (
+    totalPagadoPrevia !== undefined &&
+    totalPagadoPrevia !== null &&
+    totalPagadoPrevia > 0
+  ) {
+    payload.total_pagado_previa = totalPagadoPrevia;
+  } else if (continuidad.subtotal_credito !== undefined) {
+    payload.subtotal_credito = continuidad.subtotal_credito;
+  }
+
+  return payload;
+}
+
+/**
  * Builds the liquidacion_tipo section for Visitas edit payloads.
  */
 export function buildVisitasTipoPayload(
@@ -93,6 +149,12 @@ export function buildVisitasTipoPayload(
 
   if (inspector_operacion_id !== undefined) {
     tipoFields.inspector_operacion_id = inspector_operacion_id;
+  }
+
+  // Continuidad: solo si el usuario interactuó con la sección.
+  const continuidad = buildContinuidadEditPayload(data.continuidad);
+  if (continuidad) {
+    tipoFields.continuidad = continuidad;
   }
 
   return tipoFields;

@@ -162,6 +162,119 @@ class LiquidacionPorCategoriaVisitas(BaseModel):
         return f"Liquidación Visitas {self.liquidacion_general}"
 
 
+class LiquidacionContinuidadVisitas(BaseModel):
+    """
+    Continuidad opcional de visitas de Inspección de Obra.
+
+    Se ancla a la LCV (LiquidacionPorCategoriaVisitas) de la liquidación NUEVA
+    (B) que continúa un trabajo de inspección previo. Es OneToOne: una IO puede
+    tener como máximo una fila de continuidad.
+
+    Separa tres conceptos que antes se confundían en `LiquidacionGeneral`:
+
+    1. `monto_acumulado` / `total_acumulado` — el VALOR COMPLETO del trabajo de
+       B (neto y bruto), calculado por el servidor a la tarifa de B.
+    2. `subtotal_credito` / `total_credito` — el CRÉDITO de la liquidación
+       previa (A) por las visitas no realizadas, persistido aparte.
+    3. La DIFERENCIA a cobrar al cliente, que es lo que queda en
+       `LiquidacionGeneral.sub_total` / `LiquidacionGeneral.total` de B.
+
+    Cuando la IO NO tiene continuidad, esta tabla no tiene fila y el
+    comportamiento es idéntico al vigente (`sub_total` = valor completo).
+    """
+
+    history = HistoricalRecords()
+
+    liquidacion_visitas = models.OneToOneField(
+        "LiquidacionPorCategoriaVisitas",
+        on_delete=models.CASCADE,
+        related_name="continuidad",
+        verbose_name="Liquidación por Categoría de Visitas",
+        help_text="LCV de la liquidación nueva (B) que continúa el trabajo previo.",
+    )
+
+    liquidacion_previa = models.ForeignKey(
+        LiquidacionGeneral,
+        on_delete=models.PROTECT,
+        related_name="continuidades_visitas",
+        null=True,
+        blank=True,
+        verbose_name="Liquidación Previa",
+        help_text="Liquidación de IO previa (A) que originó la continuidad. "
+                  "NULL cuando la previa no está registrada en el sistema.",
+    )
+
+    monto_acumulado = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0"),
+        verbose_name="Monto Acumulado",
+        help_text="Valor neto completo de las visitas de B a la tarifa de B. "
+                  "Calculado por el servidor.",
+    )
+
+    total_acumulado = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0"),
+        verbose_name="Total Acumulado",
+        help_text="Contraparte bruta de `monto_acumulado` (IGV incluido).",
+    )
+
+    subtotal_credito = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0"),
+        verbose_name="Subtotal Crédito",
+        help_text="Crédito neto de la liquidación previa por las visitas no realizadas.",
+    )
+
+    total_credito = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0"),
+        verbose_name="Total Crédito",
+        help_text="Contraparte bruta de `subtotal_credito`.",
+    )
+
+    visitas_previas_totales = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Visitas Previas Totales",
+        help_text="Cantidad total de visitas de la liquidación previa.",
+    )
+
+    visitas_previas_pendientes = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Visitas Previas Pendientes",
+        help_text="Cantidad de visitas de la liquidación previa que se acreditan.",
+    )
+
+    categoria_previa = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        verbose_name="Categoría Previa",
+        help_text="Categoría de inspección de la liquidación previa (informativo).",
+    )
+
+    observacion = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Observación",
+        help_text="Observación sobre la continuidad.",
+    )
+
+    class Meta:
+        verbose_name = "Continuidad de Liquidación por Visitas"
+        verbose_name_plural = "Continuidades de Liquidaciones por Visitas"
+        ordering = ["liquidacion_visitas"]
+
+    def __str__(self):
+        return f"Continuidad {self.liquidacion_visitas}"
+
+
 class LiquidacionPorcentajeObra(BaseModel):
     """
     Cálculo porcentual de una liquidación de obra.

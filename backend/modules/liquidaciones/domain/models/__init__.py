@@ -42,6 +42,7 @@ from .liquidacion.liquidacion_tipo.liquidacion_tipo import (
     LiquidacionPorcentajeObraAcumulacion,
     LiquidacionPorMetroCuadrado,
     LiquidacionPorCategoriaVisitas,
+    LiquidacionContinuidadVisitas,
 )
 from .liquidacion.liquidacion_tipo.tarifas_reglas import (
     TarifaLiquidacionBase,
@@ -97,6 +98,7 @@ __all__ = [
     # Modelos de cálculo nuevos
     "LiquidacionPorMetroCuadrado",
     "LiquidacionPorCategoriaVisitas",
+    "LiquidacionContinuidadVisitas",
     # Modelos del refactor
     "LiquidacionProyectista",
     "LiquidacionComprobante",

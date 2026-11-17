@@ -11,10 +11,12 @@ calculation inputs (cantidad_visitas, categoria, tarifa_visitas_id) while
 keeping the liquidacion in PENDIENTE state.
 """
 import uuid
+from decimal import Decimal
 from typing import Optional
 
 from ninja import Field
 from core.types import BaseSchema
+from modules.liquidaciones.domain.constants import ModoContinuidadVisitas
 from modules.liquidaciones.presentation.schemas.liquidacion_general.general_schemas import (
     ContactoInlineSchema,
     EntidadUpdateSchema,
@@ -98,6 +100,103 @@ class LiquidacionPatchVisitasTarifaIn(BaseSchema):
     tarifa_visitas_id: uuid.UUID = Field(..., description="ID de la tarifa de visitas a aplicar")
 
 
+class LiquidacionPatchVisitasContinuidadIn(BaseSchema):
+    """
+    Bloque OPCIONAL de CONTINUIDAD de visitas en el PATCH de IO, con su
+    DISCRIMINADOR DE MODO (`modo`).
+
+    Es la única vía de edición de la continuidad: encender, mantener y apagar
+    viajan por la MISMA transacción del PATCH (no hay endpoint dedicado).
+
+    Matriz de transición (Explorer §5.1):
+
+    | Estado persistido | `modo`       | Resultado                        |
+    |--------------------|--------------|----------------------------------|
+    | Sin continuidad    | `activar`    | Crea la fila; cobra la diferencia|
+    | Sin continuidad    | `mantener`   | 400 (no hay nada que mantener)   |
+    | Sin continuidad    | `desactivar` | 400 (no hay nada que apagar)     |
+    | Con continuidad    | `mantener`   | Actualiza la fila y reaplica     |
+    | Con continuidad    | `activar`    | 400 (ya está encendida)          |
+    | Con continuidad    | `desactivar` | Elimina la fila; restaura montos |
+
+    Semántica de los campos (todos opcionales):
+    - `desactivar` ignora el resto del bloque: solo elimina la fila.
+    - `activar` toma los valores enviados; los omitidos valen 0 (crédito 0,
+      pendientes 0).
+    - `mantener` reemplaza los campos ENVIADOS y conserva los omitidos con el
+      valor vigente del registro (semántica replace por campo, nunca se pierde
+      el ancla histórica de A ni el crédito por omisión).
+
+    Lo que NO se envía (lo calcula el servidor):
+    - `monto_acumulado` / `total_acumulado`: el valor completo del trabajo de B.
+    - `total_credito`: la contraparte bruta de `subtotal_credito`, derivada
+      aplicando el IGV HISTÓRICO de `fecha_registro` (el mismo del recálculo),
+      para que el documento cuadre al centavo.
+
+    El BRUTO declarado (`total_pagado_previa`) es la ENTRADA autoritativa del
+    crédito cuando viene: manda sobre `subtotal_credito` (neto) y el servidor
+    deriva el par (neto, bruto) con el IGV histórico de `fecha_registro`. Si no
+    viene en `mantener`, el crédito persistido queda CONGELADO y solo se
+    reprecia el valor completo de B.
+
+    La NO-NEGATIVIDAD del crédito NO se valida aquí a propósito: es una regla de
+    NEGOCIO y la resuelve el orquestador con un 400 explícito (mismo criterio
+    que la creación de la IO).
+    """
+
+    modo: ModoContinuidadVisitas = Field(
+        ...,
+        description="Transición de la continuidad: 'activar', 'mantener' o 'desactivar'.",
+    )
+    liquidacion_previa_id: Optional[uuid.UUID] = Field(
+        None,
+        description="ID de la liquidación de IO previa (A). Si se referencia la previa "
+                    "en CAM, el servidor deriva de ella el total de visitas. Si se omite "
+                    "en modo 'mantener', se conserva la referencia vigente.",
+    )
+    visitas_previas_pendientes: Optional[int] = Field(
+        None,
+        ge=0,
+        le=9999,
+        description="Cantidad de visitas de la previa que se acreditan (0..9999).",
+    )
+    visitas_previas_totales: Optional[int] = Field(
+        None,
+        ge=0,
+        le=9999,
+        description="Cantidad total de visitas de la previa. Si se referencia la previa "
+                    "en CAM, el servidor lo deriva de ella.",
+    )
+    categoria_previa: Optional[str] = Field(
+        None,
+        max_length=20,
+        description="Categoría de la previa (informativo).",
+    )
+    subtotal_credito: Optional[Decimal] = Field(
+        None,
+        max_digits=12,
+        decimal_places=2,
+        description="Crédito NETO que se descuenta del valor completo de B. El servidor "
+                    "valida que no sea negativo (400) y deriva `total_credito` con el "
+                    "IGV histórico de `fecha_registro`. Se IGNORA si viene "
+                    "`total_pagado_previa`.",
+    )
+    total_pagado_previa: Optional[Decimal] = Field(
+        None,
+        gt=Decimal("0"),
+        max_digits=12,
+        decimal_places=2,
+        description="Monto BRUTO pagado en la IO previa, IGV incluido. Si viene, MANDA: "
+                    "el servidor deriva el crédito NETO con el IGV histórico de "
+                    "`fecha_registro` y `subtotal_credito` (neto) se ignora. Si no "
+                    "viene, en modo 'mantener' el crédito persistido queda congelado.",
+    )
+    observacion: Optional[str] = Field(
+        None,
+        description="Observación sobre la continuidad.",
+    )
+
+
 class LiquidacionPatchVisitasTipoIn(BaseSchema):
     """
     liquidacion_tipo wrapper for Visitas PATCH — mirrors creation structure.
@@ -116,6 +215,12 @@ class LiquidacionPatchVisitasTipoIn(BaseSchema):
         None,
         description="ID del InspectorOperacion a asociar (opcional, reemplaza el inspector existente)",
     )
+    continuidad: Optional[LiquidacionPatchVisitasContinuidadIn] = Field(
+        None,
+        description="Bloque opcional de continuidad de visitas con su discriminador de "
+                    "modo (activar / mantener / desactivar). Ausente = no hay operación "
+                    "de continuidad: solo reprecio de B con el crédito congelado.",
+    )
 
 
 class LiquidacionPatchVisitasWrapperIn(BaseSchema):
@@ -131,6 +236,11 @@ class LiquidacionPatchVisitasWrapperIn(BaseSchema):
     PAGADA blocks the entire PATCH regardless of which wrapper is provided.
 
     When both wrapper and flat fields are provided, wrapper takes precedence.
+
+    CONTINUIDAD: `liquidacion_tipo.continuidad` (con su discriminador `modo`)
+    viaja por este mismo PATCH y por la misma transacción. Cuando está
+    presente, el PATCH completo queda bloqueado con 409 si la IO tiene RH
+    mensual, `DetalleHonorarioInspector` o `RegistroPagoInspector`.
     """
     # Wrapper format (recommended)
     liquidacion_general: Optional[LiquidacionPatchVisitasGeneralIn] = Field(

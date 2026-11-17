@@ -33,6 +33,10 @@ import { useLiquidacionPdfOnAfter } from "../../../hooks/useLiquidacionPdfOnAfte
 import { useTiposLiquidacion } from "../../../hooks/useTiposLiquidacion";
 import type { LiquidacionInspeccionObraListItem } from "../../../schemas/liquidacion-inspeccion-obra.schema";
 import {
+  MODO_COTIZACION_IO_CONTINUAR,
+  MODO_COTIZACION_IO_NORMAL,
+} from "../../../schemas/liquidacion-io-modo-cotizacion.schema";
+import {
   type VisitasFormData,
   visitasFormSchema,
   visitasLegacyFormSchema,
@@ -41,11 +45,17 @@ import { canEditLiquidacion } from "../../../utils/canEditLiquidacion";
 import { toContactoInline } from "../../../utils/contacto";
 import { formatPublicId } from "../../../utils/formatPublicId";
 import { getLiquidacionTipoInfo } from "../../../utils/liquidacionTipoInfo";
+import { hidratarModoCotizacionDesdeItem } from "../../../utils/modoCotizacionIo";
 import { BuscarInspectorPorCipModal } from "../BuscarInspectorPorCipModal";
 import { LiquidacionFormBodyBase } from "../LiquidacionFormBodyBase";
 import { LiquidacionFormShell } from "../LiquidacionFormShell";
 import { SeleccionarInspectorModal } from "../SeleccionarInspectorModal";
+import { SeleccionarPreviaModal } from "../SeleccionarPreviaModal";
 import { TarifasVisitasSinPreviaSmartField } from "../TarifasVisitasSinPreviaSmartField";
+import {
+  deriveContinuidadDefaults,
+  deriveContinuidadEditDefaults,
+} from "./ContinuidadVisitasPanel";
 
 const TIPO_PDF = "inspeccion-obra";
 
@@ -55,7 +65,14 @@ interface BaseProps {
   onSuccess?: () => void;
 }
 
-type CreateProps = BaseProps & { mode: "create" };
+type CreateProps = BaseProps & {
+  mode: "create";
+  /**
+   * Liquidación previa (A) desde la que se inició la acción "Continuar".
+   * Cuando viene, la sección de continuidad arranca activada y prellena.
+   */
+  continuidadPrevia?: LiquidacionInspeccionObraListItem | null;
+};
 type LegacyProps = BaseProps & { mode: "legacy" };
 type EditProps = BaseProps & {
   mode: "edit";
@@ -96,9 +113,39 @@ function DefaultTipoLiquidacionSync({
   return null;
 }
 
+function ReferenceSelectionSync({
+  methods,
+  reference,
+}: {
+  methods: UseFormReturn<VisitasFormData>;
+  reference: LiquidacionInspeccionObraListItem | null;
+}) {
+  useEffect(() => {
+    if (!reference) return;
+
+    methods.setValue("modo_cotizacion", MODO_COTIZACION_IO_CONTINUAR, {
+      shouldValidate: true,
+    });
+    methods.setValue("continuidad", deriveContinuidadDefaults(reference), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }, [methods, reference]);
+
+  return null;
+}
+
 function buildInitialData(
   item: LiquidacionInspeccionObraListItem,
-  options: { skipSmartFieldDefaults?: boolean } = {},
+  options: {
+    skipSmartFieldDefaults?: boolean;
+    /**
+     * Rehidrata el bloque de continuidad desde el registro PERSISTIDO.
+     * Solo en `mode="edit"`: en `relacionada` la `liquidacion_tipo` es la de la
+     * PREVIA (A), no la de la liquidación que se está creando.
+     */
+    includeContinuidad?: boolean;
+  } = {},
 ): Partial<VisitasFormData> {
   const { liquidacion_general: lg, liquidacion_tipo: lt } = item;
 
@@ -141,6 +188,17 @@ function buildInitialData(
     inspector_id: options.skipSmartFieldDefaults
       ? undefined
       : (lt.inspectores?.[0]?.inspector_id ?? undefined),
+    // Continuidad: se rehidrata SOLO en edición, desde el registro persistido.
+    // Sin `modo`: la operación de continuidad solo viaja si el usuario toca
+    // el panel (Explorer §7.7).
+    ...(options.includeContinuidad && lt.continuidad
+      ? { continuidad: deriveContinuidadEditDefaults(lt.continuidad) }
+      : {}),
+    // Modo de cotización: una IO con continuidad persistida cobra la
+    // DIFERENCIA, así que se rehidrata en modo "Continuar" (patrón PO).
+    ...(options.includeContinuidad
+      ? hidratarModoCotizacionDesdeItem({ liquidacion_tipo: lt })
+      : { modo_cotizacion: MODO_COTIZACION_IO_NORMAL }),
   };
 }
 
@@ -153,6 +211,15 @@ export function LiquidacionInspeccionObraFormModal(
   // ── State específico de IO (no aplica al shell) ─────────────────
   const [inspectorModalOpen, setInspectorModalOpen] = useState(false);
   const [inspectorNombre, setInspectorNombre] = useState("");
+  const [referenciaModalOpen, setReferenciaModalOpen] = useState(false);
+  const [referenciaSeleccionada, setReferenciaSeleccionada] =
+    useState<LiquidacionInspeccionObraListItem | null>(null);
+
+  // Previa de la acción "Continuar" (solo aplica al modo create).
+  const continuidadPrevia =
+    mode === "create"
+      ? (referenciaSeleccionada ?? props.continuidadPrevia ?? null)
+      : null;
 
   // ── Hooks ──────────────────────────────────────────────────────────
   const crearMutation = useCrearInspeccionObra(
@@ -298,11 +365,49 @@ export function LiquidacionInspeccionObraFormModal(
           inspectorNombre={inspectorNombre}
           onOpenInspector={() => setInspectorModalOpen(true)}
           legacy={mode === "legacy"}
+          // En edición la cotización y el listado de tarifas usan los valores
+          // HISTÓRICOS de `fecha_registro`: son los mismos con los que el
+          // PATCH reprecia B (Explorer D6). Con valores vigentes, el preview
+          // del panel de continuidad mentiría y la UI podría ofrecer una
+          // tarifa que el PATCH rechaza con 400.
+          mode={mode === "edit" ? "edit" : "create"}
+          liquidacionId={
+            mode === "edit" ? sourceItem?.liquidacion_general.id : undefined
+          }
+          fecha={
+            mode === "edit"
+              ? sourceItem?.liquidacion_general.fecha_registro
+              : undefined
+          }
+          // El SmartField es el DUEÑO de los modos de cotización de IO:
+          //  · `create` → el panel "Continuar" se abre con la previa (A) de la
+          //    acción "Continuar" (o con ingreso manual).
+          //  · `edit`   → el panel se rehidrata del registro persistido y
+          //    permite mantener, activar o desactivar la continuidad (mismo
+          //    PATCH).
+          // `legacy` y `relacionada` no admiten continuidad: el selector de
+          // modo no se monta y el contrato vigente queda intacto.
+          soportaModoContinuidad={mode === "create" || mode === "edit"}
+          continuidadPrevia={continuidadPrevia}
+          continuidadPersistida={
+            mode === "edit"
+              ? (sourceItem?.liquidacion_tipo.continuidad ?? null)
+              : null
+          }
+          onOpenReferencia={
+            mode === "create" ? () => setReferenciaModalOpen(true) : undefined
+          }
         />
       );
 
       return (
         <>
+          {mode === "create" && (
+            <ReferenceSelectionSync
+              methods={methods}
+              reference={referenciaSeleccionada}
+            />
+          )}
           <DefaultTipoLiquidacionSync
             methods={methods}
             tipoEdificacionId={
@@ -315,6 +420,8 @@ export function LiquidacionInspeccionObraFormModal(
             methods={methods}
             tramiteField={tramiteField}
             motorSection={motorSection}
+            // El panel de continuidad ya vive DENTRO del SmartField (modo
+            // "Continuar"): el modal no monta una sección independiente.
             valoresActualesSection={null}
             canEditProyecto={canEditProyecto}
             // IO es revision-less: no hay campo de número de revisión y su
@@ -389,16 +496,36 @@ export function LiquidacionInspeccionObraFormModal(
         </>
       );
     },
-    [inspectorNombre, inspectorModalOpen, sourceItem, tipos, mode],
+    [
+      inspectorNombre,
+      inspectorModalOpen,
+      sourceItem,
+      tipos,
+      mode,
+      continuidadPrevia,
+    ],
   );
 
   const initialData: Partial<VisitasFormData> = (() => {
     if (mode === "create" || mode === "legacy") {
-      return { cantidad_visitas: 1 };
+      // "Continuar": el modo de cotización arranca en CONTINUAR y el bloque
+      // prellena con los datos de la liquidación previa (A).
+      if (mode === "create" && continuidadPrevia) {
+        return {
+          cantidad_visitas: 1,
+          modo_cotizacion: MODO_COTIZACION_IO_CONTINUAR,
+          continuidad: deriveContinuidadDefaults(continuidadPrevia),
+        };
+      }
+      return {
+        cantidad_visitas: 1,
+        modo_cotizacion: MODO_COTIZACION_IO_NORMAL,
+      };
     }
     if (sourceItem) {
       return buildInitialData(sourceItem, {
         skipSmartFieldDefaults: mode === "relacionada",
+        includeContinuidad: mode === "edit",
       });
     }
     return {};
@@ -483,6 +610,22 @@ export function LiquidacionInspeccionObraFormModal(
         computeCanEditProyecto={computeCanEditProyecto}
         onVerDetalle={onVerDetalle}
       />
+
+      {mode === "create" && (
+        <SeleccionarPreviaModal
+          open={referenciaModalOpen}
+          onOpenChange={setReferenciaModalOpen}
+          tipoPermitido="INSPECCION_OBRA"
+          title="Seleccionar IO de referencia"
+          description="Busca una IO anterior para consultar sus datos y respaldar el saldo."
+          onSelect={(previa) => {
+            setReferenciaSeleccionada(
+              previa as LiquidacionInspeccionObraListItem,
+            );
+            setReferenciaModalOpen(false);
+          }}
+        />
+      )}
 
       {(() => {
         if (!previaParaDetalle) return null;

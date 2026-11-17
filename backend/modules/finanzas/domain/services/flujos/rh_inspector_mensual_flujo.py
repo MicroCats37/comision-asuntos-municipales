@@ -38,6 +38,9 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquida
 from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.comprobante import (
     LiquidacionComprobante,
 )
+from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_continuidad_visitas_core_service import (
+    LiquidacionContinuidadVisitasCoreService,
+)
 
 TWO_PLACES = Decimal("0.01")
 
@@ -309,7 +312,13 @@ class RHInspectorMensualCotizarFlujo:
                 )
 
             # 6. Cálculo
-            importe_bruto = Decimal(str(lg.sub_total or "0"))
+            # BASE RH condicional (regla única compartida con el listado de
+            # candidatas): si la IO tiene fila de continuidad, la base es el
+            # valor COMPLETO del trabajo (`continuidad.monto_acumulado`); si no,
+            # es `liquidacion_general.sub_total` (comportamiento vigente).
+            importe_bruto = LiquidacionContinuidadVisitasCoreService.resolver_base_rh(
+                lcv, lg
+            )
             programas = lcv.cantidad_visitas or 0
             if programas <= 0:
                 raise HttpError(
@@ -572,6 +581,11 @@ class RHInspectorMensualCrearFlujo:
 
         # 4. Crear detalles (uno por liquidación) y actualizar registro de pago
         # liquidacion_categoria_visitas_id es un UUID string — se pasa directo a Django FK
+        # `importe_bruto` y `costo_por_inspeccion` se CONGELAN aquí con la misma
+        # BASE RH condicional que usa el listado de candidatas
+        # (`continuidad.monto_acumulado` si hay fila de continuidad; si no,
+        # `liquidacion_general.sub_total`). El detalle persistido y la candidata
+        # expuesta muestran, por tanto, la MISMA base.
         for item in resultado.items:
             detalle = self.core.crear_detalle_honorario(
                 recibo_mensual_id=rh.id,

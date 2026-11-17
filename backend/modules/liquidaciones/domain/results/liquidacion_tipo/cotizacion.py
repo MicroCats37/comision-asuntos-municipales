@@ -29,6 +29,21 @@ class CotizacionM2Result(BaseModel):
     monto_igv: Optional[Decimal] = None
 
 
+class CotizacionVisitasContinuidadResult(BaseModel):
+    """Cifras autoritativas de la continuidad (netas y brutas) del modo CONTINUAR.
+
+    Las devuelve el servidor: el cliente NO hace aritmética monetaria.
+    """
+    total_pagado_previa: Decimal
+    valor_completo_neto: Decimal
+    valor_completo_bruto: Decimal
+    credito_neto: Decimal
+    credito_bruto: Decimal
+    diferencia_neto: Decimal
+    diferencia_bruto: Decimal
+    igv_porcentaje: Decimal
+
+
 class CotizacionVisitasResult(BaseModel):
     """DTO de dominio interno que transporta el cálculo y metadata de cotización de Visitas."""
     cantidad_visitas: int
@@ -40,6 +55,9 @@ class CotizacionVisitasResult(BaseModel):
     total: Decimal
     uit: dict
     igv: dict
+    # ── Modo de cotización (IO). Los demás motores los dejan en None. ──
+    modo_cotizacion: Optional[str] = None
+    continuidad: Optional[CotizacionVisitasContinuidadResult] = None
 
 
 class CotizacionPorcentajeObraDetalleResult(BaseModel):

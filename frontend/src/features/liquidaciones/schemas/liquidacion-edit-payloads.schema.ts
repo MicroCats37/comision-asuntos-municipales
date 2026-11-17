@@ -133,6 +133,39 @@ export type M2TipoEdit = z.infer<typeof M2TipoEditSchema>;
 
 // ── Visitas edit payload (Inspección de Obra) ───────────────────────────────
 
+/**
+ * Bloque `continuidad` del PATCH de Inspección de Obra (edición).
+ *
+ * `modo` es el discriminador de la transición (matriz del Explorer §5.1):
+ *  · `activar`    → el registro de continuidad no existe y se crea.
+ *  · `mantener`   → el registro existe y se actualiza.
+ *  · `desactivar` → el registro existe y se elimina (el servidor ignora el
+ *                   resto del bloque en este modo).
+ *
+ * Semántica de replace POR CAMPO (la del servidor): un campo omitido conserva
+ * el valor vigente del registro; un campo enviado lo reemplaza.
+ *
+ * Lo que el cliente NUNCA envía (lo deriva el servidor con el IGV histórico de
+ * `fecha_registro`): `monto_acumulado`, `total_acumulado` y `total_credito`.
+ *
+ * `total_pagado_previa` es el BRUTO DECLARADO por el usuario (IGV incluido):
+ * si viaja, MANDA sobre `subtotal_credito` (el neto), que el servidor ignora.
+ */
+export const ContinuidadVisitasEditSchema = z.object({
+  modo: z.enum(["activar", "mantener", "desactivar"]),
+  liquidacion_previa_id: z.string().nullish(),
+  visitas_previas_totales: z.number().int().nonnegative().optional(),
+  visitas_previas_pendientes: z.number().int().nonnegative().optional(),
+  categoria_previa: z.string().optional(),
+  total_pagado_previa: z.number().positive().optional(),
+  subtotal_credito: z.number().nonnegative().optional(),
+  observacion: z.string().optional(),
+});
+
+export type ContinuidadVisitasEdit = z.infer<
+  typeof ContinuidadVisitasEditSchema
+>;
+
 /** liquidacion_tipo payload for Visitas (IO) */
 export const VisitasTipoEditSchema = z.object({
   datos: z
@@ -146,6 +179,11 @@ export const VisitasTipoEditSchema = z.object({
     })
     .optional(),
   inspector_operacion_id: z.string().optional(),
+  /**
+   * Bloque opcional de continuidad. Solo viaja si el usuario interactuó con
+   * la sección de continuidad (el bloque de formulario trae `modo`).
+   */
+  continuidad: ContinuidadVisitasEditSchema.optional(),
 });
 
 export type VisitasTipoEdit = z.infer<typeof VisitasTipoEditSchema>;

@@ -15,6 +15,7 @@ import {
   Eye,
   FileDown,
   FilePenLine,
+  Link2,
   type LucideIcon,
   Receipt,
   Trash2,
@@ -85,6 +86,9 @@ export function LiquidacionesInspeccionObraView() {
     useState<LiquidacionInspeccionObraListItem | null>(null);
   const [deleteItem, setDeleteItem] =
     useState<LiquidacionInspeccionObraListItem | null>(null);
+  // Origen de la acción "Continuar": liquidación previa (A) de la nueva (B).
+  const [continuarItem, setContinuarItem] =
+    useState<LiquidacionInspeccionObraListItem | null>(null);
 
   const buildRowActions = useCallback(
     (item: LiquidacionInspeccionObraListItem): LiquidacionRowAction[] => {
@@ -96,6 +100,12 @@ export function LiquidacionesInspeccionObraView() {
           label: "Ver detalle",
           onAction: () => setDetalleItem(item),
           variant: "primary",
+        },
+        {
+          // Continuidad OPCIONAL: crea una IO nueva que continúa esta.
+          icon: Link2,
+          label: "Continuar",
+          onAction: () => setContinuarItem(item),
         },
         {
           icon: FileDown,
@@ -214,6 +224,19 @@ export function LiquidacionesInspeccionObraView() {
         onOpenChange={setLegacyModalOpen}
         onSuccess={() => setLegacyModalOpen(false)}
       />
+
+      {/* Continuidad: crea una IO nueva que continúa la liquidación previa. */}
+      {continuarItem && (
+        <LiquidacionInspeccionObraFormModal
+          mode="create"
+          continuidadPrevia={continuarItem}
+          open
+          onOpenChange={(open) => {
+            if (!open) setContinuarItem(null);
+          }}
+          onSuccess={() => setContinuarItem(null)}
+        />
+      )}
 
       {detalleItem && (
         <LiquidacionDetalleModal

@@ -13,7 +13,7 @@ from typing import List
 from injector import inject
 from ninja.errors import HttpError
 
-from modules.liquidaciones.domain.constants import TipoLiquidacion
+from modules.liquidaciones.domain.constants import EstrategiaCotizacionPO, TipoLiquidacion
 from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_legacy_por_porcentaje_core_service import (
     LiquidacionLegacyPorPorcentajeCoreService,
 )
@@ -171,6 +171,17 @@ class LiquidacionEdificacionesLegacyOrchestrator(LiquidacionPOValidationMixin):
                 for esp in especialidades
             ]
 
+        estrategia_cotizacion = getattr(
+            payload.liquidacion_especifica, "estrategia_cotizacion", None
+        )
+        cantidad_especialidades_habilitadas = None
+        if estrategia_cotizacion == EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES:
+            cantidad_especialidades_habilitadas = len(
+                self._obtener_especialidades_vigentes_para_tipo(
+                    TipoLiquidacion.EDIFICACION, fecha=fecha_registro
+                )
+            )
+
         # Pure calculation — no persistence
         return self.porcentaje_core.calcular_cotizacion_po(
             valor_declarado=valor_declarado,
@@ -274,6 +285,17 @@ class LiquidacionEdificacionesLegacyOrchestrator(LiquidacionPOValidationMixin):
                 for esp in especialidades
             ]
 
+        estrategia_cotizacion = getattr(
+            payload.liquidacion_especifica, "estrategia_cotizacion", None
+        )
+        cantidad_especialidades_habilitadas = None
+        if estrategia_cotizacion == EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES:
+            cantidad_especialidades_habilitadas = len(
+                self._obtener_especialidades_vigentes_para_tipo(
+                    TipoLiquidacion.EDIFICACION, fecha=fecha_registro
+                )
+            )
+
         # Step 5: Build domain DTO
         domain_data = LiquidacionEspecificaPrimeraRevisionData(
             liquidacion_general=LiquidacionGeneralData(
@@ -315,6 +337,8 @@ class LiquidacionEdificacionesLegacyOrchestrator(LiquidacionPOValidationMixin):
                 datos=DatosPorcentajeObra(valor_declarado=valor_declarado),
                 tarifas=tarifas_aplicadas,
                 tipo_tramite=getattr(payload, "tipo_tramite", None),
+                estrategia_cotizacion=estrategia_cotizacion,
+                cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
                 override_subtotal=(
                     payload.cotizacion_legacy.sub_total
                     if getattr(payload, "cotizacion_legacy", None) is not None
