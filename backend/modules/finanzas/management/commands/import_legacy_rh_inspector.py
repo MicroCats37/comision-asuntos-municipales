@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import re
+import unicodedata
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -55,6 +56,29 @@ def _int(value) -> int:
         return int(value or 0)
     except (TypeError, ValueError):
         return 0
+
+
+def _match_text(value) -> str:
+    return " ".join(
+        "".join(
+            char for char in unicodedata.normalize("NFKD", _text(value).upper())
+            if not unicodedata.combining(char)
+        ).split()
+    )
+
+
+def _composite_key(owner: str, district: str, assigned_visits: int) -> tuple[str, str, int]:
+    return _match_text(owner), _match_text(district), assigned_visits
+
+
+def _composite_matches(composite_index: dict, owner: str, district: str, assigned_visits: int, used_lcv_ids: set):
+    """Find unused IO rows by the historical owner, district and assigned visits key."""
+    if not owner or not district or not assigned_visits:
+        return []
+    return [
+        lcv for lcv in composite_index.get(_composite_key(owner, district, assigned_visits), [])
+        if lcv.id not in used_lcv_ids
+    ][:2]
 
 
 def _headers(ws):
@@ -161,6 +185,19 @@ class Command(BaseCommand):
         core = FinanzasCoreService()
         crear = RHInspectorMensualCrearFlujo(core, RHInspectorMensualCotizarFlujo(core))
         outcomes = []
+        match_counts = Counter()
+        monthly_rows_ready = 0
+        composite_index = {}
+        for lcv in LiquidacionPorCategoriaVisitas.objects.select_related(
+            "liquidacion_general__proyecto__distrito",
+        ):
+            project = lcv.liquidacion_general.proyecto
+            key = _composite_key(
+                project.nombre_propietario,
+                project.distrito.nombre if project.distrito else "",
+                lcv.cantidad_visitas,
+            )
+            composite_index.setdefault(key, []).append(lcv)
 
         for path in files:
             formula_ws = load_workbook(path, data_only=False).active
@@ -176,11 +213,15 @@ class Command(BaseCommand):
             comp_col = next((column for name, column in header_index.items() if "COMP" in name), None)
             month_col = next((column for name, column in header_index.items() if "INSP" in name and "MES" in name), None)
             prev_col = next((column for name, column in header_index.items() if "PAGADAS" in name), None)
-            if not all((comp_col, month_col, prev_col)):
+            owner_col = next((column for name, column in header_index.items() if "ADMINISTR" in name), None)
+            district_col = header_index.get("DISTRITO")
+            assigned_visits_col = next((column for name, column in header_index.items() if "PROGRAM" in name), None)
+            if not all((comp_col, month_col, prev_col, owner_col, district_col, assigned_visits_col)):
                 outcomes.append([path.name, cip_match.group(1), *period, "", "SKIPPED_TEMPLATE", "Missing required columns"])
                 continue
             items = []
             rows = []
+            used_lcv_ids = set()
             for row in range(header_row + 1, values_ws.max_row + 1):
                 expediente = _text(values_ws.cell(row, exp_col).value)
                 comprobante = _text(values_ws.cell(row, comp_col).value)
@@ -193,6 +234,7 @@ class Command(BaseCommand):
                     serie__iexact=serie,
                     numero__iexact=numero,
                 ).select_related("liquidacion_general").first()
+                match_type = "EXPEDIENTE_COMPROBANTE" if match else None
                 if not match:
                     comprobante_matches = list(
                         LiquidacionComprobante.objects.filter(
@@ -203,6 +245,7 @@ class Command(BaseCommand):
                     )
                     if len(comprobante_matches) == 1:
                         match = comprobante_matches[0]
+                        match_type = "COMPROBANTE"
                     elif len(comprobante_matches) > 1:
                         outcomes.append([
                             path.name, cip_match.group(1), period[0], period[1], row,
@@ -211,17 +254,43 @@ class Command(BaseCommand):
                         continue
                 visitas_mes = _int(values_ws.cell(row, month_col).value)
                 previas = _int(values_ws.cell(row, prev_col).value)
+                assigned_visits = _int(values_ws.cell(row, assigned_visits_col).value)
                 if not match:
-                    outcomes.append([path.name, cip_match.group(1), period[0], period[1], row, "NO_MATCH_COMPROBANTE", f"{expediente} | {comprobante}"])
-                    continue
-                lcv = LiquidacionPorCategoriaVisitas.objects.filter(
-                    liquidacion_general=match.liquidacion_general,
-                ).first()
+                    composite = _composite_matches(
+                        composite_index,
+                        _text(values_ws.cell(row, owner_col).value),
+                        _text(values_ws.cell(row, district_col).value),
+                        assigned_visits,
+                        used_lcv_ids,
+                    )
+                    if len(composite) == 1:
+                        lcv = composite[0]
+                        match_type = "COMPOSITE"
+                        outcomes.append([
+                            path.name, cip_match.group(1), period[0], period[1], row,
+                            "MATCH_COMPOSITE", f"{_text(values_ws.cell(row, owner_col).value)} | {_text(values_ws.cell(row, district_col).value)} | {assigned_visits}",
+                        ])
+                    elif len(composite) > 1:
+                        outcomes.append([path.name, cip_match.group(1), period[0], period[1], row, "AMBIGUOUS_COMPOSITE", f"{_text(values_ws.cell(row, owner_col).value)} | {_text(values_ws.cell(row, district_col).value)} | {assigned_visits}"])
+                        continue
+                    else:
+                        outcomes.append([path.name, cip_match.group(1), period[0], period[1], row, "NO_MATCH_COMPOSITE", f"{expediente} | {comprobante}"])
+                        continue
+                else:
+                    lcv = LiquidacionPorCategoriaVisitas.objects.filter(
+                        liquidacion_general=match.liquidacion_general,
+                    ).first()
                 if not lcv:
                     outcomes.append([path.name, cip_match.group(1), period[0], period[1], row, "NO_IO", expediente])
                     continue
+                if lcv.id in used_lcv_ids:
+                    outcomes.append([path.name, cip_match.group(1), period[0], period[1], row, "DUPLICATE_IO", expediente])
+                    continue
+                used_lcv_ids.add(lcv.id)
+                match_counts[match_type] += 1
                 rows.append((row, lcv, previas, visitas_mes))
                 if visitas_mes:
+                    monthly_rows_ready += 1
                     items.append(RHInspectorCotizarItemIn(liquidacion_categoria_visitas_id=str(lcv.id), cantidad_visitas=visitas_mes))
             if not items:
                 outcomes.append([path.name, cip_match.group(1), period[0], period[1], "", "NO_MONTHLY_VISITS", "No valid rows"])
@@ -262,3 +331,5 @@ class Command(BaseCommand):
         self.stdout.write(f"Mode: {'APPLY' if options['apply'] else 'DRY-RUN'}")
         self.stdout.write(f"Report: {report_path}")
         self.stdout.write(f"Outcomes: {dict(counts)}")
+        self.stdout.write(f"Matched IO rows: {dict(match_counts)}")
+        self.stdout.write(f"Matched IO rows with monthly visits: {monthly_rows_ready}")

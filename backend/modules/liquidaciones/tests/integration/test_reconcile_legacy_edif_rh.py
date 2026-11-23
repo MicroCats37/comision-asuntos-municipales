@@ -2,9 +2,12 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 from modules.liquidaciones.management.commands.reconcile_legacy_edif_rh import (
-    classify_po,
-    classify_rh,
+    expected_bruto,
     expected_rh_values,
+    h3_existing_mismatch_parents,
+    po_allocation_classification,
+    rh_classification,
+    summarize_parent_counts,
 )
 
 
@@ -12,74 +15,107 @@ def detail_for(values):
     return SimpleNamespace(**values)
 
 
-def test_expected_h3_values_round_each_component_without_residual_distribution():
-    values = expected_rh_values(Decimal("100.00"), 3)
-
-    assert values == {
-        "imp_bruto": Decimal("33.33"),
-        "renta_cip": Decimal("8.33"),
-        "aporte_codemu": Decimal("1.67"),
-        "fondo_comun": Decimal("3.33"),
-        "neto_honorario": Decimal("20.00"),
+def test_expected_values_use_persisted_po_detail_subtotal_without_a_divisor():
+    assert expected_rh_values(Decimal("100.00")) == {
+        "imp_bruto": Decimal("100.00"),
+        "renta_cip": Decimal("25.00"),
+        "aporte_codemu": Decimal("5.00"),
+        "fondo_comun": Decimal("10.00"),
+        "neto_honorario": Decimal("60.00"),
     }
 
 
-def test_classify_rh_detects_three_persisted_rows_divided_by_four():
-    divided_by_four = expected_rh_values(Decimal("100.00"), 4)
-    status, expected = classify_rh(
-        [detail_for(divided_by_four) for _ in range(3)],
-        Decimal("100.00"),
-        Decimal("0.01"),
+def test_three_persisted_po_details_are_the_allocation_source():
+    porcentaje = SimpleNamespace(
+        estrategia_cotizacion="TARIFA_HABILITADAS_PARTICIPANTES",
+        cantidad_especialidades_habilitadas=3,
     )
 
-    assert status == "RH_DIVIDIDO_4"
-    assert expected["imp_bruto"] == Decimal("33.33")
+    assert po_allocation_classification(porcentaje, 3) == "PO_TRES_DETALLES_PERSISTIDOS"
 
 
-def test_classify_rh_detects_divided_by_four_when_a_persisted_row_is_missing():
-    divided_by_four = expected_rh_values(Decimal("100.00"), 4)
-    status, _ = classify_rh(
-        [detail_for(divided_by_four) for _ in range(2)],
-        Decimal("100.00"),
-        Decimal("0.01"),
+def test_total_explicito_uses_the_persisted_detail_count_not_the_rh_count():
+    porcentaje = SimpleNamespace(
+        estrategia_cotizacion="TOTAL_EXPLICITO",
+        cantidad_especialidades_habilitadas=3,
     )
 
-    assert status == "RH_DIVIDIDO_4"
+    assert (
+        po_allocation_classification(porcentaje, 3) == "PO_TOTAL_EXPLICITO_POR_DETALLE"
+    )
 
 
-def test_classify_rh_uses_fixed_divisor_when_fourth_split_has_legacy_component_rounding():
-    details = [
-        detail_for(
-            {
-                "imp_bruto": Decimal("175.10"),
-                "renta_cip": Decimal("43.78"),
-                "aporte_codemu": Decimal("8.76"),
-                "fondo_comun": Decimal("17.51"),
-                "neto_honorario": Decimal("105.05"),
-            }
+def test_exclusive_single_specialty_assigns_its_full_po_detail_to_rh():
+    porcentaje = SimpleNamespace(
+        estrategia_cotizacion="NORMAL_SELECCIONADAS",
+        cantidad_especialidades_habilitadas=3,
+    )
+
+    assert po_allocation_classification(porcentaje, 1) == "PO_EXCLUSIVO_ESPECIALIDAD"
+
+
+def test_single_unit_rate_assigns_the_parent_total_to_its_specialty():
+    liquidacion = SimpleNamespace(sub_total=Decimal("180.86"))
+    detail = SimpleNamespace(
+        tarifa_aplicada_id="tarifa-05", porcentaje_aplicado=Decimal("0.0005"), subtotal=Decimal("60.29")
+    )
+
+    assert expected_bruto(liquidacion, [detail], detail) == Decimal("180.86")
+
+
+def test_rh_comparison_marks_a_quarter_split_as_a_persisted_detail_discrepancy():
+    actual = detail_for(expected_rh_values(Decimal("25.00")))
+
+    assert (
+        rh_classification(
+            actual, expected_rh_values(Decimal("100.00")), Decimal("0.01")
         )
-        for _ in range(3)
+        == "RH_DISCREPANTE_PO_DETALLE"
+    )
+
+
+def test_parent_summary_counts_unique_parents_not_specialty_lines():
+    parent_records = [
+        {"numero": 10, "has_rh": True},
+        {"numero": 11, "has_rh": True},
+        {"numero": 12, "has_rh": False},
+    ]
+    rows = [
+        {"numero": 10, "rh_classification": "RH_DISCREPANTE_PO_DETALLE"},
+        {
+            "numero": 10,
+            "rh_classification": "RH_DISCREPANTE_PO_DETALLE_DUPLICADO_ESPECIALIDAD",
+        },
+        {"numero": 11, "rh_classification": "RH_FALTANTE_PARA_PO_DETALLE"},
+        {"numero": 12, "rh_classification": "RH_FALTANTE_PARA_PO_DETALLE"},
     ]
 
-    status, _ = classify_rh(details, Decimal("700.42"), Decimal("0.01"))
-
-    assert status == "RH_DIVIDIDO_4"
-
-
-def test_classify_rh_distinguishes_missing_details_from_wrong_count():
-    status, _ = classify_rh([], Decimal("100.00"), Decimal("0.01"))
-
-    assert status == "RH_SIN_DETALLE"
+    assert summarize_parent_counts(parent_records, rows) == {
+        "legacy_edif_post_cutover_parents": 3,
+        "parents_with_any_rh": 2,
+        "parents_without_rh": 1,
+        "parents_with_existing_rh_mismatches": 1,
+        "parents_with_missing_po_to_rh_specialties": 2,
+    }
 
 
-def test_classify_po_accepts_h3_rate_without_legacy_snapshots():
-    correct = SimpleNamespace(
-        estrategia_cotizacion="NORMAL_SELECCIONADAS",
-        cantidad_especialidades_habilitadas=None,
-        porcentaje_tarifa=None,
-        porcentaje_liquidacion=Decimal("0.0015"),
-    )
+def test_h3_existing_mismatch_report_has_one_row_per_parent():
+    rows = [
+        {
+            "numero": 20,
+            "po_detail_count": 3,
+            "rh_classification": "RH_DISCREPANTE_PO_DETALLE",
+        },
+        {
+            "numero": 20,
+            "po_detail_count": 3,
+            "rh_classification": "RH_DISCREPANTE_PO_DETALLE_DUPLICADO_ESPECIALIDAD",
+        },
+        {
+            "numero": 21,
+            "po_detail_count": 2,
+            "rh_classification": "RH_DISCREPANTE_PO_DETALLE",
+        },
+    ]
 
-    assert classify_po(correct) == "PO_CORRECTO"
-    correct.porcentaje_liquidacion = Decimal("0.0020")
-    assert classify_po(correct) == "PO_DISCREPANTE"
+    assert h3_existing_mismatch_parents(rows) == [rows[0]]
