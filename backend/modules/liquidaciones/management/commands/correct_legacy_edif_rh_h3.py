@@ -48,7 +48,7 @@ def values_for_bruto(bruto: Decimal) -> dict[str, Decimal]:
 
 
 class Command(BaseCommand):
-    help = "Corrige solo detalles RH EDIF legacy H=3 divididos entre cuatro. Dry-run por defecto."
+    help = "Retirado: no infiere RH EDIF desde subtotal/3 sin validar RH_EDIF."
 
     def add_arguments(self, parser):
         parser.add_argument("--apply", action="store_true", help="Confirma la actualizacion transaccional.")
@@ -61,6 +61,11 @@ class Command(BaseCommand):
         parser.add_argument("--csv-output", type=str, default=None)
 
     def handle(self, *args, **options):
+        raise CommandError(
+            "Unsafe correction disabled: validate each RH against RH_EDIF.csv with "
+            "restore_legacy_edif_rh_h3 before changing amounts."
+        )
+
         try:
             fecha_desde = date.fromisoformat(options["fecha_desde"])
         except ValueError as exc:

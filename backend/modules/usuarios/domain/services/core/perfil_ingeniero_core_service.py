@@ -222,6 +222,7 @@ class PerfilIngenieroCoreService:
         self,
         cip: str,
         dry_run: bool = False,
+        refresh_if_incomplete: bool = False,
         max_retries: int = 3,
         base_delay: float = 1.0,
     ) -> tuple[PerfilIngeniero | None, str]:
@@ -252,9 +253,10 @@ class PerfilIngenieroCoreService:
         if not normalized:
             return None, "ERROR"
 
-        # Step 1: Check local profile first — always reuse if present
+        # Step 1: Reuse complete local profiles. Legacy imports may have profiles
+        # without chapter data, which is required to resolve their operation.
         existing = self._obtener_perfil_por_cip(normalized)
-        if existing is not None:
+        if existing is not None and (not refresh_if_incomplete or existing.capitulo_id):
             return existing, "YA_EXISTE"
 
         # Step 2: No local profile — call CIP endpoint with retry
@@ -321,8 +323,9 @@ class PerfilIngenieroCoreService:
             return None, "ERROR"
 
         if dry_run:
-            # In dry-run, just report what would be created
-            return None, "CREADO_DESDE_CIP"
+            # Preserve the local instance so callers can identify an incomplete
+            # profile while reporting the refresh that would occur on apply.
+            return existing, "ACTUALIZADO_DESDE_CIP" if existing else "CREADO_DESDE_CIP"
 
         try:
             perfil, created = self._upsert_perfil_from_cip(normalized, cip_data)

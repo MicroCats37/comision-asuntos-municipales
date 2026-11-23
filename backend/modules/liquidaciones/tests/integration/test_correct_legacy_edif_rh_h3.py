@@ -1,6 +1,10 @@
 from decimal import Decimal
 
+import pytest
+from django.core.management.base import CommandError
+
 from modules.liquidaciones.management.commands.correct_legacy_edif_rh_h3 import (
+    Command,
     distribute_bruto,
     values_for_bruto,
 )
@@ -21,3 +25,8 @@ def test_values_for_bruto_rounds_each_persisted_component():
         "fondo_comun": Decimal("3.33"),
         "neto_honorario": Decimal("20.00"),
     }
+
+
+def test_command_rejects_unverified_subtotal_division():
+    with pytest.raises(CommandError, match="Unsafe correction disabled"):
+        Command().handle()
