@@ -124,6 +124,32 @@ logger = logging.getLogger(__name__)
 # Default path to legacy data file
 DEFAULT_DATA_PATH = Path(__file__).resolve().parent.parent.parent.parent.parent / "core_application" / "seeds" / "historico" / "EDIF_ALL.csv"
 HABILITADAS_MATCH_TOLERANCE = Decimal("1.00")
+HABILITADAS_CORTE_FECHA = date(2026, 5, 1)
+
+# Explicit, user-approved PO routing for the audited manual batch. This is opt-in
+# through --manual-po-aprobados; normal legacy imports keep their existing rules.
+MANUAL_PO_APROBADOS = {
+    "51346": {"mode": "all"}, "51588": {"mode": "all"},
+    "51839": {"mode": "all"}, "52559": {"mode": "all"},
+    "53613": {"mode": "all"}, "54431": {"mode": "all"},
+    "51213": {"mode": "target", "especialidad": "Estructuras"},
+    "51416": {"mode": "target", "especialidad": "Estructuras"},
+    "51829": {"mode": "target", "especialidad": "Inst. Mecánico Eléctricas"},
+    "52817": {"mode": "target", "especialidad": "Estructuras"},
+    "52833": {"mode": "target", "especialidad": "Estructuras"},
+    "52892": {"mode": "target", "especialidad": "Estructuras"},
+    "52915": {"mode": "target", "especialidad": "Inst. Mecánico Eléctricas"},
+    "53104": {"mode": "target", "especialidad": "Estructuras"},
+    "53836": {"mode": "target", "especialidad": "Estructuras"},
+    "54061": {"mode": "target", "especialidad": "Inst. Mecánico Eléctricas"},
+    "54104": {"mode": "target", "especialidad": "Estructuras"},
+    "54108": {"mode": "target", "especialidad": "Inst. Mecánico Eléctricas"},
+    "54116": {"mode": "target", "especialidad": "Estructuras"},
+    "54215": {"mode": "target", "especialidad": "Inst. Sanitarias"},
+    "54292": {"mode": "target", "especialidad": "Inst. Sanitarias"},
+    "54347": {"mode": "target", "especialidad": "Estructuras"},
+    "54903": {"mode": "target", "especialidad": "Estructuras"},
+}
 
 # ── Modular constants and parsers from legacy_edif package ──────────────────────
 # Single source of truth lives in commands/legacy_edif/columns.py and
@@ -241,6 +267,27 @@ def _parse_fecha(raw) -> date:
         # "unparseable" (also None) — for FECHA both are errors here.
         raise ValueError(f"Cannot parse fecha: {raw!r}")
     return parsed
+
+
+def _estrategia_legacy_por_proyecto(proyecto: str, fecha_registro: date) -> tuple[str, int | None]:
+    """Map legacy project labels to the PO strategy and its historical H snapshot."""
+    proyecto_normalizado = re.sub(r"[^a-z0-9]+", " ", _normalize_specialty(proyecto)).strip()
+    if any(
+        termino in proyecto_normalizado
+        for termino in ("ampliacion", "remodelacion", "demolicion", "reintegro")
+    ):
+        habilitadas = 3 if fecha_registro >= HABILITADAS_CORTE_FECHA else 4
+        return EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES, habilitadas
+
+    if (
+        "modificacion de licencia" in proyecto_normalizado
+        or "modif de licencia" in proyecto_normalizado
+        or "tercera revision" in proyecto_normalizado
+        or "3ra revision" in proyecto_normalizado
+    ):
+        return EstrategiaCotizacionPO.NORMAL_SELECCIONADAS, None
+
+    raise ValueError(f"Proyecto legacy sin estrategia PO definida: {proyecto or '(vacío)'}")
 
 
 def _build_orchestrator() -> LiquidacionEdificacionesLegacyOrchestrator:
@@ -920,15 +967,17 @@ class Command(BaseCommand):
             help="Solo generar reporte_legacy_detallado.csv/.xlsx sin importar ni tocar la BD",
         )
         parser.add_argument(
-            "--dry-run-rh",
+            "--migrar-especialidades-fijas",
             action="store_true",
-            help="Phase 1: parse RH delegado slots and produce a summary report. "
-                 "No DB writes for RH entities. Implies --dry-run for RH path.",
+            help=(
+                "Migrar solo filas legacy con especialidad fija que cumplan la regla PO; "
+                "sincroniza expediente y comprobante de liquidaciones existentes."
+            ),
         )
         parser.add_argument(
-            "--solo-liquidaciones",
+            "--manual-po-aprobados",
             action="store_true",
-            help="Importar o validar solo liquidaciones padre; no procesar RH ni delegados.",
+            help="Aplicar la distribucion PO auditada para el lote manual de IDs aprobados.",
         )
 
     def _reset_liquidaciones(self) -> None:
@@ -981,9 +1030,10 @@ class Command(BaseCommand):
         self._log(f"  Eliminadas {deleted} filas (LiquidacionGeneral y relacionados).")
 
     def handle(self, *args, **options):
-        self.dry_run_rh = bool(options.get("dry_run_rh", False))
-        self.dry_run = bool(options["dry_run"]) or self.dry_run_rh
-        self.solo_liquidaciones = bool(options.get("solo_liquidaciones", False))
+        self.dry_run_rh = False
+        self.dry_run = bool(options["dry_run"])
+        self.migrar_especialidades_fijas = bool(options.get("migrar_especialidades_fijas", False))
+        self.manual_po_aprobados = bool(options.get("manual_po_aprobados", False))
         self.batch_size = int(options["batch_size"])
         self.reset = bool(options.get("reset", False))
         self.solo_reporte = bool(options.get("solo_report", False)) or bool(options.get("solo_reporte", False))
@@ -1013,6 +1063,10 @@ class Command(BaseCommand):
             self._log(self.style.WARNING(f"  --fecha-desde: procesando FECHA >= {self.fecha_desde}"))
         if self.dry_run:
             self._log(self.style.WARNING("  DRY-RUN MODE — no database writes"))
+        if self.migrar_especialidades_fijas:
+            self._log(self.style.WARNING(
+                "  MODO ESPECIALIDADES FIJAS — excluye TODAS y sincroniza expediente/comprobante"
+            ))
 
         # Build injector and resolve orchestrator
         self._log("  Resolving orchestrator...")
@@ -1084,19 +1138,6 @@ class Command(BaseCommand):
 
         # Collect rejected rows for joined + clean reports
         rejected_rows: list[dict] = []
-
-        rh_report_csv_path = result_dir / "reporte_ingesta_legacy_rh.csv"
-        rh_report_xlsx_path = result_dir / "reporte_ingesta_legacy_rh.xlsx"
-        rh_report_file = rh_report_csv_path.open("w", newline="", encoding="utf-8")
-        rh_report_writer = csv.writer(rh_report_file)
-        rh_report_headers = [
-            "FILA", "NRO", "EXPEDIENTE", "LIQUIDACION_ID", "NUMERO_EDIFICACION",
-            "SLOT", "ESPECIALIDAD", "CIP", "DELEGADO_LEGACY",
-            "PERFIL_STATUS", "DELEGADO_STATUS", "OPERACION_STATUS",
-            "LIQUIDACION_DELEGADO_STATUS", "DETALLE_HONORARIO_STATUS",
-            "COMPROBANTE_STATUS", "REGISTRADO_EN_BD", "MOTIVO",
-        ]
-        rh_report_writer.writerow(rh_report_headers)
 
         # Process
         processed = 0
@@ -1173,14 +1214,22 @@ class Command(BaseCommand):
                         )
                     if existing_edificacion is not None:
                         skipped += 1
-                        if self.solo_liquidaciones:
-                            self._log(self.style.WARNING(
-                                f"  EXISTENTE row {idx}: numero {id_val} ya existe; omitido"
-                            ))
-                            continue
                         self._log(self.style.WARNING(
-                            f"  EXISTENTE row {idx}: numero {id_val} ya existe; procesando RH/delegados"
+                            f"  EXISTENTE row {idx}: numero {id_val} ya existe; sincronizando liquidación"
                         ))
+
+                    especialidad_fuente = str(row[COL_ESPECIALIDAD] or "").strip()
+                    if (
+                        self.migrar_especialidades_fijas
+                        and existing_edificacion is None
+                        and especialidad_fuente.upper() == "TODAS"
+                    ):
+                        skipped += 1
+                        report_writer.writerow([idx, "", "REQUIERE_REVISION_TODAS", "NO"])
+                        self._log(self.style.WARNING(
+                            f"  OMITIDO row {idx}: TODAS requiere migración especializada"
+                        ))
+                        continue
 
                     # ── Rechazo: NRO == 0 (filas anómalas, no se suben) ──────────
                     nro_raw = row[1] if len(row) > 1 else None
@@ -1267,8 +1316,27 @@ class Command(BaseCommand):
 
                     processed += 1
 
-                    if self.solo_liquidaciones:
-                        continue
+                    if self.migrar_especialidades_fijas:
+                        if created_liquidacion_general is not None:
+                            expediente_legacy = payload.liquidacion_general.expediente
+                            if (
+                                expediente_legacy
+                                and created_liquidacion_general.expediente != expediente_legacy
+                                and not self.dry_run
+                            ):
+                                created_liquidacion_general.expediente = expediente_legacy
+                                created_liquidacion_general.save(update_fields=["expediente"])
+
+                            comprobante_data = _parse_comprobante(row)
+                            _upsert_liquidacion_comprobante(
+                                liquidacion=created_liquidacion_general,
+                                comprobante_data=comprobante_data,
+                                total=_parse_total(row),
+                                dry_run=self.dry_run,
+                            )
+                    # This importer intentionally handles only the parent liquidation,
+                    # expediente, and comprobante. RH and delegado data are out of scope.
+                    continue
 
                     # ── Phase 1: RH slot parsing (no DB writes) ─────────────────────
                     rh_rows_parsed += 1
@@ -1587,8 +1655,6 @@ class Command(BaseCommand):
                         self._log(traceback.format_exc())
 
             report_file.close()
-            rh_report_file.close()
-
         except KeyboardInterrupt:
             self._log(self.style.WARNING(
                 "\n[!] Proceso cancelado forzadamente por el usuario. Interrumpiendo ingesta..."
@@ -1597,10 +1663,6 @@ class Command(BaseCommand):
             # ── Close CSV files and save Excel workbooks (Ctrl+C safe) ─────────
             try:
                 report_file.close()
-            except Exception:
-                pass
-            try:
-                rh_report_file.close()
             except Exception:
                 pass
             try:
@@ -1623,15 +1685,6 @@ class Command(BaseCommand):
                 self._log(self.style.WARNING(f"  Error saving wb_clean XLSX: {exc}"))
             self._log(f"  Joined/clean report files saved.")
 
-        # RH XLSX (from pre-loop RH CSV)
-        rh_wb = openpyxl.Workbook()
-        rh_ws = rh_wb.active
-        rh_ws.title = "RH"
-        with rh_report_csv_path.open("r", newline="", encoding="utf-8") as rh_csv_file:
-            for row_data in csv.reader(rh_csv_file):
-                rh_ws.append(row_data)
-        rh_wb.save(str(rh_report_xlsx_path))
-
         # Summary report
         self._log(self.style.SUCCESS("\n=== REPORTE DE IMPORTACION LEGACY ==="))
         self._log(f"  Total filas 'TODAS': {total_todas}")
@@ -1645,8 +1698,6 @@ class Command(BaseCommand):
         self._log(f"    reporte_ingesta_legacy.csv")
         self._log(f"    reporte_rechazadas.csv + .xlsx")
         self._log(f"    filas_rechazadas_para_corregir.csv + .xlsx")
-        self._log(f"  Reporte RH CSV: {rh_report_csv_path}")
-        self._log(f"  Reporte RH XLSX: {rh_report_xlsx_path}")
 
         if error_details:
             self._log(self.style.WARNING("\n  Error details (first 20):"))
@@ -1676,7 +1727,7 @@ class Command(BaseCommand):
             rh_operaciones_creadas + rh_operaciones_reusadas +
             rh_operaciones_conflicto + rh_operaciones_error
         )
-        if not self.dry_run:
+        if not self.dry_run and rh_rows_parsed:
             self._log(self.style.SUCCESS("\n=== RH DELEGADO HELPERS REPORT (Phase 2) ==="))
             self._log(f"  Perfiles creados (PerfilIngeniero):    {rh_perfiles_creados}")
             self._log(f"  Perfiles reusados:                    {rh_perfiles_reusados}")
@@ -1709,7 +1760,7 @@ class Command(BaseCommand):
         # ── Phase 3 RH Report (LiquidacionDelegado + DetalleHonorarioDelegado) ─────
         total_ld = rh_ld_creados + rh_ld_reusados + rh_ld_error
         total_dh = rh_dh_creados + rh_dh_reusados + rh_dh_error
-        if not self.dry_run:
+        if not self.dry_run and total_ld:
             self._log(self.style.SUCCESS("\n=== RH LIQUIDACION DELEGADO + DETALLE REPORT (Phase 3) ==="))
             self._log(f"  LiquidacionDelegado creados:            {rh_ld_creados}")
             self._log(f"  LiquidacionDelegado reusados:          {rh_ld_reusados}")
@@ -1740,7 +1791,7 @@ class Command(BaseCommand):
 
         # ── Phase 4 RH Report (LiquidacionComprobante) ─────────────────────────────
         total_comp = rh_comp_creados + rh_comp_actualizados + rh_comp_errores
-        if not self.dry_run:
+        if not self.dry_run and total_comp:
             self._log(self.style.SUCCESS("\n=== RH COMPROBANTE REPORT (Phase 4) ==="))
             self._log(f"  Comprobantes creados:                 {rh_comp_creados}")
             self._log(f"  Comprobantes actualizados:            {rh_comp_actualizados}")
@@ -1855,7 +1906,11 @@ class Command(BaseCommand):
                 excel_pct = Decimal(str(excel_pct_raw)) if excel_pct_raw is not None else None
 
                 cotizacion = orchestrator.cotizar_legacy_proceso(payload)
-                pct_calculado = cotizacion.porcentaje_liquidacion * Decimal(100) if cotizacion else None
+                pct_calculado = (
+                    cotizacion.porcentaje_liquidacion * Decimal(100)
+                    if cotizacion and cotizacion.porcentaje_liquidacion is not None
+                    else None
+                )
                 calc_total = cotizacion.total if cotizacion else None
                 calc_subtotal = cotizacion.total_subtotal if cotizacion else None
 
@@ -2190,6 +2245,14 @@ class Command(BaseCommand):
         except (ValueError, TypeError):
             id_val = None
         numero = id_val
+        manual_po_rule = (
+            MANUAL_PO_APROBADOS.get(str(numero))
+            if self.manual_po_aprobados and numero is not None
+            else None
+        )
+        if manual_po_rule and manual_po_rule["mode"] == "target":
+            especialidad_str = manual_po_rule["especialidad"]
+            anomalies.append(f"PO manual aprobado: destino {especialidad_str}")
 
         # ── Contacto (TPERSONA + TFONO + TDNI) ──────────────────────────────
         tpersona_raw = row[COL_TPERSONA] if len(row) > COL_TPERSONA else None
@@ -2299,28 +2362,44 @@ class Command(BaseCommand):
             numero=numero,
         )
 
-        # Some historical rows charged all enabled specialties while naming only
-        # one participant. Use that dated business mode only when the source
-        # subtotal matches its calculated parent amount.
-        if (
-            cotizacion_legacy is not None
-            and tarifas_explicit
-            and especialidad_str.strip().upper() != "TODAS"
-        ):
-            habilitadas_payload = payload.model_copy(deep=True)
-            habilitadas_payload.cotizacion_legacy = None
-            habilitadas_payload.liquidacion_especifica.estrategia_cotizacion = (
-                EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES
-            )
-            cotizacion_habilitadas = orchestrator.cotizar_legacy_proceso(habilitadas_payload)
-            if (
-                abs(cotizacion_legacy.sub_total - cotizacion_habilitadas.total_subtotal)
-                <= HABILITADAS_MATCH_TOLERANCE
-            ):
-                payload.liquidacion_especifica.estrategia_cotizacion = (
-                    EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES
+        if tarifas_explicit and especialidad_str.strip().upper() != "TODAS":
+            if manual_po_rule:
+                estrategia = EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES
+                habilitadas = 3 if fecha_registro >= HABILITADAS_CORTE_FECHA else 4
+            else:
+                estrategia, habilitadas = _estrategia_legacy_por_proyecto(
+                    proyecto_str, fecha_registro
                 )
-                anomalies.append("Estrategia legacy: tarifa habilitadas participantes")
+            payload.liquidacion_especifica.estrategia_cotizacion = estrategia
+            payload.liquidacion_especifica.cantidad_especialidades_habilitadas = habilitadas
+
+            if cotizacion_legacy is not None:
+                regla_payload = payload.model_copy(deep=True)
+                regla_payload.cotizacion_legacy = None
+                cotizacion_regla = orchestrator.cotizar_legacy_proceso(regla_payload)
+                if abs(cotizacion_legacy.sub_total - cotizacion_regla.total_subtotal) > HABILITADAS_MATCH_TOLERANCE:
+                    payload.liquidacion_especifica.estrategia_cotizacion = (
+                        EstrategiaCotizacionPO.TOTAL_EXPLICITO
+                    )
+                    payload.liquidacion_especifica.cantidad_especialidades_habilitadas = (
+                        3 if fecha_registro >= HABILITADAS_CORTE_FECHA else 4
+                    )
+                    payload.liquidacion_especifica.total_explicito = cotizacion_legacy.total
+                    anomalies.append(
+                        "Estrategia legacy: total explícito por discrepancia de tarifa"
+                    )
+                else:
+                    anomalies.append(f"Estrategia legacy: {estrategia}")
+
+        if manual_po_rule and manual_po_rule["mode"] == "all" and cotizacion_legacy:
+            payload.liquidacion_especifica.estrategia_cotizacion = (
+                EstrategiaCotizacionPO.TOTAL_EXPLICITO
+            )
+            payload.liquidacion_especifica.cantidad_especialidades_habilitadas = (
+                3 if fecha_registro >= HABILITADAS_CORTE_FECHA else 4
+            )
+            payload.liquidacion_especifica.total_explicito = cotizacion_legacy.total
+            anomalies.append("PO manual aprobado: total explicito entre habilitadas")
 
         # ── UIT override (opcional): si el TASAUIT del Excel no coincide con
         # la UIT vigente en BD para el año de fecha_registro, pasamos el valor
@@ -2365,7 +2444,7 @@ class Command(BaseCommand):
             # So: porcentaje_liquidacion * 100 == PORCENTAJE.
             excel_pct_raw = row[COL_PORCENTAJE]
             excel_pct = Decimal(str(excel_pct_raw)) if excel_pct_raw is not None else None
-            if excel_pct is not None:
+            if excel_pct is not None and cotizacion.porcentaje_liquidacion is not None:
                 pct_calculado = cotizacion.porcentaje_liquidacion * Decimal(100)
                 if pct_calculado != excel_pct:
                     anomalies.append("Porcentaje no coincide con cálculo")

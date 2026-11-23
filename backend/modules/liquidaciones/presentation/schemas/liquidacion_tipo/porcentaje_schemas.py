@@ -46,6 +46,8 @@ class LiquidacionPorcentajeObraIn(BaseSchema):
     tipo_tramite: Optional[str] = None  # Accept tipo_tramite at top level (frontend sends here)
     tarifas: List[LiquidacionPorcentajeObraTarifaIn] = []
     estrategia_cotizacion: Optional[str] = None
+    cantidad_especialidades_habilitadas: Optional[int] = None
+    total_explicito: Optional[Decimal] = None
 
 
 class EspecialidadOut(BaseSchema):

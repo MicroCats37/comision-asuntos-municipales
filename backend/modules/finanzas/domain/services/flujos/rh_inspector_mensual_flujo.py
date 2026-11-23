@@ -43,6 +43,23 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_con
 )
 
 TWO_PLACES = Decimal("0.01")
+SIX_PLACES = Decimal("0.000001")
+
+
+def _calcular_descuento_progresivo(escala, sub_total: Decimal) -> Decimal:
+    """Apply every discount bracket to its corresponding portion of the subtotal."""
+    descuento = Decimal("0")
+    for rango in escala.rangos.order_by("monto_minimo"):
+        if sub_total <= rango.monto_minimo:
+            continue
+
+        limite_superior = rango.monto_maximo or sub_total
+        base_tramo = min(sub_total, limite_superior) - rango.monto_minimo
+        descuento += (base_tramo * rango.porcentaje_descuento).quantize(
+            TWO_PLACES,
+            rounding=ROUND_HALF_UP,
+        )
+    return descuento
 
 # Reverse one-to-one accessors of LiquidacionGeneral that hold the specific
 # liquidation `numero`. Mirrors RELATED_NAME_BY_TIPO of the RH Delegado helpers so
@@ -422,10 +439,14 @@ class RHInspectorMensualCotizarFlujo:
                 )
             )
 
-        # 8. Descuento sobre el TOTAL (según decisión del usuario)
+        # 8. Descuento progresivo sobre el subtotal mensual.
         rango = self.core.get_rango_para_monto(escala, sub_total)
-        tasa = Decimal(str(rango.porcentaje_descuento)) if rango else Decimal("0")
-        total_descuento = (sub_total * tasa).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+        total_descuento = _calcular_descuento_progresivo(escala, sub_total)
+        tasa = (
+            (total_descuento / sub_total).quantize(SIX_PLACES, rounding=ROUND_HALF_UP)
+            if sub_total > Decimal("0")
+            else Decimal("0")
+        )
         total_honorarios = (sub_total - total_descuento).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
 
         # 9. Compute per-item descuento and honorarios (proportional to each item's sub_total)

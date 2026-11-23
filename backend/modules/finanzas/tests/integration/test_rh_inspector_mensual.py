@@ -426,6 +426,40 @@ def test_cotizar_con_cip_valido_inspector_asociado(
 
 
 @pytest.mark.django_db
+def test_cotizar_aplica_descuento_progresivo_por_tramos(
+    cotizar_flujo,
+    inspector,
+    perfil_ingeniero_inspector,
+    liquidacion_general_io,
+    liquidacion_inspector,
+    liquidacion_visitas,
+    escala_descuento_15,
+):
+    """The monthly discount matches the progressive brackets used in legacy RH Excel files."""
+    liquidacion_general_io.sub_total = Decimal("8976.00")
+    liquidacion_general_io.save(update_fields=["sub_total"])
+    liquidacion_visitas.cantidad_visitas = 1
+    liquidacion_visitas.save(update_fields=["cantidad_visitas"])
+
+    result = cotizar_flujo.cotizar(
+        _payload(
+            cip=perfil_ingeniero_inspector.cip,
+            periodo=2026,
+            mes=10,
+            items=[{
+                "liquidacion_categoria_visitas_id": str(liquidacion_visitas.id),
+                "cantidad_visitas": 1,
+            }],
+        )
+    )
+
+    assert Decimal(str(result.totales.sub_total)) == Decimal("8976.00")
+    assert Decimal(str(result.totales.descuento)) == Decimal("1395.20")
+    assert Decimal(str(result.totales.honorarios)) == Decimal("7580.80")
+    assert Decimal(str(result.totales.tasa_descuento_aplicada)) == Decimal("0.155437")
+
+
+@pytest.mark.django_db
 def test_cotizar_saldo_restante_refleja_quoted(
     cotizar_flujo,
     inspector,

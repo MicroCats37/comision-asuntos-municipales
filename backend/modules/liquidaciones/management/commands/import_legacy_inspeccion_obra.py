@@ -1287,9 +1287,6 @@ from modules.entidades.domain.models.entidad import Entidad
 from modules.entidades.domain.models.municipalidad import Municipalidad
 from modules.entidades.domain.models.ubigeo import UbigeoDistrito
 from modules.entidades.domain.models.contacto import Contacto
-from modules.finanzas.domain.models.detalle_honorario_inspector import (
-    DetalleHonorarioInspector,
-)
 from modules.liquidaciones.domain.constants import (
     ModoCalculoLiquidacion,
     TipoLiquidacion as TipoLiquidacionConstants,
@@ -1600,24 +1597,14 @@ def _create_fallback_perfil_ingeniero(cip: int) -> PerfilIngeniero:
     return perfil
 
 
-def _legacy_io_has_rh_detail(liquidacion_general: LiquidacionGeneral) -> bool:
-    return LiquidacionPorCategoriaVisitas.objects.filter(
-        liquidacion_general=liquidacion_general,
-        detalles_honorario__isnull=False,
-    ).exists()
-
-
-def _create_legacy_inspector_detail(
+def _ensure_legacy_inspector(
     command,
     row: "ParsedRow",
     liquidacion_visitas: LiquidacionPorCategoriaVisitas,
     perfil_cache: dict[str, tuple[object | None, str]],
     fallback_on_failure: bool = False,
-) -> tuple[bool, str, bool]:
-    """Create/reuse inspector and attach it to the legacy IO visit detail.
-
-    Idempotent: if the DetalleHonorarioInspector already exists, update missing
-    fields so re-runs repair incomplete data.
+) -> tuple[bool, str]:
+    """Create/reuse the inspector relation without creating RH details.
 
     Args:
         command: BaseCommand instance for logging.
@@ -1629,11 +1616,10 @@ def _create_legacy_inspector_detail(
             If False (default), skip inspector creation on lookup failure.
 
     Returns:
-        (success, perfil_status, was_created) where was_created is True if
-        a new DetalleHonorarioInspector was created.
+        (success, perfil_status).
     """
     if not row.delegado or row.cip is None:
-        return False, "SIN_CIP", False
+        return False, "SIN_CIP"
 
     perfil, perfil_status = _resolve_perfil_cip(row.cip, perfil_cache)
     if perfil is None:
@@ -1651,7 +1637,7 @@ def _create_legacy_inspector_detail(
                 f"  Fila {row.row_index}: no se pudo resolver PerfilIngeniero para CIP {row.cip} ({perfil_status}); "
                 "saltando inspector."
             )
-            return False, perfil_status, False
+            return False, perfil_status
 
     inspector, _ = Inspector.objects.get_or_create(perfil_ingeniero=perfil)
     inspector_operacion = _resolve_inspector_operacion_for_legacy_io(inspector, row)
@@ -1660,7 +1646,7 @@ def _create_legacy_inspector_detail(
             f"  Fila {row.row_index}: CIP {row.cip} sin capítulo con especialidad de revisión; "
             "saltando inspector."
         )
-        return False, "SIN_ESPECIALIDAD_CAPITULO", False
+        return False, "SIN_ESPECIALIDAD_CAPITULO"
     LiquidacionInspector.objects.get_or_create(
         liquidacion=liquidacion_visitas,
         inspector=inspector,
@@ -1672,100 +1658,35 @@ def _create_legacy_inspector_detail(
         },
     )
 
-    # ── Compute all DetalleHonorarioInspector fields ──────────────────────────
-    inspecciones_liquidadas = int(row.nrorev or 0)
-    inspecciones_programadas = int(row.nrorev or 0)
-    costo_por_inspeccion = row.subtotal_unitario_legacy or Decimal("0.00")
-    importe_bruto = row.imp_bruto if row.imp_bruto is not None else (row.subtotal or Decimal("0.00"))
-    monto_contribuido = row.subtotal or importe_bruto
-    legacy_deducciones = sum(
-        value or Decimal("0.00")
-        for value in (
-            row.aporte_codemu,
-            row.fondo_comun,
-            row.impuesto_renta,
-            row.renta_cip,
-            row.dscto,
-            row.retencion,
-        )
-    )
-    honorarios = row.neto_honorario if row.neto_honorario is not None else row.honorario
-    if honorarios is None:
-        honorarios = importe_bruto - legacy_deducciones
-    descuento = importe_bruto - honorarios
+    return True, perfil_status
 
-    # tasa_descuento = descuento / imp_bruto when IMPBRUTO > 0
-    tasa_descuento: Decimal | None = None
-    if importe_bruto and importe_bruto > 0:
-        try:
-            tasa_descuento = descuento / importe_bruto
-        except (InvalidOperation, ZeroDivisionError, TypeError):
-            tasa_descuento = None
 
-    # inspecciones_pagadas_hasta_mes_anterior: use PAGADAS when non-null in source
-    inspecciones_pagadas: int | None = None
-    pagadas_raw = row.pagadas  # _int already applied; 0 means absent
-    if pagadas_raw is not None and pagadas_raw != 0:
-        inspecciones_pagadas = int(pagadas_raw)
+def _diff_exceeds_threshold(row: "ParsedRow", threshold: Decimal) -> bool:
+    """Return whether either legacy unit-value difference exceeds the threshold."""
+    return max(
+        row.diff_subtotal_unitario_legacy or Decimal("0"),
+        row.diff_total_unitario_legacy or Decimal("0"),
+    ) > threshold
 
-    # saldo_restante: use DIFERENCIA when non-null in source
-    saldo_restante: Decimal | None = None
-    diferencia_raw = row.diferencia
-    if diferencia_raw is not None and diferencia_raw != 0:
-        saldo_restante = Decimal(int(diferencia_raw))
 
-    # ── Upsert DetalleHonorarioInspector (idempotent) ─────────────────────────
-    detalle = DetalleHonorarioInspector.objects.filter(
-        liquidacion_por_categoria_visitas=liquidacion_visitas,
-    ).first()
+def _resolve_valid_uit_value(
+    row: "ParsedRow", valid_values: set[int]
+) -> int | None:
+    """Resolve the source UIT, or its amount-implied fallback, from the catalog."""
+    def as_catalog_value(value: Decimal | None) -> int | None:
+        if value is None or value != value.to_integral_value():
+            return None
+        resolved_value = int(value)
+        return resolved_value if resolved_value in valid_values else None
 
-    if detalle is None:
-        detalle = DetalleHonorarioInspector.objects.create(
-            liquidacion_por_categoria_visitas=liquidacion_visitas,
-            recibo_mensual=None,
-            inspecciones_liquidadas=inspecciones_liquidadas,
-            inspecciones_programadas=inspecciones_programadas,
-            costo_por_inspeccion=costo_por_inspeccion,
-            monto_contribuido=monto_contribuido,
-            sub_total=monto_contribuido,
-            importe_bruto=importe_bruto,
-            descuento=descuento,
-            honorarios=honorarios,
-            tasa_descuento=tasa_descuento,
-            inspecciones_pagadas_hasta_mes_anterior=inspecciones_pagadas,
-            saldo_restante=saldo_restante,
-        )
-        detalle_created = True
-    else:
-        # Update missing/outdated fields so re-runs repair incomplete data
-        detalle_updated = False
-        fields_to_update = {
-            "inspecciones_liquidadas": inspecciones_liquidadas,
-            "inspecciones_programadas": inspecciones_programadas,
-            "costo_por_inspeccion": costo_por_inspeccion,
-            "monto_contribuido": monto_contribuido,
-            "sub_total": monto_contribuido,
-            "importe_bruto": importe_bruto,
-            "descuento": descuento,
-            "honorarios": honorarios,
-            "tasa_descuento": tasa_descuento,
-        }
-        for field, value in fields_to_update.items():
-            if getattr(detalle, field, None) is None and value is not None:
-                setattr(detalle, field, value)
-                detalle_updated = True
-        # Only update inspecciones_pagadas/saldo_restante if source is non-null
-        if inspecciones_pagadas is not None and detalle.inspecciones_pagadas_hasta_mes_anterior is None:
-            detalle.inspecciones_pagadas_hasta_mes_anterior = inspecciones_pagadas
-            detalle_updated = True
-        if saldo_restante is not None and detalle.saldo_restante is None:
-            detalle.saldo_restante = saldo_restante
-            detalle_updated = True
-        if detalle_updated:
-            detalle.save()
-        detalle_created = False
+    source_value = as_catalog_value(row.uit)
+    implied_value = as_catalog_value(row.uit_implicita)
 
-    return True, perfil_status, detalle_created
+    if row.validation_status in ("DIF_SUBTOTAL", "DIF_TOTAL"):
+        return implied_value
+    if source_value is not None:
+        return source_value
+    return implied_value
 
 
 def _create_legacy_liquidations(
@@ -1801,6 +1722,7 @@ def _create_legacy_liquidations(
         "liquidaciones_nuevas": 0,
         "liquidaciones_existentes": 0,
         "rechazadas_diff_alta": 0,
+        "rechazadas_sin_uit_valida": 0,
         "rechazadas_sin_tarifa": 0,
         "rechazadas_sin_datos": 0,
         "rechazadas_cip_no_resuelto": 0,
@@ -1809,8 +1731,6 @@ def _create_legacy_liquidations(
         "inspectores_asociados": 0,
         "inspectores_saltados": 0,
         "fallback_creados": 0,
-        "rh_detalles_creados": 0,
-        "rh_detalles_actualizados": 0,
         "comprobantes_creados": 0,
         "comprobantes_actualizados": 0,
         "comprobantes_omitidos": 0,
@@ -1819,6 +1739,7 @@ def _create_legacy_liquidations(
         "contactos_omitidos": 0,
     }
     perfil_cache: dict[str, tuple[object | None, str]] = {}
+    valid_uit_values = {int(value) for value in UITModel.objects.values_list("valor", flat=True)}
 
     # Filter rows that should be rejected structurally (already set by _parse_row)
     rows_to_process: list[ParsedRow] = []
@@ -1831,6 +1752,11 @@ def _create_legacy_liquidations(
             counters["rechazadas_sin_datos"] += 1
             continue
 
+        uit_valor = _resolve_valid_uit_value(row, valid_uit_values)
+        if uit_valor is None and row.existing_liquidacion_general is None:
+            counters["rechazadas_sin_uit_valida"] += 1
+            continue
+
         # Check CATEGORIA=0 / null_tariff
         if row.categoria_status == "null_tariff":
             if rechazar_sin_tarifa and row.existing_liquidacion_general is None:
@@ -1841,9 +1767,16 @@ def _create_legacy_liquidations(
             rows_to_process.append(row)
             continue
 
-        # Check diff rejection (only for rows with valid tariff lookup)
+        # Check diff rejection (only for rows with valid tariff lookup).
+        # A row can differ in either net or gross unit value; reject only when
+        # the largest difference exceeds the caller-provided threshold.
         if row.validation_status in ("DIF_SUBTOTAL", "DIF_TOTAL"):
-            if rechazar_dif_alta and row.existing_liquidacion_general is None:
+            if (
+                rechazar_dif_alta
+                and row.existing_liquidacion_general is None
+                and _diff_exceeds_threshold(row, umbral_dif)
+                and uit_valor is None
+            ):
                 counters["rechazadas_diff_alta"] += 1
                 continue
             # Existing rows are still processed so re-runs can repair inspector/RH detail.
@@ -1890,6 +1823,7 @@ def _create_legacy_liquidations(
                     f"NROREV={row.nrorev or ''}",
                     f"CATEGORIA={row.categoria_raw if row.categoria_raw is not None else ''}",
                     f"UIT_ARCHIVO={row.uit or ''}",
+                    f"UIT_USADA={uit_valor or ''}",
                     f"UIT_IMPLICITA={row.uit_implicita or ''}",
                     f"UIT_VALIDACION_STATUS={row.uit_implicita_status}",
                     f"VALIDATION_STATUS={row.validation_status}",
@@ -1912,13 +1846,12 @@ def _create_legacy_liquidations(
                     # Resolve entity/project/municipalidad
                     entidad, municipalidad, proyecto = _resolve_entidad_municipalidad_proyecto(row)
 
-                    # Resolve UIT: trust the Excel column (row.uit).
-                    # ensure_uit_for_legacy materializes the UIT record on-demand so
-                    # FK uit_id is never NULL.
+                    # Resolve a catalog-backed UIT, preferring the amount-implied
+                    # value when the CSV UIT does not explain the source amount.
                     uit_a_usar = None
-                    if row.uit is not None:
+                    if uit_valor is not None:
                         uit_a_usar = _LegacyVisitasCore.ensure_uit_for_legacy(
-                            int(row.uit),
+                            uit_valor,
                             row.fecha,
                         )
 
@@ -1960,7 +1893,7 @@ def _create_legacy_liquidations(
                         tarifa_aplicada=(tarifa if modo_calculo == ModoCalculoLiquidacion.TARIFA else None),
                     )
 
-                inspector_created, inspector_status, detalle_created = _create_legacy_inspector_detail(
+                inspector_created, inspector_status = _ensure_legacy_inspector(
                     command=command,
                     row=row,
                     liquidacion_visitas=liquidacion_visitas,
@@ -1969,16 +1902,6 @@ def _create_legacy_liquidations(
                 )
                 if inspector_created:
                     counters["inspectores_asociados"] += 1
-                    if detalle_created:
-                        counters["rh_detalles_creados"] += 1
-                        command._log_success(
-                            f"  Fila {row.row_index}: RH detalle inspector CREADO para numero {row.id_val or ''}"
-                        )
-                    else:
-                        counters["rh_detalles_actualizados"] += 1
-                        command._log(
-                            f"  Fila {row.row_index}: RH detalle inspector ACTUALIZADO para numero {row.id_val or ''}"
-                        )
                     if inspector_status.startswith("FALLBACK_"):
                         counters["fallback_creados"] += 1
                         reporte_writer.writerow([
@@ -2062,15 +1985,6 @@ def _reset_legacy_io(command) -> int:
         descripcion_legacy__startswith="IMPORT_LEGACY_IO",
     )
     count_lg = legacy_lgs.count()
-
-    # DetalleHonorarioInspector protects LiquidacionPorCategoriaVisitas, so it
-    # must be removed explicitly before deleting the legacy liquidations.
-    detalle_count, _ = DetalleHonorarioInspector.objects.filter(
-        liquidacion_por_categoria_visitas__liquidacion_general__in=legacy_lgs,
-        recibo_mensual__isnull=True,
-    ).delete()
-    if detalle_count:
-        command._log(f"  Eliminados {detalle_count} detalles RH inspector legacy IO.")
 
     legacy_lgs.delete()
     command._log(f"  Eliminadas {count_lg} liquidaciones legacy IO.")
@@ -2248,7 +2162,7 @@ class Command(BaseCommand):
                         skipped_by_date += 1
                         continue
 
-                # ── Reusar liquidación existente y procesar inspector/RH ─────
+                # ── Reusar liquidación existente ──────────────────────────────
                 id_val = parsed.id_val
                 existing_inspeccion = None
                 if id_val is not None and not self.reset:
@@ -2260,14 +2174,7 @@ class Command(BaseCommand):
 
                 if existing_inspeccion is not None:
                     lg = existing_inspeccion.liquidacion
-                    # ── Completeness check: skip only if ALL artifacts are complete ─
-                    # RH detail must have inspecciones_liquidadas populated
-                    rh_complete = DetalleHonorarioInspector.objects.filter(
-                        liquidacion_por_categoria_visitas__liquidacion_general=lg,
-                        inspecciones_liquidadas__isnull=False,
-                        inspecciones_liquidadas__gt=0,
-                    ).exists()
-                    # Comprobante must exist (active)
+                    # Skip existing IO when their non-RH related records are complete.
                     has_comprobante = LiquidacionComprobante.objects.filter(
                         liquidacion_general=lg,
                         activo=True,
@@ -2278,14 +2185,14 @@ class Command(BaseCommand):
                         principal=True,
                     ).exists()
 
-                    if rh_complete and has_comprobante and has_contacto:
+                    if has_comprobante and has_contacto:
                         skipped += 1
                         continue
-                    # Row is incomplete — repair it
+                    # Row is incomplete — repair it without touching RH details.
                     parsed.existing_liquidacion_general = lg
                     self._log_warning(
                         f"  INCOMPLETA row {idx}: numero {id_val} ya existe; "
-                        f"reparando (rh={rh_complete} comp={has_comprobante} contacto={has_contacto})"
+                        f"reparando (comp={has_comprobante} contacto={has_contacto})"
                     )
 
                 parsed_rows.append(parsed)
@@ -2475,8 +2382,6 @@ class Command(BaseCommand):
                 self._log(f"  Inspectores asociados:           {db_counters.get('inspectores_asociados', 0)}")
                 self._log(f"  Inspectores saltados:            {db_counters.get('inspectores_saltados', 0)}")
                 self._log(f"  Fallback CIP creados:            {db_counters.get('fallback_creados', 0)}")
-                self._log(f"  RH detalles creados:             {db_counters.get('rh_detalles_creados', 0)}")
-                self._log(f"  RH detalles actualizados:       {db_counters.get('rh_detalles_actualizados', 0)}")
                 self._log(f"  Comprobantes creados:           {db_counters.get('comprobantes_creados', 0)}")
                 self._log(f"  Comprobantes actualizados:     {db_counters.get('comprobantes_actualizados', 0)}")
                 self._log(f"  Comprobantes omitidos:         {db_counters.get('comprobantes_omitidos', 0)}")

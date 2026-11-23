@@ -24,6 +24,7 @@ from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_
     LiquidacionGeneralCoreService,
 )
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_porcentaje_obra_core_service import (
+    CotizacionPOContexto,
     LiquidacionPorcentajeObraCoreService,
 )
 from modules.liquidaciones.domain.services.flujos.liquidacion_especifico.liquidacion_edificaciones_flujo import (
@@ -174,21 +175,47 @@ class LiquidacionEdificacionesLegacyOrchestrator(LiquidacionPOValidationMixin):
         estrategia_cotizacion = getattr(
             payload.liquidacion_especifica, "estrategia_cotizacion", None
         )
-        cantidad_especialidades_habilitadas = None
-        if estrategia_cotizacion == EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES:
+        cantidad_especialidades_habilitadas = getattr(
+            payload.liquidacion_especifica,
+            "cantidad_especialidades_habilitadas",
+            None,
+        )
+        if estrategia_cotizacion in (
+            EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES,
+            EstrategiaCotizacionPO.TOTAL_EXPLICITO,
+        ):
             cantidad_especialidades_habilitadas = len(
                 self._obtener_especialidades_vigentes_para_tipo(
                     TipoLiquidacion.EDIFICACION, fecha=fecha_registro
                 )
             )
 
-        # Pure calculation — no persistence
-        return self.porcentaje_core.calcular_cotizacion_po(
-            valor_declarado=valor_declarado,
-            tarifas=tarifas_aplicadas,
-            igv_porcentaje=Decimal(str(igv.valor)),
-            derecho=derecho,
-            uit_valor=Decimal(str(uit.valor)),
+        return self.porcentaje_core.calcular_cotizacion_po_estrategia(
+            CotizacionPOContexto(
+                estrategia=(
+                    estrategia_cotizacion
+                    or EstrategiaCotizacionPO.NORMAL_SELECCIONADAS
+                ),
+                participantes=tarifas_aplicadas,
+                cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
+                valor_declarado=valor_declarado,
+                total_explicito=getattr(
+                    payload.liquidacion_especifica, "total_explicito", None
+                ),
+                igv_porcentaje=Decimal(str(igv.valor)),
+                uit_valor=Decimal(str(uit.valor)),
+                derecho=self.porcentaje_core.derecho_a_contexto(derecho),
+                override_subtotal=(
+                    payload.cotizacion_legacy.sub_total
+                    if getattr(payload, "cotizacion_legacy", None) is not None
+                    else None
+                ),
+                override_total=(
+                    payload.cotizacion_legacy.total
+                    if getattr(payload, "cotizacion_legacy", None) is not None
+                    else None
+                ),
+            )
         )
 
     def crear_legacy_proceso(
@@ -288,8 +315,15 @@ class LiquidacionEdificacionesLegacyOrchestrator(LiquidacionPOValidationMixin):
         estrategia_cotizacion = getattr(
             payload.liquidacion_especifica, "estrategia_cotizacion", None
         )
-        cantidad_especialidades_habilitadas = None
-        if estrategia_cotizacion == EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES:
+        cantidad_especialidades_habilitadas = getattr(
+            payload.liquidacion_especifica,
+            "cantidad_especialidades_habilitadas",
+            None,
+        )
+        if estrategia_cotizacion in (
+            EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES,
+            EstrategiaCotizacionPO.TOTAL_EXPLICITO,
+        ):
             cantidad_especialidades_habilitadas = len(
                 self._obtener_especialidades_vigentes_para_tipo(
                     TipoLiquidacion.EDIFICACION, fecha=fecha_registro
@@ -339,6 +373,9 @@ class LiquidacionEdificacionesLegacyOrchestrator(LiquidacionPOValidationMixin):
                 tipo_tramite=getattr(payload, "tipo_tramite", None),
                 estrategia_cotizacion=estrategia_cotizacion,
                 cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
+                total_explicito=getattr(
+                    payload.liquidacion_especifica, "total_explicito", None
+                ),
                 override_subtotal=(
                     payload.cotizacion_legacy.sub_total
                     if getattr(payload, "cotizacion_legacy", None) is not None

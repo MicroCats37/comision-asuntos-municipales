@@ -1,6 +1,13 @@
 import csv
+from datetime import date
 from pathlib import Path
 
+import pytest
+
+from modules.liquidaciones.domain.constants import EstrategiaCotizacionPO
+from modules.liquidaciones.management.commands.import_legacy_edificaciones import (
+    _estrategia_legacy_por_proyecto,
+)
 from modules.liquidaciones.management.commands.legacy_edif.columns import (
     COL_FECHAPRES1,
     COL_FECHAPRES2,
@@ -66,3 +73,47 @@ def test_column_constants_match_edif_csv_header():
     }
 
     assert {index: header[index] for index in expected_columns} == expected_columns
+
+
+@pytest.mark.parametrize(
+    ("proyecto", "fecha_registro", "estrategia", "habilitadas"),
+    [
+        (
+            "AMPLIACION DE ESTRUCTURAS",
+            date(2026, 5, 1),
+            EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES,
+            3,
+        ),
+        (
+            "REINTEGRO DE INST. ELECTRICAS",
+            date(2026, 4, 30),
+            EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES,
+            4,
+        ),
+        (
+            "MODIFICACION DE LICENCIA DE ESTRUCTURAS",
+            date(2026, 9, 9),
+            EstrategiaCotizacionPO.NORMAL_SELECCIONADAS,
+            None,
+        ),
+        (
+            "TERCERA REVISION DE ESTRUCTURAS",
+            date(2026, 5, 5),
+            EstrategiaCotizacionPO.NORMAL_SELECCIONADAS,
+            None,
+        ),
+        (
+            "3RA. REVISION DE ESTRUCTURAS",
+            date(2010, 5, 5),
+            EstrategiaCotizacionPO.NORMAL_SELECCIONADAS,
+            None,
+        ),
+    ],
+)
+def test_legacy_project_classification_uses_the_historical_h_snapshot(
+    proyecto, fecha_registro, estrategia, habilitadas
+):
+    assert _estrategia_legacy_por_proyecto(proyecto, fecha_registro) == (
+        estrategia,
+        habilitadas,
+    )

@@ -677,31 +677,45 @@ class LiquidacionPorcentajeObraCoreService:
         total_explicito = contexto.total_explicito.quantize(
             Decimal("0.01"), rounding=ROUND_HALF_UP
         )
-        # El IGV se extrae por RESTA para que subtotal + igv == total exacto.
-        subtotal = (total_explicito / (Decimal("1") + contexto.igv_porcentaje)).quantize(
-            Decimal("0.01"), rounding=ROUND_HALF_UP
+        usa_montos_legacy = (
+            contexto.override_subtotal is not None
+            and contexto.override_total is not None
         )
+        if usa_montos_legacy:
+            # The legacy source owns both amounts; do not recalculate the subtotal.
+            subtotal = contexto.override_subtotal.quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            total_explicito = contexto.override_total.quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+        else:
+            # El IGV se extrae por RESTA para que subtotal + igv == total exacto.
+            subtotal = (total_explicito / (Decimal("1") + contexto.igv_porcentaje)).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
         igv_monto = total_explicito - subtotal
 
         # Derechos: validación contra el subtotal previo al IGV (nunca elevación).
-        minimo = contexto.uit_valor * contexto.derecho.porcentaje_minimo_uit
-        if subtotal < minimo:
-            raise BusinessError(
-                "El subtotal ({}) es menor al derecho mínimo ({}).".format(
-                    subtotal, minimo
-                ),
-                code="PO_TOTAL_EXPLICITO_BAJO_DERECHO_MINIMO",
-            )
-        if (
-            contexto.derecho.derecho_maximo is not None
-            and subtotal > contexto.derecho.derecho_maximo
-        ):
-            raise BusinessError(
-                "El subtotal ({}) excede el derecho máximo ({}).".format(
-                    subtotal, contexto.derecho.derecho_maximo
-                ),
-                code="PO_TOTAL_EXPLICITO_EXCEDE_DERECHO_MAXIMO",
-            )
+        if not usa_montos_legacy:
+            minimo = contexto.uit_valor * contexto.derecho.porcentaje_minimo_uit
+            if subtotal < minimo:
+                raise BusinessError(
+                    "El subtotal ({}) es menor al derecho mínimo ({}).".format(
+                        subtotal, minimo
+                    ),
+                    code="PO_TOTAL_EXPLICITO_BAJO_DERECHO_MINIMO",
+                )
+            if (
+                contexto.derecho.derecho_maximo is not None
+                and subtotal > contexto.derecho.derecho_maximo
+            ):
+                raise BusinessError(
+                    "El subtotal ({}) excede el derecho máximo ({}).".format(
+                        subtotal, contexto.derecho.derecho_maximo
+                    ),
+                    code="PO_TOTAL_EXPLICITO_EXCEDE_DERECHO_MAXIMO",
+                )
 
         cuotas = self._repartir_por_habilitadas(subtotal, habilitadas, participantes)
         # En TOTAL_EXPLICITO los porcentajes quedan NULL (invariante I-3).
@@ -721,7 +735,7 @@ class LiquidacionPorcentajeObraCoreService:
             valor_declarado=contexto.valor_declarado,
             total_explicito=total_explicito,
             porcentaje_liquidacion=None,
-            porcentaje_tarifa=self._resolver_porcentaje_tarifa(contexto),
+            porcentaje_tarifa=None,
             tipo_tramite=None,
             derecho_minimo=self._calcular_derecho_minimo(contexto),
             derecho_maximo=contexto.derecho.derecho_maximo,
@@ -863,9 +877,16 @@ class LiquidacionPorcentajeObraCoreService:
         for participante, cuota in cuotas:
             detalles.append(
                 DetallePorcentajeObraData(
-                    tarifa_aplicada=participante,
+                    tarifa_aplicada=(
+                        participante if porcentaje_aplicado is not None else None
+                    ),
                     porcentaje_aplicado=porcentaje_aplicado,
                     subtotal=cuota,
+                    especialidad_id=(
+                        participante.especialidad_id
+                        if porcentaje_aplicado is None
+                        else None
+                    ),
                     importe_parcial=cuota,
                     ajuste_redondeo=Decimal("0.00"),
                 )
@@ -1073,13 +1094,21 @@ class LiquidacionPorcentajeObraCoreService:
         cualquier edición anularía el honorario del delegado.
         """
         for detalle in detalles:
-            tarifa = TarifaPorcentajeObra.objects.get(
-                id=detalle.tarifa_aplicada.tarifa_id
+            tarifa_data = detalle.tarifa_aplicada
+            tarifa = (
+                TarifaPorcentajeObra.objects.get(id=tarifa_data.tarifa_id)
+                if tarifa_data is not None
+                else None
+            )
+            especialidad_id = (
+                tarifa_data.especialidad_id
+                if tarifa_data is not None
+                else detalle.especialidad_id
             )
             LiquidacionPorcentajeObraDetalle.objects.create(
                 liquidacion_porcentaje=liquidacion_po,
                 tarifa_aplicada=tarifa,
-                especialidad_id=detalle.tarifa_aplicada.especialidad_id,
+                especialidad_id=especialidad_id,
                 porcentaje_aplicado=detalle.porcentaje_aplicado,
                 subtotal=detalle.subtotal,
                 importe_parcial=detalle.importe_parcial,

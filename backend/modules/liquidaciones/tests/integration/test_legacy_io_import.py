@@ -17,6 +17,7 @@ import io
 import tempfile
 from datetime import date
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 
@@ -33,6 +34,8 @@ from modules.liquidaciones.management.commands.import_legacy_inspeccion_obra imp
     _normalize_usuario_to_username,
     _is_xlsx,
     _detect_delimiter,
+    _diff_exceeds_threshold,
+    _resolve_valid_uit_value,
     _build_uit_validacion_detalle,
     _SENTINEL_DATE,
     _COL_ID,
@@ -1032,3 +1035,34 @@ class TestIOImportCommandRealFile:
             # CATEGORIA=0 still carries NROREV data
             assert cat0_row["NROREV"] == "36"
             assert cat0_row["VISITAS_STATUS"] == "from_nrorev"
+
+
+class TestDiffThreshold:
+    def test_rejects_only_when_a_difference_exceeds_the_threshold(self):
+        row = SimpleNamespace(
+            diff_subtotal_unitario_legacy=Decimal("1.00"),
+            diff_total_unitario_legacy=Decimal("0.25"),
+        )
+
+        assert not _diff_exceeds_threshold(row, Decimal("1.00"))
+        assert _diff_exceeds_threshold(row, Decimal("0.99"))
+
+
+class TestValidUitResolution:
+    def test_uses_implied_valid_uit_when_source_uit_does_not_match_amount(self):
+        row = SimpleNamespace(
+            uit=Decimal("4950"),
+            uit_implicita=Decimal("5150"),
+            validation_status="DIF_SUBTOTAL",
+        )
+
+        assert _resolve_valid_uit_value(row, {4950, 5150}) == 5150
+
+    def test_rejects_difference_when_implied_uit_is_not_in_catalog(self):
+        row = SimpleNamespace(
+            uit=Decimal("4950"),
+            uit_implicita=Decimal("5474.14"),
+            validation_status="DIF_SUBTOTAL",
+        )
+
+        assert _resolve_valid_uit_value(row, {4950, 5150}) is None

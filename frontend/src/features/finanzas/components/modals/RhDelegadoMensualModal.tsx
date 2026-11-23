@@ -96,6 +96,10 @@ import {
   buildDelegadoEditSelection,
   type RHUnresolvedDetail,
 } from "@/features/finanzas/utils/rh-mensual-edicion";
+import {
+  ordenarCandidatasRh,
+  ordenarSeleccionRh,
+} from "@/features/finanzas/utils/rh-candidatas-order";
 import { siguienteNumeroRhSugerido } from "@/features/finanzas/utils/rh-numero-rh";
 import {
   getPreviousPeriodParts,
@@ -453,7 +457,10 @@ export function RhDelegadoMensualModal({
     enabled: step === 2,
   });
 
-  const candidatas: CandidataDelegado[] = candidatasData?.candidatas ?? [];
+  const candidatas = useMemo(
+    () => ordenarCandidatasRh(candidatasData?.candidatas ?? []),
+    [candidatasData?.candidatas],
+  );
   const delegado = candidatasData?.delegado;
 
   // ── Derived from candidatas (after declaration to avoid TDZ) ─────────────────
@@ -1533,7 +1540,9 @@ export function RhDelegadoMensualModal({
                 <div className="w-16 shrink-0" />
               </div>
               <div className="border border-t-0 border-primary/20 rounded-b-lg overflow-x-auto">
-                {(getSelectedItems(flowKey) as DelegadoSelectionEntry[]).map(
+                {ordenarSeleccionRh(
+                  getSelectedItems(flowKey) as DelegadoSelectionEntry[],
+                ).map(
                   (entry) => {
                     const { cotizarItem, candidate } = entry;
                     return (

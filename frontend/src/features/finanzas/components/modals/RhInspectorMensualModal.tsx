@@ -88,6 +88,10 @@ import {
   collectInspectorUnresolvedDetails,
 } from "@/features/finanzas/utils/rh-mensual-edicion";
 import {
+  ordenarCandidatasRh,
+  ordenarSeleccionRh,
+} from "@/features/finanzas/utils/rh-candidatas-order";
+import {
   getPreviousPeriodParts,
   isFutureRhPeriod,
   parseRhPeriod,
@@ -367,7 +371,10 @@ export function RhInspectorMensualModal({
     enabled: step === 2,
   });
 
-  const candidatos: InspectorCandidataItem[] = candidatosData?.candidatos ?? [];
+  const candidatos = useMemo(
+    () => ordenarCandidatasRh(candidatosData?.candidatos ?? []),
+    [candidatosData?.candidatos],
+  );
 
   // ── Derived from candidatos (after declaration to avoid TDZ) ─────────────────
   const detalleRow = detalleLiquidacionGeneralId
@@ -1540,7 +1547,9 @@ export function RhInspectorMensualModal({
                 <div className="w-16 shrink-0" />
               </div>
               <div className="border border-t-0 border-primary/20 rounded-b-lg overflow-x-auto">
-                {(getSelectedItems(flowKey) as InspectorSelectionEntry[]).map(
+                {ordenarSeleccionRh(
+                  getSelectedItems(flowKey) as InspectorSelectionEntry[],
+                ).map(
                   (entry) => {
                     const { cotizarItem, candidate } = entry;
                     /**

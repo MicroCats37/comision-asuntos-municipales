@@ -487,11 +487,26 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
             ),
             detalles=[
                 CotizacionPorcentajeObraDetalleResult(
-                    tarifa_id=d.tarifa_aplicada.tarifa_id,
+                    tarifa_id=(
+                        d.tarifa_aplicada.tarifa_id
+                        if d.tarifa_aplicada is not None
+                        else None
+                    ),
                     especialidad=EspecialidadResult(
-                        id=d.tarifa_aplicada.especialidad_id,
-                        nombre=d.tarifa_aplicada.especialidad_nombre or "",
-                    ) if d.tarifa_aplicada.especialidad_id else None,
+                        id=(
+                            d.tarifa_aplicada.especialidad_id
+                            if d.tarifa_aplicada is not None
+                            else d.especialidad_id
+                        ),
+                        nombre=(
+                            d.tarifa_aplicada.especialidad_nombre or ""
+                            if d.tarifa_aplicada is not None
+                            else ""
+                        ),
+                    ) if (
+                        d.tarifa_aplicada is not None
+                        or d.especialidad_id is not None
+                    ) else None,
                     porcentaje_aplicado=d.porcentaje_aplicado,
                     subtotal=d.subtotal,
                 )

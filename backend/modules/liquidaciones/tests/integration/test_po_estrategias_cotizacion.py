@@ -236,6 +236,36 @@ def test_matriz_3x3_modos_conserva_invariantes(
         assert cotizacion.total_subtotal + cotizacion.igv_monto == cotizacion.total
 
 
+@pytest.mark.django_db
+def test_total_explicito_legacy_preserva_subtotal_total_y_distribucion(
+    derecho_po_sin_rangos, especialidad_estructuras
+):
+    service = LiquidacionPorcentajeObraCoreService()
+    cotizacion = service.calcular_cotizacion_po_estrategia(
+        _contexto(
+            TOTAL,
+            [_participante(especialidad_estructuras)],
+            derecho_po_sin_rangos,
+            total_explicito=Decimal("2324.98"),
+            override_subtotal=Decimal("1970.32"),
+            override_total=Decimal("2324.98"),
+        )
+    )
+
+    assert cotizacion.total_subtotal == Decimal("1970.32")
+    assert cotizacion.total == Decimal("2324.98")
+    assert cotizacion.igv_monto == Decimal("354.66")
+    assert cotizacion.porcentaje_liquidacion is None
+    assert cotizacion.porcentaje_tarifa is None
+    assert cotizacion.detalles[0].subtotal == Decimal("656.77")
+    assert cotizacion.detalles[0].tarifa_aplicada is None
+    assert cotizacion.detalles[0].porcentaje_aplicado is None
+    assert cotizacion.detalles[0].especialidad_id == str(especialidad_estructuras.id)
+    assert cotizacion.acumulacion is not None
+    assert cotizacion.acumulacion.porcentaje_acumulado is None
+    assert cotizacion.acumulacion.subtotal_acumulado == Decimal("1313.55")
+
+
 # ── Aritmética por estrategia ──────────────────────────────────────────────────
 
 @pytest.mark.django_db
