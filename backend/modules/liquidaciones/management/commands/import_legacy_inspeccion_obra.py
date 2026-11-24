@@ -1933,7 +1933,7 @@ def _resolve_valid_uit_value(row: "ParsedRow", valid_values: set[int]) -> int | 
     source_value = as_catalog_value(row.uit)
     implied_value = as_catalog_value(row.uit_implicita)
 
-    epoca = _uit_vigente_en_fecha(row.fecha)
+    epoca = _uit_vigente_en_fecha(getattr(row, "fecha", None))
     if epoca is not None and epoca in valid_values:
         return epoca
     if source_value is not None:

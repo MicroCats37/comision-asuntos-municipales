@@ -1172,20 +1172,36 @@ class TestDiffThreshold:
 
 
 class TestValidUitResolution:
-    def test_uses_implied_valid_uit_when_source_uit_does_not_match_amount(self):
+    @pytest.mark.django_db
+    def test_usa_el_uit_vigente_a_la_fecha_de_la_fila(self):
+        """El UIT de una liquidacion es SIEMPRE el vigente a su fecha.
+
+        Aunque el importe del CSV no cuadre con el UIT declarado, manda la
+        epoca de la fila: aceptar el UIT implicita de otro ano deja la
+        liquidacion valuada con una tarifa que no le corresponde.
+        """
+        from modules.finanzas.domain.models.impuestos import UIT
+
+        UIT.objects.create(
+            valor=4950,
+            periodo_inicio=date(2023, 1, 1),
+            periodo_fin=date(2023, 12, 31),
+        )
         row = SimpleNamespace(
             uit=Decimal("4950"),
             uit_implicita=Decimal("5150"),
             validation_status="DIF_SUBTOTAL",
+            fecha=date(2023, 6, 1),
         )
 
-        assert _resolve_valid_uit_value(row, {4950, 5150}) == 5150
+        assert _resolve_valid_uit_value(row, {4950, 5150}) == 4950
 
     def test_rejects_difference_when_implied_uit_is_not_in_catalog(self):
         row = SimpleNamespace(
             uit=Decimal("4950"),
             uit_implicita=Decimal("5474.14"),
             validation_status="DIF_SUBTOTAL",
+            fecha=None,
         )
 
-        assert _resolve_valid_uit_value(row, {4950, 5150}) is None
+        assert _resolve_valid_uit_value(row, {4950, 5150}) == 4950
