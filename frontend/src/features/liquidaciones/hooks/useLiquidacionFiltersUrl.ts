@@ -37,6 +37,7 @@ export function useLiquidacionFiltersUrl(): {
         { filterKey: "razon_social", paramKey: "rs" },
         { filterKey: "direccion", paramKey: "dir" },
         { filterKey: "documento", paramKey: "doc" },
+        { filterKey: "expediente", paramKey: "exp" },
         { filterKey: "comprobante_serie", paramKey: "comp_serie" },
         { filterKey: "comprobante_numero", paramKey: "comp_num" },
       ],

@@ -13,7 +13,7 @@
 import type { EstrategiaCotizacionPOOut } from "../schemas/liquidacion-edificaciones.schema";
 import {
   ESTRATEGIA_NORMAL,
-  ESTRATEGIA_TOTAL,
+  estrategiaUsaTotalExplicito,
   type EstrategiaCotizacionPO,
   esEstrategiaValida,
 } from "../schemas/liquidacion-po-estrategia.schema";
@@ -25,12 +25,17 @@ export const ESTRATEGIA_POR_DEFECTO: EstrategiaCotizacionPO = ESTRATEGIA_NORMAL;
 /** Campos del formulario que la estrategia activa puede reclamar. */
 export type CampoEstrategia = "valor_declarado" | "total_explicito";
 
+export { estrategiaUsaTotalExplicito };
+
 /**
  * Resuelve la estrategia persistida de una liquidación.
  *
  * `null`/`undefined`/un valor desconocido → `NORMAL_SELECCIONADAS`: las
  * liquidaciones legacy (y las que aún no tienen estrategia) se rehydratan con
  * el modo vigente.
+ *
+ * `TOTAL_EXPLICITO_SELECCIONADAS` SÍ se reconoce: si cayera a NORMAL, la
+ * vista de detalle y la recotización aplicarían la regla equivocada.
  */
 export function resolverEstrategiaPersistida(
   tipo: { estrategia_cotizacion?: string | null } | null | undefined,
@@ -46,16 +51,9 @@ export function estrategiaUsaValorDeclarado(
   return true;
 }
 
-/** `true` si la estrategia usa el total final autoritativo con IGV. */
-export function estrategiaUsaTotalExplicito(
-  estrategia: EstrategiaCotizacionPO,
-): boolean {
-  return estrategia === ESTRATEGIA_TOTAL;
-}
-
 /**
- * Campo que debe limpiarse al cambiar de estrategia. TOTAL_EXPLICITO conserva
- * ambos datos; el resto no usa el total explícito.
+ * Campo que debe limpiarse al cambiar de estrategia. Las estrategias con
+ * total explícito conservan ambos datos; el resto no usa el total explícito.
  */
 export function campoProhibidoPorEstrategia(
   estrategia: EstrategiaCotizacionPO,

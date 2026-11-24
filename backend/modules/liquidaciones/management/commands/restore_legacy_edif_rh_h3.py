@@ -84,6 +84,10 @@ def source_by_key(path: Path) -> tuple[dict[tuple[int, str, str], dict[str, Deci
 
 
 def po_category(porcentaje) -> str:
+    if porcentaje.estrategia_cotizacion == "TOTAL_EXPLICITO_SELECCIONADAS":
+        # Importe autoritativo repartido entre las SELECCIONADAS: el detalle
+        # conserva el importe completo (no es un reparto por H habilitadas).
+        return "TOTAL_EXPLICITO_SELECCIONADAS"
     if porcentaje.estrategia_cotizacion == "TOTAL_EXPLICITO":
         return "TOTAL_EXPLICITO"
     if porcentaje.porcentaje_tarifa == Decimal("0.0005"):

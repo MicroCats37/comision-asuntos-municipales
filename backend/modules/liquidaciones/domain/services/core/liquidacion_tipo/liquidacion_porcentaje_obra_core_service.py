@@ -19,6 +19,8 @@ Reglas del motor (invariantes normativos del change):
 - I-3  (modo 3) padre/detalle/acumulación sin porcentaje (NULL)
 - I-4  (modo 1) nunca existe acumulación
 - I-5  no existe acumulación con diferencia cero
+- I-6  (modo 4) padre sin porcentaje, sin acumulación y sin H; los porcentajes
+       de detalle son REFERENCIA
 
 El motor NO consulta la base de datos: los valores históricos (IGV, UIT,
 derechos, tarifa) los resuelve el llamador y se los entrega ya resueltos, de
@@ -90,6 +92,39 @@ class AcumulacionPOCotizacion(BaseSchema):
     subtotal_acumulado: Decimal
 
 
+def resolver_montos_total_seleccionadas(
+    *,
+    total_enviado: Optional[Decimal],
+    subtotal_enviado: Optional[Decimal],
+    total_persistido: Optional[Decimal],
+    subtotal_persistido: Optional[Decimal],
+) -> tuple[Optional[Decimal], Optional[Decimal]]:
+    """
+    Resuelve los importes autoritativos de TOTAL_EXPLICITO_SELECCIONADAS.
+
+    Se usa en los caminos de EDICIÓN (PATCH y cotizar-edición), donde el importe
+    histórico ya está persistido y debe preservarse tal cual:
+
+    - TOTAL: lo enviado → lo persistido (`PO.total_explicito` o `LG.total`).
+    - SUBTOTAL: lo enviado → el subtotal histórico persistido (`LG.sub_total`)
+      cuando el total NO cambió → `None` (lo deriva el motor del total por IGV)
+      cuando el total SÍ cambió.
+
+    NUNCA se recalcula desde el valor declarado ni desde la tarifa.
+    """
+    total = total_enviado if total_enviado is not None else total_persistido
+    if subtotal_enviado is not None:
+        return total, subtotal_enviado
+    if (
+        total_enviado is not None
+        and total_persistido is not None
+        and total_enviado != total_persistido
+    ):
+        # El total cambió y no se envió subtotal: se deriva del total (IGV).
+        return total, None
+    return total, subtotal_persistido
+
+
 class CotizacionPOContexto(BaseSchema):
     """
     Entrada canónica del motor único de cotización PO.
@@ -104,7 +139,8 @@ class CotizacionPOContexto(BaseSchema):
     cantidad_especialidades_habilitadas: Optional[int] = Field(
         default=None,
         description="H (habilitadas del catálogo en la fecha efectiva). "
-        "Obligatorio en TARIFA_HABILITADAS_PARTICIPANTES y TOTAL_EXPLICITO.",
+        "Obligatorio en TARIFA_HABILITADAS_PARTICIPANTES y TOTAL_EXPLICITO. "
+        "NUNCA se usa ni se persiste en TOTAL_EXPLICITO_SELECCIONADAS (queda NULL).",
     )
     porcentaje_tarifa: Optional[Decimal] = Field(
         default=None,
@@ -113,6 +149,12 @@ class CotizacionPOContexto(BaseSchema):
     valor_declarado: Optional[Decimal] = None
     total_explicito: Optional[Decimal] = Field(
         default=None, description="Total final autoritativo con IGV (modo 3)."
+    )
+    subtotal_explicito: Optional[Decimal] = Field(
+        default=None,
+        description="Subtotal autoritativo sin IGV (TOTAL_EXPLICITO_SELECCIONADAS). "
+        "Si no viene, el motor lo deriva del total por IGV. Nunca se recalcula "
+        "desde el valor declarado ni desde la tarifa.",
     )
     igv_porcentaje: Decimal = Decimal("0")
     uit_valor: Decimal = Decimal("0")
@@ -139,7 +181,7 @@ class CotizacionPOEstrategiaData(BaseSchema):
     derecho_maximo: Optional[Decimal] = None
     porcentaje_minimo_uit: Optional[Decimal] = None
     derecho_aplicado_id: Optional[str] = None
-    cantidad_especialidades_habilitadas: int = 0
+    cantidad_especialidades_habilitadas: Optional[int] = None
     count_participantes: int = 0
     detalles: List[DetallePorcentajeObraData] = Field(default_factory=list)
     total_subtotal: Decimal
@@ -300,6 +342,10 @@ class LiquidacionPorcentajeObraCoreService:
           distribuida se proyecta como acumulación (I-1, I-2).
         - TOTAL_EXPLICITO: el total con IGV es autoritativo; se extrae el
           subtotal, se reparte `subtotal / H` y los porcentajes quedan NULL (I-3).
+        - TOTAL_EXPLICITO_SELECCIONADAS: el total (y el subtotal, si viene) es
+          autoritativo y se reparte EXCLUSIVAMENTE entre las seleccionadas; H
+          no se exige, no se resuelve y no se persiste (queda NULL), los
+          porcentajes son REFERENCIA y nunca hay acumulación.
 
         Los invariantes se verifican ANTES de devolver (verificar_invariantes_po).
         """
@@ -316,6 +362,8 @@ class LiquidacionPorcentajeObraCoreService:
             cotizacion = self._calcular_estrategia_tarifa_habilitadas(contexto)
         elif estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO:
             cotizacion = self._calcular_estrategia_total_explicito(contexto)
+        elif estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS:
+            cotizacion = self._calcular_estrategia_total_explicito_seleccionadas(contexto)
         else:
             raise BusinessError(
                 f"Estrategia de cotización no soportada: {estrategia}",
@@ -335,6 +383,8 @@ class LiquidacionPorcentajeObraCoreService:
         - I-3  (modo 3) padre, detalle y acumulación sin porcentaje (NULL)
         - I-4  (modo 1) no existe acumulación
         - I-5  no existe acumulación con diferencia cero
+        - I-6  (modo 4) padre sin porcentaje, sin acumulación y sin H; los
+               porcentajes de detalle son REFERENCIA (se permiten)
 
         Levanta `BusinessError` (400) antes de cualquier commit: nunca se
         persisten números que no cierran.
@@ -429,6 +479,30 @@ class LiquidacionPorcentajeObraCoreService:
                     "El porcentaje del padre no coincide con la suma de los porcentajes "
                     "de detalle más el porcentaje acumulado.",
                     code="PO_INVARIANTE_PORCENTAJE",
+                )
+
+        if cotizacion.estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS:
+            # El padre NO lleva porcentaje: el importe es autoritativo y los
+            # porcentajes de detalle son sólo REFERENCIA (no son fórmula).
+            if cotizacion.porcentaje_liquidacion is not None:
+                raise BusinessError(
+                    "TOTAL_EXPLICITO_SELECCIONADAS no admite porcentaje en el padre.",
+                    code="PO_INVARIANTE_PORCENTAJES_NULL",
+                )
+            # Nunca hay acumulación: el subtotal se reparte íntegro entre las
+            # seleccionadas (invariante I-1 sin fila de acumulación).
+            if cotizacion.acumulacion is not None:
+                raise BusinessError(
+                    "TOTAL_EXPLICITO_SELECCIONADAS no genera acumulación.",
+                    code="PO_INVARIANTE_SIN_ACUMULACION",
+                )
+            # H (habilitadas) queda fuera del contrato de esta estrategia: NUNCA
+            # se exige, se resuelve ni se persiste (siempre NULL).
+            if cotizacion.cantidad_especialidades_habilitadas is not None:
+                raise BusinessError(
+                    "TOTAL_EXPLICITO_SELECCIONADAS no usa la cantidad de "
+                    "especialidades habilitadas (H).",
+                    code="PO_INVARIANTE_HABILITADAS_NULL",
                 )
 
     # ── Estrategias ──────────────────────────────────────────────────────────
@@ -750,6 +824,136 @@ class LiquidacionPorcentajeObraCoreService:
             acumulacion=acumulacion,
         )
 
+    def _calcular_estrategia_total_explicito_seleccionadas(
+        self, contexto: CotizacionPOContexto
+    ) -> CotizacionPOEstrategiaData:
+        """
+        TOTAL_EXPLICITO_SELECCIONADAS — el importe es autoritativo y se reparte
+        EXCLUSIVAMENTE entre las especialidades SELECCIONADAS.
+
+        Diferencias respecto de TOTAL_EXPLICITO (que NO cambia):
+
+        - NO se invoca `_resolver_habilitadas`: H no se exige, no se resuelve y
+          no se persiste (queda NULL). El universo de cobro son las
+          SELECCIONADAS, no el catálogo de habilitadas.
+        - El subtotal autoritativo NO se recalcula desde el valor declarado ni
+          desde la tarifa: se toma del `override_subtotal` (montos históricos),
+          del `subtotal_explicito` entrante o, si no viene, se deriva del
+          total por IGV.
+        - El reparto es entre las seleccionadas (`n`), no `S / H`: se usa
+          `_repartir_proporcional`, que conserva el importe exacto (el último
+          detalle absorbe los céntimos de redondeo).
+        - Los porcentajes del detalle y el porcentaje de tarifa se guardan como
+          REFERENCIA: el padre va con `porcentaje_liquidacion = NULL`.
+        - Nunca hay acumulación: el subtotal se reparte íntegro (invariante I-1).
+
+        Los derechos se VALIDAN contra el subtotal: si queda fuera del rango se
+        RECHAZA (nunca se eleva ni se ajusta el importe histórico). Los montos
+        históricos (`override_*`) son autoritativos y no se re-validan.
+        """
+        participantes = list(contexto.participantes)
+        n = len(participantes)
+        if n == 0:
+            raise BusinessError(
+                "Se requiere al menos un participante", code="PO_SIN_PARTICIPANTES"
+            )
+
+        # ── 1. TOTAL autoritativo ────────────────────────────────────────────
+        if contexto.override_total is not None:
+            total = contexto.override_total.quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+        else:
+            if contexto.total_explicito is None or contexto.total_explicito <= 0:
+                raise BusinessError(
+                    "El total explícito debe ser mayor que cero.",
+                    code="PO_TOTAL_EXPLICITO_INVALIDO",
+                )
+            total = contexto.total_explicito.quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+
+        # ── 2. SUBTOTAL autoritativo ─────────────────────────────────────────
+        # `montos_historicos` = True cuando el importe viene del histórico
+        # persistido (override): es autoritativo y NO se re-valida ni se ajusta.
+        if contexto.override_subtotal is not None:
+            subtotal = contexto.override_subtotal.quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            montos_historicos = True
+        elif contexto.subtotal_explicito is not None:
+            if contexto.subtotal_explicito <= 0:
+                raise BusinessError(
+                    "El subtotal explícito debe ser mayor que cero.",
+                    code="PO_TOTAL_EXPLICITO_INVALIDO",
+                )
+            subtotal = contexto.subtotal_explicito.quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            montos_historicos = False
+        else:
+            # Sin subtotal explícito: se deriva del total por IGV (resta exacta
+            # al céntimo: subtotal + igv == total).
+            subtotal = (total / (Decimal("1") + contexto.igv_porcentaje)).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            montos_historicos = False
+
+        # El IGV se extrae por RESTA: subtotal + igv == total exacto.
+        igv_monto = total - subtotal
+
+        # ── 3. Derechos: validación contra el subtotal (nunca elevación) ────
+        if not montos_historicos:
+            minimo = contexto.uit_valor * contexto.derecho.porcentaje_minimo_uit
+            if subtotal < minimo:
+                raise BusinessError(
+                    "El subtotal ({}) es menor al derecho mínimo ({}).".format(
+                        subtotal, minimo
+                    ),
+                    code="PO_TOTAL_EXPLICITO_BAJO_DERECHO_MINIMO",
+                )
+            if (
+                contexto.derecho.derecho_maximo is not None
+                and subtotal > contexto.derecho.derecho_maximo
+            ):
+                raise BusinessError(
+                    "El subtotal ({}) excede el derecho máximo ({}).".format(
+                        subtotal, contexto.derecho.derecho_maximo
+                    ),
+                    code="PO_TOTAL_EXPLICITO_EXCEDE_DERECHO_MAXIMO",
+                )
+
+        # ── 4. Reparto SOLO entre las seleccionadas ─────────────────────────
+        # Proporcional a la tasa de cada especialidad; el último detalle
+        # absorbe los céntimos de redondeo (SUM(detalles) == subtotal exacto).
+        porcentaje_total = sum(
+            (t.porcentaje_liquidacion for t in participantes), Decimal("0")
+        )
+        detalles = self._repartir_proporcional(
+            participantes, porcentaje_total, subtotal
+        )
+
+        return CotizacionPOEstrategiaData(
+            estrategia=EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS,
+            valor_declarado=contexto.valor_declarado,
+            total_explicito=total,
+            porcentaje_liquidacion=None,
+            porcentaje_tarifa=self._resolver_porcentaje_tarifa(contexto),
+            tipo_tramite=None,
+            derecho_minimo=self._calcular_derecho_minimo(contexto),
+            derecho_maximo=contexto.derecho.derecho_maximo,
+            porcentaje_minimo_uit=contexto.derecho.porcentaje_minimo_uit,
+            derecho_aplicado_id=contexto.derecho.derecho_aplicado_id,
+            # H (habilitadas) NUNCA se resuelve en esta estrategia: queda NULL.
+            cantidad_especialidades_habilitadas=None,
+            count_participantes=n,
+            detalles=detalles,
+            total_subtotal=subtotal,
+            total=total,
+            igv_monto=igv_monto,
+            acumulacion=None,
+        )
+
     # ── Helpers de aritmética ────────────────────────────────────────────────
 
     def _repartir_proporcional(
@@ -1062,7 +1266,7 @@ class LiquidacionPorcentajeObraCoreService:
             porcentaje_liquidacion=cotizacion.porcentaje_liquidacion,
             estrategia_cotizacion=str(cotizacion.estrategia),
             cantidad_especialidades_habilitadas=(
-                cotizacion.cantidad_especialidades_habilitadas
+                self._persistir_habilitadas(cotizacion)
             ),
             total_explicito=cotizacion.total_explicito,
             porcentaje_tarifa=cotizacion.porcentaje_tarifa,
@@ -1077,6 +1281,23 @@ class LiquidacionPorcentajeObraCoreService:
 
         self.aplicar_acumulacion_po(liquidacion_po, cotizacion.acumulacion)
         return liquidacion_po
+
+    @staticmethod
+    def _persistir_habilitadas(
+        cotizacion: CotizacionPOEstrategiaData,
+    ) -> Optional[int]:
+        """
+        Snapshot de H a persistir.
+
+        TOTAL_EXPLICITO_SELECCIONADAS NUNCA usa H: se persiste siempre NULL
+        (defensa en profundidad: aunque el llamador enviara un H, no se escribe).
+        """
+        if (
+            cotizacion.estrategia
+            == EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS
+        ):
+            return None
+        return cotizacion.cantidad_especialidades_habilitadas
 
     def crear_detalles_porcentaje_obra(
         self,
@@ -1160,9 +1381,14 @@ class LiquidacionPorcentajeObraCoreService:
         liquidacion_po.porcentaje_liquidacion = cotizacion.porcentaje_liquidacion
         liquidacion_po.estrategia_cotizacion = str(cotizacion.estrategia)
         liquidacion_po.cantidad_especialidades_habilitadas = (
-            cotizacion.cantidad_especialidades_habilitadas
+            self._persistir_habilitadas(cotizacion)
             if cantidad_especialidades_habilitadas is SIN_HABILITADAS_RESUELTAS
-            else cantidad_especialidades_habilitadas
+            else (
+                None
+                if cotizacion.estrategia
+                == EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS
+                else cantidad_especialidades_habilitadas
+            )
         )
         liquidacion_po.total_explicito = cotizacion.total_explicito
         liquidacion_po.porcentaje_tarifa = cotizacion.porcentaje_tarifa

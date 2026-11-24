@@ -12,6 +12,7 @@ Covers:
 7. _read_tsv — TSV reading with delimiter detection
 8. end-to-end dry-run against real TSV (--limit 100)
 """
+
 import csv
 import io
 import tempfile
@@ -22,6 +23,7 @@ from types import SimpleNamespace
 import pytest
 
 from modules.liquidaciones.management.commands.import_legacy_inspeccion_obra import (
+    Command,
     _parse_delegado_io,
     _map_categoria_io,
     _derive_cantidad_visitas,
@@ -104,7 +106,24 @@ from modules.liquidaciones.management.commands.import_legacy_inspeccion_obra imp
 )
 
 
+def test_comprobante_sync_is_disabled_by_default():
+    parser = Command().create_parser("manage.py", "import_legacy_inspeccion_obra")
+
+    options = vars(parser.parse_args([]))
+
+    assert options["sync_comprobantes"] is False
+
+
+def test_comprobante_sync_requires_explicit_flag():
+    parser = Command().create_parser("manage.py", "import_legacy_inspeccion_obra")
+
+    options = vars(parser.parse_args(["--sync-comprobantes"]))
+
+    assert options["sync_comprobantes"] is True
+
+
 # ── _parse_delegado_io tests ──────────────────────────────────────────────────
+
 
 class TestParseDelegadoIO:
     def test_standard_format(self):
@@ -144,6 +163,7 @@ class TestParseDelegadoIO:
 
 # ── _map_categoria_io tests ────────────────────────────────────────────────────
 
+
 class TestMapCategoriaIO:
     def test_categoria_0(self):
         cat, status = _map_categoria_io(0)
@@ -174,6 +194,7 @@ class TestMapCategoriaIO:
 
 
 # ── _derive_cantidad_visitas tests (NROREV-based — batch 3b) ─────────────────
+
 
 class TestDeriveCantidadVisitas:
     """Tests for NROREV-based cantidad_visitas derivation."""
@@ -211,6 +232,7 @@ class TestDeriveCantidadVisitas:
 
 # ── _parse_nrofactura tests ───────────────────────────────────────────────────
 
+
 class TestParseNroFactura:
     def test_standard_format(self):
         serie, numero, raw = _parse_nrofactura("001-00001")
@@ -235,6 +257,7 @@ class TestParseNroFactura:
 
 # ── _parse_fecha tests ────────────────────────────────────────────────────────
 
+
 class TestParseFecha:
     def test_sentinel_returns_none(self):
         result = _parse_fecha("1/01/1900")
@@ -250,12 +273,14 @@ class TestParseFecha:
 
     def test_datetime_object(self):
         from datetime import datetime
+
         dt = datetime(2026, 8, 20, 14, 30)
         result = _parse_fecha(dt)
         assert result == date(2026, 8, 20)
 
     def test_datetime_sentinel(self):
         from datetime import datetime
+
         dt = datetime(1900, 1, 1, 0, 0)
         result = _parse_fecha(dt)
         assert result is None
@@ -263,11 +288,13 @@ class TestParseFecha:
     def test_invalid_raises_valueerror(self):
         """Invalid dates raise ValueError (distinguishes from sentinel None)."""
         import pytest
+
         with pytest.raises(ValueError):
             _parse_fecha("not-a-date")
 
 
 # ── _resolve_tipo_documento tests ─────────────────────────────────────────────
+
 
 class TestResolveTipoDocumento:
     def test_dni_8_digits(self):
@@ -294,6 +321,7 @@ class TestResolveTipoDocumento:
 
 # ── _parse_dptoprdri tests ────────────────────────────────────────────────────
 
+
 class TestParseDptoprdri:
     def test_province_district(self):
         prov, dist = _parse_dptoprdri("LIMA/MAGDALENA DEL MAR")
@@ -313,6 +341,7 @@ class TestParseDptoprdri:
 
 # ── _normalize_usuario_to_username tests ──────────────────────────────────────
 
+
 class TestNormalizeUsuarioToUsername:
     def test_basic(self):
         assert _normalize_usuario_to_username("SANDRA OJEDA") == "sandra.ojeda"
@@ -328,6 +357,7 @@ class TestNormalizeUsuarioToUsername:
 
 # ── _detect_delimiter tests ────────────────────────────────────────────────────
 
+
 class TestDetectDelimiter:
     def test_tsv(self):
         assert _detect_delimiter("ID\tNRO\tRU") == "\t"
@@ -338,14 +368,17 @@ class TestDetectDelimiter:
 
 # ── _is_xlsx tests ────────────────────────────────────────────────────────────
 
+
 class TestIsXlsx:
     def test_xlsx_by_pk_header(self):
         with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as f:
             f.write(b"PK\x03\x04")  # ZIP/XLSX header
             f.flush()
             from pathlib import Path
+
             result = _is_xlsx(Path(f.name))
         import os
+
         os.unlink(f.name)
         assert result is True
 
@@ -354,42 +387,45 @@ class TestIsXlsx:
             f.write(b"ID,NRO,RUC\n")
             f.flush()
             from pathlib import Path
+
             result = _is_xlsx(Path(f.name))
         import os
+
         os.unlink(f.name)
         assert result is False
 
 
 # ── _read_tsv tests ───────────────────────────────────────────────────────────
 
+
 class TestReadTsv:
     def test_tab_delimited(self):
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".csv", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
             f.write("ID\tNRO\tRU\n")
             f.write("10488\t\t20611093579\n")
             f.flush()
             from pathlib import Path
+
             headers, rows = _read_tsv(Path(f.name))
 
         assert headers == ["ID", "NRO", "RU"]
         assert rows[0] == ["10488", "", "20611093579"]
         import os
+
         os.unlink(f.name)
 
     def test_comma_delimited(self):
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".csv", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
             f.write("ID,NRO,RU\n")
             f.write('10488,,"20611093579"\n')
             f.flush()
             from pathlib import Path
+
             headers, rows = _read_tsv(Path(f.name))
 
         assert headers == ["ID", "NRO", "RU"]
         import os
+
         os.unlink(f.name)
 
 
@@ -514,7 +550,9 @@ _UIT_IMPLICITA_2026_ROW[_COL_FECHA] = "30/12/2025"  # year-end 2025
 _UIT_IMPLICITA_IMPOSSIBLE_ROW = _MINIMAL_ROW[:]
 _UIT_IMPLICITA_IMPOSSIBLE_ROW[_COL_NROREV] = "36"
 _UIT_IMPLICITA_IMPOSSIBLE_ROW[_COL_TASA] = "0.042"
-_UIT_IMPLICITA_IMPOSSIBLE_ROW[_COL_SUBTOTAL] = "7502"  # implies UIT≈4960 (not in known map)
+_UIT_IMPLICITA_IMPOSSIBLE_ROW[_COL_SUBTOTAL] = (
+    "7502"  # implies UIT≈4960 (not in known map)
+)
 _UIT_IMPLICITA_IMPOSSIBLE_ROW[_COL_TOTAL] = "8852.36"  # 7502*1.18
 _UIT_IMPLICITA_IMPOSSIBLE_ROW[_COL_TASAIGV] = "18"
 _UIT_IMPLICITA_IMPOSSIBLE_ROW[_COL_UIT] = "5350"
@@ -564,7 +602,10 @@ class TestParseRow:
         assert pr.uit_implicita_year_candidate == 2026
         assert pr.uit_implicita_status == "OK_IGUAL_ARCHIVO"
         # Batch 3d: UIT validation detail
-        assert pr.uit_validacion_detalle == "La UIT del archivo explica el subtotal unitario."
+        assert (
+            pr.uit_validacion_detalle
+            == "La UIT del archivo explica el subtotal unitario."
+        )
 
     def test_categoria_zero(self):
         pr, rechazo = _parse_row(_CAT_ZERO_ROW, 3)
@@ -603,6 +644,7 @@ class TestParseRow:
         from modules.liquidaciones.management.commands.import_legacy_inspeccion_obra import (
             _build_rechazo_headers,
         )
+
         assert len(row) == len(_build_rechazo_headers())
 
     def test_detailed_report_row_length(self):
@@ -612,6 +654,7 @@ class TestParseRow:
         from modules.liquidaciones.management.commands.import_legacy_inspeccion_obra import (
             _build_detailed_headers,
         )
+
         assert len(row) == len(_build_detailed_headers())
 
 
@@ -666,7 +709,10 @@ class TestNrorevValidation:
         assert pr.uit_implicita_year_candidate == 2026
         assert pr.uit_implicita_status == "OK_IGUAL_ARCHIVO"
         # Batch 3d: UIT validation detail
-        assert pr.uit_validacion_detalle == "La UIT del archivo explica el subtotal unitario."
+        assert (
+            pr.uit_validacion_detalle
+            == "La UIT del archivo explica el subtotal unitario."
+        )
 
     def test_nrorev_missing_reported(self):
         """Missing NROREV → nrorev_status='missing', cantidad_visitas=None, anomaly."""
@@ -680,7 +726,10 @@ class TestNrorevValidation:
         assert pr.uit_implicita_status == "SIN_DATOS"
         assert any("NROREV missing" in a for a in pr.anomalies)
         # Batch 3d: UIT validation detail
-        assert pr.uit_validacion_detalle == "No se pudo validar por NROREV, TASA, UIT o SUBTOTAL faltante/cero."
+        assert (
+            pr.uit_validacion_detalle
+            == "No se pudo validar por NROREV, TASA, UIT o SUBTOTAL faltante/cero."
+        )
 
     def test_nrorev_zero_reported(self):
         """Zero NROREV → nrorev_status='non_positive', cantidad_visitas=None, anomaly."""
@@ -694,7 +743,10 @@ class TestNrorevValidation:
         assert pr.uit_implicita_status == "SIN_DATOS"
         assert any("NROREV non_positive" in a for a in pr.anomalies)
         # Batch 3d: UIT validation detail
-        assert pr.uit_validacion_detalle == "No se pudo validar por NROREV, TASA, UIT o SUBTOTAL faltante/cero."
+        assert (
+            pr.uit_validacion_detalle
+            == "No se pudo validar por NROREV, TASA, UIT o SUBTOTAL faltante/cero."
+        )
 
 
 class TestUitValidacionDetalle:
@@ -764,7 +816,10 @@ class TestUitValidacionDetalle:
             uit_implicita_year_candidate=None,
             tasa=None,
         )
-        assert detail == "No se pudo validar por NROREV, TASA, UIT o SUBTOTAL faltante/cero."
+        assert (
+            detail
+            == "No se pudo validar por NROREV, TASA, UIT o SUBTOTAL faltante/cero."
+        )
 
 
 class TestUitImplicita:
@@ -792,7 +847,10 @@ class TestUitImplicita:
         assert pr.uit_implicita_status == "OK_IGUAL_ARCHIVO"
         assert pr.validation_status == "OK"
         # Batch 3d: detail for OK_IGUAL_ARCHIVO
-        assert pr.uit_validacion_detalle == "La UIT del archivo explica el subtotal unitario."
+        assert (
+            pr.uit_validacion_detalle
+            == "La UIT del archivo explica el subtotal unitario."
+        )
 
     def test_uit_implicita_uit_conocida_diferente(self):
         """
@@ -848,7 +906,10 @@ class TestUitImplicita:
         assert pr.uit_implicita_year_candidate is None
         assert pr.validation_status == "SIN_DATOS"
         # Batch 3d: detail for SIN_DATOS
-        assert pr.uit_validacion_detalle == "No se pudo validar por NROREV, TASA, UIT o SUBTOTAL faltante/cero."
+        assert (
+            pr.uit_validacion_detalle
+            == "No se pudo validar por NROREV, TASA, UIT o SUBTOTAL faltante/cero."
+        )
 
     def test_uit_implicita_sin_datos_tasa_zero(self):
         """Zero TASA → uit_implicita=SIN_DATOS."""
@@ -859,10 +920,14 @@ class TestUitImplicita:
         assert pr.uit_implicita_status == "SIN_DATOS"
         assert pr.validation_status == "SIN_DATOS"
         # Batch 3d: detail for SIN_DATOS
-        assert pr.uit_validacion_detalle == "No se pudo validar por NROREV, TASA, UIT o SUBTOTAL faltante/cero."
+        assert (
+            pr.uit_validacion_detalle
+            == "No se pudo validar por NROREV, TASA, UIT o SUBTOTAL faltante/cero."
+        )
 
 
 # ── Integration: full command against real TSV ────────────────────────────────
+
 
 @pytest.mark.django_db
 class TestIOImportCommandRealFile:
@@ -876,7 +941,12 @@ class TestIOImportCommandRealFile:
         from django.core.management import call_command
         from pathlib import Path
 
-        data_path = Path(__file__).resolve().parents[5] / "data-old" / "data-real" / "supervisiones.csv"
+        data_path = (
+            Path(__file__).resolve().parents[5]
+            / "data-old"
+            / "data-real"
+            / "supervisiones.csv"
+        )
         if not data_path.exists():
             pytest.skip(f"Real data file not found: {data_path}")
 
@@ -964,20 +1034,73 @@ class TestIOImportCommandRealFile:
         row2 = make_row(10489, "E-1749-2026", 0)
 
         header_cols = [
-            "ID", "NRO", "RUC", "NOMBRE", "NROREV", "DPTOPRDI", "DIRECCION",
-            "DELEGADO", "UIT", "PORCENTAJE", "PORCENFINA", "SUBTOTAL", "IGV",
-            "TOTAL", "FECHA", "DNI", "RAZONSOCIAL", "VALOROBRA", "TASA",
-            "NROEXPDTE", "CODPAGO", "NROFACTURA", "DLEY", "IMPBRUTO",
-            "APORCODEMU", "FONDOCOMUN", "HONORARIO", "IMPUESRENTA",
-            "NETOHONORA", "USUARIO", "IMPRESO", "DOC", "FECHAPRES",
-            "NROORDEN", "FECHAREVI", "MES", "PERIODO", "NRORECIBO",
-            "FECHARECIBO", "NROMEMO", "OBSERVA", "DICTAMEN", "TDNI",
-            "TFONO", "TPERSONA", "TASAIGV", "FECOMPRO", "NRONC",
-            "NROQRPLZA", "RENTACIP", "DSCTO", "RUCDIRECC", "RETENCION",
-            "CIP", "BLKDEL", "NROCHEQUE", "CONCEPTO", "REINTEGRO",
-            "CATEGORIA", "PENDIENTES", "PAGADAS", "REALIZADAS", "DIFERENCIA",
+            "ID",
+            "NRO",
+            "RUC",
+            "NOMBRE",
+            "NROREV",
+            "DPTOPRDI",
+            "DIRECCION",
+            "DELEGADO",
+            "UIT",
+            "PORCENTAJE",
+            "PORCENFINA",
+            "SUBTOTAL",
+            "IGV",
+            "TOTAL",
+            "FECHA",
+            "DNI",
+            "RAZONSOCIAL",
+            "VALOROBRA",
+            "TASA",
+            "NROEXPDTE",
+            "CODPAGO",
+            "NROFACTURA",
+            "DLEY",
+            "IMPBRUTO",
+            "APORCODEMU",
+            "FONDOCOMUN",
+            "HONORARIO",
+            "IMPUESRENTA",
+            "NETOHONORA",
+            "USUARIO",
+            "IMPRESO",
+            "DOC",
+            "FECHAPRES",
+            "NROORDEN",
+            "FECHAREVI",
+            "MES",
+            "PERIODO",
+            "NRORECIBO",
+            "FECHARECIBO",
+            "NROMEMO",
+            "OBSERVA",
+            "DICTAMEN",
+            "TDNI",
+            "TFONO",
+            "TPERSONA",
+            "TASAIGV",
+            "FECOMPRO",
+            "NRONC",
+            "NROQRPLZA",
+            "RENTACIP",
+            "DSCTO",
+            "RUCDIRECC",
+            "RETENCION",
+            "CIP",
+            "BLKDEL",
+            "NROCHEQUE",
+            "CONCEPTO",
+            "REINTEGRO",
+            "CATEGORIA",
+            "PENDIENTES",
+            "PAGADAS",
+            "REALIZADAS",
+            "DIFERENCIA",
         ]
-        assert len(header_cols) == 63, f"Expected 63 header cols, got {len(header_cols)}"
+        assert (
+            len(header_cols) == 63
+        ), f"Expected 63 header cols, got {len(header_cols)}"
         assert len(row1) == 63, f"Expected 63 data cols, got {len(row1)}"
 
         with test_tsv.open("w", encoding="utf-8") as f:

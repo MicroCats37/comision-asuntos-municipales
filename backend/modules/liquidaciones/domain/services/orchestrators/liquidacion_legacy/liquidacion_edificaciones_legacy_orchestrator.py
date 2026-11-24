@@ -189,6 +189,13 @@ class LiquidacionEdificacionesLegacyOrchestrator(LiquidacionPOValidationMixin):
                     TipoLiquidacion.EDIFICACION, fecha=fecha_registro
                 )
             )
+        elif (
+            estrategia_cotizacion
+            == EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS
+        ):
+            # H está fuera del contrato de esta estrategia: NUNCA se resuelve
+            # desde el catálogo (queda NULL en el snapshot persistido).
+            cantidad_especialidades_habilitadas = None
 
         return self.porcentaje_core.calcular_cotizacion_po_estrategia(
             CotizacionPOContexto(
@@ -329,6 +336,13 @@ class LiquidacionEdificacionesLegacyOrchestrator(LiquidacionPOValidationMixin):
                     TipoLiquidacion.EDIFICACION, fecha=fecha_registro
                 )
             )
+        elif (
+            estrategia_cotizacion
+            == EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS
+        ):
+            # H está fuera del contrato de esta estrategia: NUNCA se resuelve
+            # desde el catálogo (queda NULL en el snapshot persistido).
+            cantidad_especialidades_habilitadas = None
 
         # Step 5: Build domain DTO
         domain_data = LiquidacionEspecificaPrimeraRevisionData(

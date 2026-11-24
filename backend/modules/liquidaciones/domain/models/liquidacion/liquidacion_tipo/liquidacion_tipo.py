@@ -325,7 +325,8 @@ class LiquidacionPorcentajeObra(BaseModel):
         default=EstrategiaCotizacionPO.NORMAL_SELECCIONADAS,
         verbose_name="Estrategia de Cotización",
         help_text="Estrategia de cotización del motor PO: NORMAL_SELECCIONADAS, "
-        "TARIFA_HABILITADAS_PARTICIPANTES o TOTAL_EXPLICITO.",
+        "TARIFA_HABILITADAS_PARTICIPANTES, TOTAL_EXPLICITO o "
+        "TOTAL_EXPLICITO_SELECCIONADAS.",
     )
 
     cantidad_especialidades_habilitadas = models.PositiveIntegerField(
@@ -333,7 +334,9 @@ class LiquidacionPorcentajeObra(BaseModel):
         blank=True,
         verbose_name="Cantidad de Especialidades Habilitadas",
         help_text="Snapshot de H (habilitadas del catálogo en la fecha efectiva). "
-        "NULL en registros históricos: el motor lo deriva del catálogo.",
+        "NULL en registros históricos: el motor lo deriva del catálogo. "
+        "NULL siempre en TOTAL_EXPLICITO_SELECCIONADAS (esa estrategia reparte "
+        "el importe entre las seleccionadas, no entre H habilitadas).",
     )
 
     total_explicito = models.DecimalField(
@@ -342,7 +345,8 @@ class LiquidacionPorcentajeObra(BaseModel):
         null=True,
         blank=True,
         verbose_name="Total Explícito",
-        help_text="Total final autoritativo (IGV incluido) en modo TOTAL_EXPLICITO.",
+        help_text="Total final autoritativo (IGV incluido) en modo TOTAL_EXPLICITO "
+        "y TOTAL_EXPLICITO_SELECCIONADAS.",
     )
 
     porcentaje_tarifa = models.DecimalField(

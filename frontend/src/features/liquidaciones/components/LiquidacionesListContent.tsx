@@ -149,6 +149,11 @@ function LiquidacionesListContentInner<TItem>({
           label: "N° Documento",
           value: filtros.documento!,
         },
+        filtros.expediente && {
+          key: "expediente" as const,
+          label: "Expediente",
+          value: filtros.expediente!,
+        },
         filtros.comprobante_serie && {
           key: "comprobante_serie" as const,
           label: "Comp. Serie",

@@ -8,16 +8,22 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
   ESTRATEGIA_HABILITADAS,
   ESTRATEGIA_NORMAL,
   ESTRATEGIA_TOTAL,
+  ESTRATEGIA_TOTAL_SELECCIONADAS,
 } from "../../schemas/liquidacion-po-estrategia.schema";
 import {
   EstrategiaCotizacionField,
   EstrategiaValorField,
 } from "./EstrategiaCotizacionField";
+
+/** Radix Select llama a `scrollIntoView`, que jsdom no implementa. */
+beforeAll(() => {
+  Element.prototype.scrollIntoView = vi.fn();
+});
 
 function Probe({ methods }: { methods: UseFormReturn<any> }) {
   const estrategia = useWatch({
@@ -71,22 +77,36 @@ function ValorHarness({
   );
 }
 
+async function seleccionarEstrategia(nombre: RegExp) {
+  fireEvent.click(
+    screen.getByRole("combobox", { name: "Estrategia de cotización" }),
+  );
+
+  const opcion = await screen.findByRole("option", { name: nombre });
+  fireEvent.click(opcion);
+}
+
 describe("EstrategiaCotizacionField — selector accesible", () => {
-  it("expone exactamente las tres estrategias como opciones de radio", () => {
+  it("expone las cuatro estrategias disponibles", async () => {
     render(<Harness />);
 
-    const radios = screen.getAllByRole("radio");
-    expect(radios).toHaveLength(3);
+    fireEvent.click(
+      screen.getByRole("combobox", { name: "Estrategia de cotización" }),
+    );
+
+    const opciones = await screen.findAllByRole("option");
+    expect(opciones).toHaveLength(4);
     expect(
-      screen.getByRole("radio", { name: /Normal - seleccionadas/i }),
+      screen.getByRole("option", { name: /Normal - seleccionadas/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("radio", {
-        name: /Tarifa habilitadas con participantes/i,
-      }),
+      screen.getByRole("option", { name: /1 o 2 especialidades/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("radio", { name: /Total explícito/i }),
+      screen.getByRole("option", { name: /Plantas típicas/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: /Raros/i }),
     ).toBeInTheDocument();
   });
 
@@ -94,8 +114,8 @@ describe("EstrategiaCotizacionField — selector accesible", () => {
     render(<Harness />);
 
     expect(
-      screen.getByRole("radio", { name: /Normal - seleccionadas/i }),
-    ).toHaveAttribute("aria-checked", "true");
+      screen.getByRole("combobox", { name: "Estrategia de cotización" }),
+    ).toHaveTextContent("Normal - seleccionadas");
   });
 });
 
@@ -104,7 +124,7 @@ describe("EstrategiaCotizacionField — conserva los datos aplicables", () => {
     render(<Harness />);
     expect(screen.getByTestId("valor")).toHaveTextContent("1000000");
 
-    fireEvent.click(screen.getByRole("radio", { name: /Total explícito/i }));
+    await seleccionarEstrategia(/Plantas típicas/i);
 
     await waitFor(() =>
       expect(screen.getByTestId("estrategia")).toHaveTextContent(
@@ -117,11 +137,7 @@ describe("EstrategiaCotizacionField — conserva los datos aplicables", () => {
   it("al pasar a TARIFA_HABILITADAS borra el total explícito residual", async () => {
     render(<Harness />);
 
-    fireEvent.click(
-      screen.getByRole("radio", {
-        name: /Tarifa habilitadas con participantes/i,
-      }),
-    );
+    await seleccionarEstrategia(/1 o 2 especialidades/i);
 
     await waitFor(() =>
       expect(screen.getByTestId("estrategia")).toHaveTextContent(
@@ -136,16 +152,27 @@ describe("EstrategiaCotizacionField — conserva los datos aplicables", () => {
   it("al volver a NORMAL_SELECCIONADAS conserva el valor declarado", async () => {
     render(<Harness />);
 
-    fireEvent.click(screen.getByRole("radio", { name: /Total explícito/i }));
+    await seleccionarEstrategia(/Plantas típicas/i);
     expect(screen.getByTestId("valor")).toHaveTextContent("1000000");
 
-    fireEvent.click(
-      screen.getByRole("radio", { name: /Normal - seleccionadas/i }),
-    );
+    await seleccionarEstrategia(/Normal - seleccionadas/i);
 
     await waitFor(() =>
       expect(screen.getByTestId("estrategia")).toHaveTextContent(
         ESTRATEGIA_NORMAL,
+      ),
+    );
+    expect(screen.getByTestId("valor")).toHaveTextContent("1000000");
+  });
+
+  it("al pasar a Raros conserva el valor declarado", async () => {
+    render(<Harness />);
+
+    await seleccionarEstrategia(/Raros/i);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("estrategia")).toHaveTextContent(
+        ESTRATEGIA_TOTAL_SELECCIONADAS,
       ),
     );
     expect(screen.getByTestId("valor")).toHaveTextContent("1000000");

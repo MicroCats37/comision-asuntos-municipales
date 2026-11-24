@@ -20,7 +20,7 @@ import {
 import {
   ESTRATEGIA_COTIZACION_DESCRIPCIONES,
   ESTRATEGIA_COTIZACION_LABELS,
-  ESTRATEGIAS_COTIZACION_PO,
+  ESTRATEGIAS_COTIZACION_PO_UI,
   type EstrategiaCotizacionPO,
 } from "../../schemas/liquidacion-po-estrategia.schema";
 import {
@@ -52,8 +52,12 @@ interface EstrategiaValorFieldProps {
  * Solo existe para Edificaciones: Taludes, Impacto Vial, edge y legacy no
  * tienen estrategias (su contrato queda intacto).
  *
- * Al salir de TOTAL_EXPLICITO limpia `total_explicito`; al entrar conserva el
- * valor declarado porque sigue siendo información obligatoria de la obra.
+ * El selector ofrece las estrategias disponibles tanto para creación como
+ * para edición, incluida `TOTAL_EXPLICITO_SELECCIONADAS`.
+ *
+ * Al salir de las estrategias con total explícito limpia `total_explicito`; al
+ * entrar conserva el valor declarado porque sigue siendo información
+ * obligatoria de la obra.
  */
 export function EstrategiaCotizacionField({
   methods,
@@ -98,7 +102,7 @@ export function EstrategiaCotizacionField({
           <SelectValue />
         </SelectTrigger>
         <SelectContent align="end">
-          {ESTRATEGIAS_COTIZACION_PO.map((valor) => (
+          {ESTRATEGIAS_COTIZACION_PO_UI.map((valor) => (
             <SelectItem key={valor} value={valor}>
               {ESTRATEGIA_COTIZACION_LABELS[valor]}
             </SelectItem>

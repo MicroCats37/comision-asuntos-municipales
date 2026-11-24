@@ -364,12 +364,13 @@ class RHDelegadoCotizarItemOut(BaseSchema):
     # Estrategia de cotización PO de la liquidación (solo motor PO; null en M2)
     estrategia_cotizacion: Optional[str] = Field(
         None,
-        description="Estrategia de cotización PO: NORMAL_SELECCIONADAS, TARIFA_HABILITADAS_PARTICIPANTES o TOTAL_EXPLICITO",
+        description="Estrategia de cotización PO: NORMAL_SELECCIONADAS, TARIFA_HABILITADAS_PARTICIPANTES, TOTAL_EXPLICITO o TOTAL_EXPLICITO_SELECCIONADAS",
     )
-    # Total final autoritativo (solo TOTAL_EXPLICITO)
+    # Total final autoritativo (TOTAL_EXPLICITO / TOTAL_EXPLICITO_SELECCIONADAS)
     total_explicito: Optional[Decimal] = Field(
         None,
-        description="Total final autoritativo de la estrategia TOTAL_EXPLICITO",
+        description="Total final autoritativo de las estrategias TOTAL_EXPLICITO y "
+        "TOTAL_EXPLICITO_SELECCIONADAS",
     )
 
 
@@ -437,12 +438,13 @@ class RHDelegadoMensualDetalleOut(BaseSchema):
     # Estrategia de cotización PO de la liquidación (solo motor PO; null en M2)
     estrategia_cotizacion: Optional[str] = Field(
         None,
-        description="Estrategia de cotización PO: NORMAL_SELECCIONADAS, TARIFA_HABILITADAS_PARTICIPANTES o TOTAL_EXPLICITO",
+        description="Estrategia de cotización PO: NORMAL_SELECCIONADAS, TARIFA_HABILITADAS_PARTICIPANTES, TOTAL_EXPLICITO o TOTAL_EXPLICITO_SELECCIONADAS",
     )
-    # Total final autoritativo (solo TOTAL_EXPLICITO)
+    # Total final autoritativo (TOTAL_EXPLICITO / TOTAL_EXPLICITO_SELECCIONADAS)
     total_explicito: Optional[Decimal] = Field(
         None,
-        description="Total final autoritativo de la estrategia TOTAL_EXPLICITO",
+        description="Total final autoritativo de las estrategias TOTAL_EXPLICITO y "
+        "TOTAL_EXPLICITO_SELECCIONADAS",
     )
 
 

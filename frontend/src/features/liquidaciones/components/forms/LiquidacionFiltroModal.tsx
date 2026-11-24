@@ -50,6 +50,7 @@ const filtroSchema = z.object({
   razon_social: z.string().optional(),
   direccion: z.string().optional(),
   documento: z.string().optional(),
+  expediente: z.string().optional(),
   comprobante_serie: z.string().optional(),
   comprobante_numero: z.string().optional(),
 });
@@ -156,6 +157,7 @@ export function LiquidacionFiltroModal({
     razon_social: initialFiltros?.razon_social ?? "",
     direccion: initialFiltros?.direccion ?? "",
     documento: initialFiltros?.documento ?? "",
+    expediente: initialFiltros?.expediente ?? "",
     comprobante_serie: initialFiltros?.comprobante_serie ?? "",
     comprobante_numero: initialFiltros?.comprobante_numero ?? "",
   };
@@ -172,6 +174,7 @@ export function LiquidacionFiltroModal({
       if (data.razon_social) filtros.razon_social = data.razon_social;
       if (data.direccion) filtros.direccion = data.direccion;
       if (data.documento) filtros.documento = data.documento;
+      if (data.expediente) filtros.expediente = data.expediente;
       if (data.comprobante_serie)
         filtros.comprobante_serie = data.comprobante_serie;
       if (data.comprobante_numero)
@@ -306,8 +309,15 @@ export function LiquidacionFiltroModal({
             />
           </div>
 
-          {/* Fila 5: Comprobante vigente (serie + número) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Fila 5: Expediente + comprobante vigente */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <CampoTexto
+              name="expediente"
+              label="Expediente"
+              placeholder="Número de expediente"
+              register={methods.register}
+              icon={FileText}
+            />
             <CampoTexto
               name="comprobante_serie"
               label="Comprobante — Serie"

@@ -1449,7 +1449,7 @@ class Command(BaseCommand):
                     if id_val is not None:
                         existing_edificacion = (
                             LiquidacionEdificacion.objects.select_related("liquidacion")
-                            .filter(numero=id_val)
+                            .filter(numero=id_val, liquidacion__legacy=True)
                             .first()
                         )
                     if existing_edificacion is not None:

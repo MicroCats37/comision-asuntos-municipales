@@ -47,6 +47,10 @@ def expected_bruto(liquidacion, po_details, po_detail) -> Decimal:
 
 
 def po_allocation_classification(porcentaje, detail_count: int) -> str:
+    if porcentaje.estrategia_cotizacion == "TOTAL_EXPLICITO_SELECCIONADAS":
+        # El importe autoritativo se reparte entre las SELECCIONADAS (no entre H
+        # habilitadas): el detalle conserva el importe completo.
+        return "PO_TOTAL_EXPLICITO_SELECCIONADAS_POR_DETALLE"
     if porcentaje.estrategia_cotizacion == "TOTAL_EXPLICITO":
         return "PO_TOTAL_EXPLICITO_POR_DETALLE"
     if detail_count == 1:

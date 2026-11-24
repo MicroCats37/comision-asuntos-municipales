@@ -9,6 +9,7 @@ import {
   ESTRATEGIA_HABILITADAS,
   ESTRATEGIA_NORMAL,
   ESTRATEGIA_TOTAL,
+  ESTRATEGIA_TOTAL_SELECCIONADAS,
 } from "../schemas/liquidacion-po-estrategia.schema";
 import {
   campoProhibidoPorEstrategia,
@@ -46,6 +47,16 @@ describe("resolverEstrategiaPersistida — rehidratación legacy", () => {
         estrategia_cotizacion: ESTRATEGIA_TOTAL,
       }),
     ).toBe(ESTRATEGIA_TOTAL);
+  });
+
+  it("reconoce TOTAL_EXPLICITO_SELECCIONADAS sin degradar a NORMAL", () => {
+    // Si cayera a NORMAL, la vista de detalle y la recotización aplicarían
+    // la regla equivocada al histórico regularizado.
+    expect(
+      resolverEstrategiaPersistida({
+        estrategia_cotizacion: ESTRATEGIA_TOTAL_SELECCIONADAS,
+      }),
+    ).toBe(ESTRATEGIA_TOTAL_SELECCIONADAS);
   });
 
   it("el valor por defecto es NORMAL_SELECCIONADAS", () => {
@@ -88,6 +99,21 @@ describe("hidratarEstrategiaDesdeItem — sin pérdida de datos", () => {
     });
     expect(resultado.valor_declarado).toBe(1000000.5);
   });
+
+  it("una TOTAL_EXPLICITO_SELECCIONADAS rehidrata su total autoritativo", () => {
+    const resultado = hidratarEstrategiaDesdeItem({
+      liquidacion_tipo: {
+        estrategia_cotizacion: ESTRATEGIA_TOTAL_SELECCIONADAS,
+        valor_declarado: 1000000,
+        total_explicito: 177,
+      },
+    });
+    expect(resultado.estrategia_cotizacion).toBe(
+      ESTRATEGIA_TOTAL_SELECCIONADAS,
+    );
+    expect(resultado.total_explicito).toBe(177);
+    expect(resultado.valor_declarado).toBe(1000000);
+  });
 });
 
 describe("datos exigidos por estrategia", () => {
@@ -95,6 +121,16 @@ describe("datos exigidos por estrategia", () => {
     expect(estrategiaUsaTotalExplicito(ESTRATEGIA_TOTAL)).toBe(true);
     expect(estrategiaUsaValorDeclarado(ESTRATEGIA_TOTAL)).toBe(true);
     expect(campoProhibidoPorEstrategia(ESTRATEGIA_TOTAL)).toBeNull();
+  });
+
+  it("TOTAL_EXPLICITO_SELECCIONADAS usa el total final y conserva ambos datos", () => {
+    expect(estrategiaUsaTotalExplicito(ESTRATEGIA_TOTAL_SELECCIONADAS)).toBe(
+      true,
+    );
+    expect(estrategiaUsaValorDeclarado(ESTRATEGIA_TOTAL_SELECCIONADAS)).toBe(
+      true,
+    );
+    expect(campoProhibidoPorEstrategia(ESTRATEGIA_TOTAL_SELECCIONADAS)).toBeNull();
   });
 
   it("las otras dos estrategias usan el valor declarado", () => {

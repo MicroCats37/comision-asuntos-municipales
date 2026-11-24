@@ -12,10 +12,8 @@ import type {
 } from "./liquidacion-edit-payloads.schema";
 import type { ContactoInline } from "./liquidacion-form-base.schema";
 import type { ImpactoVialFormData } from "./liquidacion-impacto-vial-form.schema";
-import {
-  ESTRATEGIA_TOTAL,
-  leerEstrategiaFormData,
-} from "./liquidacion-po-estrategia.schema";
+import { leerEstrategiaFormData } from "./liquidacion-po-estrategia.schema";
+import { estrategiaUsaTotalExplicito } from "../utils/estrategiaCotizacion";
 import type { TaludesFormData } from "./liquidacion-taludes-form.schema";
 
 export type POFormData =
@@ -162,8 +160,9 @@ export function buildPOTipoPayload(data: POFormData): PorcentajeObraTipoEdit {
     tipoFields.tipo_tramite = tipo_tramite;
   }
 
-  // TOTAL_EXPLICITO conserva el valor informativo y añade el total autoritativo.
-  if (estrategia === ESTRATEGIA_TOTAL) {
+  // Las estrategias con total explícito conservan el valor informativo y
+  // añaden el total autoritativo (el backend preserva el subtotal histórico).
+  if (estrategia !== undefined && estrategiaUsaTotalExplicito(estrategia)) {
     if (valor_declarado !== undefined || totalExplicito !== undefined) {
       tipoFields.datos = {
         ...(valor_declarado !== undefined ? { valor_declarado } : {}),

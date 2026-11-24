@@ -19,6 +19,7 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
     CotizacionPOContexto,
     CotizacionPOEstrategiaData,
     LiquidacionPorcentajeObraCoreService,
+    resolver_montos_total_seleccionadas,
 )
 from modules.liquidaciones.domain.services.core.liquidacion_general.liquidacion_general_core_service import (
     LiquidacionGeneralCoreService,
@@ -128,7 +129,9 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
         """
         estrategia_in = payload_in.liquidacion_especifica
         estrategia = estrategia_in.estrategia_cotizacion
-        valor_declarado, total_explicito = self._resolver_datos_estrategia(estrategia_in)
+        valor_declarado, total_explicito, subtotal_explicito = (
+            self._resolver_datos_estrategia(estrategia_in)
+        )
 
         # Fecha efectiva: hoy en el camino normal, `fecha_registro` en legacy.
         fecha_efectiva = (
@@ -206,6 +209,7 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
                 estrategia_cotizacion=estrategia,
                 cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
                 total_explicito=total_explicito,
+                subtotal_explicito=subtotal_explicito,
             ),
         )
 
@@ -268,11 +272,22 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
         projection (que el preview NUNCA persiste).
         """
         estrategia = estrategia_in.estrategia_cotizacion
-        valor_declarado, total_explicito = self._resolver_datos_estrategia(estrategia_in)
+        valor_declarado, total_explicito, subtotal_explicito = (
+            self._resolver_datos_estrategia(estrategia_in)
+        )
 
         # Step 1: Validation
         if valor_declarado is None or valor_declarado <= 0:
             raise HttpError(400, "valor_declarado debe ser mayor a 0")
+        if (
+            estrategia
+            in (
+                EstrategiaCotizacionPO.TOTAL_EXPLICITO,
+                EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS,
+            )
+            and (total_explicito is None or total_explicito <= 0)
+        ):
+            raise HttpError(400, "total_explicito debe ser mayor a 0")
 
         # Step 2: Hybrid resolution → participantes
         tarifas_aplicadas = self._resolver_tarifas_aplicadas(
@@ -307,6 +322,7 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
             cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
             valor_declarado=valor_declarado,
             total_explicito=total_explicito,
+            subtotal_explicito=subtotal_explicito,
             igv_porcentaje=Decimal(str(igv_vigente.valor)),
             uit_valor=Decimal(str(uit_vigente.valor)),
             derecho=self.porcentaje_core.derecho_a_contexto(derecho),
@@ -321,17 +337,29 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
     @staticmethod
     def _resolver_datos_estrategia(estrategia_in):
         """
-        Devuelve (valor_declarado, total_explicito) según la estrategia del payload.
+        Devuelve (valor_declarado, total_explicito, subtotal_explicito) según la
+        estrategia del payload.
 
-        En TOTAL_EXPLICITO el total con IGV es autoritativo para el cálculo y el
-        valor declarado se conserva sólo como información de la obra.
+        - En TOTAL_EXPLICITO el total con IGV es autoritativo para el cálculo y el
+          valor declarado se conserva sólo como información de la obra.
+        - En TOTAL_EXPLICITO_SELECCIONADAS el importe es autoritativo y puede
+          traer además el subtotal explícito (si no, el motor lo deriva del total
+          por IGV). El valor declarado sigue siendo sólo información de la obra.
         """
-        if estrategia_in.estrategia_cotizacion == EstrategiaCotizacionPO.TOTAL_EXPLICITO:
+        estrategia = estrategia_in.estrategia_cotizacion
+        if estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO:
             return (
                 estrategia_in.datos.valor_declarado,
                 estrategia_in.datos.total_explicito,
+                None,
             )
-        return estrategia_in.datos.valor_declarado, None
+        if estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS:
+            return (
+                estrategia_in.datos.valor_declarado,
+                estrategia_in.datos.total_explicito,
+                getattr(estrategia_in.datos, "subtotal_explicito", None),
+            )
+        return estrategia_in.datos.valor_declarado, None, None
 
     def _resolver_tarifas_aplicadas(
         self,
@@ -423,7 +451,14 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
           tener habilitadas: sin H el modo no es calculable (400).
         - En NORMAL_SELECCIONADAS H es sólo informativo (el padre cobra las
           seleccionadas) y su ausencia NO invalida la operación: se deja NULL.
+        - En TOTAL_EXPLICITO_SELECCIONADAS H NO EXISTE como concepto: el
+          universo de cobro son las SELECCIONADAS. Se devuelve SIEMPRE None y
+          NUNCA se exige el catálogo (ni para resolver ni para persistir H).
         """
+        if estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS:
+            # H está fuera del contrato de esta estrategia: nunca se exige,
+            # nunca se resuelve y nunca se persiste (queda NULL).
+            return None
         habilitadas = self._obtener_especialidades_vigentes_para_tipo(
             TipoLiquidacion.EDIFICACION, fecha=fecha
         )
@@ -436,7 +471,9 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
             )
         return len(habilitadas)
 
-    def _resolver_habilitadas_edicion(self, liq_po, fecha: date) -> Optional[int]:
+    def _resolver_habilitadas_edicion(
+        self, liq_po, fecha: date, estrategia: Optional[str] = None
+    ) -> Optional[int]:
         """
         Resuelve H para un camino de EDICIÓN (fecha efectiva = fecha_registro).
 
@@ -450,7 +487,12 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
         NUNCA se deduce de los participantes: si H fuera n, la diferencia nunca
         se acumularía y la estrategia TARIFA_HABILITADAS_PARTICIPANTES sería
         indistinguible de NORMAL_SELECCIONADAS.
+
+        TOTAL_EXPLICITO_SELECCIONADAS devuelve SIEMPRE None: esa estrategia no
+        usa H (ni snapshot ni catálogo).
         """
+        if estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS:
+            return None
         snapshot = getattr(liq_po, "cantidad_especialidades_habilitadas", None)
         if snapshot:
             return snapshot
@@ -723,7 +765,10 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
             or EstrategiaCotizacionPO.NORMAL_SELECCIONADAS
         )
         datos_in = payload_in.liquidacion_especifica.datos
-        if estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO:
+        if estrategia in (
+            EstrategiaCotizacionPO.TOTAL_EXPLICITO,
+            EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS,
+        ):
             valor_declarado = (
                 datos_in.valor_declarado
                 if datos_in is not None and datos_in.valor_declarado is not None
@@ -736,8 +781,23 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
             )
             if total_explicito is None or total_explicito <= 0:
                 raise HttpError(400, "total_explicito debe ser mayor a 0")
+            subtotal_explicito = (
+                datos_in.subtotal_explicito
+                if datos_in is not None
+                and datos_in.subtotal_explicito is not None
+                else None
+            )
+            if (
+                subtotal_explicito is None
+                and estrategia
+                == EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS
+            ):
+                # Se hereda el subtotal histórico autoritativo de la previa
+                # (`LiquidacionGeneral.sub_total`): el importe NO se recalcula.
+                subtotal_explicito = previa.sub_total
         else:
             total_explicito = None
+            subtotal_explicito = None
             valor_declarado = previa_po.valor_declarado
             if datos_in is not None and datos_in.valor_declarado is not None:
                 if datos_in.valor_declarado > 0:
@@ -836,6 +896,7 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
                 estrategia_cotizacion=estrategia,
                 cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
                 total_explicito=total_explicito,
+                subtotal_explicito=subtotal_explicito,
             ),
         )
 
@@ -918,6 +979,7 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
         tipo_tramite = None  # PO-only field
         estrategia_solicitada = None
         total_explicito = None
+        subtotal_explicito = None
         if liquidacion_tipo is not None:
             # Wrapper format: extract from nested structure
             tipo_datos = liquidacion_tipo.get("datos") or {}
@@ -930,6 +992,7 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
             )  # PO-only: preserve or update
             estrategia_solicitada = liquidacion_tipo.get("estrategia_cotizacion")
             total_explicito = tipo_datos.get("total_explicito")
+            subtotal_explicito = tipo_datos.get("subtotal_explicito")
             # Map wrapper tarifa field names (tarifa_porcentaje_obra_id -> tarifa_id)
             if tipo_tarifas is not None:
                 tarifas_input = [
@@ -982,6 +1045,7 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
             requiere_recalculo = (
                 vd is not None
                 or total_explicito is not None
+                or subtotal_explicito is not None
                 or tarifas_input is not None
                 or tipo_tramite is not None
                 or estrategia_solicitada is not None
@@ -993,11 +1057,17 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
                 # guard y no un 400 de datos.
                 patch_service.verificar_editable(lg)
 
-                estrategia, valor_efectivo, total_efectivo = self._resolver_estrategia_patch(
+                (
+                    estrategia,
+                    valor_efectivo,
+                    total_efectivo,
+                    subtotal_efectivo,
+                ) = self._resolver_estrategia_patch(
                     lg=lg,
                     estrategia_solicitada=estrategia_solicitada,
                     valor_declarado=vd,
                     total_explicito=total_explicito,
+                    subtotal_explicito=subtotal_explicito,
                 )
                 patch_input = PatchPorcentajeObraInput(
                     valor_declarado=valor_efectivo,
@@ -1005,7 +1075,10 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
                     tipo_tramite=tipo_tramite,
                     estrategia=estrategia,
                     total_explicito=total_efectivo,
-                    cantidad_especialidades_habilitadas=self._resolver_habilitadas_patch(lg),
+                    subtotal_explicito=subtotal_efectivo,
+                    cantidad_especialidades_habilitadas=(
+                        self._resolver_habilitadas_patch(lg, estrategia)
+                    ),
                 )
                 patch_service.recalcular(lg, patch_input)
 
@@ -1019,16 +1092,19 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
         estrategia_solicitada: Optional[str],
         valor_declarado,
         total_explicito,
+        subtotal_explicito=None,
     ):
         """
         Resuelve la estrategia efectiva del PATCH y sus datos de entrada.
 
-        Devuelve `(estrategia, valor_declarado, total_explicito)`:
+        Devuelve `(estrategia, valor_declarado, total_explicito, subtotal_explicito)`:
 
         - la estrategia es la solicitada o, si no se declara, la PERSISTIDA
           (modo "preservar": recalcular lo mismo con los valores históricos);
         - todas las estrategias conservan el valor declarado; TOTAL_EXPLICITO
-          además usa el total final autoritativo para el cálculo;
+          además usa el total final autoritativo para el cálculo y
+          TOTAL_EXPLICITO_SELECCIONADAS usa el importe autoritativo (total y,
+          opcionalmente, subtotal);
         - lo que el payload omite se preserva del PO persistido.
 
         Mezclar campos de estrategias es un error de negocio (400) y no se
@@ -1040,7 +1116,10 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
         )
         estrategia = estrategia_solicitada or persistida
 
-        if estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO:
+        if estrategia in (
+            EstrategiaCotizacionPO.TOTAL_EXPLICITO,
+            EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS,
+        ):
             valor_resuelto = (
                 valor_declarado
                 if valor_declarado is not None
@@ -1055,12 +1134,35 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
             )
             if total_resuelto is None or total_resuelto <= 0:
                 raise HttpError(400, "total_explicito debe ser mayor a 0")
-            return estrategia, valor_resuelto, total_resuelto
+            if estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS:
+                # El subtotal autoritativo NO se recalcula: si el payload no lo
+                # envía se preserva el subtotal histórico persistido
+                # (`LiquidacionGeneral.sub_total`).
+                (
+                    total_resuelto,
+                    subtotal_resuelto,
+                ) = resolver_montos_total_seleccionadas(
+                    total_enviado=total_resuelto,
+                    subtotal_enviado=subtotal_explicito,
+                    total_persistido=(
+                        getattr(liq_po, "total_explicito", None) or lg.total
+                    ),
+                    subtotal_persistido=lg.sub_total,
+                )
+                return estrategia, valor_resuelto, total_resuelto, subtotal_resuelto
+            return estrategia, valor_resuelto, total_resuelto, None
 
         if total_explicito is not None:
             raise HttpError(
                 400,
-                "total_explicito sólo aplica en la estrategia TOTAL_EXPLICITO.",
+                "total_explicito sólo aplica en las estrategias TOTAL_EXPLICITO y "
+                "TOTAL_EXPLICITO_SELECCIONADAS.",
+            )
+        if subtotal_explicito is not None:
+            raise HttpError(
+                400,
+                "subtotal_explicito sólo aplica en la estrategia "
+                "TOTAL_EXPLICITO_SELECCIONADAS.",
             )
 
         valor_resuelto = (
@@ -1070,7 +1172,7 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
         )
         if valor_resuelto is None or valor_resuelto <= 0:
             raise HttpError(400, "valor_declarado debe ser mayor a 0")
-        return estrategia, valor_resuelto, None
+        return estrategia, valor_resuelto, None, None
 
     @staticmethod
     def _po_de_edificaciones(lg):
@@ -1080,15 +1182,20 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
         except ObjectDoesNotExist:
             return None
 
-    def _resolver_habilitadas_patch(self, lg) -> Optional[int]:
+    def _resolver_habilitadas_patch(
+        self, lg, estrategia: Optional[str] = None
+    ) -> Optional[int]:
         """
         H para el PATCH: snapshot persistido primero, catálogo en la fecha
         efectiva como respaldo (contrato de snapshot/catálogo).
 
-        NUNCA se deduce de los participantes.
+        NUNCA se deduce de los participantes. TOTAL_EXPLICITO_SELECCIONADAS
+        devuelve SIEMPRE None: esa estrategia no usa H.
         """
         fecha = lg.fecha_registro.date()
-        return self._resolver_habilitadas_edicion(self._po_de_edificaciones(lg), fecha)
+        return self._resolver_habilitadas_edicion(
+            self._po_de_edificaciones(lg), fecha, estrategia
+        )
 
     def cotizar_edicion_proceso(
         self,
@@ -1135,14 +1242,18 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
         # 2. Extract fields from the discriminated union
         estrategia_in = payload_in.liquidacion_tipo
         estrategia = estrategia_in.estrategia_cotizacion
-        valor_declarado, total_explicito = self._resolver_datos_estrategia(
-            estrategia_in
+        valor_declarado, total_explicito, subtotal_explicito = (
+            self._resolver_datos_estrategia(estrategia_in)
         )
 
         if valor_declarado is None or valor_declarado <= 0:
             raise HttpError(400, "valor_declarado debe ser mayor a 0")
         if (
-            estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO
+            estrategia
+            in (
+                EstrategiaCotizacionPO.TOTAL_EXPLICITO,
+                EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS,
+            )
             and (total_explicito is None or total_explicito <= 0)
         ):
             raise HttpError(400, "total_explicito debe ser mayor a 0")
@@ -1158,10 +1269,14 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
             # servicio de cotizar-edición con su error de dominio.
             liq_po = None
         cantidad_especialidades_habilitadas = self._resolver_habilitadas_edicion(
-            liq_po, fecha
+            liq_po, fecha, estrategia
         )
         if (
-            estrategia != EstrategiaCotizacionPO.NORMAL_SELECCIONADAS
+            estrategia
+            not in (
+                EstrategiaCotizacionPO.NORMAL_SELECCIONADAS,
+                EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS,
+            )
             and cantidad_especialidades_habilitadas is None
         ):
             raise HttpError(
@@ -1184,6 +1299,7 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
             estrategia=estrategia,
             valor_declarado=valor_declarado,
             total_explicito=total_explicito,
+            subtotal_explicito=subtotal_explicito,
             tarifas=tarifas_input,
             cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
         )
@@ -1221,11 +1337,17 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
         # relacionada es un input COMPLETO: sus valores son los de hoy.
         estrategia_in = payload_in.liquidacion_especifica
         estrategia = estrategia_in.estrategia_cotizacion
-        valor_declarado, total_explicito = self._resolver_datos_estrategia(estrategia_in)
+        valor_declarado, total_explicito, subtotal_explicito = (
+            self._resolver_datos_estrategia(estrategia_in)
+        )
         if valor_declarado is None or valor_declarado <= 0:
             raise HttpError(400, "valor_declarado debe ser mayor a 0")
         if (
-            estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO
+            estrategia
+            in (
+                EstrategiaCotizacionPO.TOTAL_EXPLICITO,
+                EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS,
+            )
             and (total_explicito is None or total_explicito <= 0)
         ):
             raise HttpError(400, "total_explicito debe ser mayor a 0")
@@ -1322,6 +1444,7 @@ class LiquidacionEdificacionesOrchestrator(LegacyRegistroResolutionMixin, Liquid
                 estrategia_cotizacion=estrategia,
                 cantidad_especialidades_habilitadas=cantidad_especialidades_habilitadas,
                 total_explicito=total_explicito,
+                subtotal_explicito=subtotal_explicito,
             ),
         )
 

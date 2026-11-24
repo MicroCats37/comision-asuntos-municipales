@@ -7,7 +7,7 @@
  *    liquidacion_edificaciones_schemas.py` → union discriminada SOLO de
  *    Edificaciones.
  *
- * Hay exactamente TRES estrategias (no hay alias ni cuarto modo):
+ * Hay exactamente CUATRO estrategias:
  *   - `NORMAL_SELECCIONADAS`: `datos.valor_declarado` + participantes. El
  *     discriminador es OPCIONAL en el backend (el payload vigente queda
  *     byte-compatible); aquí se materializa siempre para que el payload sea
@@ -18,6 +18,15 @@
  *   - `TOTAL_EXPLICITO`: `datos.total_explicito` + participantes. El
  *     discriminador es OBLIGATORIO y `valor_declarado` está PROHIBIDO (el
  *     total con IGV es autoritativo y el backend extrae el subtotal).
+ *   - `TOTAL_EXPLICITO_SELECCIONADAS`: `datos.total_explicito` (+ opcional
+ *     `datos.subtotal_explicito`) + participantes. El discriminador es
+ *     OBLIGATORIO; el importe se reparte EXCLUSIVAMENTE entre las
+ *     seleccionadas y H (habilitadas) nunca se exige.
+ *
+ * `TOTAL_EXPLICITO_SELECCIONADAS` es un modo de REGULARIZACIÓN del histórico:
+ * el frontend debe RECONOCERLA al rehidratar una liquidación persistida, pero
+ * NO se ofrece en el selector de alta manual (ver
+ * `ESTRATEGIAS_COTIZACION_PO_UI`).
  *
  * Cada variante es `strict` (equivalente a `extra="forbid"` en el backend):
  * un payload mixto (campos de dos estrategias), incompleto o con campos
@@ -34,12 +43,22 @@ import { toFiniteNumber } from "../utils/toFiniteNumber";
 export const ESTRATEGIA_NORMAL = "NORMAL_SELECCIONADAS";
 export const ESTRATEGIA_HABILITADAS = "TARIFA_HABILITADAS_PARTICIPANTES";
 export const ESTRATEGIA_TOTAL = "TOTAL_EXPLICITO";
+export const ESTRATEGIA_TOTAL_SELECCIONADAS = "TOTAL_EXPLICITO_SELECCIONADAS";
 
-/** Las TRES estrategias canónicas, en el orden del enum del backend. */
+/** Las CUATRO estrategias canónicas, en el orden del enum del backend. */
 export const ESTRATEGIAS_COTIZACION_PO = [
   ESTRATEGIA_NORMAL,
   ESTRATEGIA_HABILITADAS,
   ESTRATEGIA_TOTAL,
+  ESTRATEGIA_TOTAL_SELECCIONADAS,
+] as const;
+
+/** Estrategias disponibles en el selector de creación y edición. */
+export const ESTRATEGIAS_COTIZACION_PO_UI = [
+  ESTRATEGIA_NORMAL,
+  ESTRATEGIA_HABILITADAS,
+  ESTRATEGIA_TOTAL,
+  ESTRATEGIA_TOTAL_SELECCIONADAS,
 ] as const;
 
 export type EstrategiaCotizacionPO = (typeof ESTRATEGIAS_COTIZACION_PO)[number];
@@ -52,6 +71,7 @@ export const ESTRATEGIA_COTIZACION_LABELS: Record<
   [ESTRATEGIA_NORMAL]: "Normal - seleccionadas",
   [ESTRATEGIA_HABILITADAS]: "1 o 2 especialidades",
   [ESTRATEGIA_TOTAL]: "Plantas Típicas",
+  [ESTRATEGIA_TOTAL_SELECCIONADAS]: "Raros",
 };
 
 /** Descripción corta del alcance de cada estrategia (ayuda contextual). */
@@ -65,11 +85,33 @@ export const ESTRATEGIA_COTIZACION_DESCRIPCIONES: Record<
     "La liquidación conserva el 0.15% y distribuye el importe entre una o dos especialidades.",
   [ESTRATEGIA_TOTAL]:
     "Para liquidaciones convencionales de plantas típicas, ingresando directamente el total final.",
+  [ESTRATEGIA_TOTAL_SELECCIONADAS]:
+    "Importes históricos regularizados: el total es autoritativo y se distribuye entre las especialidades seleccionadas.",
 };
+
+/**
+ * Estrategias cuyo importe final es autoritativo (`total_explicito`).
+ *
+ * En ambas el total manda: el backend nunca lo recalcula desde el valor
+ * declarado ni desde la tarifa.
+ */
+export const ESTRATEGIAS_CON_TOTAL_EXPLICITO = [
+  ESTRATEGIA_TOTAL,
+  ESTRATEGIA_TOTAL_SELECCIONADAS,
+] as const;
+
+/** `true` si la estrategia usa el total final autoritativo con IGV. */
+export function estrategiaUsaTotalExplicito(
+  estrategia: EstrategiaCotizacionPO,
+): boolean {
+  return (ESTRATEGIAS_CON_TOTAL_EXPLICITO as readonly string[]).includes(
+    estrategia,
+  );
+}
 
 export const estrategiaCotizacionSchema = z.enum(ESTRATEGIAS_COTIZACION_PO);
 
-/** `true` si el valor es una de las TRES estrategias canónicas. */
+/** `true` si el valor es una de las CUATRO estrategias canónicas. */
 export function esEstrategiaValida(
   valor: unknown,
 ): valor is EstrategiaCotizacionPO {
@@ -151,6 +193,19 @@ export const estrategiaTotalExplicitoDatosSchema = z.strictObject({
   tipo_tramite: z.string().optional(),
 });
 
+/**
+ * `datos` de TOTAL_EXPLICITO_SELECCIONADAS: importe autoritativo explícito.
+ *
+ * `subtotal_explicito` es opcional: si se omite, el backend lo deriva del
+ * total por IGV. NUNCA se recalcula desde el valor declarado ni la tarifa.
+ */
+export const estrategiaTotalSeleccionadasDatosSchema = z.strictObject({
+  valor_declarado: valorDeclaradoNumero,
+  total_explicito: totalExplicitoNumero,
+  subtotal_explicito: totalExplicitoNumero.optional(),
+  tipo_tramite: z.string().optional(),
+});
+
 export const estrategiaNormalInSchema = z.strictObject({
   estrategia_cotizacion: z.literal(ESTRATEGIA_NORMAL),
   datos: estrategiaNormalDatosSchema,
@@ -172,6 +227,13 @@ export const estrategiaTotalExplicitoInSchema = z.strictObject({
   tarifas: z.array(estrategiaTarifaSchema).default([]),
 });
 
+export const estrategiaTotalSeleccionadasInSchema = z.strictObject({
+  estrategia_cotizacion: z.literal(ESTRATEGIA_TOTAL_SELECCIONADAS),
+  datos: estrategiaTotalSeleccionadasDatosSchema,
+  tipo_tramite: z.string().optional(),
+  tarifas: z.array(estrategiaTarifaSchema).default([]),
+});
+
 /**
  * Union discriminada de estrategias — espejo exacto de
  * `LiquidacionEdificacionesEstrategiaIn` del backend.
@@ -182,6 +244,7 @@ export const edificacionesEstrategiaSchema = z.discriminatedUnion(
     estrategiaNormalInSchema,
     estrategiaHabilitadasInSchema,
     estrategiaTotalExplicitoInSchema,
+    estrategiaTotalSeleccionadasInSchema,
   ],
 );
 
@@ -192,10 +255,14 @@ export type EstrategiaHabilitadasPayload = z.infer<
 export type EstrategiaTotalExplicitoPayload = z.infer<
   typeof estrategiaTotalExplicitoInSchema
 >;
+export type EstrategiaTotalSeleccionadasPayload = z.infer<
+  typeof estrategiaTotalSeleccionadasInSchema
+>;
 export type EstrategiaPayload =
   | EstrategiaNormalPayload
   | EstrategiaHabilitadasPayload
-  | EstrategiaTotalExplicitoPayload;
+  | EstrategiaTotalExplicitoPayload
+  | EstrategiaTotalSeleccionadasPayload;
 
 // ── Normalización y parsing ─────────────────────────────────────────────────
 
@@ -236,6 +303,7 @@ export interface EstrategiaPayloadInput {
   estrategia: EstrategiaCotizacionPO;
   valor_declarado?: number | null;
   total_explicito?: number | null;
+  subtotal_explicito?: number | null;
   tipo_tramite?: string | null;
   tarifas?: EstrategiaTarifa[];
 }
@@ -243,8 +311,10 @@ export interface EstrategiaPayloadInput {
 /**
  * Construye el payload discriminado exacto que espera el backend.
  *
- * Todas las estrategias envían `datos.valor_declarado`. TOTAL_EXPLICITO añade
- * `datos.total_explicito`, que es el único dato usado por las fórmulas.
+ * Todas las estrategias envían `datos.valor_declarado`. TOTAL_EXPLICITO y
+ * TOTAL_EXPLICITO_SELECCIONADAS añaden `datos.total_explicito`, que es el
+ * único dato usado por las fórmulas; TOTAL_EXPLICITO_SELECCIONADAS admite
+ * además `datos.subtotal_explicito` (opcional).
  *
  * `tipo_tramite` viaja en el nivel de la variante (es donde lo lee el
  * orquestador del backend) y no dentro de `datos`.
@@ -260,6 +330,22 @@ export function construirEstrategiaPayload(
   const estrategia = esEstrategiaValida(input.estrategia)
     ? input.estrategia
     : ESTRATEGIA_NORMAL;
+
+  if (estrategia === ESTRATEGIA_TOTAL_SELECCIONADAS) {
+    return {
+      estrategia_cotizacion: ESTRATEGIA_TOTAL_SELECCIONADAS,
+      ...(tipoTramite ? { tipo_tramite: tipoTramite } : {}),
+      datos: {
+        valor_declarado: Number(input.valor_declarado ?? 0),
+        total_explicito: Number(input.total_explicito ?? 0),
+        ...(input.subtotal_explicito !== undefined &&
+        input.subtotal_explicito !== null
+          ? { subtotal_explicito: Number(input.subtotal_explicito) }
+          : {}),
+      },
+      tarifas,
+    };
+  }
 
   if (estrategia === ESTRATEGIA_TOTAL) {
     return {
@@ -361,7 +447,7 @@ export function validarDatosDeEstrategia(
     }
   }
 
-  if (estrategia === ESTRATEGIA_TOTAL) {
+  if (estrategiaUsaTotalExplicito(estrategia)) {
     const total = datos.total_explicito;
     if (total === undefined || total === null) {
       issues.push({

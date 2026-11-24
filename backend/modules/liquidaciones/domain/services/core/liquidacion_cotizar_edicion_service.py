@@ -53,6 +53,7 @@ from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por
     CotizacionPOContexto,
     CotizacionPOEstrategiaData,
     LiquidacionPorcentajeObraCoreService,
+    resolver_montos_total_seleccionadas,
 )
 from modules.liquidaciones.domain.constants import EstrategiaCotizacionPO, ModoCotizacionVisitas
 from modules.liquidaciones.domain.services.core.liquidacion_tipo.liquidacion_por_metro_cuadrado_core_service import (
@@ -94,14 +95,18 @@ class CotizarEdicionPOEstrategiaInput:
     dato de entrada depende de ella:
 
     Todas las estrategias conservan `valor_declarado`; TOTAL_EXPLICITO además
-    usa `total_explicito` como dato autoritativo para el cálculo.
+    usa `total_explicito` como dato autoritativo para el cálculo y
+    TOTAL_EXPLICITO_SELECCIONADAS usa el importe autoritativo (`total_explicito`
+    y, opcionalmente, `subtotal_explicito`).
 
     `cantidad_especialidades_habilitadas` (H) lo resuelve el llamador con el contrato de
-    snapshot/catálogo: NUNCA se deduce de los participantes.
+    snapshot/catálogo: NUNCA se deduce de los participantes. En
+    TOTAL_EXPLICITO_SELECCIONADAS H es siempre None.
     """
     estrategia: str = EstrategiaCotizacionPO.NORMAL_SELECCIONADAS
     valor_declarado: Optional[Decimal] = None
     total_explicito: Optional[Decimal] = None
+    subtotal_explicito: Optional[Decimal] = None
     tarifas: Optional[List[CotizarEdicionPOTarifaInput]] = None
     cantidad_especialidades_habilitadas: Optional[int] = None
 
@@ -262,7 +267,10 @@ class LiquidacionCotizarEdicionPOService:
         derecho = self._historico.get_derecho_porcentaje_vigente(fecha)
 
         # ── 3. Resolve the strategy inputs ─────────────────────────────────────
-        if patch.estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO:
+        if patch.estrategia in (
+            EstrategiaCotizacionPO.TOTAL_EXPLICITO,
+            EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS,
+        ):
             valor_declarado = (
                 patch.valor_declarado
                 if patch.valor_declarado is not None
@@ -280,6 +288,23 @@ class LiquidacionCotizarEdicionPOService:
                 else liq_po.valor_declarado
             )
             total_explicito = None
+
+        subtotal_explicito = None
+        if patch.estrategia == EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS:
+            # El importe es autoritativo: si el payload no lo envía se preserva
+            # el histórico persistido. NUNCA se recalcula desde el valor
+            # declarado ni desde la tarifa.
+            (
+                total_explicito,
+                subtotal_explicito,
+            ) = resolver_montos_total_seleccionadas(
+                total_enviado=total_explicito,
+                subtotal_enviado=patch.subtotal_explicito,
+                total_persistido=(
+                    liq_po.total_explicito or liquidacion_general.total
+                ),
+                subtotal_persistido=liquidacion_general.sub_total,
+            )
 
         # ── 4. Determine participantes to apply ─────────────────────────────────
         if patch.tarifas is not None:
@@ -300,6 +325,7 @@ class LiquidacionCotizarEdicionPOService:
             cantidad_especialidades_habilitadas=patch.cantidad_especialidades_habilitadas,
             valor_declarado=valor_declarado,
             total_explicito=total_explicito,
+            subtotal_explicito=subtotal_explicito,
             igv_porcentaje=Decimal(str(igv.valor)),
             uit_valor=Decimal(str(uit.valor)),
             derecho=self._po_core.derecho_a_contexto(derecho),

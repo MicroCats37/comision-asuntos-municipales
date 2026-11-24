@@ -133,6 +133,7 @@ class LiquidacionEdificacionesFlujo(LiquidacionPOBaseFlujo):
             ),
             valor_declarado=po_data.datos.valor_declarado,
             total_explicito=getattr(po_data, 'total_explicito', None),
+            subtotal_explicito=getattr(po_data, 'subtotal_explicito', None),
             igv_porcentaje=igv_porcentaje,
             uit_valor=uit_valor,
             derecho=self.porcentaje_core.derecho_a_contexto(derecho),

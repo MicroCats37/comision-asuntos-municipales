@@ -52,7 +52,7 @@ import logging
 import re
 import unicodedata
 from datetime import date, datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 
 import openpyxl
@@ -61,7 +61,13 @@ from django.core.management.base import BaseCommand, CommandError
 logger = logging.getLogger(__name__)
 
 # Default path to legacy IO data file (relative to backend/)
-DEFAULT_DATA_PATH = Path(__file__).resolve().parent.parent.parent.parent.parent / "core_application" / "seeds" / "historico" / "IO_ALL.csv"
+DEFAULT_DATA_PATH = (
+    Path(__file__).resolve().parent.parent.parent.parent.parent
+    / "core_application"
+    / "seeds"
+    / "historico"
+    / "IO_ALL.csv"
+)
 
 # ── TSV column indices (0-indexed after splitting header by delimiter) ──────────
 # Determined at runtime from the actual header row.
@@ -147,6 +153,7 @@ _SENTINEL_DATE = date(1900, 1, 1)
 
 # ── Decimal helpers ──────────────────────────────────────────────────────────────
 
+
 def _dec(raw, default=None) -> Decimal | None:
     """Parse a raw cell value to Decimal. Returns default if absent/invalid."""
     if raw is None:
@@ -174,6 +181,7 @@ def _int(raw, default=None) -> int | None:
 
 
 # ── Date parsing ────────────────────────────────────────────────────────────────
+
 
 def _parse_fecha(raw) -> date | None:
     """
@@ -214,6 +222,7 @@ def _parse_fecha(raw) -> date | None:
 
 # ── DPTOPRDI parsing ───────────────────────────────────────────────────────────
 
+
 def _parse_dptoprdri(raw) -> tuple[str, str]:
     """
     Parse DPTOPRDI value like 'LIMA/MAGDALENA DEL MAR' into (provincia, distrito).
@@ -231,6 +240,7 @@ def _parse_dptoprdri(raw) -> tuple[str, str]:
 
 
 # ── Documento parsing ─────────────────────────────────────────────────────────
+
 
 def _resolve_tipo_documento(dni_raw, ruc_raw) -> tuple[str, str]:
     """
@@ -294,6 +304,7 @@ def _parse_delegado_io(raw) -> tuple[int | None, str | None]:
 
 # ── CATEGORIA mapping ──────────────────────────────────────────────────────────
 
+
 def _map_categoria_io(categoria_raw) -> tuple[str | None, str]:
     """
     Map source CATEGORIA integer (0-4) to internal category.
@@ -317,6 +328,7 @@ def _map_categoria_io(categoria_raw) -> tuple[str | None, str]:
 
 
 # ── Cantidad visitas derivation (NROREV-based) ─────────────────────────────────
+
 
 def _derive_cantidad_visitas(nrorev: int | None) -> tuple[float | None, str]:
     """
@@ -404,15 +416,14 @@ def _build_uit_validacion_detalle(
     if uit_implicita_status == "SIN_UIT_ARCHIVO":
         uit_impl_val = int(round(uit_implicita)) if uit_implicita is not None else None
         if uit_impl_val is not None:
-            return (
-                f"No hay UIT en el archivo; el subtotal unitario implica UIT={uit_impl_val}."
-            )
+            return f"No hay UIT en el archivo; el subtotal unitario implica UIT={uit_impl_val}."
         return "No hay UIT en el archivo y no se pudo calcular UIT implícita."
 
     return ""
 
 
 # ── NROFACTURA parsing ─────────────────────────────────────────────────────────
+
 
 def _parse_nrofactura(raw) -> tuple[str | None, str | None, str]:
     """
@@ -433,6 +444,7 @@ def _parse_nrofactura(raw) -> tuple[str | None, str | None, str]:
 
 
 # ── TPERSONA parsing (shared pattern with EDIF/HU) ────────────────────────────
+
 
 def _parse_tpersona(raw) -> tuple[str, str | None]:
     """
@@ -460,6 +472,7 @@ def _parse_tpersona(raw) -> tuple[str, str | None]:
 
 # ── Serie normalization for legacy IO invoices ─────────────────────────────────
 
+
 def _normalize_serie_factura(raw: str | None) -> str | None:
     """
     Normalize a numeric legacy invoice series to prefixed form.
@@ -485,6 +498,7 @@ def _normalize_serie_factura(raw: str | None) -> str | None:
 
 
 # ── LiquidacionComprobante helpers ───────────────────────────────────────────
+
 
 def _tipo_comprobante_from_serie(raw: str | None) -> str | None:
     """
@@ -592,6 +606,7 @@ def _upsert_liquidacion_comprobante(
 
 # ── Contacto helpers ──────────────────────────────────────────────────────────
 
+
 def _upsert_contacto(
     liquidacion: "LiquidacionGeneral",
     nombres: str | None,
@@ -628,20 +643,28 @@ def _upsert_contacto(
         return None, "OMITIDO"
 
     if dry_run:
-        existing_principal = LiquidacionContacto.objects.filter(
+        existing_principal = (
+            LiquidacionContacto.objects.filter(
             liquidacion=liquidacion,
             principal=True,
-        ).select_related("contacto").first()
+            )
+            .select_related("contacto")
+            .first()
+        )
         if existing_principal:
             return existing_principal.contacto, "ACTUALIZADO"
         return None, "CREADO"
 
     try:
         # Check for existing principal contact
-        existing_lc = LiquidacionContacto.objects.filter(
+        existing_lc = (
+            LiquidacionContacto.objects.filter(
             liquidacion=liquidacion,
             principal=True,
-        ).select_related("contacto").first()
+            )
+            .select_related("contacto")
+            .first()
+        )
 
         if existing_lc:
             # Update missing fields only
@@ -679,6 +702,7 @@ def _upsert_contacto(
 
 # ── Username normalization ──────────────────────────────────────────────────────
 
+
 def _normalize_usuario_to_username(usuario_raw) -> str | None:
     """
     Transform a USUARIO raw value into a normalized username slug.
@@ -702,6 +726,7 @@ def _normalize_usuario_to_username(usuario_raw) -> str | None:
 
 
 # ── File reading helpers ────────────────────────────────────────────────────────
+
 
 def _detect_delimiter(first_line: str) -> str:
     """
@@ -767,6 +792,7 @@ def _read_tsv(file_path: Path) -> tuple[list[str], list[list[str]]]:
 
 # ── Row-level parser ───────────────────────────────────────────────────────────
 
+
 class ParsedRow:
     """
     Container for all parsed fields from a single source row.
@@ -784,30 +810,78 @@ class ParsedRow:
         diff_total_unitario_legacy       — abs(total_unitario_legacy - total_unitario_recalc_legacy)
         validation_status                — OK | DIF_SUBTOTAL | DIF_TOTAL | SIN_DATOS
     """
+
     __slots__ = (
-        "row_index", "raw", "id_val", "nro", "nroexpdte", "codpago", "dptoprdri",
-        "direccion", "nombre", "ruc", "dni", "razon_social",
-        "fecha", "uit", "porcentaje", "subtotal", "igv", "total", "tasa_igv",
-        "imp_bruto", "aporte_codemu", "fondo_comun", "honorario", "impuesto_renta",
-        "neto_honorario", "renta_cip", "dscto", "retencion",
-        "delegado", "delegado_nombre", "cip",
-        "categoria_raw", "categoria_mapped", "categoria_status",
-        "pendientes", "pagadas", "realizadas", "diferencia",
-        "nro_factura", "fe_factura", "fecha_pres", "fecha_revi",
-        "nro_orden", "dictamen", "usuario",
-        "cantidad_visitas", "visitas_status",
-        "documento_tipo", "documento_numero",
-        "modo_calculo", "rechazo_motivo", "anomalies",
+        "row_index",
+        "raw",
+        "id_val",
+        "nro",
+        "nroexpdte",
+        "codpago",
+        "dptoprdri",
+        "direccion",
+        "nombre",
+        "ruc",
+        "dni",
+        "razon_social",
+        "fecha",
+        "uit",
+        "porcentaje",
+        "subtotal",
+        "igv",
+        "total",
+        "tasa_igv",
+        "imp_bruto",
+        "aporte_codemu",
+        "fondo_comun",
+        "honorario",
+        "impuesto_renta",
+        "neto_honorario",
+        "renta_cip",
+        "dscto",
+        "retencion",
+        "delegado",
+        "delegado_nombre",
+        "cip",
+        "categoria_raw",
+        "categoria_mapped",
+        "categoria_status",
+        "pendientes",
+        "pagadas",
+        "realizadas",
+        "diferencia",
+        "nro_factura",
+        "fe_factura",
+        "fecha_pres",
+        "fecha_revi",
+        "nro_orden",
+        "dictamen",
+        "usuario",
+        "cantidad_visitas",
+        "visitas_status",
+        "documento_tipo",
+        "documento_numero",
+        "modo_calculo",
+        "rechazo_motivo",
+        "anomalies",
         # Batch 3b: NROREV correction fields
-        "nrorev", "tasa", "porcenfina", "nrorev_status",
-        "subtotal_unitario_legacy", "total_unitario_legacy",
-        "subtotal_unitario_recalc_legacy", "total_unitario_recalc_legacy",
-        "diff_subtotal_unitario_legacy", "diff_total_unitario_legacy",
+        "nrorev",
+        "tasa",
+        "porcenfina",
+        "nrorev_status",
+        "subtotal_unitario_legacy",
+        "total_unitario_legacy",
+        "subtotal_unitario_recalc_legacy",
+        "total_unitario_recalc_legacy",
+        "diff_subtotal_unitario_legacy",
+        "diff_total_unitario_legacy",
         "validation_status",
         # Batch 3c: UIT implied fields
-        "uit_implicita", "uit_implicita_status",
+        "uit_implicita",
+        "uit_implicita_status",
         # Batch 3d: UIT validation human-readable detail
-        "uit_validacion_detalle", "existing_liquidacion_general",
+        "uit_validacion_detalle",
+        "existing_liquidacion_general",
     )
 
     def __init__(self):
@@ -920,17 +994,25 @@ class ParsedRow:
             str(self.total) if self.total else "",         # TOTAL
             str(self.tasa_igv) if self.tasa_igv else "",   # TASAIGV
             str(self.imp_bruto) if self.imp_bruto is not None else "",  # IMPBRUTO
-            str(self.aporte_codemu) if self.aporte_codemu is not None else "",  # APORCODEMU
+            str(self.aporte_codemu)
+            if self.aporte_codemu is not None
+            else "",  # APORCODEMU
             str(self.fondo_comun) if self.fondo_comun is not None else "",  # FONDOCOMUN
             str(self.honorario) if self.honorario is not None else "",  # HONORARIO
-            str(self.impuesto_renta) if self.impuesto_renta is not None else "",  # IMPUESRENTA
-            str(self.neto_honorario) if self.neto_honorario is not None else "",  # NETOHONORA
+            str(self.impuesto_renta)
+            if self.impuesto_renta is not None
+            else "",  # IMPUESRENTA
+            str(self.neto_honorario)
+            if self.neto_honorario is not None
+            else "",  # NETOHONORA
             str(self.renta_cip) if self.renta_cip is not None else "",  # RENTACIP
             str(self.dscto) if self.dscto is not None else "",  # DSCTO
             str(self.retencion) if self.retencion is not None else "",  # RETENCION
             self.delegado,          # DELEGADO
             self.cip,               # CIP
-            str(self.categoria_raw) if self.categoria_raw is not None else "",  # CATEGORIA
+            str(self.categoria_raw)
+            if self.categoria_raw is not None
+            else "",  # CATEGORIA
             self.categoria_mapped or "",  # CATEGORIA_MAPPED
             self.categoria_status,  # CATEGORIA_STATUS
             self.pendientes,        # PENDIENTES
@@ -944,7 +1026,9 @@ class ParsedRow:
             self.nro_orden,         # NROORDEN
             self.dictamen,          # DICTAMEN
             self.usuario,           # USUARIO
-            str(self.cantidad_visitas) if self.cantidad_visitas is not None else "",  # cantidad_visitas
+            str(self.cantidad_visitas)
+            if self.cantidad_visitas is not None
+            else "",  # cantidad_visitas
             self.visitas_status,    # VISITAS_STATUS
             self.documento_tipo,    # TIPO_DOCUMENTO
             self.documento_numero,  # NUMERO_DOCUMENTO
@@ -957,15 +1041,29 @@ class ParsedRow:
             str(self.tasa) if self.tasa is not None else "",       # TASA
             str(self.porcenfina) if self.porcenfina is not None else "",  # PORCENFINA
             self.nrorev_status,     # NROREV_STATUS
-            str(self.subtotal_unitario_legacy) if self.subtotal_unitario_legacy is not None else "",  # SUBTOTAL_UNITARIO_LEGACY
-            str(self.total_unitario_legacy) if self.total_unitario_legacy is not None else "",        # TOTAL_UNITARIO_LEGACY
-            str(self.subtotal_unitario_recalc_legacy) if self.subtotal_unitario_recalc_legacy is not None else "",  # SUBTOTAL_UNITARIO_RECALC
-            str(self.total_unitario_recalc_legacy) if self.total_unitario_recalc_legacy is not None else "",          # TOTAL_UNITARIO_RECALC
-            str(self.diff_subtotal_unitario_legacy) if self.diff_subtotal_unitario_legacy is not None else "",      # DIFF_SUBTOTAL_UNITARIO
-            str(self.diff_total_unitario_legacy) if self.diff_total_unitario_legacy is not None else "",            # DIFF_TOTAL_UNITARIO
+            str(self.subtotal_unitario_legacy)
+            if self.subtotal_unitario_legacy is not None
+            else "",  # SUBTOTAL_UNITARIO_LEGACY
+            str(self.total_unitario_legacy)
+            if self.total_unitario_legacy is not None
+            else "",  # TOTAL_UNITARIO_LEGACY
+            str(self.subtotal_unitario_recalc_legacy)
+            if self.subtotal_unitario_recalc_legacy is not None
+            else "",  # SUBTOTAL_UNITARIO_RECALC
+            str(self.total_unitario_recalc_legacy)
+            if self.total_unitario_recalc_legacy is not None
+            else "",  # TOTAL_UNITARIO_RECALC
+            str(self.diff_subtotal_unitario_legacy)
+            if self.diff_subtotal_unitario_legacy is not None
+            else "",  # DIFF_SUBTOTAL_UNITARIO
+            str(self.diff_total_unitario_legacy)
+            if self.diff_total_unitario_legacy is not None
+            else "",  # DIFF_TOTAL_UNITARIO
             self.validation_status,  # VALIDATION_STATUS
             # Batch 3c: UIT implied columns
-            str(self.uit_implicita) if self.uit_implicita is not None else "",        # UIT_IMPLICITA
+            str(self.uit_implicita)
+            if self.uit_implicita is not None
+            else "",  # UIT_IMPLICITA
             self.uit_implicita_status,  # UIT_IMPLICITA_STATUS
             # Batch 3d: UIT validation human-readable detail
             self.uit_validacion_detalle,  # UIT_VALIDACION_DETALLE
@@ -1152,7 +1250,10 @@ def _parse_row(fields: list, row_idx: int) -> tuple[ParsedRow, str]:
         row.total_unitario_recalc_legacy = None
 
     # Diff between legacy source and recalculated
-    if row.subtotal_unitario_legacy is not None and row.subtotal_unitario_recalc_legacy is not None:
+    if (
+        row.subtotal_unitario_legacy is not None
+        and row.subtotal_unitario_recalc_legacy is not None
+    ):
         try:
             row.diff_subtotal_unitario_legacy = abs(
                 row.subtotal_unitario_legacy - row.subtotal_unitario_recalc_legacy
@@ -1162,7 +1263,10 @@ def _parse_row(fields: list, row_idx: int) -> tuple[ParsedRow, str]:
     else:
         row.diff_subtotal_unitario_legacy = None
 
-    if row.total_unitario_legacy is not None and row.total_unitario_recalc_legacy is not None:
+    if (
+        row.total_unitario_legacy is not None
+        and row.total_unitario_recalc_legacy is not None
+    ):
         try:
             row.diff_total_unitario_legacy = abs(
                 row.total_unitario_legacy - row.total_unitario_recalc_legacy
@@ -1222,7 +1326,9 @@ def _parse_row(fields: list, row_idx: int) -> tuple[ParsedRow, str]:
 
     # Report NROREV anomaly when visits could not be determined from NROREV
     if row.visitas_status in ("missing", "non_positive"):
-        row.anomalies.append(f"NROREV {row.visitas_status}: cantidad_visitas no determinable")
+        row.anomalies.append(
+            f"NROREV {row.visitas_status}: cantidad_visitas no determinable"
+        )
 
     # ── NROFACTURA + FECOMPRO ────────────────────────────────────────────────
     nro_fac_raw = col(_COL_NROFACTURA)
@@ -1267,7 +1373,13 @@ def _parse_row(fields: list, row_idx: int) -> tuple[ParsedRow, str]:
         row.modo_calculo = "TARIFA"
 
     # ── Encode issues in text fields ─────────────────────────────────────────
-    for field_name in ("nombre", "razon_social", "direccion", "delegado", "delegado_nombre"):
+    for field_name in (
+        "nombre",
+        "razon_social",
+        "direccion",
+        "delegado",
+        "delegado_nombre",
+    ):
         val = getattr(row, field_name, "")
         if val and "�" in val:
             row.anomalies.append("Encoding issue en texto")
@@ -1327,44 +1439,99 @@ from modules.liquidaciones.domain.services.core.liquidacion_legacy.liquidacion_l
 )
 # ── Report generation helpers ──────────────────────────────────────────────────
 
+
 def _build_rechazo_headers() -> list[str]:
     return [
-        "FILA", "EXPEDIENTE", "MOTIVO", "CATEGORIA_SOURCE",
-        "CATEGORIA_TARGET", "TARIFA_ID", "SUBTOTAL_SOURCE",
-        "SUBTOTAL_RECALC", "DIF", "MODO_CALCULO", "SUBIDO",
+        "FILA",
+        "EXPEDIENTE",
+        "MOTIVO",
+        "CATEGORIA_SOURCE",
+        "CATEGORIA_TARGET",
+        "TARIFA_ID",
+        "SUBTOTAL_SOURCE",
+        "SUBTOTAL_RECALC",
+        "DIF",
+        "MODO_CALCULO",
+        "SUBIDO",
     ]
 
 
 def _build_detailed_headers() -> list[str]:
     """Headers for the detailed report covering all source + parsed fields."""
     return [
-        "FILA", "ID", "NRO", "NROEXPDTE", "CODPAGO", "DPTOPRDI", "DIRECCION",
-        "NOMBRE", "RAZONSOCIAL", "RUC", "DNI",
-        "FECHA", "UIT", "PORCENTAJE", "SUBTOTAL", "IGV", "TOTAL", "TASAIGV",
-        "IMPBRUTO", "APORCODEMU", "FONDOCOMUN", "HONORARIO", "IMPUESRENTA",
-        "NETOHONORA", "RENTACIP", "DSCTO", "RETENCION",
-        "DELEGADO", "CIP",
-        "CATEGORIA", "CATEGORIA_MAPPED", "CATEGORIA_STATUS",
-        "PENDIENTES", "PAGADAS", "REALIZADAS", "DIFERENCIA",
-        "NROFACTURA", "FECOMPRO", "FECHAPRES", "FECHAREVI", "NROORDEN",
-        "DICTAMEN", "USUARIO",
-        "cantidad_visitas", "VISITAS_STATUS",
-        "TIPO_DOCUMENTO", "NUMERO_DOCUMENTO",
-        "DELEGADO_NOMBRE", "MODO_CALCULO", "RECHAZO_MOTIVO", "ANOMALIES",
+        "FILA",
+        "ID",
+        "NRO",
+        "NROEXPDTE",
+        "CODPAGO",
+        "DPTOPRDI",
+        "DIRECCION",
+        "NOMBRE",
+        "RAZONSOCIAL",
+        "RUC",
+        "DNI",
+        "FECHA",
+        "UIT",
+        "PORCENTAJE",
+        "SUBTOTAL",
+        "IGV",
+        "TOTAL",
+        "TASAIGV",
+        "IMPBRUTO",
+        "APORCODEMU",
+        "FONDOCOMUN",
+        "HONORARIO",
+        "IMPUESRENTA",
+        "NETOHONORA",
+        "RENTACIP",
+        "DSCTO",
+        "RETENCION",
+        "DELEGADO",
+        "CIP",
+        "CATEGORIA",
+        "CATEGORIA_MAPPED",
+        "CATEGORIA_STATUS",
+        "PENDIENTES",
+        "PAGADAS",
+        "REALIZADAS",
+        "DIFERENCIA",
+        "NROFACTURA",
+        "FECOMPRO",
+        "FECHAPRES",
+        "FECHAREVI",
+        "NROORDEN",
+        "DICTAMEN",
+        "USUARIO",
+        "cantidad_visitas",
+        "VISITAS_STATUS",
+        "TIPO_DOCUMENTO",
+        "NUMERO_DOCUMENTO",
+        "DELEGADO_NOMBRE",
+        "MODO_CALCULO",
+        "RECHAZO_MOTIVO",
+        "ANOMALIES",
         # Batch 3b: NROREV correction fields
-        "NROREV", "TASA", "PORCENFINA", "NROREV_STATUS",
-        "SUBTOTAL_UNITARIO_LEGACY", "TOTAL_UNITARIO_LEGACY",
-        "SUBTOTAL_UNITARIO_RECALC", "TOTAL_UNITARIO_RECALC",
-        "DIFF_SUBTOTAL_UNITARIO", "DIFF_TOTAL_UNITARIO",
+        "NROREV",
+        "TASA",
+        "PORCENFINA",
+        "NROREV_STATUS",
+        "SUBTOTAL_UNITARIO_LEGACY",
+        "TOTAL_UNITARIO_LEGACY",
+        "SUBTOTAL_UNITARIO_RECALC",
+        "TOTAL_UNITARIO_RECALC",
+        "DIFF_SUBTOTAL_UNITARIO",
+        "DIFF_TOTAL_UNITARIO",
         "VALIDATION_STATUS",
         # Batch 3c: UIT implied headers
-        "UIT_IMPLICITA", "UIT_IMPLICITA_STATUS",
+        "UIT_IMPLICITA",
+        "UIT_IMPLICITA_STATUS",
         # Batch 3d: UIT validation human-readable detail
         "UIT_VALIDACION_DETALLE",
     ]
 
 
 # ── Batch 4: DB Write Helpers ─────────────────────────────────────────────────
+
 
 def _es_diff_alta(
     row: "ParsedRow",
@@ -1398,7 +1565,9 @@ def _resolve_entidad_municipalidad_proyecto(
         municipalidad = Municipalidad.objects.filter(codigo=row.codpago).first()
 
     if municipalidad is None and distrito_nombre:
-        municipalidad = Municipalidad.objects.filter(nombre__iexact=distrito_nombre).first()
+        municipalidad = Municipalidad.objects.filter(
+            nombre__iexact=distrito_nombre
+        ).first()
 
     if municipalidad is None:
         lookup = f"CODPAGO={row.codpago or '-'} DPTOPRDI={distrito_nombre or '-'}"
@@ -1426,8 +1595,12 @@ def _resolve_entidad_municipalidad_proyecto(
         entidad=entidad,
         nombre_propietario=nombre_propietario[:255],
         entidad_razon_social=razon_social[:255],
-        entidad_tipo_documento=(row.documento_tipo if row.documento_tipo != "SIN_DOCUMENTO" else None),
-        entidad_numero_documento=(row.documento_numero if row.documento_tipo != "SIN_DOCUMENTO" else None),
+        entidad_tipo_documento=(
+            row.documento_tipo if row.documento_tipo != "SIN_DOCUMENTO" else None
+        ),
+        entidad_numero_documento=(
+            row.documento_numero if row.documento_tipo != "SIN_DOCUMENTO" else None
+        ),
         direccion=(row.direccion or None),
         distrito=distrito,
         descripcion=f"Legacy IO fila {row.row_index} ID {row.id_val or ''}".strip(),
@@ -1494,9 +1667,7 @@ def _resolve_inspector_operacion_for_legacy_io(
         TipoLiquidacionConstants.INSPECCION_OBRA,
     ]
     categoria = (
-        row.categoria_mapped
-        if row.categoria_mapped in {"1", "2", "3", "4"}
-        else "1"
+        row.categoria_mapped if row.categoria_mapped in {"1", "2", "3", "4"} else "1"
     )
     especialidad = _resolve_especialidad_revision_por_capitulo(inspector)
     if especialidad is None:
@@ -1523,7 +1694,9 @@ def _resolve_inspector_operacion_for_legacy_io(
     if especialidad is None:
         return None
 
-    tipo_io = TipoLiquidacion.objects.get(codigo=TipoLiquidacionConstants.INSPECCION_OBRA)
+    tipo_io = TipoLiquidacion.objects.get(
+        codigo=TipoLiquidacionConstants.INSPECCION_OBRA
+    )
     existing_io = InspectorOperacion.objects.filter(
         inspector=inspector,
         tipo_liquidacion=tipo_io,
@@ -1663,16 +1836,94 @@ def _ensure_legacy_inspector(
 
 def _diff_exceeds_threshold(row: "ParsedRow", threshold: Decimal) -> bool:
     """Return whether either legacy unit-value difference exceeds the threshold."""
-    return max(
+    return (
+        max(
         row.diff_subtotal_unitario_legacy or Decimal("0"),
         row.diff_total_unitario_legacy or Decimal("0"),
-    ) > threshold
+        )
+        > threshold
+    )
 
 
-def _resolve_valid_uit_value(
-    row: "ParsedRow", valid_values: set[int]
-) -> int | None:
-    """Resolve the source UIT, or its amount-implied fallback, from the catalog."""
+def _uit_vigente_en_fecha(fecha: date | None) -> int | None:
+    """UIT vigente a la fecha de la fila (el de su epoca).
+
+    Una liquidacion se valua siempre con el UIT de su epoca. Aceptar un UIT
+    implicito de otro ano deja la liquidacion valuada con una tarifa que no
+    corresponde a su fecha.
+    """
+    if fecha is None:
+        return None
+    registro = (
+        UITModel.objects.filter(periodo_inicio__lte=fecha)
+        .filter(models.Q(periodo_fin__isnull=True) | models.Q(periodo_fin__gte=fecha))
+        .order_by("-periodo_inicio")
+        .first()
+    )
+    return int(registro.valor) if registro else None
+
+
+def _importes_por_logica(
+    row: "ParsedRow",
+    uit_epoca: int | None,
+) -> tuple[Decimal | None, Decimal | None]:
+    """Subtotal y total segun la logica del UIT de la epoca.
+
+    SUBTOTAL = NROREV x TASA x UIT(epoca)
+    TOTAL    = SUBTOTAL x (1 + IGV%)
+    """
+    if uit_epoca is None or not row.nrorev or not row.tasa:
+        return None, None
+    subtotal = (
+        Decimal(uit_epoca) * row.tasa * Decimal(row.nrorev)
+    ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    tasa_igv = (Decimal(row.tasa_igv) / Decimal(100)) if row.tasa_igv else Decimal("0.18")
+    total = (subtotal * (Decimal(1) + tasa_igv)).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+    return subtotal, total
+
+
+def _auditar_uit_epoca(command, row: "ParsedRow") -> None:
+    """Registra como se valoraria la liquidacion con el UIT de SU epoca.
+
+    Solo informa: no escribe. Sirve para el dry-run y para el reporte.
+    """
+    epoca = _uit_vigente_en_fecha(row.fecha)
+    subtotal_logica, total_logica = _importes_por_logica(row, epoca)
+    if subtotal_logica is None or row.subtotal is None:
+        return
+    coincide = abs(Decimal(row.subtotal) - subtotal_logica) <= Decimal("0.01")
+    registro = {
+        "fila": row.row_index,
+        "id": row.id_val,
+        "expediente": row.nroexpdte,
+        "fecha": row.fecha,
+        "categoria": row.categoria_mapped,
+        "tasa": row.tasa,
+        "nrorev": row.nrorev,
+        "uit_epoca": epoca,
+        "uit_declarado": row.uit,
+        "uit_implicita": row.uit_implicita,
+        "subtotal_csv": str(row.subtotal),
+        "subtotal_logica": str(subtotal_logica),
+        "total_csv": str(row.total) if row.total is not None else "",
+        "total_logica": str(total_logica),
+        "diferencia": str(Decimal(row.subtotal) - subtotal_logica),
+        "coincide": coincide,
+    }
+    command.auditoria_uit.append(registro)
+    if not coincide:
+        command.auditoria_uit_difieren.append(registro)
+
+
+def _resolve_valid_uit_value(row: "ParsedRow", valid_values: set[int]) -> int | None:
+    """Resolve the UIT of the row: always the one vigente at its date.
+
+    El UIT implicita (derivado del importe) deja de ser fuente de verdad: solo
+    se acepta cuando coincide con el UIT vigente a la fecha de la fila.
+    """
+
     def as_catalog_value(value: Decimal | None) -> int | None:
         if value is None or value != value.to_integral_value():
             return None
@@ -1682,8 +1933,9 @@ def _resolve_valid_uit_value(
     source_value = as_catalog_value(row.uit)
     implied_value = as_catalog_value(row.uit_implicita)
 
-    if row.validation_status in ("DIF_SUBTOTAL", "DIF_TOTAL"):
-        return implied_value
+    epoca = _uit_vigente_en_fecha(row.fecha)
+    if epoca is not None and epoca in valid_values:
+        return epoca
     if source_value is not None:
         return source_value
     return implied_value
@@ -1700,6 +1952,9 @@ def _create_legacy_liquidations(
     jw=None,
     joined_csv_file=None,
     ws_joined=None,
+    recalcular: bool = False,
+    dry_run: bool = False,
+    recalculadas: list | None = None,
 ) -> dict:
     """Create DB records for valid parsed rows.
 
@@ -1713,6 +1968,11 @@ def _create_legacy_liquidations(
         rejected_rows: list to accumulate rejection dicts (for post-loop clean report)
         jw: csv.writer for joined rechazo CSV (writes live on rejection)
         ws_joined: openpyxl worksheet for joined rechazo XLSX (writes live on rejection)
+        recalcular: Recalcula el importe con el UIT vigente a la fecha de la fila
+            (SUBTOTAL = NROREV x TASA x UIT(epoca)) y actualiza las
+            liquidaciones ya importadas que conservan el importe del CSV.
+        dry_run: No escribe en la base.
+        recalculadas: Lista donde se acumulan las liquidaciones recalculadas.
 
     Returns:
         Dict with counters: created, rejected, errors
@@ -1739,7 +1999,11 @@ def _create_legacy_liquidations(
         "contactos_omitidos": 0,
     }
     perfil_cache: dict[str, tuple[object | None, str]] = {}
-    valid_uit_values = {int(value) for value in UITModel.objects.values_list("valor", flat=True)}
+    if recalculadas is None:
+        recalculadas = []
+    valid_uit_values = {
+        int(value) for value in UITModel.objects.values_list("valor", flat=True)
+    }
 
     # Filter rows that should be rejected structurally (already set by _parse_row)
     rows_to_process: list[ParsedRow] = []
@@ -1748,7 +2012,12 @@ def _create_legacy_liquidations(
         if row.rechazo_motivo:
             continue
 
-        if row.subtotal is None or row.total is None or row.nrorev is None or row.nrorev <= 0:
+        if (
+            row.subtotal is None
+            or row.total is None
+            or row.nrorev is None
+            or row.nrorev <= 0
+        ):
             counters["rechazadas_sin_datos"] += 1
             continue
 
@@ -1791,11 +2060,18 @@ def _create_legacy_liquidations(
             with transaction.atomic():
                 # Lookup tariff if not CATEGORIA=0
                 fecha_liq = row.fecha or date_type.today()
-                fecha_registro = timezone.make_aware(datetime.combine(fecha_liq, time.min))
+                fecha_registro = timezone.make_aware(
+                    datetime.combine(fecha_liq, time.min)
+                )
                 tarifa = _lookup_tarifa_categoria_visitas(row, fecha_liq)
 
                 # Determine modo_calculo. Batch 4 imports diff/no-tariff rows as MANUAL unless rejected by flags.
-                if row.categoria_status == "null_tariff" or tarifa is None or row.validation_status in {"DIF_SUBTOTAL", "DIF_TOTAL", "OK_UIT_IMPLICITA"}:
+                if (
+                    row.categoria_status == "null_tariff"
+                    or tarifa is None
+                    or row.validation_status
+                    in {"DIF_SUBTOTAL", "DIF_TOTAL", "OK_UIT_IMPLICITA"}
+                ):
                     modo_calculo = ModoCalculoLiquidacion.MANUAL
                 else:
                     modo_calculo = ModoCalculoLiquidacion.TARIFA
@@ -1804,7 +2080,9 @@ def _create_legacy_liquidations(
                 # Fallback applies only when source row has both delegado and cip,
                 # and the lookup returns SIN_COLEGIADO (CIP 404) or ERROR_CIP.
                 # For rows with no CIP/delegado, keep PARCIAL behavior (no fallback).
-                pre_check_perfil, pre_check_status = _resolve_perfil_cip(row.cip, perfil_cache)
+                pre_check_perfil, pre_check_status = _resolve_perfil_cip(
+                    row.cip, perfil_cache
+                )
                 use_fallback = (
                     row.delegado
                     and row.cip is not None
@@ -1832,22 +2110,86 @@ def _create_legacy_liquidations(
                     f"MODO_IMPORTACION={modo_calculo}",
                 ]
                 if row.uit_validacion_detalle:
-                    desc_parts.append(f"UIT_VALIDACION_DETALLE={row.uit_validacion_detalle}")
+                    desc_parts.append(
+                        f"UIT_VALIDACION_DETALLE={row.uit_validacion_detalle}"
+                    )
                 if modo_calculo == ModoCalculoLiquidacion.MANUAL:
-                    desc_parts.append("Importado como MANUAL por legacy/diff/sin tarifa")
+                    desc_parts.append(
+                        "Importado como MANUAL por legacy/diff/sin tarifa"
+                    )
                 if use_fallback:
                     desc_parts.append(f"FALLBACK_CIP={row.cip} ({pre_check_status})")
                 descripcion = "\n".join(desc_parts)
 
+                # Importe segun la logica del UIT de la epoca de la fila.
+                subtotal_logica, total_logica = _importes_por_logica(
+                    row, _uit_vigente_en_fecha(row.fecha)
+                )
+                if subtotal_logica is not None and row.subtotal is not None:
+                    if abs(Decimal(row.subtotal) - subtotal_logica) > Decimal("0.01"):
+                        counters["importe_recalculado"] = (
+                            counters.get("importe_recalculado", 0) + 1
+                        )
+                # Con --recalcular el importe guardado es el de la logica; sin
+                # el flag se conserva el importe historico del CSV.
+                if recalcular and subtotal_logica is not None:
+                    sub_total_a_guardar = subtotal_logica
+                    total_a_guardar = total_logica
+                else:
+                    sub_total_a_guardar = row.subtotal
+                    total_a_guardar = row.total or Decimal("0")
+
                 if row.existing_liquidacion_general is not None:
                     lg = row.existing_liquidacion_general
                     counters["liquidaciones_existentes"] += 1
+                    # --recalcular: actualiza el importe de las liquidaciones ya
+                    # importadas para que coincidan con la logica del UIT de su
+                    # epoca. Solo toca las que conservan el importe del CSV.
+                    if recalcular and subtotal_logica is not None:
+                        if (
+                            abs(Decimal(lg.sub_total) - subtotal_logica) > Decimal("0.01")
+                            and abs(Decimal(lg.sub_total) - Decimal(row.subtotal))
+                            <= Decimal("0.01")
+                        ):
+                            if not dry_run:
+                                lg.sub_total = subtotal_logica
+                                lg.total = total_logica
+                                lg.uit_snapshot = Decimal(uit_valor or 0)
+                                if uit_a_usar is not None:
+                                    lg.uit_id = uit_a_usar
+                                lg.save(
+                                    update_fields=[
+                                        "sub_total",
+                                        "total",
+                                        "uit_snapshot",
+                                        "uit_id",
+                                        "updated_at",
+                                    ]
+                                )
+                            counters["liquidaciones_recalculadas"] = (
+                                counters.get("liquidaciones_recalculadas", 0) + 1
+                            )
+                            recalculadas.append(
+                                {
+                                    "fila": row.row_index,
+                                    "id": row.id_val,
+                                    "expediente": row.nroexpdte,
+                                    "fecha": row.fecha,
+                                    "uit_epoca": _uit_vigente_en_fecha(row.fecha),
+                                    "sub_total_anterior": str(lg.sub_total),
+                                    "sub_total_nuevo": str(subtotal_logica),
+                                    "diferencia": str(
+                                        Decimal(lg.sub_total) - subtotal_logica
+                                    ),
+                                }
+                            )
                 else:
                     # Resolve entity/project/municipalidad
-                    entidad, municipalidad, proyecto = _resolve_entidad_municipalidad_proyecto(row)
+                    entidad, municipalidad, proyecto = (
+                        _resolve_entidad_municipalidad_proyecto(row)
+                    )
 
-                    # Resolve a catalog-backed UIT, preferring the amount-implied
-                    # value when the CSV UIT does not explain the source amount.
+                    # Resolve a catalog-backed UIT for the row date.
                     uit_a_usar = None
                     if uit_valor is not None:
                         uit_a_usar = _LegacyVisitasCore.ensure_uit_for_legacy(
@@ -1859,25 +2201,31 @@ def _create_legacy_liquidations(
                     lg = LiquidacionGeneral.objects.create(
                         proyecto=proyecto,
                         municipalidad=municipalidad,
-                        tipo_liquidacion=TipoLiquidacion.objects.get(codigo=TipoLiquidacionConstants.INSPECCION_OBRA),
+                        tipo_liquidacion=TipoLiquidacion.objects.get(
+                            codigo=TipoLiquidacionConstants.INSPECCION_OBRA
+                        ),
                         expediente=row.nroexpdte or "",
                         numero_revision=1,
                         fecha_registro=fecha_registro,
-                        sub_total=row.subtotal,
-                        total=row.total or Decimal("0"),
+                        sub_total=sub_total_a_guardar,
+                        total=total_a_guardar,
                         modo_calculo=modo_calculo,
                         descripcion_legacy=descripcion,
                         observacion=f"Legacy IO import fila {row.row_index} ID {row.id_val or ''}".strip(),
                         denominacion_de_proyecto=row.nombre or row.razon_social or None,
                         legacy=True,
                         uit_id=uit_a_usar,
-                        uit_snapshot=Decimal(str(uit_a_usar.valor)) if uit_a_usar else None,
+                        uit_snapshot=Decimal(str(uit_a_usar.valor))
+                        if uit_a_usar
+                        else None,
                     )
 
                     # Create LiquidacionInspeccionObra
                     # numero=row.id_val preserves the historical legacy ID from source CSV col 0.
                     # AutoNumeroModel.save() respects a non-None numero (no auto-increment).
-                    LiquidacionInspeccionObra.objects.create(liquidacion=lg, numero=row.id_val)
+                    LiquidacionInspeccionObra.objects.create(
+                        liquidacion=lg, numero=row.id_val
+                    )
                     counters["liquidaciones_nuevas"] += 1
 
                 # Create LiquidacionPorCategoriaVisitas (one per row)
@@ -1888,9 +2236,23 @@ def _create_legacy_liquidations(
                     liquidacion_visitas = LiquidacionPorCategoriaVisitas.objects.create(
                         liquidacion_general=lg,
                         cantidad_visitas=int(row.nrorev),
-                        porcentaje_uit=(tarifa.porcentaje_uit if tarifa is not None and modo_calculo == ModoCalculoLiquidacion.TARIFA else None),
-                        categoria=(tarifa.categoria_visitas if tarifa is not None and modo_calculo == ModoCalculoLiquidacion.TARIFA else row.categoria_mapped),
-                        tarifa_aplicada=(tarifa if modo_calculo == ModoCalculoLiquidacion.TARIFA else None),
+                        porcentaje_uit=(
+                            tarifa.porcentaje_uit
+                            if tarifa is not None
+                            and modo_calculo == ModoCalculoLiquidacion.TARIFA
+                            else None
+                        ),
+                        categoria=(
+                            tarifa.categoria_visitas
+                            if tarifa is not None
+                            and modo_calculo == ModoCalculoLiquidacion.TARIFA
+                            else row.categoria_mapped
+                        ),
+                        tarifa_aplicada=(
+                            tarifa
+                            if modo_calculo == ModoCalculoLiquidacion.TARIFA
+                            else None
+                        ),
                     )
 
                 inspector_created, inspector_status = _ensure_legacy_inspector(
@@ -1904,36 +2266,55 @@ def _create_legacy_liquidations(
                     counters["inspectores_asociados"] += 1
                     if inspector_status.startswith("FALLBACK_"):
                         counters["fallback_creados"] += 1
-                        reporte_writer.writerow([
+                        reporte_writer.writerow(
+                            [
                             row.row_index,
                             row.nroexpdte or "",
                             f"FALLBACK ({inspector_status})",
                             "CREADO",
-                        ])
+                            ]
+                        )
                 else:
                     counters["inspectores_saltados"] += 1
                     if inspector_status == "SIN_CIP":
                         motivo = "Sin inspector"
                     else:
                         motivo = f"CIP no resuelto: {inspector_status}"
-                    reporte_writer.writerow([
+                    reporte_writer.writerow(
+                        [
                         row.row_index,
                         row.nroexpdte or "",
                         motivo,
                         "PARCIAL",
-                    ])
+                        ]
+                    )
 
                 # ── Upsert LiquidacionComprobante ───────────────────────────────
                 # Parse TPERSONA / TDNI / TFONO for contacto upsert below
                 nombres, apellidos = _parse_tpersona(
                     row.raw[_COL_TPERSONA] if len(row.raw) > _COL_TPERSONA else None
                 )
-                dni_telefono_raw = row.raw[_COL_TDNI] if len(row.raw) > _COL_TDNI else None
-                telefono_raw = row.raw[_COL_TFONO] if len(row.raw) > _COL_TFONO else None
-                dni_val = str(dni_telefono_raw).strip() if dni_telefono_raw and str(dni_telefono_raw).strip().upper() not in ("NULL", "") else None
-                telefono_val = str(telefono_raw).strip() if telefono_raw and str(telefono_raw).strip().upper() not in ("NULL", "") else None
+                dni_telefono_raw = (
+                    row.raw[_COL_TDNI] if len(row.raw) > _COL_TDNI else None
+                )
+                telefono_raw = (
+                    row.raw[_COL_TFONO] if len(row.raw) > _COL_TFONO else None
+                )
+                dni_val = (
+                    str(dni_telefono_raw).strip()
+                    if dni_telefono_raw
+                    and str(dni_telefono_raw).strip().upper() not in ("NULL", "")
+                    else None
+                )
+                telefono_val = (
+                    str(telefono_raw).strip()
+                    if telefono_raw
+                    and str(telefono_raw).strip().upper() not in ("NULL", "")
+                    else None
+                )
 
-                comp, comp_status = _upsert_liquidacion_comprobante(
+                if command.sync_comprobantes:
+                    _comp, comp_status = _upsert_liquidacion_comprobante(
                     liquidacion=lg,
                     nro_factura_raw=row.nro_factura,
                     fe_compro=row.fe_factura,
@@ -1966,7 +2347,9 @@ def _create_legacy_liquidations(
         except Exception as exc:
             counters["errors"] += 1
             counters["error_details"].append(f"Fila {row.row_index}: {exc}")
-            command._log_error(f"  ERROR creando liquidación fila {row.row_index}: {exc}")
+            command._log_error(
+                f"  ERROR creando liquidación fila {row.row_index}: {exc}"
+            )
         else:
             counters["created"] += 1
 
@@ -2014,6 +2397,15 @@ class Command(BaseCommand):
             help="Procesar solo filas con FECHA mayor o igual a esta fecha (dd/mm/yyyy o yyyy-mm-dd)",
         )
         parser.add_argument(
+            "--recalcular",
+            action="store_true",
+            help=(
+                "Recalcular el importe de las liquidaciones con el UIT vigente a "
+                "SU fecha (SUBTOTAL = NROREV x TASA x UIT(epoca)) y corregir las "
+                "ya importadas que conservan el importe historico del CSV"
+            ),
+        )
+        parser.add_argument(
             "--dry-run",
             action="store_true",
             help="Validar filas sin escribir en la BD (reportes y consola únicamente)",
@@ -2044,7 +2436,11 @@ class Command(BaseCommand):
             action="store_true",
             help="Eliminar liquidaciones legacy IO antes de importar (Batch 4)",
         )
-
+        parser.add_argument(
+            "--sync-comprobantes",
+            action="store_true",
+            help="Crear o actualizar comprobantes legacy IO (desactivado por defecto)",
+        )
 
     def _log(self, msg):
         """Write a message, handling Windows encoding quirks."""
@@ -2082,7 +2478,12 @@ class Command(BaseCommand):
         self.rechazar_dif_alta = bool(options.get("rechazar_dif_alta", False))
         self.umbral_dif = Decimal(str(options.get("umbral_dif", 1.0)))
         self.rechazar_sin_tarifa = bool(options.get("rechazar_sin_tarifa", False))
+        self.recalcular = bool(options.get("recalcular", False))
+        self.recalculadas: list[dict] = []
+        self.auditoria_uit: list[dict] = []
+        self.auditoria_uit_difieren: list[dict] = []
         self.reset = bool(options.get("reset", False))
+        self.sync_comprobantes = bool(options.get("sync_comprobantes", False))
         self.traceback = bool(options.get("traceback", False))
         fecha_desde_raw = options.get("fecha_desde")
         self.fecha_desde = None
@@ -2090,7 +2491,9 @@ class Command(BaseCommand):
             try:
                 self.fecha_desde = _parse_fecha(fecha_desde_raw)
             except ValueError as exc:
-                raise CommandError(f"--fecha-desde inválida: {fecha_desde_raw!r}") from exc
+                raise CommandError(
+                    f"--fecha-desde inválida: {fecha_desde_raw!r}"
+                ) from exc
             if self.fecha_desde is None:
                 raise CommandError(f"--fecha-desde inválida: {fecha_desde_raw!r}")
 
@@ -2102,7 +2505,9 @@ class Command(BaseCommand):
         else:
             self._log("[BATCH 4] Modo solo lectura (dry-run o solo-reporte).")
 
-        data_path = Path(options["data_path"]) if options["data_path"] else DEFAULT_DATA_PATH
+        data_path = (
+            Path(options["data_path"]) if options["data_path"] else DEFAULT_DATA_PATH
+        )
         if not data_path.exists():
             raise CommandError(f"Archivo de datos no encontrado: {data_path}")
 
@@ -2116,8 +2521,16 @@ class Command(BaseCommand):
 
         self._log("\n[import_legacy_inspeccion_obra] Starting...")
         self._log(f"  Source: {data_path}")
+        if self.sync_comprobantes:
+            self._log_warning(
+                "  --sync-comprobantes activo: se crearán o actualizarán comprobantes legacy IO."
+            )
+        else:
+            self._log("  Comprobantes: sincronización desactivada.")
         if self.fecha_desde is not None:
-            self._log_warning(f"  --fecha-desde: procesando FECHA >= {self.fecha_desde}")
+            self._log_warning(
+                f"  --fecha-desde: procesando FECHA >= {self.fecha_desde}"
+            )
 
         # ── Read TSV ─────────────────────────────────────────────────────────
         self._log("  Leyendo archivo CSV...")
@@ -2168,7 +2581,7 @@ class Command(BaseCommand):
                 if id_val is not None and not self.reset:
                     existing_inspeccion = (
                         LiquidacionInspeccionObra.objects.select_related("liquidacion")
-                        .filter(numero=id_val)
+                        .filter(numero=id_val, liquidacion__legacy=True)
                         .first()
                     )
 
@@ -2196,6 +2609,9 @@ class Command(BaseCommand):
                     )
 
                 parsed_rows.append(parsed)
+                # Auditoria del UIT por epoca (corre tambien en dry-run): la
+                # liquidacion se valua con el UIT vigente a SU fecha.
+                _auditar_uit_epoca(self, parsed)
             except Exception as exc:  # noqa: BLE001
                 parse_errors += 1
                 msg = f"Fila {idx}: {exc}"
@@ -2203,9 +2619,12 @@ class Command(BaseCommand):
                 self._log_error(f"  ERROR fila {idx}: {exc}")
                 if self.traceback:
                     import traceback
+
                     self._log_error(traceback.format_exc())
 
-        self._log(f"  Parseadas: {len(parsed_rows)} | Errores de parseo: {parse_errors}")
+        self._log(
+            f"  Parseadas: {len(parsed_rows)} | Errores de parseo: {parse_errors}"
+        )
 
         # ── Read source header for clean report (needed before opening joined/clean files) ──
         source_header: list[str] = []
@@ -2235,9 +2654,8 @@ class Command(BaseCommand):
 
         joined_csv_file = joined_csv_path.open("w", newline="", encoding="utf-8")
         jw = csv.writer(joined_csv_file)
-        joined_headers = (
-            ["FILA", "MOTIVO", "SUBIDO"]
-            + (source_header if source_header else [f"col_{i}" for i in range(63)])
+        joined_headers = ["FILA", "MOTIVO", "SUBIDO"] + (
+            source_header if source_header else [f"col_{i}" for i in range(63)]
         )
         jw.writerow(joined_headers)
         joined_csv_file.flush()
@@ -2280,14 +2698,32 @@ class Command(BaseCommand):
                     jw,
                     joined_csv_file,
                     ws_joined,
+                    recalcular=bool(self.recalcular),
+                    dry_run=bool(self.dry_run),
+                    recalculadas=self.recalculadas,
                 )
-                self._log(f"  Creadas: {db_counters['created']} | Errores: {db_counters['errors']}")
+                if self.recalculadas:
+                    self._log(
+                        self.style.WARNING(
+                            f"  Recalculadas con el UIT de su epoca: "
+                            f"{len(self.recalculadas)} liquidaciones"
+                        )
+                    )
+                self._log(
+                    f"  Creadas: {db_counters['created']} | Errores: {db_counters['errors']}"
+                )
                 if db_counters["rechazadas_diff_alta"]:
-                    self._log(f"  Rechazadas por diff alta: {db_counters['rechazadas_diff_alta']}")
+                    self._log(
+                        f"  Rechazadas por diff alta: {db_counters['rechazadas_diff_alta']}"
+                    )
                 if db_counters["rechazadas_sin_tarifa"]:
-                    self._log(f"  Rechazadas por sin tarifa: {db_counters['rechazadas_sin_tarifa']}")
+                    self._log(
+                        f"  Rechazadas por sin tarifa: {db_counters['rechazadas_sin_tarifa']}"
+                    )
                 if db_counters.get("rechazadas_cip_no_resuelto"):
-                    self._log(f"  Rechazadas por CIP no resuelto: {db_counters['rechazadas_cip_no_resuelto']}")
+                    self._log(
+                        f"  Rechazadas por CIP no resuelto: {db_counters['rechazadas_cip_no_resuelto']}"
+                    )
 
             # ── Write structurally rejected rows LIVE to joined/clean reports ──────────
             for pr in parsed_rows:
@@ -2303,12 +2739,14 @@ class Command(BaseCommand):
                     clean_csv_file.flush()
                     ws_clean.append(pr.raw)
                     # Accumulate for clean report
-                    rejected_rows.append({
+                    rejected_rows.append(
+                        {
                         "fila": pr.row_index,
                         "row": pr.raw,
                         "motivo": pr.rechazo_motivo,
                         "subido": "N/A",
-                    })
+                        }
+                    )
 
             # ── Write detailed report CSV ─────────────────────────────────────────
             self._log(f"  Escribiendo reporte detallado CSV: {detalle_csv_path}")
@@ -2339,32 +2777,56 @@ class Command(BaseCommand):
             # ── Compute counters ───────────────────────────────────────────────────
             processed = len(parsed_rows)
             structurally_rejected = sum(1 for pr in parsed_rows if pr.rechazo_motivo)
-            category_zero = sum(1 for pr in parsed_rows if pr.categoria_status == "null_tariff")
-            categoria_anomaly = sum(1 for pr in parsed_rows if pr.categoria_status == "anomaly")
-            inspector_candidates = sum(1 for pr in parsed_rows if pr.delegado and pr.cip is not None)
+            category_zero = sum(
+                1 for pr in parsed_rows if pr.categoria_status == "null_tariff"
+            )
+            categoria_anomaly = sum(
+                1 for pr in parsed_rows if pr.categoria_status == "anomaly"
+            )
+            inspector_candidates = sum(
+                1 for pr in parsed_rows if pr.delegado and pr.cip is not None
+            )
             factura_candidates = sum(
-                1 for pr in parsed_rows
+                1
+                for pr in parsed_rows
                 if pr.nro_factura and pr.nro_factura.strip() not in ("NULL", "")
             )
             # Contacto candidates: TPERSONA or TFONO present in source
             contacto_candidates = sum(
-                1 for pr in parsed_rows
+                1
+                for pr in parsed_rows
                 if (
-                    (len(pr.raw) > _COL_TPERSONA and str(pr.raw[_COL_TPERSONA] or "").strip().upper() not in ("", "NULL"))
-                    or (len(pr.raw) > _COL_TFONO and str(pr.raw[_COL_TFONO] or "").strip().upper() not in ("", "NULL"))
+                    (
+                        len(pr.raw) > _COL_TPERSONA
+                        and str(pr.raw[_COL_TPERSONA] or "").strip().upper()
+                        not in ("", "NULL")
+                    )
+                    or (
+                        len(pr.raw) > _COL_TFONO
+                        and str(pr.raw[_COL_TFONO] or "").strip().upper()
+                        not in ("", "NULL")
+                    )
                 )
             )
             encoding_issues = sum(
-                1 for pr in parsed_rows
+                1
+                for pr in parsed_rows
                 if any("Encoding issue" in a for a in pr.anomalies)
             )
-            validation_ok_exact = sum(1 for pr in parsed_rows if pr.validation_status == "OK")
-            validation_ok_uit_implicita = sum(1 for pr in parsed_rows if pr.validation_status == "OK_UIT_IMPLICITA")
+            validation_ok_exact = sum(
+                1 for pr in parsed_rows if pr.validation_status == "OK"
+            )
+            validation_ok_uit_implicita = sum(
+                1 for pr in parsed_rows if pr.validation_status == "OK_UIT_IMPLICITA"
+            )
             validation_diff_unexplained = sum(
-                1 for pr in parsed_rows
+                1
+                for pr in parsed_rows
                 if pr.validation_status in ("DIF_SUBTOTAL", "DIF_TOTAL")
             )
-            validation_sin_datos = sum(1 for pr in parsed_rows if pr.validation_status == "SIN_DATOS")
+            validation_sin_datos = sum(
+                1 for pr in parsed_rows if pr.validation_status == "SIN_DATOS"
+            )
 
             # ── Console summary ──────────────────────────────────────────────────
             self._log_success("\n=== REPORTE DE IMPORTACION LEGACY IO (BATCH 4) ===")
@@ -2373,21 +2835,51 @@ class Command(BaseCommand):
                 self._log(f"  Saltadas por fecha:             {skipped_by_date}")
             self._log(f"  Procesadas (total filas leídas): {processed}")
             if self.write_mode:
-                self._log(f"  Filas procesadas en BD:          {db_counters.get('created', 0)}")
-                self._log(f"  Liquidaciones nuevas creadas:    {db_counters.get('liquidaciones_nuevas', 0)}")
-                self._log(f"  Liquidaciones existentes usadas: {db_counters.get('liquidaciones_existentes', 0)}")
-                self._log(f"  Rechazadas (diff alta):          {db_counters.get('rechazadas_diff_alta', 0)}")
-                self._log(f"  Rechazadas (sin tarifa):         {db_counters.get('rechazadas_sin_tarifa', 0)}")
-                self._log(f"  Errores al crear:                {db_counters.get('errors', 0)}")
-                self._log(f"  Inspectores asociados:           {db_counters.get('inspectores_asociados', 0)}")
-                self._log(f"  Inspectores saltados:            {db_counters.get('inspectores_saltados', 0)}")
-                self._log(f"  Fallback CIP creados:            {db_counters.get('fallback_creados', 0)}")
-                self._log(f"  Comprobantes creados:           {db_counters.get('comprobantes_creados', 0)}")
-                self._log(f"  Comprobantes actualizados:     {db_counters.get('comprobantes_actualizados', 0)}")
-                self._log(f"  Comprobantes omitidos:         {db_counters.get('comprobantes_omitidos', 0)}")
-                self._log(f"  Contactos creados:              {db_counters.get('contactos_creados', 0)}")
-                self._log(f"  Contactos actualizados:        {db_counters.get('contactos_actualizados', 0)}")
-                self._log(f"  Contactos omitidos:            {db_counters.get('contactos_omitidos', 0)}")
+                self._log(
+                    f"  Filas procesadas en BD:          {db_counters.get('created', 0)}"
+                )
+                self._log(
+                    f"  Liquidaciones nuevas creadas:    {db_counters.get('liquidaciones_nuevas', 0)}"
+                )
+                self._log(
+                    f"  Liquidaciones existentes usadas: {db_counters.get('liquidaciones_existentes', 0)}"
+                )
+                self._log(
+                    f"  Rechazadas (diff alta):          {db_counters.get('rechazadas_diff_alta', 0)}"
+                )
+                self._log(
+                    f"  Rechazadas (sin tarifa):         {db_counters.get('rechazadas_sin_tarifa', 0)}"
+                )
+                self._log(
+                    f"  Errores al crear:                {db_counters.get('errors', 0)}"
+                )
+                self._log(
+                    f"  Inspectores asociados:           {db_counters.get('inspectores_asociados', 0)}"
+                )
+                self._log(
+                    f"  Inspectores saltados:            {db_counters.get('inspectores_saltados', 0)}"
+                )
+                self._log(
+                    f"  Fallback CIP creados:            {db_counters.get('fallback_creados', 0)}"
+                )
+                self._log(
+                    f"  Comprobantes creados:           {db_counters.get('comprobantes_creados', 0)}"
+                )
+                self._log(
+                    f"  Comprobantes actualizados:     {db_counters.get('comprobantes_actualizados', 0)}"
+                )
+                self._log(
+                    f"  Comprobantes omitidos:         {db_counters.get('comprobantes_omitidos', 0)}"
+                )
+                self._log(
+                    f"  Contactos creados:              {db_counters.get('contactos_creados', 0)}"
+                )
+                self._log(
+                    f"  Contactos actualizados:        {db_counters.get('contactos_actualizados', 0)}"
+                )
+                self._log(
+                    f"  Contactos omitidos:            {db_counters.get('contactos_omitidos', 0)}"
+                )
             else:
                 self._log(f"  Importadas (creadas en BD):      0  ← modo dry-run")
             self._log(f"  Rechazadas (estructural):       {structurally_rejected}")
@@ -2401,8 +2893,12 @@ class Command(BaseCommand):
             self._log(f"")
             self._log(f"  Validación unitaria (batch 3c):")
             self._log(f"    OK exact match:                {validation_ok_exact}")
-            self._log(f"    Diff explicada por UIT implícita: {validation_ok_uit_implicita}")
-            self._log(f"    Diff inexplicable:              {validation_diff_unexplained}")
+            self._log(
+                f"    Diff explicada por UIT implícita: {validation_ok_uit_implicita}"
+            )
+            self._log(
+                f"    Diff inexplicable:              {validation_diff_unexplained}"
+            )
             self._log(f"    Sin datos para validar:        {validation_sin_datos}")
             self._log(f"")
             self._log(f"  Flags activos:")
@@ -2410,11 +2906,41 @@ class Command(BaseCommand):
             self._log(f"    --umbral-dif:          {self.umbral_dif}")
             self._log(f"    --rechazar-sin-tarifa: {self.rechazar_sin_tarifa}")
             self._log(f"    --reset:               {self.reset}")
+            self._log(f"    --recalcular:          {self.recalcular}")
+            self._log(f"")
+            # Auditoria del UIT por epoca (informa, no escribe)
+            auditoria_path = result_dir / "auditoria_uit_epoca.csv"
+            with auditoria_path.open("w", newline="", encoding="utf-8-sig") as fh:
+                writer = csv.DictWriter(
+                    fh,
+                    fieldnames=[
+                        "fila", "id", "expediente", "fecha", "categoria", "tasa",
+                        "nrorev", "uit_epoca", "uit_declarado", "uit_implicita",
+                        "subtotal_csv", "subtotal_logica", "total_csv",
+                        "total_logica", "diferencia", "coincide",
+                    ],
+                )
+                writer.writeheader()
+                writer.writerows(self.auditoria_uit)
+            self._log(f"  Auditoria UIT por epoca:")
+            self._log(f"    filas auditadas:          {len(self.auditoria_uit)}")
+            self._log(
+                f"    con importe de otra epoca: {len(self.auditoria_uit_difieren)}"
+            )
+            self._log(
+                f"    --recalcular aplicado a:  "
+                f"{len(self.recalculadas)} liquidaciones"
+            )
             self._log(f"")
             self._log(f"  Archivos generados en {result_dir}:")
             self._log(f"    reporte_ingesta_legacy.csv")
-            self._log(f"    reporte_rechazadas.csv + .xlsx  ← escrito en vivo (streaming)")
-            self._log(f"    filas_rechazadas_para_corregir.csv + .xlsx  ← escrito en vivo (streaming)")
+            self._log(f"    auditoria_uit_epoca.csv")
+            self._log(
+                f"    reporte_rechazadas.csv + .xlsx  ← escrito en vivo (streaming)"
+            )
+            self._log(
+                f"    filas_rechazadas_para_corregir.csv + .xlsx  ← escrito en vivo (streaming)"
+            )
             self._log(f"    reporte_legacy_io_detallado.csv")
             self._log(f"    reporte_legacy_io_detallado.xlsx")
 
@@ -2426,22 +2952,32 @@ class Command(BaseCommand):
                     self._log(f"    ... y {len(error_details) - 20} errores más")
 
             if self.write_mode and db_counters.get("error_details"):
-                self._log_warning("\n  Detalle de errores de creacion en BD (primeros 20):")
+                self._log_warning(
+                    "\n  Detalle de errores de creacion en BD (primeros 20):"
+                )
                 for detail in db_counters["error_details"][:20]:
                     self._log(f"    {detail}")
                 if len(db_counters["error_details"]) > 20:
-                    self._log(f"    ... y {len(db_counters['error_details']) - 20} errores más")
+                    self._log(
+                        f"    ... y {len(db_counters['error_details']) - 20} errores más"
+                    )
 
             if self.write_mode:
-                self._log_success("\n  Batch 4 completado — liquidaciones creadas en la BD.")
+                self._log_success(
+                    "\n  Batch 4 completado — liquidaciones creadas en la BD."
+                )
             else:
-                self._log_success("\n  Batch 4 completado en modo solo lectura (dry-run).")
+                self._log_success(
+                    "\n  Batch 4 completado en modo solo lectura (dry-run)."
+                )
 
         except KeyboardInterrupt:
-            self._log(self.style.WARNING(
+            self._log(
+                self.style.WARNING(
                 "\n[!] Proceso cancelado forzadamente por el usuario. "
                 "Guardando archivos..."
-            ))
+                )
+            )
         finally:
             # ── Close CSV files and save Excel workbooks (Ctrl+C safe) ─────────
             try:

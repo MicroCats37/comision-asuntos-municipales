@@ -123,19 +123,20 @@ def _aplicar_backfill():
 
 # ── Tests: enum canónico ───────────────────────────────────────────────────────
 
-def test_estrategia_cotizacion_expone_exactamente_tres_estrategias():
+def test_estrategia_cotizacion_expone_exactamente_cuatro_estrategias():
     """
     GIVEN: el enum `EstrategiaCotizacionPO`
     WHEN:  se inspeccionan sus valores
-    THEN:  expone exactamente las tres estrategias canónicas, en orden, y no
-           existe un cuarto modo ni alias (saldo, subtotal fijo, porcentaje).
+    THEN:  expone exactamente las cuatro estrategias canónicas, en orden, y no
+           existe un quinto modo ni alias (saldo, subtotal fijo, porcentaje).
     """
     assert list(EstrategiaCotizacionPO.values) == [
         "NORMAL_SELECCIONADAS",
         "TARIFA_HABILITADAS_PARTICIPANTES",
         "TOTAL_EXPLICITO",
+        "TOTAL_EXPLICITO_SELECCIONADAS",
     ]
-    assert len(EstrategiaCotizacionPO) == 3
+    assert len(EstrategiaCotizacionPO) == 4
 
     for prohibido in ("SALDO", "SUBTOTAL_FIJO", "PORCENTAJE", "CUSTOM"):
         assert not any(
@@ -168,12 +169,13 @@ def test_po_nace_con_estrategia_normal_seleccionadas(po_modelo):
         EstrategiaCotizacionPO.NORMAL_SELECCIONADAS,
         EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES,
         EstrategiaCotizacionPO.TOTAL_EXPLICITO,
+        EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS,
     ],
 )
-def test_persiste_las_tres_estrategias(po_modelo, estrategia):
+def test_persiste_las_cuatro_estrategias(po_modelo, estrategia):
     """
     GIVEN: un PO persistido
-    WHEN:  se le asigna cada una de las tres estrategias canónicas
+    WHEN:  se le asigna cada una de las cuatro estrategias canónicas
     THEN:  la estrategia se persiste y se relee sin cambios.
     """
     po_modelo.estrategia_cotizacion = estrategia

@@ -269,6 +269,24 @@ def _parse_fecha(raw) -> date:
     return parsed
 
 
+def _es_modificacion_licencia(proyecto: str) -> bool:
+    """Detecta las filas de 'modificación de licencia' (tercera revisión).
+
+    Es la fila cuyo importe histórico corresponde a UNA especialidad
+    seleccionada pero se repartió por el universo de H habilitadas: se
+    regulariza con la estrategia TOTAL_EXPLICITO_SELECCIONADAS (H = NULL).
+    """
+    proyecto_normalizado = re.sub(
+        r"[^a-z0-9]+", " ", _normalize_specialty(proyecto)
+    ).strip()
+    return (
+        "modificacion de licencia" in proyecto_normalizado
+        or "modif de licencia" in proyecto_normalizado
+        or "tercera revision" in proyecto_normalizado
+        or "3ra revision" in proyecto_normalizado
+    )
+
+
 def _estrategia_legacy_por_proyecto(proyecto: str, fecha_registro: date) -> tuple[str, int | None]:
     """Map legacy project labels to the PO strategy and its historical H snapshot."""
     proyecto_normalizado = re.sub(r"[^a-z0-9]+", " ", _normalize_specialty(proyecto)).strip()
@@ -279,12 +297,7 @@ def _estrategia_legacy_por_proyecto(proyecto: str, fecha_registro: date) -> tupl
         habilitadas = 3 if fecha_registro >= HABILITADAS_CORTE_FECHA else 4
         return EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES, habilitadas
 
-    if (
-        "modificacion de licencia" in proyecto_normalizado
-        or "modif de licencia" in proyecto_normalizado
-        or "tercera revision" in proyecto_normalizado
-        or "3ra revision" in proyecto_normalizado
-    ):
+    if _es_modificacion_licencia(proyecto):
         return EstrategiaCotizacionPO.NORMAL_SELECCIONADAS, None
 
     raise ValueError(f"Proyecto legacy sin estrategia PO definida: {proyecto or '(vacío)'}")
@@ -1209,7 +1222,7 @@ class Command(BaseCommand):
                     if id_val is not None:
                         existing_edificacion = (
                             LiquidacionEdificacion.objects.select_related("liquidacion")
-                            .filter(numero=id_val)
+                            .filter(numero=id_val, liquidacion__legacy=True)
                             .first()
                         )
                     if existing_edificacion is not None:
@@ -2378,16 +2391,34 @@ class Command(BaseCommand):
                 regla_payload.cotizacion_legacy = None
                 cotizacion_regla = orchestrator.cotizar_legacy_proceso(regla_payload)
                 if abs(cotizacion_legacy.sub_total - cotizacion_regla.total_subtotal) > HABILITADAS_MATCH_TOLERANCE:
-                    payload.liquidacion_especifica.estrategia_cotizacion = (
-                        EstrategiaCotizacionPO.TOTAL_EXPLICITO
-                    )
-                    payload.liquidacion_especifica.cantidad_especialidades_habilitadas = (
-                        3 if fecha_registro >= HABILITADAS_CORTE_FECHA else 4
-                    )
-                    payload.liquidacion_especifica.total_explicito = cotizacion_legacy.total
-                    anomalies.append(
-                        "Estrategia legacy: total explícito por discrepancia de tarifa"
-                    )
+                    if _es_modificacion_licencia(proyecto_str):
+                        # La discrepancia proviene de la división por H
+                        # habilitadas: el importe histórico corresponde a la
+                        # especialidad SELECCIONADA. Se regulariza con la
+                        # estrategia TOTAL_EXPLICITO_SELECCIONADAS: importe
+                        # autoritativo del Excel y H = NULL.
+                        payload.liquidacion_especifica.estrategia_cotizacion = (
+                            EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS
+                        )
+                        payload.liquidacion_especifica.cantidad_especialidades_habilitadas = (
+                            None
+                        )
+                        payload.liquidacion_especifica.total_explicito = cotizacion_legacy.total
+                        anomalies.append(
+                            "Estrategia legacy: total explícito seleccionadas por "
+                            "discrepancia de tarifa"
+                        )
+                    else:
+                        payload.liquidacion_especifica.estrategia_cotizacion = (
+                            EstrategiaCotizacionPO.TOTAL_EXPLICITO
+                        )
+                        payload.liquidacion_especifica.cantidad_especialidades_habilitadas = (
+                            3 if fecha_registro >= HABILITADAS_CORTE_FECHA else 4
+                        )
+                        payload.liquidacion_especifica.total_explicito = cotizacion_legacy.total
+                        anomalies.append(
+                            "Estrategia legacy: total explícito por discrepancia de tarifa"
+                        )
                 else:
                     anomalies.append(f"Estrategia legacy: {estrategia}")
 

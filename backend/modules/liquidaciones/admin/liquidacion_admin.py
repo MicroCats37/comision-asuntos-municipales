@@ -6,13 +6,18 @@ the parent model is LiquidacionGeneral and the specific models (edificaciones,
 etc.) have FK back to it.
 """
 
+from functools import partial
+
 from django import forms
 from django.contrib import admin
 from django.contrib.admin.checks import InlineModelAdminChecks
 from django.core.exceptions import ValidationError
-from django.db.models import IntegerField, Sum, Value
-from django.db.models.functions import Coalesce
-from django.forms.models import BaseModelFormSet, modelformset_factory
+from django.forms.formsets import DELETION_FIELD_NAME
+from django.forms.models import (
+    BaseInlineFormSet,
+    BaseModelFormSet,
+    modelformset_factory,
+)
 from django.utils import timezone
 
 # Import from domain/models (re-exported via models.py)
@@ -51,12 +56,38 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_general.liquida
     LiquidacionCodigo,
 )
 from modules.liquidaciones.domain.constants import CategoriaIO, TipoLiquidacion
+# El MODELO TipoLiquidacion (alias) es distinto del enum TipoLiquidacion de
+# domain.constants: el admin necesita la fila para resolver un codigo a un id
+# constante y que el planner use el indice del changelist.
+from modules.liquidaciones.domain.models.tipo_liquidacion import (
+    TipoLiquidacion as TipoLiquidacionModel,
+)
+from modules.finanzas.domain.models.detalle_honorario_delegado import (
+    DetalleHonorarioDelegado,
+)
+from modules.finanzas.domain.models.tasa_delegado import TasaDelegado
 from modules.finanzas.domain.models.registro_pago_inspector import RegistroPagoInspector
 
 
 # =============================================================================
 # ALWAYS-VISIBLE INLINES (attached to LiquidacionGeneral)
 # =============================================================================
+
+
+class LiquidacionDelegadoFormSet(BaseInlineFormSet):
+    """Formset que precarga lo que usa `LiquidacionDelegado.__str__`.
+
+    `__str__` es `f"{self.delegado} @ {self.liquidacion}"` y el template del
+    admin lo pinta por fila: sin estas relaciones, cada fila dispara 4
+    queries (delegado + perfil_ingeniero + liquidacion + proyecto).
+    """
+
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            "delegado__perfil_ingeniero",
+            "liquidacion__proyecto",
+            "especialidad_revision",
+        )
 
 
 class LiquidacionDelegadoInline(admin.TabularInline):
@@ -67,6 +98,7 @@ class LiquidacionDelegadoInline(admin.TabularInline):
     """
 
     model = LiquidacionDelegado
+    formset = LiquidacionDelegadoFormSet
     extra = 0
     autocomplete_fields = [
         "delegado",
@@ -284,6 +316,288 @@ class RegistroPagoInspectorInline(admin.TabularInline):
         )
 
 
+# =============================================================================
+# RH DETAIL INLINE (indirect: LiquidacionGeneral -> LiquidacionDelegado -> Detalle)
+#
+# El detalle de honorario del delegado es la unidad de la que se genera el RH
+# mensual. Las 75k filas que trae la importacion legacy son huerfanas
+# (`recibo_mensual_id IS NULL`) y no eran visibles en ningun admin: este inline
+# las hace visibles y editables dentro de la liquidacion.
+#
+# Reglas:
+#   - Fila huerfana (sin RH mensual) -> editable a mano y borrable.
+#   - Fila ligada a un RH mensual -> solo lectura: el flujo RH congela sus
+#     valores al crear el recibo (`frozen at creation time`), asi que editarlos
+#     dejaria stale el encabezado del recibo.
+#   - `recibo_mensual` NUNCA se edita desde aqui y nunca se dibuja como
+#     <select> sin acotar (fue el motivo por el que se retiro el inline
+#     original).
+# =============================================================================
+
+
+class DetalleHonorarioDelegadoInlineChecks(InlineModelAdminChecks):
+    """Omite solo los checks de FK directa; la relación la resuelve el formset."""
+
+    def _check_relation(self, obj, parent_model):
+        return []
+
+    def _check_exclude_of_parent_model(self, obj, parent_model):
+        return []
+
+
+class DetalleHonorarioDelegadoAdminForm(forms.ModelForm):
+    """Fila del detalle de honorario RH.
+
+    Las filas ya enlazadas a un RH mensual se muestran deshabilitadas: el
+    flujo RH es su dueno. Las huerfanas (`recibo_mensual_id IS NULL`) quedan
+    editables para poder corregir a mano la importacion legacy.
+    """
+
+    class Meta:
+        model = DetalleHonorarioDelegado
+        fields = [
+            "liquidacion_delegado",
+            "imp_bruto",
+            "sub_total",
+            "renta_cip",
+            "aporte_codemu",
+            "fondo_comun",
+            "neto_honorario",
+            "tasa_delegado",
+        ]
+        widgets = {
+            "imp_bruto": forms.NumberInput(attrs={"step": "0.01"}),
+            "sub_total": forms.NumberInput(attrs={"step": "0.01"}),
+            "renta_cip": forms.NumberInput(attrs={"step": "0.01"}),
+            "aporte_codemu": forms.NumberInput(attrs={"step": "0.01"}),
+            "fondo_comun": forms.NumberInput(attrs={"step": "0.01"}),
+            "neto_honorario": forms.NumberInput(attrs={"step": "0.01"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.esta_ligada_a_rh():
+            for field in self.fields.values():
+                field.disabled = True
+            self.fields["liquidacion_delegado"].required = False
+
+    def esta_ligada_a_rh(self) -> bool:
+        """True when the row belongs to a monthly RH receipt."""
+        instance = self.instance
+        return bool(instance and instance.pk and instance.recibo_mensual_id)
+
+
+class DetalleHonorarioDelegadoFormSet(BaseModelFormSet):
+    """Formset indirecto: LiquidacionGeneral -> LiquidacionDelegado -> Detalle."""
+
+    @classmethod
+    def get_default_prefix(cls):
+        return "detalle_honorario_delegado"
+
+    def __init__(self, *args, instance=None, save_as_new=False, **kwargs):
+        self.parent_instance = instance
+        self.asignaciones = []
+        if instance and instance.pk:
+            self.asignaciones = list(
+                instance.liquidacion_delegados.select_related(
+                    "delegado__perfil_ingeniero",
+                    "especialidad_revision",
+                ).all()
+            )
+        # Etiquetas precalculadas: `LiquidacionDelegado.__str__` atraviesa
+        # `delegado` y `liquidacion`, y pintarlo por opcion del select
+        # disparaba 2-3 queries por opcion y por formulario (el change page
+        # paso de 64 a 362 queries).
+        self._etiquetas = {
+            str(asignacion.id): self._etiqueta(asignacion)
+            for asignacion in self.asignaciones
+        }
+        kwargs["queryset"] = self._detalle_queryset()
+        super().__init__(*args, **kwargs)
+        # El selector de asignacion solo puede ofrecer las asignaciones de
+        # ESTA liquidacion (el modelo tiene 75k filas).
+        for form in self.forms:
+            self._acotar_selector_asignacion(form)
+
+    @property
+    def empty_form(self):
+        """Acota tambien la fila "Agregar otro".
+
+        `BaseFormSet.empty_form` es una PROPIEDAD: cada acceso crea un form
+        nuevo, asi que configurarlo en `__init__` no sirve. Sin acotarlo, esa
+        fila pinta un <select> con las 75.512 asignaciones y cada
+        `LiquidacionDelegado.__str__` cuesta 4 queries (=> cientos de miles).
+        """
+        form = super().empty_form
+        self._acotar_selector_asignacion(form)
+        return form
+
+    def _acotar_selector_asignacion(self, form) -> None:
+        field = form.fields.get("liquidacion_delegado")
+        if field is None:
+            return
+        field.queryset = self._asignaciones_queryset()
+        field.label_from_instance = self._label_asignacion
+
+    @staticmethod
+    def _etiqueta(asignacion) -> str:
+        perfil = asignacion.delegado.perfil_ingeniero
+        return f"{perfil.cip} · {asignacion.especialidad_revision.nombre}"
+
+    def _label_asignacion(self, asignacion) -> str:
+        # OJO: `dict.get(k, str(x))` evalua el fallback SIEMPRE (es un
+        # argumento, no un default perezoso) -> `LiquidacionDelegado.__str__`
+        # se ejecutaba en cada opcion del select (4 queries por opcion).
+        etiqueta = self._etiquetas.get(str(asignacion.id))
+        return etiqueta if etiqueta is not None else str(asignacion.id)
+
+    def _asignaciones_queryset(self):
+        if not self.parent_instance or not self.parent_instance.pk:
+            return LiquidacionDelegado.objects.none()
+        return LiquidacionDelegado.objects.filter(
+            liquidacion_id=self.parent_instance.pk
+        ).select_related("delegado__perfil_ingeniero", "especialidad_revision")
+
+    def _detalle_queryset(self):
+        # NOTA: el nombre NO puede ser `_queryset` — `BaseModelFormSet.get_queryset()`
+        # cachea el queryset en `self._queryset` y lo pisaria con el metodo.
+        ids = [asignacion.id for asignacion in self.asignaciones]
+        if not ids:
+            return DetalleHonorarioDelegado.objects.none()
+        return (
+            DetalleHonorarioDelegado.objects.filter(liquidacion_delegado_id__in=ids)
+            .select_related(
+                "recibo_mensual",
+                "tasa_delegado",
+                # La etiqueta de la fila usa la asignacion: sin esto, cada
+                # fila del formset dispara queries al pintar su asignacion.
+                "liquidacion_delegado__delegado__perfil_ingeniero",
+                "liquidacion_delegado__especialidad_revision",
+                "liquidacion_delegado__liquidacion",
+            )
+            .order_by(
+                "liquidacion_delegado__delegado__perfil_ingeniero__apellido_paterno",
+                "liquidacion_delegado__especialidad_revision__nombre",
+                "created_at",
+            )
+        )
+
+    def add_fields(self, form, index):
+        """Deshabilita el checkbox DELETE en las filas ligadas a un RH mensual."""
+        super().add_fields(form, index)
+        instance = getattr(form, "instance", None)
+        if instance is not None and instance.pk and instance.recibo_mensual_id:
+            deletion_field = form.fields.get(DELETION_FIELD_NAME)
+            if deletion_field is not None:
+                deletion_field.disabled = True
+
+    def delete_existing(self, obj, commit=True):
+        """Una fila ligada a un RH mensual la administra el flujo RH: no se borra."""
+        if obj.pk and obj.recibo_mensual_id:
+            return
+        super().delete_existing(obj, commit=commit)
+
+    def clean(self):
+        super().clean()
+        if any(self.errors) or not self.asignaciones:
+            return
+        ligadas = {
+            str(valor)
+            for valor in DetalleHonorarioDelegado.objects.filter(
+                liquidacion_delegado_id__in=[a.id for a in self.asignaciones],
+                recibo_mensual__isnull=False,
+            ).values_list("liquidacion_delegado_id", flat=True)
+        }
+        if not ligadas:
+            return
+        for form in self.extra_forms:
+            if not form.cleaned_data or not form.has_changed():
+                continue
+            asignacion = form.cleaned_data.get("liquidacion_delegado")
+            if asignacion and str(asignacion.id) in ligadas:
+                form.add_error(
+                    "liquidacion_delegado",
+                    "Esta asignación ya tiene un detalle ligado a un RH mensual; "
+                    "ese detalle lo administra el flujo RH.",
+                )
+
+    def save_new(self, form, commit=True):
+        """Create the legacy detail without a monthly RH receipt."""
+        detalle = form.save(commit=False)
+        if not detalle.pk:
+            # Detalle legacy: nace sin RH mensual.
+            detalle.recibo_mensual = None
+        if commit:
+            detalle.save()
+        return detalle
+
+
+class DetalleHonorarioDelegadoInline(admin.TabularInline):
+    """Inline del detalle de honorario RH de los delegados de la liquidacion.
+
+    Relación indirecta (LiquidacionGeneral -> LiquidacionDelegado -> Detalle):
+    Django no anida inlines, asi que el formset resuelve el padre — mismo
+    patrón que `RegistroPagoInspectorInline`.
+    """
+
+    model = DetalleHonorarioDelegado
+    checks_class = DetalleHonorarioDelegadoInlineChecks
+    form = DetalleHonorarioDelegadoAdminForm
+    formset = DetalleHonorarioDelegadoFormSet
+    extra = 1
+    can_delete = True
+    verbose_name = "detalle de honorario del delegado"
+    verbose_name_plural = "Detalles de honorarios de los delegados"
+    fields = [
+        "liquidacion_delegado",
+        "imp_bruto",
+        "sub_total",
+        "renta_cip",
+        "aporte_codemu",
+        "fondo_comun",
+        "neto_honorario",
+        "tasa_delegado",
+        "recibo_mensual",
+        "created_at",
+        "updated_at",
+    ]
+    readonly_fields = ["recibo_mensual", "created_at", "updated_at"]
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Selects acotados y sin N+1 al pintar sus opciones.
+
+        `TasaDelegado.__str__` traverses `tipo_liquidacion`: sin
+        `select_related` cada opcion del select dispara una query (y el
+        change page lo multiplica por formulario).
+        """
+        if db_field.name == "tasa_delegado":
+            kwargs["queryset"] = TasaDelegado.objects.select_related("tipo_liquidacion")
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_formset(self, request, obj=None, **kwargs):
+        # `inlineformset_factory` exige una FK directa al padre, que este
+        # inline no tiene: el formset se construye a mano (igual que
+        # `RegistroPagoInspectorInline`).
+        return modelformset_factory(
+            DetalleHonorarioDelegado,
+            form=DetalleHonorarioDelegadoAdminForm,
+            formset=DetalleHonorarioDelegadoFormSet,
+            formfield_callback=partial(self.formfield_for_dbfield, request=request),
+            fields=[
+                "liquidacion_delegado",
+                "imp_bruto",
+                "sub_total",
+                "renta_cip",
+                "aporte_codemu",
+                "fondo_comun",
+                "neto_honorario",
+                "tasa_delegado",
+            ],
+            extra=self.get_extra(request, obj),
+            can_delete=self.can_delete and self.has_delete_permission(request, obj),
+        )
+
+
 class LiquidacionPorcentajeObraInline(admin.StackedInline):
     """Inline for LiquidacionPorcentajeObra (OneToOne, percentage calculation, Edificacion)."""
 
@@ -309,6 +623,7 @@ class LiquidacionPorcentajeObraDetalleInline(admin.TabularInline):
 
 ALL_INLINES = [
     LiquidacionDelegadoInline,
+    DetalleHonorarioDelegadoInline,
     LiquidacionProyectistaInline,
     LiquidacionContactoInline,
     LiquidacionDocumentosInline,
@@ -321,6 +636,40 @@ ALL_INLINES = [
 # Reusable base class that filters by tipo_liquidacion__codigo and provides
 # all general fields from LiquidacionGeneral plus type-specific inlines.
 # =============================================================================
+
+
+#: Cache codigo -> tipo_liquidacion id, POR REQUEST.
+#:
+#: El id se resuelve con una consulta (indice unico sobre `codigo`, ~0.2 ms)
+#: y se memoiza en el request para no repetirla. No se cachea a nivel de
+#: proceso: el id debe resolverse siempre contra la base de datos activa.
+def _tipo_liquidacion_id(request, codigo: str) -> str | None:
+    """Resolve a tipo_liquidacion codigo to its row id.
+
+    El changelist filtra por un id CONSTANTE en vez de hacer el JOIN por
+    ``codigo``. Con el JOIN (o con ``IN (subquery)``) el planner no puede usar
+    el indice ``(tipo_liquidacion, legacy, fecha_registro DESC)`` y cae en un
+    seq scan + sort de toda la tabla; con el id constante usa Index Scan y
+    termina el sort (medido: 52-56 ms -> 0.2 ms de Execution Time).
+    """
+    if request is None:
+        return _resolver_tipo_liquidacion_id(codigo)
+    cache = getattr(request, "_tipo_liquidacion_ids", None)
+    if cache is None:
+        cache = {}
+        request._tipo_liquidacion_ids = cache
+    if codigo not in cache:
+        cache[codigo] = _resolver_tipo_liquidacion_id(codigo)
+    return cache[codigo]
+
+
+def _resolver_tipo_liquidacion_id(codigo: str) -> str | None:
+    resolved = (
+        TipoLiquidacionModel.objects.filter(codigo=codigo)
+        .values_list("id", flat=True)
+        .first()
+    )
+    return str(resolved) if resolved is not None else None
 
 
 class BaseLiquidacionProxyAdmin(admin.ModelAdmin):
@@ -395,9 +744,14 @@ class BaseLiquidacionProxyAdmin(admin.ModelAdmin):
     changelist_prefetch_related = ()
 
     def get_queryset(self, request):
-        """Filter by tipo_liquidacion__codigo and optimize with select_related."""
+        """Filter by tipo_liquidacion id and optimize with select_related."""
         qs = super().get_queryset(request)
-        qs = qs.filter(tipo_liquidacion__codigo=self.tipo_codigo)
+        # Filtro por id constante (no por JOIN sobre codigo): es lo que permite
+        # al planner usar el indice (tipo_liquidacion, legacy, fecha_registro).
+        tipo_id = _tipo_liquidacion_id(request, self.tipo_codigo)
+        if tipo_id is None:
+            return qs.none()
+        qs = qs.filter(tipo_liquidacion_id=tipo_id)
         # Dynamically add specific related name to avoid N+1 on numero() display method.
         related_name = getattr(self, "specific_related_name", None)
         if related_name:
@@ -496,9 +850,11 @@ class BaseLiquidacionProxyAdmin(admin.ModelAdmin):
     def get_inlines(self, request, obj):
         """Return the type-specific, calculation, comprobante and delegate inlines.
 
-        The RH detail inlines are intentionally absent: they join large RH
-        tables and render unbounded ``<select>`` widgets. RH details are
-        managed from their own admin.
+        The RH detail inline IS exposed: it renders the imported (orphan)
+        delegate honorario details, which are invisible in every other admin
+        surface. Its rows stay bounded (no unbounded ``<select>`` on
+        ``recibo_mensual``) and receipt-linked rows are read-only, so the RH
+        lifecycle is not bypassed.
         """
         inlines = []
         if obj is not None:
@@ -507,6 +863,7 @@ class BaseLiquidacionProxyAdmin(admin.ModelAdmin):
                 inlines.append(self.calc_inline)
             inlines.append(LiquidacionComprobanteInline)
             inlines.append(LiquidacionDelegadoInline)
+            inlines.append(DetalleHonorarioDelegadoInline)
         return inlines
 
 # =============================================================================
@@ -667,12 +1024,12 @@ class LiquidacionInspeccionObraProxyAdmin(BaseLiquidacionProxyAdmin):
             visitas.save(update_fields=["categoria", "updated_at"])
 
     def get_queryset(self, request):
-        return super().get_queryset(request).prefetch_related("liquidacion_visitas").annotate(
-            inspecciones_pagadas_total=Coalesce(
-                Sum("liquidacion_visitas__registros_pago__inspecciones_pagadas"),
-                Value(0),
-                output_field=IntegerField(),
-            )
+        # El total de inspecciones pagadas se calcula en Python con el
+        # prefetch: el `annotate(Sum(...))` sobre una relacion multi-valorada
+        # anadia un JOIN + GROUP BY y costaba 190.9 ms frente a 18.7 ms sin
+        # el (medido con la pagina de 100 filas de INSPECCION_OBRA).
+        return super().get_queryset(request).prefetch_related(
+            "liquidacion_visitas__registros_pago"
         )
 
     @staticmethod
@@ -695,10 +1052,16 @@ class LiquidacionInspeccionObraProxyAdmin(BaseLiquidacionProxyAdmin):
     visitas_programadas.short_description = "Programadas"
 
     def inspecciones_pagadas(self, obj):
-        return obj.inspecciones_pagadas_total
+        total = 0
+        for visita in obj.liquidacion_visitas.all():
+            for registro in visita.registros_pago.all():
+                total += registro.inspecciones_pagadas or 0
+        return total
 
     inspecciones_pagadas.short_description = "Pagadas"
-    inspecciones_pagadas.admin_order_field = "inspecciones_pagadas_total"
+    # Sin `admin_order_field`: ordenaria por la anotacion y reintroduiria el
+    # JOIN + GROUP BY que este cambio elimina. Mismo criterio que `numero`.
+    inspecciones_pagadas.admin_order_field = None
 
     def saldo_inspecciones(self, obj):
         return self.visitas_programadas(obj) - self.inspecciones_pagadas(obj)

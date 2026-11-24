@@ -42,13 +42,16 @@ class LiquidacionTipoOutput(BaseSchema):
 # legacy siguen usando `LiquidacionPorcentajeObraIn` sin tocar, de modo que los
 # campos de estrategia NO se filtran a otros motores (contrato de schemas DRY).
 #
-# Hay exactamente TRES estrategias (no hay alias ni cuarto modo):
+# Hay exactamente CUATRO estrategias:
 #   - NORMAL_SELECCIONADAS: `valor_declarado` + seleccionadas. El discriminador
 #     es opcional para preservar el payload vigente byte-compatible.
 #   - TARIFA_HABILITADAS_PARTICIPANTES: `valor_declarado` + participantes. El
 #     discriminador es obligatorio: H lo resuelve el catálogo, nunca el cliente.
 #   - TOTAL_EXPLICITO: `total_explicito` + participantes. El discriminador es
 #     obligatorio y `valor_declarado` está prohibido (el total es autoritativo).
+#   - TOTAL_EXPLICITO_SELECCIONADAS: `total_explicito` (+ `subtotal_explicito`
+#     opcional) + participantes. El discriminador es obligatorio; el importe se
+#     reparte EXCLUSIVAMENTE entre las seleccionadas y H nunca se exige.
 #
 # Cada variante declara `extra="forbid"`: un payload mixto (campos de dos
 # estrategias), incompleto (falta un campo obligatorio de la estrategia) o con
@@ -60,6 +63,9 @@ class LiquidacionTipoOutput(BaseSchema):
 ESTRATEGIA_NORMAL = EstrategiaCotizacionPO.NORMAL_SELECCIONADAS.value
 ESTRATEGIA_HABILITADAS = EstrategiaCotizacionPO.TARIFA_HABILITADAS_PARTICIPANTES.value
 ESTRATEGIA_TOTAL = EstrategiaCotizacionPO.TOTAL_EXPLICITO.value
+ESTRATEGIA_TOTAL_SELECCIONADAS = (
+    EstrategiaCotizacionPO.TOTAL_EXPLICITO_SELECCIONADAS.value
+)
 
 
 class LiquidacionEdificacionesEstrategiaNormalDatosIn(BaseSchema):
@@ -115,6 +121,47 @@ class LiquidacionEdificacionesEstrategiaTotalExplicitoDatosIn(BaseSchema):
     tipo_tramite: Optional[str] = None
 
 
+class LiquidacionEdificacionesEstrategiaTotalSeleccionadasDatosIn(BaseSchema):
+    """
+    Datos de TOTAL_EXPLICITO_SELECCIONADAS: importe autoritativo explícito.
+
+    - `total_explicito`: total final autoritativo con IGV (obligatorio).
+    - `subtotal_explicito`: subtotal autoritativo sin IGV (opcional). Si no
+      viene, el backend lo deriva del total por IGV. NUNCA se recalcula desde
+      el valor declarado ni desde la tarifa.
+    - `valor_declarado`: valor informativo de la obra; no interviene en el
+      cálculo del importe.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    valor_declarado: Decimal = Field(
+        ...,
+        le=Decimal("9999999999.99"),
+        max_digits=12,
+        decimal_places=2,
+        description="Valor informativo de la obra; no interviene en el cálculo.",
+    )
+    total_explicito: Decimal = Field(
+        ...,
+        gt=Decimal("0"),
+        le=Decimal("9999999999.99"),
+        max_digits=12,
+        decimal_places=2,
+        description="Total final autoritativo con IGV incluido.",
+    )
+    subtotal_explicito: Optional[Decimal] = Field(
+        None,
+        gt=Decimal("0"),
+        le=Decimal("9999999999.99"),
+        max_digits=12,
+        decimal_places=2,
+        description="Subtotal autoritativo sin IGV. Opcional: si se omite, el "
+        "backend lo deriva del total por IGV.",
+    )
+    tipo_tramite: Optional[str] = None
+
+
 class LiquidacionEdificacionesEstrategiaNormalIn(BaseSchema):
     """
     NORMAL_SELECCIONADAS — las seleccionadas determinan padre y detalles.
@@ -163,12 +210,30 @@ class LiquidacionEdificacionesEstrategiaTotalExplicitoIn(BaseSchema):
     tarifas: List[LiquidacionPorcentajeObraTarifaIn] = []
 
 
+class LiquidacionEdificacionesEstrategiaTotalSeleccionadasIn(BaseSchema):
+    """
+    TOTAL_EXPLICITO_SELECCIONADAS — el importe es autoritativo y se reparte
+    EXCLUSIVAMENTE entre las especialidades SELECCIONADAS.
+
+    El discriminador es OBLIGATORIO. H (habilitadas) NO se exige ni se envía:
+    la cantidad de habilitadas queda fuera del contrato de esta estrategia.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    estrategia_cotizacion: Literal[ESTRATEGIA_TOTAL_SELECCIONADAS]
+    datos: LiquidacionEdificacionesEstrategiaTotalSeleccionadasDatosIn
+    tipo_tramite: Optional[str] = None
+    tarifas: List[LiquidacionPorcentajeObraTarifaIn] = []
+
+
 # El orden importa: con el discriminador ausente, gana la primera variante
 # compatible. NORMAL_SELECCIONADAS va primero porque es la estrategia vigente.
 LiquidacionEdificacionesEstrategiaIn = Union[
     LiquidacionEdificacionesEstrategiaNormalIn,
     LiquidacionEdificacionesEstrategiaHabilitadasIn,
     LiquidacionEdificacionesEstrategiaTotalExplicitoIn,
+    LiquidacionEdificacionesEstrategiaTotalSeleccionadasIn,
 ]
 
 
@@ -242,10 +307,25 @@ class LiquidacionEdificacionesCotizarEdicionTotalExplicitoIn(BaseSchema):
     )
 
 
+class LiquidacionEdificacionesCotizarEdicionTotalSeleccionadasIn(BaseSchema):
+    """TOTAL_EXPLICITO_SELECCIONADAS — cotizar-edición."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    estrategia_cotizacion: Literal[ESTRATEGIA_TOTAL_SELECCIONADAS]
+    datos: LiquidacionEdificacionesEstrategiaTotalSeleccionadasDatosIn
+    tipo_tramite: Optional[str] = None
+    tarifas: List[LiquidacionPorcentajeObraTarifaIn] = Field(
+        ...,
+        description="Participantes cotizados. Obligatorio en edición: no se auto-completa.",
+    )
+
+
 LiquidacionEdificacionesCotizarEdicionEstrategiaIn = Union[
     LiquidacionEdificacionesCotizarEdicionNormalIn,
     LiquidacionEdificacionesCotizarEdicionHabilitadasIn,
     LiquidacionEdificacionesCotizarEdicionTotalExplicitoIn,
+    LiquidacionEdificacionesCotizarEdicionTotalSeleccionadasIn,
 ]
 
 
@@ -273,15 +353,18 @@ class LiquidacionEdificacionesPorcentajeObraDatosOut(LiquidacionPorcentajeObraDa
     estrategia_cotizacion: Optional[str] = Field(
         None,
         description="Estrategia de cotización persistida: NORMAL_SELECCIONADAS, "
-        "TARIFA_HABILITADAS_PARTICIPANTES o TOTAL_EXPLICITO.",
+        "TARIFA_HABILITADAS_PARTICIPANTES, TOTAL_EXPLICITO o "
+        "TOTAL_EXPLICITO_SELECCIONADAS.",
     )
     cantidad_especialidades_habilitadas: Optional[int] = Field(
         None,
-        description="Snapshot de H (habilitadas del catálogo en la fecha efectiva).",
+        description="Snapshot de H (habilitadas del catálogo en la fecha efectiva). "
+        "NULL en TOTAL_EXPLICITO_SELECCIONADAS.",
     )
     total_explicito: Optional[Decimal] = Field(
         None,
-        description="Total final autoritativo persistido (TOTAL_EXPLICITO).",
+        description="Total final autoritativo persistido (TOTAL_EXPLICITO y "
+        "TOTAL_EXPLICITO_SELECCIONADAS).",
     )
     porcentaje_tarifa: Optional[Decimal] = Field(
         None,
@@ -365,7 +448,17 @@ class LiquidacionEdificacionesRevisionDatosIn(BaseSchema):
         gt=Decimal("0"),
         max_digits=12,
         decimal_places=2,
-        description="Total final autoritativo con IGV (estrategia TOTAL_EXPLICITO).",
+        description="Total final autoritativo con IGV (estrategias TOTAL_EXPLICITO y "
+        "TOTAL_EXPLICITO_SELECCIONADAS).",
+    )
+    subtotal_explicito: Optional[Decimal] = Field(
+        None,
+        gt=Decimal("0"),
+        max_digits=12,
+        decimal_places=2,
+        description="Subtotal autoritativo sin IGV (estrategia "
+        "TOTAL_EXPLICITO_SELECCIONADAS). Si se omite, se preserva el subtotal "
+        "histórico persistido.",
     )
     tipo_tramite: Optional[str] = Field(
         None,
@@ -385,7 +478,12 @@ class LiquidacionEspecificaNuevaRevisionIn(BaseSchema):
     )
     # ── Module 5: estrategia de cotización de la nueva revisión ──────────────
     estrategia_cotizacion: Optional[
-        Literal[ESTRATEGIA_NORMAL, ESTRATEGIA_HABILITADAS, ESTRATEGIA_TOTAL]
+        Literal[
+            ESTRATEGIA_NORMAL,
+            ESTRATEGIA_HABILITADAS,
+            ESTRATEGIA_TOTAL,
+            ESTRATEGIA_TOTAL_SELECCIONADAS,
+        ]
     ] = Field(
         None,
         description="Estrategia de la nueva revisión. Si se omite, se hereda la de la "
@@ -393,7 +491,8 @@ class LiquidacionEspecificaNuevaRevisionIn(BaseSchema):
     )
     datos: Optional[LiquidacionEdificacionesRevisionDatosIn] = Field(
         None,
-        description="Valor declarado y, para TOTAL_EXPLICITO, total final. "
+        description="Valor declarado y, para TOTAL_EXPLICITO / "
+        "TOTAL_EXPLICITO_SELECCIONADAS, total final. "
         "Si se omiten, se heredan de la liquidación previa.",
     )
 
@@ -450,7 +549,12 @@ class LiquidacionEdificacionesPatchTipoIn(BaseSchema):
     model_config = ConfigDict(extra="forbid")
 
     estrategia_cotizacion: Optional[
-        Literal[ESTRATEGIA_NORMAL, ESTRATEGIA_HABILITADAS, ESTRATEGIA_TOTAL]
+        Literal[
+            ESTRATEGIA_NORMAL,
+            ESTRATEGIA_HABILITADAS,
+            ESTRATEGIA_TOTAL,
+            ESTRATEGIA_TOTAL_SELECCIONADAS,
+        ]
     ] = Field(
         None,
         description="Estrategia a la que se transiciona. Si se omite, se conserva la persistida.",
@@ -511,15 +615,18 @@ class LiquidacionEdificacionesCotizarOutput(BaseSchema):
     estrategia_cotizacion: Optional[str] = Field(
         None,
         description="Estrategia aplicada en la cotización: NORMAL_SELECCIONADAS, "
-        "TARIFA_HABILITADAS_PARTICIPANTES o TOTAL_EXPLICITO.",
+        "TARIFA_HABILITADAS_PARTICIPANTES, TOTAL_EXPLICITO o "
+        "TOTAL_EXPLICITO_SELECCIONADAS.",
     )
     cantidad_especialidades_habilitadas: Optional[int] = Field(
         None,
-        description="H (habilitadas del catálogo) resuelto para la fecha efectiva.",
+        description="H (habilitadas del catálogo) resuelto para la fecha efectiva. "
+        "NULL en TOTAL_EXPLICITO_SELECCIONADAS.",
     )
     total_explicito: Optional[Decimal] = Field(
         None,
-        description="Total final autoritativo (TOTAL_EXPLICITO).",
+        description="Total final autoritativo (TOTAL_EXPLICITO y "
+        "TOTAL_EXPLICITO_SELECCIONADAS).",
     )
     porcentaje_tarifa: Optional[Decimal] = Field(
         None,

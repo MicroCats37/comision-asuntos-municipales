@@ -51,7 +51,11 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.liquidacio
     LiquidacionPorCategoriaVisitas,
 )
 from modules.liquidaciones.domain.models.tipo_liquidacion import TipoLiquidacion as TipoLiquidacionModel
-from modules.liquidaciones.domain.models.delegado import LiquidacionDelegado
+from modules.liquidaciones.domain.models.delegado import Delegado, LiquidacionDelegado
+from modules.usuarios.domain.models.perfil_ingeniero import (
+    PerfilIngeniero,
+    EspecialidadRevision,
+)
 from modules.finanzas.domain.models.impuestos import IGV, UIT
 from modules.finanzas.domain.models.registro_pago_inspector import RegistroPagoInspector
 from modules.finanzas.domain.models.detalle_honorario_delegado import (
@@ -59,6 +63,9 @@ from modules.finanzas.domain.models.detalle_honorario_delegado import (
 )
 from modules.finanzas.domain.models.detalle_honorario_inspector import (
     DetalleHonorarioInspector,
+)
+from modules.finanzas.domain.models.recibo_honorario_delegado_mensual import (
+    ReciboHonorarioDelegadoMensual,
 )
 from modules.entidades.domain.models.ubigeo import UbigeoDepartamento, UbigeoProvincia, UbigeoDistrito
 from modules.entidades.domain.models.municipalidad import Municipalidad
@@ -72,6 +79,7 @@ from modules.liquidaciones.domain.models.liquidacion.liquidacion_tipo.tarifas_re
     DerechoPorMetroCuadrado,
 )
 from modules.liquidaciones.admin.liquidacion_admin import (
+    DetalleHonorarioDelegadoInline,
     LiquidacionDelegadoInline,
     LiquidacionComprobanteInline,
     LiquidacionEdificacionInline,
@@ -804,13 +812,15 @@ def test_proxy_admins_include_only_related_inlines_and_allow_deletion(
         *expected_inlines[:2],
         LiquidacionComprobanteInline,
         LiquidacionDelegadoInline,
+        DetalleHonorarioDelegadoInline,
         *expected_inlines[2:],
     ]
-    # The RH detail inlines are never exposed by the liquidation proxies.
-    assert not {DetalleHonorarioDelegado, DetalleHonorarioInspector} & {
-        inline.model for inline in inlines
-    }
-    for inline_class in [LiquidacionDelegadoInline]:
+    # The delegated RH detail IS exposed (the imported orphan rows were
+    # invisible in every other admin surface). The inspector one is not:
+    # its parent route is the IO visits chain, which is out of scope.
+    assert DetalleHonorarioDelegado in {inline.model for inline in inlines}
+    assert DetalleHonorarioInspector not in {inline.model for inline in inlines}
+    for inline_class in [LiquidacionDelegadoInline, DetalleHonorarioDelegadoInline]:
         inline = inline_class(obj.__class__, admin.site)
         assert inline.get_formset(admin_request, obj).can_delete
 
@@ -835,6 +845,295 @@ def test_liquidacion_delegado_inline_uses_bounded_widgets():
         assert related_admin.search_fields, (
             f"'{field_name}' admin has no search_fields, autocomplete would fail"
         )
+
+
+# ── RH detail inline (delegated honorario detail inside the liquidation) ────────
+
+
+@pytest.fixture
+def perfil_ingeniero_rh(db):
+    return PerfilIngeniero.objects.create(
+        cip="77777",
+        dni="77777777",
+        nombres="Luis",
+        apellido_paterno="Torres",
+        apellido_materno="Quispe",
+        correo_personal="luis.torres@test.com",
+    )
+
+
+@pytest.fixture
+def especialidad_revision_rh(db):
+    return EspecialidadRevision.objects.create(slug="topografia", nombre="Topografía")
+
+
+@pytest.fixture
+def delegado_rh(db, perfil_ingeniero_rh):
+    return Delegado.objects.create(perfil_ingeniero=perfil_ingeniero_rh)
+
+
+@pytest.fixture
+def asignacion_delegado_rh(db, edificacion_obj, delegado_rh, especialidad_revision_rh):
+    return LiquidacionDelegado.objects.create(
+        liquidacion=edificacion_obj.liquidacion,
+        delegado=delegado_rh,
+        especialidad_revision=especialidad_revision_rh,
+    )
+
+
+@pytest.fixture
+def detalle_rh_huerfano(db, asignacion_delegado_rh):
+    """Imported legacy detail: no monthly RH receipt attached."""
+    return DetalleHonorarioDelegado.objects.create(
+        liquidacion_delegado=asignacion_delegado_rh,
+        imp_bruto=Decimal("18.64"),
+        renta_cip=Decimal("0.00"),
+        aporte_codemu=Decimal("1.86"),
+        fondo_comun=Decimal("9.32"),
+        neto_honorario=Decimal("7.46"),
+    )
+
+
+@pytest.fixture
+def recibo_rh_mensual(db, delegado_rh):
+    return ReciboHonorarioDelegadoMensual.objects.create(
+        delegado=delegado_rh,
+        periodo=2026,
+        mes=1,
+        sub_total=Decimal("100.00"),
+        renta_cip=Decimal("0.00"),
+        aporte_codemu=Decimal("10.00"),
+        fondo_comun=Decimal("50.00"),
+        neto_honorario=Decimal("40.00"),
+    )
+
+
+@pytest.fixture
+def detalle_rh_ligado(db, asignacion_delegado_rh, recibo_rh_mensual):
+    """Detail already owned by a monthly RH receipt."""
+    return DetalleHonorarioDelegado.objects.create(
+        liquidacion_delegado=asignacion_delegado_rh,
+        recibo_mensual=recibo_rh_mensual,
+        imp_bruto=Decimal("100.00"),
+        renta_cip=Decimal("0.00"),
+        aporte_codemu=Decimal("10.00"),
+        fondo_comun=Decimal("50.00"),
+        neto_honorario=Decimal("40.00"),
+    )
+
+
+def _admin_request(admin_client):
+    admin_request = RequestFactory().get("/")
+    admin_request.user = get_user_model().objects.get(
+        pk=admin_client.session.get("_auth_user_id")
+    )
+    return admin_request
+
+
+def _rh_formset(admin_client, liquidacion, data=None):
+    inline = DetalleHonorarioDelegadoInline(LiquidacionGeneral, admin.site)
+    FormSet = inline.get_formset(_admin_request(admin_client), liquidacion)
+    return FormSet(
+        data=data,
+        instance=liquidacion,
+        prefix=FormSet.get_default_prefix(),
+    )
+
+
+def _rh_payload(asignacion, **overrides):
+    payload = {
+        "liquidacion_delegado": str(asignacion.id),
+        "imp_bruto": "25.50",
+        "sub_total": "25.50",
+        "renta_cip": "0.00",
+        "aporte_codemu": "2.55",
+        "fondo_comun": "12.75",
+        "neto_honorario": "10.20",
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _management(prefix, total=1, initial=0):
+    return {
+        f"{prefix}-TOTAL_FORMS": str(total),
+        f"{prefix}-INITIAL_FORMS": str(initial),
+        f"{prefix}-MIN_NUM_FORMS": "0",
+        f"{prefix}-MAX_NUM_FORMS": "1000",
+    }
+
+
+@pytest.mark.django_db
+def test_rh_detalle_inline_solo_ofrece_las_asignaciones_de_la_liquidacion(
+    admin_client, edificacion_obj, asignacion_delegado_rh
+):
+    """The assignment picker is bounded to this liquidación (the model has 75k rows)."""
+    liquidacion = edificacion_obj.liquidacion
+    formset = _rh_formset(admin_client, liquidacion)
+    queryset = formset.forms[0].fields["liquidacion_delegado"].queryset
+
+    assert list(queryset) == [asignacion_delegado_rh]
+
+
+@pytest.mark.django_db
+def test_rh_detalle_huerfano_es_editable(admin_client, edificacion_obj, detalle_rh_huerfano):
+    """An orphan detail (no monthly receipt) stays hand-editable."""
+    liquidacion = edificacion_obj.liquidacion
+    formset = _rh_formset(admin_client, liquidacion)
+
+    assert formset.forms[0].instance == detalle_rh_huerfano
+    assert not formset.forms[0].fields["imp_bruto"].disabled
+    assert not formset.forms[0].fields["DELETE"].disabled
+
+
+@pytest.mark.django_db
+def test_rh_detalle_ligado_a_rh_es_readonly(admin_client, edificacion_obj, detalle_rh_ligado):
+    """A receipt-linked detail belongs to the RH flow: read-only and not deletable."""
+    liquidacion = edificacion_obj.liquidacion
+    formset = _rh_formset(admin_client, liquidacion)
+
+    form = formset.forms[0]
+    assert form.instance == detalle_rh_ligado
+    assert form.fields["imp_bruto"].disabled
+    assert form.fields["neto_honorario"].disabled
+    assert form.fields["DELETE"].disabled
+
+
+@pytest.mark.django_db
+def test_rh_detalle_se_puede_crear_legacy_sin_mensual(
+    admin_client, edificacion_obj, asignacion_delegado_rh
+):
+    """The operator can create a legacy RH detail, born without a monthly receipt."""
+    liquidacion = edificacion_obj.liquidacion
+    prefix = "detalle_honorario_delegado"
+    data = _management(prefix)
+    data.update({f"{prefix}-0-{k}": v for k, v in _rh_payload(asignacion_delegado_rh).items()})
+
+    formset = _rh_formset(admin_client, liquidacion, data=data)
+    assert formset.is_valid(), formset.errors
+    formset.save()
+
+    detalle = DetalleHonorarioDelegado.objects.get(
+        liquidacion_delegado=asignacion_delegado_rh
+    )
+    assert detalle.recibo_mensual_id is None
+    assert detalle.imp_bruto == Decimal("25.50")
+
+
+@pytest.mark.django_db
+def test_rh_detalle_no_se_crea_sobre_asignacion_con_rh(
+    admin_client, edificacion_obj, asignacion_delegado_rh, detalle_rh_ligado
+):
+    """A detail linked to a monthly receipt is owned by the RH flow: no duplicates."""
+    liquidacion = edificacion_obj.liquidacion
+    prefix = "detalle_honorario_delegado"
+    data = _management(prefix)
+    data.update({f"{prefix}-0-{k}": v for k, v in _rh_payload(asignacion_delegado_rh).items()})
+
+    formset = _rh_formset(admin_client, liquidacion, data=data)
+    assert not formset.is_valid()
+    assert "liquidacion_delegado" in formset.forms[0].errors
+    assert DetalleHonorarioDelegado.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_rh_detalle_huerfano_se_puede_borrar(
+    admin_client, edificacion_obj, asignacion_delegado_rh, detalle_rh_huerfano
+):
+    """An orphan detail can be removed from the liquidación page."""
+    liquidacion = edificacion_obj.liquidacion
+    prefix = "detalle_honorario_delegado"
+    data = _management(prefix, total=1, initial=1)
+    data.update(
+        {
+            f"{prefix}-0-id": str(detalle_rh_huerfano.id),
+            f"{prefix}-0-liquidacion_delegado": str(asignacion_delegado_rh.id),
+            f"{prefix}-0-imp_bruto": "18.64",
+            f"{prefix}-0-sub_total": "",
+            f"{prefix}-0-renta_cip": "0.00",
+            f"{prefix}-0-aporte_codemu": "1.86",
+            f"{prefix}-0-fondo_comun": "9.32",
+            f"{prefix}-0-neto_honorario": "7.46",
+            f"{prefix}-0-tasa_delegado": "",
+            f"{prefix}-0-DELETE": "on",
+        }
+    )
+
+    formset = _rh_formset(admin_client, liquidacion, data=data)
+    assert formset.is_valid(), formset.errors
+    formset.save()
+
+    assert not DetalleHonorarioDelegado.objects.filter(
+        id=detalle_rh_huerfano.id
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_rh_detalle_ligado_a_rh_no_se_borra(
+    admin_client, edificacion_obj, asignacion_delegado_rh, detalle_rh_ligado
+):
+    """A receipt-linked detail survives a DELETE=on post from the liquidación page."""
+    liquidacion = edificacion_obj.liquidacion
+    prefix = "detalle_honorario_delegado"
+    data = _management(prefix, total=1, initial=1)
+    data.update(
+        {
+            f"{prefix}-0-id": str(detalle_rh_ligado.id),
+            f"{prefix}-0-liquidacion_delegado": str(asignacion_delegado_rh.id),
+            f"{prefix}-0-imp_bruto": "100.00",
+            f"{prefix}-0-sub_total": "",
+            f"{prefix}-0-renta_cip": "0.00",
+            f"{prefix}-0-aporte_codemu": "10.00",
+            f"{prefix}-0-fondo_comun": "50.00",
+            f"{prefix}-0-neto_honorario": "40.00",
+            f"{prefix}-0-tasa_delegado": "",
+            f"{prefix}-0-DELETE": "on",
+        }
+    )
+
+    formset = _rh_formset(admin_client, liquidacion, data=data)
+    formset.is_valid()
+    formset.save()
+
+    assert DetalleHonorarioDelegado.objects.filter(id=detalle_rh_ligado.id).exists()
+
+
+@pytest.mark.django_db
+def test_changelist_filtra_por_tipo_id_constante(tipo_edificacion):
+    """A constant tipo id is what lets the planner use the changelist index."""
+    model_admin = LiquidacionEdificacionProxyAdmin(LiquidacionEdificacionProxy, admin.site)
+    sql, _ = model_admin.get_queryset(None).query.sql_with_params()
+    where = sql[sql.index("WHERE") :]
+
+    assert "codigo" not in where
+    assert '"liquidaciones_liquidaciongeneral"."tipo_liquidacion_id" =' in where
+
+
+@pytest.mark.django_db
+def test_indice_del_changelist_existe():
+    """Regression guard: the index is what removes the seq scan + disk sort."""
+    from django.db import connection
+
+    with connection.cursor() as cursor:
+        constraints = connection.introspection.get_constraints(
+            cursor, "liquidaciones_liquidaciongeneral"
+        )
+    indexes = {name for name, c in constraints.items() if c.get("index")}
+    assert "lx_liq_tipo_legacy_fecha_idx" in indexes
+
+
+@pytest.mark.django_db
+def test_changelist_de_io_no_usa_anotacion_agregada():
+    """The IO proxy must not re-introduce the multi-valued Sum aggregation."""
+    model_admin = LiquidacionInspeccionObraProxyAdmin(
+        LiquidacionInspeccionObraProxy, admin.site
+    )
+    queryset = model_admin.get_queryset(None)
+
+    assert dict(queryset.query.annotations) == {}
+    assert "liquidacion_visitas__registros_pago" in [
+        lookup for lookup in queryset._prefetch_related_lookups
+    ]
 
 
 @pytest.mark.parametrize(

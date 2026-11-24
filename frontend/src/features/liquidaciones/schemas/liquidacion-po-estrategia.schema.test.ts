@@ -14,7 +14,9 @@ import {
   ESTRATEGIA_HABILITADAS,
   ESTRATEGIA_NORMAL,
   ESTRATEGIA_TOTAL,
+  ESTRATEGIA_TOTAL_SELECCIONADAS,
   ESTRATEGIAS_COTIZACION_PO,
+  ESTRATEGIAS_COTIZACION_PO_UI,
   edificacionesEstrategiaSchema,
   esEstrategiaValida,
   MENSAJE_TOTAL_EXPLICITO_POSITIVO,
@@ -33,17 +35,25 @@ const TARIFAS = [
   },
 ];
 
-describe("estrategias PO — exactamente tres modos canónicos", () => {
-  it("expone tres estrategias y ningún alias", () => {
-    expect(ESTRATEGIAS_COTIZACION_PO).toHaveLength(3);
+describe("estrategias PO — exactamente cuatro modos canónicos", () => {
+  it("expone cuatro estrategias y ningún alias", () => {
+    expect(ESTRATEGIAS_COTIZACION_PO).toHaveLength(4);
     expect(ESTRATEGIAS_COTIZACION_PO).toEqual([
       "NORMAL_SELECCIONADAS",
       "TARIFA_HABILITADAS_PARTICIPANTES",
       "TOTAL_EXPLICITO",
+      "TOTAL_EXPLICITO_SELECCIONADAS",
     ]);
   });
 
-  it("rechaza un cuarto modo o un alias", () => {
+  it("el selector de alta manual ofrece sólo tres estrategias", () => {
+    expect(ESTRATEGIAS_COTIZACION_PO_UI).toHaveLength(4);
+    expect(ESTRATEGIAS_COTIZACION_PO_UI).toContain(
+      ESTRATEGIA_TOTAL_SELECCIONADAS,
+    );
+  });
+
+  it("rechaza un quinto modo o un alias", () => {
     expect(esEstrategiaValida("MODO_CUSTOM")).toBe(false);
     expect(esEstrategiaValida("TOTAL")).toBe(false);
     expect(esEstrategiaValida("NORMAL")).toBe(false);
@@ -75,6 +85,28 @@ describe("union discriminada — payloads válidos por estrategia", () => {
     const resultado = edificacionesEstrategiaSchema.safeParse({
       estrategia_cotizacion: ESTRATEGIA_TOTAL,
       datos: { valor_declarado: 1000000, total_explicito: 177 },
+      tarifas: TARIFAS,
+    });
+    expect(resultado.success).toBe(true);
+  });
+
+  it("acepta TOTAL_EXPLICITO_SELECCIONADAS con total final", () => {
+    const resultado = edificacionesEstrategiaSchema.safeParse({
+      estrategia_cotizacion: ESTRATEGIA_TOTAL_SELECCIONADAS,
+      datos: { valor_declarado: 1000000, total_explicito: 177 },
+      tarifas: TARIFAS,
+    });
+    expect(resultado.success).toBe(true);
+  });
+
+  it("acepta TOTAL_EXPLICITO_SELECCIONADAS con subtotal explícito", () => {
+    const resultado = edificacionesEstrategiaSchema.safeParse({
+      estrategia_cotizacion: ESTRATEGIA_TOTAL_SELECCIONADAS,
+      datos: {
+        valor_declarado: 1000000,
+        total_explicito: 177,
+        subtotal_explicito: 149.15,
+      },
       tarifas: TARIFAS,
     });
     expect(resultado.success).toBe(true);
@@ -226,6 +258,35 @@ describe("builder — payload discriminado por estrategia", () => {
     );
     expect(resultado.success).toBe(true);
   });
+
+  it("TOTAL_EXPLICITO_SELECCIONADAS envía el total y el subtotal explícito", () => {
+    const payload = construirEstrategiaPayload({
+      estrategia: ESTRATEGIA_TOTAL_SELECCIONADAS,
+      valor_declarado: 1000000,
+      total_explicito: 177,
+      subtotal_explicito: 149.15,
+      tarifas: TARIFAS,
+    });
+    expect(payload.estrategia_cotizacion).toBe(ESTRATEGIA_TOTAL_SELECCIONADAS);
+    expect(payload.datos).toEqual({
+      valor_declarado: 1000000,
+      total_explicito: 177,
+      subtotal_explicito: 149.15,
+    });
+  });
+
+  it("TOTAL_EXPLICITO_SELECCIONADAS omite el subtotal si no viene", () => {
+    const payload = construirEstrategiaPayload({
+      estrategia: ESTRATEGIA_TOTAL_SELECCIONADAS,
+      valor_declarado: 1000000,
+      total_explicito: 177,
+      tarifas: TARIFAS,
+    });
+    expect(payload.datos).toEqual({
+      valor_declarado: 1000000,
+      total_explicito: 177,
+    });
+  });
 });
 
 describe("validación por estrategia", () => {
@@ -279,5 +340,23 @@ describe("validación por estrategia", () => {
       total_explicito: 0,
     });
     expect(issues).toEqual([]);
+  });
+
+  it("TOTAL_EXPLICITO_SELECCIONADAS exige valor declarado y total final", () => {
+    const issues = validarDatosDeEstrategia(ESTRATEGIA_TOTAL_SELECCIONADAS, {});
+    expect(issues).toEqual([
+      { path: "valor_declarado", message: MENSAJE_VALOR_DECLARADO_REQUERIDO },
+      { path: "total_explicito", message: MENSAJE_TOTAL_EXPLICITO_REQUERIDO },
+    ]);
+  });
+
+  it("TOTAL_EXPLICITO_SELECCIONADAS rechaza el total no positivo", () => {
+    const issues = validarDatosDeEstrategia(ESTRATEGIA_TOTAL_SELECCIONADAS, {
+      valor_declarado: 1000000,
+      total_explicito: 0,
+    });
+    expect(issues).toEqual([
+      { path: "total_explicito", message: MENSAJE_TOTAL_EXPLICITO_POSITIVO },
+    ]);
   });
 });

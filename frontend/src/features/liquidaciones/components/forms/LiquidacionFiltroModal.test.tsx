@@ -24,27 +24,20 @@ import { LiquidacionFiltroModal } from "./LiquidacionFiltroModal";
 describe("LiquidacionFiltroModal", () => {
   it("no muestra los controles de creador ni de número de revisiones", () => {
     render(
-      <LiquidacionFiltroModal
-        open
-        onOpenChange={vi.fn()}
-        onApply={vi.fn()}
-      />,
+      <LiquidacionFiltroModal open onOpenChange={vi.fn()} onApply={vi.fn()} />,
     );
 
     expect(screen.queryByText("Creado Por")).not.toBeInTheDocument();
     expect(screen.queryByText("N° Revisiones")).not.toBeInTheDocument();
   });
 
-  it("expone los filtros de documento y de comprobante vigente", () => {
+  it("expone los filtros de expediente, documento y comprobante vigente", () => {
     render(
-      <LiquidacionFiltroModal
-        open
-        onOpenChange={vi.fn()}
-        onApply={vi.fn()}
-      />,
+      <LiquidacionFiltroModal open onOpenChange={vi.fn()} onApply={vi.fn()} />,
     );
 
     expect(screen.getByText("N° Documento Entidad")).toBeInTheDocument();
+    expect(screen.getByText("Expediente")).toBeInTheDocument();
     expect(screen.getByText("Comprobante — Serie")).toBeInTheDocument();
     expect(screen.getByText("Comprobante — Número")).toBeInTheDocument();
   });
@@ -52,15 +45,14 @@ describe("LiquidacionFiltroModal", () => {
   it("envía los filtros nuevos y omite los retirados", async () => {
     const onApply = vi.fn();
     render(
-      <LiquidacionFiltroModal
-        open
-        onOpenChange={vi.fn()}
-        onApply={onApply}
-      />,
+      <LiquidacionFiltroModal open onOpenChange={vi.fn()} onApply={onApply} />,
     );
 
     fireEvent.change(screen.getByLabelText("N° Documento Entidad"), {
       target: { value: "20456789012" },
+    });
+    fireEvent.change(screen.getByLabelText("Expediente"), {
+      target: { value: "EXP-2026-001" },
     });
     fireEvent.change(screen.getByLabelText("Comprobante — Serie"), {
       target: { value: "F001" },
@@ -74,6 +66,7 @@ describe("LiquidacionFiltroModal", () => {
     await waitFor(() => expect(onApply).toHaveBeenCalled());
     const payload = onApply.mock.calls[0][0];
     expect(payload.documento).toBe("20456789012");
+    expect(payload.expediente).toBe("EXP-2026-001");
     expect(payload.comprobante_serie).toBe("F001");
     expect(payload.comprobante_numero).toBe("000123");
     expect(payload).not.toHaveProperty("creado_por");

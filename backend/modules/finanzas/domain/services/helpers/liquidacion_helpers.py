@@ -62,8 +62,9 @@ def _resolve_estrategia_po(
     M2 (HU/MS) and Visitas (IO) have no such wrapper, so both values are
     ``None`` for them.
 
-    ``total_explicito`` is only populated under ``TOTAL_EXPLICITO``; under the
-    other strategies it stays ``None`` and the totals come from the details.
+    ``total_explicito`` is populated under ``TOTAL_EXPLICITO`` and
+    ``TOTAL_EXPLICITO_SELECCIONADAS``; under the other strategies it stays
+    ``None`` and the totals come from the details.
 
     Returns:
         Tuple (estrategia_cotizacion, total_explicito). Both ``None`` when the

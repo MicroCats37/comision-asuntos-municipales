@@ -220,7 +220,7 @@ class ModoCalculoLiquidacion(models.TextChoices):
 class EstrategiaCotizacionPO(models.TextChoices):
     """Estrategia de cotización del motor PO (PorcentajeObra) de Edificaciones.
 
-    Son exactamente tres estrategias (no hay un cuarto modo):
+    Son exactamente cuatro estrategias:
 
     - ``NORMAL_SELECCIONADAS``: cada especialidad seleccionada suma la tarifa
       fija y genera su propio detalle. Nunca acumula.
@@ -229,6 +229,16 @@ class EstrategiaCotizacionPO(models.TextChoices):
       queda registrada como acumulación.
     - ``TOTAL_EXPLICITO``: el usuario ingresa el total final con IGV y el
       backend extrae el subtotal; los porcentajes se persisten como NULL.
+      El importe se reparte entre H habilitadas (universo de cobro), NO entre
+      las seleccionadas.
+    - ``TOTAL_EXPLICITO_SELECCIONADAS``: el total (y opcionalmente el subtotal)
+      es explícito y autoritativo, y se reparte EXCLUSIVAMENTE entre las
+      especialidades SELECCIONADAS. Nunca exige, resuelve ni persiste H
+      (habilitadas): ``cantidad_especialidades_habilitadas`` queda NULL. Los
+      porcentajes de detalle y el porcentaje de tarifa se guardan como
+      REFERENCIA (no son fórmula). Es el modo de regularización del histórico
+      en el que el importe correspondía a una sola especialidad pero se
+      repartió por el universo de habilitadas.
 
     No confundir con ``ModoCalculoLiquidacion``: aquel indica el ORIGEN del
     monto (tarifa vs manual) y es transversal a todos los motores.
@@ -240,3 +250,7 @@ class EstrategiaCotizacionPO(models.TextChoices):
         "Tarifa habilitadas participantes",
     )
     TOTAL_EXPLICITO = "TOTAL_EXPLICITO", "Total explícito"
+    TOTAL_EXPLICITO_SELECCIONADAS = (
+        "TOTAL_EXPLICITO_SELECCIONADAS",
+        "Total explícito seleccionadas",
+    )

@@ -52,6 +52,12 @@ class LiquidacionPorcentajeObraData(BaseSchema):
         default=None,
         description="Total final autoritativo con IGV (estrategia TOTAL_EXPLICITO).",
     )
+    subtotal_explicito: Optional[Decimal] = Field(
+        default=None,
+        description="Subtotal autoritativo sin IGV (estrategia "
+        "TOTAL_EXPLICITO_SELECCIONADAS). Si no viene, el motor lo deriva del "
+        "total por IGV. NUNCA se recalcula desde el valor declarado ni la tarifa.",
+    )
     override_subtotal: Optional[Decimal] = Field(
         default=None,
         description="Legacy bypass: when set, usar este subtotal directamente en lugar de calcularlo (bypasses Steps 1-5)",

@@ -227,6 +227,15 @@ class LiquidacionGeneral(BaseModel):
             models.Index(fields=["proyecto", "tipo_liquidacion", "-numero_revision"]),
             # Covers eliminado filter in active-list queries
             models.Index(fields=["eliminado"]),
+            # Covers the admin changelist of the per-tipo proxies: the filter is
+            # `tipo_liquidacion_id = <const>` and the ORDER BY is
+            # `legacy ASC, fecha_registro DESC`. Without this index the planner
+            # falls back to a parallel seq scan + external merge sort of the
+            # whole table (measured: ~121 ms per page of 100 rows).
+            models.Index(
+                fields=["tipo_liquidacion", "legacy", "-fecha_registro"],
+                name="lx_liq_tipo_legacy_fecha_idx",
+            ),
         ]
         constraints = []
 
