@@ -1884,6 +1884,90 @@ def _importes_por_logica(
     return subtotal, total
 
 
+def _recalcular_solo_importes(command, data_path: Path) -> int:
+    """Recalcula SOLO el importe de las liquidaciones ya importadas.
+
+    No crea liquidaciones ni toca comprobantes, contactos, vinculos de
+    inspector ni operatividades: unicamente revalua el importe con el UIT
+    vigente a la fecha de cada liquidacion.
+
+    Criterio de recalculo: la liquidacion debe conservar el importe que trae
+    el CSV (si alguien lo ajusto despues, no se toca).
+
+    Returns:
+        Cantidad de liquidaciones recalculadas.
+    """
+    headers, rows = _read_tsv(data_path)
+    command._log(
+        f"[solo-recalcular] {len(rows)} filas | recalculo con el UIT de la epoca"
+    )
+    recalculadas = 0
+    cambios: list[dict] = []
+    for idx, fields in enumerate(rows, start=2):
+        row, rechazo = _parse_row(fields, idx)
+        if rechazo or row.id_val is None:
+            continue
+        # La liquidacion se localiza por el numero legacy (columna ID del CSV).
+        inspeccion = (
+            LiquidacionInspeccionObra.objects.select_related("liquidacion")
+            .filter(numero=row.id_val, liquidacion__legacy=True)
+            .first()
+        )
+        if inspeccion is None:
+            continue
+        lg = inspeccion.liquidacion
+        epoca = _uit_vigente_en_fecha(row.fecha)
+        subtotal_logica, total_logica = _importes_por_logica(row, epoca)
+        if subtotal_logica is None or row.subtotal is None:
+            continue
+        if abs(Decimal(lg.sub_total) - subtotal_logica) <= Decimal("0.01"):
+            continue
+        if abs(Decimal(lg.sub_total) - Decimal(row.subtotal)) > Decimal("0.01"):
+            # el importe en base ya no es el del CSV -> no se toca
+            continue
+        if not command.dry_run:
+            lg.sub_total = subtotal_logica
+            lg.total = total_logica
+            lg.uit_snapshot = Decimal(epoca or 0)
+            uit_a_usar = _LegacyVisitasCore.ensure_uit_for_legacy(epoca, row.fecha)
+            if uit_a_usar is not None:
+                lg.uit_id = uit_a_usar
+            lg.save(
+                update_fields=["sub_total", "total", "uit_snapshot", "uit_id", "updated_at"]
+            )
+        recalculadas += 1
+        cambios.append(
+            {
+                "fila": row.row_index,
+                "id": row.id_val,
+                "expediente": row.nroexpdte,
+                "fecha": row.fecha,
+                "uit_epoca": epoca,
+                "sub_total_anterior": str(lg.sub_total),
+                "sub_total_nuevo": str(subtotal_logica),
+                "diferencia": str(Decimal(lg.sub_total) - subtotal_logica),
+            }
+        )
+    command._log(
+        f"[solo-recalcular] liquidaciones recalculadas: {recalculadas}"
+        + (" (dry-run: no se escribio nada)" if command.dry_run else "")
+    )
+    if cambios:
+        cambios_path = (
+            Path(__file__).resolve().parents[5]
+            / "result"
+            / "IO"
+            / f"recalculo_uit_epoca_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        )
+        cambios_path.parent.mkdir(parents=True, exist_ok=True)
+        with cambios_path.open("w", newline="", encoding="utf-8-sig") as fh:
+            writer = csv.DictWriter(fh, fieldnames=list(cambios[0].keys()))
+            writer.writeheader()
+            writer.writerows(cambios)
+        command._log(f"[solo-recalcular] detalle: {cambios_path}")
+    return recalculadas
+
+
 def _auditar_uit_epoca(command, row: "ParsedRow") -> None:
     """Registra como se valoraria la liquidacion con el UIT de SU epoca.
 
@@ -2406,6 +2490,14 @@ class Command(BaseCommand):
             ),
         )
         parser.add_argument(
+            "--solo-recalcular",
+            action="store_true",
+            help=(
+                "Solo recalcular importes (UIT de la epoca). NO crea liquidaciones, "
+                "NO toca comprobantes, contactos ni vinculos de inspector"
+            ),
+        )
+        parser.add_argument(
             "--dry-run",
             action="store_true",
             help="Validar filas sin escribir en la BD (reportes y consola únicamente)",
@@ -2510,6 +2602,22 @@ class Command(BaseCommand):
         )
         if not data_path.exists():
             raise CommandError(f"Archivo de datos no encontrado: {data_path}")
+
+        # --solo-recalcular: unicamente revalua importes con el UIT de la epoca.
+        # No crea liquidaciones ni toca comprobantes, contactos, vinculos de
+        # inspector ni operatividades.
+        if options.get("solo_recalcular"):
+            self.dry_run = bool(options["dry_run"])
+            self._log(
+                self.style.WARNING(
+                    "MODO SOLO-RECALCULAR: solo se revaluan importes (UIT de la epoca); "
+                    "no se crean liquidaciones ni se tocan comprobantes, contactos, "
+                    "inspectores ni operatividades."
+                )
+            )
+            recalculadas = _recalcular_solo_importes(self, data_path)
+            self._log(f"[solo-recalcular] fin | liquidaciones recalculadas: {recalculadas}")
+            return
 
         # ── XLSX guard ───────────────────────────────────────────────────────
         if _is_xlsx(data_path):

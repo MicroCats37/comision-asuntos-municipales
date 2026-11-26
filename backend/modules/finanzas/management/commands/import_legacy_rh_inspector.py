@@ -6,6 +6,7 @@ import csv
 import re
 import unicodedata
 from collections import Counter, defaultdict
+from decimal import Decimal
 from datetime import date
 from pathlib import Path
 
@@ -13,6 +14,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from openpyxl import load_workbook
 
+from modules.finanzas.domain.models.detalle_honorario_inspector import (
+    DetalleHonorarioInspector,
+)
 from modules.finanzas.domain.models.registro_pago_inspector import RegistroPagoInspector
 from modules.finanzas.domain.models.recibo_honorario_inspector_mensual import (
     ReciboHonorarioInspectorMensual,
@@ -180,6 +184,21 @@ def _ensure_inspector_io(cip: str, lcv, apply: bool, cache: dict | None = None):
     return inspector, status
 
 
+def _liquidaciones_ya_facturadas(cip: str, periodo: int, mes: int) -> set[str]:
+    """IDs de liquidacion IO ya facturadas en un recibo de ese inspector/periodo/mes."""
+    inspector = Inspector.objects.filter(perfil_ingeniero__cip=cip).first()
+    if inspector is None:
+        return set()
+    return {
+        str(lcv_id)
+        for lcv_id in DetalleHonorarioInspector.objects.filter(
+            recibo_mensual__inspector=inspector,
+            recibo_mensual__periodo=periodo,
+            recibo_mensual__mes=mes,
+        ).values_list("liquidacion_por_categoria_visitas_id", flat=True)
+    }
+
+
 def _rh_ya_importado(cip: str, periodo: int, mes: int) -> bool:
     """True when a monthly receipt already exists for that inspector and period."""
     inspector = Inspector.objects.filter(perfil_ingeniero__cip=cip).first()
@@ -223,6 +242,44 @@ def _diagnostico_sin_match(expediente: str, owner: str, district: str, visitas: 
         "No existe en la base: ni el expediente ni el propietario + distrito "
         "aparecen en ninguna liquidacion IO."
     )
+
+
+def _candidato_coincide(lcv, owner: str, district: str, visitas: int, importe_bruto) -> bool:
+    """True when the candidate liquidación matches the Excel row on all data."""
+    lg = lcv.liquidacion_general
+    proyecto = getattr(lg, "proyecto", None)
+    if proyecto is not None:
+        owner_db = _match_text(proyecto.nombre_propietario)
+        owner_excel = _match_text(owner)
+        if owner_db != owner_excel:
+            tokens_db = set(owner_db.split())
+            tokens_excel = set(owner_excel.split())
+            if not (tokens_db & tokens_excel):
+                return False
+        distrito_db = _match_text(
+            proyecto.distrito.nombre if proyecto.distrito else ""
+        )
+        if _match_text(district) not in distrito_db and distrito_db not in _match_text(district):
+            return False
+    if (lcv.cantidad_visitas or 0) != (visitas or 0):
+        return False
+    if importe_bruto is not None and lg.sub_total is not None:
+        if abs(Decimal(lg.sub_total) - Decimal(importe_bruto)) > Decimal("1"):
+            return False
+    return True
+
+
+def _numero_liquidacion(lcv) -> str:
+    """N° de la liquidacion IO (columna 'N° LIQ.' del sistema).
+
+    En las liquidaciones importadas del legacy es el ID de la fila del CSV.
+    """
+    if lcv is None:
+        return ""
+    inspeccion = getattr(lcv.liquidacion_general, "inspeccion_obra", None)
+    if inspeccion is None:
+        return ""
+    return str(inspeccion.numero or "")
 
 
 def _dry_run_inspector(cip: str):
@@ -309,9 +366,10 @@ class Command(BaseCommand):
         monthly_rows_ready = 0
         monthly_receipts = 0
         composite_index = {}
+        expediente_index = {}
         diagnostico_index = {"expedientes": set(), "por_propietario": {}, "por_propietario_distrito": {}}
         for lcv in LiquidacionPorCategoriaVisitas.objects.select_related(
-            "liquidacion_general__proyecto__distrito",
+            "liquidacion_general__proyecto__distrito", "liquidacion_general__inspeccion_obra"
         ):
             project = lcv.liquidacion_general.proyecto
             owner = project.nombre_propietario
@@ -321,6 +379,7 @@ class Command(BaseCommand):
             expediente = lcv.liquidacion_general.expediente
             if expediente:
                 diagnostico_index["expedientes"].add(_match_text(expediente))
+                expediente_index.setdefault(_match_text(expediente), []).append(lcv)
             clave_propietario = _match_text(owner)
             clave_distrito = _match_text(district)
             diagnostico_index["por_propietario"].setdefault(clave_propietario, []).append((clave_distrito, lcv.cantidad_visitas))
@@ -352,12 +411,22 @@ class Command(BaseCommand):
             items = []
             rows = []
             used_lcv_ids = set()
+            visitas_por_io = {}
+            previas_por_io = {}
+            filas_por_io = {}
+            indices_por_io = {}
+            lcv_por_id = {}
+            bruto_col = next(
+                (column for name, column in header_index.items() if name.startswith("IMPORTE BRUTO")),
+                None,
+            )
 
             def registrar_equivalencia(source_row, expediente, comprobante, owner, district, programadas, visitas_mes, previas, match_type, lcv, estado, motivo=""):
                 registro = [
                     path.name, cip, period[0], period[1], source_row,
                     expediente, comprobante, owner, district, programadas, visitas_mes, previas,
                     match_type or "", estado, motivo,
+                    _numero_liquidacion(lcv),
                     str(lcv.id) if lcv is not None else "",
                     lcv.liquidacion_general.expediente if lcv is not None else "",
                     lcv.categoria if lcv is not None else "",
@@ -379,38 +448,65 @@ class Command(BaseCommand):
                 visitas_mes = _int(values_ws.cell(row, month_col).value)
                 previas = _int(values_ws.cell(row, prev_col).value)
                 assigned_visits = _int(values_ws.cell(row, assigned_visits_col).value)
+                importe_bruto = (
+                    Decimal(str(values_ws.cell(row, bruto_col).value or 0))
+                    if bruto_col
+                    else None
+                )
                 serie, numero = (comprobante.split("-", 1) + [""])[:2]
+                candidatos = []
+                match_type = ""
+                # Nivel 1: expediente exacto + comprobante activo
                 match = LiquidacionComprobante.objects.filter(
                     activo=True,
                     liquidacion_general__expediente=expediente,
                     serie__iexact=serie,
                     numero__iexact=numero,
-                ).select_related("liquidacion_general").first()
-                match_type = "EXPEDIENTE_COMPROBANTE" if match else None
-                if not match:
+                ).select_related("liquidacion_general__inspeccion_obra").first()
+                if match is not None:
+                    lcv_n1 = LiquidacionPorCategoriaVisitas.objects.filter(
+                        liquidacion_general=match.liquidacion_general,
+                    ).select_related("liquidacion_general__inspeccion_obra").first()
+                    if lcv_n1 is not None:
+                        candidatos = [lcv_n1]
+                        match_type = "EXPEDIENTE_COMPROBANTE"
+                # Nivel 2: el comprobante es unico en la base
+                if not candidatos:
                     comprobante_matches = list(
                         LiquidacionComprobante.objects.filter(
                             activo=True,
                             serie__iexact=serie,
                             numero__iexact=numero,
-                        ).select_related("liquidacion_general")[:2]
+                        ).select_related("liquidacion_general")[:3]
                     )
-                    if len(comprobante_matches) == 1:
-                        match = comprobante_matches[0]
+                    for comp in comprobante_matches:
+                        lcv_n2 = LiquidacionPorCategoriaVisitas.objects.filter(
+                            liquidacion_general=comp.liquidacion_general,
+                        ).select_related("liquidacion_general__inspeccion_obra").first()
+                        if lcv_n2 is not None:
+                            candidatos.append(lcv_n2)
+                    if len(candidatos) == 1:
                         match_type = "COMPROBANTE"
-                    elif len(comprobante_matches) > 1:
-                        outcomes.append([
-                            path.name, cip, period[0], period[1], row,
-                            "AMBIGUOUS_COMPROBANTE", f"{expediente} | {comprobante}",
-                        ])
-                        registrar_equivalencia(
-                            row, expediente, comprobante, owner, district, assigned_visits,
-                            visitas_mes, previas, match_type, None, "AMBIGUOUS_COMPROBANTE",
-                            "El numero de comprobante apunta a mas de una liquidacion IO: "
-                            "no se puede decidir a cual pertenece la fila.",
-                        )
-                        continue
-                if not match:
+                    elif len(candidatos) > 1:
+                        match_type = "COMPROBANTE_AMBIGUO"
+                # Nivel 3: el expediente es unico en la base (aun sin comprobante).
+                # Solo se acepta si ademas coincide el numero de inspecciones
+                # programadas: el mismo expediente puede tener varias
+                # liquidaciones (distintas obras con el mismo numero de obra).
+                if not candidatos:
+                    por_expediente = [
+                        c
+                        for c in expediente_index.get(_match_text(expediente), [])
+                        if (c.cantidad_visitas or 0) == (assigned_visits or 0)
+                    ]
+                    if len(por_expediente) == 1:
+                        candidatos = list(por_expediente)
+                        match_type = "EXPEDIENTE"
+                    elif len(por_expediente) > 1:
+                        candidatos = list(por_expediente)
+                        match_type = "EXPEDIENTE_AMBIGUO"
+                # Nivel 4: propietario + distrito + inspecciones programadas
+                if not candidatos:
                     composite = _composite_matches(
                         composite_index,
                         owner,
@@ -419,35 +515,52 @@ class Command(BaseCommand):
                         used_lcv_ids,
                     )
                     if len(composite) == 1:
-                        lcv = composite[0]
+                        candidatos = composite
                         match_type = "COMPOSITE"
-                        outcomes.append([
-                            path.name, cip, period[0], period[1], row,
-                            "MATCH_COMPOSITE", f"{owner} | {district} | {assigned_visits}",
-                        ])
                     elif len(composite) > 1:
-                        outcomes.append([path.name, cip, period[0], period[1], row, "AMBIGUOUS_COMPOSITE", f"{owner} | {district} | {assigned_visits}"])
-                        registrar_equivalencia(
-                            row, expediente, comprobante, owner, district, assigned_visits,
-                            visitas_mes, previas, match_type, None, "AMBIGUOUS_COMPOSITE",
-                            "La clave propietario + distrito + inspecciones programadas devuelve "
-                            "mas de una liquidacion IO posible: no se puede decidir cual es.",
-                        )
-                        continue
-                    else:
-                        outcomes.append([path.name, cip, period[0], period[1], row, "NO_MATCH_COMPOSITE", f"{expediente} | {comprobante}"])
-                        registrar_equivalencia(
-                            row, expediente, comprobante, owner, district, assigned_visits,
-                            visitas_mes, previas, match_type, None, "NO_MATCH_COMPOSITE",
-                            _diagnostico_sin_match(
-                                expediente, owner, district, assigned_visits, diagnostico_index
-                            ),
-                        )
-                        continue
-                else:
-                    lcv = LiquidacionPorCategoriaVisitas.objects.filter(
-                        liquidacion_general=match.liquidacion_general,
-                    ).select_related("liquidacion_general").first()
+                        candidatos = composite
+                        match_type = "COMPOSITE_AMBIGUO"
+                if not candidatos:
+                    outcomes.append([path.name, cip, period[0], period[1], row, "NO_MATCH_COMPROBANTE", f"{expediente} | {comprobante}"])
+                    registrar_equivalencia(
+                        row, expediente, comprobante, owner, district, assigned_visits,
+                        visitas_mes, previas, match_type, None, "NO_MATCH_COMPROBANTE",
+                        _diagnostico_sin_match(
+                            expediente, owner, district, assigned_visits, diagnostico_index
+                        ),
+                    )
+                    continue
+                # Resolucion de ambiguedad: de los candidatos se queda el que
+                # coincide en propietario, distrito, visitas y importe bruto.
+                if len(candidatos) > 1:
+                    filtrados = [
+                        c for c in candidatos
+                        if _candidato_coincide(c, owner, district, assigned_visits, importe_bruto)
+                    ]
+                    if len(filtrados) == 1:
+                        candidatos = filtrados
+                        match_type = match_type.replace("_AMBIGUO", "") + "_RESUELTO"
+                if len(candidatos) > 1:
+                    estado_ambiguo = (
+                        "AMBIGUOUS_COMPROBANTE"
+                        if match_type.startswith("COMPROBANTE")
+                        else "AMBIGUOUS_COMPOSITE"
+                        if match_type.startswith("COMPOSITE")
+                        else "AMBIGUOUS_EXPEDIENTE"
+                    )
+                    outcomes.append([
+                        path.name, cip, period[0], period[1], row,
+                        estado_ambiguo, f"{expediente} | {comprobante} | {len(candidatos)} candidatos",
+                    ])
+                    registrar_equivalencia(
+                        row, expediente, comprobante, owner, district, assigned_visits,
+                        visitas_mes, previas, match_type, None, estado_ambiguo,
+                        f"Hay {len(candidatos)} liquidaciones IO posibles y ninguna coincide "
+                        "con los datos del Excel (propietario, distrito, visitas e importe): "
+                        "no se puede decidir cual es.",
+                    )
+                    continue
+                lcv = candidatos[0]
                 if not lcv:
                     outcomes.append([path.name, cip, period[0], period[1], row, "NO_IO", expediente])
                     registrar_equivalencia(
@@ -457,52 +570,85 @@ class Command(BaseCommand):
                         "visitas IO que necesita el calculo de honorarios.",
                     )
                     continue
+                match_counts[match_type] += 1
+                lcv_por_id[lcv.id] = lcv
                 if lcv.id in used_lcv_ids:
-                    outcomes.append([path.name, cip, period[0], period[1], row, "DUPLICATE_IO", expediente])
+                    # La misma liquidacion aparece en otra fila del mismo libro. Se
+                    # mantiene el vinculo en el reporte, pero sus visitas NO se
+                    # suman: el Excel reparte las visitas de una misma obra en
+                    # varias filas y sumarlas exigiria rebasar el saldo.
+                    filas_por_io.setdefault(lcv.id, []).append(row)
+                    indices_por_io.setdefault(lcv.id, []).append(len(mapping_rows))
                     registrar_equivalencia(
                         row, expediente, comprobante, owner, district, assigned_visits,
                         visitas_mes, previas, match_type, lcv, "DUPLICATE_IO",
-                        "La liquidacion IO ya fue asignada a otra fila del mismo libro: "
-                        "el Excel reparte las visitas del mes de una misma liquidacion "
-                        "en varias filas y la regla de una IO por fila las bloquea.",
+                        "La liquidacion IO ya fue asignada a otra fila de este libro: el "
+                        "Excel reparte las visitas del mes de una misma liquidacion en "
+                        "varias filas y solo se factura una vez.",
                     )
                     continue
                 used_lcv_ids.add(lcv.id)
-                if visitas_mes:
-                    saldo = (lcv.cantidad_visitas or 0) - previas
-                    if visitas_mes > saldo:
-                        outcomes.append([
-                            path.name, cip, period[0], period[1], row,
-                            "REJECTED_SALDO",
-                            f"{expediente} | visitas={visitas_mes} previas={previas} programadas={lcv.cantidad_visitas} saldo={saldo}",
-                        ])
-                        registrar_equivalencia(
-                            row, expediente, comprobante, owner, district, assigned_visits,
-                            visitas_mes, previas, match_type, lcv, "REJECTED_SALDO",
-                            f"Las visitas del mes ({visitas_mes}) superan el saldo disponible "
-                            f"(programadas {lcv.cantidad_visitas} - ya pagadas {previas} = {saldo}). "
-                            "Es una inconsistencia del Excel.",
-                        )
-                        continue
-                match_counts[match_type] += 1
+                visitas_por_io[lcv.id] = visitas_mes
+                previas_por_io[lcv.id] = previas
+                filas_por_io.setdefault(lcv.id, []).append(row)
+                indices_por_io.setdefault(lcv.id, []).append(len(mapping_rows))
                 rows.append((row, lcv, previas, visitas_mes))
                 registrar_equivalencia(row, expediente, comprobante, owner, district, assigned_visits, visitas_mes, previas, match_type, lcv, "ASIGNADO")
                 if visitas_mes:
                     monthly_rows_ready += 1
-                    items.append({
-                        "liquidacion_categoria_visitas_id": str(lcv.id),
-                        "cantidad_visitas": visitas_mes,
-                    })
+            # Control de saldo por liquidacion: si una linea no alcanza, se
+            # excluye SOLO esa linea (el resto del libro se migra igual).
+            for lcv_id, indices in indices_por_io.items():
+                lcv_obj = lcv_por_id[lcv_id]
+                visitas_total = visitas_por_io.get(lcv_id, 0)
+                previas_total = previas_por_io.get(lcv_id, 0)
+                if not visitas_total:
+                    continue
+                saldo = (lcv_obj.cantidad_visitas or 0) - previas_total
+                if visitas_total > saldo:
+                    for indice in indices:
+                        mapping_rows[indice][13] = "REJECTED_SALDO"
+                        mapping_rows[indice][14] = (
+                            f"Las visitas del mes ({visitas_total}) superan el saldo disponible "
+                            f"(programadas {lcv_obj.cantidad_visitas} - ya pagadas {previas_total} = {saldo}). "
+                            "Es una inconsistencia del Excel."
+                        )
+                        pending_rows.append(mapping_rows[indice])
+                    continue
+                items.append({
+                    "liquidacion_categoria_visitas_id": str(lcv_id),
+                    "cantidad_visitas": visitas_total,
+                })
             if not items:
                 outcomes.append([path.name, cip, period[0], period[1], "", "NO_MONTHLY_VISITS", "No valid rows"])
                 continue
+            # Idempotencia por CONTENIDO: una liquidacion ya facturada en un
+            # recibo de este inspector, periodo y mes no se vuelve a facturar.
+            # Dos libros distintos pueden compartir inspector y periodo (p.ej. el
+            # mismo inspector con dos planillas), asi que la clave no puede ser
+            # solo (inspector, periodo, mes).
+            ya_facturadas = _liquidaciones_ya_facturadas(cip, period[0], period[1])
+            if ya_facturadas:
+                pendientes = [i for i in items if i["liquidacion_categoria_visitas_id"] not in ya_facturadas]
+                if not pendientes:
+                    outcomes.append([
+                        path.name, cip, period[0], period[1], "",
+                        "YA_IMPORTADO", f"{len(items)} monthly rows (recibo existente)",
+                    ])
+                    continue
+                items = pendientes
+                rows = [
+                    (r, lcv, previas, visitas_mes)
+                    for (r, lcv, previas, visitas_mes) in rows
+                    if str(lcv.id) not in ya_facturadas
+                ]
+                visitas_por_io = {
+                    k: v for k, v in visitas_por_io.items() if str(k) not in ya_facturadas
+                }
+                previas_por_io = {
+                    k: v for k, v in previas_por_io.items() if str(k) not in ya_facturadas
+                }
             payload = RHInspectorCotizarIn(cip=cip, periodo=period[0], mes=period[1], items=items)
-            if _rh_ya_importado(cip, period[0], period[1]):
-                outcomes.append([
-                    path.name, cip, period[0], period[1], "",
-                    "YA_IMPORTADO", f"{len(items)} monthly rows (recibo existente)",
-                ])
-                continue
             try:
                 if options["apply"]:
                     with transaction.atomic():
@@ -513,14 +659,22 @@ class Command(BaseCommand):
                             )
                             if inspector is None:
                                 raise CommandError(f"Inspector {cip}: {inspector_status}")
-                        for _, lcv, previas, _ in rows:
+                        for lcv_id, previas in previas_por_io.items():
                             if previas:
-                                RegistroPagoInspector.objects.get_or_create(liquidacion_por_categoria_visitas=lcv, periodo=period[0], mes=1, recibo_mensual=None, defaults={"inspecciones_pagadas": previas, "fecha_registro": date(period[0], 1, 1)})
+                                lcv_obj = lcv_por_id.get(lcv_id)
+                                if lcv_obj is None:
+                                    continue
+                                RegistroPagoInspector.objects.get_or_create(liquidacion_por_categoria_visitas=lcv_obj, periodo=period[0], mes=1, recibo_mensual=None, defaults={"inspecciones_pagadas": previas, "fecha_registro": date(period[0], 1, 1)})
                         groups = defaultdict(list)
-                        for _, lcv, _, visitas_mes in rows:
-                            if not visitas_mes:
+                        for lcv_id, visitas_total in visitas_por_io.items():
+                            if not visitas_total:
                                 continue
-                            groups[_resolve_operativity_key(inspector, lcv)].append((lcv, visitas_mes))
+                            lcv_obj = lcv_por_id.get(lcv_id)
+                            if lcv_obj is None:
+                                continue
+                            groups[_resolve_operativity_key(inspector, lcv_obj)].append(
+                                (lcv_obj, visitas_total)
+                            )
                         # El flujo tolera items sin operatividad junto a UNA sola
                         # operatividad, asi que el grupo nulo se fusiona con el
                         # primero para no partir el RH sin necesidad.
@@ -583,7 +737,8 @@ class Command(BaseCommand):
             "EXPEDIENTE_EXCEL", "COMPROBANTE_EXCEL", "PROPIETARIO", "DISTRITO",
             "VISITAS_PROGRAMADAS", "VISITAS_MES", "VISITAS_PREVIAS",
             "TIPO_EMPAIREJAMIENTO", "ESTADO", "MOTIVO",
-            "LIQUIDACION_IO_ID", "IO_EXPEDIENTE", "IO_CATEGORIA", "IO_VISITAS_DB",
+            "IO_NUMERO", "LIQUIDACION_IO_ID", "IO_EXPEDIENTE", "IO_CATEGORIA",
+            "IO_VISITAS_DB",
         ]
         with mapping_path.open("w", newline="", encoding="utf-8-sig") as stream:
             writer = csv.writer(stream)
